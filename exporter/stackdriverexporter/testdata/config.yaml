@@ -9,9 +9,9 @@ exporters:
   stackdriver/customname:
     enabled: true
     project: my-project
-    enable_tracing: true
-    enable_metrics: true
-    metric_prefix: prefix
+    enable-tracing: true
+    enable-metrics: true
+    metric-prefix: prefix
 
 pipelines:
   traces:

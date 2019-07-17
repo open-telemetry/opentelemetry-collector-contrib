@@ -19,11 +19,9 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"github.com/spf13/viper"
 	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer"
@@ -33,9 +31,9 @@ import (
 
 type stackdriverConfig struct {
 	ProjectID     string `mapstructure:"project,omitempty"`
-	EnableTracing bool   `mapstructure:"enable_tracing,omitempty"`
-	EnableMetrics bool   `mapstructure:"enable_metrics,omitempty"`
-	MetricPrefix  string `mapstructure:"metric_prefix,omitempty"`
+	EnableTracing bool   `mapstructure:"enable-tracing,omitempty"`
+	EnableMetrics bool   `mapstructure:"enable-metrics,omitempty"`
+	MetricPrefix  string `mapstructure:"metric-prefix,omitempty"`
 }
 
 // TODO: Add metrics support to the exporterwrapper.
@@ -45,60 +43,10 @@ type stackdriverExporter struct {
 
 var _ consumer.MetricsConsumer = (*stackdriverExporter)(nil)
 
-// StackdriverTraceExportersFromViper unmarshals the viper and returns an consumer.TraceConsumer targeting
-// Stackdriver according to the configuration settings.
-func StackdriverTraceExportersFromViper(v *viper.Viper) (tps []consumer.TraceConsumer, mps []consumer.MetricsConsumer, doneFns []func() error, err error) {
-	var cfg struct {
-		Stackdriver *stackdriverConfig `mapstructure:"stackdriver"`
-	}
-	if err := v.Unmarshal(&cfg); err != nil {
-		return nil, nil, nil, err
-	}
-	sc := cfg.Stackdriver
-	if sc == nil {
-		return nil, nil, nil, nil
-	}
-	if !sc.EnableTracing && !sc.EnableMetrics {
-		return nil, nil, nil, nil
-	}
-
-	sde, serr := newStackdriverExporter(sc.ProjectID, sc.MetricPrefix)
-
-	if serr != nil {
-		return nil, nil, nil, fmt.Errorf("Cannot configure Stackdriver exporter: %v", serr)
-	}
-
-	exp := &stackdriverExporter{
-		exporter: sde,
-	}
-
-	sdte, err := exporterwrapper.NewExporterWrapper("stackdriver_trace", "ocservice.exporter.Stackdriver.ConsumeTraceData", sde)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
-	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
-	// upload can use the context and information from the Node.
-	if sc.EnableTracing {
-		tps = append(tps, sdte)
-	}
-
-	if sc.EnableMetrics {
-		mps = append(mps, exp)
-	}
-
-	doneFns = append(doneFns, func() error {
-		sde.Flush()
-		return nil
-	})
-	return
-}
-
 func newStackdriverTraceExporter(ProjectID, MetricPrefix string) (consumer.TraceConsumer, func() error, error) {
 	sde, serr := newStackdriverExporter(ProjectID, MetricPrefix)
 	if serr != nil {
-		return nil, nil, fmt.Errorf("Cannot configure Stackdriver Trace exporter: %v", serr)
+		return nil, nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
 	}
 
 	tExp, err := exporterwrapper.NewExporterWrapper("stackdriver_trace", "ocservice.exporter.Stackdriver.ConsumeTraceData", sde)
@@ -120,7 +68,7 @@ func newStackdriverTraceExporter(ProjectID, MetricPrefix string) (consumer.Trace
 func newStackdriverMetricsExporter(ProjectID, MetricPrefix string) (consumer.MetricsConsumer, func() error, error) {
 	sde, serr := newStackdriverExporter(ProjectID, MetricPrefix)
 	if serr != nil {
-		return nil, nil, fmt.Errorf("Cannot configure Stackdriver metric exporter: %v", serr)
+		return nil, nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
 	}
 
 	mExp := &stackdriverExporter{
@@ -160,22 +108,14 @@ func newStackdriverExporter(ProjectID, MetricPrefix string) (*stackdriver.Export
 
 func (sde *stackdriverExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	ctx, span := trace.StartSpan(ctx,
-		"opencensus.service.exporter.stackdriver.ExportMetricsData",
+		"opentelemetry.service.exporter.stackdriver.ExportMetricsData",
 		trace.WithSampler(trace.NeverSample()))
 	defer span.End()
 
-	var setErrorOnce sync.Once
-
 	err := sde.exporter.ExportMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 	if err != nil {
-		setErrorOnce.Do(func() {
-			span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
-		})
-
-		span.Annotate([]trace.Attribute{
-			trace.StringAttribute("error", err.Error()),
-		}, "Error encountered")
+		span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
 	}
 
-	return nil
+	return err
 }
