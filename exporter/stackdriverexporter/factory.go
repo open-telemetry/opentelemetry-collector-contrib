@@ -15,30 +15,29 @@
 package stackdriverexporter
 
 import (
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"go.uber.org/zap"
 )
-
-var _ = exporter.RegisterFactory(&exporterFactory{})
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "stackdriver"
 )
 
-// exporterFactory is the factory for OpenCensus exporter.
-type exporterFactory struct {
+// Factory is the factory for Stackdriver exporter.
+type Factory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *exporterFactory) Type() string {
+func (f *Factory) Type() string {
 	return typeStr
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *exporterFactory) CreateDefaultConfig() configmodels.Exporter {
+func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -48,7 +47,7 @@ func (f *exporterFactory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
 	eCfg := cfg.(*Config)
 	if !eCfg.EnableTracing {
 		return nil, nil, nil
@@ -57,7 +56,7 @@ func (f *exporterFactory) CreateTraceExporter(logger *zap.Logger, cfg configmode
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *exporterFactory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
 	eCfg := cfg.(*Config)
 	if !eCfg.EnableMetrics {
 		return nil, nil, nil
