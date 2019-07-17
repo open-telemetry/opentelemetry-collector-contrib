@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  stackdriver:
+  stackdriver/customname:
+    enabled: true
+    project: my-project
+    enable_tracing: true
+    enable_metrics: true
+    metric_prefix: prefix
+
+pipelines:
+  traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [stackdriver]
+
