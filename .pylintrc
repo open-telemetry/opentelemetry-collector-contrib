@@ -63,6 +63,8 @@ confidence=
 disable=missing-docstring,
       fixme, # Warns about FIXME, TODO, etc. comments.
       too-few-public-methods, # Might be good to re-enable this later.
+      too-many-instance-attributes,
+      too-many-arguments
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
