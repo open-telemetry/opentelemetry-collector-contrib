@@ -7,11 +7,12 @@ processors:
 exporters:
   stackdriver:
   stackdriver/customname:
-    enabled: true
     project: my-project
     enable-tracing: true
     enable-metrics: true
     metric-prefix: prefix
+  stackdriver/disabled: # will be ignored
+    disabled: true
 
 pipelines:
   traces:
