@@ -48,6 +48,5 @@ func TestLoadConfig(t *testing.T) {
 		configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: "stackdriver/customname",
-			Enabled: true,
 		})
 }
