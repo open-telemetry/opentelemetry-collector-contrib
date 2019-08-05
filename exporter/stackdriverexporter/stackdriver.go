@@ -29,13 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
 )
 
-type stackdriverConfig struct {
-	ProjectID     string `mapstructure:"project,omitempty"`
-	EnableTracing bool   `mapstructure:"enable-tracing,omitempty"`
-	EnableMetrics bool   `mapstructure:"enable-metrics,omitempty"`
-	MetricPrefix  string `mapstructure:"metric-prefix,omitempty"`
-}
-
 // TODO: Add metrics support to the exporterwrapper.
 type stackdriverExporter struct {
 	exporter *stackdriver.Exporter
