@@ -1,11 +1,11 @@
-module github.com/open-telemetry/opentelemetry-service-contrib
+module github.com/open-telemetry/opentelemetry-service-contrib/exporter
 
 go 1.12
 
 require (
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.2
-	github.com/open-telemetry/opentelemetry-service v0.0.0-20190726175643-11a0a2ab4e8b
-	github.com/stretchr/testify v1.3.0
-	go.opencensus.io v0.22.0
-	go.uber.org/zap v1.10.0
+	github.com/client9/misspell v0.3.4 // indirect
+	github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0 // indirect
+	golang.org/x/lint v0.0.0-20190409202823-959b441ac422 // indirect
+	golang.org/x/tools v0.0.0-20190805165405-2756c524cc1c // indirect
+	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 )
