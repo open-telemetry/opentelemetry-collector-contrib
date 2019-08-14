@@ -1,10 +1,13 @@
 EXPORTERS := $(wildcard exporter/*/.)
+RECEIVERS := $(wildcard receiver/*/.)
 
 .DEFAULT_GOAL := all
 
-.PHONY: all $(EXPORTERS)
-all: $(EXPORTERS)
+.PHONY: all $(EXPORTERS) $(RECEIVERS)
+all: $(EXPORTERS) $(RECEIVERS)
 $(EXPORTERS):
+	$(MAKE) -C $@
+$(RECEIVERS):
 	$(MAKE) -C $@
 
 .PHONY: install-tools
