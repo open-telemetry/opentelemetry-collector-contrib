@@ -31,9 +31,9 @@ func TestCreateExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	_, _, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
 	assert.Nil(t, err)
 
-	_, _, err = factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err = factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.Nil(t, err)
 }
