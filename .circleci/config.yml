@@ -8,5 +8,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install bazzar
+          command: sudo apt-get install bzr -y
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
           name: Verify
           command: make all
