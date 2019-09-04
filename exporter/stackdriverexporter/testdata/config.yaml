@@ -11,6 +11,7 @@ exporters:
     enable-tracing: true
     enable-metrics: true
     metric-prefix: prefix
+    endpoint: test-endpoint
   stackdriver/disabled: # will be ignored
     disabled: true
 

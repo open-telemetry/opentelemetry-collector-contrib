@@ -19,96 +19,105 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"go.opencensus.io/trace"
+	"google.golang.org/api/option"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterwrapper"
+	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-service/oterr"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
 )
 
-// TODO: Add metrics support to the exporterwrapper.
+// stackdriverExporter is a wrapper struct of Stackdriver exporter
 type stackdriverExporter struct {
 	exporter *stackdriver.Exporter
 }
 
-var _ consumer.MetricsConsumer = (*stackdriverExporter)(nil)
-
-func newStackdriverTraceExporter(ProjectID, MetricPrefix string) (consumer.TraceConsumer, func() error, error) {
-	sde, serr := newStackdriverExporter(ProjectID, MetricPrefix)
-	if serr != nil {
-		return nil, nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
-	}
-
-	tExp, err := exporterwrapper.NewExporterWrapper("stackdriver_trace", "ocservice.exporter.Stackdriver.ConsumeTraceData", sde)
-	if err != nil {
-		return nil, nil, err
-	}
-	// TODO: Examine "contrib.go.opencensus.io/exporter/stackdriver" to see
-	// if trace.ExportSpan was constraining and if perhaps the Stackdriver
-	// upload can use the context and information from the Node.
-
-	doneFn := func() error {
-		sde.Flush()
-		return nil
-	}
-
-	return tExp, doneFn, nil
+func (*stackdriverExporter) Name() string {
+	return "stackdriver"
 }
 
-func newStackdriverMetricsExporter(ProjectID, MetricPrefix string) (consumer.MetricsConsumer, func() error, error) {
-	sde, serr := newStackdriverExporter(ProjectID, MetricPrefix)
-	if serr != nil {
-		return nil, nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
-	}
-
-	mExp := &stackdriverExporter{
-		exporter: sde,
-	}
-
-	doneFn := func() error {
-		sde.Flush()
-		return nil
-	}
-
-	return mExp, doneFn, nil
+func (se *stackdriverExporter) Shutdown() error {
+	se.exporter.Flush()
+	se.exporter.StopMetricsExporter()
+	return nil
 }
 
-func newStackdriverExporter(ProjectID, MetricPrefix string) (*stackdriver.Exporter, error) {
+func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
+	options := getStackdriverOptions(cfg.ProjectID, cfg.Prefix)
+	if cfg.Endpoint != "" {
+		options.TraceClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
+	}
+	sde, serr := stackdriver.NewExporter(options)
+	if serr != nil {
+		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
+	}
+	tExp := &stackdriverExporter{exporter: sde}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		tExp.pushTraceData,
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
+		exporterhelper.WithShutdown(tExp.Shutdown))
+}
+
+func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error) {
+	options := getStackdriverOptions(cfg.ProjectID, cfg.Prefix)
+	if cfg.Endpoint != "" {
+		options.MonitoringClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
+	}
+	sde, serr := stackdriver.NewExporter(options)
+	if serr != nil {
+		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
+	}
+	mExp := &stackdriverExporter{exporter: sde}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		mExp.pushMetricsData,
+		exporterhelper.WithTracing(true),
+		exporterhelper.WithMetrics(true),
+		exporterhelper.WithShutdown(mExp.Shutdown))
+}
+
+func getStackdriverOptions(ProjectID, MetricPrefix string) stackdriver.Options {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 
-	return stackdriver.NewExporter(stackdriver.Options{
+	return stackdriver.Options{
 		// If the project ID is an empty string, it will be set by default based on
 		// the project this is running on in GCP.
 		ProjectID: ProjectID,
 
 		MetricPrefix: MetricPrefix,
 
-		// Stackdriver Metrics mandates a minimum of 60 seconds for
-		// reporting metrics. We have to enforce this as per the advisory
-		// at https://cloud.google.com/monitoring/custom-metrics/creating-metrics#writing-ts
-		// which says:
-		//
-		// "If you want to write more than one point to the same time series, then use a separate call
-		//  to the timeSeries.create method for each point. Don't make the calls faster than one time per
-		//  minute. If you are adding data points to different time series, then there is no rate limitation."
-		BundleDelayThreshold: 61 * time.Second,
-	})
+		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
+		DefaultMonitoringLabels: &stackdriver.Labels{},
+	}
 }
 
-func (sde *stackdriverExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	ctx, span := trace.StartSpan(ctx,
-		"opentelemetry.service.exporter.stackdriver.ExportMetricsData",
-		trace.WithSampler(trace.NeverSample()))
-	defer span.End()
+// pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
+func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+	return se.exporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+}
 
-	err := sde.exporter.ExportMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-	if err != nil {
-		span.SetStatus(trace.Status{Code: trace.StatusCodeInternal, Message: err.Error()})
+// TODO(songya): add an interface PushSpanProto to Stackdriver exporter and remove this method
+// pushTraceData is a wrapper method on StackdriverExporter.PushSpans
+func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+	var errs []error
+	droppedSpans := 0
+	for _, span := range td.Spans {
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
+		if err == nil {
+			se.exporter.ExportSpan(sd)
+		} else {
+			droppedSpans++
+			errs = append(errs, err)
+		}
 	}
 
-	return err
+	return droppedSpans, oterr.CombineErrors(errs)
 }
