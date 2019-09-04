@@ -23,4 +23,5 @@ type Config struct {
 	EnableTracing                 bool                     `mapstructure:"enable-tracing"`
 	EnableMetrics                 bool                     `mapstructure:"enable-metrics"`
 	Prefix                        string                   `mapstructure:"metric-prefix"`
+	Endpoint                      string                   `mapstructure:"endpoint"`
 }

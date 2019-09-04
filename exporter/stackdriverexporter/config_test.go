@@ -26,13 +26,13 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	receivers, processors, exporters, err := config.ExampleComponents()
+	facotries, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	exporters[typeStr] = factory
+	facotries.Exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), receivers, processors, exporters,
+		t, path.Join(".", "testdata", "config.yaml"), facotries,
 	)
 
 	require.NoError(t, err)
@@ -44,9 +44,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	r1 := cfg.Exporters["stackdriver/customname"].(*Config)
-	assert.Equal(t, r1.ExporterSettings,
-		configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: "stackdriver/customname",
+	assert.Equal(t, r1,
+		&Config{
+			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "stackdriver/customname"},
+			ProjectID:        "my-project",
+			EnableTracing:    true,
+			EnableMetrics:    true,
+			Prefix:           "prefix",
+			Endpoint:         "test-endpoint",
 		})
 }
