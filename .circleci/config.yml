@@ -1,0 +1,18 @@
+
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - checkout
+      - run:
+          name: Install bazzar
+          command: sudo apt-get install bzr -y
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
+          name: Verify
+          command: make all
