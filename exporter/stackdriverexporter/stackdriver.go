@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"google.golang.org/api/option"
 
 	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
