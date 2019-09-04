@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/consumer"
 	"github.com/open-telemetry/opentelemetry-service/exporter"
 )
 
@@ -30,6 +29,8 @@ const (
 // Factory is the factory for Stackdriver exporter.
 type Factory struct {
 }
+
+var _ (exporter.Factory) = (*Factory)(nil)
 
 // Type gets the type of the Exporter config created by this factory.
 func (f *Factory) Type() string {
@@ -47,19 +48,19 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.TraceConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
 	eCfg := cfg.(*Config)
 	if !eCfg.EnableTracing {
-		return nil, nil, nil
+		return nil, nil
 	}
-	return newStackdriverTraceExporter(eCfg.ProjectID, eCfg.Prefix)
+	return newStackdriverTraceExporter(eCfg)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (consumer.MetricsConsumer, exporter.StopFunc, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	if !eCfg.EnableMetrics {
-		return nil, nil, nil
+		return nil, nil
 	}
-	return newStackdriverMetricsExporter(eCfg.ProjectID, eCfg.Prefix)
+	return newStackdriverMetricsExporter(eCfg)
 }
