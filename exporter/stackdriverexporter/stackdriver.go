@@ -115,16 +115,16 @@ func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerd
 // pushTraceData is a wrapper method on StackdriverExporter.PushSpans
 func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	var errs []error
-	var goodSpans []*tracepb.Span
+	goodSpans := 0
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err == nil {
 			se.exporter.ExportSpan(sd)
-			goodSpans = append(goodSpans, span)
+			goodSpans++
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
-	return len(td.Spans) - len(goodSpans), oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
 }
