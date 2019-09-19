@@ -50,6 +50,9 @@ func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 	if cfg.Endpoint != "" {
 		options.TraceClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
 	}
+	if cfg.NumOfWorkers > 0 {
+		options.NumberOfWorkers = cfg.NumOfWorkers
+	}
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
@@ -68,6 +71,9 @@ func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error
 	options := getStackdriverOptions(cfg.ProjectID, cfg.Prefix)
 	if cfg.Endpoint != "" {
 		options.MonitoringClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
+	}
+	if cfg.NumOfWorkers > 0 {
+		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
@@ -108,16 +114,16 @@ func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerd
 // pushTraceData is a wrapper method on StackdriverExporter.PushSpans
 func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	var errs []error
-	droppedSpans := 0
+	goodSpans := 0
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
 		if err == nil {
 			se.exporter.ExportSpan(sd)
+			goodSpans++
 		} else {
-			droppedSpans++
 			errs = append(errs, err)
 		}
 	}
 
-	return droppedSpans, oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
 }

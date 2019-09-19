@@ -30,8 +30,6 @@ const (
 type Factory struct {
 }
 
-var _ (exporter.Factory) = (*Factory)(nil)
-
 // Type gets the type of the Exporter config created by this factory.
 func (f *Factory) Type() string {
 	return typeStr
