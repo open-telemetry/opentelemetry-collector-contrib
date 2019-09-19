@@ -24,4 +24,5 @@ type Config struct {
 	EnableMetrics                 bool                     `mapstructure:"enable-metrics"`
 	Prefix                        string                   `mapstructure:"metric-prefix"`
 	Endpoint                      string                   `mapstructure:"endpoint"`
+	NumOfWorkers                  int                      `mapstructure:"number-of-workers"`
 }
