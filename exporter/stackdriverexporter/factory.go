@@ -48,17 +48,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
 	eCfg := cfg.(*Config)
-	if !eCfg.EnableTracing {
-		return nil, nil
-	}
 	return newStackdriverTraceExporter(eCfg)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	if !eCfg.EnableMetrics {
-		return nil, nil
-	}
 	return newStackdriverMetricsExporter(eCfg)
 }

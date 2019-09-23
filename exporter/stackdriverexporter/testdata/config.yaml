@@ -8,8 +8,6 @@ exporters:
   stackdriver:
   stackdriver/customname:
     project: my-project
-    enable-tracing: true
-    enable-metrics: true
     metric-prefix: prefix
     endpoint: test-endpoint
   stackdriver/disabled: # will be ignored

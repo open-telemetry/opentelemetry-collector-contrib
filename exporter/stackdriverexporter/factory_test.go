@@ -15,6 +15,7 @@
 package stackdriverexporter
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,12 +29,19 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateExporter(t *testing.T) {
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		t.Skip("Default credentials not set, skip creating Stackdriver exporter")
+	}
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
+	eCfg := cfg.(*Config)
+	eCfg.ProjectID = "test"
 
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	te, err := factory.CreateTraceExporter(zap.NewNop(), eCfg)
 	assert.Nil(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
 
-	_, err = factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	me, err := factory.CreateMetricsExporter(zap.NewNop(), eCfg)
 	assert.Nil(t, err)
+	assert.NotNil(t, me, "failed to create metrics exporter")
 }

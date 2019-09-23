@@ -48,8 +48,6 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "stackdriver/customname"},
 			ProjectID:        "my-project",
-			EnableTracing:    true,
-			EnableMetrics:    true,
 			Prefix:           "prefix",
 			Endpoint:         "test-endpoint",
 		})
