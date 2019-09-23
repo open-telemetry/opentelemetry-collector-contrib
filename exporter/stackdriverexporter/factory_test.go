@@ -15,6 +15,7 @@
 package stackdriverexporter
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,6 +29,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateExporter(t *testing.T) {
+	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
+		t.Skip("Default credentials not set, skip creating Stackdriver exporter")
+	}
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
