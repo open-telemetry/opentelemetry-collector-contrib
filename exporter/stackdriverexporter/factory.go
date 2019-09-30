@@ -17,8 +17,8 @@ package stackdriverexporter
 import (
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-service/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
 )
 
 const (
