@@ -170,7 +170,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	tds, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
 		// If failed to convert, record all the received spans as dropped.
-		observability.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans))
+		observability.RecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans))
 		return scribe.ResultCode_OK, err
 	}
 
@@ -181,7 +181,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		tdsSize += len(td.Spans)
 	}
 
-	observability.RecordTraceReceiverMetrics(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
+	observability.RecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
 
 	return scribe.ResultCode_OK, nil
 }
