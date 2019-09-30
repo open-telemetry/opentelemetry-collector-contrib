@@ -25,10 +25,10 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer"
-	"github.com/open-telemetry/opentelemetry-service/observability"
-	"github.com/open-telemetry/opentelemetry-service/receiver"
-	zipkintranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/zipkin"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
 var (
