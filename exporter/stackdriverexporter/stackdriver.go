@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Package stackdriverexporter contains the wrapper for OpenTelemetry-Stackdriver
-// exporter to be used in OpenTelemetry-Service.
+// exporter to be used in opentelemetry-collector.
 package stackdriverexporter
 
 import (
@@ -23,11 +23,11 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"google.golang.org/api/option"
 
-	"github.com/open-telemetry/opentelemetry-service/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-service/exporter"
-	"github.com/open-telemetry/opentelemetry-service/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-service/oterr"
-	spandatatranslator "github.com/open-telemetry/opentelemetry-service/translator/trace/spandata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 )
 
 // stackdriverExporter is a wrapper struct of Stackdriver exporter

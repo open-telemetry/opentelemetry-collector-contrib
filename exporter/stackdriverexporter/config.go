@@ -14,7 +14,7 @@
 
 package stackdriverexporter
 
-import "github.com/open-telemetry/opentelemetry-service/config/configmodels"
+import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 
 // Config defines configuration for Stackdriver exporter.
 type Config struct {

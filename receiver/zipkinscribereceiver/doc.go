@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Package zipkinscribereceiver implements a receiver that can be used by the
-// OpenTelemetry service to receive traces in the Zipkin-Scribe format.
+// Opentelemetry collector to receive traces in the Zipkin-Scribe format.
 package zipkinscribereceiver
