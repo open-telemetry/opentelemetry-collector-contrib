@@ -13,9 +13,10 @@ exporters:
   stackdriver/disabled: # will be ignored
     disabled: true
 
-pipelines:
-  traces:
-      receivers: [examplereceiver]
-      processors: [exampleprocessor]
-      exporters: [stackdriver]
+service:
+  pipelines:
+    traces:
+        receivers: [examplereceiver]
+        processors: [exampleprocessor]
+        exporters: [stackdriver]
 
