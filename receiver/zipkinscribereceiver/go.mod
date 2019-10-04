@@ -8,7 +8,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.14.0
 	github.com/omnition/scribe-go v1.0.0
-	github.com/open-telemetry/opentelemetry-collector v0.0.3-0.20190927211703-dc6b290e3cfb
+	github.com/open-telemetry/opentelemetry-collector v0.2.0
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 )
