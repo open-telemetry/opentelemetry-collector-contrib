@@ -46,9 +46,11 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["stackdriver/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "stackdriver/customname"},
-			ProjectID:        "my-project",
-			Prefix:           "prefix",
-			Endpoint:         "test-endpoint",
+			ExporterSettings:           configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "stackdriver/customname"},
+			ProjectID:                  "my-project",
+			Prefix:                     "prefix",
+			Endpoint:                   "test-endpoint",
+			NumOfWorkers:               3,
+			SkipCreateMetricDescriptor: true,
 		})
 }
