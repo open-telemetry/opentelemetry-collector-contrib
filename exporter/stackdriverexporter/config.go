@@ -23,4 +23,5 @@ type Config struct {
 	Prefix                        string                   `mapstructure:"metric-prefix"`
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	NumOfWorkers                  int                      `mapstructure:"number-of-workers"`
+	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip-create-metric-descriptor"`
 }
