@@ -75,6 +75,9 @@ func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
+	if cfg.SkipCreateMetricDescriptor {
+		options.SkipCMD = true
+	}
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
