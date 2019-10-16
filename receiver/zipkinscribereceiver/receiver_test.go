@@ -77,7 +77,7 @@ func TestNewReceiver(t *testing.T) {
 
 func TestBadEncodedMessage(t *testing.T) {
 	sink := &mockTraceSink{}
-	traceReceiver, err := New(":0", "zipkin", sink)
+	traceReceiver, err := New("localhost:0", "zipkin", sink)
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestBadEncodedMessage(t *testing.T) {
 
 func TestNonEqualCategoryIsIgnored(t *testing.T) {
 	sink := &mockTraceSink{}
-	traceReceiver, err := New(":0", "not-zipkin", sink)
+	traceReceiver, err := New("localhost:0", "not-zipkin", sink)
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestNonEqualCategoryIsIgnored(t *testing.T) {
 }
 
 func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
-	l, err := net.Listen("tcp", ":0")
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("failed to open a port: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestScribeReceiverServer(t *testing.T) {
-	const endpoint = ":9410"
+	const endpoint = "localhost:9410"
 
 	messages := []*scribe.LogEntry{
 		{
