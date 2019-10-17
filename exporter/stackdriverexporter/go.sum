@@ -329,6 +329,8 @@ github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/open-telemetry/opentelemetry-collector v0.2.0 h1:38/NrGdEEXufWqYFkW/6yeW3koRvb1QbE/2owKSNQvI=
 github.com/open-telemetry/opentelemetry-collector v0.2.0/go.mod h1:zZf9V+57o0Fd3ik5HzaHamVsWhudJTOwnKw9kJvWoDo=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191016224815-dfabfb0c1d1e h1:poxNKN8teT8QjLK6LwKN52cNQEPqHIOEsmPJv5ssZUU=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191016224815-dfabfb0c1d1e/go.mod h1:zZf9V+57o0Fd3ik5HzaHamVsWhudJTOwnKw9kJvWoDo=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
