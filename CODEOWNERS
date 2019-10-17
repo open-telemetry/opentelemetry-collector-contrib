@@ -1,6 +1,6 @@
 #####################################################
 #
-# List of approvers for OpenTelemetry Service Contrib
+# List of approvers for OpenTelemetry Collector Contrib
 #
 #####################################################
 #
@@ -12,4 +12,4 @@
 #  https://help.github.com/en/articles/about-code-owners
 #
 
-* @bogdandrutu @pjanotti @flands @songy23 @tigrannajaryan @rghetia
+* @bogdandrutu @pjanotti @flands @songy23 @tigrannajaryan @owais @rghetia
