@@ -8,10 +8,10 @@ exporters:
   stackdriver:
   stackdriver/customname:
     project: my-project
-    metric-prefix: prefix
+    metric_prefix: prefix
     endpoint: test-endpoint
-    number-of-workers: 3
-    skip-create-metric-descriptor: true
+    number_of_workers: 3
+    skip_create_metric_descriptor: true
   stackdriver/disabled: # will be ignored
     disabled: true
 

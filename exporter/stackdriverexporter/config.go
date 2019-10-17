@@ -20,8 +20,8 @@ import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	ProjectID                     string                   `mapstructure:"project"`
-	Prefix                        string                   `mapstructure:"metric-prefix"`
+	Prefix                        string                   `mapstructure:"metric_prefix"`
 	Endpoint                      string                   `mapstructure:"endpoint"`
-	NumOfWorkers                  int                      `mapstructure:"number-of-workers"`
-	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip-create-metric-descriptor"`
+	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
+	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
 }
