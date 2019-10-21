@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-service-contrib/exporter
+module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.12
 
