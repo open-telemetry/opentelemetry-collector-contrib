@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-service-contrib/exporter/stackdriverexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter
 
 go 1.12
 

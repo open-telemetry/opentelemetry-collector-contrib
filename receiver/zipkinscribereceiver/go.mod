@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-service-contrib/receiver/zipkinscribereceiver
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver
 
 go 1.12
 
