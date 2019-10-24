@@ -1,3 +1,15 @@
 [flake8]
-ignore = E501,W503,E203
-exclude = .svn,CVS,.bzr,.hg,.git,__pycache__,.tox,ext/opentelemetry-ext-jaeger/src/opentelemetry/ext/jaeger/gen/,ext/opentelemetry-ext-jaeger/build/*
+ignore =
+  E501  # line too long, defer to black
+  F401  # unused import, defer to pylint
+  W503  # allow line breaks after binary ops, not after
+exclude =
+  .bzr
+  .git
+  .hg
+  .svn
+  .tox
+  CVS
+  __pycache__
+  ext/opentelemetry-ext-jaeger/src/opentelemetry/ext/jaeger/gen/
+  ext/opentelemetry-ext-jaeger/build/*
