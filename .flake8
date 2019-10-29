@@ -10,6 +10,7 @@ exclude =
   .svn
   .tox
   CVS
+  target
   __pycache__
   ext/opentelemetry-ext-jaeger/src/opentelemetry/ext/jaeger/gen/
   ext/opentelemetry-ext-jaeger/build/*
