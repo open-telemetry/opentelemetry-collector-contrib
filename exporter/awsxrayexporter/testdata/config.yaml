@@ -1,0 +1,21 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  awsxray:
+  awsxray/customname:
+    region: us-east-1
+    origin: "AWS::ECS::Container"
+  awsxray/disabled: # will be ignored
+    disabled: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [awsxray]
+
