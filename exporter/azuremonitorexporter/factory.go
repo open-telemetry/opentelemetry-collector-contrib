@@ -1,0 +1,108 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package azuremonitorexporter
+
+import (
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/exporter"
+
+	"go.uber.org/zap"
+)
+
+const (
+	// The value of "type" key in configuration.
+	typeStr = "azuremonitor"
+)
+
+var (
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
+)
+
+// Factory for Azure Monitor exporter.
+// Implements the interface from github.com/open-telemetry/opentelemetry-collector/exporter/factory.go
+type Factory struct {
+	TransportChannel transportChannel
+}
+
+// Type gets the type of the Exporter config created by this factory.
+func (f *Factory) Type() string {
+	return typeStr
+}
+
+// CreateDefaultConfig creates the default configuration for exporter.
+func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+
+	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		Endpoint:                  "https://dc.services.visualstudio.com/v2/track",
+		MaxBatchSize:              1024,
+		MaxBatchIntervalInSeconds: int(time.Duration(10) * time.Second),
+	}
+}
+
+// CreateTraceExporter creates a trace exporter based on this config.
+func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (exporter.TraceExporter, error) {
+	exporterConfig, ok := config.(*Config)
+
+	if !ok {
+		return nil, errUnexpectedConfigurationType
+	}
+
+	transportChannel := f.getTransportChannel(exporterConfig)
+	return newTraceExporter(exporterConfig, transportChannel)
+}
+
+// CreateMetricsExporter creates a metrics exporter based on this config.
+func (f *Factory) CreateMetricsExporter(
+	logger *zap.Logger,
+	cfg configmodels.Exporter,
+) (exporter.MetricsExporter, error) {
+	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// Configures the transport channel.
+// This method is not thread-safe
+func (f *Factory) getTransportChannel(exporterConfig *Config) transportChannel {
+
+	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
+	// This default channel handles batching, appropriate retries, and is backed by memory.
+	if f.TransportChannel == nil {
+		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
+		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
+		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
+		telemetryConfiguration.MaxBatchInterval = time.Duration(exporterConfig.MaxBatchIntervalInSeconds) * time.Second
+		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
+
+		f.TransportChannel = telemetryClient.Channel()
+
+		if exporterConfig.Debug {
+			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
+				fmt.Printf("[%s] %s\n", time.Now().Format(time.UnixDate), msg)
+				return nil
+			})
+		}
+	}
+
+	return f.TransportChannel
+}

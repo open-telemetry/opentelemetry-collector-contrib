@@ -1,0 +1,20 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  azuremonitor:
+  azuremonitor/2:
+    endpoint: "https://foo.bar"
+    instrumentation_key: abcdefg
+    maxbatchsize: 100
+    maxbatchinterval_sec: 10
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [azuremonitor]
