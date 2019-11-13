@@ -19,10 +19,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"go.opencensus.io/trace"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"math/rand"
 	"os"
+	"reflect"
 	"regexp"
 	"sync"
 	"time"
@@ -31,6 +31,48 @@ import (
 // origin contains the support aws origin values,
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 type origin string
+
+const (
+	// Attributes recorded on the span for the requests.
+	// Only trace exporters will need them.
+	ComponentAttribute   = "component"
+	HttpComponentType    = "http"
+	RpcComponentType     = "rpc"
+	DbComponentType      = "db"
+	MsgComponentType     = "messaging"
+	PeerAddressAttribute = "peer.address"
+	PeerHostAttribute    = "peer.hostname"
+	PeerIpv4Attribute    = "peer.ipv4"
+	PeerIpv6Attribute    = "peer.ipv6"
+	PeerPortAttribute    = "peer.port"
+	PeerServiceAttribute = "peer.service"
+	DbTypeAttribute      = "db.type"
+	DbInstanceAttribute  = "db.instance"
+	DbStatementAttribute = "db.statement"
+	DbUserAttribute      = "db.user"
+)
+
+const (
+	ServiceNameAttribute      = "service.name"
+	ServiceNamespaceAttribute = "service.namespace"
+	ServiceInstanceAttribute  = "service.instance.id"
+	ServiceVersionAttribute   = "service.version"
+	ContainerNameAttribute    = "container.name"
+	ContainerImageAttribute   = "container.image.name"
+	ContainerTagAttribute     = "container.image.tag"
+	K8sClusterAttribute       = "k8s.cluster.name"
+	K8sNamespaceAttribute     = "k8s.namespace.name"
+	K8sPodAttribute           = "k8s.pod.name"
+	K8sDeploymentAttribute    = "k8s.deployment.name"
+	HostHostnameAttribute     = "host.hostname"
+	HostIdAttribute           = "host.id"
+	HostNameAttribute         = "host.name"
+	HostTypeAttribute         = "host.type"
+	CloudProviderAttribute    = "cloud.provider"
+	CloudAccountAttribute     = "cloud.account.id"
+	CloudRegionAttribute      = "cloud.region"
+	CloudZoneAttribute        = "cloud.zone"
+)
 
 const (
 	// OriginEC2 span originated from EC2
@@ -53,7 +95,7 @@ const (
 )
 
 var (
-	zeroSpanID = trace.SpanID{}
+	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	r          = rand.New(rand.NewSource(time.Now().UnixNano())) // random, not secure
 	mutex      = &sync.Mutex{}
 )
@@ -164,29 +206,6 @@ type service struct {
 	Version string `json:"version,omitempty"`
 }
 
-// TraceHeader converts an OpenTelemetry span context to AWS X-Ray trace header.
-func TraceHeader(sc trace.SpanContext) string {
-	header := make([]byte, 0, 64)
-	amazonTraceID := convertToAmazonTraceID(sc.TraceID)
-	amazonSpanID := convertToAmazonSpanID(sc.SpanID)
-
-	header = append(header, prefixRoot...)
-	header = append(header, amazonTraceID...)
-	header = append(header, ";"...)
-	header = append(header, prefixParent...)
-	header = append(header, amazonSpanID...)
-	header = append(header, ";"...)
-	header = append(header, prefixSampled...)
-
-	if sc.TraceOptions&0x1 == 1 {
-		header = append(header, "1"...)
-	} else {
-		header = append(header, "0"...)
-	}
-
-	return string(header)
-}
-
 // convertToAmazonTraceID converts a trace ID to the Amazon format.
 //
 // A trace ID unique identifier that connects all segments and subsegments
@@ -198,7 +217,7 @@ func TraceHeader(sc trace.SpanContext) string {
 //  * For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //    or 58406520 in hexadecimal.
 //  * A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID trace.TraceID) string {
+func convertToAmazonTraceID(traceID []byte) string {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
 		// hit the limit
@@ -236,86 +255,25 @@ func convertToAmazonTraceID(traceID trace.TraceID) string {
 	return string(content[0:traceIDLength])
 }
 
-// parseAmazonTraceID parses an amazon traceID string in the format 1-5759e988-bd862e3fe1be46a994272793
-func parseAmazonTraceID(t string) (trace.TraceID, error) {
-	if v := len(t); v != traceIDLength {
-		return trace.TraceID{}, fmt.Errorf("invalid amazon trace id; got length %v, want %v", v, traceIDLength)
-	}
-
-	epoch, err := hex.DecodeString(t[epochOffset : epochOffset+8])
-	if err != nil {
-		return trace.TraceID{}, fmt.Errorf("unable to decode epoch from amazon trace id, %v", err)
-	}
-
-	identifier, err := hex.DecodeString(t[identifierOffset:])
-	if err != nil {
-		return trace.TraceID{}, fmt.Errorf("unable to decode identifier from amazon trace id, %v", err)
-	}
-
-	var traceID trace.TraceID
-	binary.BigEndian.PutUint32(traceID[0:4], binary.BigEndian.Uint32(epoch))
-	for index, b := range identifier {
-		traceID[index+4] = b
-	}
-
-	return traceID, nil
-}
-
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
 // for the segment, unique among segments in the same trace, in 16 hexadecimal digits.
-func convertToAmazonSpanID(v trace.SpanID) string {
-	if v == zeroSpanID {
+func convertToAmazonSpanID(v []byte) string {
+	if reflect.DeepEqual(v, zeroSpanID) {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])
 }
 
-// parseAmazonSpanID parses an amazon spanID
-func parseAmazonSpanID(v string) (trace.SpanID, error) {
-	if v == "" {
-		return zeroSpanID, nil
-	}
-
-	if len(v) != spanIDLength {
-		return trace.SpanID{}, fmt.Errorf("invalid amazon span id; got length %v, want %v", v, spanIDLength)
-	}
-
-	data, err := hex.DecodeString(v)
-	if err != nil {
-		return trace.SpanID{}, fmt.Errorf("unable to decode epoch from amazon trace id, %v", err)
-	}
-
-	var spanID trace.SpanID
-	copy(spanID[:], data)
-
-	return spanID, nil
-}
-
-// mergeAnnotations all string, bool, and numeric values from src to dest, fixing keys as needed
-func mergeAnnotations(dest, src map[string]interface{}) {
+func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
 	for key, value := range src {
 		key = fixAnnotationKey(key)
-		switch value.(type) {
-		case bool:
-			dest[key] = value
-		case string:
-			dest[key] = value
-		case int, int8, int16, int32, int64:
-			dest[key] = value
-		case uint, uint8, uint16, uint32, uint64:
-			dest[key] = value
-		case float32, float64:
-			dest[key] = value
-		}
+		dest[key] = value
 	}
 }
 
-func makeAnnotations(annotations []trace.Annotation, attributes map[string]interface{}) map[string]interface{} {
+func makeAnnotations(attributes map[string]string) map[string]interface{} {
 	var result = map[string]interface{}{}
 
-	for _, annotation := range annotations {
-		mergeAnnotations(result, annotation.Attributes)
-	}
 	mergeAnnotations(result, attributes)
 
 	if len(result) == 0 {
@@ -324,7 +282,7 @@ func makeAnnotations(annotations []trace.Annotation, attributes map[string]inter
 	return result
 }
 
-func makeCause(status trace.Status) (isError, isFault bool, cause *errCause) {
+func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool, cause *errCause) {
 	if status.Code == 0 {
 		return
 	}
@@ -390,34 +348,34 @@ func fixAnnotationKey(key string) string {
 	return key
 }
 
-func rawSegment(name string, span *trace.SpanData) segment {
+func rawSegment(name string, span *tracepb.Span) segment {
 	var (
-		traceID                 = convertToAmazonTraceID(span.TraceID)
-		startMicros             = span.StartTime.UnixNano() / int64(time.Microsecond)
+		traceID                 = convertToAmazonTraceID(span.TraceId)
+		startMicros             = span.StartTime.Nanos / int32(time.Microsecond)
 		startTime               = float64(startMicros) / 1e6
-		endMicros               = span.EndTime.UnixNano() / int64(time.Microsecond)
+		endMicros               = span.EndTime.Nanos / int32(time.Microsecond)
 		endTime                 = float64(endMicros) / 1e6
-		filtered, http          = makeHttp(span.Name, span.Code, span.Attributes)
-		isError, isFault, cause = makeCause(span.Status)
-		annotations             = makeAnnotations(span.Annotations, filtered)
+		filtered, http          = makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+		isError, isFault, cause = makeCause(span.Status, filtered)
+		annotations             = makeAnnotations(span.Resource.GetLabels())
 		namespace               string
 	)
 
 	if name == "" {
-		name = fixSegmentName(span.Name)
+		name = fixSegmentName(span.Name.String())
 	}
-	if span.HasRemoteParent {
+	if span.ParentSpanId != nil {
 		namespace = "remote"
 	}
 
 	return segment{
-		ID:          convertToAmazonSpanID(span.SpanID),
+		ID:          convertToAmazonSpanID(span.SpanId),
 		TraceID:     traceID,
 		Name:        name,
 		StartTime:   startTime,
 		EndTime:     endTime,
 		Namespace:   namespace,
-		ParentID:    convertToAmazonSpanID(span.ParentSpanID),
+		ParentID:    convertToAmazonSpanID(span.ParentSpanId),
 		Annotations: annotations,
 		Http:        http,
 		Error:       isError,
