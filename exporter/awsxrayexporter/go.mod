@@ -27,6 +27,7 @@ require (
 	github.com/bsm/sarama-cluster v2.1.15+incompatible // indirect
 	github.com/cactus/go-statsd-client/statsd v0.0.0-20191030180650-a68a2246f89c // indirect
 	github.com/casbin/casbin v1.9.1 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec // indirect
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
@@ -63,6 +64,7 @@ require (
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/goji/param v0.0.0-20160927210335-d7f49fd7d1ed // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/golang/protobuf v1.3.2
 	github.com/gonum/blas v0.0.0-20181208220705-f22b278b28ac // indirect
 	github.com/gonum/floats v0.0.0-20181209220543-c233463c7e82 // indirect
 	github.com/gonum/internal v0.0.0-20181124074243-f884aa714029 // indirect
@@ -157,6 +159,7 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/automaxprocs v1.2.0 // indirect
 	go.uber.org/zap v1.10.0
+	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/pipe.v2 v2.0.0-20140414041502-3c2ca4d52544 // indirect

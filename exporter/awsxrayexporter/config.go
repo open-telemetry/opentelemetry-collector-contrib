@@ -23,6 +23,12 @@ type Config struct {
 	Concurrency int `mapstructure:"num_workers"`
 	// X-Ray service endpoint to which the daemon sends segment documents.
 	Endpoint string `mapstructure:"endpoint"`
+	// Number of seconds before timing out a request.
+	RequestTimeout int `mapstructure:"request_timeout"`
+	// Enable or disable TLS certificate verification.
+	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
+	// Upload segments to AWS X-Ray through a proxy.
+	ProxyAddress string `mapstructure:"proxy_address"`
 	// Send segments to AWS X-Ray service in a specific region.
 	Region string `mapstructure:"region"`
 	// Local mode to skip EC2 instance metadata check.
@@ -31,10 +37,6 @@ type Config struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
-	// Enable or disable TLS certificate verification.
-	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
-	// Upload segments to AWS X-Ray through a proxy.
-	ProxyAddress string `mapstructure:"proxy_address"`
 	// Default AWS resource type of trace data origin
 	// [AWS::EC2::Instance | AWS::ECS::Container | AWS::ElasticBeanstalk::Environment]
 	Origin string `mapstructure:"origin"`

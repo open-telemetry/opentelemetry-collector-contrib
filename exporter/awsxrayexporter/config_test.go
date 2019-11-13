@@ -49,12 +49,13 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "awsxray/customname"},
 			Concurrency:      8,
 			Endpoint:         "",
+			RequestTimeout:   30,
+			NoVerifySSL:      false,
+			ProxyAddress:     "",
 			Region:           "us-east-1",
 			LocalMode:        false,
 			ResourceARN:      "",
 			RoleARN:          "",
-			NoVerifySSL:      false,
-			ProxyAddress:     "",
 			Origin:           "AWS::ECS::Container",
 		})
 }

@@ -15,9 +15,27 @@
 package awsxrayexporter
 
 import (
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/trace"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"net/http"
+)
+
+const (
+	// Attributes recorded on the span for the requests.
+	// Only trace exporters will need them.
+	MethodAttribute     = "http.method"
+	URLAttribute        = "http.url"
+	TargetAttribute     = "http.target"
+	HostAttribute       = "http.host"
+	SchemeAttribute     = "http.scheme"
+	StatusCodeAttribute = "http.status_code"
+	StatusTextAttribute = "http.status_text"
+	FlavorAttribute     = "http.flavor"
+	ServerNameAttribute = "http.server_name"
+	PortAttribute       = "http.port"
+	RouteAttribute      = "http.route"
+	ClientIpAttribute   = "http.client_ip"
+	UserAgentAttribute  = "http.user_agent"
 )
 
 // httpRequest – Information about an http request.
@@ -40,15 +58,13 @@ type httpRequest struct {
 	// XForwardedFor – (segments only) boolean indicating that the client_ip was
 	// read from an X-Forwarded-For header and is not reliable as it could have
 	// been forged.
-	XForwardedFor string `json:"x_forwarded_for,omitempty"`
+	XForwardedFor bool `json:"x_forwarded_for,omitempty"`
 
 	// Traced – (subsegments only) boolean indicating that the downstream call
 	// is to another traced service. If this field is set to true, X-Ray considers
 	// the trace to be broken until the downstream service uploads a segment with
 	// a parent_id that matches the id of the subsegment that contains this block.
-	//
-	// TODO - need to understand the impact of this field
-	//Traced bool `json:"traced"`
+	Traced bool `json:"traced,omitempty"`
 }
 
 // httpResponse - Information about an http response.
@@ -66,82 +82,173 @@ type httpInfo struct {
 }
 
 func convertToStatusCode(code int32) int64 {
-	// https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
-	// Status codes for use with Span.SetStatus. These correspond to the status
-	// codes used by gRPC defined here: https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 	switch code {
-	case trace.StatusCodeOK:
+	case tracetranslator.OCOK:
 		return http.StatusOK
-	case trace.StatusCodeCancelled:
+	case tracetranslator.OCCancelled:
 		return 499 // Client Closed Request
-	case trace.StatusCodeUnknown:
+	case tracetranslator.OCUnknown:
 		return http.StatusInternalServerError
-	case trace.StatusCodeInvalidArgument:
+	case tracetranslator.OCInvalidArgument:
 		return http.StatusBadRequest
-	case trace.StatusCodeDeadlineExceeded:
+	case tracetranslator.OCDeadlineExceeded:
 		return http.StatusGatewayTimeout
-	case trace.StatusCodeNotFound:
+	case tracetranslator.OCNotFound:
 		return http.StatusNotFound
-	case trace.StatusCodeAlreadyExists:
+	case tracetranslator.OCAlreadyExists:
 		return http.StatusConflict
-	case trace.StatusCodePermissionDenied:
+	case tracetranslator.OCPermissionDenied:
 		return http.StatusForbidden
-	case trace.StatusCodeResourceExhausted:
+	case tracetranslator.OCResourceExhausted:
 		return http.StatusTooManyRequests
-	case trace.StatusCodeFailedPrecondition:
+	case tracetranslator.OCFailedPrecondition:
 		return http.StatusBadRequest
-	case trace.StatusCodeAborted:
+	case tracetranslator.OCAborted:
 		return http.StatusConflict
-	case trace.StatusCodeOutOfRange:
+	case tracetranslator.OCOutOfRange:
 		return http.StatusBadRequest
-	case trace.StatusCodeUnimplemented:
+	case tracetranslator.OCUnimplemented:
 		return http.StatusNotImplemented
-	case trace.StatusCodeInternal:
+	case tracetranslator.OCInternal:
 		return http.StatusInternalServerError
-	case trace.StatusCodeUnavailable:
+	case tracetranslator.OCUnavailable:
 		return http.StatusServiceUnavailable
-	case trace.StatusCodeDataLoss:
+	case tracetranslator.OCDataLoss:
 		return http.StatusInternalServerError
-	case trace.StatusCodeUnauthenticated:
+	case tracetranslator.OCUnauthenticated:
 		return http.StatusUnauthorized
 	default:
 		return http.StatusInternalServerError
 	}
 }
 
-func makeHttp(spanName string, code int32, attributes map[string]interface{}) (map[string]interface{}, *httpInfo) {
+func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]*tracepb.AttributeValue) (map[string]string, *httpInfo) {
 	var (
 		info     httpInfo
-		filtered = map[string]interface{}{}
+		filtered = make(map[string]string)
+		urlParts = make(map[string]string)
 	)
 
 	for key, value := range attributes {
 		switch key {
-		case ochttp.MethodAttribute:
-			info.Request.Method, _ = value.(string)
-
-		case ochttp.UserAgentAttribute:
-			info.Request.UserAgent, _ = value.(string)
-
-		case ochttp.StatusCodeAttribute:
-			info.Response.Status, _ = value.(int64)
-
+		case MethodAttribute:
+			info.Request.Method = value.String()
+		case UserAgentAttribute:
+			info.Request.UserAgent = value.String()
+		case ClientIpAttribute:
+			info.Request.ClientIP = value.String()
+			info.Request.XForwardedFor = true
+		case StatusCodeAttribute:
+			info.Response.Status = value.GetIntValue()
+		case URLAttribute:
+			urlParts[key] = value.String()
+		case SchemeAttribute:
+			urlParts[key] = value.String()
+		case HostAttribute:
+			urlParts[key] = value.String()
+		case TargetAttribute:
+			urlParts[key] = value.String()
+		case PeerHostAttribute:
+			urlParts[key] = value.String()
+		case PeerPortAttribute:
+			urlParts[key] = value.String()
+		case PeerIpv4Attribute:
+			urlParts[key] = value.String()
+		case PeerIpv6Attribute:
+			urlParts[key] = value.String()
 		default:
-			filtered[key] = value
+			filtered[key] = value.String()
 		}
 	}
 
-	info.Request.URL = spanName
+	if tracepb.Span_SERVER == spanKind {
+		info.Request.URL = constructServerUrl(urlParts)
+	} else {
+		info.Request.URL = constructClientUrl(urlParts)
+	}
 
 	if info.Response.Status == 0 {
-		// this is a fallback because the ochttp.StatusCodeAttribute isn't being set by opencensus-go
-		// https://github.com/census-instrumentation/opencensus-go/issues/899
 		info.Response.Status = convertToStatusCode(code)
 	}
 
-	if len(filtered) == len(attributes) {
-		return attributes, nil
+	return filtered, &info
+}
+
+func constructClientUrl(urlParts map[string]string) string {
+	// follows OpenTelemetry specification-defined combinations for client spans described in
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
+	url, ok := urlParts[URLAttribute]
+	if ok {
+		// full URL available so no need to assemble
+		return url
 	}
 
-	return filtered, &info
+	scheme, ok := urlParts[SchemeAttribute]
+	if !ok {
+		scheme = "http"
+	}
+	port := ""
+	host, ok := urlParts[HostAttribute]
+	if !ok {
+		host, ok = urlParts[PeerHostAttribute]
+		if !ok {
+			host, ok = urlParts[PeerIpv4Attribute]
+			if !ok {
+				host = urlParts[PeerIpv6Attribute]
+			}
+		}
+		port, ok = urlParts[PeerPortAttribute]
+		if !ok {
+			port = ""
+		}
+	}
+	url = scheme + "://" + host
+	if len(port) > 0 {
+		url += ":" + port
+	}
+	target, ok := urlParts[TargetAttribute]
+	if ok {
+		url += target
+	} else {
+		url += "/"
+	}
+	return url
+}
+
+func constructServerUrl(urlParts map[string]string) string {
+	// follows OpenTelemetry specification-defined combinations for server spans described in
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
+	url, ok := urlParts[URLAttribute]
+	if ok {
+		// full URL available so no need to assemble
+		return url
+	}
+
+	scheme, ok := urlParts[SchemeAttribute]
+	if !ok {
+		scheme = "http"
+	}
+	port := ""
+	host, ok := urlParts[HostAttribute]
+	if !ok {
+		host, ok = urlParts[ServerNameAttribute]
+		if !ok {
+			host, ok = urlParts[HostNameAttribute]
+		}
+		port, ok = urlParts[PortAttribute]
+		if !ok {
+			port = ""
+		}
+	}
+	url = scheme + "://" + host
+	if len(port) > 0 {
+		url += ":" + port
+	}
+	target, ok := urlParts[TargetAttribute]
+	if ok {
+		url += target
+	} else {
+		url += "/"
+	}
+	return url
 }
