@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"math/rand"
-	"os"
 	"reflect"
 	"regexp"
 	"sync"
@@ -182,7 +181,7 @@ type segment struct {
 	Service *service `json:"service,omitempty"`
 
 	// Http - optional xray specific http settings
-	Http *httpInfo `json:"http,omitempty"`
+	Http *HTTPData `json:"http,omitempty"`
 
 	// Error - boolean indicating that a client error occurred
 	// (response status code was 4XX Client Error).
@@ -193,7 +192,7 @@ type segment struct {
 	Fault bool `json:"fault,omitempty"`
 
 	// Cause
-	Cause *errCause `json:"cause,omitempty"`
+	Cause *CauseData `json:"cause,omitempty"`
 
 	/* -- Used by SubSegments only ------------------------ */
 
@@ -280,42 +279,6 @@ func makeAnnotations(attributes map[string]string) map[string]interface{} {
 		return nil
 	}
 	return result
-}
-
-func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool, cause *errCause) {
-	if status.Code == 0 {
-		return
-	}
-
-	if status.Message != "" {
-		id := make([]byte, 8)
-		mutex.Lock()
-		r.Read(id) // rand.Read always returns nil
-		mutex.Unlock()
-
-		hexID := hex.EncodeToString(id)
-
-		cause = &errCause{
-			Exceptions: []exception{
-				{
-					ID:      hexID,
-					Message: status.Message,
-				},
-			},
-		}
-
-		if dir, err := os.Getwd(); err == nil {
-			cause.WorkingDirectory = dir
-		}
-	}
-
-	if status.Code >= 400 && status.Code < 500 {
-		isError = true
-		return
-	}
-
-	isFault = true
-	return
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines
