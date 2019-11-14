@@ -34,12 +34,12 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -57,12 +57,12 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes["user.id"] = "junit"
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -81,12 +81,12 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -103,11 +103,11 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes[TargetAttribute] = "/users/junit"
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
-	assert.NotNil(t, httpInfo)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -124,11 +124,11 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes[TargetAttribute] = "/users/junit"
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
-	assert.NotNil(t, httpInfo)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -145,12 +145,12 @@ func TestServerSpanWithUrlAttribute(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructServerSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -169,12 +169,12 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructServerSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -194,12 +194,12 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructServerSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -220,12 +220,12 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[ContentLenAttribute] = 21378
 	span := constructServerSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -239,12 +239,12 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	span := constructClientSpan(attributes)
 
-	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
-	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
-	if err := w.Encode(httpInfo); err != nil {
+	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
