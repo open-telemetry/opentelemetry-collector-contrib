@@ -14,7 +14,9 @@
 
 package stackdriverexporter
 
-import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+import (
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+)
 
 // Config defines configuration for Stackdriver exporter.
 type Config struct {
@@ -24,4 +26,6 @@ type Config struct {
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
+	// Only has effect if Endpoint is not ""
+	UseInsecure bool `mapstructure:"use_insecure"`
 }
