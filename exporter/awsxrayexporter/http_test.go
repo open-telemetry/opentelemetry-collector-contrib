@@ -22,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -30,14 +31,20 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
-	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
 	span := constructClientSpan(attributes)
 
 	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
 	assert.NotNil(t, httpInfo)
 	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
@@ -51,28 +58,198 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	span := constructClientSpan(attributes)
 
 	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
 	assert.NotNil(t, httpInfo)
 	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "http"
+	attributes[PeerHostAttribute] = "kb234.example.com"
+	attributes[PeerPortAttribute] = 8080
+	attributes[PeerIpv4Attribute] = "10.8.17.36"
+	attributes[TargetAttribute] = "/users/junit"
+	attributes[StatusCodeAttribute] = 200
+	span := constructClientSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+}
+
+func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "http"
+	attributes[PeerIpv4Attribute] = "10.8.17.36"
+	attributes[PeerPortAttribute] = "8080"
+	attributes[TargetAttribute] = "/users/junit"
+	span := constructClientSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
+}
+
+func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "https"
+	attributes[PeerIpv6Attribute] = "2001:db8:85a3::8a2e:370:7334"
+	attributes[PeerPortAttribute] = "443"
+	attributes[TargetAttribute] = "/users/junit"
+	span := constructClientSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
+}
+
+func TestServerSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructClientSpan(attributes)
+	span := constructServerSpan(attributes)
 
 	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
 	assert.NotNil(t, httpInfo)
 	assert.NotNil(t, filtered)
-}
-
-func TestServerSpanWithUrlAttribute(t *testing.T) {
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "https"
+	attributes[HostAttribute] = "api.example.com"
+	attributes[TargetAttribute] = "/users/junit"
+	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
+	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[StatusCodeAttribute] = 200
+	span := constructServerSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
+func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "https"
+	attributes[ServerNameAttribute] = "api.example.com"
+	attributes[PortAttribute] = 443
+	attributes[TargetAttribute] = "/users/junit"
+	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
+	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[StatusCodeAttribute] = 200
+	span := constructServerSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
+}
+
+func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "http"
+	attributes[HostNameAttribute] = "kb234.example.com"
+	attributes[PortAttribute] = 8080
+	attributes[TargetAttribute] = "/users/junit"
+	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
+	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[StatusCodeAttribute] = 200
+	attributes[ContentLenAttribute] = 21378
+	span := constructServerSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
+}
+
+func TestHttpStatusFromSpanStatus(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[MethodAttribute] = "GET"
+	attributes[URLAttribute] = "https://api.example.com/users/junit"
+	span := constructClientSpan(attributes)
+
+	filtered, httpInfo := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+
+	assert.NotNil(t, httpInfo)
+	assert.NotNil(t, filtered)
+	w := borrow()
+	if err := w.Encode(httpInfo); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	w.Reset()
+	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
 func constructClientSpan(attributes map[string]interface{}) *tracepb.Span {
@@ -86,6 +263,40 @@ func constructClientSpan(attributes map[string]interface{}) *tracepb.Span {
 		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_CLIENT,
+		StartTime:    convertTimeToTimestamp(startTime),
+		EndTime:      convertTimeToTimestamp(endTime),
+		Status: &tracepb.Status{
+			Code:    0,
+			Message: "OK",
+		},
+		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
+		Tracestate: &tracepb.Span_Tracestate{
+			Entries: []*tracepb.Span_Tracestate_Entry{
+				{Key: "foo", Value: "bar"},
+				{Key: "a", Value: "b"},
+			},
+		},
+		Attributes: &tracepb.Span_Attributes{
+			AttributeMap: spanAttributes,
+		},
+		Resource: &resourcepb.Resource{
+			Type:   "container",
+			Labels: constructResourceLabels(),
+		},
+	}
+}
+
+func constructServerSpan(attributes map[string]interface{}) *tracepb.Span {
+	endTime := time.Now().Round(time.Second)
+	startTime := endTime.Add(-90 * time.Second)
+	spanAttributes := constructSpanAttributes(attributes)
+
+	return &tracepb.Span{
+		TraceId:      []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
+		SpanId:       []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
+		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
+		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
+		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),
 		EndTime:      convertTimeToTimestamp(endTime),
 		Status: &tracepb.Status{

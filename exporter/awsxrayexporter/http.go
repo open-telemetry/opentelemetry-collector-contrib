@@ -18,6 +18,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -36,6 +37,7 @@ const (
 	RouteAttribute      = "http.route"
 	ClientIpAttribute   = "http.client_ip"
 	UserAgentAttribute  = "http.user_agent"
+	ContentLenAttribute = "http.resp.content_length"
 )
 
 // httpRequest – Information about an http request.
@@ -132,32 +134,46 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 	for key, value := range attributes {
 		switch key {
 		case MethodAttribute:
-			info.Request.Method = value.String()
+			info.Request.Method = value.GetStringValue().GetValue()
 		case UserAgentAttribute:
-			info.Request.UserAgent = value.String()
+			info.Request.UserAgent = value.GetStringValue().GetValue()
 		case ClientIpAttribute:
-			info.Request.ClientIP = value.String()
+			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
 		case StatusCodeAttribute:
 			info.Response.Status = value.GetIntValue()
 		case URLAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
 		case SchemeAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
 		case HostAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
 		case TargetAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
+		case ServerNameAttribute:
+			urlParts[key] = value.GetStringValue().GetValue()
+		case HostNameAttribute:
+			urlParts[key] = value.GetStringValue().GetValue()
+		case PortAttribute:
+			urlParts[key] = value.GetStringValue().GetValue()
+			if len(urlParts[key]) == 0 {
+				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
+			}
 		case PeerHostAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
 		case PeerPortAttribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
+			if len(urlParts[key]) == 0 {
+				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
+			}
 		case PeerIpv4Attribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
 		case PeerIpv6Attribute:
-			urlParts[key] = value.String()
+			urlParts[key] = value.GetStringValue().GetValue()
+		case ContentLenAttribute:
+			info.Response.ContentLength = value.GetIntValue()
 		default:
-			filtered[key] = value.String()
+			filtered[key] = value.GetStringValue().GetValue()
 		}
 	}
 
@@ -203,7 +219,7 @@ func constructClientUrl(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 {
+	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[TargetAttribute]
@@ -241,7 +257,7 @@ func constructServerUrl(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 {
+	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[TargetAttribute]
