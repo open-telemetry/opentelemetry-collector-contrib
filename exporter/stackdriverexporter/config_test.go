@@ -52,6 +52,6 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint:                   "test-endpoint",
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
-			Insecure:                   true,
+			UseInsecure:                true,
 		})
 }

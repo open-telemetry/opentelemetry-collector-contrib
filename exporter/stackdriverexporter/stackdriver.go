@@ -91,7 +91,7 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 	}
 	if cfg.Endpoint != "" {
 		dOpts := []grpc.DialOption{}
-		if cfg.Insecure {
+		if cfg.UseInsecure {
 			dOpts = append(dOpts, grpc.WithInsecure())
 		}
 		conn, err := grpc.Dial(cfg.Endpoint, dOpts...)
