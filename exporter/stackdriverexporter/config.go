@@ -27,5 +27,5 @@ type Config struct {
 	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
 	// Only has effect if Endpoint is not ""
-	UseInsecure                   bool                     `mapstructure:"use_insecure"`
+	UseInsecure bool `mapstructure:"use_insecure"`
 }
