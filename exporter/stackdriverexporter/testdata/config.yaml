@@ -12,6 +12,7 @@ exporters:
     endpoint: test-endpoint
     number_of_workers: 3
     skip_create_metric_descriptor: true
+    insecure: true
   stackdriver/disabled: # will be ignored
     disabled: true
 
