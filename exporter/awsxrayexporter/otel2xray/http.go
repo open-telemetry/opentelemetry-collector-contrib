@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package otel2xray
 
 import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -105,13 +105,17 @@ func convertToStatusCode(code int32) int64 {
 
 func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]*tracepb.AttributeValue) (map[string]string, *HTTPData) {
 	var (
-		info     HTTPData
-		filtered = make(map[string]string)
-		urlParts = make(map[string]string)
+		info           HTTPData
+		filtered       = make(map[string]string)
+		urlParts       = make(map[string]string)
+		componentValue string
 	)
 
 	for key, value := range attributes {
 		switch key {
+		case ComponentAttribute:
+			componentValue = value.GetStringValue().GetValue()
+			filtered[key] = componentValue
 		case MethodAttribute:
 			info.Request.Method = value.GetStringValue().GetValue()
 		case UserAgentAttribute:
@@ -154,6 +158,10 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
 		}
+	}
+
+	if (componentValue != HttpComponentType && componentValue != RpcComponentType) || info.Request.Method == "" {
+		return filtered, nil
 	}
 
 	if tracepb.Span_SERVER == spanKind {

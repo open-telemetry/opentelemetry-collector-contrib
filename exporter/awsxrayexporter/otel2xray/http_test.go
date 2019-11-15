@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package otel2xray
 
 import (
 	"fmt"
@@ -29,10 +29,11 @@ import (
 
 func TestClientSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	attributes[StatusCodeAttribute] = 200
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -43,19 +44,20 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[HostAttribute] = "api.example.com"
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[StatusCodeAttribute] = 200
 	attributes["user.id"] = "junit"
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -66,12 +68,13 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[PeerHostAttribute] = "kb234.example.com"
@@ -79,7 +82,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[PeerIpv4Attribute] = "10.8.17.36"
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[StatusCodeAttribute] = 200
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -90,18 +93,19 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[PeerIpv4Attribute] = "10.8.17.36"
 	attributes[PeerPortAttribute] = "8080"
 	attributes[TargetAttribute] = "/users/junit"
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 	assert.NotNil(t, httpData)
@@ -111,18 +115,19 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
 }
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[PeerIpv6Attribute] = "2001:db8:85a3::8a2e:370:7334"
 	attributes[PeerPortAttribute] = "443"
 	attributes[TargetAttribute] = "/users/junit"
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 	assert.NotNil(t, httpData)
@@ -132,18 +137,19 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
 }
 
 func TestServerSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructServerSpan(attributes)
+	span := constructHttpServerSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -154,12 +160,13 @@ func TestServerSpanWithUrlAttribute(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[HostAttribute] = "api.example.com"
@@ -167,7 +174,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructServerSpan(attributes)
+	span := constructHttpServerSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -178,12 +185,13 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[ServerNameAttribute] = "api.example.com"
@@ -192,7 +200,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructServerSpan(attributes)
+	span := constructHttpServerSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -203,12 +211,13 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[HostNameAttribute] = "kb234.example.com"
@@ -218,7 +227,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
 	attributes[ContentLenAttribute] = 21378
-	span := constructServerSpan(attributes)
+	span := constructHttpServerSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -229,15 +238,16 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
 func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = HttpComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
-	span := constructClientSpan(attributes)
+	span := constructHttpClientSpan(attributes)
 
 	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 
@@ -248,11 +258,11 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
-func constructClientSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHttpClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -286,7 +296,7 @@ func constructClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	}
 }
 
-func constructServerSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

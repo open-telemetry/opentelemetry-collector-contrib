@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package otel2xray
 
 import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"math/rand"
 	"reflect"
 	"regexp"
 	"sync"
 	"time"
 )
-
-// origin contains the support aws origin values,
-// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-type origin string
 
 const (
 	// Attributes recorded on the span for the requests.
@@ -45,10 +43,6 @@ const (
 	PeerIpv6Attribute    = "peer.ipv6"
 	PeerPortAttribute    = "peer.port"
 	PeerServiceAttribute = "peer.service"
-	DbTypeAttribute      = "db.type"
-	DbInstanceAttribute  = "db.instance"
-	DbStatementAttribute = "db.statement"
-	DbUserAttribute      = "db.user"
 )
 
 const (
@@ -75,22 +69,9 @@ const (
 
 const (
 	// OriginEC2 span originated from EC2
-	OriginEC2 origin = "AWS::EC2::Instance"
-
-	// OriginECS span originated from Elastic Container Service (ECS)
-	OriginECS origin = "AWS::ECS::Container"
-
-	// OriginEB span originated from Elastic Beanstalk (EB)
-	OriginEB origin = "AWS::ElasticBeanstalk::Environment"
-)
-
-const (
-	httpHeaderMaxSize = 200
-	httpHeader        = `X-Amzn-Trace-Id`
-	prefixRoot        = "Root="
-	prefixParent      = "Parent="
-	prefixSampled     = "Sampled="
-	separator         = ";" // separator used by x-ray to split parts of X-Amzn-Trace-Id header
+	OriginEC2 = "AWS::EC2::Instance"
+	OriginECS = "AWS::ECS::Container"
+	OriginEB  = "AWS::ElasticBeanstalk::Environment"
 )
 
 var (
@@ -113,7 +94,7 @@ const (
 	// span name
 	defaultSegmentName = "span"
 
-	// maxSegmentNameLength the maximum length of a segment name
+	// maxSegmentNameLength the maximum length of a Segment name
 	maxSegmentNameLength = 200
 )
 
@@ -124,85 +105,88 @@ const (
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
-type segment struct {
-	// ID - A 64-bit identifier for the segment, unique among segments in the same trace,
-	// in 16 hexadecimal digits.
-	ID string `json:"id"`
-
-	// Name - The logical name of the service that handled the request, up to 200 characters.
-	// For example, your application's name or domain name. Names can contain Unicode
-	// letters, numbers, and whitespace, and the following symbols: _, ., :, /, %, &, #, =,
-	// +, \, -, @
-	Name string `json:"name,omitempty"`
-
-	// StartTime - number that is the time the segment was created, in floating point seconds
-	// in epoch time.. For example, 1480615200.010 or 1.480615200010E9. Use as many decimal
-	// places as you need. Microsecond resolution is recommended when available.
+type Segment struct {
+	// Required
+	TraceID   string  `json:"trace_id,omitempty"`
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
 	StartTime float64 `json:"start_time"`
+	EndTime   float64 `json:"end_time,omitempty"`
 
-	// TraceID - A unique identifier that connects all segments and subsegments originating
-	// from a single client request.
-	//	* The version number, that is, 1.
-	//	* The time of the original request, in Unix epoch time, in 8 hexadecimal digits.
-	//	* For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds, or 58406520 in hexadecimal.
-	//	* A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-	TraceID string `json:"trace_id,omitempty"`
+	// Optional
+	InProgress  bool       `json:"in_progress,omitempty"`
+	ParentID    string     `json:"parent_id,omitempty"`
+	Fault       bool       `json:"fault,omitempty"`
+	Error       bool       `json:"error,omitempty"`
+	Throttle    bool       `json:"throttle,omitempty"`
+	Cause       *CauseData `json:"cause,omitempty"`
+	ResourceARN string     `json:"resource_arn,omitempty"`
+	Origin      string     `json:"origin,omitempty"`
 
-	// EndTime - number that is the time the segment was closed. For example, 1480615200.090
-	// or 1.480615200090E9. Specify either an end_time or in_progress.
-	EndTime float64 `json:"end_time"`
+	Type         string   `json:"type,omitempty"`
+	Namespace    string   `json:"namespace,omitempty"`
+	User         string   `json:"user,omitempty"`
+	PrecursorIDs []string `json:"precursor_ids,omitempty"`
 
-	/* ---------------------------------------------------- */
+	HTTP *HTTPData              `json:"http,omitempty"`
+	AWS  map[string]interface{} `json:"aws,omitempty"`
 
-	// Service - An object with information about your application.
-	//Service service `json:"service,omitempty"`
+	Service *ServiceData `json:"service,omitempty"`
 
-	// User - A string that identifies the user who sent the request.
-	//User string `json:"user,omitempty"`
+	// SQL
+	SQL *SQLData `json:"sql,omitempty"`
 
-	// Origin - The type of AWS resource running your application.
-	Origin string `json:"origin,omitempty"`
-
-	// Namespace - aws for AWS SDK calls; remote for other downstream calls.
-	Namespace string `json:"namespace,omitempty"`
-
-	// ParentID – A subsegment ID you specify if the request originated from an instrumented
-	// application. The X-Ray SDK adds the parent subsegment ID to the tracing header for
-	// downstream HTTP calls.
-	ParentID string `json:"parent_id,omitempty"`
-
-	// Annotations - object with key-value pairs that you want X-Ray to index for search
-	Annotations map[string]interface{} `json:"annotations,omitempty"`
-
-	// SubSegments contains the list of child segments
-	SubSegments []*segment `json:"subsegments,omitempty"`
-
-	// Service - optional service definition
-	Service *service `json:"service,omitempty"`
-
-	// Http - optional xray specific http settings
-	Http *HTTPData `json:"http,omitempty"`
-
-	// Error - boolean indicating that a client error occurred
-	// (response status code was 4XX Client Error).
-	Error bool `json:"error,omitempty"`
-
-	// Fault - boolean indicating that a server error occurred
-	// (response status code was 5XX Server Error).
-	Fault bool `json:"fault,omitempty"`
-
-	// Cause
-	Cause *CauseData `json:"cause,omitempty"`
-
-	/* -- Used by SubSegments only ------------------------ */
-
-	// Type indicates span is a subsegment; should either be subsegment or blank
-	Type string `json:"type,omitempty"`
+	// Metadata
+	Annotations map[string]interface{}            `json:"annotations,omitempty"`
+	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
 }
 
-type service struct {
-	// Version - A string that identifies the version of your application that served the request.
-	Version string `json:"version,omitempty"`
+func MakeSegment(name string, span *tracepb.Span) Segment {
+	var (
+		traceID                 = convertToAmazonTraceID(span.TraceId)
+		startTime               = timestampToFloatSeconds(span.StartTime, span.StartTime)
+		endTime                 = timestampToFloatSeconds(span.EndTime, span.StartTime)
+		filtered, http          = makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+		isError, isFault, cause = makeCause(span.Status, filtered)
+		annotations             = makeAnnotations(span.Resource.GetLabels())
+		namespace               string
+	)
+
+	if name == "" {
+		name = fixSegmentName(span.Name.String())
+	}
+	if span.ParentSpanId != nil {
+		namespace = "remote"
+	}
+
+	return Segment{
+		ID:          convertToAmazonSpanID(span.SpanId),
+		TraceID:     traceID,
+		Name:        name,
+		StartTime:   startTime,
+		EndTime:     endTime,
+		ParentID:    convertToAmazonSpanID(span.ParentSpanId),
+		Fault:       isFault,
+		Error:       isError,
+		Cause:       cause,
+		Origin:      determineAwsOrigin(span.Resource),
+		Namespace:   namespace,
+		HTTP:        http,
+		Service:     makeService(span.Resource),
+		Annotations: annotations,
+	}
+}
+
+func determineAwsOrigin(resource *resourcepb.Resource) string {
+	origin := OriginEC2
+	if resource == nil {
+		return origin
+	}
+	_, ok := resource.Labels[ContainerNameAttribute]
+	if ok {
+		origin = OriginECS
+	}
+	return origin
 }
 
 // convertToAmazonTraceID converts a trace ID to the Amazon format.
@@ -255,12 +239,26 @@ func convertToAmazonTraceID(traceID []byte) string {
 }
 
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
-// for the segment, unique among segments in the same trace, in 16 hexadecimal digits.
+// for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
 func convertToAmazonSpanID(v []byte) string {
 	if reflect.DeepEqual(v, zeroSpanID) {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])
+}
+
+func timestampToFloatSeconds(ts *timestamp.Timestamp, startTs *timestamp.Timestamp) float64 {
+	var (
+		t time.Time
+	)
+	if ts == nil {
+		t = time.Now()
+	} else if startTs == nil {
+		t = time.Unix(ts.Seconds, int64(ts.Nanos))
+	} else {
+		t = time.Unix(startTs.Seconds, int64(ts.Nanos))
+	}
+	return float64(t.UnixNano()) / 1e9
 }
 
 func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
@@ -309,42 +307,6 @@ func fixAnnotationKey(key string) string {
 	}
 
 	return key
-}
-
-func rawSegment(name string, span *tracepb.Span) segment {
-	var (
-		traceID                 = convertToAmazonTraceID(span.TraceId)
-		startMicros             = span.StartTime.Nanos / int32(time.Microsecond)
-		startTime               = float64(startMicros) / 1e6
-		endMicros               = span.EndTime.Nanos / int32(time.Microsecond)
-		endTime                 = float64(endMicros) / 1e6
-		filtered, http          = makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
-		isError, isFault, cause = makeCause(span.Status, filtered)
-		annotations             = makeAnnotations(span.Resource.GetLabels())
-		namespace               string
-	)
-
-	if name == "" {
-		name = fixSegmentName(span.Name.String())
-	}
-	if span.ParentSpanId != nil {
-		namespace = "remote"
-	}
-
-	return segment{
-		ID:          convertToAmazonSpanID(span.SpanId),
-		TraceID:     traceID,
-		Name:        name,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		Namespace:   namespace,
-		ParentID:    convertToAmazonSpanID(span.ParentSpanId),
-		Annotations: annotations,
-		Http:        http,
-		Error:       isError,
-		Fault:       isFault,
-		Cause:       cause,
-	}
 }
 
 type writer struct {
