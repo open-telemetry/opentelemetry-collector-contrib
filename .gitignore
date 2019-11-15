@@ -1,0 +1,57 @@
+*.py[cod]
+*.sw[op]
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+__pycache__
+venv*/
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+coverage.xml
+.coverage
+.nox
+.tox
+.cache
+htmlcov
+
+# Translations
+*.mo
+
+# Mac
+.DS_Store
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# JetBrains
+.idea
+
+# VSCode
+.vscode
+
+# Sphinx
+_build/
+
+# mypy
+.mypy_cache/
+target
