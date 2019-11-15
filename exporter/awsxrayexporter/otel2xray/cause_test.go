@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package otel2xray
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -43,7 +43,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
@@ -67,7 +67,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
@@ -92,7 +92,7 @@ func TestCauseWithErrorMessage(t *testing.T) {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	w.Reset()
+	release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 	assert.True(t, strings.Contains(jsonStr, "ConstructorResolver"))
 }

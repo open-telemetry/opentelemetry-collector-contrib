@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package awsxrayexporter
+package otel2xray
 
 import (
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -22,7 +22,7 @@ import (
 func ConvertTraceDataToXRay(td consumerdata.TraceData) *xray.PutTraceSegmentsInput {
 	documents := make([]*string, len(td.Spans))
 	//for i, span := range td.Spans {
-	//	seg := segment{}
+	//	seg := Segment{}
 	//}
 	input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
 	return &input
