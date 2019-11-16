@@ -12,16 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2xray
+package translator
 
 import (
-	"fmt"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -291,7 +288,7 @@ func constructHttpClientSpan(attributes map[string]interface{}) *tracepb.Span {
 		},
 		Resource: &resourcepb.Resource{
 			Type:   "container",
-			Labels: constructResourceLabels(),
+			Labels: constructDefaultResourceLabels(),
 		},
 	}
 }
@@ -325,59 +322,7 @@ func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
 		},
 		Resource: &resourcepb.Resource{
 			Type:   "container",
-			Labels: constructResourceLabels(),
+			Labels: constructDefaultResourceLabels(),
 		},
-	}
-}
-
-func constructSpanAttributes(attributes map[string]interface{}) map[string]*tracepb.AttributeValue {
-	attrs := make(map[string]*tracepb.AttributeValue)
-	for key, value := range attributes {
-		valType := reflect.TypeOf(value)
-		var attrVal tracepb.AttributeValue
-		if valType.Kind() == reflect.Int {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: int64(value.(int)),
-			}}
-		} else if valType.Kind() == reflect.Int64 {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: value.(int64),
-			}}
-		} else {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{Value: fmt.Sprintf("%v", value)},
-			}}
-		}
-		attrs[key] = &attrVal
-	}
-	return attrs
-}
-
-func constructResourceLabels() map[string]string {
-	labels := make(map[string]string)
-	labels[ServiceNameAttribute] = "signup_aggregator"
-	labels[ServiceVersionAttribute] = "1.1.12"
-	labels[ContainerNameAttribute] = "signup_aggregator"
-	labels[ContainerImageAttribute] = "otel/signupaggregator"
-	labels[ContainerTagAttribute] = "v1"
-	labels[K8sClusterAttribute] = "production"
-	labels[K8sNamespaceAttribute] = "default"
-	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = "signup_aggregator-x82ufje83"
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudRegionAttribute] = "us-east-1"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	return labels
-}
-
-func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
 	}
 }

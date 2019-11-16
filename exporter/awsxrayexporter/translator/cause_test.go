@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2xray
+package translator
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -118,7 +118,7 @@ func constructExceptionServerSpan(attributes map[string]interface{}) *tracepb.Sp
 		},
 		Resource: &resourcepb.Resource{
 			Type:   "container",
-			Labels: constructResourceLabels(),
+			Labels: constructDefaultResourceLabels(),
 		},
 	}
 }
