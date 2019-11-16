@@ -12,37 +12,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2xray
+package translator
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/stretchr/testify/assert"
+	"strings"
+	"testing"
 )
 
-// ServiceData provides the shape for unmarshalling service version.
-type ServiceData struct {
-	Version         string `json:"version,omitempty"`
-	CompilerVersion string `json:"compiler_version,omitempty"`
-	Compiler        string `json:"compiler,omitempty"`
+func TestServiceFromResource(t *testing.T) {
+	resource := &resourcepb.Resource{
+		Type:   "container",
+		Labels: constructDefaultResourceLabels(),
+	}
+
+	service := makeService(resource)
+
+	assert.NotNil(t, service)
+	w := borrow()
+	if err := w.Encode(service); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	release(w)
+	assert.True(t, strings.Contains(jsonStr, "1.1.12"))
 }
 
-func makeService(resource *resourcepb.Resource) *ServiceData {
-	var (
-		ver     string
-		service *ServiceData
-	)
-	if resource == nil {
-		return service
-	}
-	for key, value := range resource.Labels {
-		switch key {
-		case ServiceVersionAttribute:
-			ver = value
-		}
-	}
-	if ver != "" {
-		service = &ServiceData{
-			Version: ver,
-		}
-	}
-	return service
+func TestServiceFromNullResource(t *testing.T) {
+	var resource *resourcepb.Resource
+
+	service := makeService(resource)
+
+	assert.Nil(t, service)
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2xray
+package translator
 
 import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -165,9 +165,9 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 	}
 
 	if tracepb.Span_SERVER == spanKind {
-		info.Request.URL = constructServerUrl(urlParts)
+		info.Request.URL = constructServerUrl(componentValue, urlParts)
 	} else {
-		info.Request.URL = constructClientUrl(urlParts)
+		info.Request.URL = constructClientUrl(componentValue, urlParts)
 	}
 
 	if info.Response.Status == 0 {
@@ -177,7 +177,7 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 	return filtered, &info
 }
 
-func constructClientUrl(urlParts map[string]string) string {
+func constructClientUrl(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for client spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[URLAttribute]
@@ -188,7 +188,11 @@ func constructClientUrl(urlParts map[string]string) string {
 
 	scheme, ok := urlParts[SchemeAttribute]
 	if !ok {
-		scheme = "http"
+		if component == RpcComponentType {
+			scheme = "dns"
+		} else {
+			scheme = "http"
+		}
 	}
 	port := ""
 	host, ok := urlParts[HostAttribute]
@@ -218,7 +222,7 @@ func constructClientUrl(urlParts map[string]string) string {
 	return url
 }
 
-func constructServerUrl(urlParts map[string]string) string {
+func constructServerUrl(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for server spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[URLAttribute]
@@ -229,7 +233,11 @@ func constructServerUrl(urlParts map[string]string) string {
 
 	scheme, ok := urlParts[SchemeAttribute]
 	if !ok {
-		scheme = "http"
+		if component == RpcComponentType {
+			scheme = "dns"
+		} else {
+			scheme = "http"
+		}
 	}
 	port := ""
 	host, ok := urlParts[HostAttribute]

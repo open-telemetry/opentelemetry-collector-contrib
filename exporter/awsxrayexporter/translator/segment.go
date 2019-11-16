@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package otel2xray
+package translator
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -148,6 +146,8 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		endTime                 = timestampToFloatSeconds(span.EndTime, span.StartTime)
 		filtered, http          = makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
 		isError, isFault, cause = makeCause(span.Status, filtered)
+		origin                  = determineAwsOrigin(span.Resource)
+		service                 = makeService(span.Resource)
 		annotations             = makeAnnotations(span.Resource.GetLabels())
 		namespace               string
 	)
@@ -169,10 +169,10 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		Fault:       isFault,
 		Error:       isError,
 		Cause:       cause,
-		Origin:      determineAwsOrigin(span.Resource),
+		Origin:      origin,
 		Namespace:   namespace,
 		HTTP:        http,
-		Service:     makeService(span.Resource),
+		Service:     service,
 		Annotations: annotations,
 	}
 }
@@ -241,7 +241,7 @@ func convertToAmazonTraceID(traceID []byte) string {
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
 // for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
 func convertToAmazonSpanID(v []byte) string {
-	if reflect.DeepEqual(v, zeroSpanID) {
+	if v == nil || reflect.DeepEqual(v, zeroSpanID) {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])
@@ -309,50 +309,22 @@ func fixAnnotationKey(key string) string {
 	return key
 }
 
-type writer struct {
-	buffer  *bytes.Buffer
-	encoder *json.Encoder
-}
-
-func (w *writer) Reset() {
-	w.buffer.Reset()
-}
-
-func (w *writer) Encode(v interface{}) error {
-	return w.encoder.Encode(v)
-}
-
-func (w *writer) String() string {
-	return w.buffer.String()
-}
-
-const (
-	maxBufSize = 256e3
-)
-
-var (
-	writers = &sync.Pool{
-		New: func() interface{} {
-			var (
-				buffer  = bytes.NewBuffer(make([]byte, 0, 8192))
-				encoder = json.NewEncoder(buffer)
-			)
-
-			return &writer{
-				buffer:  buffer,
-				encoder: encoder,
-			}
-		},
+func newTraceID() []byte {
+	var r [16]byte
+	epoch := time.Now().Unix()
+	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
+	_, err := rand.Read(r[4:])
+	if err != nil {
+		panic(err)
 	}
-)
-
-func borrow() *writer {
-	return writers.Get().(*writer)
+	return r[:]
 }
 
-func release(w *writer) {
-	if w.buffer.Cap() < maxBufSize {
-		w.buffer.Reset()
-		writers.Put(w)
+func newSegmentID() []byte {
+	var r [8]byte
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
 	}
+	return r[:]
 }
