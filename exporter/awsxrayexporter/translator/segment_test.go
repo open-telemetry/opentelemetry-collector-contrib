@@ -27,9 +27,9 @@ import (
 )
 
 func TestClientSpanWithRpcComponent(t *testing.T) {
-	spanName := "/widgets"
+	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = RpcComponentType
+	attributes[ComponentAttribute] = GrpcComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "ipv6"
 	attributes[PeerIpv6Attribute] = "2607:f8b0:4000:80c::2004"
@@ -51,7 +51,8 @@ func TestClientSpanWithRpcComponent(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, spanName))
 }
 
-func constructClientSpan(parentSpanId []byte, name string, code int32, message string, attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
+func constructClientSpan(parentSpanId []byte, name string, code int32, message string,
+	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
 		traceId        = newTraceID()
 		spanId         = newSegmentID()

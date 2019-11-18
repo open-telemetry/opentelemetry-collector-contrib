@@ -33,21 +33,45 @@ type SQLData struct {
 	SanitizedQuery   string `json:"sanitized_query,omitempty"`
 }
 
-func makeSql(attributes map[string]string) *SQLData {
+func makeSql(attributes map[string]string) (map[string]string, *SQLData) {
 	var (
-		sqlData SQLData
+		filtered    = make(map[string]string)
+		sqlData     SQLData
+		dbUrl       string
+		dbType      string
+		dbInstance  string
+		dbStatement string
+		dbUser      string
 	)
 	componentType := attributes[ComponentAttribute]
-	url := attributes[PeerAddressAttribute]
-	if componentType == HttpComponentType || componentType == RpcComponentType || url == "" {
-		return nil
+	if componentType == HttpComponentType || componentType == GrpcComponentType {
+		return attributes, nil
 	}
-	url += "/" + attributes[DbInstanceAttribute]
+	for key, value := range attributes {
+		switch key {
+		case PeerAddressAttribute:
+			dbUrl = value
+		case DbTypeAttribute:
+			dbType = value
+		case DbInstanceAttribute:
+			dbInstance = value
+		case DbStatementAttribute:
+			dbStatement = value
+		case DbUserAttribute:
+			dbUser = value
+		default:
+			filtered[key] = value
+		}
+	}
+	if dbUrl == "" {
+		dbUrl = "localhost"
+	}
+	url := dbUrl + "/" + dbInstance
 	sqlData = SQLData{
 		URL:            url,
-		DatabaseType:   attributes[DbTypeAttribute],
-		User:           attributes[DbUserAttribute],
-		SanitizedQuery: attributes[DbStatementAttribute],
+		DatabaseType:   dbType,
+		User:           dbUser,
+		SanitizedQuery: dbStatement,
 	}
-	return &sqlData
+	return filtered, &sqlData
 }

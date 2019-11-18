@@ -31,8 +31,9 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes[PeerHostAttribute] = "db.example.com"
 	attributes[PeerPortAttribute] = "3306"
 
-	sqlData := makeSql(attributes)
+	filtered, sqlData := makeSql(attributes)
 
+	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
 	w := borrow()
 	if err := w.Encode(sqlData); err != nil {
@@ -54,7 +55,8 @@ func TestClientSpanWithHttpComponentAttribute(t *testing.T) {
 	attributes[PeerHostAttribute] = "db.example.com"
 	attributes[PeerPortAttribute] = "3306"
 
-	sqlData := makeSql(attributes)
+	filtered, sqlData := makeSql(attributes)
 
+	assert.NotNil(t, filtered)
 	assert.Nil(t, sqlData)
 }
