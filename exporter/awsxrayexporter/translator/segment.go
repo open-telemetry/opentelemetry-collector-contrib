@@ -20,6 +20,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"math/rand"
 	"reflect"
 	"regexp"
@@ -32,7 +33,7 @@ const (
 	// Only trace exporters will need them.
 	ComponentAttribute   = "component"
 	HttpComponentType    = "http"
-	RpcComponentType     = "rpc"
+	GrpcComponentType    = "grpc"
 	DbComponentType      = "db"
 	MsgComponentType     = "messaging"
 	PeerAddressAttribute = "peer.address"
@@ -126,8 +127,8 @@ type Segment struct {
 	User         string   `json:"user,omitempty"`
 	PrecursorIDs []string `json:"precursor_ids,omitempty"`
 
-	HTTP *HTTPData              `json:"http,omitempty"`
-	AWS  map[string]interface{} `json:"aws,omitempty"`
+	HTTP *HTTPData `json:"http,omitempty"`
+	AWS  *AWSData  `json:"aws,omitempty"`
 
 	Service *ServiceData `json:"service,omitempty"`
 
@@ -144,11 +145,14 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		traceID                 = convertToAmazonTraceID(span.TraceId)
 		startTime               = timestampToFloatSeconds(span.StartTime, span.StartTime)
 		endTime                 = timestampToFloatSeconds(span.EndTime, span.StartTime)
-		filtered, http          = makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
-		isError, isFault, cause = makeCause(span.Status, filtered)
+		httpfiltered, http      = makeHttp(span)
+		isError, isFault, cause = makeCause(span.Status, httpfiltered)
+		isThrottled             = span.Status.Code == tracetranslator.OCResourceExhausted
 		origin                  = determineAwsOrigin(span.Resource)
+		aws                     = makeAws(span.Resource)
 		service                 = makeService(span.Resource)
-		annotations             = makeAnnotations(span.Resource.GetLabels())
+		sqlfiltered, sql        = makeSql(httpfiltered)
+		annotations             = makeAnnotations(sqlfiltered)
 		namespace               string
 	)
 
@@ -168,12 +172,16 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		ParentID:    convertToAmazonSpanID(span.ParentSpanId),
 		Fault:       isFault,
 		Error:       isError,
+		Throttle:    isThrottled,
 		Cause:       cause,
 		Origin:      origin,
 		Namespace:   namespace,
 		HTTP:        http,
+		AWS:         aws,
 		Service:     service,
+		SQL:         sql,
 		Annotations: annotations,
+		Metadata:    nil,
 	}
 }
 

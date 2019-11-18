@@ -17,6 +17,7 @@ package translator
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -32,7 +33,7 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -56,7 +57,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes["user.id"] = "junit"
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -81,7 +82,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -104,7 +105,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes[TargetAttribute] = "/users/junit"
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
@@ -126,7 +127,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes[TargetAttribute] = "/users/junit"
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
@@ -148,7 +149,7 @@ func TestServerSpanWithUrlAttribute(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructHttpServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -173,7 +174,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructHttpServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -199,7 +200,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes[StatusCodeAttribute] = 200
 	span := constructHttpServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -223,10 +224,11 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
 	attributes[ClientIpAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	attributes[ContentLenAttribute] = 21378
 	span := constructHttpServerSpan(attributes)
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime)
+	span.TimeEvents = &timeEvents
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -246,7 +248,7 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	span := constructHttpClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, httpData := makeHttp(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -325,4 +327,35 @@ func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
 			Labels: constructDefaultResourceLabels(),
 		},
 	}
+}
+
+func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
+	eventAttrMap := make(map[string]*tracepb.AttributeValue)
+	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
+		StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
+	}}
+	eventAttrMap[MessageUncompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+		IntValue: 12452,
+	}}
+	eventAttrbutes := tracepb.Span_Attributes{
+		AttributeMap:           eventAttrMap,
+		DroppedAttributesCount: 0,
+	}
+	annotation := tracepb.Span_TimeEvent_Annotation{
+		Attributes: &eventAttrbutes,
+	}
+	event := tracepb.Span_TimeEvent{
+		Time: tm,
+		Value: &tracepb.Span_TimeEvent_Annotation_{
+			Annotation: &annotation,
+		},
+	}
+	events := make([]*tracepb.Span_TimeEvent, 1, 1)
+	events[0] = &event
+	timeEvents := tracepb.Span_TimeEvents{
+		TimeEvent:                 events,
+		DroppedAnnotationsCount:   0,
+		DroppedMessageEventsCount: 0,
+	}
+	return timeEvents
 }

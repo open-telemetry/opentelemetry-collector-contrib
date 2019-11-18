@@ -24,20 +24,23 @@ import (
 const (
 	// Attributes recorded on the span for the requests.
 	// Only trace exporters will need them.
-	MethodAttribute     = "http.method"
-	URLAttribute        = "http.url"
-	TargetAttribute     = "http.target"
-	HostAttribute       = "http.host"
-	SchemeAttribute     = "http.scheme"
-	StatusCodeAttribute = "http.status_code"
-	StatusTextAttribute = "http.status_text"
-	FlavorAttribute     = "http.flavor"
-	ServerNameAttribute = "http.server_name"
-	PortAttribute       = "http.port"
-	RouteAttribute      = "http.route"
-	ClientIpAttribute   = "http.client_ip"
-	UserAgentAttribute  = "http.user_agent"
-	ContentLenAttribute = "http.resp.content_length"
+	MethodAttribute                  = "http.method"
+	URLAttribute                     = "http.url"
+	TargetAttribute                  = "http.target"
+	HostAttribute                    = "http.host"
+	SchemeAttribute                  = "http.scheme"
+	StatusCodeAttribute              = "http.status_code"
+	StatusTextAttribute              = "http.status_text"
+	FlavorAttribute                  = "http.flavor"
+	ServerNameAttribute              = "http.server_name"
+	PortAttribute                    = "http.port"
+	RouteAttribute                   = "http.route"
+	ClientIpAttribute                = "http.client_ip"
+	UserAgentAttribute               = "http.user_agent"
+	MessageTypeAttribute             = "message.type"
+	MessageIdAttribute               = "message.id"
+	MessageCompressedSizeAttribute   = "message.compressed_size"
+	MessageUncompressedSizeAttribute = "message.uncompressed_size"
 )
 
 // HTTPData provides the shape for unmarshalling request and response data.
@@ -103,7 +106,7 @@ func convertToStatusCode(code int32) int64 {
 	}
 }
 
-func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]*tracepb.AttributeValue) (map[string]string, *HTTPData) {
+func makeHttp(span *tracepb.Span) (map[string]string, *HTTPData) {
 	var (
 		info           HTTPData
 		filtered       = make(map[string]string)
@@ -111,7 +114,7 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 		componentValue string
 	)
 
-	for key, value := range attributes {
+	for key, value := range span.Attributes.AttributeMap {
 		switch key {
 		case ComponentAttribute:
 			componentValue = value.GetStringValue().GetValue()
@@ -153,28 +156,50 @@ func makeHttp(spanKind tracepb.Span_SpanKind, code int32, attributes map[string]
 			urlParts[key] = value.GetStringValue().GetValue()
 		case PeerIpv6Attribute:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case ContentLenAttribute:
-			info.Response.ContentLength = value.GetIntValue()
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
 		}
 	}
 
-	if (componentValue != HttpComponentType && componentValue != RpcComponentType) || info.Request.Method == "" {
+	if (componentValue != HttpComponentType && componentValue != GrpcComponentType) || info.Request.Method == "" {
 		return filtered, nil
 	}
 
-	if tracepb.Span_SERVER == spanKind {
+	if tracepb.Span_SERVER == span.Kind {
 		info.Request.URL = constructServerUrl(componentValue, urlParts)
 	} else {
 		info.Request.URL = constructClientUrl(componentValue, urlParts)
 	}
 
 	if info.Response.Status == 0 {
-		info.Response.Status = convertToStatusCode(code)
+		info.Response.Status = convertToStatusCode(span.Status.Code)
 	}
 
+	info.Response.ContentLength = extractResponseSizeFromEvents(span)
+
 	return filtered, &info
+}
+
+func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
+	var size int64
+	if span.TimeEvents != nil {
+		for _, te := range span.TimeEvents.TimeEvent {
+			anno := te.GetAnnotation()
+			if anno != nil {
+				attrMap := anno.Attributes.AttributeMap
+				typeVal := attrMap[MessageTypeAttribute]
+				if typeVal != nil {
+					if typeVal.GetStringValue().GetValue() == "RECEIVED" {
+						sizeVal := attrMap[MessageUncompressedSizeAttribute]
+						if sizeVal != nil {
+							size = sizeVal.GetIntValue()
+						}
+					}
+				}
+			}
+		}
+	}
+	return size
 }
 
 func constructClientUrl(component string, urlParts map[string]string) string {
@@ -188,7 +213,7 @@ func constructClientUrl(component string, urlParts map[string]string) string {
 
 	scheme, ok := urlParts[SchemeAttribute]
 	if !ok {
-		if component == RpcComponentType {
+		if component == GrpcComponentType {
 			scheme = "dns"
 		} else {
 			scheme = "http"
@@ -233,7 +258,7 @@ func constructServerUrl(component string, urlParts map[string]string) string {
 
 	scheme, ok := urlParts[SchemeAttribute]
 	if !ok {
-		if component == RpcComponentType {
+		if component == GrpcComponentType {
 			scheme = "dns"
 		} else {
 			scheme = "http"

@@ -31,7 +31,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[StatusCodeAttribute] = 500
 	span := constructExceptionServerSpan(attributes)
 	span.Status.Message = errorMsg
-	filtered, _ := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, _ := makeHttp(span)
 
 	isError, isFault, cause := makeCause(span.Status, filtered)
 
@@ -55,7 +55,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[StatusCodeAttribute] = 500
 	attributes[StatusTextAttribute] = errorMsg
 	span := constructExceptionServerSpan(attributes)
-	filtered, _ := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, _ := makeHttp(span)
 
 	isError, isFault, cause := makeCause(span.Status, filtered)
 
@@ -80,7 +80,7 @@ func TestCauseWithErrorMessage(t *testing.T) {
 	attributes[ErrorMessageAttribute] = errorMsg
 	attributes[ErrorStackAttribute] = "org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:749)"
 	span := constructExceptionServerSpan(attributes)
-	filtered, _ := makeHttp(span.Kind, span.Status.Code, span.Attributes.AttributeMap)
+	filtered, _ := makeHttp(span)
 
 	isError, isFault, cause := makeCause(span.Status, filtered)
 

@@ -68,11 +68,7 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 	}
 
 	if message != "" {
-		id := make([]byte, 8)
-		mutex.Lock()
-		r.Read(id) // rand.Read always returns nil
-		mutex.Unlock()
-
+		id := newSegmentID()
 		hexID := hex.EncodeToString(id)
 
 		cause = &CauseData{
