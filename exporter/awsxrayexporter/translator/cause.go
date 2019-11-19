@@ -17,14 +17,11 @@ package translator
 import (
 	"encoding/hex"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"os"
-	"strings"
 )
 
 const (
 	ErrorObjectAttribute  = "error.object"
 	ErrorMessageAttribute = "error.message"
-	ErrorStackAttribute   = "error.stack"
 	ErrorKindAttribute    = "error.kind"
 )
 
@@ -51,20 +48,38 @@ type Stack struct {
 	Label string `json:"label,omitempty"`
 }
 
-func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool, cause *CauseData) {
+func makeCause(status *tracepb.Status, attributes map[string]string) (bool, bool, map[string]string, *CauseData) {
 	if status.Code == 0 {
-		return
+		return false, false, attributes, nil
 	}
+	var (
+		filtered    = make(map[string]string)
+		cause       *CauseData
+		message     = status.GetMessage()
+		errorKind   string
+		errorObject string
+	)
 
-	message := status.GetMessage()
-	if message == "" {
-		message = attributes[ErrorMessageAttribute]
+	for key, value := range attributes {
+		switch key {
+		case ErrorKindAttribute:
+			errorKind = value
+		case ErrorMessageAttribute:
+			if message == "" {
+				message = value
+			}
+		case StatusTextAttribute:
+			if message == "" {
+				message = value
+			}
+		case ErrorObjectAttribute:
+			errorObject = value
+		default:
+			filtered[key] = value
+		}
 	}
 	if message == "" {
-		message = attributes[StatusTextAttribute]
-	}
-	if message == "" {
-		message = attributes[ErrorObjectAttribute]
+		message = errorObject
 	}
 
 	if message != "" {
@@ -75,42 +90,21 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 			Exceptions: []Exception{
 				{
 					ID:      hexID,
-					Type:    attributes[ErrorKindAttribute],
+					Type:    errorKind,
 					Message: message,
 				},
 			},
 		}
-
-		stackStr := attributes[ErrorStackAttribute]
-		if stackStr != "" {
-			cause.Exceptions[0].Stack = parseStackData(stackStr)
-		}
-
-		if dir, err := os.Getwd(); err == nil {
-			cause.WorkingDirectory = dir
-		}
 	}
 
 	if isClientError(status.Code) {
-		isError = true
-		return
+		return true, false, filtered, cause
+	} else {
+		return false, true, filtered, cause
 	}
-
-	isFault = true
-	return
-}
-
-func parseStackData(stackStr string) []Stack {
-	parts := strings.Split(stackStr, "|")
-	stacks := make([]Stack, len(parts))
-	for i, part := range parts {
-		stacks[i] = Stack{
-			Label: part,
-		}
-	}
-	return stacks
 }
 
 func isClientError(code int32) bool {
-	return false
+	httpStatus := convertToHttpStatusCode(code)
+	return httpStatus >= 400 && httpStatus < 500
 }

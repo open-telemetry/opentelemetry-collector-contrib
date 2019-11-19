@@ -89,18 +89,14 @@ var (
 )
 
 const (
-	// defaultSpanName will be used if there are no valid xray characters in the
-	// span name
+	// defaultSpanName will be used if there are no valid xray characters in the span name
 	defaultSegmentName = "span"
-
 	// maxSegmentNameLength the maximum length of a Segment name
 	maxSegmentNameLength = 200
 )
 
 const (
 	traceIDLength    = 35 // fixed length of aws trace id
-	spanIDLength     = 16 // fixed length of aws span id
-	epochOffset      = 2  // offset of epoch secs
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
@@ -140,20 +136,31 @@ type Segment struct {
 	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
 }
 
-func MakeSegment(name string, span *tracepb.Span) Segment {
+func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute string) (string, error) {
+	segment := MakeSegment(name, span, userAttribute)
+	w := borrow()
+	if err := w.Encode(segment); err != nil {
+		return "", err
+	}
+	jsonStr := w.String()
+	release(w)
+	return jsonStr, nil
+}
+
+func MakeSegment(name string, span *tracepb.Span, userAttribute string) Segment {
 	var (
-		traceID                 = convertToAmazonTraceID(span.TraceId)
-		startTime               = timestampToFloatSeconds(span.StartTime, span.StartTime)
-		endTime                 = timestampToFloatSeconds(span.EndTime, span.StartTime)
-		httpfiltered, http      = makeHttp(span)
-		isError, isFault, cause = makeCause(span.Status, httpfiltered)
-		isThrottled             = span.Status.Code == tracetranslator.OCResourceExhausted
-		origin                  = determineAwsOrigin(span.Resource)
-		aws                     = makeAws(span.Resource)
-		service                 = makeService(span.Resource)
-		sqlfiltered, sql        = makeSql(httpfiltered)
-		annotations             = makeAnnotations(sqlfiltered)
-		namespace               string
+		traceID                                = convertToAmazonTraceID(span.TraceId)
+		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
+		endTime                                = timestampToFloatSeconds(span.EndTime, span.StartTime)
+		httpfiltered, http                     = makeHttp(span)
+		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
+		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
+		origin                                 = determineAwsOrigin(span.Resource)
+		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
+		service                                = makeService(span.Resource)
+		sqlfiltered, sql                       = makeSql(awsfiltered)
+		user, annotations                      = makeAnnotations(sqlfiltered, userAttribute)
+		namespace                              string
 	)
 
 	if name == "" {
@@ -176,6 +183,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		Cause:       cause,
 		Origin:      origin,
 		Namespace:   namespace,
+		User:        user,
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
@@ -276,15 +284,22 @@ func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
 	}
 }
 
-func makeAnnotations(attributes map[string]string) map[string]interface{} {
-	var result = map[string]interface{}{}
+func makeAnnotations(attributes map[string]string, userAttribute string) (string, map[string]interface{}) {
+	var (
+		result = map[string]interface{}{}
+		user   = attributes[userAttribute]
+	)
 
+	if user != "" {
+		delete(attributes, userAttribute)
+	}
+	delete(attributes, ComponentAttribute)
 	mergeAnnotations(result, attributes)
 
 	if len(result) == 0 {
-		return nil
+		return user, nil
 	}
-	return result
+	return user, result
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines

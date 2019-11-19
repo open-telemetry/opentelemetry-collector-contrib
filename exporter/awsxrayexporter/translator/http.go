@@ -65,7 +65,7 @@ type ResponseData struct {
 	ContentLength int64 `json:"content_length,omitempty"`
 }
 
-func convertToStatusCode(code int32) int64 {
+func convertToHttpStatusCode(code int32) int64 {
 	switch code {
 	case tracetranslator.OCOK:
 		return http.StatusOK
@@ -172,7 +172,7 @@ func makeHttp(span *tracepb.Span) (map[string]string, *HTTPData) {
 	}
 
 	if info.Response.Status == 0 {
-		info.Response.Status = convertToStatusCode(span.Status.Code)
+		info.Response.Status = convertToHttpStatusCode(span.Status.Code)
 	}
 
 	info.Response.ContentLength = extractResponseSizeFromEvents(span)

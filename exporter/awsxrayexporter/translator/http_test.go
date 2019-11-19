@@ -17,7 +17,6 @@ package translator
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -327,35 +326,4 @@ func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
 			Labels: constructDefaultResourceLabels(),
 		},
 	}
-}
-
-func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
-	eventAttrMap := make(map[string]*tracepb.AttributeValue)
-	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-		StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
-	}}
-	eventAttrMap[MessageUncompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 12452,
-	}}
-	eventAttrbutes := tracepb.Span_Attributes{
-		AttributeMap:           eventAttrMap,
-		DroppedAttributesCount: 0,
-	}
-	annotation := tracepb.Span_TimeEvent_Annotation{
-		Attributes: &eventAttrbutes,
-	}
-	event := tracepb.Span_TimeEvent{
-		Time: tm,
-		Value: &tracepb.Span_TimeEvent_Annotation_{
-			Annotation: &annotation,
-		},
-	}
-	events := make([]*tracepb.Span_TimeEvent, 1, 1)
-	events[0] = &event
-	timeEvents := tracepb.Span_TimeEvents{
-		TimeEvent:                 events,
-		DroppedAnnotationsCount:   0,
-		DroppedMessageEventsCount: 0,
-	}
-	return timeEvents
 }
