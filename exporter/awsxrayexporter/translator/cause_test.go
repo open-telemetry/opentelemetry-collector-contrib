@@ -33,10 +33,11 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	span.Status.Message = errorMsg
 	filtered, _ := makeHttp(span)
 
-	isError, isFault, cause := makeCause(span.Status, filtered)
+	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := borrow()
 	if err := w.Encode(cause); err != nil {
@@ -57,10 +58,11 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	span := constructExceptionServerSpan(attributes)
 	filtered, _ := makeHttp(span)
 
-	isError, isFault, cause := makeCause(span.Status, filtered)
+	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := borrow()
 	if err := w.Encode(cause); err != nil {
@@ -78,14 +80,14 @@ func TestCauseWithErrorMessage(t *testing.T) {
 	attributes[URLAttribute] = "https://api.example.com/widgets"
 	attributes[StatusCodeAttribute] = 500
 	attributes[ErrorMessageAttribute] = errorMsg
-	attributes[ErrorStackAttribute] = "org.springframework.beans.factory.support.ConstructorResolver.createArgumentArray(ConstructorResolver.java:749)"
 	span := constructExceptionServerSpan(attributes)
 	filtered, _ := makeHttp(span)
 
-	isError, isFault, cause := makeCause(span.Status, filtered)
+	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
+	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := borrow()
 	if err := w.Encode(cause); err != nil {
@@ -94,7 +96,6 @@ func TestCauseWithErrorMessage(t *testing.T) {
 	jsonStr := w.String()
 	release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
-	assert.True(t, strings.Contains(jsonStr, "ConstructorResolver"))
 }
 
 func constructExceptionServerSpan(attributes map[string]interface{}) *tracepb.Span {

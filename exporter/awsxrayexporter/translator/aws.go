@@ -19,12 +19,26 @@ import (
 	"strconv"
 )
 
+const (
+	AwsOperationAttribute = "aws.operation"
+	AwsAccountAttribute   = "aws.account_id"
+	AwsRegionAttribute    = "aws.region"
+	AwsRequestIdAttribute = "aws.request_id"
+	AwsQueueUrlAttribute  = "aws.queue_url"
+	AwsTableNameAttribute = "aws.table_name"
+)
+
 // AWSData provides the shape for unmarshalling AWS resource data.
 type AWSData struct {
 	AccountID         string             `json:"account_id,omitempty"`
 	BeanstalkMetadata *BeanstalkMetadata `json:"elastic_beanstalk,omitempty"`
 	ECSMetadata       *ECSMetadata       `json:"ecs,omitempty"`
 	EC2Metadata       *EC2Metadata       `json:"ec2,omitempty"`
+	Operation         string             `json:"operation,omitempty"`
+	RemoteRegion      string             `json:"region,omitempty"`
+	RequestID         string             `json:"request_id,omitempty"`
+	QueueURL          string             `json:"queue_url,omitempty"`
+	TableName         string             `json:"table_name,omitempty"`
 }
 
 // EC2Metadata provides the shape for unmarshalling EC2 metadata.
@@ -45,25 +59,32 @@ type BeanstalkMetadata struct {
 	DeploymentID int64  `json:"deployment_id"`
 }
 
-func makeAws(resource *resourcepb.Resource) *AWSData {
+func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[string]string, *AWSData) {
 	var (
-		cloud     string
-		account   string
-		zone      string
-		hostId    string
-		container string
-		namespace string
-		deployId  string
-		ver       string
-		origin    string
-		ec2       *EC2Metadata
-		ecs       *ECSMetadata
-		ebs       *BeanstalkMetadata
-		awsData   *AWSData
+		cloud        string
+		account      string
+		zone         string
+		hostId       string
+		container    string
+		namespace    string
+		deployId     string
+		ver          string
+		origin       string
+		operation    string
+		remoteRegion string
+		requestId    string
+		queueUrl     string
+		tableName    string
+		ec2          *EC2Metadata
+		ecs          *ECSMetadata
+		ebs          *BeanstalkMetadata
+		awsData      *AWSData
+		filtered     map[string]string
 	)
 	if resource == nil {
-		return awsData
+		return attributes, awsData
 	}
+	filtered = make(map[string]string)
 	for key, value := range resource.Labels {
 		switch key {
 		case CloudProviderAttribute:
@@ -88,8 +109,28 @@ func makeAws(resource *resourcepb.Resource) *AWSData {
 			ver = value
 		}
 	}
+	for key, value := range attributes {
+		switch key {
+		case AwsOperationAttribute:
+			operation = value
+		case AwsAccountAttribute:
+			if value != "" {
+				account = value
+			}
+		case AwsRegionAttribute:
+			remoteRegion = value
+		case AwsRequestIdAttribute:
+			requestId = value
+		case AwsQueueUrlAttribute:
+			queueUrl = value
+		case AwsTableNameAttribute:
+			tableName = value
+		default:
+			filtered[key] = value
+		}
+	}
 	if cloud != "aws" && cloud != "" {
-		return awsData // not AWS so return nil
+		return filtered, awsData // not AWS so return nil
 	}
 	// progress from least specific to most specific origin so most specific ends up as origin
 	// as per X-Ray docs
@@ -119,13 +160,18 @@ func makeAws(resource *resourcepb.Resource) *AWSData {
 		}
 	}
 	if origin == "" {
-		return awsData
+		return filtered, awsData
 	}
 	awsData = &AWSData{
 		AccountID:         account,
 		BeanstalkMetadata: ebs,
 		ECSMetadata:       ecs,
 		EC2Metadata:       ec2,
+		Operation:         operation,
+		RemoteRegion:      remoteRegion,
+		RequestID:         requestId,
+		QueueURL:          queueUrl,
+		TableName:         tableName,
 	}
-	return awsData
+	return filtered, awsData
 }
