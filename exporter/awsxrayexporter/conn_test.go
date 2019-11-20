@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conn
+package awsxrayexporter
 
 import (
 	"errors"
@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -47,7 +46,7 @@ func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(roleArn string, region string) *session.Session {
+func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) *session.Session {
 	return c.sn
 }
 
@@ -83,15 +82,15 @@ func TestRegionEnv(t *testing.T) {
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
 }
 
-func loadExporterConfig(t *testing.T) *awsxrayexporter.Config {
+func loadExporterConfig(t *testing.T) *Config {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
-	factory := &awsxrayexporter.Factory{}
+	factory := &Factory{}
 	factories.Exporters[factory.Type()] = factory
 	otelcfg, err := config.LoadConfigFile(
-		t, path.Join(".", "../testdata", "config.yaml"), factories,
+		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
-	xrayExporterCfg := otelcfg.Exporters["awsxray"].(*awsxrayexporter.Config)
+	xrayExporterCfg := otelcfg.Exporters["awsxray"].(*Config)
 	return xrayExporterCfg
 }
 

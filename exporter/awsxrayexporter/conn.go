@@ -1,4 +1,5 @@
 // Copyright 2019, OpenTelemetry Authors
+// Portions of this file Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conn
+package awsxrayexporter
 
 import (
 	"crypto/tls"
@@ -29,13 +30,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
 
 type connAttr interface {
-	newAWSSession(roleArn string, region string) *session.Session
+	newAWSSession(logger *zap.Logger, roleArn string, region string) *session.Session
 	getEC2Region(s *session.Session) (string, error)
 }
 
@@ -54,7 +54,8 @@ const (
 )
 
 // getNewHTTPClient returns new HTTP client instance with provided configuration.
-func getNewHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool, proxyAddress string) *http.Client {
+func getNewHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
+	proxyAddress string) *http.Client {
 	logger.Debug("Using proxy address: ",
 		zap.String("proxyAddr", proxyAddress),
 	)
@@ -108,7 +109,7 @@ func getProxyURL(finalProxyAddress string) *url.URL {
 }
 
 // GetAWSConfigSession returns AWS config and session instances.
-func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *awsxrayexporter.Config) (*aws.Config, *session.Session) {
+func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Config, *session.Session) {
 	var s *session.Session
 	var err error
 	var awsRegion string
@@ -133,7 +134,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *awsxrayexporter.C
 		//log.Error("Cannot fetch region variable from config file, environment variables and ec2 metadata.")
 		os.Exit(1)
 	}
-	s = cn.newAWSSession(cfg.RoleARN, awsRegion)
+	s = cn.newAWSSession(logger, cfg.RoleARN, awsRegion)
 
 	config := &aws.Config{
 		Region:                 aws.String(awsRegion),
@@ -146,7 +147,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *awsxrayexporter.C
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.
-func ProxyServerTransport(config *awsxrayexporter.Config) *http.Transport {
+func ProxyServerTransport(config *Config) *http.Transport {
 	tls := &tls.Config{
 		InsecureSkipVerify: config.NoVerifySSL,
 	}
@@ -219,7 +220,8 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) *credentials
 // getSTSCredsFromRegionEndpoint fetches STS credentials for provided roleARN from regional endpoint.
 // AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
 // Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
-func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, region string, roleArn string) *credentials.Credentials {
+func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, region string,
+	roleArn string) *credentials.Credentials {
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
@@ -230,9 +232,10 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, re
 	return stscreds.NewCredentialsWithClient(st, roleArn)
 }
 
-// getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in the
-// respective partition.
-func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn string, region string) *credentials.Credentials {
+// getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in
+// the respective partition.
+func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn string,
+	region string) *credentials.Credentials {
 	partitionID := getPartition(region)
 	if partitionID == endpoints.AwsPartitionID {
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn)

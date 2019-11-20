@@ -39,3 +39,26 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 
 ## Exporter Configuration
 
+The following exporter configuration parameters are supported.
+
+| Name              | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `num_workers`     | Maximum number of concurrent calls to AWS X-Ray to upload documents.   | 8       |
+| `endpoint`        | Optionally override the default X-Ray service endpoint.                |         |
+| `request_timeout` | Number of seconds before timing out a request.                         | 30      |
+| `no_verify_ssl`   | Enable or disable TLS certificate verification.                        | false   |
+| `proxy_address`   | Upload segments to AWS X-Ray through a proxy.                          |         |
+| `region`          | Send segments to AWS X-Ray service in a specific region.               |         |
+| `local_mode`      | Local mode to skip EC2 instance metadata check.                        | false   |
+| `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
+| `role_arn`        | IAM role to upload segments to a different account.                    |         |
+| `user_attribute`  | Span attribute name which holds the originating user's login.          |         |
+
+
+## AWS Credential Configuration
+
+This exporter follows default credential resolution for the 
+[aws-sdk-go](https://docs.aws.amazon.com/sdk-for-go/api/index.html).
+
+Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the 
+credential configuration.

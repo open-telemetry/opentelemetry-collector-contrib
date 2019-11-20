@@ -1,4 +1,5 @@
 // Copyright 2019, OpenTelemetry Authors
+// Portions of this file Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package conn
+package awsxrayexporter
 
 import (
 	"os"
@@ -62,7 +63,8 @@ func NewXRay(logger *zap.Logger, awsConfig *aws.Config, s *session.Session) XRay
 	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
 		Name: "tracing.TimestampHandler",
 		Fn: func(r *request.Request) {
-			r.HTTPRequest.Header.Set("X-Amzn-Xray-Timestamp", strconv.FormatFloat(float64(time.Now().UnixNano())/float64(time.Second), 'f', 9, 64))
+			r.HTTPRequest.Header.Set("X-Amzn-Xray-Timestamp",
+				strconv.FormatFloat(float64(time.Now().UnixNano())/float64(time.Second), 'f', 9, 64))
 		},
 	})
 

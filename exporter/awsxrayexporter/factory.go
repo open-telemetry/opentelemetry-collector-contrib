@@ -15,6 +15,7 @@
 package awsxrayexporter
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"go.uber.org/zap"
@@ -57,11 +58,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.TraceExporter, error) {
 	eCfg := cfg.(*Config)
-	return NewTraceExporter(eCfg, logger)
+	return NewTraceExporter(eCfg, logger, &Conn{})
 }
 
 // CreateMetricsExporter always returns nil.
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger,
 	cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
-	return nil, nil
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
