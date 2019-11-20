@@ -15,13 +15,14 @@
 package awsxrayexporter
 
 import (
+	"path"
+	"testing"
+
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"path"
-	"testing"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

@@ -15,15 +15,15 @@
 package translator
 
 import (
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"net/http"
 	"strconv"
+
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
+// OpenTelemetry Semantic Convention attribute names for HTTP and gRPC related attributes
 const (
-	// Attributes recorded on the span for the requests.
-	// Only trace exporters will need them.
 	MethodAttribute                  = "http.method"
 	URLAttribute                     = "http.url"
 	TargetAttribute                  = "http.target"
@@ -35,10 +35,10 @@ const (
 	ServerNameAttribute              = "http.server_name"
 	PortAttribute                    = "http.port"
 	RouteAttribute                   = "http.route"
-	ClientIpAttribute                = "http.client_ip"
+	ClientIPAttribute                = "http.client_ip"
 	UserAgentAttribute               = "http.user_agent"
 	MessageTypeAttribute             = "message.type"
-	MessageIdAttribute               = "message.id"
+	MessageIDAttribute               = "message.id"
 	MessageCompressedSizeAttribute   = "message.compressed_size"
 	MessageUncompressedSizeAttribute = "message.uncompressed_size"
 )
@@ -65,7 +65,7 @@ type ResponseData struct {
 	ContentLength int64 `json:"content_length,omitempty"`
 }
 
-func convertToHttpStatusCode(code int32) int64 {
+func convertToHTTPStatusCode(code int32) int64 {
 	switch code {
 	case tracetranslator.OCOK:
 		return http.StatusOK
@@ -106,7 +106,7 @@ func convertToHttpStatusCode(code int32) int64 {
 	}
 }
 
-func makeHttp(span *tracepb.Span) (map[string]string, *HTTPData) {
+func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 	var (
 		info           HTTPData
 		filtered       = make(map[string]string)
@@ -123,7 +123,7 @@ func makeHttp(span *tracepb.Span) (map[string]string, *HTTPData) {
 			info.Request.Method = value.GetStringValue().GetValue()
 		case UserAgentAttribute:
 			info.Request.UserAgent = value.GetStringValue().GetValue()
-		case ClientIpAttribute:
+		case ClientIPAttribute:
 			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
 		case StatusCodeAttribute:
@@ -161,18 +161,18 @@ func makeHttp(span *tracepb.Span) (map[string]string, *HTTPData) {
 		}
 	}
 
-	if (componentValue != HttpComponentType && componentValue != GrpcComponentType) || info.Request.Method == "" {
+	if (componentValue != HTTPComponentType && componentValue != GrpcComponentType) || info.Request.Method == "" {
 		return filtered, nil
 	}
 
 	if tracepb.Span_SERVER == span.Kind {
-		info.Request.URL = constructServerUrl(componentValue, urlParts)
+		info.Request.URL = constructServerURL(componentValue, urlParts)
 	} else {
-		info.Request.URL = constructClientUrl(componentValue, urlParts)
+		info.Request.URL = constructClientURL(componentValue, urlParts)
 	}
 
 	if info.Response.Status == 0 {
-		info.Response.Status = convertToHttpStatusCode(span.Status.Code)
+		info.Response.Status = convertToHTTPStatusCode(span.Status.Code)
 	}
 
 	info.Response.ContentLength = extractResponseSizeFromEvents(span)
@@ -202,7 +202,7 @@ func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
 	return size
 }
 
-func constructClientUrl(component string, urlParts map[string]string) string {
+func constructClientURL(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for client spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[URLAttribute]
@@ -247,7 +247,7 @@ func constructClientUrl(component string, urlParts map[string]string) string {
 	return url
 }
 
-func constructServerUrl(component string, urlParts map[string]string) string {
+func constructServerURL(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for server spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[URLAttribute]

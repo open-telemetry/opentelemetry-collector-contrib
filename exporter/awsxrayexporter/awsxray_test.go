@@ -17,6 +17,10 @@ package awsxrayexporter
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"testing"
+	"time"
+
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -26,9 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func TestTraceExport(t *testing.T) {
@@ -52,9 +53,9 @@ func initializeTraceExporter() exporter.TraceExporter {
 func constructSpanData() consumerdata.TraceData {
 	resource := constructResource()
 	spans := make([]*tracepb.Span, 2)
-	spans[0] = constructHttpClientSpan()
+	spans[0] = constructHTTPClientSpan()
 	spans[0].Resource = resource
-	spans[1] = constructHttpServerSpan()
+	spans[1] = constructHTTPServerSpan()
 	spans[1].Resource = resource
 	return consumerdata.TraceData{
 		Node:         nil,
@@ -81,9 +82,9 @@ func constructResource() *resourcepb.Resource {
 	}
 }
 
-func constructHttpClientSpan() *tracepb.Span {
+func constructHTTPClientSpan() *tracepb.Span {
 	attributes := make(map[string]interface{})
-	attributes[translator.ComponentAttribute] = translator.HttpComponentType
+	attributes[translator.ComponentAttribute] = translator.HTTPComponentType
 	attributes[translator.MethodAttribute] = "GET"
 	attributes[translator.URLAttribute] = "https://api.example.com/users/junit"
 	attributes[translator.StatusCodeAttribute] = 200
@@ -116,13 +117,13 @@ func constructHttpClientSpan() *tracepb.Span {
 	}
 }
 
-func constructHttpServerSpan() *tracepb.Span {
+func constructHTTPServerSpan() *tracepb.Span {
 	attributes := make(map[string]interface{})
-	attributes[translator.ComponentAttribute] = translator.HttpComponentType
+	attributes[translator.ComponentAttribute] = translator.HTTPComponentType
 	attributes[translator.MethodAttribute] = "GET"
 	attributes[translator.URLAttribute] = "https://api.example.com/users/junit"
 	attributes[translator.UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[translator.ClientIpAttribute] = "192.168.15.32"
+	attributes[translator.ClientIPAttribute] = "192.168.15.32"
 	attributes[translator.StatusCodeAttribute] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)

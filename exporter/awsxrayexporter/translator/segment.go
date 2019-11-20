@@ -17,25 +17,21 @@ package translator
 import (
 	"encoding/binary"
 	"encoding/hex"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"math/rand"
 	"reflect"
 	"regexp"
 	"sync"
 	"time"
+
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
+// OpenTelemetry Semantic Convention values for general Span attribute names.
 const (
-	// Attributes recorded on the span for the requests.
-	// Only trace exporters will need them.
 	ComponentAttribute   = "component"
-	HttpComponentType    = "http"
-	GrpcComponentType    = "grpc"
-	DbComponentType      = "db"
-	MsgComponentType     = "messaging"
 	PeerAddressAttribute = "peer.address"
 	PeerHostAttribute    = "peer.hostname"
 	PeerIpv4Attribute    = "peer.ipv4"
@@ -44,6 +40,15 @@ const (
 	PeerServiceAttribute = "peer.service"
 )
 
+// OpenTelemetry Semantic Convention values for component attribute values.
+const (
+	HTTPComponentType = "http"
+	GrpcComponentType = "grpc"
+	DbComponentType   = "db"
+	MsgComponentType  = "messaging"
+)
+
+// OpenTelemetry Semantic Convention values for Resource attribute names.
 const (
 	ServiceNameAttribute      = "service.name"
 	ServiceNamespaceAttribute = "service.namespace"
@@ -57,7 +62,7 @@ const (
 	K8sPodAttribute           = "k8s.pod.name"
 	K8sDeploymentAttribute    = "k8s.deployment.name"
 	HostHostnameAttribute     = "host.hostname"
-	HostIdAttribute           = "host.id"
+	HostIDAttribute           = "host.id"
 	HostNameAttribute         = "host.name"
 	HostTypeAttribute         = "host.type"
 	CloudProviderAttribute    = "cloud.provider"
@@ -66,8 +71,8 @@ const (
 	CloudZoneAttribute        = "cloud.zone"
 )
 
+// AWS X-Ray acceptable values for origin field.
 const (
-	// OriginEC2 span originated from EC2
 	OriginEC2 = "AWS::EC2::Instance"
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
@@ -100,6 +105,7 @@ const (
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
+// Segment provides the shape for unmarshalling segment data.
 type Segment struct {
 	// Required
 	TraceID   string  `json:"trace_id,omitempty"`
@@ -136,6 +142,7 @@ type Segment struct {
 	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
 }
 
+// MakeSegmentDocumentString converts an Otel Span to an X-Ray Segment and then serialzies to JSON
 func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute string) (string, error) {
 	segment := MakeSegment(name, span, userAttribute)
 	w := borrow()
@@ -147,18 +154,19 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute st
 	return jsonStr, nil
 }
 
+// MakeSegment converts an Otel Span to an X-Ray Segment
 func MakeSegment(name string, span *tracepb.Span, userAttribute string) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)
 		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
 		endTime                                = timestampToFloatSeconds(span.EndTime, span.StartTime)
-		httpfiltered, http                     = makeHttp(span)
+		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
 		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
 		origin                                 = determineAwsOrigin(span.Resource)
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
-		sqlfiltered, sql                       = makeSql(awsfiltered)
+		sqlfiltered, sql                       = makeSQL(awsfiltered)
 		user, annotations                      = makeAnnotations(sqlfiltered, userAttribute)
 		namespace                              string
 	)
@@ -191,6 +199,28 @@ func MakeSegment(name string, span *tracepb.Span, userAttribute string) Segment 
 		Annotations: annotations,
 		Metadata:    nil,
 	}
+}
+
+// NewTraceID generates a new valid X-Ray TraceID
+func NewTraceID() []byte {
+	var r [16]byte
+	epoch := time.Now().Unix()
+	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
+	_, err := rand.Read(r[4:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
+}
+
+// NewSegmentID generates a new valid X-Ray SegmentID
+func NewSegmentID() []byte {
+	var r [8]byte
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
 }
 
 func determineAwsOrigin(resource *resourcepb.Resource) string {
@@ -331,24 +361,4 @@ func fixAnnotationKey(key string) string {
 	}
 
 	return key
-}
-
-func NewTraceID() []byte {
-	var r [16]byte
-	epoch := time.Now().Unix()
-	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
-	_, err := rand.Read(r[4:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
-}
-
-func NewSegmentID() []byte {
-	var r [8]byte
-	_, err := rand.Read(r[:])
-	if err != nil {
-		panic(err)
-	}
-	return r[:]
 }

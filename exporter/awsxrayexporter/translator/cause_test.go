@@ -15,12 +15,13 @@
 package translator
 
 import (
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 	"time"
+
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCauseWithStatusMessage(t *testing.T) {
@@ -31,7 +32,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[StatusCodeAttribute] = 500
 	span := constructExceptionServerSpan(attributes)
 	span.Status.Message = errorMsg
-	filtered, _ := makeHttp(span)
+	filtered, _ := makeHTTP(span)
 
 	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 
@@ -56,7 +57,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[StatusCodeAttribute] = 500
 	attributes[StatusTextAttribute] = errorMsg
 	span := constructExceptionServerSpan(attributes)
-	filtered, _ := makeHttp(span)
+	filtered, _ := makeHTTP(span)
 
 	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 
@@ -81,7 +82,7 @@ func TestCauseWithErrorMessage(t *testing.T) {
 	attributes[StatusCodeAttribute] = 500
 	attributes[ErrorMessageAttribute] = errorMsg
 	span := constructExceptionServerSpan(attributes)
-	filtered, _ := makeHttp(span)
+	filtered, _ := makeHTTP(span)
 
 	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
 

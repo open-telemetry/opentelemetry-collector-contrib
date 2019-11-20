@@ -15,16 +15,17 @@
 package conn
 
 import (
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/xray"
 	"go.uber.org/zap"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // XRay defines X-Ray api call structure.

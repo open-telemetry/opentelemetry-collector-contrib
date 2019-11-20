@@ -15,10 +15,11 @@
 package translator
 
 import (
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestServiceFromResource(t *testing.T) {
