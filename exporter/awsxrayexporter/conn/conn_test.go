@@ -16,16 +16,17 @@ package conn
 
 import (
 	"errors"
+	"os"
+	"path"
+	"strings"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
-	"os"
-	"path"
-	"strings"
-	"testing"
 )
 
 var ec2Region = "us-east-1"

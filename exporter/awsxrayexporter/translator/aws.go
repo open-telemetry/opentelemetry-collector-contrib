@@ -15,16 +15,18 @@
 package translator
 
 import (
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"strconv"
+
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 )
 
+// AWS-specific OpenTelemetry attribute names
 const (
 	AwsOperationAttribute = "aws.operation"
 	AwsAccountAttribute   = "aws.account_id"
 	AwsRegionAttribute    = "aws.region"
-	AwsRequestIdAttribute = "aws.request_id"
-	AwsQueueUrlAttribute  = "aws.queue_url"
+	AwsRequestIDAttribute = "aws.request_id"
+	AwsQueueURLAttribute  = "aws.queue_url"
 	AwsTableNameAttribute = "aws.table_name"
 )
 
@@ -64,16 +66,16 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		cloud        string
 		account      string
 		zone         string
-		hostId       string
+		hostID       string
 		container    string
 		namespace    string
-		deployId     string
+		deployID     string
 		ver          string
 		origin       string
 		operation    string
 		remoteRegion string
-		requestId    string
-		queueUrl     string
+		requestID    string
+		queueURL     string
 		tableName    string
 		ec2          *EC2Metadata
 		ecs          *ECSMetadata
@@ -93,8 +95,8 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 			account = value
 		case CloudZoneAttribute:
 			zone = value
-		case HostIdAttribute:
-			hostId = value
+		case HostIDAttribute:
+			hostID = value
 		case ContainerNameAttribute:
 			if container == "" {
 				container = value
@@ -104,7 +106,7 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		case ServiceNamespaceAttribute:
 			namespace = value
 		case ServiceInstanceAttribute:
-			deployId = value
+			deployID = value
 		case ServiceVersionAttribute:
 			ver = value
 		}
@@ -119,10 +121,10 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 			}
 		case AwsRegionAttribute:
 			remoteRegion = value
-		case AwsRequestIdAttribute:
-			requestId = value
-		case AwsQueueUrlAttribute:
-			queueUrl = value
+		case AwsRequestIDAttribute:
+			requestID = value
+		case AwsQueueURLAttribute:
+			queueURL = value
 		case AwsTableNameAttribute:
 			tableName = value
 		default:
@@ -134,10 +136,10 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 	}
 	// progress from least specific to most specific origin so most specific ends up as origin
 	// as per X-Ray docs
-	if hostId != "" {
+	if hostID != "" {
 		origin = OriginEC2
 		ec2 = &EC2Metadata{
-			InstanceID:       hostId,
+			InstanceID:       hostID,
 			AvailabilityZone: zone,
 		}
 	}
@@ -147,9 +149,9 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 			ContainerName: container,
 		}
 	}
-	if deployId != "" {
+	if deployID != "" {
 		origin = OriginEB
-		deployNum, err := strconv.ParseInt(deployId, 10, 64)
+		deployNum, err := strconv.ParseInt(deployID, 10, 64)
 		if err != nil {
 			deployNum = 0
 		}
@@ -169,8 +171,8 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		EC2Metadata:       ec2,
 		Operation:         operation,
 		RemoteRegion:      remoteRegion,
-		RequestID:         requestId,
-		QueueURL:          queueUrl,
+		RequestID:         requestID,
+		QueueURL:          queueURL,
 		TableName:         tableName,
 	}
 	return filtered, awsData

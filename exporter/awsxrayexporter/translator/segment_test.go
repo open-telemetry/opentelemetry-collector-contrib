@@ -16,15 +16,16 @@ package translator
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+	"testing"
+	"time"
+
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestClientSpanWithGrpcComponent(t *testing.T) {
@@ -50,22 +51,22 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
-	parentSpanId := NewSegmentID()
+	parentSpanID := NewSegmentID()
 	userAttribute := "originating.user"
 	user := "testing"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "POST"
 	attributes[SchemeAttribute] = "https"
 	attributes[HostAttribute] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[TargetAttribute] = "/"
 	attributes[UserAgentAttribute] = "aws-sdk-java/1.11.613 Windows_10/10.0 OpenJDK_64-Bit_server_VM/11.0.4+11-LTS"
 	attributes[AwsOperationAttribute] = "GetItem"
-	attributes[AwsRequestIdAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[AwsRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[AwsTableNameAttribute] = "otel-dev-Testing"
 	attributes[userAttribute] = user
 	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(parentSpanId, spanName, 0, "OK", attributes, labels)
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
 
 	jsonStr, err := MakeSegmentDocumentString(spanName, span, userAttribute)
 
@@ -78,12 +79,12 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanId := NewSegmentID()
+	parentSpanID := NewSegmentID()
 	userAttribute := "originating.user"
 	user := "testing"
 	errorMessage := "java.lang.NullPointerException"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "POST"
 	attributes[URLAttribute] = "https://api.example.org/api/locations"
 	attributes[TargetAttribute] = "/api/locations"
@@ -91,7 +92,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[userAttribute] = user
 	attributes[ErrorKindAttribute] = "java.lang.NullPointerException"
 	labels := constructDefaultResourceLabels()
-	span := constructServerSpan(parentSpanId, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
 	span.TimeEvents = &timeEvents
 
@@ -114,7 +115,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
-	enterpriseAppId := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
+	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
 	attributes[ComponentAttribute] = DbComponentType
 	attributes[DbTypeAttribute] = "sql"
@@ -124,7 +125,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[PeerAddressAttribute] = "mysql://db.dev.example.com:3306"
 	attributes[PeerHostAttribute] = "db.dev.example.com"
 	attributes[PeerPortAttribute] = "3306"
-	attributes["enterprise.app.id"] = enterpriseAppId
+	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
 
@@ -147,12 +148,12 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	jsonStr := w.String()
 	release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, enterpriseAppId))
+	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }
 
 func TestClientSpanWithBlankUserAttribute(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
-	enterpriseAppId := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
+	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
 	attributes[ComponentAttribute] = DbComponentType
 	attributes[DbTypeAttribute] = "sql"
@@ -162,7 +163,7 @@ func TestClientSpanWithBlankUserAttribute(t *testing.T) {
 	attributes[PeerAddressAttribute] = "mysql://db.dev.example.com:3306"
 	attributes[PeerHostAttribute] = "db.dev.example.com"
 	attributes[PeerPortAttribute] = "3306"
-	attributes["enterprise.app.id"] = enterpriseAppId
+	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
 
@@ -185,7 +186,7 @@ func TestClientSpanWithBlankUserAttribute(t *testing.T) {
 	jsonStr := w.String()
 	release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, enterpriseAppId))
+	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }
 
 func TestSpanWithInvalidTraceId(t *testing.T) {
@@ -211,20 +212,20 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "1-11"))
 }
 
-func constructClientSpan(parentSpanId []byte, name string, code int32, message string,
+func constructClientSpan(parentSpanID []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceId        = NewTraceID()
-		spanId         = NewSegmentID()
+		traceID        = NewTraceID()
+		spanID         = NewSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
 	return &tracepb.Span{
-		TraceId:      traceId,
-		SpanId:       spanId,
-		ParentSpanId: parentSpanId,
+		TraceId:      traceID,
+		SpanId:       spanID,
+		ParentSpanId: parentSpanID,
 		Name:         &tracepb.TruncatableString{Value: name},
 		Kind:         tracepb.Span_CLIENT,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -243,20 +244,20 @@ func constructClientSpan(parentSpanId []byte, name string, code int32, message s
 	}
 }
 
-func constructServerSpan(parentSpanId []byte, name string, code int32, message string,
+func constructServerSpan(parentSpanID []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceId        = NewTraceID()
-		spanId         = NewSegmentID()
+		traceID        = NewTraceID()
+		spanID         = NewSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
 	return &tracepb.Span{
-		TraceId:      traceId,
-		SpanId:       spanId,
-		ParentSpanId: parentSpanId,
+		TraceId:      traceID,
+		SpanId:       spanID,
+		ParentSpanId: parentSpanID,
 		Name:         &tracepb.TruncatableString{Value: name},
 		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -332,7 +333,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) trace
 	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
 		StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
 	}}
-	eventAttrMap[MessageIdAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+	eventAttrMap[MessageIDAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
 		IntValue: 1,
 	}}
 	eventAttrMap[MessageCompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
@@ -369,7 +370,7 @@ func constructTimedEventsWithSentMessageEvent(tm *timestamp.Timestamp) tracepb.S
 	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
 		StringValue: &tracepb.TruncatableString{Value: "SENT"},
 	}}
-	eventAttrMap[MessageIdAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+	eventAttrMap[MessageIDAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
 		IntValue: 1,
 	}}
 	eventAttrMap[MessageUncompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{

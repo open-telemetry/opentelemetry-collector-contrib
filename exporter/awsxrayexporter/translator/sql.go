@@ -14,6 +14,7 @@
 
 package translator
 
+// OpenTelemetry Semantic Convention attribute names for database related attributes
 const (
 	DbTypeAttribute      = "db.type"
 	DbInstanceAttribute  = "db.instance"
@@ -33,24 +34,24 @@ type SQLData struct {
 	SanitizedQuery   string `json:"sanitized_query,omitempty"`
 }
 
-func makeSql(attributes map[string]string) (map[string]string, *SQLData) {
+func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 	var (
 		filtered    = make(map[string]string)
 		sqlData     SQLData
-		dbUrl       string
+		dbURL       string
 		dbType      string
 		dbInstance  string
 		dbStatement string
 		dbUser      string
 	)
 	componentType := attributes[ComponentAttribute]
-	if componentType == HttpComponentType || componentType == GrpcComponentType {
+	if componentType == HTTPComponentType || componentType == GrpcComponentType {
 		return attributes, nil
 	}
 	for key, value := range attributes {
 		switch key {
 		case PeerAddressAttribute:
-			dbUrl = value
+			dbURL = value
 		case DbTypeAttribute:
 			dbType = value
 		case DbInstanceAttribute:
@@ -63,10 +64,10 @@ func makeSql(attributes map[string]string) (map[string]string, *SQLData) {
 			filtered[key] = value
 		}
 	}
-	if dbUrl == "" {
-		dbUrl = "localhost"
+	if dbURL == "" {
+		dbURL = "localhost"
 	}
-	url := dbUrl + "/" + dbInstance
+	url := dbURL + "/" + dbInstance
 	sqlData = SQLData{
 		URL:            url,
 		DatabaseType:   dbType,

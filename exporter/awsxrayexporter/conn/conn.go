@@ -16,6 +16,11 @@ package conn
 
 import (
 	"crypto/tls"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -27,10 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
-	"net/http"
-	"net/url"
-	"os"
-	"time"
 )
 
 type connAttr interface {
@@ -45,6 +46,7 @@ func (c *Conn) getEC2Region(s *session.Session) (string, error) {
 	return ec2metadata.New(s).Region()
 }
 
+// AWS STS endpoint constants
 const (
 	STSEndpointPrefix         = "https://sts."
 	STSEndpointSuffix         = ".amazonaws.com"
@@ -231,12 +233,12 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, re
 // getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in the
 // respective partition.
 func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn string, region string) *credentials.Credentials {
-	partitionId := getPartition(region)
-	if partitionId == endpoints.AwsPartitionID {
+	partitionID := getPartition(region)
+	if partitionID == endpoints.AwsPartitionID {
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn)
-	} else if partitionId == endpoints.AwsCnPartitionID {
+	} else if partitionID == endpoints.AwsCnPartitionID {
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.CnNorth1RegionID, roleArn)
-	} else if partitionId == endpoints.AwsUsGovPartitionID {
+	} else if partitionID == endpoints.AwsUsGovPartitionID {
 		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsGovWest1RegionID, roleArn)
 	}
 

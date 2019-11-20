@@ -15,9 +15,10 @@
 package translator
 
 import (
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
@@ -31,7 +32,7 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes[PeerHostAttribute] = "db.example.com"
 	attributes[PeerPortAttribute] = "3306"
 
-	filtered, sqlData := makeSql(attributes)
+	filtered, sqlData := makeSQL(attributes)
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
@@ -46,7 +47,7 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 
 func TestClientSpanWithHttpComponentAttribute(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[DbTypeAttribute] = "sql"
 	attributes[DbInstanceAttribute] = "customers"
 	attributes[DbStatementAttribute] = "SELECT * FROM user WHERE user_id = ?"
@@ -55,7 +56,7 @@ func TestClientSpanWithHttpComponentAttribute(t *testing.T) {
 	attributes[PeerHostAttribute] = "db.example.com"
 	attributes[PeerPortAttribute] = "3306"
 
-	filtered, sqlData := makeSql(attributes)
+	filtered, sqlData := makeSQL(attributes)
 
 	assert.NotNil(t, filtered)
 	assert.Nil(t, sqlData)

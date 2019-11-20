@@ -15,24 +15,25 @@
 package translator
 
 import (
+	"strings"
+	"testing"
+	"time"
+
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
-	"time"
 )
 
 func TestClientSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -47,16 +48,16 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[HostAttribute] = "api.example.com"
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[StatusCodeAttribute] = 200
 	attributes["user.id"] = "junit"
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -71,7 +72,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[PeerHostAttribute] = "kb234.example.com"
@@ -79,9 +80,9 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[PeerIpv4Attribute] = "10.8.17.36"
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -96,15 +97,15 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[PeerIpv4Attribute] = "10.8.17.36"
 	attributes[PeerPortAttribute] = "8080"
 	attributes[TargetAttribute] = "/users/junit"
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
@@ -118,15 +119,15 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[PeerIpv6Attribute] = "2001:db8:85a3::8a2e:370:7334"
 	attributes[PeerPortAttribute] = "443"
 	attributes[TargetAttribute] = "/users/junit"
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := borrow()
@@ -140,15 +141,15 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 
 func TestServerSpanWithUrlAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[ClientIPAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpServerSpan(attributes)
+	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -163,17 +164,17 @@ func TestServerSpanWithUrlAttribute(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[HostAttribute] = "api.example.com"
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[ClientIPAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpServerSpan(attributes)
+	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -188,18 +189,18 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "https"
 	attributes[ServerNameAttribute] = "api.example.com"
 	attributes[PortAttribute] = 443
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[ClientIPAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpServerSpan(attributes)
+	span := constructHTTPServerSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -214,20 +215,20 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[SchemeAttribute] = "http"
 	attributes[HostNameAttribute] = "kb234.example.com"
 	attributes[PortAttribute] = 8080
 	attributes[TargetAttribute] = "/users/junit"
 	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIpAttribute] = "192.168.15.32"
+	attributes[ClientIPAttribute] = "192.168.15.32"
 	attributes[StatusCodeAttribute] = 200
-	span := constructHttpServerSpan(attributes)
+	span := constructHTTPServerSpan(attributes)
 	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime)
 	span.TimeEvents = &timeEvents
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -242,12 +243,12 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 
 func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HttpComponentType
+	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "GET"
 	attributes[URLAttribute] = "https://api.example.com/users/junit"
-	span := constructHttpClientSpan(attributes)
+	span := constructHTTPClientSpan(attributes)
 
-	filtered, httpData := makeHttp(span)
+	filtered, httpData := makeHTTP(span)
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
@@ -260,7 +261,7 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
-func constructHttpClientSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -294,7 +295,7 @@ func constructHttpClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	}
 }
 
-func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPServerSpan(attributes map[string]interface{}) *tracepb.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

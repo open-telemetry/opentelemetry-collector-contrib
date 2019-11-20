@@ -15,19 +15,20 @@
 package translator
 
 import (
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAwsFromEc2Resource(t *testing.T) {
-	instanceId := "i-00f7c0bcb26da2a99"
+	instanceID := "i-00f7c0bcb26da2a99"
 	labels := make(map[string]string)
 	labels[CloudProviderAttribute] = "aws"
 	labels[CloudAccountAttribute] = "123456789"
 	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[HostIdAttribute] = instanceId
+	labels[HostIDAttribute] = instanceID
 	labels[HostTypeAttribute] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "vm",
@@ -48,12 +49,12 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	}
 	jsonStr := w.String()
 	release(w)
-	assert.True(t, strings.Contains(jsonStr, instanceId))
+	assert.True(t, strings.Contains(jsonStr, instanceID))
 }
 
 func TestAwsFromEcsResource(t *testing.T) {
-	instanceId := "i-00f7c0bcb26da2a99"
-	containerId := "signup_aggregator-x82ufje83"
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
 	labels[CloudProviderAttribute] = "aws"
 	labels[CloudAccountAttribute] = "123456789"
@@ -64,8 +65,8 @@ func TestAwsFromEcsResource(t *testing.T) {
 	labels[K8sClusterAttribute] = "production"
 	labels[K8sNamespaceAttribute] = "default"
 	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerId
-	labels[HostIdAttribute] = instanceId
+	labels[K8sPodAttribute] = containerID
+	labels[HostIDAttribute] = instanceID
 	labels[HostTypeAttribute] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
@@ -86,18 +87,18 @@ func TestAwsFromEcsResource(t *testing.T) {
 	}
 	jsonStr := w.String()
 	release(w)
-	assert.True(t, strings.Contains(jsonStr, containerId))
+	assert.True(t, strings.Contains(jsonStr, containerID))
 }
 
 func TestAwsFromBeanstalkResource(t *testing.T) {
-	deployId := "232"
+	deployID := "232"
 	labels := make(map[string]string)
 	labels[CloudProviderAttribute] = "aws"
 	labels[CloudAccountAttribute] = "123456789"
 	labels[CloudZoneAttribute] = "us-east-1c"
 	labels[ServiceVersionAttribute] = "2.1.4"
 	labels[ServiceNamespaceAttribute] = "production"
-	labels[ServiceInstanceAttribute] = deployId
+	labels[ServiceInstanceAttribute] = deployID
 	resource := &resourcepb.Resource{
 		Type:   "vm",
 		Labels: labels,
@@ -117,12 +118,12 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	}
 	jsonStr := w.String()
 	release(w)
-	assert.True(t, strings.Contains(jsonStr, deployId))
+	assert.True(t, strings.Contains(jsonStr, deployID))
 }
 
 func TestAwsWithAwsSqsResources(t *testing.T) {
-	instanceId := "i-00f7c0bcb26da2a99"
-	containerId := "signup_aggregator-x82ufje83"
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
 	labels[CloudProviderAttribute] = "aws"
 	labels[CloudAccountAttribute] = "123456789"
@@ -133,19 +134,19 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	labels[K8sClusterAttribute] = "production"
 	labels[K8sNamespaceAttribute] = "default"
 	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerId
-	labels[HostIdAttribute] = instanceId
+	labels[K8sPodAttribute] = containerID
+	labels[HostIDAttribute] = instanceID
 	labels[HostTypeAttribute] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
 		Labels: labels,
 	}
-	queueUrl := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]string)
 	attributes[AwsOperationAttribute] = "SendMessage"
 	attributes[AwsAccountAttribute] = "987654321"
 	attributes[AwsRegionAttribute] = "us-east-2"
-	attributes[AwsQueueUrlAttribute] = queueUrl
+	attributes[AwsQueueURLAttribute] = queueURL
 	attributes["employee.id"] = "XB477"
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -161,13 +162,13 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	}
 	jsonStr := w.String()
 	release(w)
-	assert.True(t, strings.Contains(jsonStr, containerId))
-	assert.True(t, strings.Contains(jsonStr, queueUrl))
+	assert.True(t, strings.Contains(jsonStr, containerID))
+	assert.True(t, strings.Contains(jsonStr, queueURL))
 }
 
 func TestAwsWithAwsDynamoDbResources(t *testing.T) {
-	instanceId := "i-00f7c0bcb26da2a99"
-	containerId := "signup_aggregator-x82ufje83"
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
 	labels[CloudProviderAttribute] = "aws"
 	labels[CloudAccountAttribute] = "123456789"
@@ -178,8 +179,8 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	labels[K8sClusterAttribute] = "production"
 	labels[K8sNamespaceAttribute] = "default"
 	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerId
-	labels[HostIdAttribute] = instanceId
+	labels[K8sPodAttribute] = containerID
+	labels[HostIDAttribute] = instanceID
 	labels[HostTypeAttribute] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
@@ -188,7 +189,7 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]string)
 	attributes[AwsOperationAttribute] = "PutItem"
-	attributes[AwsRequestIdAttribute] = "75107C82-EC8A-4F75-883F-4440B491B0AB"
+	attributes[AwsRequestIDAttribute] = "75107C82-EC8A-4F75-883F-4440B491B0AB"
 	attributes[AwsTableNameAttribute] = tableName
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -204,6 +205,6 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	}
 	jsonStr := w.String()
 	release(w)
-	assert.True(t, strings.Contains(jsonStr, containerId))
+	assert.True(t, strings.Contains(jsonStr, containerID))
 	assert.True(t, strings.Contains(jsonStr, tableName))
 }
