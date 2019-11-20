@@ -90,16 +90,13 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	}
 	if cfg.Endpoint != "" {
-		dOpts := []grpc.DialOption{}
+		dOpts := []option.ClientOption{}
 		if cfg.UseInsecure {
-			dOpts = append(dOpts, grpc.WithInsecure())
+			dOpts = append(dOpts, option.WithGRPCDialOption(grpc.WithInsecure()))
 		}
-		conn, err := grpc.Dial(cfg.Endpoint, dOpts...)
-		if err != nil {
-			return nil, fmt.Errorf("cannot configure grpc conn: %v", err)
-		}
-		options.TraceClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
-		options.MonitoringClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
+		dOpts = append(dOpts, option.WithEndpoint(cfg.Endpoint))
+		options.TraceClientOptions = dOpts
+		options.MonitoringClientOptions = dOpts
 	}
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
