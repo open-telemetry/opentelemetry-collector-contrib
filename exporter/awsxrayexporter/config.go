@@ -37,7 +37,6 @@ type Config struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
-	// Default AWS resource type of trace data origin
-	// [AWS::EC2::Instance | AWS::ECS::Container | AWS::ElasticBeanstalk::Environment]
-	Origin string `mapstructure:"origin"`
+	// Span attribute name which holds the originating user's login
+	UserAttribute string `mapstructure:"user_attribute"`
 }

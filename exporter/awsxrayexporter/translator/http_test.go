@@ -266,9 +266,9 @@ func constructHttpClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
-		SpanId:       []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
-		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
+		TraceId:      NewTraceID(),
+		SpanId:       NewSegmentID(),
+		ParentSpanId: NewSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_CLIENT,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -300,9 +300,9 @@ func constructHttpServerSpan(attributes map[string]interface{}) *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
-		SpanId:       []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
-		ParentSpanId: []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
+		TraceId:      NewTraceID(),
+		SpanId:       NewSegmentID(),
+		ParentSpanId: NewSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),

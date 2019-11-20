@@ -52,10 +52,10 @@ func TestLoadConfig(t *testing.T) {
 			RequestTimeout:   30,
 			NoVerifySSL:      false,
 			ProxyAddress:     "",
-			Region:           "us-east-1",
+			Region:           "eu-west-1",
 			LocalMode:        false,
-			ResourceARN:      "",
-			RoleARN:          "",
-			Origin:           "AWS::ECS::Container",
+			ResourceARN:      "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
+			RoleARN:          "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+			UserAttribute:    "user.id",
 		})
 }

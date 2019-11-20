@@ -16,6 +16,8 @@ package awsxrayexporter
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -28,15 +30,38 @@ import (
 func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger) (exporter.TraceExporter, error) {
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
+	userAttribute := config.(*Config).UserAttribute
 	return exporterhelper.NewTraceExporter(
 		config,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			logger.Info("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
-			// TODO: Add ability to record the received data
-			return 0, nil
+			droppedSpans, input := assembleRequest(userAttribute, td, logger)
+			logger.Info("request: " + input.String())
+			return droppedSpans, nil
 		},
 		exporterhelper.WithTracing(true),
 		exporterhelper.WithMetrics(false),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
+}
+
+func assembleRequest(userAttribute string, td consumerdata.TraceData,
+	logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
+	documents := make([]*string, len(td.Spans))
+	droppedSpans := int(0)
+	for i, span := range td.Spans {
+		if span == nil || span.Name == nil {
+			droppedSpans++
+			continue
+		}
+		spanName := span.Name.Value
+		jsonStr, err := translator.MakeSegmentDocumentString(spanName, span, userAttribute)
+		if err != nil {
+			droppedSpans++
+			logger.Warn("Unable to convert span", zap.Error(err))
+		}
+		logger.Debug(jsonStr)
+		documents[i] = &jsonStr
+	}
+	return droppedSpans, &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
 }

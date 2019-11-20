@@ -7,8 +7,10 @@ processors:
 exporters:
   awsxray:
   awsxray/customname:
-    region: us-east-1
-    origin: "AWS::ECS::Container"
+    region: eu-west-1
+    resource_arn: "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u"
+    role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
+    user_attribute: "user.id"
   awsxray/disabled: # will be ignored
     disabled: true
 
