@@ -22,6 +22,7 @@ ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
+IMPI=impi
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
@@ -128,6 +129,10 @@ vet:
 	@$(GOVET) ./...
 	@echo "Vet finished successfully"
 
+.PHONY: impi
+impi:
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+
 .PHONY: install-tools
 install-tools:
 	GO111MODULE=on go install \
@@ -135,7 +140,8 @@ install-tools:
 	  golang.org/x/lint/golint \
 	  golang.org/x/tools/cmd/goimports \
 	  github.com/client9/misspell/cmd/misspell \
-	  honnef.co/go/tools/cmd/staticcheck
+	  honnef.co/go/tools/cmd/staticcheck \
+	  github.com/pavius/impi/cmd/impi
 
 .PHONY: otelcontribcol
 otelcontribcol:
