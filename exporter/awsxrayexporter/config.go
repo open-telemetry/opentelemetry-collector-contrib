@@ -19,9 +19,9 @@ import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 // Config defines configuration for AWS X-Ray exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	// Maximum number of concurrent calls to AWS X-Ray to upload segment documents.
+	// Maximum number of concurrent calls to AWS X-Ray to upload documents.
 	Concurrency int `mapstructure:"num_workers"`
-	// X-Ray service endpoint to which the daemon sends segment documents.
+	// X-Ray service endpoint to which the collector sends segment documents.
 	Endpoint string `mapstructure:"endpoint"`
 	// Number of seconds before timing out a request.
 	RequestTimeout int `mapstructure:"request_timeout"`
@@ -33,10 +33,10 @@ type Config struct {
 	Region string `mapstructure:"region"`
 	// Local mode to skip EC2 instance metadata check.
 	LocalMode bool `mapstructure:"local_mode"`
-	// Amazon Resource Name (ARN) of the AWS resource running the daemon.
+	// Amazon Resource Name (ARN) of the AWS resource running the collector.
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
-	// Span attribute name which holds the originating user's login
+	// Span attribute name which holds the originating user's login.
 	UserAttribute string `mapstructure:"user_attribute"`
 }

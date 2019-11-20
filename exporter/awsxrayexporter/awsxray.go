@@ -28,17 +28,24 @@ import (
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
 // received data and logs debugging messages.
-func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger) (exporter.TraceExporter, error) {
+func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (exporter.TraceExporter, error) {
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
 	userAttribute := config.(*Config).UserAttribute
+	awsConfig, session := GetAWSConfigSession(logger, cn, config.(*Config))
+	xrayClient := NewXRay(logger, awsConfig, session)
 	return exporterhelper.NewTraceExporter(
 		config,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			logger.Info("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
 			droppedSpans, input := assembleRequest(userAttribute, td, logger)
-			logger.Info("request: " + input.String())
-			return droppedSpans, nil
+			logger.Debug("request: " + input.String())
+			output, err := xrayClient.PutTraceSegments(input)
+			logger.Debug("response: " + output.String())
+			if output != nil && output.UnprocessedTraceSegments != nil {
+				droppedSpans += len(output.UnprocessedTraceSegments)
+			}
+			return droppedSpans, err
 		},
 		exporterhelper.WithTracing(true),
 		exporterhelper.WithMetrics(false),

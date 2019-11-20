@@ -62,6 +62,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	exporter, err := factory.CreateMetricsExporter(logger, cfg.Exporters["awsxray/customname"])
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

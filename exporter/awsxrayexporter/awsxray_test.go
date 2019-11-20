@@ -43,7 +43,12 @@ func TestTraceExport(t *testing.T) {
 func initializeTraceExporter() exporter.TraceExporter {
 	logger := zap.NewNop()
 	factory := Factory{}
-	traceExporter, err := factory.CreateTraceExporter(logger, factory.CreateDefaultConfig())
+	config := factory.CreateDefaultConfig()
+	config.(*Config).Region = "us-east-1"
+	config.(*Config).LocalMode = true
+	mconn := new(mockConn)
+	mconn.sn = getDefaultSession(logger)
+	traceExporter, err := NewTraceExporter(config, logger, mconn)
 	if err != nil {
 		panic(err)
 	}
