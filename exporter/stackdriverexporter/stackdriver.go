@@ -22,6 +22,7 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -46,14 +47,7 @@ func (se *stackdriverExporter) Shutdown() error {
 }
 
 func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
-	options := getStackdriverOptions(cfg.ProjectID, cfg.Prefix)
-	if cfg.Endpoint != "" {
-		options.TraceClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
-	}
-	if cfg.NumOfWorkers > 0 {
-		options.NumberOfWorkers = cfg.NumOfWorkers
-	}
-	sde, serr := stackdriver.NewExporter(options)
+	sde, serr := newStackdriverExporter(cfg)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
 	}
@@ -68,17 +62,7 @@ func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 }
 
 func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error) {
-	options := getStackdriverOptions(cfg.ProjectID, cfg.Prefix)
-	if cfg.Endpoint != "" {
-		options.MonitoringClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
-	}
-	if cfg.NumOfWorkers > 0 {
-		options.NumberOfWorkers = cfg.NumOfWorkers
-	}
-	if cfg.SkipCreateMetricDescriptor {
-		options.SkipCMD = true
-	}
-	sde, serr := stackdriver.NewExporter(options)
+	sde, serr := newStackdriverExporter(cfg)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
 	}
@@ -92,20 +76,35 @@ func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error
 		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
-func getStackdriverOptions(ProjectID, MetricPrefix string) stackdriver.Options {
+func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
-
-	return stackdriver.Options{
+	options := stackdriver.Options{
 		// If the project ID is an empty string, it will be set by default based on
 		// the project this is running on in GCP.
-		ProjectID: ProjectID,
+		ProjectID: cfg.ProjectID,
 
-		MetricPrefix: MetricPrefix,
+		MetricPrefix: cfg.Prefix,
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	}
+	if cfg.Endpoint != "" {
+		dOpts := []option.ClientOption{}
+		if cfg.UseInsecure {
+			dOpts = append(dOpts, option.WithGRPCDialOption(grpc.WithInsecure()))
+		}
+		dOpts = append(dOpts, option.WithEndpoint(cfg.Endpoint))
+		options.TraceClientOptions = dOpts
+		options.MonitoringClientOptions = dOpts
+	}
+	if cfg.NumOfWorkers > 0 {
+		options.NumberOfWorkers = cfg.NumOfWorkers
+	}
+	if cfg.SkipCreateMetricDescriptor {
+		options.SkipCMD = true
+	}
+	return stackdriver.NewExporter(options)
 }
 
 // pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
