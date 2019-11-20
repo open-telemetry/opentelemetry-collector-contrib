@@ -18,12 +18,13 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/service/xray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 )
 
 // NewTraceExporter creates an exporter.TraceExporter that just drops the
