@@ -287,10 +287,11 @@ func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
 func makeAnnotations(attributes map[string]string, userAttribute string) (string, map[string]interface{}) {
 	var (
 		result = map[string]interface{}{}
-		user   = attributes[userAttribute]
+		user   string
 	)
 
-	if user != "" {
+	if userAttribute != "" {
+		user = attributes[userAttribute]
 		delete(attributes, userAttribute)
 	}
 	delete(attributes, ComponentAttribute)
@@ -332,7 +333,7 @@ func fixAnnotationKey(key string) string {
 	return key
 }
 
-func newTraceID() []byte {
+func NewTraceID() []byte {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -343,7 +344,7 @@ func newTraceID() []byte {
 	return r[:]
 }
 
-func newSegmentID() []byte {
+func NewSegmentID() []byte {
 	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {

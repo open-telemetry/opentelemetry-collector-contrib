@@ -50,7 +50,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 		LocalMode:      false,
 		ResourceARN:    "",
 		RoleARN:        "",
-		Origin:         "AWS::EC2::Instance",
+		UserAttribute:  "",
 	}
 }
 
@@ -60,6 +60,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Expor
 	return NewTraceExporter(eCfg, logger)
 }
 
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
+func (f *Factory) CreateMetricsExporter(logger *zap.Logger,
+	cfg configmodels.Exporter) (exporter.MetricsExporter, error) {
 	return nil, nil
 }

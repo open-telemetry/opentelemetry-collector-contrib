@@ -50,7 +50,7 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
-	parentSpanId := newSegmentID()
+	parentSpanId := NewSegmentID()
 	userAttribute := "originating.user"
 	user := "testing"
 	attributes := make(map[string]interface{})
@@ -78,7 +78,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanId := newSegmentID()
+	parentSpanId := NewSegmentID()
 	userAttribute := "originating.user"
 	user := "testing"
 	errorMessage := "java.lang.NullPointerException"
@@ -150,11 +150,72 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppId))
 }
 
+func TestClientSpanWithBlankUserAttribute(t *testing.T) {
+	spanName := "call update_user_preference( ?, ?, ? )"
+	enterpriseAppId := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
+	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = DbComponentType
+	attributes[DbTypeAttribute] = "sql"
+	attributes[DbInstanceAttribute] = "customers"
+	attributes[DbStatementAttribute] = spanName
+	attributes[DbUserAttribute] = "userprefsvc"
+	attributes[PeerAddressAttribute] = "mysql://db.dev.example.com:3306"
+	attributes[PeerHostAttribute] = "db.dev.example.com"
+	attributes[PeerPortAttribute] = "3306"
+	attributes["enterprise.app.id"] = enterpriseAppId
+	labels := constructDefaultResourceLabels()
+	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
+
+	segment := MakeSegment(spanName, span, "")
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.SQL)
+	assert.NotNil(t, segment.Service)
+	assert.NotNil(t, segment.AWS)
+	assert.NotNil(t, segment.Annotations)
+	assert.Nil(t, segment.Cause)
+	assert.Nil(t, segment.HTTP)
+	assert.Equal(t, spanName, segment.Name)
+	assert.False(t, segment.Fault)
+	assert.False(t, segment.Error)
+	w := borrow()
+	if err := w.Encode(segment); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	release(w)
+	assert.True(t, strings.Contains(jsonStr, spanName))
+	assert.True(t, strings.Contains(jsonStr, enterpriseAppId))
+}
+
+func TestSpanWithInvalidTraceId(t *testing.T) {
+	spanName := "platformapi.widgets.searchWidgets"
+	attributes := make(map[string]interface{})
+	attributes[ComponentAttribute] = GrpcComponentType
+	attributes[MethodAttribute] = "GET"
+	attributes[SchemeAttribute] = "ipv6"
+	attributes[PeerIpv6Attribute] = "2607:f8b0:4000:80c::2004"
+	attributes[PeerPortAttribute] = "9443"
+	attributes[TargetAttribute] = spanName
+	labels := constructDefaultResourceLabels()
+	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
+	span.TimeEvents = &timeEvents
+	span.TraceId[0] = 0x11
+
+	jsonStr, err := MakeSegmentDocumentString(spanName, span, "user.id")
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, spanName))
+	assert.False(t, strings.Contains(jsonStr, "1-11"))
+}
+
 func constructClientSpan(parentSpanId []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceId        = newTraceID()
-		spanId         = newSegmentID()
+		traceId        = NewTraceID()
+		spanId         = NewSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)
@@ -185,8 +246,8 @@ func constructClientSpan(parentSpanId []byte, name string, code int32, message s
 func constructServerSpan(parentSpanId []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceId        = newTraceID()
-		spanId         = newSegmentID()
+		traceId        = NewTraceID()
+		spanId         = NewSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)
