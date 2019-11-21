@@ -37,12 +37,12 @@ func TestClientSpanWithUrlAttribute(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
@@ -61,12 +61,12 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
@@ -86,12 +86,12 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
@@ -108,12 +108,12 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	filtered, httpData := makeHTTP(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
 }
 
@@ -130,12 +130,12 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	filtered, httpData := makeHTTP(span)
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
 }
 
@@ -153,12 +153,12 @@ func TestServerSpanWithUrlAttribute(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
@@ -178,12 +178,12 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
@@ -204,12 +204,12 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
 }
 
@@ -232,12 +232,12 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
@@ -252,12 +252,12 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 

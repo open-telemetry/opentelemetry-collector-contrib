@@ -28,6 +28,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	testWriters = newWriterPool(2048)
+)
+
 func TestClientSpanWithGrpcComponent(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]interface{})
@@ -61,9 +65,9 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[HostAttribute] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[TargetAttribute] = "/"
 	attributes[UserAgentAttribute] = "aws-sdk-java/1.11.613 Windows_10/10.0 OpenJDK_64-Bit_server_VM/11.0.4+11-LTS"
-	attributes[AwsOperationAttribute] = "GetItem"
-	attributes[AwsRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
-	attributes[AwsTableNameAttribute] = "otel-dev-Testing"
+	attributes[AWSOperationAttribute] = "GetItem"
+	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
 	attributes[userAttribute] = user
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
@@ -102,12 +106,12 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.NotNil(t, segment.Cause)
 	assert.Equal(t, spanName, segment.Name)
 	assert.True(t, segment.Fault)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, errorMessage))
 	assert.False(t, strings.Contains(jsonStr, userAttribute))
@@ -141,12 +145,12 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.Equal(t, spanName, segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }
@@ -179,12 +183,12 @@ func TestClientSpanWithBlankUserAttribute(t *testing.T) {
 	assert.Equal(t, spanName, segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }

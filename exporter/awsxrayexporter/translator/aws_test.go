@@ -43,12 +43,12 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(awsData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, instanceID))
 }
 
@@ -81,12 +81,12 @@ func TestAwsFromEcsResource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.NotNil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(awsData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, containerID))
 }
 
@@ -112,12 +112,12 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	assert.Nil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.NotNil(t, awsData.BeanstalkMetadata)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(awsData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, deployID))
 }
 
@@ -143,10 +143,10 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	}
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]string)
-	attributes[AwsOperationAttribute] = "SendMessage"
-	attributes[AwsAccountAttribute] = "987654321"
-	attributes[AwsRegionAttribute] = "us-east-2"
-	attributes[AwsQueueURLAttribute] = queueURL
+	attributes[AWSOperationAttribute] = "SendMessage"
+	attributes[AWSAccountAttribute] = "987654321"
+	attributes[AWSRegionAttribute] = "us-east-2"
+	attributes[AWSQueueURLAttribute] = queueURL
 	attributes["employee.id"] = "XB477"
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -156,12 +156,12 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.NotNil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(awsData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, containerID))
 	assert.True(t, strings.Contains(jsonStr, queueURL))
 }
@@ -188,9 +188,9 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	}
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]string)
-	attributes[AwsOperationAttribute] = "PutItem"
-	attributes[AwsRequestIDAttribute] = "75107C82-EC8A-4F75-883F-4440B491B0AB"
-	attributes[AwsTableNameAttribute] = tableName
+	attributes[AWSOperationAttribute] = "PutItem"
+	attributes[AWSRequestIDAttribute] = "75107C82-EC8A-4F75-883F-4440B491B0AB"
+	attributes[AWSTableNameAttribute] = tableName
 
 	filtered, awsData := makeAws(attributes, resource)
 
@@ -199,12 +199,12 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.NotNil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(awsData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, containerID))
 	assert.True(t, strings.Contains(jsonStr, tableName))
 }

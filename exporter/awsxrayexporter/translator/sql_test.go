@@ -36,12 +36,12 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(sqlData); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "mysql://db.example.com:3306/customers"))
 }
 

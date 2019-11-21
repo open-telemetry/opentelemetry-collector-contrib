@@ -46,8 +46,8 @@ func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) *session.Session {
-	return c.sn
+func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error) {
+	return c.sn, nil
 }
 
 // fetch region value from ec2 meta data service
@@ -59,9 +59,10 @@ func TestEC2Session(t *testing.T) {
 	var expectedSession *session.Session
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
-	cfg, s := GetAWSConfigSession(logger, m, xrayExporterCfg)
+	cfg, s, err := GetAWSConfigSession(logger, m, xrayExporterCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
+	assert.Nil(t, err)
 }
 
 // fetch region value from environment variable
@@ -77,9 +78,10 @@ func TestRegionEnv(t *testing.T) {
 	var expectedSession *session.Session
 	expectedSession, _ = session.NewSession()
 	m.sn = expectedSession
-	cfg, s := GetAWSConfigSession(logger, m, xrayExporterCfg)
+	cfg, s, err := GetAWSConfigSession(logger, m, xrayExporterCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
+	assert.Nil(t, err)
 }
 
 func loadExporterConfig(t *testing.T) *Config {

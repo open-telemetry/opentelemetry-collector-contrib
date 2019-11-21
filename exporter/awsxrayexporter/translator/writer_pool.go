@@ -20,9 +20,34 @@ import (
 	"sync"
 )
 
+const (
+	maxBufSize = 65536
+)
+
 type writer struct {
 	buffer  *bytes.Buffer
 	encoder *json.Encoder
+}
+
+type writerPool struct {
+	pool *sync.Pool
+}
+
+func newWriterPool(size int) *writerPool {
+	pool := &sync.Pool{
+		New: func() interface{} {
+			var (
+				buffer  = bytes.NewBuffer(make([]byte, 0, size))
+				encoder = json.NewEncoder(buffer)
+			)
+
+			return &writer{
+				buffer:  buffer,
+				encoder: encoder,
+			}
+		},
+	}
+	return &writerPool{pool: pool}
 }
 
 func (w *writer) Reset() {
@@ -37,33 +62,13 @@ func (w *writer) String() string {
 	return w.buffer.String()
 }
 
-const (
-	maxBufSize = 256e3
-)
-
-var (
-	writers = &sync.Pool{
-		New: func() interface{} {
-			var (
-				buffer  = bytes.NewBuffer(make([]byte, 0, 8192))
-				encoder = json.NewEncoder(buffer)
-			)
-
-			return &writer{
-				buffer:  buffer,
-				encoder: encoder,
-			}
-		},
-	}
-)
-
-func borrow() *writer {
-	return writers.Get().(*writer)
+func (writerPool *writerPool) borrow() *writer {
+	return writerPool.pool.Get().(*writer)
 }
 
-func release(w *writer) {
+func (writerPool *writerPool) release(w *writer) {
 	if w.buffer.Cap() < maxBufSize {
 		w.buffer.Reset()
-		writers.Put(w)
+		writerPool.pool.Put(w)
 	}
 }

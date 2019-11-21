@@ -22,12 +22,12 @@ import (
 
 // AWS-specific OpenTelemetry attribute names
 const (
-	AwsOperationAttribute = "aws.operation"
-	AwsAccountAttribute   = "aws.account_id"
-	AwsRegionAttribute    = "aws.region"
-	AwsRequestIDAttribute = "aws.request_id"
-	AwsQueueURLAttribute  = "aws.queue_url"
-	AwsTableNameAttribute = "aws.table_name"
+	AWSOperationAttribute = "aws.operation"
+	AWSAccountAttribute   = "aws.account_id"
+	AWSRegionAttribute    = "aws.region"
+	AWSRequestIDAttribute = "aws.request_id"
+	AWSQueueURLAttribute  = "aws.queue_url"
+	AWSTableNameAttribute = "aws.table_name"
 )
 
 // AWSData provides the shape for unmarshalling AWS resource data.
@@ -80,13 +80,11 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		ec2          *EC2Metadata
 		ecs          *ECSMetadata
 		ebs          *BeanstalkMetadata
-		awsData      *AWSData
-		filtered     map[string]string
 	)
 	if resource == nil {
-		return attributes, awsData
+		return attributes, nil
 	}
-	filtered = make(map[string]string)
+	filtered := make(map[string]string)
 	for key, value := range resource.Labels {
 		switch key {
 		case CloudProviderAttribute:
@@ -113,26 +111,26 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 	}
 	for key, value := range attributes {
 		switch key {
-		case AwsOperationAttribute:
+		case AWSOperationAttribute:
 			operation = value
-		case AwsAccountAttribute:
+		case AWSAccountAttribute:
 			if value != "" {
 				account = value
 			}
-		case AwsRegionAttribute:
+		case AWSRegionAttribute:
 			remoteRegion = value
-		case AwsRequestIDAttribute:
+		case AWSRequestIDAttribute:
 			requestID = value
-		case AwsQueueURLAttribute:
+		case AWSQueueURLAttribute:
 			queueURL = value
-		case AwsTableNameAttribute:
+		case AWSTableNameAttribute:
 			tableName = value
 		default:
 			filtered[key] = value
 		}
 	}
 	if cloud != "aws" && cloud != "" {
-		return filtered, awsData // not AWS so return nil
+		return filtered, nil // not AWS so return nil
 	}
 	// progress from least specific to most specific origin so most specific ends up as origin
 	// as per X-Ray docs
@@ -162,9 +160,9 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		}
 	}
 	if origin == "" {
-		return filtered, awsData
+		return filtered, nil
 	}
-	awsData = &AWSData{
+	awsData := &AWSData{
 		AccountID:         account,
 		BeanstalkMetadata: ebs,
 		ECSMetadata:       ecs,
