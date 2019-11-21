@@ -33,12 +33,15 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
 	userAttribute := config.(*Config).UserAttribute
-	awsConfig, session := GetAWSConfigSession(logger, cn, config.(*Config))
+	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
+	if err != nil {
+		return nil, err
+	}
 	xrayClient := NewXRay(logger, awsConfig, session)
 	return exporterhelper.NewTraceExporter(
 		config,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
-			logger.Info("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
+			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
 			droppedSpans, input := assembleRequest(userAttribute, td, logger)
 			logger.Debug("request: " + input.String())
 			output, err := xrayClient.PutTraceSegments(input)

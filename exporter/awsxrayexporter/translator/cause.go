@@ -50,18 +50,18 @@ type Stack struct {
 	Label string `json:"label,omitempty"`
 }
 
-func makeCause(status *tracepb.Status, attributes map[string]string) (bool, bool, map[string]string, *CauseData) {
+func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool,
+	filtered map[string]string, cause *CauseData) {
 	if status.Code == 0 {
 		return false, false, attributes, nil
 	}
 	var (
-		filtered    = make(map[string]string)
-		cause       *CauseData
 		message     = status.GetMessage()
 		errorKind   string
 		errorObject string
 	)
 
+	filtered = make(map[string]string)
 	for key, value := range attributes {
 		switch key {
 		case ErrorKindAttribute:
@@ -100,9 +100,13 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (bool, bool
 	}
 
 	if isClientError(status.Code) {
-		return true, false, filtered, cause
+		isError = true
+		isFault = false
+	} else {
+		isError = false
+		isFault = true
 	}
-	return false, true, filtered, cause
+	return isError, isFault, filtered, cause
 }
 
 func isClientError(code int32) bool {

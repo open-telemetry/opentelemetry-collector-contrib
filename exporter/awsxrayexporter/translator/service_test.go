@@ -31,12 +31,12 @@ func TestServiceFromResource(t *testing.T) {
 	service := makeService(resource)
 
 	assert.NotNil(t, service)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(service); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "1.1.12"))
 }
 

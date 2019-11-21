@@ -142,15 +142,19 @@ type Segment struct {
 	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
 }
 
+var (
+	writers = newWriterPool(2048)
+)
+
 // MakeSegmentDocumentString converts an Otel Span to an X-Ray Segment and then serialzies to JSON
 func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute string) (string, error) {
 	segment := MakeSegment(name, span, userAttribute)
-	w := borrow()
+	w := writers.borrow()
 	if err := w.Encode(segment); err != nil {
 		return "", err
 	}
 	jsonStr := w.String()
-	release(w)
+	writers.release(w)
 	return jsonStr, nil
 }
 

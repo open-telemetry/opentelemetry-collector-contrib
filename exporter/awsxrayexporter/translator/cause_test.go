@@ -40,12 +40,12 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	assert.True(t, isFault)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(cause); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
@@ -65,12 +65,12 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.True(t, isFault)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(cause); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
@@ -90,12 +90,12 @@ func TestCauseWithErrorMessage(t *testing.T) {
 	assert.True(t, isFault)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
-	w := borrow()
+	w := testWriters.borrow()
 	if err := w.Encode(cause); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
-	release(w)
+	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
