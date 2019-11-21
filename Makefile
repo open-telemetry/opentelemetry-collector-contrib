@@ -41,10 +41,10 @@ all-srcs:
 .DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
 
 .PHONY: all
-all: addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test otelcontribcol
+all: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test otelcontribcol
 
-.PHONY: addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
-addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
+.PHONY: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
+addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt impi vet lint goimports misspell staticcheck test
 
 .PHONY: test
 test:
