@@ -21,8 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
-	// "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver"
 )
 
@@ -44,7 +44,7 @@ func components() (config.Factories, error) {
 
 	exporters := []exporter.Factory{
 		&stackdriverexporter.Factory{},
-		//&azuremonitorexporter.Factory{},
+		&azuremonitorexporter.Factory{},
 	}
 
 	for _, exp := range factories.Exporters {
