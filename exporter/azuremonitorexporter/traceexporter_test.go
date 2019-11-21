@@ -104,6 +104,8 @@ func TestSpanToRequestDataHTTPAttributeSet1(t *testing.T) {
 		spanAttributeKeyHTTPHost:       "foo",
 		spanAttributeKeyHTTPTarget:     "/bar",
 		spanAttributeKeyHTTPStatusCode: "400",
+		spanAttributeKeyHTTPClientIP:   "127.0.0.1",
+		"foo":                          "bar",
 	}
 
 	appendMap(attributes, baseAttributes)
@@ -112,9 +114,10 @@ func TestSpanToRequestDataHTTPAttributeSet1(t *testing.T) {
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo/bar", data.Url)
-	assert.Equal(t, 0, len(data.Properties))
+	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, "400", data.ResponseCode)
+	assert.Equal(t, "127.0.0.1", data.Source)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -184,12 +187,19 @@ func TestSpanToRequestDataHTTPAttributeSet4(t *testing.T) {
 func TestSpanToRequestDataGrpcAttributeSet(t *testing.T) {
 	spanName := "foopackage.barservice/methodX"
 	wireFormatSpan := getDefaultServerSpan(spanName)
-	attributes := getRequiredGrpcAttributes()
+	baseAttributes := getRequiredGrpcAttributes()
+
+	attributes := map[string]string{
+		"foo": "bar",
+	}
+
+	appendMap(attributes, baseAttributes)
+
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, spanName, data.Name)
-	assert.Equal(t, 0, len(data.Properties))
+	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, strconv.Itoa(int(codes.ResourceExhausted)), data.ResponseCode)
 }
@@ -228,6 +238,7 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet1(t *testing.T) {
 	attributes := map[string]string{
 		spanAttributeKeyHTTPUrl:        url,
 		spanAttributeKeyHTTPStatusCode: statusCode,
+		"foo":                          "bar",
 	}
 
 	appendMap(attributes, baseAttributes)
@@ -237,7 +248,7 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet1(t *testing.T) {
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, url, data.Data)
 	assert.Equal(t, "foo:81", data.Target)
-	assert.Equal(t, 0, len(data.Properties))
+	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, statusCode, data.ResultCode)
 }
@@ -315,16 +326,28 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet4(t *testing.T) {
 
 // Tests proper assignment for gRPC span with attribute set
 func TestSpanToRemoteDependencyDataGrpcAttributeSet(t *testing.T) {
-	spanName := "foopackage.barservice/methodX"
+	spanName := "/foopackage.barservice/methodX"
 	wireFormatSpan := getDefaultClientSpan(spanName)
-	attributes := getRequiredGrpcAttributes()
+	baseAttributes := getRequiredGrpcAttributes()
+
+	attributes := map[string]string{
+		spanAttributeKeyPeerService:  "/foopackage.barservice/methodX",
+		spanAttributeKeyPeerHostname: "localhost",
+		spanAttributeKeyPeerPort:     "5001",
+		"foo":                        "bar",
+	}
+
+	appendMap(attributes, baseAttributes)
+
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, spanName, data.Name)
-	assert.Equal(t, 0, len(data.Properties))
+	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, strconv.Itoa(int(codes.ResourceExhausted)), data.ResultCode)
+	assert.Equal(t, "localhost:5001", data.Target)
+	assert.Equal(t, "localhost:5001/foopackage.barservice/methodX", data.Data)
 }
 
 // Tests proper assignment for database span with attribute set
@@ -379,7 +402,7 @@ func TestExporterPushTraceDataCallback(t *testing.T) {
 
 	// Some spans
 	span1 := getDefaultServerSpan("foo")
-	span2 := getDefaultServerSpan("bar")
+	span2 := getDefaultClientSpan("bar")
 
 	traceData := consumerdata.TraceData{
 		Spans: []*tracepb.Span{
@@ -402,7 +425,7 @@ func getDefaultSpan(spanName string, spanKind tracepb.Span_SpanKind) tracepb.Spa
 		SpanId:       defaultSpanID,
 		ParentSpanId: defaultParentSpanID,
 		Name:         &tracepb.TruncatableString{Value: spanName},
-		Kind:         tracepb.Span_CLIENT,
+		Kind:         spanKind,
 		StartTime:    &timestamp.Timestamp{},
 		EndTime:      &timestamp.Timestamp{Seconds: 1, Nanos: 0},
 	}
