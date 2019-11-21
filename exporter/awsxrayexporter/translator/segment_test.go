@@ -46,7 +46,7 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
 	span.TimeEvents = &timeEvents
 
-	jsonStr, err := MakeSegmentDocumentString(spanName, span, "user.id")
+	jsonStr, err := MakeSegmentDocumentString(spanName, span)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -56,8 +56,7 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := NewSegmentID()
-	userAttribute := "originating.user"
-	user := "testing"
+	user := "testingT"
 	attributes := make(map[string]interface{})
 	attributes[ComponentAttribute] = HTTPComponentType
 	attributes[MethodAttribute] = "POST"
@@ -68,11 +67,11 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[AWSOperationAttribute] = "GetItem"
 	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
-	attributes[userAttribute] = user
+	attributes[IAMUserAttribute] = user
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
 
-	jsonStr, err := MakeSegmentDocumentString(spanName, span, userAttribute)
+	jsonStr, err := MakeSegmentDocumentString(spanName, span)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -84,7 +83,6 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := NewSegmentID()
-	userAttribute := "originating.user"
 	user := "testing"
 	errorMessage := "java.lang.NullPointerException"
 	attributes := make(map[string]interface{})
@@ -93,14 +91,14 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[URLAttribute] = "https://api.example.org/api/locations"
 	attributes[TargetAttribute] = "/api/locations"
 	attributes[StatusCodeAttribute] = 500
-	attributes[userAttribute] = user
+	attributes[IAMUserAttribute] = user
 	attributes[ErrorKindAttribute] = "java.lang.NullPointerException"
 	labels := constructDefaultResourceLabels()
 	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
 	span.TimeEvents = &timeEvents
 
-	segment := MakeSegment(spanName, span, "originating.user")
+	segment := MakeSegment(spanName, span)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -114,7 +112,6 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, errorMessage))
-	assert.False(t, strings.Contains(jsonStr, userAttribute))
 }
 
 func TestClientSpanWithDbComponent(t *testing.T) {
@@ -133,45 +130,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
 
-	segment := MakeSegment(spanName, span, "originating.user")
-
-	assert.NotNil(t, segment)
-	assert.NotNil(t, segment.SQL)
-	assert.NotNil(t, segment.Service)
-	assert.NotNil(t, segment.AWS)
-	assert.NotNil(t, segment.Annotations)
-	assert.Nil(t, segment.Cause)
-	assert.Nil(t, segment.HTTP)
-	assert.Equal(t, spanName, segment.Name)
-	assert.False(t, segment.Fault)
-	assert.False(t, segment.Error)
-	w := testWriters.borrow()
-	if err := w.Encode(segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
-}
-
-func TestClientSpanWithBlankUserAttribute(t *testing.T) {
-	spanName := "call update_user_preference( ?, ?, ? )"
-	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
-	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = DbComponentType
-	attributes[DbTypeAttribute] = "sql"
-	attributes[DbInstanceAttribute] = "customers"
-	attributes[DbStatementAttribute] = spanName
-	attributes[DbUserAttribute] = "userprefsvc"
-	attributes[PeerAddressAttribute] = "mysql://db.dev.example.com:3306"
-	attributes[PeerHostAttribute] = "db.dev.example.com"
-	attributes[PeerPortAttribute] = "3306"
-	attributes["enterprise.app.id"] = enterpriseAppID
-	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
-
-	segment := MakeSegment(spanName, span, "")
+	segment := MakeSegment(spanName, span)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.SQL)
@@ -208,7 +167,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	span.TimeEvents = &timeEvents
 	span.TraceId[0] = 0x11
 
-	jsonStr, err := MakeSegmentDocumentString(spanName, span, "user.id")
+	jsonStr, err := MakeSegmentDocumentString(spanName, span)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)

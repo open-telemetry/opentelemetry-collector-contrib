@@ -38,6 +38,7 @@ const (
 	PeerIpv6Attribute    = "peer.ipv6"
 	PeerPortAttribute    = "peer.port"
 	PeerServiceAttribute = "peer.service"
+	IAMUserAttribute     = "iam.user"
 )
 
 // OpenTelemetry Semantic Convention values for component attribute values.
@@ -147,8 +148,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an Otel Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute string) (string, error) {
-	segment := MakeSegment(name, span, userAttribute)
+func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) {
+	segment := MakeSegment(name, span)
 	w := writers.borrow()
 	if err := w.Encode(segment); err != nil {
 		return "", err
@@ -159,7 +160,7 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span, userAttribute st
 }
 
 // MakeSegment converts an Otel Span to an X-Ray Segment
-func MakeSegment(name string, span *tracepb.Span, userAttribute string) Segment {
+func MakeSegment(name string, span *tracepb.Span) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)
 		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
@@ -171,7 +172,7 @@ func MakeSegment(name string, span *tracepb.Span, userAttribute string) Segment 
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		user, annotations                      = makeAnnotations(sqlfiltered, userAttribute)
+		user, annotations                      = makeAnnotations(sqlfiltered)
 		namespace                              string
 	)
 
@@ -318,16 +319,14 @@ func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
 	}
 }
 
-func makeAnnotations(attributes map[string]string, userAttribute string) (string, map[string]interface{}) {
+func makeAnnotations(attributes map[string]string) (string, map[string]interface{}) {
 	var (
 		result = map[string]interface{}{}
 		user   string
 	)
 
-	if userAttribute != "" {
-		user = attributes[userAttribute]
-		delete(attributes, userAttribute)
-	}
+	user = attributes[IAMUserAttribute]
+	delete(attributes, IAMUserAttribute)
 	delete(attributes, ComponentAttribute)
 	mergeAnnotations(result, attributes)
 

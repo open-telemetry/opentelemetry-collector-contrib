@@ -51,7 +51,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 		LocalMode:      false,
 		ResourceARN:    "",
 		RoleARN:        "",
-		UserAttribute:  "",
 	}
 }
 

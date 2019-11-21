@@ -37,6 +37,4 @@ type Config struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
-	// Span attribute name which holds the originating user's login.
-	UserAttribute string `mapstructure:"user_attribute"`
 }

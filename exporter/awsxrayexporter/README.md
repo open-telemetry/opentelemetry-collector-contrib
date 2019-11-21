@@ -39,7 +39,8 @@ by the Span Resource object. X-Ray uses this data to generate inferred segments 
 
 ## Exporter Configuration
 
-The following exporter configuration parameters are supported.
+The following exporter configuration parameters are supported. They mirror and have the same affect as the
+comparable AWS X-Ray Daemon configuration values.
 
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
@@ -52,8 +53,6 @@ The following exporter configuration parameters are supported.
 | `local_mode`      | Local mode to skip EC2 instance metadata check.                        | false   |
 | `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
-| `user_attribute`  | Span attribute name which holds the originating user's login.          |         |
-
 
 ## AWS Credential Configuration
 
