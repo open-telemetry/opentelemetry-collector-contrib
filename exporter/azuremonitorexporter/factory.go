@@ -94,7 +94,8 @@ func (f *Factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 
 		f.TransportChannel = telemetryClient.Channel()
 
-		if exporterConfig.Debug {
+		// Don't even bother enabling the AppInsights diagnostics listener unless debug logging is enabled
+		if checkedEntry := logger.Check(zap.DebugLevel, ""); checkedEntry != nil {
 			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
 				logger.Debug(msg)
 				return nil

@@ -26,5 +26,4 @@ type Config struct {
 	InstrumentationKey            string `mapstructure:"instrumentation_key"`
 	MaxBatchSize                  int    `mapstructure:"maxbatchsize"`
 	MaxBatchIntervalInSeconds     int    `mapstructure:"maxbatchinterval_sec"`
-	Debug                         bool   `mapstructure:"debug"`
 }
