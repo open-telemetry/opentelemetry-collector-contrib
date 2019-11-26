@@ -24,7 +24,9 @@ type Config struct {
 	// X-Ray service endpoint to which the collector sends segment documents.
 	Endpoint string `mapstructure:"endpoint"`
 	// Number of seconds before timing out a request.
-	RequestTimeout int `mapstructure:"request_timeout"`
+	RequestTimeoutSeconds int `mapstructure:"request_timeout_seconds"`
+	// Maximum number of retries before abandoning an attempt to post data.
+	MaxRetries int `mapstructure:"max_retries"`
 	// Enable or disable TLS certificate verification.
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// Upload segments to AWS X-Ray through a proxy.
