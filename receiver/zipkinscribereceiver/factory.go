@@ -17,12 +17,11 @@ package zipkinscribereceiver
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"go.uber.org/zap"
 )
 
 // This file implements factory for Zipkin-Scribe receiver.
