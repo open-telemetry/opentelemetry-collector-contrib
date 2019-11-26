@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -76,6 +77,7 @@ const (
 type traceExporter struct {
 	config           *Config
 	transportChannel transportChannel
+	logger           *zap.Logger
 }
 
 func idToHex(source []byte) string {
@@ -122,7 +124,7 @@ func attributeValueAsString(val *tracepb.AttributeValue) string {
 }
 
 // Transforms a wire-format Span to an AppInsights Envelope
-func spanToEnvelope(
+func (exporter *traceExporter) spanToEnvelope(
 	instrumentationKey string,
 	span *tracepb.Span) (*contracts.Envelope, error) {
 
@@ -139,20 +141,22 @@ func spanToEnvelope(
 
 	if span.Kind == tracepb.Span_SERVER {
 		requestData := spanToRequestData(span)
+		exporter.sanitize(func() []string { return requestData.Sanitize() })
 		envelope.Name = requestData.EnvelopeName("")
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
 	} else if span.Kind == tracepb.Span_CLIENT || span.Kind == tracepb.Span_SPAN_KIND_UNSPECIFIED {
 		remoteDependencyData := spanToRemoteDependencyData(span)
+		exporter.sanitize(func() []string { return remoteDependencyData.Sanitize() })
 		envelope.Name = remoteDependencyData.EnvelopeName("")
 		data.BaseData = remoteDependencyData
 		data.BaseType = remoteDependencyData.BaseType()
 	}
 
 	envelope.Data = data
-	sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
-	sanitize(func() []string { return data.Sanitize() })
+	exporter.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
+	exporter.sanitize(func() []string { return data.Sanitize() })
 
 	return envelope, nil
 }
@@ -202,7 +206,6 @@ func spanToRequestData(span *tracepb.Span) *contracts.RequestData {
 		}
 	}
 
-	sanitize(func() []string { return data.Sanitize() })
 	return data
 }
 
@@ -393,7 +396,6 @@ func spanToRemoteDependencyData(span *tracepb.Span) *contracts.RemoteDependencyD
 		}
 	}
 
-	sanitize(func() []string { return data.Sanitize() })
 	return data
 }
 
@@ -603,16 +605,16 @@ func prefixIfNecessary(s string, prefix string) string {
 	return prefix + s
 }
 
-func sanitize(sanitizeFunc func() []string) {
-	sanitizeWithCallback(sanitizeFunc, nil)
+func (exporter *traceExporter) sanitize(sanitizeFunc func() []string) {
+	sanitizeWithCallback(sanitizeFunc, nil, exporter.logger)
 }
 
-func sanitizeWithCallback(sanitizeFunc func() []string, warningCallback func(string)) {
+func sanitizeWithCallback(sanitizeFunc func() []string, warningCallback func(string), logger *zap.Logger) {
 	sanitizeWarnings := sanitizeFunc()
 	for _, warning := range sanitizeWarnings {
 		if warningCallback == nil {
 			// TODO error handling
-			fmt.Println(warning)
+			logger.Warn(warning)
 		} else {
 			warningCallback(warning)
 		}
@@ -630,7 +632,7 @@ func (exporter *traceExporter) pushTraceData(
 	}
 
 	for _, wireFormatSpan := range traceData.Spans {
-		if envelope, err := spanToEnvelope(exporter.config.InstrumentationKey, wireFormatSpan); err == nil && exporter.transportChannel != nil {
+		if envelope, err := exporter.spanToEnvelope(exporter.config.InstrumentationKey, wireFormatSpan); err == nil && exporter.transportChannel != nil {
 			// This is a fire and forget operation
 			exporter.transportChannel.Send(envelope)
 		} else {
@@ -643,11 +645,12 @@ func (exporter *traceExporter) pushTraceData(
 }
 
 // Returns a new instance of the trace exporter
-func newTraceExporter(config *Config, transportChannel transportChannel) (exporter.TraceExporter, error) {
+func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (exporter.TraceExporter, error) {
 
 	exporter := &traceExporter{
 		config:           config,
 		transportChannel: transportChannel,
+		logger:           logger,
 	}
 
 	exp, err := exporterhelper.NewTraceExporter(

@@ -19,11 +19,11 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/codes"
-
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -68,7 +68,7 @@ func TestSanitize(t *testing.T) {
 		warningCounter++
 	}
 
-	sanitizeWithCallback(sanitizeFunc, warningCallback)
+	sanitizeWithCallback(sanitizeFunc, warningCallback, zap.NewNop())
 	assert.Equal(t, 4, warningCounter)
 }
 
