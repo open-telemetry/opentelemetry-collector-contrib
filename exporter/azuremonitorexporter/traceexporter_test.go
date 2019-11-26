@@ -74,23 +74,17 @@ func TestSanitize(t *testing.T) {
 // Tests proper assignment for unknown server spans
 func TestSpanToRequestData_UnknownType(t *testing.T) {
 	wireFormatSpan := getDefaultServerSpan("foo")
-
-	// attach some random attributres
-	attributes := map[string]string{
-		"unknown_1": "a",
-		"unknown_2": "b",
-	}
-
-	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	wireFormatSpan.Attributes = initializeAttributes(map[string]string{})
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, "|"+defaultTraceIDAsHex+"."+defaultSpanIDAsHex+".", data.Id)
 	assert.Equal(t, "foo", data.Name)
 	assert.Equal(t, "00.00:00:01.000000", data.Duration)
-	assert.Equal(t, 2, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResponseCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -104,19 +98,20 @@ func TestSpanToRequestDataHTTPAttributeSet1(t *testing.T) {
 		spanAttributeKeyHTTPTarget:     "/bar",
 		spanAttributeKeyHTTPStatusCode: "400",
 		spanAttributeKeyHTTPClientIP:   "127.0.0.1",
-		"foo":                          "bar",
 	}
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
+
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo/bar", data.Url)
-	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, "400", data.ResponseCode)
 	assert.Equal(t, "127.0.0.1", data.Source)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -132,13 +127,14 @@ func TestSpanToRequestDataHTTPAttributeSet2(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo:81/bar", data.Url)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResponseCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -154,13 +150,14 @@ func TestSpanToRequestDataHTTPAttributeSet3(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo:81/bar", data.Url)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResponseCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -173,13 +170,14 @@ func TestSpanToRequestDataHTTPAttributeSet4(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo:81/bar", data.Url)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResponseCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for gRPC span with attribute set
@@ -187,43 +185,32 @@ func TestSpanToRequestDataGrpcAttributeSet(t *testing.T) {
 	spanName := "foopackage.barservice/methodX"
 	wireFormatSpan := getDefaultServerSpan(spanName)
 	baseAttributes := getRequiredGrpcAttributes()
-
-	attributes := map[string]string{
-		"foo": "bar",
-	}
-
-	appendMap(attributes, baseAttributes)
-
-	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	wireFormatSpan.Attributes = initializeAttributes(baseAttributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRequestData(&wireFormatSpan)
 
 	assert.Equal(t, spanName, data.Name)
-	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, strconv.Itoa(int(codes.ResourceExhausted)), data.ResponseCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for unknown client spans
 func TestSpanToRemoteDependencyData_UnknownType(t *testing.T) {
 	wireFormatSpan := getDefaultClientSpan("foo")
 
-	// attach some random attributres
-	attributes := map[string]string{
-		"unknown_1": "a",
-		"unknown_2": "b",
-	}
-
-	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	wireFormatSpan.Attributes = initializeAttributes(map[string]string{})
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, "|"+defaultTraceIDAsHex+"."+defaultSpanIDAsHex+".", data.Id)
 	assert.Equal(t, "foo", data.Name)
 	assert.Equal(t, "00.00:00:01.000000", data.Duration)
-	assert.Equal(t, 2, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResultCode)
 	assert.Equal(t, "InProc", data.Type)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -237,19 +224,19 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet1(t *testing.T) {
 	attributes := map[string]string{
 		spanAttributeKeyHTTPUrl:        url,
 		spanAttributeKeyHTTPStatusCode: statusCode,
-		"foo":                          "bar",
 	}
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, url, data.Data)
 	assert.Equal(t, "foo:81", data.Target)
-	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, statusCode, data.ResultCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -265,14 +252,15 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet2(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo/bar", data.Data)
 	assert.Equal(t, "foo", data.Target)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "200", data.ResultCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -289,14 +277,15 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet3(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://foo:81/bar", data.Data)
 	assert.Equal(t, "foo:81", data.Target)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "200", data.ResultCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for HTTP span with attribute set
@@ -313,14 +302,15 @@ func TestSpanToRemoteDependencyDataHTTPAttributeSet4(t *testing.T) {
 
 	appendMap(attributes, baseAttributes)
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, "GET /bar", data.Name)
 	assert.Equal(t, "https://10.0.0.1:81/bar", data.Data)
 	assert.Equal(t, "10.0.0.1:81", data.Target)
-	assert.Equal(t, 0, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "200", data.ResultCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for gRPC span with attribute set
@@ -333,20 +323,20 @@ func TestSpanToRemoteDependencyDataGrpcAttributeSet(t *testing.T) {
 		spanAttributeKeyPeerService:  "/foopackage.barservice/methodX",
 		spanAttributeKeyPeerHostname: "localhost",
 		spanAttributeKeyPeerPort:     "5001",
-		"foo":                        "bar",
 	}
 
 	appendMap(attributes, baseAttributes)
 
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, spanName, data.Name)
-	assert.Equal(t, 1, len(data.Properties))
 	assert.False(t, data.Success)
 	assert.Equal(t, strconv.Itoa(int(codes.ResourceExhausted)), data.ResultCode)
 	assert.Equal(t, "localhost:5001", data.Target)
 	assert.Equal(t, "localhost:5001/foopackage.barservice/methodX", data.Data)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests proper assignment for database span with attribute set
@@ -369,15 +359,16 @@ func TestSpanToRemoteDependencyDataDatabaseAttributeSet(t *testing.T) {
 	}
 
 	wireFormatSpan.Attributes = initializeAttributes(attributes)
+	appendArbitraryValuesToAttributes(wireFormatSpan.Attributes)
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
 	assert.Equal(t, spanName, data.Name)
 	assert.Equal(t, dbType, data.Type)
 	assert.Equal(t, dbStatement, data.Data)
 	assert.Equal(t, peerAddress, data.Target)
-	assert.Equal(t, 6, len(data.Properties))
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResultCode)
+	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
 }
 
 // Tests the exporter's pushTraceData callback method
@@ -496,4 +487,22 @@ func appendMap(target map[string]string, values map[string]string) {
 	for k, v := range values {
 		target[k] = v
 	}
+}
+
+// Appends some arbitrary value types
+func appendArbitraryValuesToAttributes(attributes *tracepb.Span_Attributes) {
+	attributes.AttributeMap["someBool"] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_BoolValue{BoolValue: true}}
+	attributes.AttributeMap["someInt"] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{IntValue: 8888}}
+	attributes.AttributeMap["someDouble"] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_DoubleValue{DoubleValue: 9999}}
+	attributes.AttributeMap["someString"] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "foo"}}}
+}
+
+// Validates the arbitrary value types
+func validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t *testing.T, properties map[string]string, measurements map[string]float64) {
+	assert.NotNil(t, properties)
+	assert.NotNil(t, measurements)
+	assert.Equal(t, "true", properties["someBool"])
+	assert.Equal(t, float64(8888), measurements["someInt"])
+	assert.Equal(t, float64(9999), measurements["someDouble"])
+	assert.Equal(t, "foo", properties["someString"])
 }

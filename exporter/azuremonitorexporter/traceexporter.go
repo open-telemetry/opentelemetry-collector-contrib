@@ -122,6 +122,27 @@ func attributeValueAsString(val *tracepb.AttributeValue) string {
 	return ""
 }
 
+func setAttributeValueAsPropertyOrMeasurement(
+	key string,
+	attributeValue *tracepb.AttributeValue,
+	properties map[string]string,
+	measurements map[string]float64) {
+
+	switch value := attributeValue.Value.(type) {
+	case *tracepb.AttributeValue_BoolValue:
+		properties[key] = strconv.FormatBool(value.BoolValue)
+
+	case *tracepb.AttributeValue_StringValue:
+		properties[key] = attributeValueAsString(attributeValue)
+
+	case *tracepb.AttributeValue_IntValue:
+		measurements[key] = float64(value.IntValue)
+
+	case *tracepb.AttributeValue_DoubleValue:
+		measurements[key] = float64(value.DoubleValue)
+	}
+}
+
 // Transforms a wire-format Span to an AppInsights Envelope
 func (exporter *traceExporter) spanToEnvelope(
 	instrumentationKey string,
@@ -182,6 +203,7 @@ func spanToRequestData(span *tracepb.Span) *contracts.RequestData {
 	data.Name = span.Name.Value
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
 	data.ResponseCode = "0"
 	data.Success = true
 
@@ -231,37 +253,36 @@ func fillRequestDataHTTP(span *tracepb.Span, data *contracts.RequestData) {
 	httpURL := ""
 
 	for k, v := range attributes {
-		stringValue := attributeValueAsString(v)
 		switch k {
 		case spanAttributeKeyComponent:
 			// do nothing
 		case spanAttributeKeyHTTPMethod:
-			httpMethod = stringValue
+			httpMethod = attributeValueAsString(v)
 		case spanAttributeKeyHTTPScheme:
-			httpScheme = stringValue
+			httpScheme = attributeValueAsString(v)
 		case spanAttributeKeyHTTPHost:
-			httpHost = stringValue
+			httpHost = attributeValueAsString(v)
 		case spanAttributeKeyHTTPTarget:
-			httpTarget = prefixIfNecessary(stringValue, "/")
+			httpTarget = prefixIfNecessary(attributeValueAsString(v), "/")
 		case spanAttributeKeyHTTPServerName:
-			httpServerName = stringValue
+			httpServerName = attributeValueAsString(v)
 		case spanAttributeKeyHostPort:
-			hostPort = stringValue
+			hostPort = attributeValueAsString(v)
 		case spanAttributeKeyHostName:
-			hostName = stringValue
+			hostName = attributeValueAsString(v)
 		case spanAttributeKeyHTTPUrl:
-			httpURL = stringValue
+			httpURL = attributeValueAsString(v)
 		case spanAttributeKeyHTTPStatusCode:
-			data.ResponseCode = stringValue
+			data.ResponseCode = attributeValueAsString(v)
 			code, err := strconv.Atoi(data.ResponseCode)
 			if err == nil {
 				data.Success = code >= 200 && code <= 399
 			}
 		case spanAttributeKeyHTTPClientIP:
-			data.Source = stringValue
+			data.Source = attributeValueAsString(v)
 		default:
 			// Anything not on this list above ends up as a custom property
-			data.Properties[k] = stringValue
+			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 		}
 	}
 
@@ -322,7 +343,7 @@ func fillRequestDataHTTP(span *tracepb.Span, data *contracts.RequestData) {
 func fillRequestDataInternal(span *tracepb.Span, data *contracts.RequestData) {
 	// Everything is a custom attribute here
 	for k, v := range span.Attributes.AttributeMap {
-		data.Properties[k] = attributeValueAsString(v)
+		setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 	}
 }
 
@@ -330,16 +351,15 @@ func fillRequestDataInternal(span *tracepb.Span, data *contracts.RequestData) {
 func fillRequestDataGrpc(span *tracepb.Span, data *contracts.RequestData) {
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-rpc.md
 	for k, v := range span.Attributes.AttributeMap {
-		stringValue := attributeValueAsString(v)
 		switch k {
 		case spanAttributeKeyComponent:
 			// do nothing
 		case spanAttributeKeyRPCStatusCode:
-			data.ResponseCode = stringValue
+			data.ResponseCode = attributeValueAsString(v)
 			data.Success = data.ResponseCode == string(codes.OK)
 		default:
 			// Anything not on this list above ends up as a custom property
-			data.Properties[k] = stringValue
+			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 		}
 	}
 }
@@ -368,6 +388,7 @@ func spanToRemoteDependencyData(span *tracepb.Span) *contracts.RemoteDependencyD
 	data.Duration = formatSpanDuration(span)
 	data.Success = true
 	data.Properties = make(map[string]string)
+	data.Measurements = make(map[string]float64)
 	data.Type = "InProc"
 
 	if span.Attributes != nil && span.Attributes.AttributeMap != nil {
@@ -401,18 +422,16 @@ func spanToRemoteDependencyData(span *tracepb.Span) *contracts.RemoteDependencyD
 // Sets properties on an AppInsights RemoteDependencyData from the wire format Span when the outbound Span type is a database call
 func fillRemoteDependencyDataDatabase(span *tracepb.Span, data *contracts.RemoteDependencyData) {
 	for k, v := range span.Attributes.AttributeMap {
-		stringValue := attributeValueAsString(v)
-
-		// For database calls, preserve all attributes
-		data.Properties[k] = stringValue
 
 		switch k {
 		case spanAttributeKeyDbType:
-			data.Type = stringValue
+			data.Type = attributeValueAsString(v)
 		case spanAttributeKeyDbStatement:
-			data.Data = stringValue
+			data.Data = attributeValueAsString(v)
 		case spanAttributeKeyPeerAddress:
-			data.Target = stringValue
+			data.Target = attributeValueAsString(v)
+		default:
+			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 		}
 	}
 }
@@ -423,7 +442,7 @@ func fillRemoteDependencyDataInternal(span *tracepb.Span, data *contracts.Remote
 
 	// Everything is a custom attribute here
 	for k, v := range span.Attributes.AttributeMap {
-		data.Properties[k] = attributeValueAsString(v)
+		setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 	}
 }
 
@@ -452,35 +471,34 @@ func fillRemoteDependencyDataHTTP(span *tracepb.Span, data *contracts.RemoteDepe
 	peerIP := ""
 
 	for k, v := range span.Attributes.AttributeMap {
-		stringValue := attributeValueAsString(v)
 		switch k {
 		case spanAttributeKeyComponent:
 			// do nothing
 		case spanAttributeKeyHTTPMethod:
-			httpMethod = stringValue
+			httpMethod = attributeValueAsString(v)
 		case spanAttributeKeyHTTPUrl:
-			httpURL = stringValue
+			httpURL = attributeValueAsString(v)
 		case spanAttributeKeyHTTPScheme:
-			httpScheme = stringValue
+			httpScheme = attributeValueAsString(v)
 		case spanAttributeKeyHTTPHost:
-			httpHost = stringValue
+			httpHost = attributeValueAsString(v)
 		case spanAttributeKeyHTTPTarget:
-			httpTarget = prefixIfNecessary(stringValue, "/")
+			httpTarget = prefixIfNecessary(attributeValueAsString(v), "/")
 		case spanAttributeKeyPeerHostname:
-			peerHostName = stringValue
+			peerHostName = attributeValueAsString(v)
 		case spanAttributeKeyPeerIP:
-			peerIP = stringValue
+			peerIP = attributeValueAsString(v)
 		case spanAttributeKeyPeerPort:
-			peerPort = stringValue
+			peerPort = attributeValueAsString(v)
 		case spanAttributeKeyHTTPStatusCode:
-			data.ResultCode = stringValue
+			data.ResultCode = attributeValueAsString(v)
 			code, err := strconv.Atoi(data.ResultCode)
 			if err == nil {
 				data.Success = code >= 200 && code <= 399
 			}
 		default:
 			// Anything not on this list above ends up as a custom property
-			data.Properties[k] = stringValue
+			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 		}
 	}
 
@@ -561,25 +579,24 @@ func fillRemoteDependencyDataGrpc(span *tracepb.Span, data *contracts.RemoteDepe
 	peerPort := ""
 
 	for k, v := range span.Attributes.AttributeMap {
-		stringValue := attributeValueAsString(v)
 		switch k {
 		case spanAttributeKeyComponent:
 			// do nothing
 		case spanAttributeKeyRPCStatusCode:
-			data.ResultCode = stringValue
+			data.ResultCode = attributeValueAsString(v)
 			code, err := strconv.Atoi(data.ResultCode)
 			if err == nil {
 				data.Success = code == int(codes.OK)
 			}
 		case spanAttributeKeyPeerService:
-			peerService = stringValue
+			peerService = attributeValueAsString(v)
 		case spanAttributeKeyPeerHostname:
-			peerHostName = stringValue
+			peerHostName = attributeValueAsString(v)
 		case spanAttributeKeyPeerPort:
-			peerPort = stringValue
+			peerPort = attributeValueAsString(v)
 		default:
 			// Anything not on this list above ends up as a custom property
-			data.Properties[k] = stringValue
+			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
 		}
 	}
 
