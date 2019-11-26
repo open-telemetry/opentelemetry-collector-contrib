@@ -19,14 +19,13 @@ import (
 	"strconv"
 	"testing"
 
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 )
 
 var (

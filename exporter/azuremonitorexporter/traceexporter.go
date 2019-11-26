@@ -23,13 +23,12 @@ import (
 	"time"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
-
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 )
 
 const (
