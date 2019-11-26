@@ -114,7 +114,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	var s *session.Session
 	var err error
 	var awsRegion string
-	http, err := newHTTPClient(logger, cfg.Concurrency, cfg.RequestTimeout, cfg.NoVerifySSL, cfg.ProxyAddress)
+	http, err := newHTTPClient(logger, cfg.Concurrency, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, nil, err
@@ -152,7 +152,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	config := &aws.Config{
 		Region:                 aws.String(awsRegion),
 		DisableParamValidation: aws.Bool(true),
-		MaxRetries:             aws.Int(2),
+		MaxRetries:             aws.Int(cfg.MaxRetries),
 		Endpoint:               aws.String(cfg.Endpoint),
 		HTTPClient:             http,
 	}
@@ -173,7 +173,7 @@ func ProxyServerTransport(logger *zap.Logger, config *Config) (*http.Transport, 
 	}
 
 	// Connection timeout in seconds
-	idleConnTimeout := time.Duration(config.RequestTimeout) * time.Second
+	idleConnTimeout := time.Duration(config.RequestTimeoutSeconds) * time.Second
 
 	transport := &http.Transport{
 		MaxIdleConns:        config.Concurrency,

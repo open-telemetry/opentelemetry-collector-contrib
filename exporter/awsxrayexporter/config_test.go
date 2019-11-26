@@ -46,15 +46,16 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["awsxray/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "awsxray/customname"},
-			Concurrency:      8,
-			Endpoint:         "",
-			RequestTimeout:   30,
-			NoVerifySSL:      false,
-			ProxyAddress:     "",
-			Region:           "eu-west-1",
-			LocalMode:        false,
-			ResourceARN:      "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
-			RoleARN:          "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+			ExporterSettings:      configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "awsxray/customname"},
+			Concurrency:           8,
+			Endpoint:              "",
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            2,
+			NoVerifySSL:           false,
+			ProxyAddress:          "",
+			Region:                "eu-west-1",
+			LocalMode:             false,
+			ResourceARN:           "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
+			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 		})
 }
