@@ -154,8 +154,8 @@ func (exporter *traceExporter) spanToEnvelope(
 	}
 
 	envelope.Data = data
+	exporter.sanitize(func() []string { return envelope.Sanitize() })
 	exporter.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
-	exporter.sanitize(func() []string { return data.Sanitize() })
 
 	return envelope, nil
 }
