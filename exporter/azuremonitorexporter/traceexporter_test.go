@@ -31,17 +31,17 @@ import (
 
 var (
 	defaultTraceID      = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
-	defaultTraceIDAsHex = toHex(defaultTraceID)
+	defaultTraceIDAsHex = idToHex(defaultTraceID)
 	defaultSpanID       = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 26}
-	defaultSpanIDAsHex  = toHex(defaultSpanID)
+	defaultSpanIDAsHex  = idToHex(defaultSpanID)
 	defaultParentSpanID = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 27}
 )
 
-func TestToHex(t *testing.T) {
-	assert.Equal(t, "", toHex(nil))
+func TestIdToHex(t *testing.T) {
+	assert.Equal(t, "", idToHex(nil))
 
 	bytes := []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
-	hex := toHex(bytes)
+	hex := idToHex(bytes)
 
 	assert.Equal(t, "23bf4de5a2f2d94b94aa5163e3a39119", hex)
 }

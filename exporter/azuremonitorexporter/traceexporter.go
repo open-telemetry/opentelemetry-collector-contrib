@@ -78,7 +78,7 @@ type traceExporter struct {
 	transportChannel transportChannel
 }
 
-func toHex(source []byte) string {
+func idToHex(source []byte) string {
 	if source == nil {
 		return ""
 	}
@@ -98,7 +98,7 @@ func formatParentChild(parent string, child string) string {
 }
 
 func formatTraceAndSpanAsParentChild(span *tracepb.Span) string {
-	return formatParentChild(toHex(span.TraceId), toHex(span.SpanId))
+	return formatParentChild(idToHex(span.TraceId), idToHex(span.SpanId))
 }
 
 func formatSpanDuration(span *tracepb.Span) string {
@@ -131,9 +131,9 @@ func spanToEnvelope(
 	envelope.IKey = instrumentationKey
 	envelope.Time = toTime(span.StartTime).Format(time.RFC3339Nano)
 
-	traceIDHexString := toHex(span.TraceId)
+	traceIDHexString := idToHex(span.TraceId)
 	envelope.Tags[contracts.OperationId] = traceIDHexString
-	envelope.Tags[contracts.OperationParentId] = formatParentChild(traceIDHexString, toHex(span.ParentSpanId))
+	envelope.Tags[contracts.OperationParentId] = formatParentChild(traceIDHexString, idToHex(span.ParentSpanId))
 
 	data := contracts.NewData()
 
