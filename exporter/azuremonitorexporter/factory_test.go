@@ -17,9 +17,8 @@ package azuremonitorexporter
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -28,8 +27,6 @@ func TestExporterTypeKey(t *testing.T) {
 
 	assert.Equal(t, typeStr, factory.Type())
 }
-
-// factory.CreateDefaultConfig() exercised in config_test.go
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
@@ -41,21 +38,19 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
+func TestCreateTraceExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
-	transportChannel := &mockTransportChannel{}
-	factory := Factory{
-		TransportChannel: transportChannel,
-	}
-
+	factory := Factory{TransportChannel: &mockTransportChannel{}}
 	exporter, err := factory.CreateTraceExporter(zap.NewNop(), factory.CreateDefaultConfig())
-
-	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
+	assert.Nil(t, err)
+}
 
-	// default transport channel creation, if nothing specified
-	factory = Factory{}
-	exporter, err = factory.CreateTraceExporter(zap.NewNop(), factory.CreateDefaultConfig())
+func TestCreateTraceExporterUsingDefaultTransportChannel(t *testing.T) {
+	// We get the default transport channel creation, if we dont't specify one during factory creation
+	factory := Factory{}
+	assert.Nil(t, factory.TransportChannel)
+	exporter, err := factory.CreateTraceExporter(zap.NewNop(), factory.CreateDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
 	assert.NotNil(t, factory.TransportChannel)

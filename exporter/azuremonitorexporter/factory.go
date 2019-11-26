@@ -16,14 +16,12 @@ package azuremonitorexporter
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
-
 	"go.uber.org/zap"
 )
 
@@ -69,7 +67,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, errUnexpectedConfigurationType
 	}
 
-	transportChannel := f.getTransportChannel(exporterConfig)
+	transportChannel := f.getTransportChannel(exporterConfig, logger)
 	return newTraceExporter(exporterConfig, transportChannel)
 }
 
@@ -83,7 +81,7 @@ func (f *Factory) CreateMetricsExporter(
 
 // Configures the transport channel.
 // This method is not thread-safe
-func (f *Factory) getTransportChannel(exporterConfig *Config) transportChannel {
+func (f *Factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
 
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
@@ -98,7 +96,7 @@ func (f *Factory) getTransportChannel(exporterConfig *Config) transportChannel {
 
 		if exporterConfig.Debug {
 			appinsights.NewDiagnosticsMessageListener(func(msg string) error {
-				fmt.Printf("[%s] %s\n", time.Now().Format(time.UnixDate), msg)
+				logger.Debug(msg)
 				return nil
 			})
 		}
