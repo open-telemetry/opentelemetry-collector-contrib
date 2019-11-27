@@ -42,7 +42,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Concurrency:           8,
+		NumberOfWorkers:       8,
 		Endpoint:              "",
 		RequestTimeoutSeconds: 30,
 		MaxRetries:            2,
