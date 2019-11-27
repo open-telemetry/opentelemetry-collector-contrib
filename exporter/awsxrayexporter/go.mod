@@ -1,4 +1,4 @@
-module github.com/kbrockhoff/opentelemetry-collector-contrib/exporter/awsxrayexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
 
 go 1.12
 
