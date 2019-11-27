@@ -47,6 +47,7 @@ comparable AWS X-Ray Daemon configuration values.
 | `num_workers`     | Maximum number of concurrent calls to AWS X-Ray to upload documents.   | 8       |
 | `endpoint`        | Optionally override the default X-Ray service endpoint.                |         |
 | `request_timeout` | Number of seconds before timing out a request.                         | 30      |
+| `max_retries`     | Maximun number of attempts to post a batch before failing.             | 2       |
 | `no_verify_ssl`   | Enable or disable TLS certificate verification.                        | false   |
 | `proxy_address`   | Upload segments to AWS X-Ray through a proxy.                          |         |
 | `region`          | Send segments to AWS X-Ray service in a specific region.               |         |

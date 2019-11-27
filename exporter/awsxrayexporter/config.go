@@ -20,7 +20,7 @@ import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// Maximum number of concurrent calls to AWS X-Ray to upload documents.
-	Concurrency int `mapstructure:"num_workers"`
+	NumberOfWorkers int `mapstructure:"num_workers"`
 	// X-Ray service endpoint to which the collector sends segment documents.
 	Endpoint string `mapstructure:"endpoint"`
 	// Number of seconds before timing out a request.

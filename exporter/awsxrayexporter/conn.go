@@ -114,7 +114,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	var s *session.Session
 	var err error
 	var awsRegion string
-	http, err := newHTTPClient(logger, cfg.Concurrency, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
+	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, nil, err
@@ -122,20 +122,20 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	regionEnv := os.Getenv("AWS_REGION")
 	if cfg.Region == "" && regionEnv != "" {
 		awsRegion = regionEnv
-		logger.Debug("Fetch region %v from environment variables", zap.String("region", awsRegion))
+		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
 	} else if cfg.Region != "" {
 		awsRegion = cfg.Region
-		logger.Debug("Fetch region %v from commandline/config file", zap.String("region", awsRegion))
+		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
 	} else if !cfg.NoVerifySSL {
 		es, err := getDefaultSession(logger)
 		if err != nil {
-			logger.Error("Unable to retrieve default session %v\n", zap.Error(err))
+			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {
 			awsRegion, err = cn.getEC2Region(es)
 			if err != nil {
-				logger.Error("Unable to retrieve the region from the EC2 instance %v\n", zap.Error(err))
+				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
 			} else {
-				logger.Debug("Fetch region %v from ec2 metadata", zap.String("region", awsRegion))
+				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
 			}
 		}
 	}
@@ -176,8 +176,8 @@ func ProxyServerTransport(logger *zap.Logger, config *Config) (*http.Transport, 
 	idleConnTimeout := time.Duration(config.RequestTimeoutSeconds) * time.Second
 
 	transport := &http.Transport{
-		MaxIdleConns:        config.Concurrency,
-		MaxIdleConnsPerHost: config.Concurrency,
+		MaxIdleConns:        config.NumberOfWorkers,
+		MaxIdleConnsPerHost: config.NumberOfWorkers,
 		IdleConnTimeout:     idleConnTimeout,
 		Proxy:               http.ProxyURL(proxyURL),
 		TLSClientConfig:     tls,
@@ -232,7 +232,7 @@ func getSTSCreds(logger *zap.Logger, region string, roleArn string) (*credential
 			err = nil
 			switch aerr.Code() {
 			case sts.ErrCodeRegionDisabledException:
-				logger.Error("Region : %v - %v", zap.String("region", region), zap.String("error", aerr.Error()))
+				logger.Error("Region ", zap.String("region", region), zap.String("error", aerr.Error()))
 				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, region)
 			}
 		}
@@ -251,7 +251,7 @@ func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, re
 	// This will be only in the case, if provided region is not present in aws_regions.go
 	c := &aws.Config{Region: aws.String(region), Endpoint: &regionalEndpoint}
 	st := sts.New(sess, c)
-	logger.Info("STS Endpoint : %v", zap.String("endpoint", st.Endpoint))
+	logger.Info("STS Endpoint ", zap.String("endpoint", st.Endpoint))
 	return stscreds.NewCredentialsWithClient(st, roleArn)
 }
 
@@ -287,7 +287,7 @@ func getSTSRegionalEndpoint(r string) string {
 func getDefaultSession(logger *zap.Logger) (*session.Session, error) {
 	result, serr := session.NewSession()
 	if serr != nil {
-		logger.Error("Error in creating session object : %v\n.", zap.Error(serr))
+		logger.Error("Error in creating session object ", zap.Error(serr))
 		return result, serr
 	}
 	return result, nil

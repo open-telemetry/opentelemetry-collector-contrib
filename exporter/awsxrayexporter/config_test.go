@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ExporterSettings:      configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "awsxray/customname"},
-			Concurrency:           8,
+			NumberOfWorkers:       8,
 			Endpoint:              "",
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            2,
