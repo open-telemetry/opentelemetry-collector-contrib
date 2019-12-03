@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
+	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,7 @@ func TestLoadConfig(t *testing.T) {
 
 	exporterType = typeStr + "/2"
 	exporter = cfg.Exporters[exporterType].(*Config)
+	assert.NoError(t, configcheck.ValidateConfig(exporter))
 	assert.Equal(
 		t,
 		&Config{
