@@ -1,0 +1,23 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  signalfx:
+    realm: ap0
+  signalfx/allsettings:
+    access_token: testToken
+    realm: "us1"
+    timeout: 2s
+    headers:
+      added-entry: "added value"
+      dot.test: test
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [signalfx, signalfx/allsettings]

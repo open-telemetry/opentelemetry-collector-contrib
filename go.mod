@@ -12,6 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0-20191126142441-b2a048090ad6
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0-20191126142441-b2a048090ad6
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
+	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de
 	golang.org/x/tools v0.0.0-20191119175705-11e13f1c3fd7
 	honnef.co/go/tools v0.0.1-2019.2.3
