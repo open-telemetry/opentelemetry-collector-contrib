@@ -38,7 +38,7 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
+.DEFAULT_GOAL := addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
 
 .PHONY: all
 all: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test otelcontribcol
