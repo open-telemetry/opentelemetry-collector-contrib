@@ -9,6 +9,7 @@ require (
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
 	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191126183205-e94dd19191e0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0-20191203211755-8ae89debd6c5
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0-20191126142441-b2a048090ad6
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0-20191126142441-b2a048090ad6
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
