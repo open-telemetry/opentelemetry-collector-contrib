@@ -31,9 +31,11 @@ type Config struct {
 	// default value is "us0"
 	Realm string `mapstructure:"realm"`
 
-	// URL is destination to where SignalFx metrics will be sent to, it is
-	// intended for tests and debugging. It cannot be specified at the same time
-	// with Realm.
+	// URL is the destination to where SignalFx metrics will be sent to, it is
+	// intended for tests and debugging. The value of Realm is ignored if the
+	// URL is specified. If a path is not included the exporter will
+	// automatically append the appropriate path, eg.: "v2/datapoint".
+	// If a path is specified it will use the one set by the config.
 	URL string `mapstructure:"url"`
 
 	// Timeout is the maximum timeout for HTTP request sending trace data. The

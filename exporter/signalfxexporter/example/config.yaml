@@ -11,8 +11,11 @@ receivers:
 
 exporters:
   signalfx:
+    # Access token to send data to SignalFx.
     access_token: <replace_with_actual_access_token>
+    # SignalFx realm where the data will be received.
     realm: us1
+    # Timeout for the send operations.
     timeout: 5s
 
 service:

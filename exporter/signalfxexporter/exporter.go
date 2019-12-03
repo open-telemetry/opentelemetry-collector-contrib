@@ -23,6 +23,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"path"
 	"sync"
 	"time"
 
@@ -57,19 +59,22 @@ func New(
 		return nil, err
 	}
 
-	if config.Realm != "" && config.URL != "" {
-		err := fmt.Errorf(
-			"%q \"realm\" and \"url\" cannot be specified at the same time",
-			config.Name())
-		return nil, err
-	}
-
-	var url string
-	if config.URL != "" {
-		url = config.URL
-	} else {
-		url = fmt.Sprintf(
+	var actualURL string
+	if config.URL == "" {
+		actualURL = fmt.Sprintf(
 			"https://ingest.%s.signalfx.com/v2/datapoint", config.Realm)
+	} else {
+		// Ignore realm and use the URL. Typically used for debugging.
+		u, err := url.Parse(config.URL)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"%q invalid \"url\": %v", config.Name(), err)
+		}
+		if u.Path == "" || u.Path == "/" {
+			u.Path = path.Join(u.Path, "v2/datapoint")
+		}
+		actualURL = u.String()
+		logger.Info("SingalFX Config", zap.String("actual_url", actualURL))
 	}
 
 	if config.Timeout == 0 {
@@ -89,7 +94,7 @@ func New(
 	}
 
 	s := &httpSender{
-		url:     url,
+		url:     actualURL,
 		headers: headers,
 		client: &http.Client{
 			// TODO: What other settings of http.Client to expose via config?

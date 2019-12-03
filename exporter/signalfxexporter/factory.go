@@ -68,9 +68,7 @@ func (f *Factory) CreateMetricsExporter(
 
 	expCfg := config.(*Config)
 
-	exp, err := New(
-		expCfg,
-		logger)
+	exp, err := New(expCfg, logger)
 
 	if err != nil {
 		return nil, err

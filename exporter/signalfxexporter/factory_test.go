@@ -122,18 +122,6 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			},
 			errorMessage: "\"signalfx\" config requires a non-empty \"realm\" or \"url\"",
 		},
-		{
-			name: "realm_and_url",
-			config: &Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
-					NameVal: typeStr,
-				},
-				URL:   "https://some.url",
-				Realm: "us0",
-			},
-			errorMessage: "\"signalfx\" \"realm\" and \"url\" cannot be specified at the same time",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
