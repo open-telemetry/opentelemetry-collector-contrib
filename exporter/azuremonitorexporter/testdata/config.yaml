@@ -1,0 +1,24 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  azuremonitor:
+  azuremonitor/2:
+    # endpoint is the uri used to communicate with Azure Monitor
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    # instrumentation_key is the unique identifer for your Application Insights resource
+    instrumentation_key: abcdefg
+    # maxbatchsize is the maximum number of items that can be queued before calling to the configured endpoint
+    maxbatchsize: 100
+    # maxbatchinterval is the maximum time to wait before calling the configured endpoint.
+    maxbatchinterval: 10s
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [azuremonitor]
