@@ -17,6 +17,7 @@ package azuremonitorexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
@@ -50,11 +51,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings:          configmodels.ExporterSettings{TypeVal: typeStr, NameVal: exporterType},
-			Endpoint:                  "https://foo.bar",
-			InstrumentationKey:        "abcdefg",
-			MaxBatchSize:              100,
-			MaxBatchIntervalInSeconds: 10,
+			ExporterSettings:   configmodels.ExporterSettings{TypeVal: typeStr, NameVal: exporterType},
+			Endpoint:           defaultEndpoint,
+			InstrumentationKey: "abcdefg",
+			MaxBatchSize:       100,
+			MaxBatchInterval:   10 * time.Second,
 		},
 		exporter)
 }

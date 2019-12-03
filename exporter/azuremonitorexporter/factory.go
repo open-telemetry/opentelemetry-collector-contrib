@@ -27,7 +27,8 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "azuremonitor"
+	typeStr         = "azuremonitor"
+	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
 )
 
 var (
@@ -53,9 +54,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint:                  "https://dc.services.visualstudio.com/v2/track",
-		MaxBatchSize:              1024,
-		MaxBatchIntervalInSeconds: int(time.Duration(10) * time.Second),
+		Endpoint:         defaultEndpoint,
+		MaxBatchSize:     1024,
+		MaxBatchInterval: 10 * time.Second,
 	}
 }
 
@@ -89,7 +90,7 @@ func (f *Factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger
 		telemetryConfiguration := appinsights.NewTelemetryConfiguration(exporterConfig.InstrumentationKey)
 		telemetryConfiguration.EndpointUrl = exporterConfig.Endpoint
 		telemetryConfiguration.MaxBatchSize = exporterConfig.MaxBatchSize
-		telemetryConfiguration.MaxBatchInterval = time.Duration(exporterConfig.MaxBatchIntervalInSeconds) * time.Second
+		telemetryConfiguration.MaxBatchInterval = exporterConfig.MaxBatchInterval
 		telemetryClient := appinsights.NewTelemetryClientFromConfig(telemetryConfiguration)
 
 		f.TransportChannel = telemetryClient.Channel()
