@@ -19,28 +19,8 @@ import (
 	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-)
-
-// OpenTelemetry Semantic Convention attribute names for HTTP and gRPC related attributes
-const (
-	MethodAttribute                  = "http.method"
-	URLAttribute                     = "http.url"
-	TargetAttribute                  = "http.target"
-	HostAttribute                    = "http.host"
-	SchemeAttribute                  = "http.scheme"
-	StatusCodeAttribute              = "http.status_code"
-	StatusTextAttribute              = "http.status_text"
-	FlavorAttribute                  = "http.flavor"
-	ServerNameAttribute              = "http.server_name"
-	PortAttribute                    = "http.port"
-	RouteAttribute                   = "http.route"
-	ClientIPAttribute                = "http.client_ip"
-	UserAgentAttribute               = "http.user_agent"
-	MessageTypeAttribute             = "message.type"
-	MessageIDAttribute               = "message.id"
-	MessageCompressedSizeAttribute   = "message.compressed_size"
-	MessageUncompressedSizeAttribute = "message.uncompressed_size"
 )
 
 // HTTPData provides the shape for unmarshalling request and response data.
@@ -116,52 +96,51 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 
 	for key, value := range span.Attributes.AttributeMap {
 		switch key {
-		case ComponentAttribute:
+		case semconventions.AttributeComponent:
 			componentValue = value.GetStringValue().GetValue()
 			filtered[key] = componentValue
-		case MethodAttribute:
+		case semconventions.AttributeHTTPMethod:
 			info.Request.Method = value.GetStringValue().GetValue()
-		case UserAgentAttribute:
-			info.Request.UserAgent = value.GetStringValue().GetValue()
-		case ClientIPAttribute:
+		case semconventions.AttributeHTTPClientIP:
 			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
-		case StatusCodeAttribute:
+		case semconventions.AttributeHTTPStatusCode:
 			info.Response.Status = value.GetIntValue()
-		case URLAttribute:
+		case semconventions.AttributeHTTPURL:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case SchemeAttribute:
+		case semconventions.AttributeHTTPScheme:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case HostAttribute:
+		case semconventions.AttributeHTTPHost:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case TargetAttribute:
+		case semconventions.AttributeHTTPTarget:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case ServerNameAttribute:
+		case semconventions.AttributeHTTPServerName:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case HostNameAttribute:
+		case semconventions.AttributeHostName:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case PortAttribute:
-			urlParts[key] = value.GetStringValue().GetValue()
-			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
-			}
-		case PeerHostAttribute:
-			urlParts[key] = value.GetStringValue().GetValue()
-		case PeerPortAttribute:
+		case semconventions.AttributeHTTPHostPort:
 			urlParts[key] = value.GetStringValue().GetValue()
 			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
-		case PeerIpv4Attribute:
+		case semconventions.AttributePeerHost:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case PeerIpv6Attribute:
+		case semconventions.AttributePeerPort:
+			urlParts[key] = value.GetStringValue().GetValue()
+			if len(urlParts[key]) == 0 {
+				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
+			}
+		case semconventions.AttributePeerIpv4:
+			urlParts[key] = value.GetStringValue().GetValue()
+		case semconventions.AttributePeerIpv6:
 			urlParts[key] = value.GetStringValue().GetValue()
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
 		}
 	}
 
-	if (componentValue != HTTPComponentType && componentValue != GrpcComponentType) || info.Request.Method == "" {
+	if (componentValue != semconventions.ComponentTypeHTTP && componentValue != semconventions.ComponentTypeGRPC) ||
+		info.Request.Method == "" {
 		return filtered, nil
 	}
 
@@ -187,10 +166,10 @@ func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
 			anno := te.GetAnnotation()
 			if anno != nil {
 				attrMap := anno.Attributes.AttributeMap
-				typeVal := attrMap[MessageTypeAttribute]
+				typeVal := attrMap[semconventions.AttributeMessageType]
 				if typeVal != nil {
 					if typeVal.GetStringValue().GetValue() == "RECEIVED" {
-						sizeVal := attrMap[MessageUncompressedSizeAttribute]
+						sizeVal := attrMap[semconventions.AttributeMessageUncompressedSize]
 						if sizeVal != nil {
 							size = sizeVal.GetIntValue()
 						}
@@ -205,31 +184,31 @@ func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
 func constructClientURL(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for client spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
-	url, ok := urlParts[URLAttribute]
+	url, ok := urlParts[semconventions.AttributeHTTPURL]
 	if ok {
 		// full URL available so no need to assemble
 		return url
 	}
 
-	scheme, ok := urlParts[SchemeAttribute]
+	scheme, ok := urlParts[semconventions.AttributeHTTPScheme]
 	if !ok {
-		if component == GrpcComponentType {
+		if component == semconventions.ComponentTypeGRPC {
 			scheme = "dns"
 		} else {
 			scheme = "http"
 		}
 	}
 	port := ""
-	host, ok := urlParts[HostAttribute]
+	host, ok := urlParts[semconventions.AttributeHTTPHost]
 	if !ok {
-		host, ok = urlParts[PeerHostAttribute]
+		host, ok = urlParts[semconventions.AttributePeerHost]
 		if !ok {
-			host, ok = urlParts[PeerIpv4Attribute]
+			host, ok = urlParts[semconventions.AttributePeerIpv4]
 			if !ok {
-				host = urlParts[PeerIpv6Attribute]
+				host = urlParts[semconventions.AttributePeerIpv6]
 			}
 		}
-		port, ok = urlParts[PeerPortAttribute]
+		port, ok = urlParts[semconventions.AttributePeerPort]
 		if !ok {
 			port = ""
 		}
@@ -238,7 +217,7 @@ func constructClientURL(component string, urlParts map[string]string) string {
 	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
-	target, ok := urlParts[TargetAttribute]
+	target, ok := urlParts[semconventions.AttributeHTTPTarget]
 	if ok {
 		url += target
 	} else {
@@ -250,28 +229,28 @@ func constructClientURL(component string, urlParts map[string]string) string {
 func constructServerURL(component string, urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for server spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
-	url, ok := urlParts[URLAttribute]
+	url, ok := urlParts[semconventions.AttributeHTTPURL]
 	if ok {
 		// full URL available so no need to assemble
 		return url
 	}
 
-	scheme, ok := urlParts[SchemeAttribute]
+	scheme, ok := urlParts[semconventions.AttributeHTTPScheme]
 	if !ok {
-		if component == GrpcComponentType {
+		if component == semconventions.ComponentTypeGRPC {
 			scheme = "dns"
 		} else {
 			scheme = "http"
 		}
 	}
 	port := ""
-	host, ok := urlParts[HostAttribute]
+	host, ok := urlParts[semconventions.AttributeHTTPHost]
 	if !ok {
-		host, ok = urlParts[ServerNameAttribute]
+		host, ok = urlParts[semconventions.AttributeHTTPServerName]
 		if !ok {
-			host, ok = urlParts[HostNameAttribute]
+			host, ok = urlParts[semconventions.AttributeHostName]
 		}
-		port, ok = urlParts[PortAttribute]
+		port, ok = urlParts[semconventions.AttributeHTTPHostPort]
 		if !ok {
 			port = ""
 		}
@@ -280,7 +259,7 @@ func constructServerURL(component string, urlParts map[string]string) string {
 	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
-	target, ok := urlParts[TargetAttribute]
+	target, ok := urlParts[semconventions.AttributeHTTPTarget]
 	if ok {
 		url += target
 	} else {

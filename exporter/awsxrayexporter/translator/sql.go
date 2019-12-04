@@ -14,12 +14,8 @@
 
 package translator
 
-// OpenTelemetry Semantic Convention attribute names for database related attributes
-const (
-	DbTypeAttribute      = "db.type"
-	DbInstanceAttribute  = "db.instance"
-	DbStatementAttribute = "db.statement"
-	DbUserAttribute      = "db.user"
+import (
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 // SQLData provides the shape for unmarshalling sql data.
@@ -44,21 +40,22 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbStatement string
 		dbUser      string
 	)
-	componentType := attributes[ComponentAttribute]
-	if componentType == HTTPComponentType || componentType == GrpcComponentType {
+	componentType := attributes[semconventions.AttributeComponent]
+	if componentType == semconventions.ComponentTypeHTTP ||
+		componentType == semconventions.ComponentTypeGRPC {
 		return attributes, nil
 	}
 	for key, value := range attributes {
 		switch key {
-		case PeerAddressAttribute:
+		case semconventions.AttributePeerAddress:
 			dbURL = value
-		case DbTypeAttribute:
+		case semconventions.AttributeDBType:
 			dbType = value
-		case DbInstanceAttribute:
+		case semconventions.AttributeDBInstance:
 			dbInstance = value
-		case DbStatementAttribute:
+		case semconventions.AttributeDBStatement:
 			dbStatement = value
-		case DbUserAttribute:
+		case semconventions.AttributeDBUser:
 			dbUser = value
 		default:
 			filtered[key] = value

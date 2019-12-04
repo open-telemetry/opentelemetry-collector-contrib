@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 // OpenTelemetry Semantic Convention attribute names for error/fault/exception related attributes
@@ -70,7 +71,7 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 			if message == "" {
 				message = value
 			}
-		case StatusTextAttribute:
+		case semconventions.AttributeHTTPStatusText:
 			if message == "" {
 				message = value
 			}

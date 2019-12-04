@@ -18,19 +18,20 @@ import (
 	"strings"
 	"testing"
 
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[ComponentAttribute] = DbComponentType
-	attributes[DbTypeAttribute] = "sql"
-	attributes[DbInstanceAttribute] = "customers"
-	attributes[DbStatementAttribute] = "SELECT * FROM user WHERE user_id = ?"
-	attributes[DbUserAttribute] = "readonly_user"
-	attributes[PeerAddressAttribute] = "mysql://db.example.com:3306"
-	attributes[PeerHostAttribute] = "db.example.com"
-	attributes[PeerPortAttribute] = "3306"
+	attributes[semconventions.AttributeComponent] = "db"
+	attributes[semconventions.AttributeDBType] = "sql"
+	attributes[semconventions.AttributeDBInstance] = "customers"
+	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
+	attributes[semconventions.AttributeDBUser] = "readonly_user"
+	attributes[semconventions.AttributePeerAddress] = "mysql://db.example.com:3306"
+	attributes[semconventions.AttributePeerHost] = "db.example.com"
+	attributes[semconventions.AttributePeerPort] = "3306"
 
 	filtered, sqlData := makeSQL(attributes)
 
@@ -45,16 +46,16 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "mysql://db.example.com:3306/customers"))
 }
 
-func TestClientSpanWithHttpComponentAttribute(t *testing.T) {
+func TestClientSpanWithHttpComponent(t *testing.T) {
 	attributes := make(map[string]string)
-	attributes[ComponentAttribute] = HTTPComponentType
-	attributes[DbTypeAttribute] = "sql"
-	attributes[DbInstanceAttribute] = "customers"
-	attributes[DbStatementAttribute] = "SELECT * FROM user WHERE user_id = ?"
-	attributes[DbUserAttribute] = "readonly_user"
-	attributes[PeerAddressAttribute] = "mysql://db.example.com:3306"
-	attributes[PeerHostAttribute] = "db.example.com"
-	attributes[PeerPortAttribute] = "3306"
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeDBType] = "sql"
+	attributes[semconventions.AttributeDBInstance] = "customers"
+	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
+	attributes[semconventions.AttributeDBUser] = "readonly_user"
+	attributes[semconventions.AttributePeerAddress] = "mysql://db.example.com:3306"
+	attributes[semconventions.AttributePeerHost] = "db.example.com"
+	attributes[semconventions.AttributePeerPort] = "3306"
 
 	filtered, sqlData := makeSQL(attributes)
 

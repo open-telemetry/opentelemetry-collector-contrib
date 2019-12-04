@@ -16,6 +16,7 @@ package translator
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 // ServiceData provides the shape for unmarshalling service version.
@@ -35,7 +36,7 @@ func makeService(resource *resourcepb.Resource) *ServiceData {
 	}
 	for key, value := range resource.Labels {
 		switch key {
-		case ServiceVersionAttribute:
+		case semconventions.AttributeContainerTag:
 			ver = value
 		}
 	}
