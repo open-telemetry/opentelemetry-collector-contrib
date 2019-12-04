@@ -23,6 +23,7 @@ MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
 IMPI=impi
+RUN_CONFIG=local/config.yaml
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
 BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/version
@@ -138,6 +139,7 @@ install-tools:
 	GO111MODULE=on go install \
 	  github.com/google/addlicense \
 	  golang.org/x/lint/golint \
+ 	  github.com/golangci/golangci-lint/cmd/golangci-lint \
 	  golang.org/x/tools/cmd/goimports \
 	  github.com/client9/misspell/cmd/misspell \
 	  honnef.co/go/tools/cmd/staticcheck \
@@ -146,6 +148,10 @@ install-tools:
 .PHONY: otelcontribcol
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelcontribcol $(BUILD_INFO) ./cmd/otelcontribcol
+
+.PHONY: run
+run:
+	GO111MODULE=on go run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG}
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
