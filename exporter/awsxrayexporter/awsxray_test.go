@@ -27,6 +27,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -73,15 +74,14 @@ func constructSpanData() consumerdata.TraceData {
 
 func constructResource() *resourcepb.Resource {
 	labels := make(map[string]string)
-	labels[translator.ServiceNameAttribute] = "signup_aggregator"
-	labels[translator.ServiceVersionAttribute] = "1.1.12"
-	labels[translator.ContainerNameAttribute] = "signup_aggregator"
-	labels[translator.ContainerImageAttribute] = "otel/signupaggregator"
-	labels[translator.ContainerTagAttribute] = "v1"
-	labels[translator.CloudProviderAttribute] = "aws"
-	labels[translator.CloudAccountAttribute] = "999999998"
-	labels[translator.CloudRegionAttribute] = "us-west-2"
-	labels[translator.CloudZoneAttribute] = "us-west-1b"
+	labels[semconventions.AttributeServiceName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
+	labels[semconventions.AttributeContainerTag] = "v1"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "999999998"
+	labels[semconventions.AttributeCloudRegion] = "us-west-2"
+	labels[semconventions.AttributeCloudZone] = "us-west-1b"
 	return &resourcepb.Resource{
 		Type:   "container",
 		Labels: labels,
@@ -90,10 +90,10 @@ func constructResource() *resourcepb.Resource {
 
 func constructHTTPClientSpan() *tracepb.Span {
 	attributes := make(map[string]interface{})
-	attributes[translator.ComponentAttribute] = translator.HTTPComponentType
-	attributes[translator.MethodAttribute] = "GET"
-	attributes[translator.URLAttribute] = "https://api.example.com/users/junit"
-	attributes[translator.StatusCodeAttribute] = 200
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -125,12 +125,11 @@ func constructHTTPClientSpan() *tracepb.Span {
 
 func constructHTTPServerSpan() *tracepb.Span {
 	attributes := make(map[string]interface{})
-	attributes[translator.ComponentAttribute] = translator.HTTPComponentType
-	attributes[translator.MethodAttribute] = "GET"
-	attributes[translator.URLAttribute] = "https://api.example.com/users/junit"
-	attributes[translator.UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[translator.ClientIPAttribute] = "192.168.15.32"
-	attributes[translator.StatusCodeAttribute] = 200
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

@@ -37,7 +37,7 @@ func TestServiceFromResource(t *testing.T) {
 	}
 	jsonStr := w.String()
 	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "1.1.12"))
+	assert.True(t, strings.Contains(jsonStr, "v1"))
 }
 
 func TestServiceFromNullResource(t *testing.T) {

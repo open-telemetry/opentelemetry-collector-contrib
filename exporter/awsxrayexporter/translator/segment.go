@@ -26,50 +26,8 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
-)
-
-// OpenTelemetry Semantic Convention values for general Span attribute names.
-const (
-	ComponentAttribute   = "component"
-	PeerAddressAttribute = "peer.address"
-	PeerHostAttribute    = "peer.hostname"
-	PeerIpv4Attribute    = "peer.ipv4"
-	PeerIpv6Attribute    = "peer.ipv6"
-	PeerPortAttribute    = "peer.port"
-	PeerServiceAttribute = "peer.service"
-	IAMUserAttribute     = "iam.user"
-)
-
-// OpenTelemetry Semantic Convention values for component attribute values.
-const (
-	HTTPComponentType = "http"
-	GrpcComponentType = "grpc"
-	DbComponentType   = "db"
-	MsgComponentType  = "messaging"
-)
-
-// OpenTelemetry Semantic Convention values for Resource attribute names.
-const (
-	ServiceNameAttribute      = "service.name"
-	ServiceNamespaceAttribute = "service.namespace"
-	ServiceInstanceAttribute  = "service.instance.id"
-	ServiceVersionAttribute   = "service.version"
-	ContainerNameAttribute    = "container.name"
-	ContainerImageAttribute   = "container.image.name"
-	ContainerTagAttribute     = "container.image.tag"
-	K8sClusterAttribute       = "k8s.cluster.name"
-	K8sNamespaceAttribute     = "k8s.namespace.name"
-	K8sPodAttribute           = "k8s.pod.name"
-	K8sDeploymentAttribute    = "k8s.deployment.name"
-	HostHostnameAttribute     = "host.hostname"
-	HostIDAttribute           = "host.id"
-	HostNameAttribute         = "host.name"
-	HostTypeAttribute         = "host.type"
-	CloudProviderAttribute    = "cloud.provider"
-	CloudAccountAttribute     = "cloud.account.id"
-	CloudRegionAttribute      = "cloud.region"
-	CloudZoneAttribute        = "cloud.zone"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -233,7 +191,7 @@ func determineAwsOrigin(resource *resourcepb.Resource) string {
 	if resource == nil {
 		return origin
 	}
-	_, ok := resource.Labels[ContainerNameAttribute]
+	_, ok := resource.Labels[semconventions.AttributeContainerName]
 	if ok {
 		origin = OriginECS
 	}
@@ -325,9 +283,7 @@ func makeAnnotations(attributes map[string]string) (string, map[string]interface
 		user   string
 	)
 
-	user = attributes[IAMUserAttribute]
-	delete(attributes, IAMUserAttribute)
-	delete(attributes, ComponentAttribute)
+	delete(attributes, semconventions.AttributeComponent)
 	mergeAnnotations(result, attributes)
 
 	if len(result) == 0 {

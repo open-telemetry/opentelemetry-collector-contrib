@@ -18,6 +18,7 @@ import (
 	"strconv"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
 // AWS-specific OpenTelemetry attribute names
@@ -87,26 +88,24 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 	filtered := make(map[string]string)
 	for key, value := range resource.Labels {
 		switch key {
-		case CloudProviderAttribute:
+		case semconventions.AttributeCloudProvider:
 			cloud = value
-		case CloudAccountAttribute:
+		case semconventions.AttributeCloudAccount:
 			account = value
-		case CloudZoneAttribute:
+		case semconventions.AttributeCloudZone:
 			zone = value
-		case HostIDAttribute:
+		case semconventions.AttributeHostID:
 			hostID = value
-		case ContainerNameAttribute:
+		case semconventions.AttributeContainerName:
 			if container == "" {
 				container = value
 			}
-		case K8sPodAttribute:
+		case semconventions.AttributeK8sPod:
 			container = value
-		case ServiceNamespaceAttribute:
+		case semconventions.AttributeServiceNamespace:
 			namespace = value
-		case ServiceInstanceAttribute:
+		case semconventions.AttributeServiceInstance:
 			deployID = value
-		case ServiceVersionAttribute:
-			ver = value
 		}
 	}
 	for key, value := range attributes {

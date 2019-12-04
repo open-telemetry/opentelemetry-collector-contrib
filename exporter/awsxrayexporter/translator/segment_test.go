@@ -24,6 +24,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,12 +36,12 @@ var (
 func TestClientSpanWithGrpcComponent(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = GrpcComponentType
-	attributes[MethodAttribute] = "GET"
-	attributes[SchemeAttribute] = "ipv6"
-	attributes[PeerIpv6Attribute] = "2607:f8b0:4000:80c::2004"
-	attributes[PeerPortAttribute] = "9443"
-	attributes[TargetAttribute] = spanName
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeGRPC
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
+	attributes[semconventions.AttributePeerIpv6] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributePeerPort] = "9443"
+	attributes[semconventions.AttributeHTTPTarget] = spanName
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
@@ -58,16 +59,14 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	parentSpanID := NewSegmentID()
 	user := "testingT"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HTTPComponentType
-	attributes[MethodAttribute] = "POST"
-	attributes[SchemeAttribute] = "https"
-	attributes[HostAttribute] = "dynamodb.us-east-1.amazonaws.com"
-	attributes[TargetAttribute] = "/"
-	attributes[UserAgentAttribute] = "aws-sdk-java/1.11.613 Windows_10/10.0 OpenJDK_64-Bit_server_VM/11.0.4+11-LTS"
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[semconventions.AttributeHTTPTarget] = "/"
 	attributes[AWSOperationAttribute] = "GetItem"
 	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
-	attributes[IAMUserAttribute] = user
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
 
@@ -76,22 +75,20 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, spanName))
-	assert.True(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, ComponentAttribute))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, semconventions.AttributeComponent))
 }
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := NewSegmentID()
-	user := "testing"
 	errorMessage := "java.lang.NullPointerException"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HTTPComponentType
-	attributes[MethodAttribute] = "POST"
-	attributes[URLAttribute] = "https://api.example.org/api/locations"
-	attributes[TargetAttribute] = "/api/locations"
-	attributes[StatusCodeAttribute] = 500
-	attributes[IAMUserAttribute] = user
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
+	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
+	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[ErrorKindAttribute] = "java.lang.NullPointerException"
 	labels := constructDefaultResourceLabels()
 	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
@@ -118,14 +115,14 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = DbComponentType
-	attributes[DbTypeAttribute] = "sql"
-	attributes[DbInstanceAttribute] = "customers"
-	attributes[DbStatementAttribute] = spanName
-	attributes[DbUserAttribute] = "userprefsvc"
-	attributes[PeerAddressAttribute] = "mysql://db.dev.example.com:3306"
-	attributes[PeerHostAttribute] = "db.dev.example.com"
-	attributes[PeerPortAttribute] = "3306"
+	attributes[semconventions.AttributeComponent] = "db"
+	attributes[semconventions.AttributeDBType] = "sql"
+	attributes[semconventions.AttributeDBInstance] = "customers"
+	attributes[semconventions.AttributeDBStatement] = spanName
+	attributes[semconventions.AttributeDBUser] = "userprefsvc"
+	attributes[semconventions.AttributePeerAddress] = "mysql://db.dev.example.com:3306"
+	attributes[semconventions.AttributePeerHost] = "db.dev.example.com"
+	attributes[semconventions.AttributePeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
@@ -155,12 +152,12 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 func TestSpanWithInvalidTraceId(t *testing.T) {
 	spanName := "platformapi.widgets.searchWidgets"
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = GrpcComponentType
-	attributes[MethodAttribute] = "GET"
-	attributes[SchemeAttribute] = "ipv6"
-	attributes[PeerIpv6Attribute] = "2607:f8b0:4000:80c::2004"
-	attributes[PeerPortAttribute] = "9443"
-	attributes[TargetAttribute] = spanName
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeGRPC
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
+	attributes[semconventions.AttributePeerIpv6] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributePeerPort] = "9443"
+	attributes[semconventions.AttributeHTTPTarget] = spanName
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
@@ -264,19 +261,18 @@ func constructSpanAttributes(attributes map[string]interface{}) map[string]*trac
 
 func constructDefaultResourceLabels() map[string]string {
 	labels := make(map[string]string)
-	labels[ServiceNameAttribute] = "signup_aggregator"
-	labels[ServiceVersionAttribute] = "1.1.12"
-	labels[ContainerNameAttribute] = "signup_aggregator"
-	labels[ContainerImageAttribute] = "otel/signupaggregator"
-	labels[ContainerTagAttribute] = "v1"
-	labels[K8sClusterAttribute] = "production"
-	labels[K8sNamespaceAttribute] = "default"
-	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = "signup_aggregator-x82ufje83"
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudRegionAttribute] = "us-east-1"
-	labels[CloudZoneAttribute] = "us-east-1c"
+	labels[semconventions.AttributeServiceName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
+	labels[semconventions.AttributeContainerTag] = "v1"
+	labels[semconventions.AttributeK8sCluster] = "production"
+	labels[semconventions.AttributeK8sNamespace] = "default"
+	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
+	labels[semconventions.AttributeK8sPod] = "signup_aggregator-x82ufje83"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudRegion] = "us-east-1"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
 	return labels
 }
 
@@ -293,18 +289,21 @@ func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
 
 func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
 	eventAttrMap := make(map[string]*tracepb.AttributeValue)
-	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-		StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
-	}}
-	eventAttrMap[MessageIDAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+	eventAttrMap[semconventions.AttributeMessageType] =
+		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
+			StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
+		}}
+	eventAttrMap[semconventions.AttributeMessageID] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
 		IntValue: 1,
 	}}
-	eventAttrMap[MessageCompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 6478,
-	}}
-	eventAttrMap[MessageUncompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 12452,
-	}}
+	eventAttrMap[semconventions.AttributeMessageCompressedSize] =
+		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+			IntValue: 6478,
+		}}
+	eventAttrMap[semconventions.AttributeMessageUncompressedSize] =
+		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+			IntValue: 12452,
+		}}
 	eventAttrbutes := tracepb.Span_Attributes{
 		AttributeMap:           eventAttrMap,
 		DroppedAttributesCount: 0,
@@ -330,15 +329,17 @@ func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) trace
 
 func constructTimedEventsWithSentMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
 	eventAttrMap := make(map[string]*tracepb.AttributeValue)
-	eventAttrMap[MessageTypeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-		StringValue: &tracepb.TruncatableString{Value: "SENT"},
-	}}
-	eventAttrMap[MessageIDAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+	eventAttrMap[semconventions.AttributeMessageType] =
+		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
+			StringValue: &tracepb.TruncatableString{Value: "SENT"},
+		}}
+	eventAttrMap[semconventions.AttributeMessageID] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
 		IntValue: 1,
 	}}
-	eventAttrMap[MessageUncompressedSizeAttribute] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 7480,
-	}}
+	eventAttrMap[semconventions.AttributeMessageUncompressedSize] =
+		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
+			IntValue: 7480,
+		}}
 	eventAttrbutes := tracepb.Span_Attributes{
 		AttributeMap:           eventAttrMap,
 		DroppedAttributesCount: 0,

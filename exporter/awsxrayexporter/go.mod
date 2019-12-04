@@ -59,7 +59,6 @@ require (
 	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-martini/martini v0.0.0-20170121215854-22fa46961aab // indirect
 	github.com/gobuffalo/buffalo v0.15.0 // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocql/gocql v0.0.0-20191102131523-9faa4c08d962 // indirect
 	github.com/godbus/dbus v4.1.0+incompatible // indirect
 	github.com/goji/param v0.0.0-20160927210335-d7f49fd7d1ed // indirect
@@ -105,14 +104,13 @@ require (
 	github.com/mjibson/appstats v0.0.0-20151004071057-0542d5f0e87e // indirect
 	github.com/montanaflynn/stats v0.5.0 // indirect
 	github.com/nats-io/nats.go v1.9.1 // indirect
-	github.com/nbutton23/zxcvbn-go v0.0.0-20180912185939-ae427f1e4c1d // indirect
 	github.com/oklog/oklog v0.3.2 // indirect
 	github.com/olekukonko/tablewriter v0.0.1 // indirect
 	github.com/olivere/elastic v6.2.26+incompatible // indirect
 	github.com/olivere/env v1.1.0 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	// TODO: pin a released version
-	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191016224815-dfabfb0c1d1e
+	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191203213105-fe3782c76de2
 	github.com/opentracing/basictracer-go v1.0.0 // indirect
 	github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.4 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
@@ -138,7 +136,6 @@ require (
 	github.com/shurcooL/resume v0.0.0-20190824223711-dc47c8f77a80 // indirect
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/sony/gobreaker v0.4.1 // indirect
-	github.com/sourcegraph/go-diff v0.5.1 // indirect
 	github.com/stathat/go v1.0.0 // indirect
 	github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a // indirect
 	github.com/stretchr/testify v1.4.0
@@ -156,10 +153,9 @@ require (
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.etcd.io/etcd v3.3.17+incompatible // indirect
-	go.opencensus.io v0.22.1
 	go.uber.org/automaxprocs v1.2.0 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
+	golang.org/x/net v0.0.0-20190923162816-aa69164e4478
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/pipe.v2 v2.0.0-20140414041502-3c2ca4d52544 // indirect

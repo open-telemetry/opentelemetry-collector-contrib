@@ -21,15 +21,16 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[MethodAttribute] = "POST"
-	attributes[URLAttribute] = "https://api.example.com/widgets"
-	attributes[StatusCodeAttribute] = 500
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes)
 	span.Status.Message = errorMsg
 	filtered, _ := makeHTTP(span)
@@ -52,10 +53,10 @@ func TestCauseWithStatusMessage(t *testing.T) {
 func TestCauseWithHttpStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[MethodAttribute] = "POST"
-	attributes[URLAttribute] = "https://api.example.com/widgets"
-	attributes[StatusCodeAttribute] = 500
-	attributes[StatusTextAttribute] = errorMsg
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[semconventions.AttributeHTTPStatusCode] = 500
+	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 	span := constructExceptionServerSpan(attributes)
 	filtered, _ := makeHTTP(span)
 
@@ -77,9 +78,9 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 func TestCauseWithErrorMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
-	attributes[MethodAttribute] = "POST"
-	attributes[URLAttribute] = "https://api.example.com/widgets"
-	attributes[StatusCodeAttribute] = 500
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[ErrorMessageAttribute] = errorMsg
 	span := constructExceptionServerSpan(attributes)
 	filtered, _ := makeHTTP(span)

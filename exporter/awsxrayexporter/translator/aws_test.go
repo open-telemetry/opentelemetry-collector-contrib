@@ -19,17 +19,18 @@ import (
 	"testing"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAwsFromEc2Resource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	labels := make(map[string]string)
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[HostIDAttribute] = instanceID
-	labels[HostTypeAttribute] = "m5.xlarge"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
+	labels[semconventions.AttributeHostID] = instanceID
+	labels[semconventions.AttributeHostType] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "vm",
 		Labels: labels,
@@ -56,18 +57,18 @@ func TestAwsFromEcsResource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[ContainerNameAttribute] = "signup_aggregator"
-	labels[ContainerImageAttribute] = "otel/signupaggregator"
-	labels[ContainerTagAttribute] = "v1"
-	labels[K8sClusterAttribute] = "production"
-	labels[K8sNamespaceAttribute] = "default"
-	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerID
-	labels[HostIDAttribute] = instanceID
-	labels[HostTypeAttribute] = "m5.xlarge"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
+	labels[semconventions.AttributeContainerName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
+	labels[semconventions.AttributeContainerTag] = "v1"
+	labels[semconventions.AttributeK8sCluster] = "production"
+	labels[semconventions.AttributeK8sNamespace] = "default"
+	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
+	labels[semconventions.AttributeK8sPod] = containerID
+	labels[semconventions.AttributeHostID] = instanceID
+	labels[semconventions.AttributeHostType] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
 		Labels: labels,
@@ -93,12 +94,11 @@ func TestAwsFromEcsResource(t *testing.T) {
 func TestAwsFromBeanstalkResource(t *testing.T) {
 	deployID := "232"
 	labels := make(map[string]string)
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[ServiceVersionAttribute] = "2.1.4"
-	labels[ServiceNamespaceAttribute] = "production"
-	labels[ServiceInstanceAttribute] = deployID
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
+	labels[semconventions.AttributeServiceNamespace] = "production"
+	labels[semconventions.AttributeServiceInstance] = deployID
 	resource := &resourcepb.Resource{
 		Type:   "vm",
 		Labels: labels,
@@ -125,18 +125,18 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[ContainerNameAttribute] = "signup_aggregator"
-	labels[ContainerImageAttribute] = "otel/signupaggregator"
-	labels[ContainerTagAttribute] = "v1"
-	labels[K8sClusterAttribute] = "production"
-	labels[K8sNamespaceAttribute] = "default"
-	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerID
-	labels[HostIDAttribute] = instanceID
-	labels[HostTypeAttribute] = "m5.xlarge"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
+	labels[semconventions.AttributeContainerName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
+	labels[semconventions.AttributeContainerTag] = "v1"
+	labels[semconventions.AttributeK8sCluster] = "production"
+	labels[semconventions.AttributeK8sNamespace] = "default"
+	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
+	labels[semconventions.AttributeK8sPod] = containerID
+	labels[semconventions.AttributeHostID] = instanceID
+	labels[semconventions.AttributeHostType] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
 		Labels: labels,
@@ -170,18 +170,18 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
 	labels := make(map[string]string)
-	labels[CloudProviderAttribute] = "aws"
-	labels[CloudAccountAttribute] = "123456789"
-	labels[CloudZoneAttribute] = "us-east-1c"
-	labels[ContainerNameAttribute] = "signup_aggregator"
-	labels[ContainerImageAttribute] = "otel/signupaggregator"
-	labels[ContainerTagAttribute] = "v1"
-	labels[K8sClusterAttribute] = "production"
-	labels[K8sNamespaceAttribute] = "default"
-	labels[K8sDeploymentAttribute] = "signup_aggregator"
-	labels[K8sPodAttribute] = containerID
-	labels[HostIDAttribute] = instanceID
-	labels[HostTypeAttribute] = "m5.xlarge"
+	labels[semconventions.AttributeCloudProvider] = "aws"
+	labels[semconventions.AttributeCloudAccount] = "123456789"
+	labels[semconventions.AttributeCloudZone] = "us-east-1c"
+	labels[semconventions.AttributeContainerName] = "signup_aggregator"
+	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
+	labels[semconventions.AttributeContainerTag] = "v1"
+	labels[semconventions.AttributeK8sCluster] = "production"
+	labels[semconventions.AttributeK8sNamespace] = "default"
+	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
+	labels[semconventions.AttributeK8sPod] = containerID
+	labels[semconventions.AttributeHostID] = instanceID
+	labels[semconventions.AttributeHostType] = "m5.xlarge"
 	resource := &resourcepb.Resource{
 		Type:   "container",
 		Labels: labels,

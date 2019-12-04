@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -70,11 +71,10 @@ func BenchmarkWithPool(b *testing.B) {
 
 func constructWriterPoolSpan() *tracepb.Span {
 	attributes := make(map[string]interface{})
-	attributes[ComponentAttribute] = HTTPComponentType
-	attributes[MethodAttribute] = "GET"
-	attributes[URLAttribute] = "https://api.example.com/users/junit"
-	attributes[UserAgentAttribute] = "PostmanRuntime/7.16.3"
-	attributes[ClientIPAttribute] = "192.168.15.32"
-	attributes[StatusCodeAttribute] = 200
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	return constructHTTPServerSpan(attributes)
 }
