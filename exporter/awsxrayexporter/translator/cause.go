@@ -19,6 +19,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
 // OpenTelemetry Semantic Convention attribute names for error/fault/exception related attributes
@@ -111,6 +112,6 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 }
 
 func isClientError(code int32) bool {
-	httpStatus := convertToHTTPStatusCode(code)
+	httpStatus := tracetranslator.HTTPStatusCodeFromOCStatus(code)
 	return httpStatus >= 400 && httpStatus < 500
 }
