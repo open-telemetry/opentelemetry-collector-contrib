@@ -15,7 +15,6 @@
 package translator
 
 import (
-	"net/http"
 	"strconv"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -43,47 +42,6 @@ type RequestData struct {
 type ResponseData struct {
 	Status        int64 `json:"status,omitempty"`
 	ContentLength int64 `json:"content_length,omitempty"`
-}
-
-func convertToHTTPStatusCode(code int32) int64 {
-	switch code {
-	case tracetranslator.OCOK:
-		return http.StatusOK
-	case tracetranslator.OCCancelled:
-		return 499 // Client Closed Request
-	case tracetranslator.OCUnknown:
-		return http.StatusInternalServerError
-	case tracetranslator.OCInvalidArgument:
-		return http.StatusBadRequest
-	case tracetranslator.OCDeadlineExceeded:
-		return http.StatusGatewayTimeout
-	case tracetranslator.OCNotFound:
-		return http.StatusNotFound
-	case tracetranslator.OCAlreadyExists:
-		return http.StatusConflict
-	case tracetranslator.OCPermissionDenied:
-		return http.StatusForbidden
-	case tracetranslator.OCResourceExhausted:
-		return http.StatusTooManyRequests
-	case tracetranslator.OCFailedPrecondition:
-		return http.StatusBadRequest
-	case tracetranslator.OCAborted:
-		return http.StatusConflict
-	case tracetranslator.OCOutOfRange:
-		return http.StatusBadRequest
-	case tracetranslator.OCUnimplemented:
-		return http.StatusNotImplemented
-	case tracetranslator.OCInternal:
-		return http.StatusInternalServerError
-	case tracetranslator.OCUnavailable:
-		return http.StatusServiceUnavailable
-	case tracetranslator.OCDataLoss:
-		return http.StatusInternalServerError
-	case tracetranslator.OCUnauthenticated:
-		return http.StatusUnauthorized
-	default:
-		return http.StatusInternalServerError
-	}
 }
 
 func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
@@ -151,7 +109,7 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 	}
 
 	if info.Response.Status == 0 {
-		info.Response.Status = convertToHTTPStatusCode(span.Status.Code)
+		info.Response.Status = int64(tracetranslator.HTTPStatusCodeFromOCStatus(span.Status.Code))
 	}
 
 	info.Response.ContentLength = extractResponseSizeFromEvents(span)

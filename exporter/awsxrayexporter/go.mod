@@ -110,7 +110,7 @@ require (
 	github.com/olivere/env v1.1.0 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	// TODO: pin a released version
-	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191203213105-fe3782c76de2
+	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205151336-8e2473c5e754
 	github.com/opentracing/basictracer-go v1.0.0 // indirect
 	github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.4 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
