@@ -39,13 +39,10 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
+.DEFAULT_GOAL := all
 
 .PHONY: all
-all: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test otelcontribcol
-
-.PHONY: addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test
-addlicense-fmt-impi-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt impi vet lint goimports misspell staticcheck test
+all: addlicense fmt impi vet lint goimports misspell staticcheck test otelcontribcol
 
 .PHONY: test
 test:
@@ -56,16 +53,14 @@ benchmark:
 	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
 .PHONY: ci
-ci: fmt vet lint goimports misspell staticcheck test-with-cover otelcontribcol
-	$(MAKE) -C testbed install-tools
-	$(MAKE) -C testbed runtests
+ci: all test-with-cover
 
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
-	@time go test -i $(ALL_PKGS)
+	go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
 	go tool cover -html=coverage.txt -o coverage.html
 
