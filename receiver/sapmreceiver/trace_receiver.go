@@ -1,0 +1,233 @@
+// Copyright 2019, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package sapmreceiver
+
+import (
+	"bytes"
+	"compress/gzip"
+	"context"
+	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/gorilla/mux"
+	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
+	splunksapm "github.com/signalfx/sapm-proto/gen"
+	"github.com/signalfx/sapm-proto/sapmprotocol"
+	"go.opencensus.io/trace"
+	"go.uber.org/zap"
+)
+
+const (
+	traceSource string = "sapm"
+)
+
+var gzipWriterPool = &sync.Pool{
+	New: func() interface{} {
+		return gzip.NewWriter(ioutil.Discard)
+	},
+}
+
+// sapmReceiver receives spans in the Splunk SAPM format over HTTP
+type sapmReceiver struct {
+	// mu protects the fields of this type
+	mu        sync.Mutex
+	startOnce sync.Once
+	stopOnce  sync.Once
+	logger    *zap.Logger
+
+	config *Config
+	server *http.Server
+
+	nextConsumer consumer.TraceConsumer
+
+	// defaultResponse is a placeholder. For now this receiver returns an empty sapm response.
+	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
+	// for every request. At some point this may be removed when there is actual content to return.
+	defaultResponse []byte
+}
+
+// handleRequest parses an http request containing sapm and passes the trace data to the next consumer
+func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) error {
+	sapm, err := sapmprotocol.ParseTraceV2Request(req)
+	// errors processing the request should return http.StatusBadRequest
+	if err != nil {
+		return err
+	}
+
+	// process sapm batches
+	for _, batch := range sapm.Batches {
+		// convert the jager batches to OCProto
+		td, err := jaegertranslator.ProtoBatchToOCProto(*batch)
+		if err != nil {
+			return err
+		}
+		td.SourceFormat = "sapm"
+
+		// pass the trace data to the next consumer
+		err = sr.nextConsumer.ConsumeTraceData(ctx, td)
+		if err != nil {
+			return fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
+		}
+
+		// We MUST unconditionally record metrics from this reception.
+		observability.RecordMetricsForTraceReceiver(ctx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
+	}
+
+	return nil
+}
+
+// HTTPHandlerFunction returns an http.HandlerFunc that handles SAPM requests
+func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
+	// create context with the receiver name from the request context
+	ctx := observability.ContextWithReceiverName(req.Context(), "sapm")
+
+	// trace this request
+	_, span := trace.StartSpan(ctx, traceSource)
+	defer span.End()
+
+	// handle the request payload
+	err := sr.handleRequest(ctx, req)
+	if err != nil {
+		// TODO account for this error (throttled logging or metrics)
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// respBytes are bytes to write to the http.Response
+
+	// build the response message
+	// NOTE currently the response is an empty struct.  As an optimization this receiver will pass a
+	// byte array that was generated in the receiver's constructor.  If this receiver needs to return
+	// more than an empty struct, then the sapm.PostSpansResponse{} struct will need to be marshalled
+	// and on error a http.StatusInternalServerError should be written to the http.ResponseWriter and
+	// this function should immediately return.
+	var respBytes = sr.defaultResponse
+	rw.Header().Set(sapmprotocol.ContentTypeHeaderName, sapmprotocol.ContentTypeHeaderValue)
+
+	// write the response if client does not accept gzip encoding
+	if req.Header.Get(sapmprotocol.AcceptEncodingHeaderName) != sapmprotocol.GZipEncodingHeaderValue {
+		// write the response bytes
+		rw.Write(respBytes)
+		return
+	}
+
+	// gzip the response
+
+	// get the gzip writer
+	writer := gzipWriterPool.Get().(*gzip.Writer)
+	defer gzipWriterPool.Put(writer)
+
+	var gzipBuffer bytes.Buffer
+
+	// reset the writer with the gzip buffer
+	writer.Reset(&gzipBuffer)
+
+	// gzip the responseBytes
+	_, err = writer.Write(respBytes)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// close the gzip writer and write gzip footer
+	err = writer.Close()
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// write the successfully gzipped payload
+	rw.Header().Set(sapmprotocol.ContentEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
+	rw.Write(gzipBuffer.Bytes())
+	return
+}
+
+// TraceSource implements receiver.TraceReceiver.TraceSource() and returns a tag describing the source format
+func (sr *sapmReceiver) TraceSource() string {
+	return traceSource
+}
+
+// StartTraceReception starts the sapmReceiver's server
+func (sr *sapmReceiver) StartTraceReception(host receiver.Host) error {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+
+	var err = oterr.ErrAlreadyStarted
+	sr.startOnce.Do(func() {
+		var ln net.Listener
+
+		// set up the listener
+		ln, err = net.Listen("tcp", sr.config.Endpoint)
+		if err != nil {
+			err = fmt.Errorf("failed to bind to address %s: %v", sr.config.Endpoint, err)
+			return
+		}
+
+		// use gorilla mux to create a router/handler
+		nr := mux.NewRouter()
+		nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
+
+		// create a server with the handler
+		sr.server = &http.Server{Handler: nr}
+
+		// run the server on a routine
+		go func() {
+			host.ReportFatalError(sr.server.Serve(ln))
+		}()
+	})
+	return err
+}
+
+// StopTraceRetention stops the the sapmReceiver's server
+func (sr *sapmReceiver) StopTraceReception() error {
+	sr.mu.Lock()
+	defer sr.mu.Unlock()
+
+	var err = oterr.ErrAlreadyStopped
+	sr.stopOnce.Do(func() {
+		if sr.server != nil {
+			err = sr.server.Close()
+			sr.server = nil
+		}
+	})
+
+	return err
+}
+
+// this validates at compile time that sapmReceiver implements the receiver.TraceReceiver interface
+var _ receiver.TraceReceiver = (*sapmReceiver)(nil)
+
+// New creates a sapmReceiver that receives SAPM over http
+func New(ctx context.Context, logger *zap.Logger, config *Config, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+	// build the response message
+	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal default response body for %s receiver: %v", config.Name(), err)
+	}
+	return &sapmReceiver{
+		logger:          logger,
+		config:          config,
+		nextConsumer:    nextConsumer,
+		defaultResponse: defaultResponse,
+	}, nil
+}
