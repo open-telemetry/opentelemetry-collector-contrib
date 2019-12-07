@@ -1,0 +1,16 @@
+receivers:
+  signalfx:
+  signalfx/allsettings:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx, signalfx/allsettings]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
