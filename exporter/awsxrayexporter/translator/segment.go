@@ -105,7 +105,7 @@ var (
 	writers = newWriterPool(2048)
 )
 
-// MakeSegmentDocumentString converts an Otel Span to an X-Ray Segment and then serialzies to JSON
+// MakeSegmentDocumentString converts an OpenCensus Span to an X-Ray Segment and then serialzies to JSON
 func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) {
 	segment := MakeSegment(name, span)
 	w := writers.borrow()
@@ -117,7 +117,7 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) 
 	return jsonStr, nil
 }
 
-// MakeSegment converts an Otel Span to an X-Ray Segment
+// MakeSegment converts an OpenCensus Span to an X-Ray Segment
 func MakeSegment(name string, span *tracepb.Span) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)

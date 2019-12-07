@@ -22,13 +22,6 @@ import (
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 )
 
-// OpenTelemetry Semantic Convention attribute names for error/fault/exception related attributes
-const (
-	ErrorObjectAttribute  = "error.object"
-	ErrorMessageAttribute = "error.message"
-	ErrorKindAttribute    = "error.kind"
-)
-
 // CauseData provides the shape for unmarshalling data that records exception.
 type CauseData struct {
 	WorkingDirectory string      `json:"working_directory,omitempty"`
@@ -66,18 +59,10 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 	filtered = make(map[string]string)
 	for key, value := range attributes {
 		switch key {
-		case ErrorKindAttribute:
-			errorKind = value
-		case ErrorMessageAttribute:
-			if message == "" {
-				message = value
-			}
 		case semconventions.AttributeHTTPStatusText:
 			if message == "" {
 				message = value
 			}
-		case ErrorObjectAttribute:
-			errorObject = value
 		default:
 			filtered[key] = value
 		}
