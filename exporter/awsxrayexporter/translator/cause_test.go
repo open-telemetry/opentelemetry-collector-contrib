@@ -75,31 +75,6 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
-func TestCauseWithErrorMessage(t *testing.T) {
-	errorMsg := "this is a test"
-	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeHTTPMethod] = "POST"
-	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[ErrorMessageAttribute] = errorMsg
-	span := constructExceptionServerSpan(attributes)
-	filtered, _ := makeHTTP(span)
-
-	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
-
-	assert.False(t, isError)
-	assert.True(t, isFault)
-	assert.NotNil(t, filtered)
-	assert.NotNil(t, cause)
-	w := testWriters.borrow()
-	if err := w.Encode(cause); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, errorMsg))
-}
-
 func constructExceptionServerSpan(attributes map[string]interface{}) *tracepb.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)

@@ -89,7 +89,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.org/api/locations"
 	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	attributes[ErrorKindAttribute] = "java.lang.NullPointerException"
+	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
 	labels := constructDefaultResourceLabels()
 	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
