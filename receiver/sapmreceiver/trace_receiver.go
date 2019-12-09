@@ -159,7 +159,6 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// write the successfully gzipped payload
 	rw.Header().Set(sapmprotocol.ContentEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
 	rw.Write(gzipBuffer.Bytes())
-	return
 }
 
 // TraceSource implements receiver.TraceReceiver.TraceSource() and returns a tag describing the source format
