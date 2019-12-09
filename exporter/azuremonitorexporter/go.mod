@@ -1,4 +1,4 @@
-module azuremonitorexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
 
 go 1.12
 
