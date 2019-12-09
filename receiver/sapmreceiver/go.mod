@@ -1,4 +1,4 @@
-module github.com/optelemetry-collector-contrib/receiver/sapmreceiver
+module github.com/openlemetry-collector-contrib/receiver/sapmreceiver
 
 go 1.12
 

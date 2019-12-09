@@ -1,11 +1,8 @@
-# More exclusions can be added similar with: -not -path './vendor/*'
 ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path './vendor/*' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
-                                -not -path './vendor/*' \
                                 -type f | sort)
 
 # ALL_PKGS is used with 'go cover'
@@ -23,6 +20,7 @@ ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
+IMPI=impi
 
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
@@ -30,14 +28,18 @@ all-pkgs:
 all-srcs:
 	@echo $(ALL_SRC) | tr ' ' '\n' | sort
 
-.DEFAULT_GOAL := addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
+.DEFAULT_GOAL := common
 
-.PHONY: addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test
-addlicense-fmt-vet-lint-goimports-misspell-staticcheck-test: addlicense fmt vet lint goimports misspell staticcheck test
+.PHONY: common
+common: addlicense fmt impi vet lint goimports misspell staticcheck test
 
 .PHONY: test
 test:
 	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
+
+.PHONY: benchmark
+benchmark:
+	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
 
 .PHONY: addlicense
 addlicense:
@@ -74,7 +76,7 @@ lint:
 
 .PHONY: goimports
 goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -d . 2>&1`; \
+	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector-contrib -d . 2>&1`; \
 	if [ "$$IMPORTSOUT" ]; then \
 		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
 		echo "$$IMPORTSOUT\n"; \
@@ -99,3 +101,7 @@ staticcheck:
 vet:
 	@$(GOVET) ./...
 	@echo "Vet finished successfully"
+
+.PHONY: impi
+impi:
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...

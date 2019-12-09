@@ -1,28 +1,5 @@
-# More exclusions can be added similar with: -not -path './testbed/*'
-ALL_SRC := $(shell find . -name '*.go' \
-                                -not -path './testbed/*' \
-                                -type f | sort)
+include ./Makefile.Common
 
-# All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
-                                -type f | sort)
-
-# ALL_PKGS is used with 'go cover'
-ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))))
-
-GOTEST_OPT?= -race -timeout 30s
-GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST=go test
-GOFMT=gofmt
-GOIMPORTS=goimports
-GOLINT=golint
-GOVET=go vet
-GOOS=$(shell go env GOOS)
-ADDLICENCESE= addlicense
-MISSPELL=misspell -error
-MISSPELL_CORRECTION=misspell -w
-STATICCHECK=staticcheck
-IMPI=impi
 RUN_CONFIG=local/config.yaml
 
 GIT_SHA=$(shell git rev-parse --short HEAD)
@@ -33,24 +10,10 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 
-all-pkgs:
-	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
-
-all-srcs:
-	@echo $(ALL_SRC) | tr ' ' '\n' | sort
-
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: addlicense fmt impi vet lint goimports misspell staticcheck test otelcontribcol
-
-.PHONY: test
-test:
-	$(GOTEST) $(GOTEST_OPT) $(ALL_PKGS)
-
-.PHONY: benchmark
-benchmark:
-	$(GOTEST) -bench=. -run=notests $(ALL_PKGS)
+all: common otelcontribcol
 
 .PHONY: ci
 ci: all test-with-cover
@@ -63,71 +26,6 @@ test-with-cover:
 	go test -i $(ALL_PKGS)
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
 	go tool cover -html=coverage.txt -o coverage.html
-
-.PHONY: addlicense
-addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y 2019 -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
-		if [ "$$ADDLICENCESEOUT" ]; then \
-			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
-			echo "$$ADDLICENCESEOUT\n"; \
-			exit 1; \
-		else \
-			echo "Add License finished successfully"; \
-		fi
-
-.PHONY: fmt
-fmt:
-	@FMTOUT=`$(GOFMT) -s -l $(ALL_SRC) 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Fmt finished successfully"; \
-	fi
-
-.PHONY: lint
-lint:
-	@LINTOUT=`$(GOLINT) $(ALL_PKGS) 2>&1`; \
-	if [ "$$LINTOUT" ]; then \
-		echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
-		echo "$$LINTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Lint finished successfully"; \
-	fi
-
-.PHONY: goimports
-goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector-contrib -d . 2>&1`; \
-	if [ "$$IMPORTSOUT" ]; then \
-		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
-		echo "$$IMPORTSOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Goimports finished successfully"; \
-	fi
-
-.PHONY: misspell
-misspell:
-	$(MISSPELL) $(ALL_SRC_AND_DOC)
-
-.PHONY: misspell-correction
-misspell-correction:
-	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-
-.PHONY: staticcheck
-staticcheck:
-	$(STATICCHECK) ./...
-
-.PHONY: vet
-vet:
-	@$(GOVET) ./...
-	@echo "Vet finished successfully"
-
-.PHONY: impi
-impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: install-tools
 install-tools:
