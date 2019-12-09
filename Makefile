@@ -15,6 +15,10 @@ BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2}"
 .PHONY: all
 all: common otelcontribcol
 
+.PHONY: e2e-test
+e2e-test: otelcontribcol
+	$(MAKE) -C testbed runtests
+
 .PHONY: ci
 ci: all test-with-cover
 
