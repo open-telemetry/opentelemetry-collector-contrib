@@ -21,6 +21,8 @@ e2e-test: otelcontribcol
 
 .PHONY: ci
 ci: all test-with-cover
+	$(MAKE) -C testbed install-tools
+	$(MAKE) -C testbed runtests
 
 .PHONY: test-with-cover
 test-with-cover:

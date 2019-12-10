@@ -16,3 +16,7 @@ jobs:
       - run:
           name: Verify
           command: make ci
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
