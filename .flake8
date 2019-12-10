@@ -11,6 +11,8 @@ exclude =
   .svn
   .tox
   CVS
+  .venv*/
+  venv*/
   target
   __pycache__
   ext/opentelemetry-ext-jaeger/src/opentelemetry/ext/jaeger/gen/
