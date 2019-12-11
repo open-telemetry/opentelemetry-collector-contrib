@@ -317,7 +317,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) trace
 			Annotation: &annotation,
 		},
 	}
-	events := make([]*tracepb.Span_TimeEvent, 1, 1)
+	events := make([]*tracepb.Span_TimeEvent, 1)
 	events[0] = &event
 	timeEvents := tracepb.Span_TimeEvents{
 		TimeEvent:                 events,
@@ -353,7 +353,7 @@ func constructTimedEventsWithSentMessageEvent(tm *timestamp.Timestamp) tracepb.S
 			Annotation: &annotation,
 		},
 	}
-	events := make([]*tracepb.Span_TimeEvent, 1, 1)
+	events := make([]*tracepb.Span_TimeEvent, 1)
 	events[0] = &event
 	timeEvents := tracepb.Span_TimeEvents{
 		TimeEvent:                 events,

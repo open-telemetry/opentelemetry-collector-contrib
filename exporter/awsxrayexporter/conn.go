@@ -201,7 +201,7 @@ func (c *Conn) newAWSSession(logger *zap.Logger, roleArn string, region string) 
 			return s, err
 		}
 	} else {
-		stsCreds, err := getSTSCreds(logger, region, roleArn)
+		stsCreds, _ := getSTSCreds(logger, region, roleArn)
 
 		s, err = session.NewSession(&aws.Config{
 			Credentials: stsCreds,
