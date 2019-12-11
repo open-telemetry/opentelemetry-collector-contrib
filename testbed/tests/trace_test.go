@@ -22,7 +22,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
-	"github.com/open-telemetry/opentelemetry-collector/testutils"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -30,17 +29,22 @@ func TestMain(m *testing.M) {
 	testbed.DoTestMain(m)
 }
 
-func Test10kSPS(t *testing.T) {
+func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
 		name     string
 		receiver testbed.Receiver
 	}{
-		{"JaegerRx", testbed.NewJaegerReceiver(int(testutils.GetAvailablePort(t)))},
+		{"JaegerReceiver", testbed.NewJaegerReceiver(testbed.GetAvailablePort(t))},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scenarios.Scenario10kSPS(t, testbed.NewJaegerExporter(int(testutils.GetAvailablePort(t))), test.receiver)
+			scenarios.Scenario10kItemsPerSecond(
+				t,
+				testbed.NewJaegerExporter(testbed.GetAvailablePort(t)),
+				test.receiver,
+				testbed.LoadOptions{},
+			)
 		})
 	}
 }
