@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -53,6 +54,7 @@ func components() (config.Factories, error) {
 		&stackdriverexporter.Factory{},
 		&azuremonitorexporter.Factory{},
 		&signalfxexporter.Factory{},
+		&sapmexporter.Factory{},
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
