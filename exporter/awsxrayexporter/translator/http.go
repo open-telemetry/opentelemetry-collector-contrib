@@ -206,7 +206,7 @@ func constructServerURL(component string, urlParts map[string]string) string {
 	if !ok {
 		host, ok = urlParts[semconventions.AttributeHTTPServerName]
 		if !ok {
-			host, ok = urlParts[semconventions.AttributeHostName]
+			host = urlParts[semconventions.AttributeHostName]
 		}
 		port, ok = urlParts[semconventions.AttributeHTTPHostPort]
 		if !ok {

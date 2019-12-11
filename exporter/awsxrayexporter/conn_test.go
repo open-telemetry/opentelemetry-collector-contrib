@@ -89,7 +89,7 @@ func loadExporterConfig(t *testing.T) *Config {
 	assert.Nil(t, err)
 	factory := &Factory{}
 	factories.Exporters[factory.Type()] = factory
-	otelcfg, err := config.LoadConfigFile(
+	otelcfg, _ := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 	xrayExporterCfg := otelcfg.Exporters["awsxray"].(*Config)

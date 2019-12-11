@@ -20,7 +20,6 @@ import (
 	"math/rand"
 	"reflect"
 	"regexp"
-	"sync"
 	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -39,8 +38,6 @@ const (
 
 var (
 	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	r          = rand.New(rand.NewSource(time.Now().UnixNano())) // random, not secure
-	mutex      = &sync.Mutex{}
 )
 
 var (
