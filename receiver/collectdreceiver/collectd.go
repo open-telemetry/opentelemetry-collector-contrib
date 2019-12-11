@@ -234,9 +234,7 @@ func labelsFromName(val *string) (instanceName string, toAddDims map[string]stri
 				}
 				piece := dimensions[prev:cindex]
 				tindex := strings.Index(piece, "=")
-				//lint:ignore S1004 staticcheck wants us to use strings.Contains instead of Index but we need to use
-				// the index later in the function in addition to checking for existence of char.
-				if tindex == -1 || strings.Index(piece[tindex+1:], "=") > -1 {
+				if tindex == -1 || strings.Contains(piece[tindex+1:], "=") {
 					return
 				}
 				working[piece[:tindex]] = piece[tindex+1:]
