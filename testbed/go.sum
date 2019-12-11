@@ -4,6 +4,7 @@ cloud.google.com/go v0.38.0/go.mod h1:990N+gfupTy94rShfmMCWGDn0LpTmnzTp2qbd1dvSR
 cloud.google.com/go v0.44.1/go.mod h1:iSa0KzasP4Uvy3f1mN/7PiObzGgflwredwwASm/v6AU=
 contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948 h1:xdP25yLqNGSnpfDmEChwA9ZuKLdiyL0jqJKPm/Ypfag=
 contrib.go.opencensus.io/exporter/jaeger v0.1.1-0.20190430175949-e8b55949d948/go.mod h1:ukdzwIYYHgZ7QYtwVFQUjiT28BJHiMhTERo32s6qVgM=
+contrib.go.opencensus.io/exporter/ocagent v0.6.0 h1:Z1n6UAyr0QwM284yUuh5Zd8JlvxUGAhFZcgMJkMPrGM=
 contrib.go.opencensus.io/exporter/ocagent v0.6.0/go.mod h1:zmKjrJcdo0aYcVS7bmEeSEBLPA9YJp5bjrofdU3pIXs=
 contrib.go.opencensus.io/exporter/prometheus v0.1.0/go.mod h1:cGFniUXGZlKRjzOyuZJ6mgB+PgBcCIa79kEKR8YCW+A=
 contrib.go.opencensus.io/resource v0.1.2/go.mod h1:F361eGI91LCmW1I/Saf+rX0+OFcigGlFvXwEGEnkRLA=
@@ -369,10 +370,14 @@ github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed6
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed61e5bac/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191209163440-5d463fe48816 h1:jVHc4z0F+QFSVWwpyE5aq4qXMseHEDZFLVueVsFze6M=
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191209163440-5d463fe48816/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191211145602-94066e4c70c1 h1:hpxbVMM+AK4T5xxugQGO6NF7h/Inj3F+BdRiYeiBRb8=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191211145602-94066e4c70c1/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
 github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191206193345-8739948139e0 h1:E0PePrVOI/qnjZLH46e5fDMZGiJpyQIZxC86wAIFp9w=
 github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191206193345-8739948139e0/go.mod h1:bd5+hmcMPWQNXGrgUmfxTESLvlGpvRBUNaRX/TxTfuk=
 github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191209163440-5d463fe48816 h1:vGnpaKTVNqf8Vdrw/vQBAGVM1pkb8I98YIvqWPFuw1I=
 github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191209163440-5d463fe48816/go.mod h1:bd5+hmcMPWQNXGrgUmfxTESLvlGpvRBUNaRX/TxTfuk=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191211145602-94066e4c70c1 h1:T/EY2fKzuUDkDcVZ7Nr9ZJPqcvyfoomC+3UIHuV2Liw=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191211145602-94066e4c70c1/go.mod h1:0x5LWC/8hyS8Q8fCi0elhTYf9S94RzRX6ZgL7EiYvlQ=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
