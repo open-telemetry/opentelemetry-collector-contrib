@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	r1 := cfg.Exporters["sapm/customname"].(*Config)
-	maxRetries := uint64(10)
+	maxRetries := uint(10)
 	assert.Equal(t, r1,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "sapm/customname"},

@@ -31,12 +31,12 @@ type Config struct {
 
 	// NumWorkers is the number of workers that should be used to export traces.
 	// Exporter can make as many requests in parallel as the number of workers.
-	NumWorkers uint64 `mapstructure:"num_workers"`
+	NumWorkers uint `mapstructure:"num_workers"`
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
-	MaxConnections uint64 `mapstructure:"max_connections"`
+	MaxConnections uint `mapstructure:"max_connections"`
 
 	// MaxRetries is maximum number of retry attempts the exporter should make before dropping a span batch.
 	// Note that right now this is only used when the server responds with HTTP 429 (tries to rate limit the client)
-	MaxRetries *uint64 `mapstructure:"max_retries"`
+	MaxRetries *uint `mapstructure:"max_retries"`
 }
