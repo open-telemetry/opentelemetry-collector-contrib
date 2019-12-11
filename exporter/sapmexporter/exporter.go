@@ -60,7 +60,7 @@ func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (exporter.TraceExport
 	}
 
 	if cfg.AccessToken != "" {
-		opts = append(opts, sapmclient.WithAuthToken(cfg.AccessToken))
+		opts = append(opts, sapmclient.WithAccessToken(cfg.AccessToken))
 	}
 
 	client, err := sapmclient.New(opts...)
