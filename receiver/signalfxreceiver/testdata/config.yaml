@@ -1,6 +1,9 @@
 receivers:
   signalfx:
   signalfx/allsettings:
+    # endpoint specifies the network interface and port which will receive
+    # SignalFx metrics.
+    endpoint: localhost:8080
 
 processors:
   exampleprocessor:

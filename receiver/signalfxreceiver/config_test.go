@@ -46,8 +46,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "signalfx/allsettings",
+				TypeVal:  typeStr,
+				NameVal:  "signalfx/allsettings",
+				Endpoint: "localhost:8080",
 			},
 		})
 }
