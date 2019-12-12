@@ -222,39 +222,6 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 	}
 }
 
-func strPtr(s string) *string {
-	l := s
-	return &l
-}
-
-func int64Ptr(i int64) *int64 {
-	l := i
-	return &l
-}
-
-func float64Ptr(f float64) *float64 {
-	l := f
-	return &l
-}
-
-func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	l := t
-	return &l
-}
-
-func buildNDimensions(n uint) []*sfxpb.Dimension {
-	d := make([]*sfxpb.Dimension, 0, n)
-	for i := uint(0); i < n; i++ {
-		idx := int(i)
-		suffix := strconv.Itoa(idx)
-		d = append(d, &sfxpb.Dimension{
-			Key:   strPtr("k" + suffix),
-			Value: strPtr("v" + suffix),
-		})
-	}
-	return d
-}
-
 func Test_buildPoint_errors(t *testing.T) {
 	type args struct {
 		sfxDataPoint       *sfxpb.DataPoint
@@ -298,6 +265,15 @@ func Test_buildPoint_errors(t *testing.T) {
 			wantErr: errSFxUnexpectedFloat64DatumType,
 		},
 		{
+			name: "no_value",
+			args: args{
+				sfxDataPoint: &sfxpb.DataPoint{
+					Value: &sfxpb.Datum{},
+				},
+			},
+			wantErr: errSFxNoDatumValue,
+		},
+		{
 			name: "unexpect_str_value",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
@@ -309,13 +285,26 @@ func Test_buildPoint_errors(t *testing.T) {
 			wantErr: errSFxUnexpectedStringDatumType,
 		},
 		{
-			name: "no_value",
+			name: "dbl_as_str",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{},
+					Value: &sfxpb.Datum{StrValue: strPtr("13.13")},
 				},
+				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
 			},
-			wantErr: errSFxNoDatumValue,
+			want: &metricspb.Point{
+				Value: &metricspb.Point_DoubleValue{DoubleValue: 13.13},
+			},
+		},
+		{
+			name: "str_not_dbl",
+			args: args{
+				sfxDataPoint: &sfxpb.DataPoint{
+					Value: &sfxpb.Datum{StrValue: strPtr("not_a_number")},
+				},
+				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			},
+			wantErr: errSFxStringDatumNotNumber,
 		},
 	}
 	for _, tt := range tests {
@@ -325,4 +314,37 @@ func Test_buildPoint_errors(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
+}
+
+func strPtr(s string) *string {
+	l := s
+	return &l
+}
+
+func int64Ptr(i int64) *int64 {
+	l := i
+	return &l
+}
+
+func float64Ptr(f float64) *float64 {
+	l := f
+	return &l
+}
+
+func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
+	l := t
+	return &l
+}
+
+func buildNDimensions(n uint) []*sfxpb.Dimension {
+	d := make([]*sfxpb.Dimension, 0, n)
+	for i := uint(0); i < n; i++ {
+		idx := int(i)
+		suffix := strconv.Itoa(idx)
+		d = append(d, &sfxpb.Dimension{
+			Key:   strPtr("k" + suffix),
+			Value: strPtr("v" + suffix),
+		})
+	}
+	return d
 }

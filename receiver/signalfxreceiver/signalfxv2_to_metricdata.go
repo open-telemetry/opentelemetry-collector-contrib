@@ -17,6 +17,7 @@ package signalfxreceiver
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -32,6 +33,7 @@ var (
 	errSFxUnexpectedInt64DatumType   = errors.New("datum value type of int64 is unexpected")
 	errSFxUnexpectedFloat64DatumType = errors.New("datum value type of float64 is unexpected")
 	errSFxUnexpectedStringDatumType  = errors.New("datum value type of string is unexpected")
+	errSFxStringDatumNotNumber       = errors.New("datum string cannot be parsed to a number")
 	errSFxNoDatumValue               = errors.New("no datum value present for data-point")
 )
 
@@ -125,8 +127,8 @@ func convertType(
 	case sfxpb.MetricType_ENUM:
 		// String: Used for non-continuous quantities (that is, measurements where there is a fixed
 		// set of meaningful values). This is essentially a special case of gauge.
-		// TODO: attempt to treat it as a numeric metric.
-		err = errSFxMetricTypeEnumNotSupported
+		// Attempt to treat it as a numeric gauge.
+		descType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 
 	default:
 		err = fmt.Errorf("unknown data-point type (%d)", sfxMetricType)
@@ -165,7 +167,14 @@ func buildPoint(
 		p.Value = &metricspb.Point_DoubleValue{DoubleValue: *sfxDataPoint.Value.DoubleValue}
 
 	case sfxDataPoint.Value.StrValue != nil:
-		return nil, errSFxUnexpectedStringDatumType
+		if expectedMetricType != metricspb.MetricDescriptor_GAUGE_DOUBLE {
+			return nil, errSFxUnexpectedStringDatumType
+		}
+		dbl, err := strconv.ParseFloat(*sfxDataPoint.Value.StrValue, 64)
+		if err != nil {
+			return nil, errSFxStringDatumNotNumber
+		}
+		p.Value = &metricspb.Point_DoubleValue{DoubleValue: dbl}
 
 	default:
 		return nil, errSFxNoDatumValue
