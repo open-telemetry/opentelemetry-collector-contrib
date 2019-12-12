@@ -125,7 +125,7 @@ func convertType(
 	case sfxpb.MetricType_ENUM:
 		// String: Used for non-continuous quantities (that is, measurements where there is a fixed
 		// set of meaningful values). This is essentially a special case of gauge.
-		// TODO: add a way to support this type?
+		// TODO: attempt to treat it as a numeric metric.
 		err = errSFxMetricTypeEnumNotSupported
 
 	default:
@@ -212,7 +212,7 @@ func buildLabelKeysAndValues(
 	values := make([]*metricspb.LabelValue, 0, len(dimensions))
 	for _, dim := range dimensions {
 		if dim == nil {
-			// TODO: Log or metric this odd ball
+			// TODO: Log or metric for this odd ball?
 			continue
 		}
 		lk := &metricspb.LabelKey{Key: *dim.Key}

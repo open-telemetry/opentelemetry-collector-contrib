@@ -166,9 +166,9 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var err error
 	bodyReader := req.Body
 	if encoding == "gzip" {
+		var err error
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
 			r.failRequest(resp, http.StatusBadRequest, responseErrGzipReader, err, span)

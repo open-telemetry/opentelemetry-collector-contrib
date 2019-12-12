@@ -13,5 +13,5 @@
 // limitations under the License.
 
 // Package signalfxreceiver implements a receiver that can be used by the
-// Opentelemetry collector to receive data in the SignalFx supported formats.
+// OpenTelemetry collector to receive data in the SignalFx supported formats.
 package signalfxreceiver
