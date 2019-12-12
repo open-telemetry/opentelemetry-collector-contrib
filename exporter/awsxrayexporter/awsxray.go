@@ -27,8 +27,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 )
 
-// NewTraceExporter creates an exporter.TraceExporter that just drops the
-// received data and logs debugging messages.
+// NewTraceExporter creates an exporter.TraceExporter that converts to an X-Ray PutTraceSegments
+// request and then posts the request to the configured region's X-Ray endpoint.
 func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (exporter.TraceExporter, error) {
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
@@ -44,6 +44,9 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 			droppedSpans, input := assembleRequest(td, logger)
 			logger.Debug("request: " + input.String())
 			output, err := xrayClient.PutTraceSegments(input)
+			if config.(*Config).LocalMode {
+				err = nil // test mode, ignore errors
+			}
 			logger.Debug("response: " + output.String())
 			if output != nil && output.UnprocessedTraceSegments != nil {
 				droppedSpans += len(output.UnprocessedTraceSegments)
