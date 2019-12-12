@@ -17,6 +17,7 @@ package awsxrayexporter
 import (
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -43,6 +44,10 @@ func TestTraceExport(t *testing.T) {
 }
 
 func initializeTraceExporter() exporter.TraceExporter {
+	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
+	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	os.Setenv("AWS_REGION", "us-east-1")
 	logger := zap.NewNop()
 	factory := Factory{}
 	config := factory.CreateDefaultConfig()
