@@ -32,16 +32,16 @@ func TestMain(m *testing.M) {
 func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
 		name     string
-		receiver testbed.Receiver
+		receiver testbed.DataReceiver
 	}{
-		{"JaegerReceiver", testbed.NewJaegerReceiver(testbed.GetAvailablePort(t))},
+		{"JaegerReceiver", testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t))},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			scenarios.Scenario10kItemsPerSecond(
 				t,
-				testbed.NewJaegerExporter(testbed.GetAvailablePort(t)),
+				testbed.NewJaegerDataSender(testbed.GetAvailablePort(t)),
 				test.receiver,
 				testbed.LoadOptions{},
 			)
