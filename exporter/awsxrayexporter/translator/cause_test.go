@@ -81,9 +81,9 @@ func constructExceptionServerSpan(attributes map[string]interface{}) *tracepb.Sp
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      NewTraceID(),
-		SpanId:       NewSegmentID(),
-		ParentSpanId: NewSegmentID(),
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/widgets"},
 		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),

@@ -72,7 +72,7 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 	}
 
 	if message != "" {
-		id := NewSegmentID()
+		id := newSegmentID()
 		hexID := hex.EncodeToString(id)
 
 		cause = &CauseData{

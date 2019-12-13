@@ -127,7 +127,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		user, annotations                      = makeAnnotations(sqlfiltered)
+		annotations                            = makeAnnotations(sqlfiltered)
 		namespace                              string
 	)
 
@@ -151,7 +151,6 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		Cause:       cause,
 		Origin:      origin,
 		Namespace:   namespace,
-		User:        user,
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
@@ -161,8 +160,8 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 	}
 }
 
-// NewTraceID generates a new valid X-Ray TraceID
-func NewTraceID() []byte {
+// newTraceID generates a new valid X-Ray TraceID
+func newTraceID() []byte {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -173,8 +172,8 @@ func NewTraceID() []byte {
 	return r[:]
 }
 
-// NewSegmentID generates a new valid X-Ray SegmentID
-func NewSegmentID() []byte {
+// newSegmentID generates a new valid X-Ray SegmentID
+func newSegmentID() []byte {
 	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {
@@ -267,26 +266,25 @@ func timestampToFloatSeconds(ts *timestamp.Timestamp, startTs *timestamp.Timesta
 	return float64(t.UnixNano()) / 1e9
 }
 
-func mergeAnnotations(dest map[string]interface{}, src map[string]string) {
+func sanitizeAndTransferAnnotations(dest map[string]interface{}, src map[string]string) {
 	for key, value := range src {
 		key = fixAnnotationKey(key)
 		dest[key] = value
 	}
 }
 
-func makeAnnotations(attributes map[string]string) (string, map[string]interface{}) {
+func makeAnnotations(attributes map[string]string) map[string]interface{} {
 	var (
 		result = map[string]interface{}{}
-		user   string
 	)
 
 	delete(attributes, semconventions.AttributeComponent)
-	mergeAnnotations(result, attributes)
+	sanitizeAndTransferAnnotations(result, attributes)
 
 	if len(result) == 0 {
-		return user, nil
+		return nil
 	}
-	return user, result
+	return result
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines

@@ -16,7 +16,9 @@ package awsxrayexporter
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"os"
 	"reflect"
 	"testing"
@@ -31,8 +33,6 @@ import (
 	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 )
 
 func TestTraceExport(t *testing.T) {
@@ -104,9 +104,9 @@ func constructHTTPClientSpan() *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      translator.NewTraceID(),
-		SpanId:       translator.NewSegmentID(),
-		ParentSpanId: translator.NewSegmentID(),
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_CLIENT,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -140,9 +140,9 @@ func constructHTTPServerSpan() *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      translator.NewTraceID(),
-		SpanId:       translator.NewSegmentID(),
-		ParentSpanId: translator.NewSegmentID(),
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -196,4 +196,24 @@ func constructSpanAttributes(attributes map[string]interface{}) map[string]*trac
 		attrs[key] = &attrVal
 	}
 	return attrs
+}
+
+func newTraceID() []byte {
+	var r [16]byte
+	epoch := time.Now().Unix()
+	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
+	_, err := rand.Read(r[4:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
+}
+
+func newSegmentID() []byte {
+	var r [8]byte
+	_, err := rand.Read(r[:])
+	if err != nil {
+		panic(err)
+	}
+	return r[:]
 }
