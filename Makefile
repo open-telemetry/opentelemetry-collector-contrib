@@ -29,9 +29,12 @@ test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
-	go test -i $(ALL_PKGS)
-	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
-	go tool cover -html=coverage.txt -o coverage.html
+	set -e; for dir in $(ALL_TEST_DIRS); do \
+	  echo "go test ./... + coverage in $${dir}"; \
+	  (cd "$${dir}" && \
+	    $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... && \
+	 	go tool cover -html=coverage.txt -o coverage.html ); \
+	done
 
 .PHONY: install-tools
 install-tools:
