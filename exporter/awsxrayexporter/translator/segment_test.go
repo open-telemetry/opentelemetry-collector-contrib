@@ -56,7 +56,7 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
-	parentSpanID := NewSegmentID()
+	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
@@ -81,7 +81,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := NewSegmentID()
+	parentSpanID := newSegmentID()
 	errorMessage := "java.lang.NullPointerException"
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
@@ -172,11 +172,32 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "1-11"))
 }
 
+func TestFixSegmentName(t *testing.T) {
+	validName := "EP @ test_15.testing-d\u00F6main.org#GO"
+	fixedName := fixSegmentName(validName)
+	assert.Equal(t, validName, fixedName)
+	invalidName := "<subDomain>.example.com"
+	fixedName = fixSegmentName(invalidName)
+	assert.Equal(t, "subDomain.example.com", fixedName)
+	fullyInvalidName := "<>"
+	fixedName = fixSegmentName(fullyInvalidName)
+	assert.Equal(t, defaultSegmentName, fixedName)
+}
+
+func TestFixAnnotationKey(t *testing.T) {
+	validKey := "Key_1"
+	fixedKey := fixAnnotationKey(validKey)
+	assert.Equal(t, validKey, fixedKey)
+	invalidKey := "Key@1"
+	fixedKey = fixAnnotationKey(invalidKey)
+	assert.Equal(t, "Key_1", fixedKey)
+}
+
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceID        = NewTraceID()
-		spanID         = NewSegmentID()
+		traceID        = newTraceID()
+		spanID         = newSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)
@@ -207,8 +228,8 @@ func constructClientSpan(parentSpanID []byte, name string, code int32, message s
 func constructServerSpan(parentSpanID []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (
-		traceID        = NewTraceID()
-		spanID         = NewSegmentID()
+		traceID        = newTraceID()
+		spanID         = newSegmentID()
 		endTime        = time.Now()
 		startTime      = endTime.Add(-215 * time.Millisecond)
 		spanAttributes = constructSpanAttributes(attributes)

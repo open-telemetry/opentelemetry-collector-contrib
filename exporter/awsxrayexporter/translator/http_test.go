@@ -264,9 +264,9 @@ func constructHTTPClientSpan(attributes map[string]interface{}) *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      NewTraceID(),
-		SpanId:       NewSegmentID(),
-		ParentSpanId: NewSegmentID(),
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_CLIENT,
 		StartTime:    convertTimeToTimestamp(startTime),
@@ -298,9 +298,9 @@ func constructHTTPServerSpan(attributes map[string]interface{}) *tracepb.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	return &tracepb.Span{
-		TraceId:      NewTraceID(),
-		SpanId:       NewSegmentID(),
-		ParentSpanId: NewSegmentID(),
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
 		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
 		Kind:         tracepb.Span_SERVER,
 		StartTime:    convertTimeToTimestamp(startTime),
