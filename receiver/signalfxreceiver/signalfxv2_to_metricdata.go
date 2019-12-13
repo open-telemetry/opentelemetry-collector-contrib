@@ -27,8 +27,7 @@ import (
 )
 
 var (
-	errSFxNilDatum                   = errors.New("nil datum value for data-point")
-	errSFxMetricTypeEnumNotSupported = errors.New("data-point of MetricType_ENUM type is not supported")
+	errSFxNilDatum = errors.New("nil datum value for data-point")
 
 	errSFxUnexpectedInt64DatumType   = errors.New("datum value type of int64 is unexpected")
 	errSFxUnexpectedFloat64DatumType = errors.New("datum value type of float64 is unexpected")
@@ -102,7 +101,7 @@ func convertType(
 	sfxMetricType := sfxDataPoint.GetMetricType()
 	sfxDatum := sfxDataPoint.Value
 	if sfxDatum == nil {
-		return descType, errSFxNilDatum
+		return metricspb.MetricDescriptor_UNSPECIFIED, errSFxNilDatum
 	}
 
 	switch sfxMetricType {

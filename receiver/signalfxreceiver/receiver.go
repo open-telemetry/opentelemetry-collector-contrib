@@ -44,6 +44,12 @@ const (
 	responseErrReadBody        = "Failed to read message body"
 	responseErrUnmarshalBody   = "Failed to unmarshal message body"
 	responseErrNextConsumer    = "Internal Server Error"
+
+	// Centralizing some HTTP and related string constants.
+	protobufContentType       = "application/x-protobuf"
+	gzipEncoding              = "gzip"
+	httpContentTypeHeader     = "Content-Type"
+	httpContentEncodingHeader = "Content-Encoding"
 )
 
 var (
@@ -51,7 +57,7 @@ var (
 	errEmptyEndpoint   = errors.New("empty endpoint")
 )
 
-// sfxReceiver implements the receiver.TraceReceiver for Zipkin Scribe protocol.
+// sfxReceiver implements the receiver.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
 	sync.Mutex
 	logger       *zap.Logger
@@ -85,12 +91,6 @@ func New(
 		return nil, errEmptyEndpoint
 	}
 
-	// Handle config zero values.
-	if config.Name() == "" {
-		config.SetType(typeStr)
-		config.SetName(typeStr)
-	}
-
 	r := &sfxReceiver{
 		logger:       logger,
 		config:       &config,
@@ -112,7 +112,8 @@ func New(
 }
 
 // StartMetricsReception tells the receiver to start its processing.
-// By convention the consumer of the data received is set at creation time.
+// By convention the consumer of the received data is set when the receiver
+// instance is created.
 func (r *sfxReceiver) StartMetricsReception(host receiver.Host) error {
 	r.Lock()
 	defer r.Unlock()
@@ -150,24 +151,24 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	spanCtx, span := trace.StartSpan(reqCtx, r.config.Name())
 	defer span.End()
 
-	if req.Method != "POST" {
+	if req.Method != http.MethodPost {
 		r.failRequest(resp, http.StatusBadRequest, responseInvalidMethod, nil, span)
 		return
 	}
 
-	if req.Header.Get("Content-Type") != "application/x-protobuf" {
+	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
 		r.failRequest(resp, http.StatusUnsupportedMediaType, responseInvalidContentType, nil, span)
 		return
 	}
 
-	encoding := req.Header.Get("Content-Encoding")
-	if encoding != "" && encoding != "gzip" {
+	encoding := req.Header.Get(httpContentEncodingHeader)
+	if encoding != "" && encoding != gzipEncoding {
 		r.failRequest(resp, http.StatusUnsupportedMediaType, responseInvalidEncoding, nil, span)
 		return
 	}
 
 	bodyReader := req.Body
-	if encoding == "gzip" {
+	if encoding == gzipEncoding {
 		var err error
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
@@ -246,7 +247,7 @@ func (r *sfxReceiver) failRequest(
 	}
 	reqSpan.SetStatus(traceStatus)
 
-	r.logger.Warn(
+	r.logger.Debug(
 		"SignalFx receiver request failed",
 		zap.Int("http_status_code", httpStatusCode),
 		zap.String("msg", msg),
