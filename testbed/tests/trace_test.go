@@ -36,14 +36,14 @@ func TestTrace10kSPS(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerReceiver",
+			"JaegerThrift",
 			testbed.NewJaegerDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
-			"SAPMReceiver",
+			"SAPM",
 			NewSapmDataSender(testbed.GetAvailablePort(t)),
-			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}
 
