@@ -36,6 +36,15 @@ test-with-cover:
 	 	go tool cover -html=coverage.txt -o coverage.html ); \
 	done
 
+.PHONY: go-tidy
+go-tidy:
+	@set -e; for dir in $(ALL_TEST_DIRS); do \
+	  (cd "$${dir}" && \
+	  	echo "tidying up $${dir}" && \
+	 	go mod tidy ); \
+	done
+
+
 .PHONY: install-tools
 install-tools:
 	GO111MODULE=on go install \
