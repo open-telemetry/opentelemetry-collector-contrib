@@ -21,3 +21,5 @@ require (
 	golang.org/x/tools v0.0.0-20191205225056-3393d29bb9fe
 	honnef.co/go/tools v0.0.1-2019.2.3
 )
+
+replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
