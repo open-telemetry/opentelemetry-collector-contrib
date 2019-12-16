@@ -37,8 +37,7 @@ common: addlicense fmt impi vet lint goimports misspell staticcheck test
 
 .PHONY: test
 test:
-	# $(GOTEST) $(GOTEST_OPT) $(ALL_TEST_DIRS)
-	set -e; for dir in $(ALL_TEST_DIRS); do \
+	@set -e; for dir in $(ALL_TEST_DIRS); do \
 	  echo "go test ./... in $${dir}"; \
 	  (cd "$${dir}" && \
 	    $(GOTEST) ./... ); \

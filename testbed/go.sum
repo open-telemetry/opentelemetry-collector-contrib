@@ -64,6 +64,8 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.23.12 h1:2UnxgNO6Y5J1OrkXS8XNp0UatDxD1bWHiDT62RDPggI=
 github.com/aws/aws-sdk-go v1.23.12/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.23.20 h1:2CBuL21P0yKdZN5urf2NxKa1ha8fhnY+A3pBCHFeZoA=
+github.com/aws/aws-sdk-go v1.23.20/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -280,6 +282,8 @@ github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 h1:zwtduBRr5SSW
 github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4/go.mod h1:Izgrg8RkN3rCIMLGE9CyYmU9pY2Jer6DgANEnZ/L/cQ=
 github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0 h1:ydbHzabf84uucKri5fcfiqYxGg+rYgP/zQfLLN8lyP0=
 github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0/go.mod h1:QtPG26W17m+OIQgE6gQ24gC1M6pUaMBAbFrTIDtwG/E=
+github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4 h1:Bptr91tgP3H4/tg/69DYMrievvj8AgXXr5ktPmm+p38=
+github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4/go.mod h1:QtPG26W17m+OIQgE6gQ24gC1M6pUaMBAbFrTIDtwG/E=
 github.com/google/btree v0.0.0-20160524151835-7d79101e329e/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0 h1:0udJVsspx3VBr5FwtLhQQtuAsVc79tTq0ocGIPAU6qo=
@@ -491,14 +495,14 @@ github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191119152140-567e10
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205151336-8e2473c5e754/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed61e5bac h1:Bif71iXGHh9WH9vA3sU96b0y19zM2kFl2PvaS2IS2v8=
 github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed61e5bac/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191213162008-563eac85a88c h1:PtVtU4iX52uEC00v/aiSmOcrf8Gr8YatTxDWC0iL2W0=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191213162008-563eac85a88c/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191216151622-3b06acccb124 h1:Y5vSmtvVErvuj+75d1PZSG3vxkSq8nqboPOHO025bvM=
+github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191216151622-3b06acccb124/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-20191213162202-55b8658da81a h1:RCLKcv60md9hi8KU0AoB8xas3dSqOAfHfiwpuFNfRio=
 github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-20191213162202-55b8658da81a/go.mod h1:mKclA4o6zDWbAotcpUwdum80rgoNanUNroX3VEZZLa8=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-20191213162202-55b8658da81a h1:K9n2YclHY8ez3dTKc/Yntbmhyyt+FR+GG5q/hxPBwZ4=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-20191213162202-55b8658da81a/go.mod h1:U1F1p3CcH3VYq2z+3OiO+WfhifaQvRknR5XlxiuZzcU=
-github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191213162008-563eac85a88c h1:M7lSfZJXXHN010DA41JIls10l5mDh4d1emhNNaiKJwo=
-github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191213162008-563eac85a88c/go.mod h1:0x5LWC/8hyS8Q8fCi0elhTYf9S94RzRX6ZgL7EiYvlQ=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191216151622-3b06acccb124 h1:+DJFOm4C2nx4E9A+lOamQG/W4V/njSNDiNaJSkJq4Qc=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191216151622-3b06acccb124/go.mod h1:0x5LWC/8hyS8Q8fCi0elhTYf9S94RzRX6ZgL7EiYvlQ=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=

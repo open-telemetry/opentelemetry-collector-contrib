@@ -36,9 +36,9 @@ func TestTrace10kSPS(t *testing.T) {
 		receiver testbed.DataReceiver
 	}{
 		{
-			"JaegerThrift",
-			testbed.NewJaegerDataSender(testbed.GetAvailablePort(t)),
-			testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+			"OpenCensus",
+			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
 			"SAPM",
@@ -53,7 +53,7 @@ func TestTrace10kSPS(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{ItemsPerBatch: 100},
+				testbed.LoadOptions{},
 			)
 		})
 	}
