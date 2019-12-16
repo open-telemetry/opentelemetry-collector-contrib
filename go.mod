@@ -16,7 +16,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0-20191126142441-b2a048090ad6
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-20191213033854-af8a37b00e74 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
-	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/tools v0.0.0-20191205225056-3393d29bb9fe
 	honnef.co/go/tools v0.0.1-2019.2.3
