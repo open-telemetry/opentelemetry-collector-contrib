@@ -1,9 +1,9 @@
 # Test Results
-Started: Fri, 13 Dec 2019 15:39:39 -0500
+Started: Mon, 16 Dec 2019 12:05:28 -0500
 
 Test                                    |Result|Duration|CPU Avg%|CPU Max%|RAM Avg MiB|RAM Max MiB|Sent Items|Received Items|
 ----------------------------------------|------|-------:|-------:|-------:|----------:|----------:|---------:|-------------:|
-Trace10kSPS/JaegerThrift                |PASS  |     15s|    37.7|    40.6|         20|         25|    150000|        150000|
-Trace10kSPS/SAPM                        |PASS  |     15s|    34.1|    35.3|         33|         41|    150000|        150000|
+Trace10kSPS/OpenCensus                  |PASS  |     16s|    26.8|    27.7|         36|         44|    149830|        149830|
+Trace10kSPS/SAPM                        |PASS  |     16s|    28.2|    31.5|         56|         73|    149170|        149170|
 
-Total duration: 30s
+Total duration: 33s
