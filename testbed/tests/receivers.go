@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 )
 
 // SapmDataReceiver implements Sapm format receiver.
@@ -74,4 +75,48 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 // ProtocolName returns protocol name as it is specified in Collector config.
 func (sr *SapmDataReceiver) ProtocolName() string {
 	return "sapm"
+}
+
+// SFxMetricsDataReceiver implements SignalFx format receiver.
+type SFxMetricsDataReceiver struct {
+	testbed.DataReceiverBase
+	receiver receiver.MetricsReceiver
+}
+
+// Ensure SFxMetricsDataReceiver implements MetricDataSender.
+var _ testbed.DataReceiver = (*SFxMetricsDataReceiver)(nil)
+
+// NewSFxMetricsDataReceiver creates a new SFxMetricsDataReceiver that will listen on the
+// specified port after Start is called.
+func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
+	return &SFxMetricsDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
+}
+
+func (or *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
+	addr := fmt.Sprintf("localhost:%d", or.Port)
+	config := signalfxreceiver.Config{
+		ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
+	}
+	var err error
+	or.receiver, err = signalfxreceiver.New(zap.L(), config, mc)
+	if err != nil {
+		return err
+	}
+
+	return or.receiver.StartMetricsReception(or)
+}
+
+func (or *SFxMetricsDataReceiver) Stop() {
+	or.receiver.StopMetricsReception()
+}
+
+func (or *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  signalfx:
+    url: "http://localhost:%d/v2/datapoint"`, or.Port)
+}
+
+func (or *SFxMetricsDataReceiver) ProtocolName() string {
+	return "signalfx"
 }
