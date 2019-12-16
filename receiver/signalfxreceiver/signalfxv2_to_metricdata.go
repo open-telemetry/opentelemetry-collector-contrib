@@ -112,12 +112,10 @@ func convertType(
 			descType = metricspb.MetricDescriptor_GAUGE_INT64
 		}
 
-	case sfxpb.MetricType_COUNTER:
-		// Numerical: Count of occurrences. Generally non-negative integers.
-		fallthrough
-
-	case sfxpb.MetricType_CUMULATIVE_COUNTER:
-		// Tracks a value that increases over time, where only the difference is important.
+	case sfxpb.MetricType_COUNTER, sfxpb.MetricType_CUMULATIVE_COUNTER:
+		// COUNTER:  Count of occurrences. Generally non-negative integers.
+		// CUMULATIVE_COUNTER: Tracks a value that increases over time, where
+		// only the difference is important.
 		descType = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
 		if sfxDatum.IntValue != nil {
 			descType = metricspb.MetricDescriptor_CUMULATIVE_INT64

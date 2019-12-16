@@ -72,8 +72,7 @@ type sfxReceiver struct {
 var _ receiver.MetricsReceiver = (*sfxReceiver)(nil)
 
 func (r *sfxReceiver) MetricsSource() string {
-	const metricsSource string = "SignalFx"
-	return metricsSource
+	return "SignalFx"
 }
 
 // New creates the SignalFx receiver with the given configuration.
