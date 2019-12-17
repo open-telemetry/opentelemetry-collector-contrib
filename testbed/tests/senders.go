@@ -101,6 +101,7 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 	return &SFxMetricsDataSender{port: port}
 }
 
+// Start the sender.
 func (sf *SFxMetricsDataSender) Start() error {
 	cfg := &signalfxexporter.Config{
 		URL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
@@ -117,13 +118,16 @@ func (sf *SFxMetricsDataSender) Start() error {
 	return nil
 }
 
+// SendMetrics sends metrics. Can be called after Start.
 func (sf *SFxMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
 	return sf.exporter.ConsumeMetricsData(context.Background(), metrics)
 }
 
+// Flush previously sent spans.
 func (sf *SFxMetricsDataSender) Flush() {
 }
 
+// GenConfigYAMLStr returns receiver config for the agent.
 func (sf *SFxMetricsDataSender) GenConfigYAMLStr() string {
 	// Note that this generates a receiver config for agent.
 	return fmt.Sprintf(`
@@ -131,10 +135,12 @@ func (sf *SFxMetricsDataSender) GenConfigYAMLStr() string {
     endpoint: "localhost:%d"`, sf.port)
 }
 
+// GetCollectorPort returns receiver port for the Collector.
 func (sf *SFxMetricsDataSender) GetCollectorPort() int {
 	return sf.port
 }
 
+// ProtocolName returns protocol name as it is specified in Collector config.
 func (sf *SFxMetricsDataSender) ProtocolName() string {
 	return "signalfx"
 }

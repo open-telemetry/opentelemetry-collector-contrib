@@ -23,19 +23,28 @@ import (
 
 func TestMetric10kDPS(t *testing.T) {
 	tests := []struct {
-		name     string
-		sender   testbed.DataSender
-		receiver testbed.DataReceiver
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
 	}{
 		{
 			"SignalFx",
 			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
 			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 48,
+				ExpectedMaxRAM: 52,
+			},
 		},
 		{
 			"OpenCensus",
 			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 20,
+				ExpectedMaxRAM: 59,
+			},
 		},
 	}
 
@@ -46,6 +55,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				testbed.LoadOptions{ItemsPerBatch: 100},
+				test.resourceSpec,
 			)
 		})
 	}

@@ -31,19 +31,28 @@ func TestMain(m *testing.M) {
 
 func TestTrace10kSPS(t *testing.T) {
 	tests := []struct {
-		name     string
-		sender   testbed.DataSender
-		receiver testbed.DataReceiver
+		name         string
+		sender       testbed.DataSender
+		receiver     testbed.DataReceiver
+		resourceSpec testbed.ResourceSpec
 	}{
 		{
 			"OpenCensus",
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 35,
+				ExpectedMaxRAM: 71,
+			},
 		},
 		{
 			"SAPM",
 			NewSapmDataSender(testbed.GetAvailablePort(t)),
 			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 67,
+				ExpectedMaxRAM: 105,
+			},
 		},
 	}
 
@@ -54,6 +63,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				testbed.LoadOptions{},
+				test.resourceSpec,
 			)
 		})
 	}
