@@ -92,6 +92,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 	return &SFxMetricsDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
 }
 
+// Start the receiver.
 func (or *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", or.Port)
 	config := signalfxreceiver.Config{
@@ -106,10 +107,12 @@ func (or *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testb
 	return or.receiver.StartMetricsReception(or)
 }
 
+// Stop the receiver.
 func (or *SFxMetricsDataReceiver) Stop() {
 	or.receiver.StopMetricsReception()
 }
 
+// GenConfigYAMLStr returns exporter config for the agent.
 func (or *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
@@ -117,6 +120,7 @@ func (or *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
     url: "http://localhost:%d/v2/datapoint"`, or.Port)
 }
 
+// ProtocolName returns protocol name as it is specified in Collector config.
 func (or *SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
 }
