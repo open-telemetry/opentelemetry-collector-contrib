@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package tests contains test cases. To run the tests go to tests directory and run:
-// TESTBED_CONFIG=local.yaml go test -v
-
 package tests
 
 import (
@@ -24,26 +21,21 @@ import (
 	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
 )
 
-// TestMain is used to initiate setup, execution and tear down of testbed.
-func TestMain(m *testing.M) {
-	testbed.DoTestMain(m)
-}
-
-func TestTrace10kSPS(t *testing.T) {
+func TestMetric10kDPS(t *testing.T) {
 	tests := []struct {
 		name     string
 		sender   testbed.DataSender
 		receiver testbed.DataReceiver
 	}{
 		{
-			"OpenCensus",
-			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
-			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+			"SignalFx",
+			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
+			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 		},
 		{
-			"SAPM",
-			NewSapmDataSender(testbed.GetAvailablePort(t)),
-			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			"OpenCensus",
+			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		},
 	}
 
@@ -53,8 +45,9 @@ func TestTrace10kSPS(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{},
+				testbed.LoadOptions{ItemsPerBatch: 100},
 			)
 		})
 	}
+
 }

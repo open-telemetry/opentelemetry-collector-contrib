@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 )
 
 // SapmDataSender implements TraceDataSender for SAPM protocol.
@@ -83,4 +84,57 @@ func (je *SapmDataSender) GetCollectorPort() int {
 // ProtocolName returns protocol name as it is specified in Collector config.
 func (je *SapmDataSender) ProtocolName() string {
 	return "sapm"
+}
+
+// SFxMetricsDataSender implements MetricDataSender for SignalFx metrics protocol.
+type SFxMetricsDataSender struct {
+	exporter exporter.MetricsExporter
+	port     int
+}
+
+// Ensure SFxMetricsDataSender implements MetricDataSender.
+var _ testbed.MetricDataSender = (*SFxMetricsDataSender)(nil)
+
+// NewSFxMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// to the specified port after Start is called.
+func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
+	return &SFxMetricsDataSender{port: port}
+}
+
+func (sf *SFxMetricsDataSender) Start() error {
+	cfg := &signalfxexporter.Config{
+		URL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
+	}
+
+	factory := signalfxexporter.Factory{}
+	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	sf.exporter = exporter
+	return nil
+}
+
+func (sf *SFxMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
+	return sf.exporter.ConsumeMetricsData(context.Background(), metrics)
+}
+
+func (sf *SFxMetricsDataSender) Flush() {
+}
+
+func (sf *SFxMetricsDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  signalfx:
+    endpoint: "localhost:%d"`, sf.port)
+}
+
+func (sf *SFxMetricsDataSender) GetCollectorPort() int {
+	return sf.port
+}
+
+func (sf *SFxMetricsDataSender) ProtocolName() string {
+	return "signalfx"
 }
