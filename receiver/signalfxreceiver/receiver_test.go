@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -250,7 +251,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusOK, status)
-				assert.Equal(t, "", body)
+				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -265,7 +266,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusAccepted, status)
-				assert.Equal(t, "", body)
+				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -288,7 +289,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusAccepted, status)
-				assert.Equal(t, "", body)
+				assert.Equal(t, responseOK, body)
 			},
 		},
 		{
@@ -315,13 +316,19 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			sink := new(exportertest.SinkMetricsExporter)
 			rcv, err := New(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
+
 			r := rcv.(*sfxReceiver)
 			w := httptest.NewRecorder()
 			r.handleReq(w, tt.req)
+
 			resp := w.Result()
-			bytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := ioutil.ReadAll(resp.Body)
 			assert.NoError(t, err)
-			tt.assertResponse(t, resp.StatusCode, string(bytes))
+
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+
+			tt.assertResponse(t, resp.StatusCode, bodyStr)
 		})
 	}
 }

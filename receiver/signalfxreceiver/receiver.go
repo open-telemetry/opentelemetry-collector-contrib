@@ -16,11 +16,13 @@ package signalfxreceiver
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
@@ -37,6 +39,7 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
+	responseOK                 = "OK"
 	responseInvalidMethod      = "Only \"POST\" method is supported"
 	responseInvalidContentType = "\"Content-Type\" must be \"application/x-protobuf\""
 	responseInvalidEncoding    = "\"Content-Encoding\" must be \"gzip\" or empty"
@@ -55,6 +58,15 @@ const (
 var (
 	errNilNextConsumer = errors.New("nil nextConsumer")
 	errEmptyEndpoint   = errors.New("empty endpoint")
+
+	okRespBody               = jsonResponse(responseOK)
+	invalidMethodRespBody    = jsonResponse(responseInvalidMethod)
+	invalidContentRespBody   = jsonResponse(responseInvalidContentType)
+	invalidEncodingRespBody  = jsonResponse(responseInvalidEncoding)
+	errGzipReaderRespBody    = jsonResponse(responseErrGzipReader)
+	errReadBodyRespBody      = jsonResponse(responseErrReadBody)
+	errUnmarshalBodyRespBody = jsonResponse(responseErrUnmarshalBody)
+	errNextConsumerRespBody  = jsonResponse(responseErrNextConsumer)
 )
 
 // sfxReceiver implements the receiver.MetricsReceiver for SignalFx metric protocol.
@@ -151,18 +163,18 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	defer span.End()
 
 	if req.Method != http.MethodPost {
-		r.failRequest(resp, http.StatusBadRequest, responseInvalidMethod, nil, span)
+		r.failRequest(resp, http.StatusBadRequest, invalidMethodRespBody, nil, span)
 		return
 	}
 
 	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
-		r.failRequest(resp, http.StatusUnsupportedMediaType, responseInvalidContentType, nil, span)
+		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil, span)
 		return
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
-		r.failRequest(resp, http.StatusUnsupportedMediaType, responseInvalidEncoding, nil, span)
+		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil, span)
 		return
 	}
 
@@ -171,26 +183,27 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		var err error
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
-			r.failRequest(resp, http.StatusBadRequest, responseErrGzipReader, err, span)
+			r.failRequest(resp, http.StatusBadRequest, errGzipReaderRespBody, err, span)
 			return
 		}
 	}
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
-		r.failRequest(resp, http.StatusBadRequest, responseErrReadBody, err, span)
+		r.failRequest(resp, http.StatusBadRequest, errReadBodyRespBody, err, span)
 		return
 	}
 
 	msg := &sfxpb.DataPointUploadMessage{}
 	if err := proto.Unmarshal(body, msg); err != nil {
-		r.failRequest(resp, http.StatusBadRequest, responseErrUnmarshalBody, err, span)
+		r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err, span)
 		return
 	}
 
 	recvCtx := observability.ContextWithReceiverName(spanCtx, r.config.Name())
 	if len(msg.Datapoints) == 0 {
 		observability.RecordMetricsForMetricsReceiver(recvCtx, 0, 0)
+		resp.Write(okRespBody)
 		return
 	}
 
@@ -202,7 +215,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 			recvCtx,
 			len(msg.Datapoints),
 			len(msg.Datapoints))
-		r.failRequest(resp, http.StatusInternalServerError, responseErrNextConsumer, err, span)
+		r.failRequest(resp, http.StatusInternalServerError, errNextConsumerRespBody, err, span)
 		return
 	}
 
@@ -212,18 +225,20 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		numDroppedTimeseries)
 
 	resp.WriteHeader(http.StatusAccepted)
+	resp.Write(okRespBody)
 }
 
 func (r *sfxReceiver) failRequest(
 	resp http.ResponseWriter,
 	httpStatusCode int,
-	msg string,
+	jsonResponse []byte,
 	err error,
 	reqSpan *trace.Span,
 ) {
 	resp.WriteHeader(httpStatusCode)
-	if msg != "" {
-		_, writeErr := resp.Write([]byte(msg))
+	if len(jsonResponse) > 0 {
+		// The response needs to be written as a JSON string.
+		_, writeErr := resp.Write(jsonResponse)
 		if writeErr != nil {
 			r.logger.Warn(
 				"Error writing HTTP response message",
@@ -231,6 +246,9 @@ func (r *sfxReceiver) failRequest(
 				zap.String("receiver", r.config.Name()))
 		}
 	}
+
+	// Use the same pattern as strings.Builder String().
+	msg := *(*string)(unsafe.Pointer(&jsonResponse))
 
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
@@ -252,4 +270,13 @@ func (r *sfxReceiver) failRequest(
 		zap.String("msg", msg),
 		zap.Error(err), // It handles nil error
 		zap.String("receiver", r.config.Name()))
+}
+
+func jsonResponse(s string) []byte {
+	respBody, err := json.Marshal(s)
+	if err != nil {
+		// This is to be used in initialization so panic here is fine.
+		panic(err)
+	}
+	return respBody
 }
