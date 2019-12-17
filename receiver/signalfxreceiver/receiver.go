@@ -59,14 +59,14 @@ var (
 	errNilNextConsumer = errors.New("nil nextConsumer")
 	errEmptyEndpoint   = errors.New("empty endpoint")
 
-	okRespBody               = jsonResponse(responseOK)
-	invalidMethodRespBody    = jsonResponse(responseInvalidMethod)
-	invalidContentRespBody   = jsonResponse(responseInvalidContentType)
-	invalidEncodingRespBody  = jsonResponse(responseInvalidEncoding)
-	errGzipReaderRespBody    = jsonResponse(responseErrGzipReader)
-	errReadBodyRespBody      = jsonResponse(responseErrReadBody)
-	errUnmarshalBodyRespBody = jsonResponse(responseErrUnmarshalBody)
-	errNextConsumerRespBody  = jsonResponse(responseErrNextConsumer)
+	okRespBody               = initJSONResponse(responseOK)
+	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
+	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
+	invalidEncodingRespBody  = initJSONResponse(responseInvalidEncoding)
+	errGzipReaderRespBody    = initJSONResponse(responseErrGzipReader)
+	errReadBodyRespBody      = initJSONResponse(responseErrReadBody)
+	errUnmarshalBodyRespBody = initJSONResponse(responseErrUnmarshalBody)
+	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 )
 
 // sfxReceiver implements the receiver.MetricsReceiver for SignalFx metric protocol.
@@ -272,7 +272,7 @@ func (r *sfxReceiver) failRequest(
 		zap.String("receiver", r.config.Name()))
 }
 
-func jsonResponse(s string) []byte {
+func initJSONResponse(s string) []byte {
 	respBody, err := json.Marshal(s)
 	if err != nil {
 		// This is to be used in initialization so panic here is fine.
