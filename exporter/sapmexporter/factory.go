@@ -42,6 +42,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		NumWorkers: defaultNumWorkers,
 	}
 }
 

@@ -17,7 +17,6 @@ package sapmexporter
 
 import (
 	"context"
-	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
@@ -40,30 +39,12 @@ func (se *sapmExporter) Shutdown() error {
 }
 
 func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (exporter.TraceExporter, error) {
-	if cfg.Endpoint == "" {
-		return nil, errors.New("`endpoint` not specified")
+	err := cfg.validate()
+	if err != nil {
+		return nil, err
 	}
 
-	opts := []sapmclient.Option{
-		sapmclient.WithEndpoint(cfg.Endpoint),
-	}
-	if cfg.NumWorkers > 0 {
-		opts = append(opts, sapmclient.WithWorkers(cfg.NumWorkers))
-	}
-
-	if cfg.MaxConnections > 0 {
-		opts = append(opts, sapmclient.WithMaxConnections(cfg.MaxConnections))
-	}
-
-	if cfg.MaxRetries != nil {
-		opts = append(opts, sapmclient.WithMaxRetries(*cfg.MaxRetries))
-	}
-
-	if cfg.AccessToken != "" {
-		opts = append(opts, sapmclient.WithAccessToken(cfg.AccessToken))
-	}
-
-	client, err := sapmclient.New(opts...)
+	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
 		return nil, err
 	}

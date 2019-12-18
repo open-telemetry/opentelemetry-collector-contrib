@@ -15,7 +15,16 @@
 package sapmexporter
 
 import (
+	"errors"
+	"net/url"
+
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	sapmclient "github.com/signalfx/sapm-proto/client"
+)
+
+const (
+	defaultEndpointScheme = "https"
+	defaultNumWorkers     = 8
 )
 
 // Config defines configuration for SAPM exporter.
@@ -30,7 +39,7 @@ type Config struct {
 	AccessToken string `mapstructure:"access_token"`
 
 	// NumWorkers is the number of workers that should be used to export traces.
-	// Exporter can make as many requests in parallel as the number of workers.
+	// Exporter can make as many requests in parallel as the number of workers. Defaults to 8.
 	NumWorkers uint `mapstructure:"num_workers"`
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
@@ -39,4 +48,44 @@ type Config struct {
 	// MaxRetries is maximum number of retry attempts the exporter should make before dropping a span batch.
 	// Note that right now this is only used when the server responds with HTTP 429 (tries to rate limit the client)
 	MaxRetries *uint `mapstructure:"max_retries"`
+}
+
+func (c *Config) validate() error {
+	if c.Endpoint == "" {
+		return errors.New("`endpoint` not specified")
+	}
+
+	e, err := url.Parse(c.Endpoint)
+	if err != nil {
+		return err
+	}
+
+	if e.Scheme == "" {
+		e.Scheme = defaultEndpointScheme
+	}
+	c.Endpoint = e.String()
+	return nil
+}
+
+func (c *Config) clientOptions() []sapmclient.Option {
+	opts := []sapmclient.Option{
+		sapmclient.WithEndpoint(c.Endpoint),
+	}
+	if c.NumWorkers > 0 {
+		opts = append(opts, sapmclient.WithWorkers(c.NumWorkers))
+	}
+
+	if c.MaxConnections > 0 {
+		opts = append(opts, sapmclient.WithMaxConnections(c.MaxConnections))
+	}
+
+	if c.MaxRetries != nil {
+		opts = append(opts, sapmclient.WithMaxRetries(*c.MaxRetries))
+	}
+
+	if c.AccessToken != "" {
+		opts = append(opts, sapmclient.WithAccessToken(c.AccessToken))
+	}
+
+	return opts
 }
