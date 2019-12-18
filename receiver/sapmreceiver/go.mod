@@ -13,7 +13,7 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205151336-8e2473c5e754
 	github.com/prometheus/client_model v0.0.0-20191202183732-d1d2010b5bee // indirect
-	github.com/signalfx/sapm-proto v0.0.2
+	github.com/signalfx/sapm-proto v0.3.0
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.2
 	go.uber.org/zap v1.13.0
