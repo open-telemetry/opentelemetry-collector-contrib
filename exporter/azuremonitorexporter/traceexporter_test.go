@@ -45,11 +45,6 @@ func TestIdToHex(t *testing.T) {
 	assert.Equal(t, "23bf4de5a2f2d94b94aa5163e3a39119", hex)
 }
 
-func TestFormatParentChild(t *testing.T) {
-	assert.Equal(t, "|0000000000000000.00000000.", formatParentChild("", ""))
-	assert.Equal(t, "|foo.bar.", formatParentChild("foo", "bar"))
-}
-
 func TestSanitize(t *testing.T) {
 	sanitizeFunc := func() []string {
 		warnings := [4]string{
@@ -79,7 +74,7 @@ func TestSpanToRequestData_UnknownType(t *testing.T) {
 
 	data := spanToRequestData(&wireFormatSpan)
 
-	assert.Equal(t, "|"+defaultTraceIDAsHex+"."+defaultSpanIDAsHex+".", data.Id)
+	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, "foo", data.Name)
 	assert.Equal(t, "00.00:00:01.000000", data.Duration)
 	assert.True(t, data.Success)
@@ -204,7 +199,7 @@ func TestSpanToRemoteDependencyData_UnknownType(t *testing.T) {
 
 	data := spanToRemoteDependencyData(&wireFormatSpan)
 
-	assert.Equal(t, "|"+defaultTraceIDAsHex+"."+defaultSpanIDAsHex+".", data.Id)
+	assert.Equal(t, defaultSpanIDAsHex, data.Id)
 	assert.Equal(t, "foo", data.Name)
 	assert.Equal(t, "00.00:00:01.000000", data.Duration)
 	assert.True(t, data.Success)
