@@ -87,21 +87,6 @@ func idToHex(source []byte) string {
 	return fmt.Sprintf("%02x", source)
 }
 
-func formatParentChild(parent string, child string) string {
-	if parent == "" {
-		parent = "0000000000000000"
-	}
-
-	if child == "" {
-		child = "00000000"
-	}
-	return fmt.Sprintf("|%v.%v.", parent, child)
-}
-
-func formatTraceAndSpanAsParentChild(span *tracepb.Span) string {
-	return formatParentChild(idToHex(span.TraceId), idToHex(span.SpanId))
-}
-
 func formatSpanDuration(span *tracepb.Span) string {
 	startTime := toTime(span.StartTime)
 	endTime := toTime(span.EndTime)
@@ -155,7 +140,7 @@ func (exporter *traceExporter) spanToEnvelope(
 
 	traceIDHexString := idToHex(span.TraceId)
 	envelope.Tags[contracts.OperationId] = traceIDHexString
-	envelope.Tags[contracts.OperationParentId] = formatParentChild(traceIDHexString, idToHex(span.ParentSpanId))
+	envelope.Tags[contracts.OperationParentId] = idToHex(span.ParentSpanId)
 
 	data := contracts.NewData()
 
@@ -199,7 +184,7 @@ func spanToRequestData(span *tracepb.Span) *contracts.RequestData {
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/requestdata.go
 	// Start with some reasonable default for server spans.
 	data := contracts.NewRequestData()
-	data.Id = formatTraceAndSpanAsParentChild(span)
+	data.Id = idToHex(span.SpanId)
 	data.Name = span.Name.Value
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
@@ -267,17 +252,29 @@ func fillRequestDataHTTP(span *tracepb.Span, data *contracts.RequestData) {
 		case spanAttributeKeyHTTPServerName:
 			httpServerName = attributeValueAsString(v)
 		case spanAttributeKeyHostPort:
-			hostPort = attributeValueAsString(v)
+			switch value := v.Value.(type) {
+			case *tracepb.AttributeValue_StringValue:
+				hostPort = attributeValueAsString(v)
+			case *tracepb.AttributeValue_IntValue:
+				hostPort = strconv.FormatInt(value.IntValue, 10)
+			}
 		case spanAttributeKeyHostName:
 			hostName = attributeValueAsString(v)
 		case spanAttributeKeyHTTPUrl:
 			httpURL = attributeValueAsString(v)
 		case spanAttributeKeyHTTPStatusCode:
-			data.ResponseCode = attributeValueAsString(v)
-			code, err := strconv.Atoi(data.ResponseCode)
-			if err == nil {
-				data.Success = code >= 200 && code <= 399
+			var statusCode int
+
+			switch value := v.Value.(type) {
+			case *tracepb.AttributeValue_IntValue:
+				data.ResponseCode = strconv.FormatInt(value.IntValue, 10)
+				statusCode = int(value.IntValue)
+			case *tracepb.AttributeValue_StringValue:
+				data.ResponseCode = attributeValueAsString(v)
+				statusCode, _ = strconv.Atoi(data.ResponseCode)
 			}
+
+			data.Success = statusCode <= 399
 		case spanAttributeKeyHTTPClientIP:
 			data.Source = attributeValueAsString(v)
 		default:
@@ -382,7 +379,7 @@ func spanToRemoteDependencyData(span *tracepb.Span) *contracts.RemoteDependencyD
 	// https://github.com/microsoft/ApplicationInsights-Go/blob/master/appinsights/contracts/remotedependencydata.go
 	// Start with some reasonable default for dependent spans.
 	data := contracts.NewRemoteDependencyData()
-	data.Id = formatTraceAndSpanAsParentChild(span)
+	data.Id = idToHex(span.SpanId)
 	data.Name = span.Name.Value
 	data.ResultCode = "0"
 	data.Duration = formatSpanDuration(span)
@@ -491,11 +488,18 @@ func fillRemoteDependencyDataHTTP(span *tracepb.Span, data *contracts.RemoteDepe
 		case spanAttributeKeyPeerPort:
 			peerPort = attributeValueAsString(v)
 		case spanAttributeKeyHTTPStatusCode:
-			data.ResultCode = attributeValueAsString(v)
-			code, err := strconv.Atoi(data.ResultCode)
-			if err == nil {
-				data.Success = code >= 200 && code <= 399
+			var statusCode int
+
+			switch value := v.Value.(type) {
+			case *tracepb.AttributeValue_IntValue:
+				data.ResultCode = strconv.FormatInt(value.IntValue, 10)
+				statusCode = int(value.IntValue)
+			case *tracepb.AttributeValue_StringValue:
+				data.ResultCode = attributeValueAsString(v)
+				statusCode, _ = strconv.Atoi(data.ResultCode)
 			}
+
+			data.Success = statusCode <= 399
 		default:
 			// Anything not on this list above ends up as a custom property
 			setAttributeValueAsPropertyOrMeasurement(k, v, data.Properties, data.Measurements)
