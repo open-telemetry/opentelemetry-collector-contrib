@@ -15,7 +15,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-00010101000000-000000000000 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/tools v0.0.0-20191205225056-3393d29bb9fe
@@ -46,3 +45,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ./receiver/signalfxreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver => ./receiver/zipkinscribereceiver
+
+replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
