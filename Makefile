@@ -20,9 +20,15 @@ e2e-test: otelcontribcol
 	$(MAKE) -C testbed runtests
 
 .PHONY: ci
-ci: all test-with-cover
+ci: gomod-check all test-with-cover
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
+
+.PHONY: gomod-check
+gomod-check:
+	@go mod download
+	$(MAKE) gotidy
+	@git diff --exit-code || (echo 'Go modules are not tidied up. Run `make gotidy` and commit the changes.' && exit 1)
 
 .PHONY: test-with-cover
 test-with-cover:
