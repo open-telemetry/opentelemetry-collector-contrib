@@ -36,8 +36,8 @@ test-with-cover:
 	 	go tool cover -html=coverage.txt -o coverage.html ); \
 	done
 
-.PHONY: go-tidy
-go-tidy:
+.PHONY: gotidy
+gotidy:
 	@set -e; for dir in $(ALL_TEST_DIRS); do \
 	  (cd "$${dir}" && \
 	  	echo "tidying up $${dir}" && \
