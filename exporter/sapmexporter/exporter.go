@@ -67,7 +67,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td consumerdata.Trace
 	}
 	err = se.client.Export(ctx, jBatch)
 	if err != nil {
-		if sendErr, ok := err.(*sapmclient.ErrHTTPSend); ok {
+		if sendErr, ok := err.(*sapmclient.ErrSend); ok {
 			if sendErr.Permanent {
 				return 0, consumererror.Permanent(sendErr)
 			}

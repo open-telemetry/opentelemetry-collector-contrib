@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191119152140-567e1046cefa
-	github.com/signalfx/sapm-proto v0.1.0
+	github.com/signalfx/sapm-proto v0.3.0
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0 // indirect

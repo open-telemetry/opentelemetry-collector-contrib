@@ -44,10 +44,6 @@ type Config struct {
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
 	MaxConnections uint `mapstructure:"max_connections"`
-
-	// MaxRetries is maximum number of retry attempts the exporter should make before dropping a span batch.
-	// Note that right now this is only used when the server responds with HTTP 429 (tries to rate limit the client)
-	MaxRetries *uint `mapstructure:"max_retries"`
 }
 
 func (c *Config) validate() error {
@@ -77,10 +73,6 @@ func (c *Config) clientOptions() []sapmclient.Option {
 
 	if c.MaxConnections > 0 {
 		opts = append(opts, sapmclient.WithMaxConnections(c.MaxConnections))
-	}
-
-	if c.MaxRetries != nil {
-		opts = append(opts, sapmclient.WithMaxRetries(*c.MaxRetries))
 	}
 
 	if c.AccessToken != "" {
