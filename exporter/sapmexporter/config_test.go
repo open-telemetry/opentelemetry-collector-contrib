@@ -43,14 +43,12 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	r1 := cfg.Exporters["sapm/customname"].(*Config)
-	maxRetries := uint(10)
 	assert.Equal(t, r1,
 		&Config{
 			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "sapm/customname"},
 			Endpoint:         "test-endpoint",
 			AccessToken:      "abcd1234",
 			NumWorkers:       3,
-			MaxRetries:       &maxRetries,
 			MaxConnections:   45,
 		})
 }

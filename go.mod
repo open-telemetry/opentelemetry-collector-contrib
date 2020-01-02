@@ -5,6 +5,8 @@ go 1.12
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191217213608-3cac55bf869f
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0
