@@ -651,6 +651,8 @@ github.com/signalfx/omnition-kinesis-producer v0.4.6 h1:rs18AQ+zz7+B0akJfzJtwdrz
 github.com/signalfx/omnition-kinesis-producer v0.4.6/go.mod h1:Qo5UjM14fq/eVKavLkovKbXWbNTTQwiyuADYnXoGx1I=
 github.com/signalfx/opencensus-go-exporter-kinesis v0.4.0 h1:l6tnNSdU0nyRAn157IklHNPFN3LXTrs1IDm1b07wWLY=
 github.com/signalfx/opencensus-go-exporter-kinesis v0.4.0/go.mod h1:moUthjX4ThpXwvVZhIGEZP5g0cOkt+dXs9pElpaaWQw=
+github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2 h1:euMCOJ9wQhaWQ/xehHWPsWeEHGibGn1vihg/15okcts=
+github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2/go.mod h1:4YEoC8CxFYfcCj9c8QAlWgbNBeUMSyfUwe4wckBCAXQ=
 github.com/signalfx/sapm-proto v0.3.0 h1:tH5+dplEX+mHp9q9PVTTA5XIwZUY6qYUwOO2yb1obH4=
 github.com/signalfx/sapm-proto v0.3.0/go.mod h1:X/wS1ofuOAW+OTFhCALiHVZvihqMDiNPhzmbusWCQi8=
 github.com/signalfx/thrift v0.0.0-20181211001559-3838fa316492/go.mod h1:Xv29nl9fxdk0hmeqcUHgAZZwvYrOhduNW+9qk4H+6K0=
