@@ -17,6 +17,7 @@ package kinesisexporter
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -37,7 +38,7 @@ var _ (exporter.TraceExporter) = (*Exporter)(nil)
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned. If error is returned by
 // Start() then the collector startup will be aborted.
-func (e Exporter) Start(host exporter.Host) error {
+func (e Exporter) Start(host component.Host) error {
 	return nil
 }
 

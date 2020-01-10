@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -167,7 +168,7 @@ func (sr *sapmReceiver) TraceSource() string {
 }
 
 // StartTraceReception starts the sapmReceiver's server
-func (sr *sapmReceiver) StartTraceReception(host receiver.Host) error {
+func (sr *sapmReceiver) Start(host component.Host) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
@@ -198,7 +199,7 @@ func (sr *sapmReceiver) StartTraceReception(host receiver.Host) error {
 }
 
 // StopTraceRetention stops the the sapmReceiver's server
-func (sr *sapmReceiver) StopTraceReception() error {
+func (sr *sapmReceiver) Shutdown() error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 

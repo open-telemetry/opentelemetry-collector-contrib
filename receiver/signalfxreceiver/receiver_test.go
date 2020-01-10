@@ -30,12 +30,12 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/testutils/metricstestutils"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
@@ -105,12 +105,12 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 
-	mh := receivertest.NewMockHost()
-	err = r.StartMetricsReception(mh)
+	mh := component.NewMockHost()
+	err = r.Start(mh)
 	require.NoError(t, err)
 	runtime.Gosched()
-	defer r.StopMetricsReception()
-	require.Equal(t, oterr.ErrAlreadyStarted, r.StartMetricsReception(mh))
+	defer r.Shutdown()
+	require.Equal(t, oterr.ErrAlreadyStarted, r.Start(mh))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -152,8 +152,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.Equal(t, 1, len(got))
 	assert.Equal(t, want, got[0])
 
-	assert.NoError(t, r.StopMetricsReception())
-	assert.Equal(t, oterr.ErrAlreadyStopped, r.StopMetricsReception())
+	assert.NoError(t, r.Shutdown())
+	assert.Equal(t, oterr.ErrAlreadyStopped, r.Shutdown())
 }
 
 func Test_sfxReceiver_handleReq(t *testing.T) {

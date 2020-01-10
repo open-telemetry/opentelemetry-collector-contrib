@@ -52,13 +52,13 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 		return err
 	}
 
-	return sr.receiver.StartTraceReception(sr)
+	return sr.receiver.Start(sr)
 }
 
 // Stop the receiver.
 func (sr *SapmDataReceiver) Stop() {
 	if sr.receiver != nil {
-		if err := sr.receiver.StopTraceReception(); err != nil {
+		if err := sr.receiver.Shutdown(); err != nil {
 			log.Printf("Cannot stop Sapm receiver: %s", err.Error())
 		}
 	}
@@ -104,12 +104,12 @@ func (or *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testb
 		return err
 	}
 
-	return or.receiver.StartMetricsReception(or)
+	return or.receiver.Start(or)
 }
 
 // Stop the receiver.
 func (or *SFxMetricsDataReceiver) Stop() {
-	or.receiver.StopMetricsReception()
+	or.receiver.Shutdown()
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.
