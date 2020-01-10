@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
@@ -125,7 +126,7 @@ func New(
 // StartMetricsReception tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *sfxReceiver) StartMetricsReception(host receiver.Host) error {
+func (r *sfxReceiver) Start(host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -145,7 +146,7 @@ func (r *sfxReceiver) StartMetricsReception(host receiver.Host) error {
 
 // StopMetricsReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
-func (r *sfxReceiver) StopMetricsReception() error {
+func (r *sfxReceiver) Shutdown() error {
 	r.Lock()
 	defer r.Unlock()
 

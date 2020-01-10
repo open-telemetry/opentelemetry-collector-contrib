@@ -24,10 +24,10 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -163,12 +163,12 @@ func TestCollectDServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	cdr.StartMetricsReception(receivertest.NewMockHost())
+	cdr.Start(component.NewMockHost())
 	if err != nil {
 		t.Fatalf("Failed to start metrics reception: %v", err)
 	}
 	defer func() {
-		err := cdr.StopMetricsReception()
+		err := cdr.Shutdown()
 		if err != nil {
 			t.Fatalf("Error stopping metrics reception: %v", err)
 		}

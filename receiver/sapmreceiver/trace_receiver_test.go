@@ -30,10 +30,10 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -257,12 +257,12 @@ func TestReception(t *testing.T) {
 			sink := new(exportertest.SinkTraceExporter)
 
 			sr, err := New(context.Background(), zap.NewNop(), tt.args.config, sink)
-			defer sr.StopTraceReception()
+			defer sr.Shutdown()
 			assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 			t.Log("Starting")
 
-			mh := receivertest.NewMockHost()
-			err = sr.StartTraceReception(mh)
+			mh := component.NewMockHost()
+			err = sr.Start(mh)
 			assert.NoError(t, err, "should not have failed to start trace reception")
 			t.Log("Trace Reception Started")
 
