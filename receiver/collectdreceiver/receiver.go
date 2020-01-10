@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
@@ -86,7 +87,7 @@ func (cdr *collectdReceiver) MetricsSource() string {
 }
 
 // StartMetricsReception starts an HTTP server that can process CollectD JSON requests.
-func (cdr *collectdReceiver) StartMetricsReception(host receiver.Host) error {
+func (cdr *collectdReceiver) Start(host component.Host) error {
 	cdr.Lock()
 	defer cdr.Unlock()
 
@@ -105,7 +106,7 @@ func (cdr *collectdReceiver) StartMetricsReception(host receiver.Host) error {
 }
 
 // StopMetricsReception stops the CollectD receiver.
-func (cdr *collectdReceiver) StopMetricsReception() error {
+func (cdr *collectdReceiver) Shutdown() error {
 	cdr.Lock()
 	defer cdr.Unlock()
 

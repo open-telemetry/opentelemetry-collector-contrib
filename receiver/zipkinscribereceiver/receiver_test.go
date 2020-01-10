@@ -27,10 +27,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/receiver/receivertest"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -136,9 +136,9 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.StartTraceReception(receivertest.NewMockHost())
+	err = traceReceiver.Start(component.NewMockHost())
 	if err == nil {
-		traceReceiver.StopTraceReception()
+		traceReceiver.Shutdown()
 		t.Fatal("conflict on port was expected")
 	}
 }
@@ -160,12 +160,12 @@ func TestScribeReceiverServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	traceReceiver.StartTraceReception(receivertest.NewMockHost())
+	traceReceiver.Start(component.NewMockHost())
 	if err != nil {
 		t.Fatalf("Failed to start trace reception: %v", err)
 	}
 	defer func() {
-		err := traceReceiver.StopTraceReception()
+		err := traceReceiver.Shutdown()
 		if err != nil {
 			t.Fatalf("Error stopping trace reception: %v", err)
 		}

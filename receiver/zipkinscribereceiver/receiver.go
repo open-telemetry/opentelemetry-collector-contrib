@@ -24,6 +24,7 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
@@ -78,7 +79,7 @@ func (r *scribeReceiver) TraceSource() string {
 	return traceSource
 }
 
-func (r *scribeReceiver) StartTraceReception(host receiver.Host) error {
+func (r *scribeReceiver) Start(host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -112,7 +113,7 @@ func (r *scribeReceiver) StartTraceReception(host receiver.Host) error {
 	return err
 }
 
-func (r *scribeReceiver) StopTraceReception() error {
+func (r *scribeReceiver) Shutdown() error {
 	r.Lock()
 	defer r.Unlock()
 

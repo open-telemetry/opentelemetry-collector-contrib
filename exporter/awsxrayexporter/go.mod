@@ -9,7 +9,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	// TODO: pin a released version
-	github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205151336-8e2473c5e754
+	github.com/open-telemetry/opentelemetry-collector v0.2.2
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20190923162816-aa69164e4478

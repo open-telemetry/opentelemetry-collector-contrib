@@ -30,7 +30,6 @@ import (
 
 var (
 	defaultTraceID      = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
-	defaultTraceIDAsHex = idToHex(defaultTraceID)
 	defaultSpanID       = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 26}
 	defaultSpanIDAsHex  = idToHex(defaultSpanID)
 	defaultParentSpanID = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 27}

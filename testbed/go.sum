@@ -45,6 +45,7 @@ github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMx
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUWq3EgK3CesDbo8upS2Vm9/P3FtgI+Jk=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
+github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrdtl/UvroE=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -63,8 +64,6 @@ github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf/go.mod h1:l
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.23.12 h1:2UnxgNO6Y5J1OrkXS8XNp0UatDxD1bWHiDT62RDPggI=
 github.com/aws/aws-sdk-go v1.23.12/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
-github.com/aws/aws-sdk-go v1.23.20 h1:2CBuL21P0yKdZN5urf2NxKa1ha8fhnY+A3pBCHFeZoA=
-github.com/aws/aws-sdk-go v1.23.20/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -334,6 +333,7 @@ github.com/gorilla/websocket v1.4.0/go.mod h1:E7qHFY5m1UJ88s3WnNqhKjPHQ0heANvMoA
 github.com/gostaticanalysis/analysisutil v0.0.0-20190318220348-4088753ea4d3 h1:JVnpOZS+qxli+rgVl98ILOXVNbW+kb5wcxeGx8ShUIw=
 github.com/gostaticanalysis/analysisutil v0.0.0-20190318220348-4088753ea4d3/go.mod h1:eEOZF4jCKGi+aprrirO9e7WKB3beBRtWgqGunKl6pKE=
 github.com/gregjones/httpcache v0.0.0-20170728041850-787624de3eb7/go.mod h1:FecbI9+v66THATjSRHfNgh1IVFe/9kFxbXtjV0ctIMA=
+github.com/grpc-ecosystem/go-grpc-middleware v1.0.0 h1:Iju5GlWwrvL6UBg4zJJt3btmonfrMlCDdsejg4CZE7c=
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
@@ -510,15 +510,13 @@ github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.7.0 h1:XPnZz8VVBHjVsy1vzJmRwIcSwiUO+JFfrv/xGiigmME=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191119152140-567e1046cefa/go.mod h1:WCsoKuWfht1l33mnPISJ189n8l1p1G10TrQaKylV7no=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205151336-8e2473c5e754/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed61e5bac h1:Bif71iXGHh9WH9vA3sU96b0y19zM2kFl2PvaS2IS2v8=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191205212659-419ed61e5bac/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191209163440-5d463fe48816/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191217213608-3cac55bf869f h1:IeYV2aOZ77BK2lTJIYHbwDeOZUQfm57M77b/pM3iCPE=
-github.com/open-telemetry/opentelemetry-collector v0.2.1-0.20191217213608-3cac55bf869f/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
-github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191217213608-3cac55bf869f h1:ld2HWYL6js8ApHhc4mWQ+LXDEeDPZEpPTSJrPEwhZvQ=
-github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20191217213608-3cac55bf869f/go.mod h1:0x5LWC/8hyS8Q8fCi0elhTYf9S94RzRX6ZgL7EiYvlQ=
+github.com/open-telemetry/opentelemetry-collector v0.2.0-0.20200110151913-9777072f35b3 h1:6I6y/6uRWaQ7AhZiho1oyLXzBNiybJlws/PApwyoNdk=
+github.com/open-telemetry/opentelemetry-collector v0.2.0-0.20200110151913-9777072f35b3/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
+github.com/open-telemetry/opentelemetry-collector v0.2.2 h1:fByPHI/xDbTw3X36/OiEr30Hu69/Xdwd4SEdy1WrIIY=
+github.com/open-telemetry/opentelemetry-collector v0.2.2/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
+github.com/open-telemetry/opentelemetry-collector-contrib v0.0.0-20200108235032-fc49e9a799fb h1:19gs8qZpWRFwC8lVVpvFMbrZ20QOZ9GFEvwMqZqV4aI=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20200110193345-9f801c5b8d9f h1:HnaCRgCuhUBlVyJaLY+3e4b6gSSpvF9F0Hdg/z4P/Dk=
+github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20200110193345-9f801c5b8d9f/go.mod h1:ENTpOKAOQO8D9w18NdsydhyZGjoZTPtUpY++a5hc6kk=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
@@ -674,7 +672,6 @@ github.com/uber-go/atomic v1.4.0/go.mod h1:/Ct5t2lcmbJ4OSe/waGBoaVvVqtO0bmtfVNex
 github.com/uber/jaeger-client-go v2.15.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-client-go v2.16.0+incompatible h1:Q2Pp6v3QYiocMxomCaJuwQGFt7E53bPYqEgug/AoBtY=
 github.com/uber/jaeger-client-go v2.16.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
-github.com/uber/jaeger-lib v2.0.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/uber/jaeger-lib v2.2.0+incompatible h1:MxZXOiR2JuoANZ3J6DE/U0kSFv/eJ/GfSYVCjK7dyaw=
 github.com/uber/jaeger-lib v2.2.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
 github.com/uber/tchannel-go v1.10.0 h1:YOihLHuvkwT3nzvpgqFtexFW+pb5vD1Tz7h/bIWApgE=
