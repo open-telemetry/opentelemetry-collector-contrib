@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 )
@@ -653,6 +654,43 @@ func (exporter *traceExporter) pushTraceData(
 
 	for _, wireFormatSpan := range traceData.Spans {
 		if envelope, err := exporter.spanToEnvelope(exporter.config.InstrumentationKey, wireFormatSpan); err == nil && exporter.transportChannel != nil {
+
+			// Attach node level attributes to envelope and data as appropriate
+			if traceData.Node != nil && traceData.Node.Attributes != nil {
+				// Augment the envelope and envelope data with node level attributes
+				// Configure the ai.cloud.role and ai.cloud.roleinstance on the envelope tags itself, then copy the node attributes to the envelope data as well.
+				// Assumes the node level attribute key/values correspond to:
+				// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-resource-semantic-conventions.md
+				if serviceName, ok := traceData.Node.Attributes[conventions.AttributeServiceName]; ok {
+					if serviceNamespace, success := traceData.Node.Attributes[conventions.AttributeServiceNamespace]; success {
+						envelope.Tags[contracts.CloudRole] = serviceNamespace + "." + serviceName
+					} else {
+						envelope.Tags[contracts.CloudRole] = serviceName
+					}
+				}
+
+				if serviceInstanceID, ok := traceData.Node.Attributes[conventions.AttributeServiceInstance]; ok {
+					envelope.Tags[contracts.CloudRoleInstance] = serviceInstanceID
+				}
+
+				// Locate the correct properties map for the envelope
+				var properties map[string]string
+				if data, ok := envelope.Data.(*contracts.Data); ok {
+					if d, success := data.BaseData.(*contracts.RemoteDependencyData); success {
+						properties = d.Properties
+					} else if d, success := data.BaseData.(*contracts.RequestData); success {
+						properties = d.Properties
+					}
+
+					// Copy the node properties
+					if properties != nil {
+						for key, value := range traceData.Node.Attributes {
+							properties[key] = value
+						}
+					}
+				}
+			}
+
 			// This is a fire and forget operation
 			exporter.transportChannel.Send(envelope)
 		} else {
