@@ -24,6 +24,11 @@ ci: all test-with-cover
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
+.PHONY: precommit
+precommit:
+	$(MAKE) gotidy
+	$(MAKE) ci
+
 .PHONY: test-with-cover
 test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
@@ -38,6 +43,7 @@ test-with-cover:
 
 .PHONY: gotidy
 gotidy:
+	go mod tidy
 	@set -e; for dir in $(ALL_TEST_DIRS); do \
 	  (cd "$${dir}" && \
 	  	echo "tidying up $${dir}" && \
