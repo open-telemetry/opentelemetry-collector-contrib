@@ -5,7 +5,7 @@ go 1.12
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
-	github.com/open-telemetry/opentelemetry-collector v0.2.2
+	github.com/open-telemetry/opentelemetry-collector v0.2.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0
@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-20200108235032-fc49e9a799fb // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.0.0-20200113165313-aaaf81577e1a // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/tools v0.0.0-20191205225056-3393d29bb9fe
