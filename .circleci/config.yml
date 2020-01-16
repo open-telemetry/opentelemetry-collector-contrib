@@ -1,5 +1,16 @@
-
 version: 2
+
+workflows:
+  version: 2
+  build-publish:
+    jobs:
+      - build
+      - publish:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /^v[0-9].[0-9].[0-9]+.*/
 
 jobs:
   build:
@@ -10,13 +21,37 @@ jobs:
       - run:
           name: Install bazzar
           command: sudo apt-get install bzr -y
+      #- run:
+      #    name: Install tools
+      #    command: make install-tools
+      #- run:
+      #    name: Verify
+      #    command: make ci
       - run:
-          name: Install tools
-          command: make install-tools
-      - run:
-          name: Verify
-          command: make ci
+          name: Build collector 
+          command: make otelcontribcol
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  publish:
+    docker:
+      - image: circleci/golang:1.12
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: Build image
+          command: |
+            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:${CIRCLE_TAG}
+            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:latest
+      - run:
+          name: Push image
+          command: |
+            docker push omnition/opentelemetry-collector-contrib:${CIRCLE_TAG}
+            docker push omnition/opentelemetry-collector-contrib:latest
