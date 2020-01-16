@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
@@ -27,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
@@ -66,6 +68,17 @@ func components() (config.Factories, error) {
 		exporters = append(exporters, exp)
 	}
 	factories.Exporters, err = exporter.Build(exporters...)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	processors := []processor.Factory{
+		&k8sprocessor.Factory{},
+	}
+	for _, pr := range factories.Processors {
+		processors = append(processors, pr)
+	}
+	factories.Processors, err = processor.Build(processors...)
 	if err != nil {
 		errs = append(errs, err)
 	}
