@@ -4,7 +4,12 @@ workflows:
   version: 2
   build-publish:
     jobs:
-      - build
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
       - publish:
           requires:
             - build
