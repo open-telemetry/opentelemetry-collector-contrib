@@ -22,7 +22,7 @@ workflows:
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - checkout
       - run:
@@ -47,7 +47,7 @@ jobs:
             - .
   publish:
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
     steps:
       - attach_workspace:
           at: .
