@@ -542,6 +542,10 @@ github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200115225140-264426
 github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200115225140-264426a9cae4/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
 github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200122010738-1a92a7ea5aea h1:K6rD+EfYyeggEm5e0kSVPd4eTNl0ru8geKc+MCHnaqg=
 github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200122010738-1a92a7ea5aea/go.mod h1:WxiK9mcisb/hM6M6+2BRV/VIU2c8VzlCRJED2S1MWns=
+github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200123195845-9ecbe7589868 h1:tA6L7XXITw++T3iU5R5FIqc8kajx3gTn/Kh3Cx4ERkQ=
+github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200123195845-9ecbe7589868/go.mod h1:QQpcOiQiiE1Jwsbp9HlJMRHy9gnPtBVFoONFJ5A1eis=
+github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200127212148-c4458c722b19 h1:sBb4GnuXdznEBKLputJtGQrQCHxOfjAVXXWUb5I/zr4=
+github.com/open-telemetry/opentelemetry-collector v0.2.4-0.20200127212148-c4458c722b19/go.mod h1:QQpcOiQiiE1Jwsbp9HlJMRHy9gnPtBVFoONFJ5A1eis=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
