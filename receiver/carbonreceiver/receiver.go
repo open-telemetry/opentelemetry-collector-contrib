@@ -73,6 +73,14 @@ func New(
 		return nil, errEmptyEndpoint
 	}
 
+	if config.Parser == nil {
+		// Set the defaults
+		config.Parser = &protocol.Config{
+			Type:   "plaintext",
+			Config: &protocol.PlaintextParser{},
+		}
+	}
+
 	if config.Parser.Type != "plaintext" {
 		// TODO: Currently only plaintext is implemented. Remove this check
 		// 	when other parsers are supported.
