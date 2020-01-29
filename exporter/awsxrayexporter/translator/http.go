@@ -62,6 +62,8 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		case semconventions.AttributeHTTPClientIP:
 			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
+		case semconventions.AttributeHTTPUserAgent:
+			info.Request.UserAgent = value.GetStringValue().GetValue()
 		case semconventions.AttributeHTTPStatusCode:
 			info.Response.Status = value.GetIntValue()
 		case semconventions.AttributeHTTPURL:
@@ -81,16 +83,14 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
-		case semconventions.AttributePeerHost:
+		case semconventions.AttributeNetPeerName:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case semconventions.AttributePeerPort:
+		case semconventions.AttributeNetPeerPort:
 			urlParts[key] = value.GetStringValue().GetValue()
 			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
-		case semconventions.AttributePeerIpv4:
-			urlParts[key] = value.GetStringValue().GetValue()
-		case semconventions.AttributePeerIpv6:
+		case semconventions.AttributeNetPeerIP:
 			urlParts[key] = value.GetStringValue().GetValue()
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
@@ -159,14 +159,11 @@ func constructClientURL(component string, urlParts map[string]string) string {
 	port := ""
 	host, ok := urlParts[semconventions.AttributeHTTPHost]
 	if !ok {
-		host, ok = urlParts[semconventions.AttributePeerHost]
+		host, ok = urlParts[semconventions.AttributeNetPeerName]
 		if !ok {
-			host, ok = urlParts[semconventions.AttributePeerIpv4]
-			if !ok {
-				host = urlParts[semconventions.AttributePeerIpv6]
-			}
+			host = urlParts[semconventions.AttributeNetPeerIP]
 		}
-		port, ok = urlParts[semconventions.AttributePeerPort]
+		port, ok = urlParts[semconventions.AttributeNetPeerPort]
 		if !ok {
 			port = ""
 		}

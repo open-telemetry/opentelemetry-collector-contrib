@@ -28,21 +28,18 @@ type ServiceData struct {
 
 func makeService(resource *resourcepb.Resource) *ServiceData {
 	var (
-		ver     string
 		service *ServiceData
 	)
 	if resource == nil {
 		return service
 	}
-	for key, value := range resource.Labels {
-		switch key {
-		case semconventions.AttributeContainerTag:
-			ver = value
-		}
+	verStr, ok := resource.Labels[semconventions.AttributeServiceVersion]
+	if !ok {
+		verStr = resource.Labels[semconventions.AttributeContainerTag]
 	}
-	if ver != "" {
+	if verStr != "" {
 		service = &ServiceData{
-			Version: ver,
+			Version: verStr,
 		}
 	}
 	return service

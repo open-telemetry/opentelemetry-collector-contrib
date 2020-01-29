@@ -39,8 +39,8 @@ func TestClientSpanWithGrpcComponent(t *testing.T) {
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeGRPC
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
-	attributes[semconventions.AttributePeerIpv6] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributePeerPort] = "9443"
+	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
@@ -83,6 +83,8 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	errorMessage := "java.lang.NullPointerException"
+	userAgent := "PostmanRuntime/7.21.0"
+	enduser := "go.tester@example.com"
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "POST"
@@ -90,6 +92,8 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[semconventions.AttributeHTTPTarget] = "/api/locations"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
+	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
+	attributes[semconventions.AttributeEnduserID] = enduser
 	labels := constructDefaultResourceLabels()
 	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
@@ -109,6 +113,8 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, errorMessage))
+	assert.True(t, strings.Contains(jsonStr, userAgent))
+	assert.True(t, strings.Contains(jsonStr, enduser))
 }
 
 func TestClientSpanWithDbComponent(t *testing.T) {
@@ -120,9 +126,9 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[semconventions.AttributeDBInstance] = "customers"
 	attributes[semconventions.AttributeDBStatement] = spanName
 	attributes[semconventions.AttributeDBUser] = "userprefsvc"
-	attributes[semconventions.AttributePeerAddress] = "mysql://db.dev.example.com:3306"
-	attributes[semconventions.AttributePeerHost] = "db.dev.example.com"
-	attributes[semconventions.AttributePeerPort] = "3306"
+	attributes[semconventions.AttributeDBURL] = "mysql://db.dev.example.com:3306"
+	attributes[semconventions.AttributeNetPeerName] = "db.dev.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
@@ -155,8 +161,8 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeGRPC
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
-	attributes[semconventions.AttributePeerIpv6] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributePeerPort] = "9443"
+	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
@@ -283,6 +289,7 @@ func constructSpanAttributes(attributes map[string]interface{}) map[string]*trac
 func constructDefaultResourceLabels() map[string]string {
 	labels := make(map[string]string)
 	labels[semconventions.AttributeServiceName] = "signup_aggregator"
+	labels[semconventions.AttributeServiceVersion] = "semver:1.1.4"
 	labels[semconventions.AttributeContainerName] = "signup_aggregator"
 	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
 	labels[semconventions.AttributeContainerTag] = "v1"

@@ -76,9 +76,9 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
-	attributes[semconventions.AttributePeerHost] = "kb234.example.com"
-	attributes[semconventions.AttributePeerPort] = 8080
-	attributes[semconventions.AttributePeerIpv4] = "10.8.17.36"
+	attributes[semconventions.AttributeNetPeerName] = "kb234.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = 8080
+	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
 	attributes[semconventions.AttributeHTTPTarget] = "/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPClientSpan(attributes)
@@ -101,8 +101,8 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
-	attributes[semconventions.AttributePeerIpv4] = "10.8.17.36"
-	attributes[semconventions.AttributePeerPort] = "8080"
+	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
+	attributes[semconventions.AttributeNetPeerPort] = "8080"
 	attributes[semconventions.AttributeHTTPTarget] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -123,8 +123,8 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
-	attributes[semconventions.AttributePeerIpv6] = "2001:db8:85a3::8a2e:370:7334"
-	attributes[semconventions.AttributePeerPort] = "443"
+	attributes[semconventions.AttributeNetPeerIP] = "2001:db8:85a3::8a2e:370:7334"
+	attributes[semconventions.AttributeNetPeerPort] = "443"
 	attributes[semconventions.AttributeHTTPTarget] = "/users/junit"
 	span := constructHTTPClientSpan(attributes)
 
@@ -146,6 +146,7 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[semconventions.AttributeHTTPUserAgent] = "PostmanRuntime/7.21.0"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
 

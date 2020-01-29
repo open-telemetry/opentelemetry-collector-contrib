@@ -29,9 +29,9 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	attributes[semconventions.AttributeDBInstance] = "customers"
 	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
 	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributePeerAddress] = "mysql://db.example.com:3306"
-	attributes[semconventions.AttributePeerHost] = "db.example.com"
-	attributes[semconventions.AttributePeerPort] = "3306"
+	attributes[semconventions.AttributeDBURL] = "mysql://db.example.com:3306"
+	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = "3306"
 
 	filtered, sqlData := makeSQL(attributes)
 
@@ -53,9 +53,9 @@ func TestClientSpanWithHttpComponent(t *testing.T) {
 	attributes[semconventions.AttributeDBInstance] = "customers"
 	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
 	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributePeerAddress] = "mysql://db.example.com:3306"
-	attributes[semconventions.AttributePeerHost] = "db.example.com"
-	attributes[semconventions.AttributePeerPort] = "3306"
+	attributes[semconventions.AttributeDBURL] = "mysql://db.example.com:3306"
+	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = "3306"
 
 	filtered, sqlData := makeSQL(attributes)
 
