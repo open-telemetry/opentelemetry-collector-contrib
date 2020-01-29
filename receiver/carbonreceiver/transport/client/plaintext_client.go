@@ -23,12 +23,12 @@ import (
 	"time"
 )
 
-// This code was initially taken from
-// https://github.com/census-ecosystem/opencensus-go-exporter-graphite/tree/master/internal/client
-// and modified for the needs of testing the Carbon receiver package.
-
 // Graphite is a struct that defines the relevant properties of a graphite
 // connection.
+// This code was initially taken from
+// https://github.com/census-ecosystem/opencensus-go-exporter-graphite/tree/master/internal/client
+// and modified for the needs of testing the Carbon receiver package and is not
+// intended/tested to be used in production.
 type Graphite struct {
 	Host    string
 	Port    int
@@ -48,6 +48,10 @@ const (
 )
 
 // NewGraphite is a method that's used to create a new Graphite instance.
+// This code was initially taken from
+// https://github.com/census-ecosystem/opencensus-go-exporter-graphite/tree/master/internal/client
+// and modified for the needs of testing the Carbon receiver package and is not
+// intended/tested to be used in production.
 func NewGraphite(transport Transport, host string, port int) (*Graphite, error) {
 	graphite := &Graphite{Host: host, Port: port}
 	err := graphite.connect(transport)
