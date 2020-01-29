@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
 
-go 1.12
+go 1.13
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1

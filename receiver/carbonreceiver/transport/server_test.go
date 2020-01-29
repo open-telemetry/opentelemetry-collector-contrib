@@ -44,7 +44,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 				return NewTCPServer(addr, 1*time.Second)
 			},
 			buildClientFn: func(host string, port int) (*client.Graphite, error) {
-				return client.NewGraphite("tcp", host, port)
+				return client.NewGraphite(client.TCP, host, port)
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 				return NewUDPServer(addr)
 			},
 			buildClientFn: func(host string, port int) (*client.Graphite, error) {
-				return client.NewGraphite("udp", host, port)
+				return client.NewGraphite(client.UDP, host, port)
 			},
 		},
 	}

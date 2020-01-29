@@ -31,9 +31,6 @@ var _ (ParserConfig) = (*DelimiterParser)(nil)
 
 // BuildParser builds the respective parser of the configuration instance.
 func (d *DelimiterParser) BuildParser() (Parser, error) {
-	if d == nil {
-		return &DelimiterParser{}, nil
-	}
 	return d, nil
 }
 
@@ -43,4 +40,8 @@ func (d *DelimiterParser) Parse(line string) (*metricspb.Metric, error) {
 	// TODO: for now this parser is just a place holder, implementation coming
 	// soon.
 	return nil, errors.New("delimiter parser not implemeted yet")
+}
+
+func delimiterDefaultConfig() ParserConfig {
+	return &DelimiterParser{}
 }

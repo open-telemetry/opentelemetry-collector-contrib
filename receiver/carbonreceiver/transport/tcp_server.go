@@ -159,6 +159,16 @@ func (t *tcpServer) handleConnection(
 				err)
 			return
 		}
+
+		// reader.ReadBytes call below will block until either:
+		//
+		// * a '\n' char is read
+		// * the connection is closed (either by client or server)
+		// * an idle timeout happens (see call to conn.SetDeadline above)
+		//
+		// Notice that it is possible for the function to return with error at
+		// the same time that it returns data (typically the error is io.EOF in
+		// this case).
 		bytes, err := reader.ReadBytes((byte)('\n'))
 
 		// It is possible to have new data in bytes and err to be io.EOF

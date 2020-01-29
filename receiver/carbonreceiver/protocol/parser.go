@@ -23,6 +23,18 @@ import (
 type Parser interface {
 	// Parse receives the string with plaintext data, aka line, in the Carbon
 	// format and transforms it to the collector metric format.
+	//
+	// The expected line is a text line in the following format:
+	// 	"<metric_path> <metric_value> <metric_timestamp>"
+	//
+	// The <metric_path> is where there are variations that require selection
+	// of specialized parsers to handle them, but include the metric name and
+	// labels/dimensions for the metric.
+	//
+	// The <metric_value> is the textual representation of the metric value.
+	//
+	// The <metric_timestamp> is the Unix time text of when the measurement was
+	// made.
 	Parse(line string) (*metricspb.Metric, error)
 }
 
@@ -53,10 +65,6 @@ func buildMetricForSinglePoint(
 }
 
 func convertUnixSec(sec int64) *timestamp.Timestamp {
-	if sec == 0 {
-		return nil
-	}
-
 	ts := &timestamp.Timestamp{
 		Seconds: sec,
 	}

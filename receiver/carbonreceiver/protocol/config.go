@@ -16,8 +16,41 @@ package protocol
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/spf13/viper"
+)
+
+var (
+	// parserMap has all supported parsers and their respective default
+	// configuration.
+	parserMap = map[string]func() ParserConfig{
+		"plaintext": plaintextDefaultConfig,
+		"delimiter": delimiterDefaultConfig,
+	}
+
+	// validParsers keeps a list of all valid parsers to be used in error
+	// messages. It is initialized on init so new valid parsers just need to be
+	// added at parserMap above.
+	validParsers []string
+)
+
+func init() {
+	for k := range parserMap {
+		validParsers = append(validParsers, k)
+	}
+
+	// Sort the valid parsers by name so the message is consistent on every run.
+	sort.Slice(validParsers, func(i, j int) bool {
+		return validParsers[i] < validParsers[j]
+	})
+}
+
+const (
+	// configSection is the name that must be used for the config settings
+	// in the configuration struct. The metadata mapstructure for the parser
+	// should use the same string.
+	configSection = "config"
 )
 
 // Config is the general configuration for the parser to be used.
@@ -35,30 +68,27 @@ type ParserConfig interface {
 	BuildParser() (Parser, error)
 }
 
-// parserMap has all supported parsers and their respective default configuration.
-var parserMap = map[string]ParserConfig{
-	"plaintext": &PlaintextParser{},
-	"delimiter": &DelimiterParser{},
-}
-
-// LoadParserConfig is used to parser the parser configuration according to the
+// LoadParserConfig is used to load the parser configuration according to the
 // specified parser type. It expects the passed viper to be pointing at the level
 // of the Config reference.
 func LoadParserConfig(v *viper.Viper, config *Config) error {
-	defaultCfg, ok := parserMap[config.Type]
+	defaultCfgFn, ok := parserMap[config.Type]
 	if !ok {
-		return fmt.Errorf("unknown parser type %s", config.Type)
+		return fmt.Errorf(
+			"unknown parser type %q, valid parser types: %v",
+			config.Type,
+			validParsers)
 	}
 
-	config.Config = defaultCfg
+	config.Config = defaultCfgFn()
 
-	vParserCfg := v.Sub("config")
+	vParserCfg := v.Sub(configSection)
 	if vParserCfg == nil {
-		// Parser config section was not specified use the default config.
+		// Parser config section was not specified, use the default config.
 		return nil
 	}
 
-	if err := vParserCfg.UnmarshalExact(defaultCfg); err != nil {
+	if err := vParserCfg.UnmarshalExact(config.Config); err != nil {
 		return err
 	}
 

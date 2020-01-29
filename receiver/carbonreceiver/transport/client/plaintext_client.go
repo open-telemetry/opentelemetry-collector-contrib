@@ -28,7 +28,7 @@ import (
 // and modified for the needs of testing the Carbon receiver package.
 
 // Graphite is a struct that defines the relevant properties of a graphite
-// connection
+// connection.
 type Graphite struct {
 	Host    string
 	Port    int
@@ -36,14 +36,21 @@ type Graphite struct {
 	Conn    io.Writer
 }
 
-// defaultTimeout is the default number of seconds that we're willing to wait
-// before forcing the connection establishment to fail
-const defaultTimeout = 5
+// Transport is used as an enum to select the type of transport to be used.
+type Transport int
 
-// NewGraphite is a method that's used to create a new Graphite
-func NewGraphite(network, host string, port int) (*Graphite, error) {
+const (
+	defaultTimeout = 5
+
+	// Available transport options: TCP and UDP.
+	TCP Transport = iota
+	UDP
+)
+
+// NewGraphite is a method that's used to create a new Graphite instance.
+func NewGraphite(transport Transport, host string, port int) (*Graphite, error) {
 	graphite := &Graphite{Host: host, Port: port}
-	err := graphite.connect(network)
+	err := graphite.connect(transport)
 	if err != nil {
 		return nil, err
 	}
@@ -51,8 +58,8 @@ func NewGraphite(network, host string, port int) (*Graphite, error) {
 	return graphite, nil
 }
 
-// connect populates the Graphite.conn
-func (g *Graphite) connect(network string) error {
+// connect populates the Graphite.conn.
+func (g *Graphite) connect(transport Transport) error {
 	if cl, ok := g.Conn.(io.Closer); ok {
 		cl.Close()
 	}
@@ -65,20 +72,21 @@ func (g *Graphite) connect(network string) error {
 	var err error
 	var conn net.Conn
 
-	if network == "udp" {
-		udpAddr, err := net.ResolveUDPAddr(network, address)
+	switch transport {
+	case TCP:
+		conn, err = net.DialTimeout("tcp", address, g.Timeout)
+	case UDP:
+		udpAddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
 			return err
 		}
-		conn, err = net.DialUDP(network, nil, udpAddr)
+		conn, err = net.DialUDP("udp", nil, udpAddr)
 		if err != nil {
 			return err
 		}
-		g.Conn = conn
-		return nil
+	default:
+		return fmt.Errorf("unknown transport %d", transport)
 	}
-
-	conn, err = net.DialTimeout(network, address, g.Timeout)
 
 	g.Conn = conn
 

@@ -22,6 +22,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
+const (
+	// parserConfigSection is the name that must be used for the parser settings
+	// in the configuration struct. The metadata mapstructure for the parser
+	// should use the same string.
+	parserConfigSection = "parser"
+)
+
 // Config defines configuration for the Carbon receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`

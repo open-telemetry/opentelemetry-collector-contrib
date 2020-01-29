@@ -91,6 +91,24 @@ func Test_carbonreceiver_New(t *testing.T) {
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
 		{
+			name: "only_plaintext_parser_supported",
+			args: args{
+				config: Config{
+					ReceiverSettings: configmodels.ReceiverSettings{
+						NameVal:  "only_plaintext_parser_supported_rcv",
+						Endpoint: "localhost:2003",
+					},
+					Transport: "tcp",
+					Parser: &protocol.Config{
+						Type:   "delimiter",
+						Config: &protocol.DelimiterParser{},
+					},
+				},
+				nextConsumer: new(exportertest.SinkMetricsExporter),
+			},
+			wantErr: errOnlyPlaintextParserSupported,
+		},
+		{
 			name: "negative_tcp_idle_timeout",
 			args: args{
 				config: Config{
@@ -142,7 +160,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				return (&Factory{}).CreateDefaultConfig().(*Config)
 			},
 			clientFn: func(t *testing.T) *client.Graphite {
-				c, err := client.NewGraphite("tcp", host, port)
+				c, err := client.NewGraphite(client.TCP, host, port)
 				require.NoError(t, err)
 				return c
 			},
@@ -155,7 +173,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				return cfg
 			},
 			clientFn: func(t *testing.T) *client.Graphite {
-				c, err := client.NewGraphite("udp", host, port)
+				c, err := client.NewGraphite(client.UDP, host, port)
 				require.NoError(t, err)
 				return c
 			},

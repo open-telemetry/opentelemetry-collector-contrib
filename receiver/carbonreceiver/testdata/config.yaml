@@ -16,7 +16,8 @@ receivers:
     parser:
       # type specifies the type of parser to be used, the default is "plaintext"
       type: delimiter
-      # config specifies any special configuration of the selected parser.
+      # config specifies any special configuration of the selected parser. What
+      # goes under the section depends on the type of parser selected.
       config:
         or_delimiter: "|"
 

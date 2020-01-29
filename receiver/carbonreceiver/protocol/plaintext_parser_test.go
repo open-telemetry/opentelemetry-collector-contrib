@@ -20,7 +20,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_plaintextParser_Parse(t *testing.T) {
@@ -28,7 +27,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 	tests := []struct {
 		line    string
 		want    *metricspb.Metric
-		wantErr error
+		wantErr bool
 	}{
 		{
 			line: "tst.int 1 1582230020",
@@ -82,18 +81,29 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				},
 			),
 		},
+		{
+			line:    "more.than.3.parts 1.23 1582230000 1582230020",
+			wantErr: true,
+		},
+		{
+			line:    "nan.value xyz 1582230000",
+			wantErr: true,
+		},
+		{
+			line:    ";invalid=path 1.23 1582230000",
+			wantErr: true,
+		},
+		{
+			line:    "invalid.timestamp 1.23 xyz",
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.line, func(t *testing.T) {
 			got, err := p.Parse(tt.line)
-			assert.Equal(t, tt.wantErr, err)
-			if tt.wantErr != nil {
-				require.Nil(t, got)
-			} else {
-				require.NotNil(t, got)
-				assert.Equal(t, tt.want, got)
-			}
+			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
 }
@@ -196,12 +206,4 @@ func buildMetric(
 		labelKeys,
 		labelValues,
 		point)
-	//return &metricspb.Metric{
-	//	MetricDescriptor: &metricspb.MetricDescriptor{
-	//		Name:      name,
-	//		Type:      typ,
-	//		LabelKeys: labelKeys,
-	//	},
-	//	Timeseries: []*metricspb.TimeSeries{timeseries},
-	//}
 }

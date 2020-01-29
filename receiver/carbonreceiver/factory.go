@@ -16,6 +16,7 @@ package carbonreceiver
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -46,7 +47,8 @@ func (f *Factory) Type() string {
 	return typeStr
 }
 
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
+// CustomUnmarshaler returns the custom function to handle the special settings
+// used on the receiver.
 func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
@@ -55,7 +57,7 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		}
 
 		// Unmarshal but not exact yet so the different keys under config do not
-		// trigger errors, this is needed to the types of protocol and transport
+		// trigger errors, this is needed so that the types of protocol and transport
 		// are read.
 		if err := sourceViperSection.Unmarshal(intoCfg); err != nil {
 			return err
@@ -63,10 +65,14 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 
 		// Unmarshal the protocol, so the type of config can be properly set.
 		rCfg := intoCfg.(*Config)
-		vParserCfg := sourceViperSection.Sub("parser")
+		vParserCfg := sourceViperSection.Sub(parserConfigSection)
 		if vParserCfg != nil {
 			if err := protocol.LoadParserConfig(vParserCfg, rCfg.Parser); err != nil {
-				return err
+				return fmt.Errorf(
+					"error on %q section for %s: %v",
+					parserConfigSection,
+					rCfg.Name(),
+					err)
 			}
 		}
 

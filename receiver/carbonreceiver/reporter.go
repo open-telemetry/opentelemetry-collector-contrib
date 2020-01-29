@@ -24,6 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 )
 
+// reporter struct implements the transport.Reporter interface to give consistent
+// observability per Collector metric observability package.
 type reporter struct {
 	name          string
 	spanName      string
@@ -42,6 +44,10 @@ func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 	}
 }
 
+// OnDataReceived is called when a message or request is received from
+// a client. The returned context should be used in other calls to the same
+// reporter instance. The caller code should include a call to end the
+// returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) (context.Context, *trace.Span) {
 	rcvCtx := observability.ContextWithReceiverName(ctx, r.name)
 	span := trace.FromContext(rcvCtx)
@@ -49,6 +55,9 @@ func (r *reporter) OnDataReceived(ctx context.Context) (context.Context, *trace.
 	return rcvCtx, span
 }
 
+// OnTranslationError is used to report a translation error from original
+// format to the internal format of the Collector. The context and span
+// passed to it should be the ones returned by OnDataReceived.
 func (r *reporter) OnTranslationError(ctx context.Context, span *trace.Span, err error) {
 	if err == nil {
 		return
@@ -67,6 +76,10 @@ func (r *reporter) OnTranslationError(ctx context.Context, span *trace.Span, err
 	)
 }
 
+// OnMetricsProcessed is called when the received data is passed to next
+// consumer on the pipeline. The context and span passed to it should be the
+// ones returned by OnDataReceived. The error should be error returned by
+// the next consumer - the reporter is expected to handle nil error too.
 func (r *reporter) OnMetricsProcessed(
 	ctx context.Context,
 	span *trace.Span,
@@ -81,7 +94,7 @@ func (r *reporter) OnMetricsProcessed(
 	numDroppedTimeseries := numInvalidTimeseries
 	if err != nil {
 		r.logger.Debug(
-			"Carbon receiver failed to be push metrics into pipeline",
+			"Carbon receiver failed to push metrics into pipeline",
 			zap.String("receiver", r.name),
 			zap.Int("numReceivedTimeseries", numReceivedTimeseries),
 			zap.Int("numInvalidTimeseries", numInvalidTimeseries),

@@ -32,17 +32,26 @@ var _ (ParserConfig) = (*PlaintextParser)(nil)
 // BuildParser creates a new Parser instance that receives plaintext
 // Carbon data.
 func (p *PlaintextParser) BuildParser() (Parser, error) {
-	if p == nil {
-		return &PlaintextParser{}, nil
-	}
 	return p, nil
 }
 
 // Parse receives the string with plaintext data, aka line, in the Carbon
 // format and transforms it to the collector metric format. See
 // https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
+//
+// The expected line is a text line in the following format:
+// 	"<metric_path> <metric_value> <metric_timestamp>"
+//
+// The <metric_path> is where there are variations that require selection
+// of specialized parsers to handle them, but include the metric name and
+// labels/dimensions for the metric.
+//
+// The <metric_value> is the textual representation of the metric value.
+//
+// The <metric_timestamp> is the Unix time text of when the measurement was
+// made.
 func (p PlaintextParser) Parse(line string) (*metricspb.Metric, error) {
-	parts := strings.SplitN(line, " ", 3)
+	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid carbon metric [%s]", line)
 	}
@@ -87,6 +96,17 @@ func (p PlaintextParser) Parse(line string) (*metricspb.Metric, error) {
 	return metric, nil
 }
 
+// parsePath converts the <metric_path> of a Carbon line (see Parse function for
+// description of the full line). The metric path is expected to be in the
+// following format:
+//
+// 	<metric_name>[;tag0;...;tagN]
+//
+// <metric_name> is the name of the metric and terminates either at the first ';'
+// or at the end of the path.
+//
+// tag is of the form "key=val", where key can contain any char except ";!^=" and
+// val can contain any char except ";~".
 func (p *PlaintextParser) parsePath(path string) (name string, keys []*metricspb.LabelKey, values []*metricspb.LabelValue, err error) {
 	parts := strings.SplitN(path, ";", 2)
 	if len(parts) < 1 || parts[0] == "" {
@@ -125,4 +145,8 @@ func (p *PlaintextParser) parsePath(path string) (name string, keys []*metricspb
 	}
 
 	return
+}
+
+func plaintextDefaultConfig() ParserConfig {
+	return &PlaintextParser{}
 }
