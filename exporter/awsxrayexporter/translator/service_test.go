@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,6 +29,24 @@ func TestServiceFromResource(t *testing.T) {
 		Labels: constructDefaultResourceLabels(),
 	}
 
+	service := makeService(resource)
+
+	assert.NotNil(t, service)
+	w := testWriters.borrow()
+	if err := w.Encode(service); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, "semver:1.1.4"))
+}
+
+func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
+	resource := &resourcepb.Resource{
+		Type:   "container",
+		Labels: constructDefaultResourceLabels(),
+	}
+	delete(resource.Labels, semconventions.AttributeServiceVersion)
 	service := makeService(resource)
 
 	assert.NotNil(t, service)

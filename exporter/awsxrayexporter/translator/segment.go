@@ -127,7 +127,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		annotations                            = makeAnnotations(sqlfiltered)
+		user, annotations                      = makeAnnotations(sqlfiltered)
 		namespace                              string
 	)
 
@@ -151,6 +151,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		Cause:       cause,
 		Origin:      origin,
 		Namespace:   namespace,
+		User:        user,
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
@@ -273,18 +274,23 @@ func sanitizeAndTransferAnnotations(dest map[string]interface{}, src map[string]
 	}
 }
 
-func makeAnnotations(attributes map[string]string) map[string]interface{} {
+func makeAnnotations(attributes map[string]string) (string, map[string]interface{}) {
 	var (
 		result = map[string]interface{}{}
+		user   string
 	)
-
 	delete(attributes, semconventions.AttributeComponent)
+	userid, ok := attributes[semconventions.AttributeEnduserID]
+	if ok {
+		user = userid
+		delete(attributes, semconventions.AttributeEnduserID)
+	}
 	sanitizeAndTransferAnnotations(result, attributes)
 
 	if len(result) == 0 {
-		return nil
+		return user, nil
 	}
-	return result
+	return user, result
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines
