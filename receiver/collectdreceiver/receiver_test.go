@@ -72,13 +72,10 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer)
+			_, err := New(logger, tt.args.addr, time.Second*10, "", tt.args.nextConsumer)
 			if err != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if got != nil && got.MetricsSource() != metricsSource {
-				t.Errorf("MetricsSource() = %v, want %v", got, metricsSource)
 			}
 		})
 	}
