@@ -1,0 +1,35 @@
+receivers:
+  carbon:
+  carbon/allsettings:
+    # endpoint specifies the network interface and port which will receive
+    # Carbon data.
+    endpoint: localhost:8080
+    # transport specifies either "tcp" (the default) or "udp".
+    transport: udp
+    # tcp_idle_timeout is max duration that a tcp connection will idle wait for
+    # new data. This value is ignored is the transport is not "tcp". The default
+    # value is 30 seconds.
+    tcp_idle_timeout: 5s
+    # parser section is used to to configure the actual parser to handle the
+    # received data. The default is "plaintext", see
+    # https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
+    parser:
+      # type specifies the type of parser to be used, the default is "plaintext"
+      type: delimiter
+      # config specifies any special configuration of the selected parser. What
+      # goes under the section depends on the type of parser selected.
+      config:
+        or_delimiter: "|"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [carbon, carbon/allsettings]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
