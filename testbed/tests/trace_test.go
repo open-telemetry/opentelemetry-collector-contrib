@@ -51,7 +51,7 @@ func TestTrace10kSPS(t *testing.T) {
 			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 71,
-				ExpectedMaxRAM: 105,
+				ExpectedMaxRAM: 140,
 			},
 		},
 	}
