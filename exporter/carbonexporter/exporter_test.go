@@ -158,13 +158,11 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 
 			if !tt.acceptClient {
-				// See comment about recvfrom at connPool.Write why small
-				// batch doesn't cause error.
-				if len(tt.md.Metrics) < 1000 {
-					assert.NoError(t, exp.ConsumeMetricsData(context.Background(), tt.md))
-				} else {
-					require.Error(t, exp.ConsumeMetricsData(context.Background(), tt.md))
-				}
+				// Due to differences between platforms is not certain if the
+				// call to ConsumeMetricsData below will produce error or not.
+				// See comment about recvfrom at connPool.Write for detailed
+				// information.
+				exp.ConsumeMetricsData(context.Background(), tt.md)
 				assert.NoError(t, exp.Shutdown())
 				return
 			}
