@@ -217,8 +217,8 @@ func Test_connPool_Concurrency(t *testing.T) {
 	sender := carbonSender{connPool: cp}
 	ctx := context.Background()
 	md := generateLargeBatch(t)
-	concurrentWriters := 8
-	writesPerRoutine := 10
+	concurrentWriters := 3
+	writesPerRoutine := 3
 
 	var doneFlag int64
 	defer func(flag *int64) {
