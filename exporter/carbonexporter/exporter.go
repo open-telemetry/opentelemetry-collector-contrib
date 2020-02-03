@@ -72,7 +72,7 @@ func (cs *carbonSender) pushMetricsData(
 	lines, converted, dropped := metricDataToPlaintext(md)
 
 	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
-		// Error sending all failed to be sent.
+		// Use the sum of converted and dropped since the write failed for all.
 		return converted + dropped, err
 	}
 

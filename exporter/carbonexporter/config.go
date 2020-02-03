@@ -22,8 +22,8 @@ import (
 
 // Defaults for not specified configuration settings.
 const (
-	DefaultEndpoint = "localhost:2003"
-	DefaultTimeout  = 5 * time.Second
+	DefaultEndpoint    = "localhost:2003"
+	DefaultSendTimeout = 5 * time.Second
 )
 
 // Config defines configuration for Carbon exporter.
@@ -34,8 +34,9 @@ type Config struct {
 	// format. The default value is defined by the DefaultEndpoint constant.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Timeout is used to limit the duration of individual send operations.
-	// The default value is defined by the DefaultTimeout constant.
+	// Timeout is the maximum duration allowed to connecting and sending the
+	// data to the Carbon/Graphite backend.
+	// The default value is defined by the DefaultSendTimeout constant.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
 
@@ -48,7 +49,7 @@ func defaultConfig() *Config {
 			NameVal: typeStr,
 		},
 		Endpoint: DefaultEndpoint,
-		Timeout:  DefaultTimeout,
+		Timeout:  DefaultSendTimeout,
 	}
 }
 

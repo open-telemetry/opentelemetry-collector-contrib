@@ -110,10 +110,11 @@ func metricDataToPlaintext(md consumerdata.MetricsData) (string, int, int) {
 				//	len(labelValues),
 				//	name)
 
-				// From this point on all code below is safe to assume that
-				// len(tagKeys) is equal to len(labelValues).
 				continue
 			}
+
+			// From this point on all code below is safe to assume that
+			// len(tagKeys) is equal to len(labelValues).
 
 			for _, point := range ts.Points {
 				timestampStr := formatInt64(point.GetTimestamp().GetSeconds())

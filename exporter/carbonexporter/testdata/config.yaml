@@ -11,7 +11,8 @@ exporters:
     # use endpoint to specify alternative destinations for the exporter,
     # the default is localhost:2003
     endpoint: localhost:8080
-    # timeout is used to limit the duration of each individual send attempt.
+    # timeout is the maximum duration allowed to connecting and sending the
+    # data to the Carbon/Graphite backend.
     # The default is 5 seconds.
     timeout: 10s
 
