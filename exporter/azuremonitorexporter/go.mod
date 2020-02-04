@@ -10,7 +10,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector v0.2.4
+	github.com/open-telemetry/opentelemetry-collector v0.2.5
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect

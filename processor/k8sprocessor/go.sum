@@ -460,8 +460,8 @@ github.com/onsi/gomega v1.4.3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1Cpa
 github.com/onsi/gomega v1.5.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.7.0 h1:XPnZz8VVBHjVsy1vzJmRwIcSwiUO+JFfrv/xGiigmME=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/open-telemetry/opentelemetry-collector v0.2.4 h1:KLDYeGaDz9nVwFgZSBaw3ACg3ykuWUEDvgLG1eZ9lvs=
-github.com/open-telemetry/opentelemetry-collector v0.2.4/go.mod h1:ccg/kg89vmkW1VsSg74QKoVOsgSwH7bvEBvo5LeN+V8=
+github.com/open-telemetry/opentelemetry-collector v0.2.5 h1:IDdSQ93ieSHDZf3EtkPNnTaTN7thRbBAezuPu33WIc4=
+github.com/open-telemetry/opentelemetry-collector v0.2.5/go.mod h1:ccg/kg89vmkW1VsSg74QKoVOsgSwH7bvEBvo5LeN+V8=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
