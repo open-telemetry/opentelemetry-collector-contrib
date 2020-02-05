@@ -15,6 +15,8 @@
 package stackdriverexporter
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
@@ -26,6 +28,9 @@ type Config struct {
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
+	BundleDelayThreshold          time.Duration            `mapstructure:"bundle_delay_threshold"`
+	BundleCountThreshold          int                      `mapstructure:"bundle_count_threshold"`
+	TraceSpansBufferMaxBytes      int                      `mapstructure:"trace_spans_buffer_max_bytes"`
 	// Only has effect if Endpoint is not ""
 	UseInsecure bool `mapstructure:"use_insecure"`
 }

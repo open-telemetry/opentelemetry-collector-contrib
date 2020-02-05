@@ -83,7 +83,10 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 		// the project this is running on in GCP.
 		ProjectID: cfg.ProjectID,
 
-		MetricPrefix: cfg.Prefix,
+		MetricPrefix:             cfg.Prefix,
+		BundleDelayThreshold:     cfg.BundleDelayThreshold,
+		BundleCountThreshold:     cfg.BundleCountThreshold,
+		TraceSpansBufferMaxBytes: cfg.TraceSpansBufferMaxBytes,
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},

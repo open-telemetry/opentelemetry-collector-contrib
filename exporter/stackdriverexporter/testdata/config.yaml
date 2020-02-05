@@ -13,6 +13,9 @@ exporters:
     number_of_workers: 3
     skip_create_metric_descriptor: true
     use_insecure: true
+    bundle_count_threshold: 42
+    bundle_delay_threshold: 1m
+    trace_spans_buffer_max_bytes: 1024
   stackdriver/disabled: # will be ignored
     disabled: true
 

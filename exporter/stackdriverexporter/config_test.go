@@ -17,6 +17,7 @@ package stackdriverexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -52,5 +53,8 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			BundleDelayThreshold:       1 * time.Minute,
+			BundleCountThreshold:       42,
+			TraceSpansBufferMaxBytes:   1024,
 		})
 }
