@@ -29,21 +29,30 @@ func TestMetric10kDPS(t *testing.T) {
 		resourceSpec testbed.ResourceSpec
 	}{
 		{
-			"SignalFx",
-			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
-			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 58,
-			},
-		},
-		{
 			"OpenCensus",
 			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 29,
 				ExpectedMaxRAM: 59,
+			},
+		},
+		{
+			"Carbon",
+			NewCarbonDataSender(testbed.GetAvailablePort(t)),
+			NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 115,
+				ExpectedMaxRAM: 40,
+			},
+		},
+		{
+			"SignalFx",
+			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
+			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 40,
+				ExpectedMaxRAM: 58,
 			},
 		},
 	}

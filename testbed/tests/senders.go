@@ -17,12 +17,14 @@ package tests
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 )
@@ -95,7 +97,7 @@ type SFxMetricsDataSender struct {
 // Ensure SFxMetricsDataSender implements MetricDataSender.
 var _ testbed.MetricDataSender = (*SFxMetricsDataSender)(nil)
 
-// NewSFxMetricDataSender creates a new OpenCensus metric protocol sender that will send
+// NewSFxMetricDataSender creates a new SignalFx metric protocol sender that will send
 // to the specified port after Start is called.
 func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 	return &SFxMetricsDataSender{port: port}
@@ -123,7 +125,7 @@ func (sf *SFxMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) er
 	return sf.exporter.ConsumeMetricsData(context.Background(), metrics)
 }
 
-// Flush previously sent spans.
+// Flush previously sent metrics.
 func (sf *SFxMetricsDataSender) Flush() {
 }
 
@@ -143,4 +145,64 @@ func (sf *SFxMetricsDataSender) GetCollectorPort() int {
 // ProtocolName returns protocol name as it is specified in Collector config.
 func (sf *SFxMetricsDataSender) ProtocolName() string {
 	return "signalfx"
+}
+
+// CarbonDataSender implements MetricDataSender for Carbon metrics protocol.
+type CarbonDataSender struct {
+	exporter exporter.MetricsExporter
+	port     int
+}
+
+// Ensure CarbonDataSender implements MetricDataSender.
+var _ testbed.MetricDataSender = (*CarbonDataSender)(nil)
+
+// NewCarbonDataSender creates a new Carbon metric protocol sender that will send
+// to the specified port after Start is called.
+func NewCarbonDataSender(port int) *CarbonDataSender {
+	return &CarbonDataSender{port: port}
+}
+
+// Start the sender.
+func (cs *CarbonDataSender) Start() error {
+	cfg := &carbonexporter.Config{
+		Endpoint: fmt.Sprintf("localhost:%d", cs.port),
+		Timeout:  5 * time.Second,
+	}
+
+	factory := carbonexporter.Factory{}
+	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+
+	if err != nil {
+		return err
+	}
+
+	cs.exporter = exporter
+	return nil
+}
+
+// SendMetrics sends metrics. Can be called after Start.
+func (cs *CarbonDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
+	return cs.exporter.ConsumeMetricsData(context.Background(), metrics)
+}
+
+// Flush previously sent metrics.
+func (cs *CarbonDataSender) Flush() {
+}
+
+// GenConfigYAMLStr returns receiver config for the agent.
+func (cs *CarbonDataSender) GenConfigYAMLStr() string {
+	// Note that this generates a receiver config for agent.
+	return fmt.Sprintf(`
+  carbon:
+    endpoint: localhost:%d`, cs.port)
+}
+
+// GetCollectorPort returns receiver port for the Collector.
+func (cs *CarbonDataSender) GetCollectorPort() int {
+	return cs.port
+}
+
+// ProtocolName returns protocol name as it is specified in Collector config.
+func (cs *CarbonDataSender) ProtocolName() string {
+	return "carbon"
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 )
@@ -93,34 +95,86 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 }
 
 // Start the receiver.
-func (or *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
-	addr := fmt.Sprintf("localhost:%d", or.Port)
+func (sr *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
+	addr := fmt.Sprintf("localhost:%d", sr.Port)
 	config := signalfxreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
 	}
 	var err error
-	or.receiver, err = signalfxreceiver.New(zap.L(), config, mc)
+	sr.receiver, err = signalfxreceiver.New(zap.L(), config, mc)
 	if err != nil {
 		return err
 	}
 
-	return or.receiver.Start(or)
+	return sr.receiver.Start(sr)
 }
 
 // Stop the receiver.
-func (or *SFxMetricsDataReceiver) Stop() {
-	or.receiver.Shutdown()
+func (sr *SFxMetricsDataReceiver) Stop() {
+	sr.receiver.Shutdown()
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.
-func (or *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
+func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   signalfx:
-    url: "http://localhost:%d/v2/datapoint"`, or.Port)
+    url: "http://localhost:%d/v2/datapoint"`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
-func (or *SFxMetricsDataReceiver) ProtocolName() string {
+func (sr *SFxMetricsDataReceiver) ProtocolName() string {
 	return "signalfx"
+}
+
+// CarbonDataReceiver implements Carbon format receiver.
+type CarbonDataReceiver struct {
+	testbed.DataReceiverBase
+	receiver receiver.MetricsReceiver
+}
+
+// Ensure CarbonDataReceiver implements MetricDataSender.
+var _ testbed.DataReceiver = (*CarbonDataReceiver)(nil)
+
+// NewCarbonDataReceiver creates a new CarbonDataReceiver that will listen on the
+// specified port after Start is called.
+func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
+	return &CarbonDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
+}
+
+// Start the receiver.
+func (cr *CarbonDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
+	addr := fmt.Sprintf("localhost:%d", cr.Port)
+	config := carbonreceiver.Config{
+		ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
+		Parser: &protocol.Config{
+			Type:   "plaintext",
+			Config: &protocol.PlaintextParser{},
+		},
+	}
+	var err error
+	cr.receiver, err = carbonreceiver.New(zap.L(), config, mc)
+	if err != nil {
+		return err
+	}
+
+	return cr.receiver.Start(cr)
+}
+
+// Stop the receiver.
+func (cr *CarbonDataReceiver) Stop() {
+	cr.receiver.Shutdown()
+}
+
+// GenConfigYAMLStr returns exporter config for the agent.
+func (cr *CarbonDataReceiver) GenConfigYAMLStr() string {
+	// Note that this generates an exporter config for agent.
+	return fmt.Sprintf(`
+  carbon:
+    endpoint: "localhost:%d"`, cr.Port)
+}
+
+// ProtocolName returns protocol name as it is specified in Collector config.
+func (cr *CarbonDataReceiver) ProtocolName() string {
+	return "carbon"
 }
