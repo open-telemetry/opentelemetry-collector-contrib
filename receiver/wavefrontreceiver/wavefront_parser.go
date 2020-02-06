@@ -36,7 +36,7 @@ type WavefrontParser struct {
 var _ (protocol.Parser) = (*WavefrontParser)(nil)
 var _ (protocol.ParserConfig) = (*WavefrontParser)(nil)
 
-var escapedDoubleQuoteReplacer = strings.NewReplacer("\\\"", `"`)
+var escapedDoubleQuoteReplacer = strings.NewReplacer(`\"`, `"`)
 
 // BuildParser creates a new Parser instance that receives Wavefront metric data.
 func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {

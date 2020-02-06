@@ -84,6 +84,12 @@ func (f *Factory) CreateMetricsReceiver(
 
 	rCfg := cfg.(*Config)
 
+	// Wavefront is very similar to Carbon: it is TCP based in which each received
+	// text line represents a single metric data point. They differ on the format
+	// of their textual representation.
+	//
+	// The Wavefront receiver leverages the Carbon receiver code by implementing
+	// a dedicated parser for its format.
 	carbonCfg := carbonreceiver.Config{
 		ReceiverSettings: rCfg.ReceiverSettings,
 		Transport:        "tcp",
