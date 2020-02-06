@@ -392,36 +392,36 @@ func TestLabelsFromName(t *testing.T) {
 		wantLabels     map[string]string
 	}{
 		{
-			name: "simple",
+			name:           "simple",
 			wantMetricName: "simple",
 		},
 		{
-			name: "single[k=v]",
+			name:           "single[k=v]",
 			wantMetricName: "single",
 			wantLabels: map[string]string{
 				"k": "v",
 			},
 		},
 		{
-			name: "a.b.c.[k=v].d",
+			name:           "a.b.c.[k=v].d",
 			wantMetricName: "a.b.c..d",
 			wantLabels: map[string]string{
 				"k": "v",
 			},
 		},
 		{
-			name: "a.b[k0=v0,k1=v1,k2=v2].c",
+			name:           "a.b[k0=v0,k1=v1,k2=v2].c",
 			wantMetricName: "a.b.c",
 			wantLabels: map[string]string{
 				"k0": "v0", "k1": "v1", "k2": "v2",
 			},
 		},
 		{
-			name: "empty[]",
+			name:           "empty[]",
 			wantMetricName: "empty[]",
 		},
 		{
-			name: "mal.formed[k_no_sep]",
+			name:           "mal.formed[k_no_sep]",
 			wantMetricName: "mal.formed[k_no_sep]",
 		},
 	}
