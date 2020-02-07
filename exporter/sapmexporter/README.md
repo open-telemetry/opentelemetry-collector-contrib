@@ -1,7 +1,7 @@
 # SAPM Exporter
 
-SAPM exports builds on the Jaeger proto and adds additional batching on top. This allows
-the collector to export traces from multiples nodes/services in a single batch. SAPM proto
+The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
+the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
 
 ## Configuration
@@ -12,7 +12,7 @@ Example:
 exporters:
   sapm:
     endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com
-    access_token: abcd1234
+    access_token: YOUR_ACCESS_TOKEN
     num_workers: 8
     max_connections: 100
 ```
