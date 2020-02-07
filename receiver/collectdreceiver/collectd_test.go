@@ -384,3 +384,52 @@ var wantMetricsData = []*metricspb.Metric{
 		},
 	},
 }
+
+func TestLabelsFromName(t *testing.T) {
+	tests := []struct {
+		name           string
+		wantMetricName string
+		wantLabels     map[string]string
+	}{
+		{
+			name:           "simple",
+			wantMetricName: "simple",
+		},
+		{
+			name:           "single[k=v]",
+			wantMetricName: "single",
+			wantLabels: map[string]string{
+				"k": "v",
+			},
+		},
+		{
+			name:           "a.b.c.[k=v].d",
+			wantMetricName: "a.b.c..d",
+			wantLabels: map[string]string{
+				"k": "v",
+			},
+		},
+		{
+			name:           "a.b[k0=v0,k1=v1,k2=v2].c",
+			wantMetricName: "a.b.c",
+			wantLabels: map[string]string{
+				"k0": "v0", "k1": "v1", "k2": "v2",
+			},
+		},
+		{
+			name:           "empty[]",
+			wantMetricName: "empty[]",
+		},
+		{
+			name:           "mal.formed[k_no_sep]",
+			wantMetricName: "mal.formed[k_no_sep]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotMetricName, gotLabels := LabelsFromName(&tt.name)
+			assert.Equal(t, tt.wantMetricName, gotMetricName)
+			assert.Equal(t, tt.wantLabels, gotLabels)
+		})
+	}
+}

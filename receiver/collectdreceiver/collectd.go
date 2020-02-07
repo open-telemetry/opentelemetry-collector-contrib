@@ -194,7 +194,7 @@ func (r *collectDRecord) pointTypeInstance(attrs map[string]string, parts []byte
 		return parts
 	}
 
-	instanceName, extractedAttrs := labelsFromName(r.TypeInstance)
+	instanceName, extractedAttrs := LabelsFromName(r.TypeInstance)
 	if instanceName != "" {
 		if len(parts) > 0 {
 			parts = append(parts, '.')
@@ -210,13 +210,16 @@ func (r *collectDRecord) pointTypeInstance(attrs map[string]string, parts []byte
 	return parts
 }
 
-// labelsFromName tries to pull out dimensions out of name in the format name[k=v,f=x]-morename
-// would return name-morename and extract dimensions (k,v) and (f,x)
-// if we encounter something we don't expect use original name.
-// This is a bit complicated to avoid allocations, string.split allocates, while slices
-// inside same function, do not.
-func labelsFromName(val *string) (instanceName string, toAddDims map[string]string) {
-	instanceName = *val
+// LabelsFromName tries to pull out dimensions out of name in the format
+// "name[k=v,f=x]-more_name".
+// For the example above it would return "name-more_name" and extract dimensions
+// (k,v) and (f,x).
+// If something unexpected is encountered it returns the original metric name.
+//
+// The code tries to avoid allocation by using local slices and avoiding calls
+// to functions like strings.Slice.
+func LabelsFromName(val *string) (metricName string, labels map[string]string) {
+	metricName = *val
 	index := strings.Index(*val, "[")
 	if index > -1 {
 		left := (*val)[:index]
@@ -244,8 +247,8 @@ func labelsFromName(val *string) (instanceName string, toAddDims map[string]stri
 				prev = cindex + 1
 				cindex = strings.Index(dimensions[prev:], ",") + prev
 			}
-			toAddDims = working
-			instanceName = left + rest
+			labels = working
+			metricName = left + rest
 		}
 	}
 	return
@@ -267,7 +270,7 @@ func parseAndAddLabels(labels map[string]string, pluginInstance *string, host *s
 }
 
 func parseNameForLabels(labels map[string]string, key string, val *string) {
-	instanceName, toAddDims := labelsFromName(val)
+	instanceName, toAddDims := LabelsFromName(val)
 
 	for k, v := range toAddDims {
 		if _, exists := labels[k]; !exists {
