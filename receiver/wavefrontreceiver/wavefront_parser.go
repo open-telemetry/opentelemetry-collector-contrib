@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 )
 
 // WavefrontParser converts metrics in the Wavefront format, see
@@ -147,7 +148,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 	var toAddDims map[string]string
 	index := strings.Index(metricName, "..")
 	for {
-		metricName, toAddDims = labelsFromName(&metricName)
+		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
 				metricName = strings.Replace(metricName, "..", ".", -1)
@@ -238,46 +239,4 @@ func unDoubleQuote(s string) string {
 		return s[1 : n-1]
 	}
 	return s
-}
-
-// labelsFromName tries to pull out dimensions out of name in the format name[k=v,f=x]-morename
-// would return name-morename and extract dimensions (k,v) and (f,x)
-// if we encounter something we don't expect use original name.
-// This is a bit complicated to avoid allocations, string.split allocates, while slices
-// inside same function, do not.
-// TODO: This is being copied from collectdreceiver, expose it and call it from that package.
-func labelsFromName(val *string) (instanceName string, toAddDims map[string]string) {
-	instanceName = *val
-	index := strings.Index(*val, "[")
-	if index > -1 {
-		left := (*val)[:index]
-		rest := (*val)[index+1:]
-		index = strings.Index(rest, "]")
-		if index > -1 {
-			working := make(map[string]string)
-			dimensions := rest[:index]
-			rest = rest[index+1:]
-			cindex := strings.Index(dimensions, ",")
-			prev := 0
-			for {
-				if cindex < prev {
-					cindex = len(dimensions)
-				}
-				piece := dimensions[prev:cindex]
-				tindex := strings.Index(piece, "=")
-				if tindex == -1 || strings.Contains(piece[tindex+1:], "=") {
-					return
-				}
-				working[piece[:tindex]] = piece[tindex+1:]
-				if cindex == len(dimensions) {
-					break
-				}
-				prev = cindex + 1
-				cindex = strings.Index(dimensions[prev:], ",") + prev
-			}
-			toAddDims = working
-			instanceName = left + rest
-		}
-	}
-	return
 }
