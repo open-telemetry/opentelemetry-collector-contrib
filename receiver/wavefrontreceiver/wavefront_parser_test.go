@@ -70,6 +70,22 @@ func Test_buildLabels(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple_escapes",
+			tags: "source=\"tst\\\"\\ntst\\\"\" bgn=\"\nb\" mid=\"tst\\nspc\" end=\"e\n\"",
+			wantKeys: []*metricspb.LabelKey{
+				{Key: "source"},
+				{Key: "bgn"},
+				{Key: "mid"},
+				{Key: "end"},
+			},
+			wantValues: []*metricspb.LabelValue{
+				{Value: "tst\"\ntst\"", HasValue: true},
+				{Value: "\nb", HasValue: true},
+				{Value: "tst\nspc", HasValue: true},
+				{Value: "e\n", HasValue: true},
+			},
+		},
+		{
 			name: "missing_tagValue",
 			tags: "k0=0 k1= k2=2",
 			wantKeys: []*metricspb.LabelKey{

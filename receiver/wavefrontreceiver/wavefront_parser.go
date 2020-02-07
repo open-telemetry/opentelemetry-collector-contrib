@@ -36,7 +36,12 @@ type WavefrontParser struct {
 var _ (protocol.Parser) = (*WavefrontParser)(nil)
 var _ (protocol.ParserConfig) = (*WavefrontParser)(nil)
 
-var escapedDoubleQuoteReplacer = strings.NewReplacer(`\"`, `"`)
+// Only two chars can be espcaped per Wavafront SDK, see
+// https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
+var escapedCharReplacer = strings.NewReplacer(
+	`\"`, `"`, // Replaces escaped double-quotes
+	`\n`, "\n", // Repaces escaped new-line.
+)
 
 // BuildParser creates a new Parser instance that receives Wavefront metric data.
 func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
@@ -181,21 +186,25 @@ func buildLabels(tags string) (keys []*metricspb.LabelKey, values []*metricspb.L
 			foundEscape := false
 			i := 1
 			for ; i < len(rest); i++ {
-				if rest[i] != '"' {
+				if rest[i] != '"' && rest[i] != 'n' {
 					continue
 				}
-				if rest[i-1] != '\\' {
+				isPrevCharEscape := rest[i-1] == '\\'
+				if rest[i] == '"' && !isPrevCharEscape {
+					// Non-escaped double-quote, it is the end of the value.
 					break
 				}
-				foundEscape = true
+				foundEscape = foundEscape || isPrevCharEscape
 			}
 
 			value = rest[1:i]
 			tagLen += len(value) + 2 // plus 2 to account for the double-quotes.
 			if foundEscape {
-				value = escapedDoubleQuoteReplacer.Replace(value)
+				// Per implementation of Wavefront SDK only double-quotes and
+				// newline characters are escaped. See the link below:
+				// https://github.com/wavefrontHQ/wavefront-sdk-go/blob/2c5891318fcd83c35c93bba2b411640495473333/senders/formatter.go#L20
+				value = escapedCharReplacer.Replace(value)
 			}
-
 		} else {
 			// Skip until space.
 			i := 0
