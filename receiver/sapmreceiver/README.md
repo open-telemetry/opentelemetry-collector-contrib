@@ -1,15 +1,15 @@
 # SAPM Receiver 
 
-SAPM exports builds on the Jaeger proto and adds additional batching on top. This allows
-the collector to export traces from multiples nodes/services in a single batch. SAPM proto
-and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
+The SAPM receiver builds on the Jaeger proto. This allows the collector to receiver traces 
+from other collectors or the SignalFx Smart Agent. SAPM proto and some useful related 
+utilities can be found [here](https://github.com/signalfx/sapm-proto/).
 
 ## Configuration
 
 Example:
 
 ```yaml
-exporters:
+receivers:
   sapm:
     endpoint: localhost:7276
 ```
