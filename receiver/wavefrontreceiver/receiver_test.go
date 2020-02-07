@@ -155,9 +155,9 @@ var _ (consumer.MetricsConsumer) = (*waitableMetricsConsumer)(nil)
 
 func (w *waitableMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	w.mtx.Lock()
-	defer w.mtx.Unlock()
-	defer w.Done()
 	w.metrics = append(w.metrics, md.Metrics...)
+	w.mtx.Unlock()
+	w.Done()
 	return nil
 }
 
