@@ -468,8 +468,6 @@ github.com/open-telemetry/opentelemetry-collector v0.2.6 h1:2OVuxsIj/W3NYxplKTwx
 github.com/open-telemetry/opentelemetry-collector v0.2.6/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-20200205175917-17050961bb75 h1:1ELaK+MUfdSMskozIzeqwv6Dle5SfZPWpSnpLn9RegY=
 github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-20200205175917-17050961bb75/go.mod h1:rYpsRBUmc3Hp5aKlMe0JnJDEsvP2EbwznID9rPnhni8=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-20200207163721-b6ba4d575be7 h1:jX05DXe1RWIrsmFEr5ulBcgpcI9KRyOsk/PQ9roWonw=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-20200207163721-b6ba4d575be7/go.mod h1:OmOGMtC37mBbQnPcQllOlApqOj88jPAzaYd1CCV0WDA=
 github.com/open-telemetry/opentelemetry-proto v0.0.0-20200206071824-8310c432e51c h1:nDOtl6j2Ei16tlnx/o4qKEelpHtGoZ9ArwU+tux4Ia8=
 github.com/open-telemetry/opentelemetry-proto v0.0.0-20200206071824-8310c432e51c/go.mod h1:PMR5GI0F7BSpio+rBGFxNm6SLzg3FypDTcFuQZnO+F8=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
