@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4 // indirect
-	github.com/open-telemetry/opentelemetry-collector v0.2.5
+	github.com/open-telemetry/opentelemetry-collector v0.2.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
