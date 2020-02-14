@@ -139,9 +139,16 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: map[string]string{
 				"annotation1": "av1",
 			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				meta_v1.OwnerReference{
+					Kind: "somekind",
+					Name: "somename",
+				},
+			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "auth-hostname3",
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
@@ -173,6 +180,8 @@ func TestExtractionRules(t *testing.T) {
 			Node:       true,
 			Cluster:    true,
 			StartTime:  true,
+			HostName:   true,
+			Owners:     true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -181,6 +190,8 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"k8s.pod.hostname":    "auth-hostname3",
+			"k8s.owners.somekind": "someowner",
 		},
 	}, {
 		name: "labels",
