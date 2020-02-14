@@ -34,6 +34,8 @@ const (
 	tagNodeName       = "k8s.node.name"
 	tagPodName        = "k8s.pod.name"
 	tagStartTime      = "k8s.pod.startTime"
+	tagHostName       = "k8s.pod.hostname"
+	tagOwnerTemplate  = "k8s.owner.%s"
 )
 
 var (
@@ -110,6 +112,8 @@ type ExtractionRules struct {
 	Node       bool
 	Cluster    bool
 	StartTime  bool
+	HostName   bool
+	Owners     bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
