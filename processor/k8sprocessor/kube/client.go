@@ -211,10 +211,20 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[tagNodeName] = pod.Spec.NodeName
 	}
 
+	if c.Rules.HostName {
+		tags[tagHostName] = pod.Spec.Hostname
+	}
+
 	if c.Rules.Cluster {
 		clusterName := pod.GetClusterName()
 		if clusterName != "" {
 			tags[tagClusterName] = clusterName
+		}
+	}
+
+	if c.Rules.Owners {
+		for _, or := range pod.ObjectMeta.OwnerReferences {
+			tags[fmt.Sprintf(tagOwnerTemplate, or.Kind)] = or.Name
 		}
 	}
 
