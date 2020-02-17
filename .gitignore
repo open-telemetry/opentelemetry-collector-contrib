@@ -26,3 +26,7 @@ bin/
 # Coverage
 coverage.txt
 coverage.html
+
+# vagrant
+.vagrant
+ubuntu-bionic-18.04-cloudimg-console.log
