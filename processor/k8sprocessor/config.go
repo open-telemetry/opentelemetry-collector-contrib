@@ -50,6 +50,11 @@ type ExtractConfig struct {
 	// By default all of the fields are extracted and added to spans.
 	Metadata []string `mapstructure:"metadata"`
 
+	// Tags allow to specify output name used for each of the kubernetes tags
+	// The field accepts a map of string->string. It is optional and if no values
+	// are provided, defaults will be used
+	Tags map[string]string `mapstructure:"tags"`
+
 	// Annotations allows extracting data from pod annotations and record it
 	// as resource attributes.
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
