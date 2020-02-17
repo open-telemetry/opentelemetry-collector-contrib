@@ -65,6 +65,7 @@ func (f *Factory) CreateTraceProcessor(
 	opts = append(opts, WithExtractMetadata(oCfg.Extract.Metadata...))
 	opts = append(opts, WithExtractLabels(oCfg.Extract.Labels...))
 	opts = append(opts, WithExtractAnnotations(oCfg.Extract.Annotations...))
+	opts = append(opts, WithExtractTags(oCfg.Extract.Tags))
 
 	// filters
 	opts = append(opts, WithFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
