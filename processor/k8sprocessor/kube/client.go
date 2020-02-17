@@ -185,17 +185,17 @@ func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
-		tags[tagPodName] = pod.Name
+		tags[c.Rules.Tags.PodName] = pod.Name
 	}
 
 	if c.Rules.Namespace {
-		tags[tagNamespaceName] = pod.GetNamespace()
+		tags[c.Rules.Tags.Namespace] = pod.GetNamespace()
 	}
 
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			tags[tagStartTime] = ts.String()
+			tags[c.Rules.Tags.StartTime] = ts.String()
 		}
 	}
 
@@ -203,28 +203,28 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
-			tags[tagDeploymentName] = parts[1]
+			tags[c.Rules.Tags.Deployment] = parts[1]
 		}
 	}
 
 	if c.Rules.Node {
-		tags[tagNodeName] = pod.Spec.NodeName
+		tags[c.Rules.Tags.NodeName] = pod.Spec.NodeName
 	}
 
 	if c.Rules.HostName {
-		tags[tagHostName] = pod.Spec.Hostname
+		tags[c.Rules.Tags.HostName] = pod.Spec.Hostname
 	}
 
 	if c.Rules.Cluster {
 		clusterName := pod.GetClusterName()
 		if clusterName != "" {
-			tags[tagClusterName] = clusterName
+			tags[c.Rules.Tags.ClusterName] = clusterName
 		}
 	}
 
 	if c.Rules.Owners {
 		for _, or := range pod.ObjectMeta.OwnerReferences {
-			tags[fmt.Sprintf(tagOwnerTemplate, or.Kind)] = or.Name
+			tags[fmt.Sprintf(c.Rules.Tags.OwnerTemplate, or.Kind)] = or.Name
 		}
 	}
 

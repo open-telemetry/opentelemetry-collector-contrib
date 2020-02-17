@@ -167,6 +167,7 @@ func TestExtractionRules(t *testing.T) {
 		name: "deployment",
 		rules: ExtractionRules{
 			Deployment: true,
+			Tags:       NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -182,6 +183,7 @@ func TestExtractionRules(t *testing.T) {
 			StartTime:  true,
 			HostName:   true,
 			Owners:     true,
+			Tags:       NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -191,7 +193,39 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
 			"k8s.pod.hostname":    "auth-hostname3",
-			"k8s.owners.somekind": "someowner",
+			"k8s.owner.somekind":  "somename",
+		},
+	}, {
+		name: "non-default tags",
+		rules: ExtractionRules{
+			Deployment: true,
+			Namespace:  true,
+			PodName:    true,
+			Node:       true,
+			Cluster:    true,
+			StartTime:  true,
+			HostName:   true,
+			Owners:     true,
+			Tags: ExtractionFieldTags{
+				Deployment:    "d",
+				Namespace:     "n",
+				PodName:       "p",
+				NodeName:      "nn",
+				ClusterName:   "cc",
+				StartTime:     "st",
+				HostName:      "hn",
+				OwnerTemplate: "ow-%s",
+			},
+		},
+		attributes: map[string]string{
+			"d":           "auth-service",
+			"n":           "ns1",
+			"cc":          "cluster1",
+			"nn":          "node1",
+			"p":           "auth-service-abc12-xyz3",
+			"st":          pod.GetCreationTimestamp().String(),
+			"hn":          "auth-hostname3",
+			"ow-somekind": "somename",
 		},
 	}, {
 		name: "labels",
