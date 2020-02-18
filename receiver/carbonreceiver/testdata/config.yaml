@@ -1,6 +1,6 @@
 receivers:
   carbon:
-  carbon/allsettings:
+  carbon/receiver_settings:
     # endpoint specifies the network interface and port which will receive
     # Carbon data.
     endpoint: localhost:8080
@@ -15,11 +15,44 @@ receivers:
     # https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
     parser:
       # type specifies the type of parser to be used, the default is "plaintext"
-      type: delimiter
+      type: plaintext
       # config specifies any special configuration of the selected parser. What
       # goes under the section depends on the type of parser selected.
       config:
-        or_delimiter: "|"
+  carbon/regex:
+    parser:
+      # The "regex" parser can breakdown the "metric path" of a Carbon metric
+      # into metric labels. This is typically used to extract the labels from
+      # a naming hierarchy, see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#step-1-plan-a-naming-hierarchy
+      type: regex
+      # config section with the custom config for the "regex" parser.
+      config:
+        # Rules with regular expressions to be applied to the received metrics.
+        # The first rule that matches the metric is applied and no further rules
+        # are applied. If no rules match the metric is processed by the "plaintext"
+        # parser.
+        rules:
+          # The first rule generates extract dimensions with keys: "base", "env",
+          # and "host" if the "metric path" matches the regular expression of the
+          # rule. Regular expression named captures are used to populate metric
+          # labels, while named captures prefixed with "name_part" are used to
+          # generate the final metric name (these are sorted according to their
+          # name to sort the parts on the resulting metric name.
+          - regexp: "(?P<base>test)\\.env(?P<env>[^.]*)\\.(?P<host>[^.]*)"
+            # name_prefix is added when to the resulting metric name.
+            name_prefix: "name-prefix"
+            # labels to be added to the metrics matching this rule.
+            labels:
+              dot.key: dot.value
+              key: value
+            # counter is used to force the metric to be set as a cumulative
+            # counter, by default they are all gauges.
+            counter: true
+          # The second rule for this "regex" parser.
+          - regexp: "(?P<just>test)\\.(?P<match>.*)"
+        # Name separator is used when concatenating named regular expression
+        # captures prefixed with "name_part"
+        name_separator: "_"
 
 processors:
   exampleprocessor:
@@ -30,6 +63,6 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [carbon, carbon/allsettings]
+      receivers: [carbon, carbon/receiver_settings, carbon/regex]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

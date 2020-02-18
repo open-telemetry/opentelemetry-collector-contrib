@@ -39,29 +39,31 @@ func TestLoadParserConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			// Keep this test before the default_delimiter to ensure that the
+			// Keep this test before the default_regex to ensure that the
 			// default configuration is not being corrupted.
 			name: "custom_delimiter",
 			yaml: `
-type: delimiter
+type: regex
 config:
-  or_delimiter: o
+  rules:
+    - regexp: "(?P<test>.*test)"
 `,
-			cfg: Config{Type: "delimiter"},
+			cfg: Config{Type: "regex"},
 			want: Config{
-				Type: "delimiter",
-				Config: &DelimiterParser{
-					OrDemiliter: "o",
-				},
+				Type: "regex",
+				Config: &RegexParserConfig{
+					Rules: []*RegexRule{
+						{Regexp: "(?P<test>.*test)"},
+					}},
 			},
 		},
 		{
-			name: "default_delimiter",
-			yaml: `type: delimiter`,
-			cfg:  Config{Type: "delimiter"},
+			name: "default_regex",
+			yaml: `type: regex`,
+			cfg:  Config{Type: "regex"},
 			want: Config{
-				Type:   "delimiter",
-				Config: &DelimiterParser{},
+				Type:   "regex",
+				Config: &RegexParserConfig{},
 			},
 		},
 	}

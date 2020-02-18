@@ -83,7 +83,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					Transport: "unknown_transp",
 					Parser: &protocol.Config{
 						Type:   "plaintext",
-						Config: &protocol.PlaintextParser{},
+						Config: &protocol.PlaintextConfig{},
 					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporter),
@@ -91,22 +91,27 @@ func Test_carbonreceiver_New(t *testing.T) {
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
 		{
-			name: "only_plaintext_parser_supported",
+			name: "regex_parser",
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "only_plaintext_parser_supported_rcv",
+						NameVal:  "regex_parser_rcv",
 						Endpoint: "localhost:2003",
 					},
 					Transport: "tcp",
 					Parser: &protocol.Config{
-						Type:   "delimiter",
-						Config: &protocol.DelimiterParser{},
+						Type: "regex",
+						Config: &protocol.RegexParserConfig{
+							Rules: []*protocol.RegexRule{
+								{
+									Regexp: `(?P<root>[^.]*)\.test`,
+								},
+							},
+						},
 					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporter),
 			},
-			wantErr: errOnlyPlaintextParserSupported,
 		},
 		{
 			name: "negative_tcp_idle_timeout",
@@ -120,7 +125,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					TCPIdleTimeout: -1 * time.Second,
 					Parser: &protocol.Config{
 						Type:   "plaintext",
-						Config: &protocol.PlaintextParser{},
+						Config: &protocol.PlaintextConfig{},
 					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporter),

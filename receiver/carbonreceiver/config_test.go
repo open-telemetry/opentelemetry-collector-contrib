@@ -40,27 +40,58 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r0 := cfg.Receivers["carbon"]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	r1 := cfg.Receivers["carbon/allsettings"].(*Config)
+	r1 := cfg.Receivers["carbon/receiver_settings"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
-				NameVal:  "carbon/allsettings",
+				NameVal:  "carbon/receiver_settings",
 				Endpoint: "localhost:8080",
 			},
 			Transport:      "udp",
 			TCPIdleTimeout: 5 * time.Second,
 			Parser: &protocol.Config{
-				Type: "delimiter",
-				Config: &protocol.DelimiterParser{
-					OrDemiliter: "|",
-				},
+				Type:   "plaintext",
+				Config: &protocol.PlaintextConfig{},
 			},
 		},
 		r1)
+
+	r2 := cfg.Receivers["carbon/regex"].(*Config)
+	assert.Equal(t,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "carbon/regex",
+				Endpoint: "localhost:2003",
+			},
+			Transport:      "tcp",
+			TCPIdleTimeout: 30 * time.Second,
+			Parser: &protocol.Config{
+				Type: "regex",
+				Config: &protocol.RegexParserConfig{
+					Rules: []*protocol.RegexRule{
+						{
+							Regexp:     `(?P<base>test)\.env(?P<env>[^.]*)\.(?P<host>[^.]*)`,
+							NamePrefix: "name-prefix",
+							Labels: map[string]string{
+								"dot.key": "dot.value",
+								"key":     "value",
+							},
+							Counter: true,
+						},
+						{
+							Regexp: `(?P<just>test)\.(?P<match>.*)`,
+						},
+					},
+					MetricNameSeparator: "_",
+				},
+			},
+		},
+		r2)
 }
