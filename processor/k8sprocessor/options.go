@@ -29,14 +29,14 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metadataNamespace  = "namespace"
-	metadataPodName    = "podName"
-	metadataStartTime  = "startTime"
-	metadataDeployment = "deployment"
-	metadataCluster    = "cluster"
-	metadataNode       = "node"
-	metadataHostName   = "hostName"
-	metadataOwners     = "owners"
+	metadataNamespace   = "namespace"
+	metadataPodName     = "podName"
+	metadataStartTime   = "startTime"
+	metadataDeployment  = "deployment"
+	metadataClusterName = "cluster"
+	metadataNodeName    = "node"
+	metadataHostName    = "hostName"
+	metadataOwners      = "owners"
 )
 
 // Option represents a configuration option that can be passes.
@@ -61,8 +61,8 @@ func WithExtractMetadata(fields ...string) Option {
 				metadataPodName,
 				metadataStartTime,
 				metadataDeployment,
-				metadataCluster,
-				metadataNode,
+				metadataClusterName,
+				metadataNodeName,
 				metadataHostName,
 				metadataOwners,
 			}
@@ -77,10 +77,10 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.StartTime = true
 			case metadataDeployment:
 				p.rules.Deployment = true
-			case metadataCluster:
-				p.rules.Cluster = true
-			case metadataNode:
-				p.rules.Node = true
+			case metadataClusterName:
+				p.rules.ClusterName = true
+			case metadataNodeName:
+				p.rules.NodeName = true
 			case metadataHostName:
 				p.rules.HostName = true
 			case metadataOwners:
@@ -107,9 +107,9 @@ func WithExtractTags(tagsMap map[string]string) Option {
 				tags.StartTime = tag
 			case metadataDeployment:
 				tags.Deployment = tag
-			case metadataCluster:
+			case metadataClusterName:
 				tags.ClusterName = tag
-			case metadataNode:
+			case metadataNodeName:
 				tags.NodeName = tag
 			case metadataHostName:
 				tags.HostName = tag
