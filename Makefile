@@ -80,7 +80,7 @@ run:
 docker-component: check-component
 	GOOS=linux $(MAKE) $(COMPONENT)
 	cp ./bin/linux/$(COMPONENT) ./cmd/$(COMPONENT)/
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	docker build -t $(COMPONENT) -f ./cmd/$(COMPONENT)/Dockerfile .
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component
