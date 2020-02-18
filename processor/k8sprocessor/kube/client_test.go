@@ -140,7 +140,7 @@ func TestExtractionRules(t *testing.T) {
 				"annotation1": "av1",
 			},
 			OwnerReferences: []meta_v1.OwnerReference{
-				meta_v1.OwnerReference{
+				{
 					Kind: "somekind",
 					Name: "somename",
 				},
