@@ -56,13 +56,13 @@ jobs:
           name: Build image
           command: |
             make docker-otelcontribcol
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:latest
+            docker tag otelcontribcol:latest sumologic/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker tag otelcontribcol:latest sumologic/opentelemetry-collector-contrib:latest
       - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
       - run:
           name: Push image
           command: |
-            docker push omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker push omnition/opentelemetry-collector-contrib:latest
+            docker push sumologic/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker push sumologic/opentelemetry-collector-contrib:latest
