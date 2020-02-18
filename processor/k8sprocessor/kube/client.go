@@ -207,7 +207,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.Node {
+	if c.Rules.NodeName {
 		tags[c.Rules.Tags.NodeName] = pod.Spec.NodeName
 	}
 
@@ -215,7 +215,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[c.Rules.Tags.HostName] = pod.Spec.Hostname
 	}
 
-	if c.Rules.Cluster {
+	if c.Rules.ClusterName {
 		clusterName := pod.GetClusterName()
 		if clusterName != "" {
 			tags[c.Rules.Tags.ClusterName] = clusterName
