@@ -19,8 +19,9 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 	"k8s.io/apimachinery/pkg/selection"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
 const (
