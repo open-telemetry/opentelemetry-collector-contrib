@@ -102,18 +102,16 @@ jobs:
           repo: opentelemetry-collector-contrib
           tag: ${CIRCLE_TAG:1}
       - run:
-          name: Calculate checksums 
-          command: cd bin && shasum -a 256 * > checksums.txt
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest sumologic/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker tag otelcontribcol:latest sumologic/opentelemetry-collector-contrib:latest
       - run:
-          name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
-
-  publish-dev:
-    docker:
-      - image: cimg/go:1.14
-    steps:
-      - attach_to_workspace
-      - setup_remote_docker
-      - publish_docker_images:
-          repo: opentelemetry-collector-contrib-dev
-          tag: ${CIRCLE_SHA1}
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push sumologic/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker push sumologic/opentelemetry-collector-contrib:latest
