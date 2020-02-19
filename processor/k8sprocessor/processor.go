@@ -60,7 +60,7 @@ func NewTraceProcessor(
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.rules, kp.filters, nil, nil)
+		kc, err := kubeClient(logger, kp.rules, kp.filters, nil, nil, nil)
 		if err != nil {
 			return nil, err
 		}

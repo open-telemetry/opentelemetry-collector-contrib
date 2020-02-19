@@ -42,6 +42,7 @@ type WatchClient struct {
 	deploymentRegex *regexp.Regexp
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
+	op              OwnerAPI
 
 	Pods    map[string]*Pod
 	Rules   ExtractionRules
@@ -49,7 +50,7 @@ type WatchClient struct {
 }
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider, newOwnerProvider OwnerProvider) (Client, error) {
 
 	// Extract deployment name from the pod name. Pod name is created using
 	// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
@@ -70,6 +71,11 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 		return nil, err
 	}
 	c.kc = kc
+
+	if newOwnerProvider == nil {
+		newOwnerProvider = newOwnerProvider
+	}
+	c.op = newOwnerProvider(kc)
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -223,8 +229,60 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	if c.Rules.Owners {
-		for _, or := range pod.ObjectMeta.OwnerReferences {
-			tags[fmt.Sprintf(c.Rules.Tags.OwnerTemplate, or.Kind)] = or.Name
+		owners := c.op.GetOwners(pod)
+
+		for _, owner := range owners {
+			switch owner.kind {
+			case "DaemonSet":
+				if c.Rules.DaemonSetName {
+					tags[c.Rules.Tags.DaemonSetName] = owner.name
+				}
+			case "Deployment":
+				// This should be already set earlier
+			case "ReplicaSet":
+				if c.Rules.ReplicaSetName {
+					tags[c.Rules.Tags.ReplicaSetName] = owner.name
+				}
+			case "Service":
+				if c.Rules.ServiceName {
+					tags[c.Rules.Tags.ServiceName] = owner.name
+				}
+			case "StatefulSet":
+				if c.Rules.StatefulSetName {
+					tags[c.Rules.Tags.StatefulSetName] = owner.name
+				}
+			default:
+				// Do nothing
+			}
+		}
+	}
+
+	if len(pod.Status.ContainerStatuses) > 0 {
+		cs := pod.Status.ContainerStatuses[0]
+		if c.Rules.ContainerID {
+			tags[c.Rules.Tags.ContainerID] = cs.ContainerID
+		}
+	}
+
+	if len(pod.Spec.Containers) > 0 {
+		container := pod.Spec.Containers[0]
+
+		if c.Rules.ContainerName {
+			tags[c.Rules.Tags.ContainerName] = container.Name
+		}
+		if c.Rules.ContainerImage {
+			tags[c.Rules.Tags.ContainerImage] = container.Image
+		}
+	}
+
+	if c.Rules.PodID {
+		tags[c.Rules.Tags.PodID] = string(pod.UID)
+	}
+
+	if c.Rules.NamespaceID {
+		ns := c.op.GetNamespace(pod.Namespace)
+		if ns != nil {
+			tags[c.Rules.Tags.NamespaceID] = string(ns.UID)
 		}
 	}
 

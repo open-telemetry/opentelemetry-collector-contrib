@@ -130,6 +130,7 @@ func TestExtractionRules(t *testing.T) {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
 			Namespace:         "ns1",
+			UID:               "33333",
 			CreationTimestamp: meta_v1.Now(),
 			ClusterName:       "cluster1",
 			Labels: map[string]string{
@@ -141,17 +142,29 @@ func TestExtractionRules(t *testing.T) {
 			},
 			OwnerReferences: []meta_v1.OwnerReference{
 				{
-					Kind: "somekind",
-					Name: "somename",
+					Kind: "ReplicaSet",
+					Name: "foo-bar-rs",
+					UID:  "1a1658f9-7818-11e9-90f1-02324f7e0d1e",
 				},
 			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
 			Hostname: "auth-hostname3",
+			Containers: []api_v1.Container{
+				{
+					Image: "auth-service-image",
+					Name:  "auth-service-container-name",
+				},
+			},
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
+			ContainerStatuses: []api_v1.ContainerStatus{
+				{
+					ContainerID: "111-222-333",
+				},
+			},
 		},
 	}
 
@@ -175,57 +188,70 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment:  true,
-			Namespace:   true,
-			PodName:     true,
-			NodeName:    true,
-			ClusterName: true,
-			StartTime:   true,
-			HostName:    true,
-			Owners:      true,
-			Tags:        NewExtractionFieldTags(),
+			ClusterName:     true,
+			ContainerID:     true,
+			ContainerImage:  true,
+			ContainerName:   true,
+			DaemonSetName:   true,
+			Deployment:      true,
+			HostName:        true,
+			Owners:          true,
+			PodID:           true,
+			PodName:         true,
+			ReplicaSetName:  true,
+			ServiceName:     true,
+			StatefulSetName: true,
+			StartTime:       true,
+			Namespace:       true,
+			NamespaceID:     true,
+			NodeName:        true,
+			Tags:            NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.namespace.name":  "ns1",
 			"k8s.cluster.name":    "cluster1",
-			"k8s.node.name":       "node1",
+			"k8s.container.id":    "111-222-333",
+			"k8s.container.image": "auth-service-image",
+			"k8s.container.name":  "auth-service-container-name",
+			"k8s.deployment.name": "auth-service",
+			"k8s.pod.hostname":    "auth-hostname3",
+			"k8s.pod.id":          "33333",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
-			"k8s.pod.hostname":    "auth-hostname3",
-			"k8s.owner.somekind":  "somename",
+			"k8s.replicaset.name": "SomeReplicaSet",
+			"k8s.namespace.name":  "ns1",
+			"k8s.namespace.id":    "33333-66666",
+			"k8s.node.name":       "node1",
 		},
 	}, {
 		name: "non-default tags",
 		rules: ExtractionRules{
-			Deployment:  true,
-			Namespace:   true,
-			PodName:     true,
-			NodeName:    true,
-			ClusterName: true,
-			StartTime:   true,
-			HostName:    true,
-			Owners:      true,
+			ClusterName:     true,
+			ContainerID:     true,
+			ContainerImage:  false,
+			ContainerName:   true,
+			DaemonSetName:   false,
+			Deployment:      false,
+			HostName:        false,
+			Owners:          false,
+			PodID:           false,
+			PodName:         false,
+			ReplicaSetName:  false,
+			ServiceName:     false,
+			StatefulSetName: false,
+			StartTime:       false,
+			Namespace:       false,
+			NamespaceID:     false,
+			NodeName:        false,
 			Tags: ExtractionFieldTags{
-				Deployment:    "d",
-				Namespace:     "n",
-				PodName:       "p",
-				NodeName:      "nn",
 				ClusterName:   "cc",
-				StartTime:     "st",
-				HostName:      "hn",
-				OwnerTemplate: "ow-%s",
+				ContainerID:   "cid",
+				ContainerName: "cn",
 			},
 		},
 		attributes: map[string]string{
-			"d":           "auth-service",
-			"n":           "ns1",
-			"cc":          "cluster1",
-			"nn":          "node1",
-			"p":           "auth-service-abc12-xyz3",
-			"st":          pod.GetCreationTimestamp().String(),
-			"hn":          "auth-hostname3",
-			"ow-somekind": "somename",
+			"cc":  "cluster1",
+			"cid": "111-222-333",
+			"cn":  "auth-service-container-name",
 		},
 	}, {
 		name: "labels",
@@ -408,7 +434,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 }
 
 func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) *WatchClient {
-	c, err := New(zap.NewNop(), e, f, newFakeAPIClientset, newFakeInformer)
+	c, err := New(zap.NewNop(), e, f, newFakeAPIClientset, newFakeInformer, newFakeOwnerProvider)
 	require.NoError(t, err)
 	return c.(*WatchClient)
 }

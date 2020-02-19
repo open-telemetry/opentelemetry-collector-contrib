@@ -31,7 +31,7 @@ const (
 
 // Factory is the factory for Attributes processor.
 type Factory struct {
-	// Factory dependencies that can be provided form outside.
+	// Factory dependencies that can be provided from outside.
 	KubeClient kube.ClientProvider
 }
 
