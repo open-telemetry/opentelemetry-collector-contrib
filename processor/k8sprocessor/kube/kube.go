@@ -28,14 +28,22 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	defaultTagDeploymentName = "k8s.deployment.name"
-	defaultTagNamespaceName  = "k8s.namespace.name"
-	defaultTagPodName        = "k8s.pod.name"
-	defaultTagNodeName       = "k8s.node.name"
-	defaultTagClusterName    = "k8s.cluster.name"
-	defaultTagStartTime      = "k8s.pod.startTime"
-	defaultTagHostName       = "k8s.pod.hostname"
-	defaultTagOwnerTemplate  = "k8s.owner.%s"
+	defaultTagClusterName     = "k8s.cluster.name"
+	defaultTagContainerID     = "k8s.container.id"
+	defaultTagContainerImage  = "k8s.container.image"
+	defaultTagContainerName   = "k8s.container.name"
+	defaultTagDaemonSetName   = "k8s.daemonset.name"
+	defaultTagDeploymentName  = "k8s.deployment.name"
+	defaultTagHostName        = "k8s.pod.hostname"
+	defaultTagPodID           = "k8s.pod.id"
+	defaultTagPodName         = "k8s.pod.name"
+	defaultTagReplicaSetName  = "k8s.replicaset.name"
+	defaultTagServiceName     = "k8s.service.name"
+	defaultTagStatefulSetName = "k8s.statefulset.name"
+	defaultTagStartTime       = "k8s.pod.startTime"
+	defaultTagNamespaceName   = "k8s.namespace.name"
+	defaultTagNamespaceID     = "k8s.namespace.id"
+	defaultTagNodeName        = "k8s.node.name"
 )
 
 var (
@@ -56,7 +64,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, ExtractionRules, Filters, APIClientsetProvider, InformerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, ExtractionRules, Filters, APIClientsetProvider, InformerProvider, OwnerProvider) (Client, error)
 
 // APIClientsetProvider APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -106,14 +114,23 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment  bool
-	Namespace   bool
-	PodName     bool
-	NodeName    bool
-	ClusterName bool
-	StartTime   bool
-	HostName    bool
-	Owners      bool
+	ClusterName     bool
+	ContainerID     bool
+	ContainerImage  bool
+	ContainerName   bool
+	DaemonSetName   bool
+	Deployment      bool
+	HostName        bool
+	Owners          bool
+	PodID           bool
+	PodName         bool
+	ReplicaSetName  bool
+	ServiceName     bool
+	StatefulSetName bool
+	StartTime       bool
+	Namespace       bool
+	NamespaceID     bool
+	NodeName        bool
 
 	Tags        ExtractionFieldTags
 	Annotations []FieldExtractionRule
@@ -122,27 +139,43 @@ type ExtractionRules struct {
 
 // ExtractionFieldTags is used to describe selected exported key names for the extracted data
 type ExtractionFieldTags struct {
-	Deployment    string
-	Namespace     string
-	PodName       string
-	NodeName      string
-	ClusterName   string
-	StartTime     string
-	HostName      string
-	OwnerTemplate string
+	ClusterName     string
+	ContainerID     string
+	ContainerImage  string
+	ContainerName   string
+	DaemonSetName   string
+	Deployment      string
+	HostName        string
+	PodID           string
+	PodName         string
+	Namespace       string
+	NamespaceID     string
+	NodeName        string
+	ReplicaSetName  string
+	ServiceName     string
+	StartTime       string
+	StatefulSetName string
 }
 
 // NewExtractionFieldTags builds a new instance of tags with default values
 func NewExtractionFieldTags() ExtractionFieldTags {
 	tags := ExtractionFieldTags{}
-	tags.Deployment = defaultTagDeploymentName
-	tags.Namespace = defaultTagNamespaceName
-	tags.PodName = defaultTagPodName
-	tags.NodeName = defaultTagNodeName
 	tags.ClusterName = defaultTagClusterName
-	tags.StartTime = defaultTagStartTime
+	tags.ContainerID = defaultTagContainerID
+	tags.ContainerImage = defaultTagContainerImage
+	tags.ContainerName = defaultTagContainerName
+	tags.DaemonSetName = defaultTagDaemonSetName
+	tags.Deployment = defaultTagDeploymentName
 	tags.HostName = defaultTagHostName
-	tags.OwnerTemplate = defaultTagOwnerTemplate
+	tags.PodID = defaultTagPodID
+	tags.PodName = defaultTagPodName
+	tags.Namespace = defaultTagNamespaceName
+	tags.NamespaceID = defaultTagNamespaceID
+	tags.NodeName = defaultTagNodeName
+	tags.ReplicaSetName = defaultTagReplicaSetName
+	tags.ServiceName = defaultTagServiceName
+	tags.StartTime = defaultTagStartTime
+	tags.StatefulSetName = defaultTagStatefulSetName
 	return tags
 }
 
