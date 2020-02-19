@@ -28,12 +28,14 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	tagClusterName    = "k8s.cluster.name"
-	tagDeploymentName = "k8s.deployment.name"
-	tagNamespaceName  = "k8s.namespace.name"
-	tagNodeName       = "k8s.node.name"
-	tagPodName        = "k8s.pod.name"
-	tagStartTime      = "k8s.pod.startTime"
+	defaultTagDeploymentName = "k8s.deployment.name"
+	defaultTagNamespaceName  = "k8s.namespace.name"
+	defaultTagPodName        = "k8s.pod.name"
+	defaultTagNodeName       = "k8s.node.name"
+	defaultTagClusterName    = "k8s.cluster.name"
+	defaultTagStartTime      = "k8s.pod.startTime"
+	defaultTagHostName       = "k8s.pod.hostname"
+	defaultTagOwnerTemplate  = "k8s.owner.%s"
 )
 
 var (
@@ -104,15 +106,44 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment bool
-	Namespace  bool
-	PodName    bool
-	Node       bool
-	Cluster    bool
-	StartTime  bool
+	Deployment  bool
+	Namespace   bool
+	PodName     bool
+	NodeName    bool
+	ClusterName bool
+	StartTime   bool
+	HostName    bool
+	Owners      bool
 
+	Tags        ExtractionFieldTags
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+}
+
+// ExtractionFieldTags is used to describe selected exported key names for the extracted data
+type ExtractionFieldTags struct {
+	Deployment    string
+	Namespace     string
+	PodName       string
+	NodeName      string
+	ClusterName   string
+	StartTime     string
+	HostName      string
+	OwnerTemplate string
+}
+
+// NewExtractionFieldTags builds a new instance of tags with default values
+func NewExtractionFieldTags() ExtractionFieldTags {
+	tags := ExtractionFieldTags{}
+	tags.Deployment = defaultTagDeploymentName
+	tags.Namespace = defaultTagNamespaceName
+	tags.PodName = defaultTagPodName
+	tags.NodeName = defaultTagNodeName
+	tags.ClusterName = defaultTagClusterName
+	tags.StartTime = defaultTagStartTime
+	tags.HostName = defaultTagHostName
+	tags.OwnerTemplate = defaultTagOwnerTemplate
+	return tags
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

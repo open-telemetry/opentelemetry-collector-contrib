@@ -139,9 +139,16 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: map[string]string{
 				"annotation1": "av1",
 			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					Kind: "somekind",
+					Name: "somename",
+				},
+			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "auth-hostname3",
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
@@ -160,6 +167,7 @@ func TestExtractionRules(t *testing.T) {
 		name: "deployment",
 		rules: ExtractionRules{
 			Deployment: true,
+			Tags:       NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -167,12 +175,15 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment: true,
-			Namespace:  true,
-			PodName:    true,
-			Node:       true,
-			Cluster:    true,
-			StartTime:  true,
+			Deployment:  true,
+			Namespace:   true,
+			PodName:     true,
+			NodeName:    true,
+			ClusterName: true,
+			StartTime:   true,
+			HostName:    true,
+			Owners:      true,
+			Tags:        NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -181,6 +192,40 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"k8s.pod.hostname":    "auth-hostname3",
+			"k8s.owner.somekind":  "somename",
+		},
+	}, {
+		name: "non-default tags",
+		rules: ExtractionRules{
+			Deployment:  true,
+			Namespace:   true,
+			PodName:     true,
+			NodeName:    true,
+			ClusterName: true,
+			StartTime:   true,
+			HostName:    true,
+			Owners:      true,
+			Tags: ExtractionFieldTags{
+				Deployment:    "d",
+				Namespace:     "n",
+				PodName:       "p",
+				NodeName:      "nn",
+				ClusterName:   "cc",
+				StartTime:     "st",
+				HostName:      "hn",
+				OwnerTemplate: "ow-%s",
+			},
+		},
+		attributes: map[string]string{
+			"d":           "auth-service",
+			"n":           "ns1",
+			"cc":          "cluster1",
+			"nn":          "node1",
+			"p":           "auth-service-abc12-xyz3",
+			"st":          pod.GetCreationTimestamp().String(),
+			"hn":          "auth-hostname3",
+			"ow-somekind": "somename",
 		},
 	}, {
 		name: "labels",

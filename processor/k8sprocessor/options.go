@@ -30,12 +30,14 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metdataNamespace   = "namespace"
-	metadataPodName    = "podName"
-	metadataStartTime  = "startTime"
-	metadataDeployment = "deployment"
-	metadataCluster    = "cluster"
-	metadataNode       = "node"
+	metadataNamespace   = "namespace"
+	metadataPodName     = "podName"
+	metadataStartTime   = "startTime"
+	metadataDeployment  = "deployment"
+	metadataClusterName = "cluster"
+	metadataNodeName    = "node"
+	metadataHostName    = "hostName"
+	metadataOwners      = "owners"
 )
 
 // Option represents a configuration option that can be passes.
@@ -56,17 +58,19 @@ func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
-				metdataNamespace,
+				metadataNamespace,
 				metadataPodName,
 				metadataStartTime,
 				metadataDeployment,
-				metadataCluster,
-				metadataNode,
+				metadataClusterName,
+				metadataNodeName,
+				metadataHostName,
+				metadataOwners,
 			}
 		}
 		for _, field := range fields {
 			switch field {
-			case metdataNamespace:
+			case metadataNamespace:
 				p.rules.Namespace = true
 			case metadataPodName:
 				p.rules.PodName = true
@@ -74,14 +78,49 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.StartTime = true
 			case metadataDeployment:
 				p.rules.Deployment = true
-			case metadataCluster:
-				p.rules.Cluster = true
-			case metadataNode:
-				p.rules.Node = true
+			case metadataClusterName:
+				p.rules.ClusterName = true
+			case metadataNodeName:
+				p.rules.NodeName = true
+			case metadataHostName:
+				p.rules.HostName = true
+			case metadataOwners:
+				p.rules.Owners = true
 			default:
 				fmt.Printf("\"%s\" is not a supported metadata field", field)
 			}
 		}
+		return nil
+	}
+}
+
+// WithExtractTags allows specifying custom tag names
+func WithExtractTags(tagsMap map[string]string) Option {
+	return func(p *kubernetesprocessor) error {
+		var tags = kube.NewExtractionFieldTags()
+		for field, tag := range tagsMap {
+			switch field {
+			case metadataNamespace:
+				tags.Namespace = tag
+			case metadataPodName:
+				tags.PodName = tag
+			case metadataStartTime:
+				tags.StartTime = tag
+			case metadataDeployment:
+				tags.Deployment = tag
+			case metadataClusterName:
+				tags.ClusterName = tag
+			case metadataNodeName:
+				tags.NodeName = tag
+			case metadataHostName:
+				tags.HostName = tag
+			case metadataOwners:
+				tags.OwnerTemplate = tag
+			default:
+				fmt.Printf("\"%s\" is not a supported metadata field", field)
+			}
+		}
+		p.rules.Tags = tags
 		return nil
 	}
 }
