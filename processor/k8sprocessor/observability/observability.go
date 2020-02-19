@@ -30,6 +30,7 @@ func init() {
 		viewPodsAdded,
 		viewPodsDeleted,
 		viewIPLookupMiss,
+		viewAPICallMade,
 	)
 }
 
@@ -39,6 +40,8 @@ var (
 	mPodsDeleted = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
 
 	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
+
+	mAPICallMade = stats.Int64("otelsvc/k8s/api_call_made", "Number of times other API calls were made", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -69,6 +72,13 @@ var viewIPLookupMiss = &view.View{
 	Aggregation: view.Sum(),
 }
 
+var viewAPICallMade = &view.View{
+	Name:        mAPICallMade.Name(),
+	Description: mAPICallMade.Description(),
+	Measure:     mAPICallMade,
+	Aggregation: view.Sum(),
+}
+
 // RecordPodUpdated increments the metric that records pod update events received.
 func RecordPodUpdated() {
 	stats.Record(context.Background(), mPodsUpdated.M(int64(1)))
@@ -87,4 +97,9 @@ func RecordPodDeleted() {
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
 func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
+}
+
+// RecordAPICallMade increments the metrics that records other lookups
+func RecordAPICallMade() {
+	stats.Record(context.Background(), mAPICallMade.M(int64(1)))
 }

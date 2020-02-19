@@ -27,7 +27,7 @@ type FakeClient struct {
 }
 
 // NewFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func NewFakeClient(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func NewFakeClient(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider, newOwnerProvider OwnerProvider) (Client, error) {
 	return &FakeClient{map[string]*Pod{}, rules, filters}, nil
 }
 
