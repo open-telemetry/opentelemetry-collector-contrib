@@ -287,14 +287,28 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if v, ok := pod.Labels[r.Key]; ok {
-			tags[r.Name] = c.extractField(v, r)
+		if r.Key == "*" && r.Name == "*" {
+			// Special case, extract everything
+			for label, value := range pod.Labels {
+				tags[fmt.Sprintf(c.Rules.Tags.LabelTemplate, label)] = c.extractField(value, r)
+			}
+		} else {
+			if v, ok := pod.Labels[r.Key]; ok {
+				tags[r.Name] = c.extractField(v, r)
+			}
 		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if v, ok := pod.Annotations[r.Key]; ok {
-			tags[r.Name] = c.extractField(v, r)
+		if r.Key == "*" && r.Name == "*" {
+			// Special case, extract everything
+			for label, value := range pod.Annotations {
+				tags[fmt.Sprintf(c.Rules.Tags.AnnotationTemplate, label)] = c.extractField(value, r)
+			}
+		} else {
+			if v, ok := pod.Annotations[r.Key]; ok {
+				tags[r.Name] = c.extractField(v, r)
+			}
 		}
 	}
 	return tags
