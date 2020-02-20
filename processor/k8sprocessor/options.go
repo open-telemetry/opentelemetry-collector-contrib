@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -30,23 +31,25 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metadataContainerID     = "containerId"
-	metadataContainerName   = "containerName"
-	metadataContainerImage  = "containerImage"
-	metadataClusterName     = "cluster"
-	metadataDaemonSetName   = "daemonSetName"
-	metadataDeployment      = "deployment"
-	metadataHostName        = "hostName"
-	metadataNamespace       = "namespace"
-	metadataNamespaceID     = "namespaceId"
-	metadataNodeName        = "node"
-	metadataOwners          = "owners"
-	metadataPodID           = "podId"
-	metadataPodName         = "podName"
-	metadataReplicaSetName  = "replicaSetName"
-	metadataServiceName     = "serviceName"
-	metadataStartTime       = "startTime"
-	metadataStatefulSetName = "statefulSetName"
+	metadataAnnotationTemplate = "annotationTemplate"
+	metadataContainerID        = "containerId"
+	metadataContainerName      = "containerName"
+	metadataContainerImage     = "containerImage"
+	metadataClusterName        = "cluster"
+	metadataDaemonSetName      = "daemonSetName"
+	metadataDeployment         = "deployment"
+	metadataHostName           = "hostName"
+	metadataLabelTemplate      = "labelTemplate"
+	metadataNamespace          = "namespace"
+	metadataNamespaceID        = "namespaceId"
+	metadataNodeName           = "node"
+	metadataOwners             = "owners"
+	metadataPodID              = "podId"
+	metadataPodName            = "podName"
+	metadataReplicaSetName     = "replicaSetName"
+	metadataServiceName        = "serviceName"
+	metadataStartTime          = "startTime"
+	metadataStatefulSetName    = "statefulSetName"
 )
 
 // Option represents a configuration option that can be passes.
@@ -136,37 +139,41 @@ func WithExtractTags(tagsMap map[string]string) Option {
 		var tags = kube.NewExtractionFieldTags()
 		for field, tag := range tagsMap {
 			switch field {
-			case metadataClusterName:
+			case strings.ToLower(metadataAnnotationTemplate):
+				tags.AnnotationTemplate = tag
+			case strings.ToLower(metadataClusterName):
 				tags.ClusterName = tag
-			case metadataContainerID:
+			case strings.ToLower(metadataContainerID):
 				tags.ContainerID = tag
-			case metadataContainerName:
+			case strings.ToLower(metadataContainerName):
 				tags.ContainerName = tag
-			case metadataContainerImage:
+			case strings.ToLower(metadataContainerImage):
 				tags.ContainerImage = tag
-			case metadataDaemonSetName:
+			case strings.ToLower(metadataDaemonSetName):
 				tags.DaemonSetName = tag
-			case metadataDeployment:
+			case strings.ToLower(metadataDeployment):
 				tags.Deployment = tag
-			case metadataHostName:
+			case strings.ToLower(metadataHostName):
 				tags.HostName = tag
-			case metadataNamespace:
+			case strings.ToLower(metadataLabelTemplate):
+				tags.LabelTemplate = tag
+			case strings.ToLower(metadataNamespace):
 				tags.Namespace = tag
-			case metadataNamespaceID:
+			case strings.ToLower(metadataNamespaceID):
 				tags.NamespaceID = tag
-			case metadataNodeName:
+			case strings.ToLower(metadataNodeName):
 				tags.NodeName = tag
-			case metadataPodID:
+			case strings.ToLower(metadataPodID):
 				tags.PodID = tag
-			case metadataPodName:
+			case strings.ToLower(metadataPodName):
 				tags.PodName = tag
-			case metadataReplicaSetName:
+			case strings.ToLower(metadataReplicaSetName):
 				tags.ReplicaSetName = tag
-			case metadataServiceName:
+			case strings.ToLower(metadataServiceName):
 				tags.ServiceName = tag
-			case metadataStartTime:
+			case strings.ToLower(metadataStartTime):
 				tags.StartTime = tag
-			case metadataStatefulSetName:
+			case strings.ToLower(metadataStatefulSetName):
 				tags.StatefulSetName = tag
 			default:
 				fmt.Printf("\"%s\" is not a supported metadata field", field)
