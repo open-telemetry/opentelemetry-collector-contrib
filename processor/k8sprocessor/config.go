@@ -43,10 +43,7 @@ type ExtractConfig struct {
 	// Metadata allows to extract pod metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
-	// Metadata fields supported right now are,
-	//   namespace, podName, deployment, cluster, node and startTime
-	//
-	// Specifying anything other than these values will result in an error.
+	// Specifying anything not-supported will result in an error.
 	// By default all of the fields are extracted and added to spans.
 	Metadata []string `mapstructure:"metadata"`
 

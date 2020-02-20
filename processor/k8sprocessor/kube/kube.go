@@ -28,22 +28,24 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	defaultTagClusterName     = "k8s.cluster.name"
-	defaultTagContainerID     = "k8s.container.id"
-	defaultTagContainerImage  = "k8s.container.image"
-	defaultTagContainerName   = "k8s.container.name"
-	defaultTagDaemonSetName   = "k8s.daemonset.name"
-	defaultTagDeploymentName  = "k8s.deployment.name"
-	defaultTagHostName        = "k8s.pod.hostname"
-	defaultTagPodID           = "k8s.pod.id"
-	defaultTagPodName         = "k8s.pod.name"
-	defaultTagReplicaSetName  = "k8s.replicaset.name"
-	defaultTagServiceName     = "k8s.service.name"
-	defaultTagStatefulSetName = "k8s.statefulset.name"
-	defaultTagStartTime       = "k8s.pod.startTime"
-	defaultTagNamespaceName   = "k8s.namespace.name"
-	defaultTagNamespaceID     = "k8s.namespace.id"
-	defaultTagNodeName        = "k8s.node.name"
+	defaultTagAnnotationTemplate = "k8s.pod.annotation.%s"
+	defaultTagClusterName        = "k8s.cluster.name"
+	defaultTagContainerID        = "k8s.container.id"
+	defaultTagContainerImage     = "k8s.container.image"
+	defaultTagContainerName      = "k8s.container.name"
+	defaultTagDaemonSetName      = "k8s.daemonset.name"
+	defaultTagDeploymentName     = "k8s.deployment.name"
+	defaultTagHostName           = "k8s.pod.hostname"
+	defaultTagLabelTemplate      = "k8s.pod.label.%s"
+	defaultTagPodID              = "k8s.pod.id"
+	defaultTagPodName            = "k8s.pod.name"
+	defaultTagReplicaSetName     = "k8s.replicaset.name"
+	defaultTagServiceName        = "k8s.service.name"
+	defaultTagStatefulSetName    = "k8s.statefulset.name"
+	defaultTagStartTime          = "k8s.pod.startTime"
+	defaultTagNamespaceName      = "k8s.namespace.name"
+	defaultTagNamespaceID        = "k8s.namespace.id"
+	defaultTagNodeName           = "k8s.node.name"
 )
 
 var (
@@ -139,27 +141,30 @@ type ExtractionRules struct {
 
 // ExtractionFieldTags is used to describe selected exported key names for the extracted data
 type ExtractionFieldTags struct {
-	ClusterName     string
-	ContainerID     string
-	ContainerImage  string
-	ContainerName   string
-	DaemonSetName   string
-	Deployment      string
-	HostName        string
-	PodID           string
-	PodName         string
-	Namespace       string
-	NamespaceID     string
-	NodeName        string
-	ReplicaSetName  string
-	ServiceName     string
-	StartTime       string
-	StatefulSetName string
+	AnnotationTemplate string
+	ClusterName        string
+	ContainerID        string
+	ContainerImage     string
+	ContainerName      string
+	DaemonSetName      string
+	Deployment         string
+	HostName           string
+	LabelTemplate      string
+	PodID              string
+	PodName            string
+	Namespace          string
+	NamespaceID        string
+	NodeName           string
+	ReplicaSetName     string
+	ServiceName        string
+	StartTime          string
+	StatefulSetName    string
 }
 
 // NewExtractionFieldTags builds a new instance of tags with default values
 func NewExtractionFieldTags() ExtractionFieldTags {
 	tags := ExtractionFieldTags{}
+	tags.AnnotationTemplate = defaultTagAnnotationTemplate
 	tags.ClusterName = defaultTagClusterName
 	tags.ContainerID = defaultTagContainerID
 	tags.ContainerImage = defaultTagContainerImage
@@ -167,6 +172,7 @@ func NewExtractionFieldTags() ExtractionFieldTags {
 	tags.DaemonSetName = defaultTagDaemonSetName
 	tags.Deployment = defaultTagDeploymentName
 	tags.HostName = defaultTagHostName
+	tags.LabelTemplate = defaultTagLabelTemplate
 	tags.PodID = defaultTagPodID
 	tags.PodName = defaultTagPodName
 	tags.Namespace = defaultTagNamespaceName
