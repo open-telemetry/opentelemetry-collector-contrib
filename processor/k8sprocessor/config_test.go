@@ -61,7 +61,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Passthrough: false,
 			Extract: ExtractConfig{
-				Metadata: []string{"podName", "deployment", "cluster", "namespace", "node", "startTime"},
+				Metadata: []string{
+					"containerId", "containerName", "containerImage", "cluster", "daemonSetName",
+					"deployment", "hostName", "namespace", "namespaceId", "node", "owners", "podId",
+					"podName", "replicaSetName", "serviceName", "startTime", "statefulSetName",
+				},
+				Tags: map[string]string{
+					"labeltemplate":      "k8s.pod.label.%s",
+					"annotationtemplate": "k8s.pod.annotation.%s",
+				},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},

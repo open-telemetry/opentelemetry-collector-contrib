@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/open-telemetry/opentelemetry-collector v0.2.6
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.2
 	go.uber.org/zap v1.13.0
