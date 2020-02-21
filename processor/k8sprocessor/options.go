@@ -31,25 +31,23 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metadataAnnotationTemplate = "annotationTemplate"
-	metadataContainerID        = "containerId"
-	metadataContainerName      = "containerName"
-	metadataContainerImage     = "containerImage"
-	metadataClusterName        = "cluster"
-	metadataDaemonSetName      = "daemonSetName"
-	metadataDeployment         = "deployment"
-	metadataHostName           = "hostName"
-	metadataLabelTemplate      = "labelTemplate"
-	metadataNamespace          = "namespace"
-	metadataNamespaceID        = "namespaceId"
-	metadataNodeName           = "node"
-	metadataOwners             = "owners"
-	metadataPodID              = "podId"
-	metadataPodName            = "podName"
-	metadataReplicaSetName     = "replicaSetName"
-	metadataServiceName        = "serviceName"
-	metadataStartTime          = "startTime"
-	metadataStatefulSetName    = "statefulSetName"
+	metadataContainerID     = "containerId"
+	metadataContainerName   = "containerName"
+	metadataContainerImage  = "containerImage"
+	metadataClusterName     = "cluster"
+	metadataDaemonSetName   = "daemonSetName"
+	metadataDeployment      = "deployment"
+	metadataHostName        = "hostName"
+	metadataNamespace       = "namespace"
+	metadataNamespaceID     = "namespaceId"
+	metadataNodeName        = "node"
+	metadataOwners          = "owners"
+	metadataPodID           = "podId"
+	metadataPodName         = "podName"
+	metadataReplicaSetName  = "replicaSetName"
+	metadataServiceName     = "serviceName"
+	metadataStartTime       = "startTime"
+	metadataStatefulSetName = "statefulSetName"
 )
 
 // Option represents a configuration option that can be passes.
@@ -139,8 +137,6 @@ func WithExtractTags(tagsMap map[string]string) Option {
 		var tags = kube.NewExtractionFieldTags()
 		for field, tag := range tagsMap {
 			switch field {
-			case strings.ToLower(metadataAnnotationTemplate):
-				tags.AnnotationTemplate = tag
 			case strings.ToLower(metadataClusterName):
 				tags.ClusterName = tag
 			case strings.ToLower(metadataContainerID):
@@ -155,8 +151,6 @@ func WithExtractTags(tagsMap map[string]string) Option {
 				tags.Deployment = tag
 			case strings.ToLower(metadataHostName):
 				tags.HostName = tag
-			case strings.ToLower(metadataLabelTemplate):
-				tags.LabelTemplate = tag
 			case strings.ToLower(metadataNamespace):
 				tags.Namespace = tag
 			case strings.ToLower(metadataNamespaceID):
@@ -213,7 +207,11 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	for _, a := range fields {
 		name := a.TagName
 		if name == "" {
-			name = fmt.Sprintf("k8s.%s.%s", fieldType, a.Key)
+			if a.Key == "*" {
+				name = fmt.Sprintf("k8s.%s.%%s", fieldType)
+			} else {
+				name = fmt.Sprintf("k8s.%s.%s", fieldType, a.Key)
+			}
 		}
 
 		var r *regexp.Regexp

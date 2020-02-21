@@ -67,8 +67,7 @@ func TestLoadConfig(t *testing.T) {
 					"podName", "replicaSetName", "serviceName", "startTime", "statefulSetName",
 				},
 				Tags: map[string]string{
-					"labeltemplate":      "k8s.pod.label.%s",
-					"annotationtemplate": "k8s.pod.annotation.%s",
+					"containerid": "my.namespace.containerId",
 				},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
