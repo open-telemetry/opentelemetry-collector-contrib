@@ -104,7 +104,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.RegexParserConfig{
 							Rules: []*protocol.RegexRule{
 								{
-									Regexp: `(?P<root>[^.]*)\.test`,
+									Regexp: `(?P<key_root>[^.]*)\.test`,
 								},
 							},
 						},

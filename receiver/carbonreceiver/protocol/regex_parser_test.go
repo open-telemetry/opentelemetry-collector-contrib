@@ -42,7 +42,7 @@ func TestRegexParser_BuildParser(t *testing.T) {
 			name: "invalid_regexp",
 			config: &RegexParserConfig{
 				Rules: []*RegexRule{
-					{Regexp: "(?P<good>test).env(?P<env>[^.]*).(?P<host>[^.]*)"},
+					{Regexp: "(?P<key_good>test).env(?P<key_env>[^.]*).(?P<key_host>[^.]*)"},
 					{Regexp: "(?<bad>test)"},
 				},
 			},
@@ -52,8 +52,8 @@ func TestRegexParser_BuildParser(t *testing.T) {
 			name: "valid_rules",
 			config: &RegexParserConfig{
 				Rules: []*RegexRule{
-					{Regexp: "(?P<good>test).env(?P<env>[^.]*).(?P<host>[^.]*)"},
-					{Regexp: "(?P<another>good).env(?P<env>[^.]*).(?P<host>[^.]*)"},
+					{Regexp: "(?P<key_good>test).env(?P<key_env>[^.]*).(?P<key_host>[^.]*)"},
+					{Regexp: "(?P<key_another>good).env(?P<key_env>[^.]*).(?P<key_host>[^.]*)"},
 				},
 			},
 		},
@@ -77,17 +77,17 @@ func Test_regexParser_parsePath(t *testing.T) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
 			{
-				Regexp:     `(?P<svc>[^.]+)\.(?P<host>[^.]+)\.cpu\.seconds`,
+				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
 				NamePrefix: "cpu_seconds",
 				Labels:     map[string]string{"k": "v"},
 			},
 			{
-				Regexp:     `(?P<svc>[^.]+)\.(?P<host>[^.]+)\.rpc\.count`,
+				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
 				Counter:    true,
 			},
 			{
-				Regexp: `^(?P<svc>[^.]+)\.(?P<host>[^.]+)\.(?P<name_part0>[^.]+).(?P<name_part1>[^.]+)$`,
+				Regexp: `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
 			},
 		},
 	}
@@ -184,17 +184,17 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
 			{
-				Regexp:     `(?P<svc>[^.]+)\.(?P<host>[^.]+)\.cpu\.seconds`,
+				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
 				NamePrefix: "cpu_seconds",
 				Labels:     map[string]string{"k": "v"},
 			},
 			{
-				Regexp:     `(?P<svc>[^.]+)\.(?P<host>[^.]+)\.rpc\.count`,
+				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
 				Counter:    true,
 			},
 			{
-				Regexp: `^(?P<svc>[^.]+)\.(?P<host>[^.]+)\.(?P<name_part0>[^.]+).(?P<name_part1>[^.]+)$`,
+				Regexp: `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
 			},
 		},
 	}

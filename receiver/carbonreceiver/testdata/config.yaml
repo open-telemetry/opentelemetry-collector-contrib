@@ -34,11 +34,12 @@ receivers:
         rules:
           # The first rule generates extract dimensions with keys: "base", "env",
           # and "host" if the "metric path" matches the regular expression of the
-          # rule. Regular expression named captures are used to populate metric
-          # labels, while named captures prefixed with "name_part" are used to
-          # generate the final metric name (these are sorted according to their
-          # name to sort the parts on the resulting metric name.
-          - regexp: "(?P<base>test)\\.env(?P<env>[^.]*)\\.(?P<host>[^.]*)"
+          # rule. Regular expression named captures prefixed with "key_" are used
+          # to populate metric labels, while named captures prefixed with "name_"
+          # are used to generate the final metric name. The "name_*" captures are
+          # sorted by name and their values are used to compose the resulting
+          # metric name.
+          - regexp: "(?P<key_base>test)\\.env(?P<key_env>[^.]*)\\.(?P<key_host>[^.]*)"
             # name_prefix is added when to the resulting metric name.
             name_prefix: "name-prefix"
             # labels to be added to the metrics matching this rule.
@@ -49,9 +50,9 @@ receivers:
             # counter, by default they are all gauges.
             counter: true
           # The second rule for this "regex" parser.
-          - regexp: "(?P<just>test)\\.(?P<match>.*)"
+          - regexp: "(?P<key_just>test)\\.(?P<key_match>.*)"
         # Name separator is used when concatenating named regular expression
-        # captures prefixed with "name_part"
+        # captures prefixed with "name_"
         name_separator: "_"
 
 processors:

@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	metricNameCapturePrefix = "name_part"
+	metricNameCapturePrefix = "name_"
+	keyCapturePrefix        = "key_"
 )
 
 // RegexParserConfig has the configuration for a parser that can breakdown a
@@ -38,7 +39,7 @@ const (
 // Examples:
 //
 // 1. Rule:
-//        - regexp: "(?P<svc>[^.]+)\.(?P<host>[^.]+)\.cpu\.seconds"
+//        - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
 //          name_prefix: cpu_seconds
 //          labels:
 //            k: v
@@ -49,7 +50,7 @@ const (
 //        label values: {"service_name", "host00", "k"}
 //
 // 2. Rule:
-//        - regexp: "^(?P<svc>[^.]+)\.(?P<host>[^.]+)\.(?P<name_part0>[^.]+).(?P<name_part1>[^.]+)$"
+//        - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
 //    Metric path: "svc_02.host02.avg.duration"
 //    Resulting metric:
 //        name: avgduration
@@ -65,7 +66,7 @@ type RegexParserConfig struct {
 
 	// MetricNameSeparator is used when joining the name prefix of each individual
 	// rule and the respective named captures that start with the prefix
-	// "name_part" (see RegexRule for more information).
+	// "name_" (see RegexRule for more information).
 	MetricNameSeparator string `mapstructure:"name_separator"`
 }
 
@@ -128,8 +129,16 @@ func compileRegexRules(rules []*RegexRule) error {
 		rules[i].compRegexp = regex
 		var metricNameParts []string
 		for _, n := range regex.SubexpNames() {
-			if strings.HasPrefix(n, metricNameCapturePrefix) {
+			switch {
+			case n == "":
+				// Default capture.
+			case strings.HasPrefix(n, metricNameCapturePrefix):
 				metricNameParts = append(metricNameParts, n)
+			case strings.HasPrefix(n, keyCapturePrefix):
+				// Correctly prefixed, nothing else to do.
+			default:
+				return fmt.Errorf(
+					"capture %q on %d-th rule has an unknown prefix", n, i)
 			}
 		}
 		sort.Strings(metricNameParts)
@@ -164,7 +173,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
 				} else {
-					keys = append(keys, &metricspb.LabelKey{Key: nms[i]})
+					keys = append(keys, &metricspb.LabelKey{Key: nms[i][len(keyCapturePrefix):]})
 					values = append(values, &metricspb.LabelValue{
 						Value:    ms[i],
 						HasValue: true,

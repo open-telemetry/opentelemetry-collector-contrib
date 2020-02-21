@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				Config: &protocol.RegexParserConfig{
 					Rules: []*protocol.RegexRule{
 						{
-							Regexp:     `(?P<base>test)\.env(?P<env>[^.]*)\.(?P<host>[^.]*)`,
+							Regexp:     `(?P<key_base>test)\.env(?P<key_env>[^.]*)\.(?P<key_host>[^.]*)`,
 							NamePrefix: "name-prefix",
 							Labels: map[string]string{
 								"dot.key": "dot.value",
@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 							Counter: true,
 						},
 						{
-							Regexp: `(?P<just>test)\.(?P<match>.*)`,
+							Regexp: `(?P<key_just>test)\.(?P<key_match>.*)`,
 						},
 					},
 					MetricNameSeparator: "_",

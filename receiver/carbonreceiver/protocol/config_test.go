@@ -46,14 +46,14 @@ func TestLoadParserConfig(t *testing.T) {
 type: regex
 config:
   rules:
-    - regexp: "(?P<test>.*test)"
+    - regexp: "(?<key_test>.*test)"
 `,
 			cfg: Config{Type: "regex"},
 			want: Config{
 				Type: "regex",
 				Config: &RegexParserConfig{
 					Rules: []*RegexRule{
-						{Regexp: "(?P<test>.*test)"},
+						{Regexp: "(?<key_test>.*test)"},
 					}},
 			},
 		},
