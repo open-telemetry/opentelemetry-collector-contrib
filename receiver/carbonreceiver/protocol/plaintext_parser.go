@@ -48,31 +48,30 @@ type PlaintextPathParser struct{}
 //
 // tag is of the form "key=val", where key can contain any char except ";!^=" and
 // val can contain any char except ";~".
-func (p *PlaintextPathParser) ParsePath(path string) (name string, keys []*metricspb.LabelKey, values []*metricspb.LabelValue, forceCumulative bool, err error) {
+func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
 	parts := strings.SplitN(path, ";", 2)
 	if len(parts) < 1 || parts[0] == "" {
-		err = fmt.Errorf("empty metric name extracted from path [%s]", path)
-		return
+		return fmt.Errorf("empty metric name extracted from path [%s]", path)
 	}
-	name = parts[0]
+
+	parsedPath.MetricName = parts[0]
 	if len(parts) == 1 {
 		// No tags, no more work here.
-		return
+		return nil
 	}
 
 	if parts[1] == "" {
 		// Empty tags, nothing to do.
-		return
+		return nil
 	}
 
 	tags := strings.Split(parts[1], ";")
-	keys = make([]*metricspb.LabelKey, 0, len(tags))
-	values = make([]*metricspb.LabelValue, 0, len(tags))
+	keys := make([]*metricspb.LabelKey, 0, len(tags))
+	values := make([]*metricspb.LabelValue, 0, len(tags))
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
-			err = fmt.Errorf("cannot parse metric path [%s]: incorrect key value separator for [%s]", path, tag)
-			return
+			return fmt.Errorf("cannot parse metric path [%s]: incorrect key value separator for [%s]", path, tag)
 		}
 
 		key := tag[:idx]
@@ -85,7 +84,9 @@ func (p *PlaintextPathParser) ParsePath(path string) (name string, keys []*metri
 		})
 	}
 
-	return
+	parsedPath.LabelKeys = keys
+	parsedPath.LabelValues = values
+	return nil
 }
 
 func plaintextDefaultConfig() ParserConfig {

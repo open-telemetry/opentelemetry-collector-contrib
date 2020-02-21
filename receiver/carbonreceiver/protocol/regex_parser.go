@@ -151,15 +151,15 @@ type regexPathParser struct {
 // ParsePath converts the <metric_path> of a Carbon line (see PathParserHelper
 // a full description of the line format) according to the RegexParserConfig
 // settings.
-func (rpp *regexPathParser) ParsePath(path string) (name string, keys []*metricspb.LabelKey, values []*metricspb.LabelValue, forceCumulative bool, err error) {
+func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
 	for _, rule := range rpp.rules {
 		if rule.compRegexp.MatchString(path) {
 			ms := rule.compRegexp.FindStringSubmatch(path)
 			nms := rule.compRegexp.SubexpNames() // regexp pre-computes this slice.
 			metricNameLookup := map[string]string{}
 
-			keys = make([]*metricspb.LabelKey, 0, len(nms)+len(rule.Labels))
-			values = make([]*metricspb.LabelValue, 0, len(nms)+len(rule.Labels))
+			keys := make([]*metricspb.LabelKey, 0, len(nms)+len(rule.Labels))
+			values := make([]*metricspb.LabelValue, 0, len(nms)+len(rule.Labels))
 			for i := 1; i < len(ms); i++ {
 				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
 					metricNameLookup[nms[i]] = ms[i]
@@ -197,11 +197,15 @@ func (rpp *regexPathParser) ParsePath(path string) (name string, keys []*metrics
 				actualMetricName = path
 			}
 
-			return actualMetricName, keys, values, rule.Counter, nil
+			parsedPath.MetricName = actualMetricName
+			parsedPath.LabelKeys = keys
+			parsedPath.LabelValues = values
+			parsedPath.ForceCumulative = rule.Counter
+			return nil
 		}
 	}
 
-	return rpp.plaintextPathParser.ParsePath(path)
+	return rpp.plaintextPathParser.ParsePath(path, parsedPath)
 }
 
 func regexDefaultConfig() ParserConfig {

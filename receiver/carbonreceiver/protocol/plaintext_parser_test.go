@@ -169,12 +169,17 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &PlaintextPathParser{}
-			gotName, gotKeys, gotValues, gotCumulative, err := p.ParsePath(tt.path)
-			assert.Equal(t, tt.wantName, gotName)
-			assert.Equal(t, tt.wantKeys, gotKeys)
-			assert.Equal(t, tt.wantValues, gotValues)
-			assert.False(t, gotCumulative)
-			assert.Equal(t, tt.wantErr, err != nil)
+			got := ParsedPath{}
+			err := p.ParsePath(tt.path, &got)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantName, got.MetricName)
+				assert.Equal(t, tt.wantKeys, got.LabelKeys)
+				assert.Equal(t, tt.wantValues, got.LabelValues)
+				assert.False(t, got.ForceCumulative)
+			}
 		})
 	}
 }

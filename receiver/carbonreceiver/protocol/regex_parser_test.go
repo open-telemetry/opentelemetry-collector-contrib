@@ -157,16 +157,17 @@ func Test_regexParser_parsePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotName, gotKeys, gotValues, gotForceCumulative, err := rp.ParsePath(tt.path)
+			got := ParsedPath{}
+			err := rp.ParsePath(tt.path, &got)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
 			}
 
-			assert.Equal(t, tt.wantName, gotName)
-			assert.Equal(t, tt.wantKeys, gotKeys)
-			assert.Equal(t, tt.wantValues, gotValues)
-			assert.Equal(t, tt.wantForceCumulative, gotForceCumulative)
+			assert.Equal(t, tt.wantName, got.MetricName)
+			assert.Equal(t, tt.wantKeys, got.LabelKeys)
+			assert.Equal(t, tt.wantValues, got.LabelValues)
+			assert.Equal(t, tt.wantForceCumulative, got.ForceCumulative)
 		})
 	}
 }
@@ -210,22 +211,23 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 		"svc_02.host02.avg.duration",
 	}
 
-	gotName, gotKeys, gotValues, gotForceCumulative, err := rp.ParsePath(tests[0])
-	res.name = gotName
-	res.keys = gotKeys
-	res.values = gotValues
-	res.forceCumulative = gotForceCumulative
+	got := ParsedPath{}
+	err := rp.ParsePath(tests[0], &got)
+	res.name = got.MetricName
+	res.keys = got.LabelKeys
+	res.values = got.LabelValues
+	res.forceCumulative = got.ForceCumulative
 	res.err = err
 
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < len(tests); i++ {
-			gotName, gotKeys, gotValues, gotForceCumulative, err = rp.ParsePath(tests[i])
+			err = rp.ParsePath(tests[i], &got)
 		}
 	}
 
-	res.name = gotName
-	res.keys = gotKeys
-	res.values = gotValues
-	res.forceCumulative = gotForceCumulative
+	res.name = got.MetricName
+	res.keys = got.LabelKeys
+	res.values = got.LabelValues
+	res.forceCumulative = got.ForceCumulative
 	res.err = err
 }
