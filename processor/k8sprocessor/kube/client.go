@@ -50,7 +50,7 @@ type WatchClient struct {
 }
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider, newOwnerProvider OwnerProvider) (Client, error) {
+func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider, newOwnerProviderFunc OwnerProvider) (Client, error) {
 
 	// Extract deployment name from the pod name. Pod name is created using
 	// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
@@ -72,10 +72,10 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 	}
 	c.kc = kc
 
-	if newOwnerProvider == nil {
-		newOwnerProvider = newOwnerProvider
+	if newOwnerProviderFunc == nil {
+		newOwnerProviderFunc = newOwnerProvider
 	}
-	c.op = newOwnerProvider(kc)
+	c.op = newOwnerProviderFunc(kc)
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
