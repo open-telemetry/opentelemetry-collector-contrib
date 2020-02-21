@@ -79,13 +79,6 @@ func New(
 	return r, nil
 }
 
-const metricsSource string = "CollectD"
-
-// MetricsSource returns the name of the trace data source.
-func (cdr *collectdReceiver) MetricsSource() string {
-	return metricsSource
-}
-
 // StartMetricsReception starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(host component.Host) error {
 	cdr.Lock()

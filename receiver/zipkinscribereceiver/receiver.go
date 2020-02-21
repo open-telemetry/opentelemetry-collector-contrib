@@ -72,13 +72,6 @@ func New(
 	return r, nil
 }
 
-const traceSource string = "Zipkin-Scribe"
-
-// TraceSource returns the name of the trace data source.
-func (r *scribeReceiver) TraceSource() string {
-	return traceSource
-}
-
 func (r *scribeReceiver) Start(host component.Host) error {
 	r.Lock()
 	defer r.Unlock()

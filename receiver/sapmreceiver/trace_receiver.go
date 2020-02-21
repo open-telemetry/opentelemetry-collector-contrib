@@ -162,11 +162,6 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	rw.Write(gzipBuffer.Bytes())
 }
 
-// TraceSource implements receiver.TraceReceiver.TraceSource() and returns a tag describing the source format
-func (sr *sapmReceiver) TraceSource() string {
-	return traceSource
-}
-
 // StartTraceReception starts the sapmReceiver's server
 func (sr *sapmReceiver) Start(host component.Host) error {
 	sr.mu.Lock()
