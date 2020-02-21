@@ -52,7 +52,7 @@ type OwnerProvider func(
 ) OwnerAPI
 
 func newOwnerProvider(
-	clientset *kubernetes.Clientset) *OwnerCache {
+	clientset *kubernetes.Clientset) OwnerAPI {
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.clientset = clientset
