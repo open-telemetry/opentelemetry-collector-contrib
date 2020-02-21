@@ -83,7 +83,7 @@ func TestLoadConfig(t *testing.T) {
 								"dot.key": "dot.value",
 								"key":     "value",
 							},
-							Counter: true,
+							MetricType: "cumulative",
 						},
 						{
 							Regexp: `(?P<key_just>test)\.(?P<key_match>.*)`,

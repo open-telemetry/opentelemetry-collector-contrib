@@ -86,9 +86,9 @@ type RegexRule struct {
 	// rule.
 	Labels map[string]string `mapstructure:"labels"`
 
-	// Counter forces the metric to be a counter, by default all metrics are set
-	// to be gauges this flag can be used to make it a cumulative counter.
-	Counter bool `mapstructure:"counter"`
+	// MetricType selects the type of metric to be generated, supported values are
+	// "gauge" (the default) and "cumulative".
+	MetricType string `mapstructure:"type"`
 
 	// Some fields cached after the compilation of the regular expression.
 	compRegexp      *regexp.Regexp
@@ -124,6 +124,17 @@ func compileRegexRules(rules []*RegexRule) error {
 		regex, err := regexp.Compile(r.Regexp)
 		if err != nil {
 			return fmt.Errorf("error compiling %d-th rule: %v", i, err)
+		}
+
+		switch TargetMetricType(r.MetricType) {
+		case DefaultMetricType, GaugeMetricType, CumulativeMetricType:
+		default:
+			return fmt.Errorf(
+				`error on %d-th rule: unknown metric type %q valid choices are: %q or %q`,
+				i,
+				r.MetricType,
+				GaugeMetricType,
+				CumulativeMetricType)
 		}
 
 		rules[i].compRegexp = regex
@@ -209,7 +220,7 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			parsedPath.MetricName = actualMetricName
 			parsedPath.LabelKeys = keys
 			parsedPath.LabelValues = values
-			parsedPath.ForceCumulative = rule.Counter
+			parsedPath.MetricType = TargetMetricType(rule.MetricType)
 			return nil
 		}
 	}

@@ -178,7 +178,7 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 				assert.Equal(t, tt.wantName, got.MetricName)
 				assert.Equal(t, tt.wantKeys, got.LabelKeys)
 				assert.Equal(t, tt.wantValues, got.LabelValues)
-				assert.False(t, got.ForceCumulative)
+				assert.Equal(t, DefaultMetricType, got.MetricType)
 			}
 		})
 	}

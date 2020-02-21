@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRegexParser_BuildParser(t *testing.T) {
+func TestRegexParserConfigBuildParser(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  ParserConfig
@@ -44,6 +44,27 @@ func TestRegexParser_BuildParser(t *testing.T) {
 				Rules: []*RegexRule{
 					{Regexp: "(?P<key_good>test).env(?P<key_env>[^.]*).(?P<key_host>[^.]*)"},
 					{Regexp: "(?<bad>test)"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "no_prefix_regexp_submatch",
+			config: &RegexParserConfig{
+				Rules: []*RegexRule{
+					{Regexp: "(?P<key_good>test).env(?P<env>[^.]*).(?P<key_host>[^.]*)"},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid_metric_type",
+			config: &RegexParserConfig{
+				Rules: []*RegexRule{
+					{
+						Regexp:     "(?P<key_good>test).env(?P<key_env>[^.]*).(?P<key_host>[^.]*)",
+						MetricType: "unknown",
+					},
 				},
 			},
 			wantErr: true,
@@ -84,10 +105,11 @@ func Test_regexParser_parsePath(t *testing.T) {
 			{
 				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
-				Counter:    true,
+				MetricType: CumulativeMetricType,
 			},
 			{
-				Regexp: `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
+				Regexp:     `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
+				MetricType: GaugeMetricType,
 			},
 		},
 	}
@@ -98,13 +120,13 @@ func Test_regexParser_parsePath(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		path                string
-		wantName            string
-		wantKeys            []*metricspb.LabelKey
-		wantValues          []*metricspb.LabelValue
-		wantForceCumulative bool
-		wantErr             bool
+		name           string
+		path           string
+		wantName       string
+		wantKeys       []*metricspb.LabelKey
+		wantValues     []*metricspb.LabelValue
+		wantMetricType TargetMetricType
+		wantErr        bool
 	}{
 		{
 			name:     "no_rule_match",
@@ -138,7 +160,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 				{Value: "service_name", HasValue: true},
 				{Value: "host01", HasValue: true},
 			},
-			wantForceCumulative: true,
+			wantMetricType: CumulativeMetricType,
 		},
 		{
 			name:     "match_rule2",
@@ -152,6 +174,7 @@ func Test_regexParser_parsePath(t *testing.T) {
 				{Value: "svc_02", HasValue: true},
 				{Value: "host02", HasValue: true},
 			},
+			wantMetricType: GaugeMetricType,
 		},
 	}
 
@@ -167,17 +190,17 @@ func Test_regexParser_parsePath(t *testing.T) {
 			assert.Equal(t, tt.wantName, got.MetricName)
 			assert.Equal(t, tt.wantKeys, got.LabelKeys)
 			assert.Equal(t, tt.wantValues, got.LabelValues)
-			assert.Equal(t, tt.wantForceCumulative, got.ForceCumulative)
+			assert.Equal(t, tt.wantMetricType, got.MetricType)
 		})
 	}
 }
 
 var res struct {
-	name            string
-	keys            []*metricspb.LabelKey
-	values          []*metricspb.LabelValue
-	forceCumulative bool
-	err             error
+	name       string
+	keys       []*metricspb.LabelKey
+	values     []*metricspb.LabelValue
+	metricType TargetMetricType
+	err        error
 }
 
 func Benchmark_regexPathParser_ParsePath(b *testing.B) {
@@ -191,7 +214,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 			{
 				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
-				Counter:    true,
+				MetricType: CumulativeMetricType,
 			},
 			{
 				Regexp: `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
@@ -216,7 +239,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	res.name = got.MetricName
 	res.keys = got.LabelKeys
 	res.values = got.LabelValues
-	res.forceCumulative = got.ForceCumulative
+	res.metricType = got.MetricType
 	res.err = err
 
 	for n := 0; n < b.N; n++ {
@@ -228,6 +251,6 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 	res.name = got.MetricName
 	res.keys = got.LabelKeys
 	res.values = got.LabelValues
-	res.forceCumulative = got.ForceCumulative
+	res.metricType = got.MetricType
 	res.err = err
 }

@@ -56,6 +56,17 @@ func Test_carbonreceiver_New(t *testing.T) {
 			},
 		},
 		{
+			name: "zero_value_parser",
+			args: args{
+				config: Config{
+					ReceiverSettings: defaultConfig.ReceiverSettings,
+					Transport:        defaultConfig.Transport,
+					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
+				},
+				nextConsumer: new(exportertest.SinkMetricsExporter),
+			},
+		},
+		{
 			name: "nil_nextConsumer",
 			args: args{
 				config: *defaultConfig,

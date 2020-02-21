@@ -46,9 +46,9 @@ receivers:
             labels:
               dot.key: dot.value
               key: value
-            # counter is used to force the metric to be set as a cumulative
-            # counter, by default they are all gauges.
-            counter: true
+            # type is used to select the metric type to be set, the default is
+            # "gauge", the other alternative is "cumulative".
+            type: cumulative
           # The second rule for this "regex" parser.
           - regexp: "(?P<key_just>test)\\.(?P<key_match>.*)"
         # Name separator is used when concatenating named regular expression
