@@ -282,12 +282,12 @@ func TestExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				Tags: NewExtractionFieldTags(),
 				Annotations: []FieldExtractionRule{{
-					Name: "*",
+					Name: "k8s.pod.annotation.%s",
 					Key:  "*",
 				},
 				},
 				Labels: []FieldExtractionRule{{
-					Name: "*",
+					Name: "k8s.pod.label.%s",
 					Key:  "*",
 				},
 				},

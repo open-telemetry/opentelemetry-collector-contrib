@@ -27,11 +27,7 @@ processors:
         - statefulSetName
       tags:
         # It is possible to provide your custom key names for each of the extracted metadata:
-        # containerId: my.namespace.containerId
-        # It is albo possible to provide custom templates when all annotations or labels are being extracted:
-        labelTemplate: k8s.pod.label.%s
-        annotationTemplate: k8s.pod.annotation.%s
-        
+        containerId: my.namespace.containerId
 
       annotations:
         - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
@@ -40,7 +36,7 @@ processors:
           key: annotation-two
           regex: field=(?P<value>.+)
         # You can also extract all annotations, e.g.:
-        # - tag_name: "*"
+        # - tag_name: k8s.annotation.%s
         #   key: "*"
       labels:
         - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
@@ -49,7 +45,7 @@ processors:
           key: label2
           regex: field=(?P<value>.+)
         # You can also extract all labels, e.g.:
-        # - tag_name: "*"
+        # - tag_name: k8s.label.%s
         #   key: "*"
 
     filter:
