@@ -149,7 +149,7 @@ func (cr *CarbonDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.M
 		ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
 		Parser: &protocol.Config{
 			Type:   "plaintext",
-			Config: &protocol.PlaintextParser{},
+			Config: &protocol.PlaintextConfig{},
 		},
 	}
 	var err error

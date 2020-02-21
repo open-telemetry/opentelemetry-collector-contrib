@@ -20,10 +20,12 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_plaintextParser_Parse(t *testing.T) {
-	p := PlaintextParser{}
+	p, err := (&PlaintextConfig{}).BuildParser()
+	require.NoError(t, err)
 	tests := []struct {
 		line    string
 		want    *metricspb.Metric
@@ -166,12 +168,18 @@ func TestPlaintextParser_parsePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &PlaintextParser{}
-			gotName, gotKeys, gotValues, err := p.parsePath(tt.path)
-			assert.Equal(t, tt.wantName, gotName)
-			assert.Equal(t, tt.wantKeys, gotKeys)
-			assert.Equal(t, tt.wantValues, gotValues)
-			assert.Equal(t, tt.wantErr, err != nil)
+			p := &PlaintextPathParser{}
+			got := ParsedPath{}
+			err := p.ParsePath(tt.path, &got)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantName, got.MetricName)
+				assert.Equal(t, tt.wantKeys, got.LabelKeys)
+				assert.Equal(t, tt.wantValues, got.LabelValues)
+				assert.Equal(t, DefaultMetricType, got.MetricType)
+			}
 		})
 	}
 }

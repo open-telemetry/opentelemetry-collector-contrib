@@ -16,87 +16,28 @@ package protocol
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-// PlaintextParser converts a line of https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
-// treating tags per spec at https://graphite.readthedocs.io/en/latest/tags.html#carbon.
-type PlaintextParser struct{}
+// PlaintextConfig holds the configuration for the plaintext parser.
+type PlaintextConfig struct{}
 
-var _ (Parser) = (*PlaintextParser)(nil)
-var _ (ParserConfig) = (*PlaintextParser)(nil)
+var _ (ParserConfig) = (*PlaintextConfig)(nil)
 
 // BuildParser creates a new Parser instance that receives plaintext
 // Carbon data.
-func (p *PlaintextParser) BuildParser() (Parser, error) {
-	return p, nil
+func (p *PlaintextConfig) BuildParser() (Parser, error) {
+	pathParser := &PlaintextPathParser{}
+	return NewParser(pathParser)
 }
 
-// Parse receives the string with plaintext data, aka line, in the Carbon
-// format and transforms it to the collector metric format. See
-// https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
-//
-// The expected line is a text line in the following format:
-// 	"<metric_path> <metric_value> <metric_timestamp>"
-//
-// The <metric_path> is where there are variations that require selection
-// of specialized parsers to handle them, but include the metric name and
-// labels/dimensions for the metric.
-//
-// The <metric_value> is the textual representation of the metric value.
-//
-// The <metric_timestamp> is the Unix time text of when the measurement was
-// made.
-func (p PlaintextParser) Parse(line string) (*metricspb.Metric, error) {
-	parts := strings.Split(line, " ")
-	if len(parts) != 3 {
-		return nil, fmt.Errorf("invalid carbon metric [%s]", line)
-	}
+// PlaintextPathParser converts a line of https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
+// treating tags per spec at https://graphite.readthedocs.io/en/latest/tags.html#carbon.
+type PlaintextPathParser struct{}
 
-	path := parts[0]
-	valueStr := parts[1]
-	timestampStr := parts[2]
-
-	metricName, labelKeys, labelValues, err := p.parsePath(path)
-	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric [%s]: %v", line, err)
-	}
-
-	unixTime, err := strconv.ParseInt(timestampStr, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("invalid carbon metric time [%s]: %v", line, err)
-	}
-
-	var metricType metricspb.MetricDescriptor_Type
-	point := metricspb.Point{
-		Timestamp: convertUnixSec(unixTime),
-	}
-	intVal, err := strconv.ParseInt(valueStr, 10, 64)
-	if err == nil {
-		metricType = metricspb.MetricDescriptor_GAUGE_INT64
-		point.Value = &metricspb.Point_Int64Value{Int64Value: intVal}
-	} else {
-		dblVal, err := strconv.ParseFloat(valueStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid carbon metric value [%s]: %v", line, err)
-		}
-		metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-		point.Value = &metricspb.Point_DoubleValue{DoubleValue: dblVal}
-	}
-
-	metric := buildMetricForSinglePoint(
-		metricName,
-		metricType,
-		labelKeys,
-		labelValues,
-		&point)
-	return metric, nil
-}
-
-// parsePath converts the <metric_path> of a Carbon line (see Parse function for
+// ParsePath converts the <metric_path> of a Carbon line (see Parse function for
 // description of the full line). The metric path is expected to be in the
 // following format:
 //
@@ -107,31 +48,30 @@ func (p PlaintextParser) Parse(line string) (*metricspb.Metric, error) {
 //
 // tag is of the form "key=val", where key can contain any char except ";!^=" and
 // val can contain any char except ";~".
-func (p *PlaintextParser) parsePath(path string) (name string, keys []*metricspb.LabelKey, values []*metricspb.LabelValue, err error) {
+func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) error {
 	parts := strings.SplitN(path, ";", 2)
 	if len(parts) < 1 || parts[0] == "" {
-		err = fmt.Errorf("empty metric name extracted from path [%s]", path)
-		return
+		return fmt.Errorf("empty metric name extracted from path [%s]", path)
 	}
-	name = parts[0]
+
+	parsedPath.MetricName = parts[0]
 	if len(parts) == 1 {
 		// No tags, no more work here.
-		return
+		return nil
 	}
 
 	if parts[1] == "" {
 		// Empty tags, nothing to do.
-		return
+		return nil
 	}
 
 	tags := strings.Split(parts[1], ";")
-	keys = make([]*metricspb.LabelKey, 0, len(tags))
-	values = make([]*metricspb.LabelValue, 0, len(tags))
+	keys := make([]*metricspb.LabelKey, 0, len(tags))
+	values := make([]*metricspb.LabelValue, 0, len(tags))
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
-			err = fmt.Errorf("cannot parse metric path [%s]: incorrect key value separator for [%s]", path, tag)
-			return
+			return fmt.Errorf("cannot parse metric path [%s]: incorrect key value separator for [%s]", path, tag)
 		}
 
 		key := tag[:idx]
@@ -144,9 +84,11 @@ func (p *PlaintextParser) parsePath(path string) (name string, keys []*metricspb
 		})
 	}
 
-	return
+	parsedPath.LabelKeys = keys
+	parsedPath.LabelValues = values
+	return nil
 }
 
 func plaintextDefaultConfig() ParserConfig {
-	return &PlaintextParser{}
+	return &PlaintextConfig{}
 }

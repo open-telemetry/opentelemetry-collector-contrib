@@ -26,7 +26,7 @@ var (
 	// configuration.
 	parserMap = map[string]func() ParserConfig{
 		"plaintext": plaintextDefaultConfig,
-		"delimiter": delimiterDefaultConfig,
+		"regex":     regexDefaultConfig,
 	}
 
 	// validParsers keeps a list of all valid parsers to be used in error

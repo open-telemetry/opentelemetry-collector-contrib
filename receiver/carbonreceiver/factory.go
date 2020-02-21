@@ -97,7 +97,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
 		Parser: &protocol.Config{
 			Type:   "plaintext",
-			Config: &protocol.PlaintextParser{},
+			Config: &protocol.PlaintextConfig{},
 		},
 	}
 }

@@ -70,7 +70,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			require.NoError(t, err)
 
 			mc := &mockMetricsConsumer{}
-			p := &protocol.PlaintextParser{}
+			p, err := (&protocol.PlaintextConfig{}).BuildParser()
+			require.NoError(t, err)
 			mr := NewMockReporter(1)
 
 			wgListenAndServe := sync.WaitGroup{}
