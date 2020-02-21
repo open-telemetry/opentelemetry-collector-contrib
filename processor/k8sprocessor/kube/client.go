@@ -287,10 +287,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if r.Key == "*" && r.Name == "*" {
+		if r.Key == "*" {
 			// Special case, extract everything
 			for label, value := range pod.Labels {
-				tags[fmt.Sprintf(c.Rules.Tags.LabelTemplate, label)] = c.extractField(value, r)
+				tags[fmt.Sprintf(r.Name, label)] = c.extractField(value, r)
 			}
 		} else {
 			if v, ok := pod.Labels[r.Key]; ok {
@@ -300,10 +300,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.Key == "*" && r.Name == "*" {
+		if r.Key == "*" {
 			// Special case, extract everything
 			for label, value := range pod.Annotations {
-				tags[fmt.Sprintf(c.Rules.Tags.AnnotationTemplate, label)] = c.extractField(value, r)
+				tags[fmt.Sprintf(r.Name, label)] = c.extractField(value, r)
 			}
 		} else {
 			if v, ok := pod.Annotations[r.Key]; ok {
