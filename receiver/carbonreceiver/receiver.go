@@ -53,10 +53,6 @@ type carbonReceiver struct {
 
 var _ receiver.MetricsReceiver = (*carbonReceiver)(nil)
 
-func (r *carbonReceiver) MetricsSource() string {
-	return "Carbon"
-}
-
 // New creates the Carbon receiver with the given configuration.
 func New(
 	logger *zap.Logger,
