@@ -16,7 +16,6 @@ package kube
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"regexp"
 	"testing"
 	"time"
@@ -27,6 +26,7 @@ import (
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
