@@ -15,6 +15,8 @@
 package kube
 
 import (
+	"fmt"
+	"k8s.io/apimachinery/pkg/types"
 	"regexp"
 	"testing"
 	"time"
@@ -462,4 +464,95 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 
 func newTestClient(t *testing.T) *WatchClient {
 	return newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+}
+
+func newBenchmarkClient(b *testing.B) *WatchClient {
+	e := ExtractionRules{
+		ClusterName:     true,
+		ContainerID:     true,
+		ContainerImage:  true,
+		ContainerName:   true,
+		DaemonSetName:   true,
+		Deployment:      true,
+		HostName:        true,
+		Owners:          true,
+		PodID:           true,
+		PodName:         true,
+		ReplicaSetName:  true,
+		ServiceName:     true,
+		StatefulSetName: true,
+		StartTime:       true,
+		Namespace:       true,
+		NamespaceID:     true,
+		NodeName:        true,
+		Tags:            NewExtractionFieldTags(),
+	}
+	f := Filters{}
+
+	c, _ := New(zap.NewNop(), e, f, newFakeAPIClientset, newFakeInformer, newFakeOwnerProvider)
+	return c.(*WatchClient)
+}
+
+// benchmark actually checks what's the impact of adding new Pod, which is mostly impacted by duration of API call
+func benchmark(b *testing.B, podsPerUniqueOwner int) {
+	c := newBenchmarkClient(b)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		pod := &api_v1.Pod{
+			ObjectMeta: meta_v1.ObjectMeta{
+				Name:              fmt.Sprintf("pod-number-%d", i),
+				Namespace:         "ns1",
+				UID:               types.UID(fmt.Sprintf("33333-%d", i)),
+				CreationTimestamp: meta_v1.Now(),
+				ClusterName:       "cluster1",
+				Labels: map[string]string{
+					"label1": fmt.Sprintf("lv1-%d", i),
+					"label2": "k1=v1 k5=v5 extra!",
+				},
+				Annotations: map[string]string{
+					"annotation1": fmt.Sprintf("av%d", i),
+				},
+				OwnerReferences: []meta_v1.OwnerReference{
+					{
+						Kind: "ReplicaSet",
+						Name: "foo-bar-rs",
+						UID:  types.UID(fmt.Sprintf("1a1658f9-7818-11e9-90f1-02324f7e0d1e-%d", i/podsPerUniqueOwner)),
+					},
+				},
+			},
+			Spec: api_v1.PodSpec{
+				NodeName: "node1",
+				Hostname: "auth-hostname3",
+				Containers: []api_v1.Container{
+					{
+						Image: "auth-service-image",
+						Name:  "auth-service-container-name",
+					},
+				},
+			},
+			Status: api_v1.PodStatus{
+				PodIP: fmt.Sprintf("%d.%d.%d.%d", (i>>24)%256, (i>>16)%256, (i>>8)%256, i%256),
+				ContainerStatuses: []api_v1.ContainerStatus{
+					{
+						ContainerID: fmt.Sprintf("111-222-333-%d", i),
+					},
+				},
+			},
+		}
+
+		c.handlePodAdd(pod)
+		_, ok := c.GetPodByIP(pod.Status.PodIP)
+		require.True(b, ok)
+
+	}
+
+}
+
+func BenchmarkManyPodsPerOwner(b *testing.B) {
+	benchmark(b, 100000)
+}
+
+func BenchmarkFewPodsPerOwner(b *testing.B) {
+	benchmark(b, 10)
 }
