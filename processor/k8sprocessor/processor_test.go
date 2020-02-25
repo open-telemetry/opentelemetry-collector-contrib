@@ -197,3 +197,28 @@ func (ts *testConsumer) ConsumeTraceData(ctx context.Context, td consumerdata.Tr
 	ts.data = append(ts.data, td)
 	return nil
 }
+
+func BenchmarkConsumingTraceData(b *testing.B) {
+	next := &testConsumer{}
+	p, _ := NewTraceProcessor(
+		zap.NewNop(),
+		next,
+		kube.NewFakeClient,
+	)
+
+	kp, _ := p.(*kubernetesprocessor)
+	kc, _ := kp.kc.(*kube.FakeClient)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ip := "1.1.1.1"
+		attrs := map[string]string{
+			"pod":         "test-2323",
+			"ns":          "default",
+			"another tag": "value",
+		}
+		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
+		ctx := client.NewContext(context.Background(), &client.Client{IP: ip})
+		p.ConsumeTraceData(ctx, consumerdata.TraceData{})
+	}
+}
