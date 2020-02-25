@@ -15,13 +15,14 @@
 package kube
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
+	"time"
+
 	gocache "github.com/patrickmn/go-cache"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
 )
 
 // fakeOwnerCache is a simple structure which aids querying for owners
