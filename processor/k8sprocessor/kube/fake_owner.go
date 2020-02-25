@@ -15,17 +15,25 @@
 package kube
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
+	gocache "github.com/patrickmn/go-cache"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"time"
 )
 
 // fakeOwnerCache is a simple structure which aids querying for owners
-type fakeOwnerCache struct{}
+type fakeOwnerCache struct {
+	objectOwnersCache *gocache.Cache
+	apiCallDuration   time.Duration
+}
 
 // NewOwnerProvider creates new instance of the owners api
 func newFakeOwnerProvider(clientset *kubernetes.Clientset) OwnerAPI {
 	ownerCache := fakeOwnerCache{}
+	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
+	ownerCache.apiCallDuration = 50 * time.Millisecond
 	return &ownerCache
 }
 
@@ -42,10 +50,33 @@ func (op *fakeOwnerCache) GetNamespace(namespace string) *ObjectOwner {
 	return &oo
 }
 
+func (op *fakeOwnerCache) deepCacheObject(namespace string, kind string, name string, objectUID types.UID) {
+	time.Sleep(op.apiCallDuration)
+
+	observability.RecordAPICallMade()
+
+	oo := ObjectOwner{
+		UID:       objectUID,
+		namespace: namespace,
+		ownerUIDs: []types.UID{},
+		kind:      kind,
+		name:      name,
+	}
+
+	op.objectOwnersCache.Add(string(oo.UID), &oo, gocache.DefaultExpiration)
+}
+
 // GetOwners fetches deep tree of owners for a given pod
 func (op *fakeOwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 	objectOwners := []*ObjectOwner{}
 
+	// Make sure the tree is cached/traversed first
+	for _, or := range pod.OwnerReferences {
+		_, found := op.objectOwnersCache.Get(string(or.UID))
+		if !found {
+			op.deepCacheObject(pod.Namespace, or.Kind, or.Name, or.UID)
+		}
+	}
 	oo := ObjectOwner{
 		UID:       "12345",
 		namespace: pod.Namespace,
