@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -ex
+
+# Determine where "../dist" is
+PARENT_DIR="$( cd "$(dirname "${0}")/../" ; pwd -P )"
+DIST_DIR="${PARENT_DIR}/dist"
+
+# Remove and recreate dist/ directory where our release wheels/source distribution will go
+rm -rf "${DIST_DIR}"
+mkdir "${DIST_DIR}"
+
+build_script=$(cat <<'EOF'
+set -ex
+
+# Build linux wheels from the source distribution we created
+for PYBIN in /opt/python/*/bin;
+do
+  "${PYBIN}/pip" wheel --no-deps /dd-trace-py/dist/*.tar.gz -w /dd-trace-py/dist
+done
+
+# Build manylinux wheels from the linux wheels we just created
+for whl in /dd-trace-py/dist/*-linux_${ARCH}.whl;
+do
+  auditwheel repair "${whl}" -w /dd-trace-py/dist
+
+  # Remove linux wheel since we only want the manylinux wheels
+  rm "${whl}"
+done
+EOF
+)
+
+# First build a source distribution for our package
+python setup.py sdist --dist-dir dist
+
+# Build x86_64 linux and manylinux wheels
+docker run -it --rm -v "${PARENT_DIR}:/dd-trace-py" -e "ARCH=x86_64" quay.io/pypa/manylinux1_x86_64 /bin/bash -c "${build_script}"
+
+# Build i686 linux and manylinux wheels
+docker run -it --rm -v "${PARENT_DIR}:/dd-trace-py" -e "ARCH=i686" quay.io/pypa/manylinux1_i686 linux32 /bin/bash -c "${build_script}"

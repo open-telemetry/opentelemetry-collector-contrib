@@ -1,0 +1,125 @@
+version: "3"
+# remember to use this compose file __ONLY__ for development/testing purposes
+
+services:
+    elasticsearch:
+        image: elasticsearch:2.4-alpine
+        ports:
+            - "127.0.0.1:9200:9200"
+    cassandra:
+        image: spotify/cassandra:latest
+        environment:
+            - MAX_HEAP_SIZE=512M
+            - HEAP_NEWSIZE=256M
+        ports:
+            - "127.0.0.1:9042:9042"
+    consul:
+        image: consul:1.6.0
+        ports:
+            - "127.0.0.1:8500:8500"
+    postgres:
+        image: postgres:10.5-alpine
+        environment:
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_USER=postgres
+            - POSTGRES_DB=postgres
+        ports:
+            - "127.0.0.1:5432:5432"
+    mysql:
+        image: mysql:5.7
+        environment:
+            - MYSQL_ROOT_PASSWORD=admin
+            - MYSQL_PASSWORD=test
+            - MYSQL_USER=test
+            - MYSQL_DATABASE=test
+        ports:
+            - "127.0.0.1:3306:3306"
+    redis:
+        image: redis:4.0-alpine
+        ports:
+            - "127.0.0.1:6379:6379"
+    rediscluster:
+        image: grokzen/redis-cluster:4.0.9
+        environment:
+            - IP=0.0.0.0
+        ports:
+            - "127.0.0.1:7000:7000"
+            - "127.0.0.1:7001:7001"
+            - "127.0.0.1:7002:7002"
+            - "127.0.0.1:7003:7003"
+            - "127.0.0.1:7004:7004"
+            - "127.0.0.1:7005:7005"
+    mongo:
+        image: mongo:3.6
+        ports:
+            - "127.0.0.1:27017:27017"
+    memcached:
+        image: memcached:1.5-alpine
+        ports:
+            - "127.0.0.1:11211:11211"
+    moto:
+        # container that executes mocked AWS services; this is a custom
+        # build that runs all of them in a single container. It is built
+        # using this fork: https://github.com/palazzem/moto/tree/palazzem/docker-service
+        image: datadog/docker-library:moto_1_0_1
+        ports:
+            - "127.0.0.1:5000:5000"
+            - "127.0.0.1:5001:5001"
+            - "127.0.0.1:5002:5002"
+            - "127.0.0.1:5003:5003"
+            - "127.0.0.1:5004:5004"
+            - "127.0.0.1:5005:5005"
+    rabbitmq:
+        image: rabbitmq:3.7-alpine
+        ports:
+            - "127.0.0.1:5672:5672"
+    ddagent:
+        image: datadog/agent-dev:gbbr-apm-build
+        environment:
+            - DD_BIND_HOST=0.0.0.0
+            - DD_API_KEY=invalid_key_but_this_is_fine
+            - DD_APM_RECEIVER_SOCKET=/tmp/ddagent/trace.sock
+        ports:
+            - "127.0.0.1:8126:8126"
+        volumes:
+          - ddagent:/tmp/ddagent
+
+    vertica:
+        image: sumitchawla/vertica
+        environment:
+          - VP_TEST_USER=dbadmin
+          - VP_TEST_PASSWORD=abc123
+          - VP_TEST_DATABASE=docker
+        ports:
+          - "127.0.0.1:5433:5433"
+
+    testrunner:
+        image: datadog/docker-library:ddtrace_py
+        environment:
+            - TOX_SKIP_DIST=True
+            - TEST_DATADOG_INTEGRATION=1
+            - TEST_DATADOG_INTEGRATION_UDS=1
+        network_mode: host
+        working_dir: /src
+        volumes:
+            - ddagent:/tmp/ddagent
+            - ./ddtrace:/src/ddtrace:ro
+            # DEV: Make ddtrace/vendor rw so Tox can build C-extensions
+            - ./ddtrace/vendor:/src/ddtrace/vendor:rw
+            - ./tests:/src/tests:ro
+            - ./setup.cfg:/src/setup.cfg:ro
+            - ./setup.py:/src/setup.py:ro
+            - ./conftest.py:/src/conftest.py:ro
+            - ./tox.ini:/src/tox.ini:ro
+            - ./docs:/src/docs:ro
+            - ./pyproject.toml:/src/pyproject.toml:ro
+            - ./.ddtox:/src/.tox
+            - ./scripts:/src/scripts
+            # setuptools_scm needs `.git` to figure out what version we are on
+            # DEV: We could use `SETUPTOOLS_SCM_PRETEND_VERSION` but prefer `.git`
+            #      to get the same behavior as during releases
+            - ./.git:/src/.git:ro
+        command: bash
+
+volumes:
+    ddagent:

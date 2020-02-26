@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+PATTERN="$1"
+shift
+
+# CircleCI has a bug in its workspace code where it can't handle filenames with some chars
+CLEANED_PATTERN=`echo $PATTERN | tr '^?()$' '_'`
+exec tox -l | grep "$PATTERN" | tr '\n' ',' | xargs -I ARGS tox --result-json /tmp/"$CLEANED_PATTERN".results -e ARGS -- $@

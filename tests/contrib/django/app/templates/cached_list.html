@@ -1,0 +1,7 @@
+{% load cache %}
+
+{% cache 60 users_list %}
+    {% for user in object_list %}
+        {{ user }}
+    {% endfor %}
+{% endcache %}

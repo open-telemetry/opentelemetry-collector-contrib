@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+import os
+import shutil
+import tempfile
+
+import mkwheelhouse
+
+S3_BUCKET = 'pypi.datadoghq.com'
+S3_DIR = os.environ['S3_DIR']
+
+
+# DEV: This is the same `mkwheelhouse.build_wheels` except we are running `python setup.py sdist` instead
+def build_sdist():
+    build_dir = tempfile.mkdtemp(prefix='mkwheelhouse-')
+    args = [
+        'python', 'setup.py', 'sdist',
+        '--dist-dir', build_dir,
+    ]
+    mkwheelhouse.spawn(args)
+    return build_dir
+
+
+# DEV: This is the same as `mkwheelhouse.Bucket.make_index`, except we include `*.whl` and `*.tar.gz` files
+def make_index(bucket):
+    doc, tag, text = mkwheelhouse.yattag.Doc().tagtext()
+    with tag('html'):
+        for key in bucket.list():
+            # Skip over any non-wheel or non-source dist
+            if not key.name.endswith('.whl') and not key.name.endswith('.tar.gz'):
+                continue
+
+            with tag('a', href=bucket.generate_url(key)):
+                text(key.name)
+            doc.stag('br')
+
+    return doc.getvalue()
+
+
+# DEV: This is the same as `mkwheelhouse.run` except we hard code some values and use our custom functions instead
+def run():
+    s3_url = 's3://{0}/{1}'.format(S3_BUCKET, S3_DIR)
+    acl = 'private'
+    bucket = mkwheelhouse.Bucket(s3_url)
+
+    if not bucket.has_key('index.html'):  # noqa
+        bucket.put('<!DOCTYPE html><html></html>', 'index.html', acl=acl)
+
+    index_url = bucket.generate_url('index.html')
+    build_dir = build_sdist()
+    bucket.sync(build_dir, acl=acl)
+    bucket.put(make_index(bucket), key='index.html', acl=acl)
+    shutil.rmtree(build_dir)
+    print('mkwheelhouse: index written to', index_url)
+
+
+if __name__ == '__main__':
+    run()
