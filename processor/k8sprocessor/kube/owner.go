@@ -79,71 +79,179 @@ func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
 
 			return &oo
 		}
+
+		// This is a good opportunity to do cache warmup!
+		op.warmupCache(namespace)
 	}
 
 	return ns.(*ObjectOwner)
 }
 
-func (op *OwnerCache) deepCacheObject(namespace string, kind string, name string) {
-	var obj *meta_v1.ObjectMeta = nil
+func (op *OwnerCache) cacheMetadataObject(kind string, obj *meta_v1.ObjectMeta) {
+	oo := ObjectOwner{
+		UID:       obj.UID,
+		namespace: obj.Namespace,
+		ownerUIDs: []types.UID{},
+		kind:      kind,
+		name:      obj.Name,
+	}
+	for _, or := range obj.OwnerReferences {
+		oo.ownerUIDs = append(oo.ownerUIDs, or.UID)
+	}
+
+	// First set the cache
+	op.objectOwnersCache.Add(string(obj.UID), &oo, gocache.DefaultExpiration)
+}
+
+type objectOrList struct {
+	obj  *meta_v1.ObjectMeta
+	list []*meta_v1.ObjectMeta
+}
+
+// objectApiCall queries for ObjectMeta; if name is nil, then all objects of given type from
+// namespace are retrieved; otherwise only the one with specified name. Errors are quietly ignored
+func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string) objectOrList {
+	result := objectOrList{}
+	result.list = make([]*meta_v1.ObjectMeta, 0)
+
+	// This *terribly* misses that: https://blog.golang.org/why-generics
 	switch kind {
 	case "DaemonSet":
-		ds, _ := op.clientset.ExtensionsV1beta1().DaemonSets(namespace).Get(name, meta_v1.GetOptions{})
+		daemonSetAPI := op.clientset.ExtensionsV1beta1().DaemonSets(namespace)
 		observability.RecordAPICallMade()
-		if ds != nil {
-			obj = &ds.ObjectMeta
+
+		if name != nil {
+			ds, _ := daemonSetAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := daemonSetAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	case "Deployment":
-		dp, _ := op.clientset.ExtensionsV1beta1().Deployments(namespace).Get(name, meta_v1.GetOptions{})
+		deploymentsAPI := op.clientset.ExtensionsV1beta1().Deployments(namespace)
 		observability.RecordAPICallMade()
-		if dp != nil {
-			obj = &dp.ObjectMeta
+
+		if name != nil {
+			ds, _ := deploymentsAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := deploymentsAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	case "Pod":
-		pp, _ := op.clientset.CoreV1().Pods(namespace).Get(name, meta_v1.GetOptions{})
+		podsAPI := op.clientset.CoreV1().Pods(namespace)
 		observability.RecordAPICallMade()
-		if pp != nil {
-			obj = &pp.ObjectMeta
+
+		if name != nil {
+			ds, _ := podsAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := podsAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	case "ReplicaSet":
-		rs, _ := op.clientset.ExtensionsV1beta1().ReplicaSets(namespace).Get(name, meta_v1.GetOptions{})
+		replicaSetsAPI := op.clientset.ExtensionsV1beta1().ReplicaSets(namespace)
 		observability.RecordAPICallMade()
-		if rs != nil {
-			obj = &rs.ObjectMeta
+
+		if name != nil {
+			ds, _ := replicaSetsAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := replicaSetsAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	case "Service":
-		srv, _ := op.clientset.CoreV1().Services(namespace).Get(name, meta_v1.GetOptions{})
+		servicesAPI := op.clientset.CoreV1().Services(namespace)
 		observability.RecordAPICallMade()
-		if srv != nil {
-			obj = &srv.ObjectMeta
+
+		if name != nil {
+			ds, _ := servicesAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := servicesAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	case "StatefulSet":
-		ss, _ := op.clientset.AppsV1().StatefulSets(namespace).Get(name, meta_v1.GetOptions{})
+		statefulSetsAPI := op.clientset.AppsV1().StatefulSets(namespace)
 		observability.RecordAPICallMade()
-		if ss != nil {
-			obj = &ss.ObjectMeta
+
+		if name != nil {
+			ds, _ := statefulSetsAPI.Get(*name, meta_v1.GetOptions{})
+			if ds != nil {
+				result.obj = &ds.ObjectMeta
+			}
+		} else {
+			dss, _ := statefulSetsAPI.List(meta_v1.ListOptions{})
+			if dss != nil {
+				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
+				for i, it := range dss.Items {
+					result.list[i] = &it.ObjectMeta
+				}
+			}
 		}
 	default:
 		// Just do nothing here
 	}
 
-	if obj != nil {
-		oo := ObjectOwner{
-			UID:       obj.UID,
-			namespace: obj.Namespace,
-			ownerUIDs: []types.UID{},
-			kind:      kind,
-			name:      obj.Name,
-		}
-		for _, or := range obj.OwnerReferences {
-			oo.ownerUIDs = append(oo.ownerUIDs, or.UID)
-		}
+	return result
+}
 
+// warmupCache makes sure that enough objects are cached to not spend too much time on lazy
+// requests via deepCacheObject
+func (op *OwnerCache) warmupCache(namespace string) {
+	for _, kind := range []string{"DaemonSet", "Deployment", "ReplicaSet", "Service", "StatefulSet"} {
+		res := op.objectApiCall(namespace, kind, nil)
+		for _, it := range res.list {
+			op.cacheMetadataObject("DaemonSet", it)
+		}
+	}
+}
+
+// deepCacheObject is a lazily executed function that makes a set of API calls to
+// traverse the owners tree and cache it
+func (op *OwnerCache) deepCacheObject(namespace string, kind string, name string) {
+	res := op.objectApiCall(namespace, kind, &name)
+	if res.obj != nil {
 		// First set the cache
-		op.objectOwnersCache.Add(string(obj.UID), &oo, gocache.DefaultExpiration)
+		op.cacheMetadataObject(kind, res.obj)
 
 		// Then continue traverse
-		for _, or := range obj.OwnerReferences {
+		for _, or := range res.obj.OwnerReferences {
 			_, found := op.objectOwnersCache.Get(string(or.UID))
 			if !found {
 				op.deepCacheObject(namespace, or.Kind, or.Name)
