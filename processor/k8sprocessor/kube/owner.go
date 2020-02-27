@@ -54,19 +54,19 @@ type OwnerProvider func(
 	logger *zap.Logger,
 	client *kubernetes.Clientset,
 	cacheWarmupEnabled bool,
-) OwnerAPI
+) (OwnerAPI, error)
 
 func newOwnerProvider(
 	logger *zap.Logger,
 	clientset *kubernetes.Clientset,
-	cacheWarmupEnabled bool) OwnerAPI {
+	cacheWarmupEnabled bool) (OwnerAPI, error) {
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.namespaces = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.clientset = clientset
 	ownerCache.logger = logger
 	ownerCache.cacheWarmupEnabled = cacheWarmupEnabled
-	return &ownerCache
+	return &ownerCache, nil
 }
 
 // GetNamespace retrieves relevant metadata from API or from cache
@@ -75,6 +75,8 @@ func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
 	if !found {
 		startTime := time.Now()
 		nn, _ := op.clientset.CoreV1().Namespaces().Get(namespace, meta_v1.GetOptions{})
+		observability.RecordAPICallMadeAndLatency(&startTime)
+
 		if nn != nil {
 			oo := ObjectOwner{
 				UID:       nn.UID,
@@ -86,12 +88,13 @@ func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
 
 			op.namespaces.Add(namespace, &oo, gocache.DefaultExpiration)
 
+			// This is a good opportunity to do cache warmup!
+			if op.cacheWarmupEnabled {
+				op.warmupCache(namespace)
+			}
+
 			return &oo
 		}
-		observability.RecordAPICallMadeAndLatency(&startTime)
-
-		// This is a good opportunity to do cache warmup!
-		op.warmupCache(namespace)
 	}
 
 	return ns.(*ObjectOwner)
@@ -253,7 +256,7 @@ func (op *OwnerCache) warmupCache(namespace string) {
 			op.cacheMetadataObject("DaemonSet", it)
 		}
 	}
-	op.logger.Info("Warming up cache for namespace %s took %d ms",
+	op.logger.Info("Warming up cache",
 		zap.String("namespace", namespace),
 		zap.Int64("duration", time.Since(startTime).Milliseconds()))
 }
