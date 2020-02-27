@@ -76,7 +76,10 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 		newOwnerProviderFunc = newOwnerProvider
 	}
 
-	c.op = newOwnerProviderFunc(logger, kc, !limitsPodScope(filters))
+	c.op, err = newOwnerProviderFunc(logger, kc, !limitsPodScope(filters))
+	if err != nil {
+		return nil, err
+	}
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
