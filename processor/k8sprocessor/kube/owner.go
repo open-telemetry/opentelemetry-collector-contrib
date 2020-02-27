@@ -16,6 +16,7 @@ import (
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -41,22 +42,30 @@ type OwnerAPI interface {
 
 // OwnerCache is a simple structure which aids querying for owners
 type OwnerCache struct {
-	objectOwnersCache *gocache.Cache
-	namespaces        *gocache.Cache
-	clientset         *kubernetes.Clientset
+	objectOwnersCache  *gocache.Cache
+	namespaces         *gocache.Cache
+	clientset          *kubernetes.Clientset
+	logger             *zap.Logger
+	cacheWarmupEnabled bool
 }
 
 // OwnerProvider allows to dynamically assign constructor
 type OwnerProvider func(
+	logger *zap.Logger,
 	client *kubernetes.Clientset,
+	cacheWarmupEnabled bool,
 ) OwnerAPI
 
 func newOwnerProvider(
-	clientset *kubernetes.Clientset) OwnerAPI {
+	logger *zap.Logger,
+	clientset *kubernetes.Clientset,
+	cacheWarmupEnabled bool) OwnerAPI {
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.namespaces = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.clientset = clientset
+	ownerCache.logger = logger
+	ownerCache.cacheWarmupEnabled = cacheWarmupEnabled
 	return &ownerCache
 }
 
@@ -64,8 +73,8 @@ func newOwnerProvider(
 func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
 	ns, found := op.namespaces.Get(string(namespace))
 	if !found {
+		startTime := time.Now()
 		nn, _ := op.clientset.CoreV1().Namespaces().Get(namespace, meta_v1.GetOptions{})
-		observability.RecordAPICallMade()
 		if nn != nil {
 			oo := ObjectOwner{
 				UID:       nn.UID,
@@ -79,6 +88,7 @@ func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
 
 			return &oo
 		}
+		observability.RecordAPICallMadeAndLatency(&startTime)
 
 		// This is a good opportunity to do cache warmup!
 		op.warmupCache(namespace)
@@ -114,11 +124,13 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 	result := objectOrList{}
 	result.list = make([]*meta_v1.ObjectMeta, 0)
 
+	startTime := time.Now()
+	callNotMade := false
+
 	// This *terribly* misses that: https://blog.golang.org/why-generics
 	switch kind {
 	case "DaemonSet":
 		daemonSetAPI := op.clientset.ExtensionsV1beta1().DaemonSets(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := daemonSetAPI.Get(*name, meta_v1.GetOptions{})
@@ -136,7 +148,6 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 		}
 	case "Deployment":
 		deploymentsAPI := op.clientset.ExtensionsV1beta1().Deployments(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := deploymentsAPI.Get(*name, meta_v1.GetOptions{})
@@ -154,7 +165,6 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 		}
 	case "Pod":
 		podsAPI := op.clientset.CoreV1().Pods(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := podsAPI.Get(*name, meta_v1.GetOptions{})
@@ -172,7 +182,6 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 		}
 	case "ReplicaSet":
 		replicaSetsAPI := op.clientset.ExtensionsV1beta1().ReplicaSets(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := replicaSetsAPI.Get(*name, meta_v1.GetOptions{})
@@ -190,7 +199,6 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 		}
 	case "Service":
 		servicesAPI := op.clientset.CoreV1().Services(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := servicesAPI.Get(*name, meta_v1.GetOptions{})
@@ -208,7 +216,6 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 		}
 	case "StatefulSet":
 		statefulSetsAPI := op.clientset.AppsV1().StatefulSets(namespace)
-		observability.RecordAPICallMade()
 
 		if name != nil {
 			ds, _ := statefulSetsAPI.Get(*name, meta_v1.GetOptions{})
@@ -225,7 +232,12 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 			}
 		}
 	default:
-		// Just do nothing here
+		// Just mark we didn't call any API
+		callNotMade = true
+	}
+
+	if !callNotMade {
+		observability.RecordAPICallMadeAndLatency(&startTime)
 	}
 
 	return result
@@ -234,12 +246,16 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 // warmupCache makes sure that enough objects are cached to not spend too much time on lazy
 // requests via deepCacheObject
 func (op *OwnerCache) warmupCache(namespace string) {
+	startTime := time.Now()
 	for _, kind := range []string{"DaemonSet", "Deployment", "ReplicaSet", "Service", "StatefulSet"} {
 		res := op.objectApiCall(namespace, kind, nil)
 		for _, it := range res.list {
 			op.cacheMetadataObject("DaemonSet", it)
 		}
 	}
+	op.logger.Info("Warming up cache for namespace %s took %d ms",
+		zap.String("namespace", namespace),
+		zap.Int64("duration", time.Since(startTime).Milliseconds()))
 }
 
 // deepCacheObject is a lazily executed function that makes a set of API calls to

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	gocache "github.com/patrickmn/go-cache"
+	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -27,15 +28,19 @@ import (
 
 // fakeOwnerCache is a simple structure which aids querying for owners
 type fakeOwnerCache struct {
+	logger            *zap.Logger
 	objectOwnersCache *gocache.Cache
 	apiCallDuration   time.Duration
 }
 
 // NewOwnerProvider creates new instance of the owners api
-func newFakeOwnerProvider(clientset *kubernetes.Clientset) OwnerAPI {
+func newFakeOwnerProvider(logger *zap.Logger,
+	clientset *kubernetes.Clientset,
+	cacheWarmupEnabled bool) OwnerAPI {
 	ownerCache := fakeOwnerCache{}
 	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.apiCallDuration = 50 * time.Millisecond
+	ownerCache.logger = logger
 	return &ownerCache
 }
 
@@ -53,9 +58,9 @@ func (op *fakeOwnerCache) GetNamespace(namespace string) *ObjectOwner {
 }
 
 func (op *fakeOwnerCache) deepCacheObject(namespace string, kind string, name string, objectUID types.UID) {
-	time.Sleep(op.apiCallDuration)
+	startTime := time.Now()
 
-	observability.RecordAPICallMade()
+	time.Sleep(op.apiCallDuration)
 
 	oo := ObjectOwner{
 		UID:       objectUID,
@@ -64,6 +69,7 @@ func (op *fakeOwnerCache) deepCacheObject(namespace string, kind string, name st
 		kind:      kind,
 		name:      name,
 	}
+	observability.RecordAPICallMadeAndLatency(&startTime)
 
 	op.objectOwnersCache.Add(string(oo.UID), &oo, gocache.DefaultExpiration)
 }

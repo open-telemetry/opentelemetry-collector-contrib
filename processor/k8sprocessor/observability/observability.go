@@ -16,6 +16,7 @@ package observability
 
 import (
 	"context"
+	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -31,6 +32,7 @@ func init() {
 		viewPodsDeleted,
 		viewIPLookupMiss,
 		viewAPICallMade,
+		viewAPICallLatency,
 	)
 }
 
@@ -41,7 +43,8 @@ var (
 
 	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
 
-	mAPICallMade = stats.Int64("otelsvc/k8s/api_call_made", "Number of times other API calls were made", "1")
+	mAPICallMade    = stats.Int64("otelsvc/k8s/api_call_made", "Number of times K8S API calls were made", "1")
+	mAPICallLatency = stats.Float64("otelsvc/k8s/api_call_latency", "The latency in milliseconds per K8S API call", "ms")
 )
 
 var viewPodsUpdated = &view.View{
@@ -79,6 +82,13 @@ var viewAPICallMade = &view.View{
 	Aggregation: view.Sum(),
 }
 
+var viewAPICallLatency = &view.View{
+	Name:        mAPICallLatency.Name(),
+	Description: mAPICallLatency.Description(),
+	Measure:     mAPICallLatency,
+	Aggregation: view.Distribution(0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000),
+}
+
 // RecordPodUpdated increments the metric that records pod update events received.
 func RecordPodUpdated() {
 	stats.Record(context.Background(), mPodsUpdated.M(int64(1)))
@@ -99,7 +109,12 @@ func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
 }
 
-// RecordAPICallMade increments the metrics that records other lookups
-func RecordAPICallMade() {
+// RecordAPICallMadeAndLatency increments the metrics that records K8S lookups and measures their duration
+func RecordAPICallMadeAndLatency(startTime *time.Time) {
 	stats.Record(context.Background(), mAPICallMade.M(int64(1)))
+	stats.Record(context.Background(), mAPICallLatency.M(sinceInMilliseconds(startTime)))
+}
+
+func sinceInMilliseconds(startTime *time.Time) float64 {
+	return float64(time.Since(*startTime).Nanoseconds()) / 1e6
 }
