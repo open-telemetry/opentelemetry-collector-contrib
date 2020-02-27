@@ -75,7 +75,8 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 	if newOwnerProviderFunc == nil {
 		newOwnerProviderFunc = newOwnerProvider
 	}
-	c.op = newOwnerProviderFunc(kc)
+
+	c.op = newOwnerProviderFunc(logger, kc, !limitsPodScope(filters))
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
@@ -399,6 +400,24 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 		if rexp.MatchString(pod.Name) {
 			return true
 		}
+	}
+
+	return false
+}
+
+// limitsPodScope check if there are filters applied; if this is the case, then pod scope is being
+// limited and it is better to not do cache warmup and rely on lazy lookups
+func limitsPodScope(filters Filters) bool {
+	if len(filters.Labels) > 0 {
+		return true
+	}
+
+	if len(filters.Fields) > 0 {
+		return true
+	}
+
+	if filters.Node != "" {
+		return true
 	}
 
 	return false
