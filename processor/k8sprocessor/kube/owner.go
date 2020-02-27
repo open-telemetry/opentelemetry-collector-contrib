@@ -258,7 +258,7 @@ func (op *OwnerCache) warmupCache(namespace string) {
 	}
 	op.logger.Info("Warming up cache",
 		zap.String("namespace", namespace),
-		zap.Int64("duration", time.Since(startTime).Milliseconds()))
+		zap.Int64("duration_ms", time.Since(startTime).Milliseconds()))
 }
 
 // deepCacheObject is a lazily executed function that makes a set of API calls to
