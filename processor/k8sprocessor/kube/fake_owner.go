@@ -36,12 +36,12 @@ type fakeOwnerCache struct {
 // NewOwnerProvider creates new instance of the owners api
 func newFakeOwnerProvider(logger *zap.Logger,
 	clientset *kubernetes.Clientset,
-	cacheWarmupEnabled bool) OwnerAPI {
+	cacheWarmupEnabled bool) (OwnerAPI, error) {
 	ownerCache := fakeOwnerCache{}
 	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
 	ownerCache.apiCallDuration = 50 * time.Millisecond
 	ownerCache.logger = logger
-	return &ownerCache
+	return &ownerCache, nil
 }
 
 // GetNamespace retrieves relevant metadata from API or from cache
