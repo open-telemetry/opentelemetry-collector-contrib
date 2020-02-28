@@ -5,7 +5,7 @@ How to send metrics to SignalFx.
 The following configuration options are required:
 
 - `access_token` (no default): AccessToken is the authentication token provided
-by SignalFx or another backend that supports the SAPM proto.
+by SignalFx.
 - `realm` (default = us0): SignalFx realm where the data will be received.
 
 The following configuration options can also be configured:
