@@ -121,7 +121,7 @@ func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdat
 	var errs []error
 	goodSpans := 0
 	for _, span := range td.Spans {
-		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, nil)
 		if err == nil {
 			se.exporter.ExportSpan(sd)
 			goodSpans++
