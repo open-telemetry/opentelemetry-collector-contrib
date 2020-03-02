@@ -1013,6 +1013,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-test/go.mod h1:yqKqyawOh7VrmuZrbPULOL5H4x+SwKZtceMEVuWeQCo=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-test2 h1:TaPb0UFakfh5pq9m6OU5pIoZV1cId2Ayt2E1ZXrhOGo=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-test2/go.mod h1:UYUQLHvmy8uyLmN3Y3YrKDCRA3i3cePd4HdNkSFH58g=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin h1:3nLoDxhwSRSjBfnRJBc44TiuXwcVUoZF30iXbXDuTLY=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin/go.mod h1:WDWBwCH/wrcpTWVpykjLOGVQFuVVtWs/5RWso3lQjYw=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a h1:AA9vgIBDjMHPC2McaGPojgV2dcI78ZC0TLNhYCXEKH8=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a/go.mod h1:lzZQ3Noex5pfAy7mkAeCjcBDteYU85uWWnJ/y6gKU8k=
