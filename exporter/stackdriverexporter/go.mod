@@ -2,6 +2,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 
 go 1.14
 
+replace github.com/open-telemetry/opentelemetry-collector v0.2.6 => github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin2
+
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1
 	github.com/census-instrumentation/opencensus-proto v0.2.1
