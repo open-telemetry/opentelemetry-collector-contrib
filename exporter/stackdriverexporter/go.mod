@@ -2,6 +2,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 
 go 1.12
 
+replace github.com/open-telemetry/opentelemetry-collector v0.2.6 => github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3
+
 require (
 	// TODO: pin a released version
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.8-0.20190917133925-4339afab4a99
