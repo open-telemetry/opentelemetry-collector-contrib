@@ -41,6 +41,7 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdko
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/StackExchange/wmi v0.0.0-20180116203802-5d049714c4a6/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
+github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
@@ -298,6 +299,7 @@ github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8/go.mod h1:
 github.com/gophercloud/gophercloud v0.3.0 h1:6sjpKIpVwRIIwmcEGp+WwNovNsem+c+2vm6oxshRpL8=
 github.com/gophercloud/gophercloud v0.3.0/go.mod h1:vxM41WHh5uqHVBMZHzuwNOHh8XEoIEcSTewFxm1c5g8=
 github.com/gorilla/context v1.1.1/go.mod h1:kBGZzfjB9CEq2AlWe17Uuf7NDRt0dE0s8S51q0aT7Yg=
+github.com/gorilla/handlers v1.4.2/go.mod h1:Qkdc/uu4tH4g6mTK6auzZ766c4CA0Ng8+o/OAirnOIQ=
 github.com/gorilla/mux v1.6.2/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
 github.com/gorilla/mux v1.7.3 h1:gnP5JzjVOuiZD07fKKToCAOjS0yOpj/qPETTXCCS6hw=
 github.com/gorilla/mux v1.7.3/go.mod h1:1lud6UwP+6orDFRuTfBEV8e9/aOM/c4fVVCaMa2zaAs=
@@ -369,6 +371,7 @@ github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANyt
 github.com/influxdata/influxdb v1.7.7/go.mod h1:qZna6X/4elxqT3yI9iZYdZrWWdeFOOprn86kgg4+IzY=
 github.com/jaegertracing/jaeger v1.14.0 h1:C0En+gfcxf3NsAriMAvQ6LcSFrQ5VQGXddqfty1EpTI=
 github.com/jaegertracing/jaeger v1.14.0/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOOxihXx0+53llXI=
+github.com/jaegertracing/jaeger v1.17.0/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOOxihXx0+53llXI=
 github.com/jessevdk/go-flags v0.0.0-20180331124232-1c38ed7ad0cc/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af h1:pmfjZENx5imkbgOkpRUYLnmbU7UEFbjtDA2hxJ1ichM=
 github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
@@ -479,6 +482,7 @@ github.com/open-telemetry/opentelemetry-collector v0.2.6 h1:2OVuxsIj/W3NYxplKTwx
 github.com/open-telemetry/opentelemetry-collector v0.2.6/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
 github.com/open-telemetry/opentelemetry-proto v0.0.0-20200206071824-8310c432e51c h1:nDOtl6j2Ei16tlnx/o4qKEelpHtGoZ9ArwU+tux4Ia8=
 github.com/open-telemetry/opentelemetry-proto v0.0.0-20200206071824-8310c432e51c/go.mod h1:PMR5GI0F7BSpio+rBGFxNm6SLzg3FypDTcFuQZnO+F8=
+github.com/open-telemetry/opentelemetry-proto v0.0.0-20200211051721-ff5f19c6217d/go.mod h1:PMR5GI0F7BSpio+rBGFxNm6SLzg3FypDTcFuQZnO+F8=
 github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9/go.mod h1:PLldrQSroqzH70Xl+1DQcGnefIbqsKR7UDaiux3zV+w=
 github.com/opentracing/opentracing-go v1.1.0 h1:pWlfV3Bxv7k65HYwkikxat0+s3pV4bsqf19k25Ur8rU=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
@@ -508,6 +512,17 @@ github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin2 h1:WoFosOzc4NY9uRCtlL
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin2/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3 h1:nnvenOuIar7U8VtDBRY9CXlgjxfdxrEHjl44BAoEeVY=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin4/go.mod h1:WDWBwCH/wrcpTWVpykjLOGVQFuVVtWs/5RWso3lQjYw=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin5 h1:ymJyO1mG4hYEVXnGW6e0+EEQ88LrZfJYnieOPYqrzkU=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin5/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin6 h1:r4Rw8icTODjRAhd8lAnaNP+Xadnwa8gxqvUUOUpOi6M=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin6/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin7 h1:IjJUX5QSesE+99Yc/c0JiklxiZdgpa55va2UXzTy71E=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin7/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin8 h1:khZx91tU/QUp7yRgfLf6TmfPo7brSDmC25nN3QFSwzU=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin8/go.mod h1:UYUQLHvmy8uyLmN3Y3YrKDCRA3i3cePd4HdNkSFH58g=
+github.com/pmm-sumo/opentelemetry-collector v0.2.7-0.20200309090457-abf38593f2d9 h1:8xwYcr7k4u2KhJV2CX26Toek6AnvxKlHZ18By6LFyVE=
+github.com/pmm-sumo/opentelemetry-collector v0.2.7-0.20200309090457-abf38593f2d9/go.mod h1:UYUQLHvmy8uyLmN3Y3YrKDCRA3i3cePd4HdNkSFH58g=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a h1:AA9vgIBDjMHPC2McaGPojgV2dcI78ZC0TLNhYCXEKH8=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a/go.mod h1:lzZQ3Noex5pfAy7mkAeCjcBDteYU85uWWnJ/y6gKU8k=
