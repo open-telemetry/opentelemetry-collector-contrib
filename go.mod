@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.14
 
-replace github.com/open-telemetry/opentelemetry-collector v0.2.6 => github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3
+replace github.com/open-telemetry/opentelemetry-collector v0.2.6 => github.com/pmm-sumo/opentelemetry-collector v0.2.7-0.20200309090457-abf38593f2d9
 
 require (
 	github.com/client9/misspell v0.3.4

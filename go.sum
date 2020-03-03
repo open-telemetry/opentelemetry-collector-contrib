@@ -1019,6 +1019,17 @@ github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin2 h1:WoFosOzc4NY9uRCtlL
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin2/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3 h1:nnvenOuIar7U8VtDBRY9CXlgjxfdxrEHjl44BAoEeVY=
 github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin3/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin4 h1:8sQQ3sN173MDwyeOm0qxCN1OMiROzitt2hDa5yRMYB4=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin4/go.mod h1:WDWBwCH/wrcpTWVpykjLOGVQFuVVtWs/5RWso3lQjYw=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin5 h1:ymJyO1mG4hYEVXnGW6e0+EEQ88LrZfJYnieOPYqrzkU=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin5/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin6 h1:r4Rw8icTODjRAhd8lAnaNP+Xadnwa8gxqvUUOUpOi6M=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin6/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin7 h1:IjJUX5QSesE+99Yc/c0JiklxiZdgpa55va2UXzTy71E=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin7/go.mod h1:V1KYdNcKU2881dKDsVrFDq33isfaOcG+k7U2zynMgrk=
+github.com/pmm-sumo/opentelemetry-collector v0.2.6-zipkin8/go.mod h1:UYUQLHvmy8uyLmN3Y3YrKDCRA3i3cePd4HdNkSFH58g=
+github.com/pmm-sumo/opentelemetry-collector v0.2.7-0.20200309090457-abf38593f2d9 h1:8xwYcr7k4u2KhJV2CX26Toek6AnvxKlHZ18By6LFyVE=
+github.com/pmm-sumo/opentelemetry-collector v0.2.7-0.20200309090457-abf38593f2d9/go.mod h1:UYUQLHvmy8uyLmN3Y3YrKDCRA3i3cePd4HdNkSFH58g=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a h1:AA9vgIBDjMHPC2McaGPojgV2dcI78ZC0TLNhYCXEKH8=
 github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a/go.mod h1:lzZQ3Noex5pfAy7mkAeCjcBDteYU85uWWnJ/y6gKU8k=
