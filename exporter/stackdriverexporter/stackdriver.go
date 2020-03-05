@@ -26,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
+	"go.opencensus.io/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -115,19 +116,26 @@ func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerd
 	return se.exporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 }
 
-// TODO(songya): add an interface PushSpanProto to Stackdriver exporter and remove this method
-// pushTraceData is a wrapper method on StackdriverExporter.PushSpans
+// pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans
 func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
 	var errs []error
 	goodSpans := 0
+	spans := make([]*trace.SpanData, 0, len(td.Spans))
+
 	for _, span := range td.Spans {
 		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, nil)
 		if err == nil {
-			se.exporter.ExportSpan(sd)
+			spans = append(spans, sd)
 			goodSpans++
 		} else {
 			errs = append(errs, err)
 		}
+	}
+
+	_, err := se.exporter.PushTraceSpans(ctx, td.Node, td.Resource, spans)
+	if err != nil {
+		goodSpans = 0
+		errs = append(errs, err)
 	}
 
 	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)

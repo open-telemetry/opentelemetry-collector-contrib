@@ -16,6 +16,7 @@ package k8sprocessor
 
 import (
 	"context"
+	"errors"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-collector/client"
@@ -75,12 +76,18 @@ func (kp *kubernetesprocessor) GetCapabilities() processor.Capabilities {
 }
 
 func (kp *kubernetesprocessor) Start(host component.Host) error {
-	go kp.kc.Start()
+	if kp.kc != nil {
+		go kp.kc.Start()
+	} else if !kp.passthroughMode {
+		return errors.New("KubeClient not initialized and not in passthrough mode")
+	}
 	return nil
 }
 
 func (kp *kubernetesprocessor) Shutdown() error {
-	kp.kc.Stop()
+	if kp.kc != nil {
+		kp.kc.Stop()
+	}
 	return nil
 }
 

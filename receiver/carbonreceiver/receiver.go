@@ -31,9 +31,8 @@ import (
 )
 
 var (
-	errNilNextConsumer              = errors.New("nil nextConsumer")
-	errEmptyEndpoint                = errors.New("empty endpoint")
-	errOnlyPlaintextParserSupported = errors.New("currently only plaintext parser is supported")
+	errNilNextConsumer = errors.New("nil nextConsumer")
+	errEmptyEndpoint   = errors.New("empty endpoint")
 )
 
 // carbonreceiver implements a receiver.MetricsReceiver for Carbon plaintext, aka "line", protocol.
@@ -54,10 +53,6 @@ type carbonReceiver struct {
 
 var _ receiver.MetricsReceiver = (*carbonReceiver)(nil)
 
-func (r *carbonReceiver) MetricsSource() string {
-	return "Carbon"
-}
-
 // New creates the Carbon receiver with the given configuration.
 func New(
 	logger *zap.Logger,
@@ -77,14 +72,8 @@ func New(
 		// Set the defaults
 		config.Parser = &protocol.Config{
 			Type:   "plaintext",
-			Config: &protocol.PlaintextParser{},
+			Config: &protocol.PlaintextConfig{},
 		}
-	}
-
-	if config.Parser.Type != "plaintext" {
-		// TODO: Currently only plaintext is implemented. Remove this check
-		// 	when other parsers are supported.
-		return nil, errOnlyPlaintextParserSupported
 	}
 
 	parser, err := config.Parser.Config.BuildParser()

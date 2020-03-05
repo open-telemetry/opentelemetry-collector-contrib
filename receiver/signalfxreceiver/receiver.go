@@ -84,10 +84,6 @@ type sfxReceiver struct {
 
 var _ receiver.MetricsReceiver = (*sfxReceiver)(nil)
 
-func (r *sfxReceiver) MetricsSource() string {
-	return "SignalFx"
-}
-
 // New creates the SignalFx receiver with the given configuration.
 func New(
 	logger *zap.Logger,
