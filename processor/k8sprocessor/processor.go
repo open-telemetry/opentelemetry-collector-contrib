@@ -16,6 +16,7 @@ package k8sprocessor
 
 import (
 	"context"
+	"errors"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-collector/client"
