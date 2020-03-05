@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/otel/api/core"
 )
 
-const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-collector"
+const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
 
 type HoneycombExporter struct {
 	exporter *honeycomb.Exporter
@@ -50,7 +50,7 @@ func newHoneycombTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 		cfg,
 		hce.pushTraceData,
 		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(false),
+		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(hce.Shutdown))
 }
 
