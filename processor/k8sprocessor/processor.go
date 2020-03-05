@@ -31,6 +31,7 @@ import (
 
 const (
 	sourceFormatJaeger string = "jaeger"
+	sourceFormatZipkin string = "zipkin"
 	ipLabelName        string = "ip"
 )
 
@@ -102,7 +103,8 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 	// Jaeger client libs tag the process with the process/resource IP and
 	// jaeger to OC translator maps jaeger process to OC node.
 	// TODO: Should jaeger translator map jaeger process to OC resource instead?
-	if podIP == "" && td.SourceFormat == sourceFormatJaeger {
+	// Zipkin format is grouped by common endpoints as Node by receiver
+	if podIP == "" && (td.SourceFormat == sourceFormatJaeger || td.SourceFormat == sourceFormatZipkin) {
 		if td.Node != nil {
 			podIP = td.Node.Attributes[ipLabelName]
 		}
