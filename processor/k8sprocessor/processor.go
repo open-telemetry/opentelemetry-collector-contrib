@@ -75,12 +75,16 @@ func (kp *kubernetesprocessor) GetCapabilities() processor.Capabilities {
 }
 
 func (kp *kubernetesprocessor) Start(host component.Host) error {
-	go kp.kc.Start()
+	if !kp.passthroughMode {
+		go kp.kc.Start()
+	}
 	return nil
 }
 
 func (kp *kubernetesprocessor) Shutdown() error {
-	kp.kc.Stop()
+	if !kp.passthroughMode {
+		kp.kc.Stop()
+	}
 	return nil
 }
 
