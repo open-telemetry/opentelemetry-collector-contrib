@@ -5,11 +5,11 @@ go 1.13
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
-	github.com/honeycombio/opentelemetry-exporter-go v0.2.3 // indirect
 	github.com/open-telemetry/opentelemetry-collector v0.2.6
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
@@ -37,6 +37,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ./exporter/carbonexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter => ./exporter/honeycombexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter => ./exporter/kinesisexporter
 
