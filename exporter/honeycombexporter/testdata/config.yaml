@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  honeycomb:
+  honeycomb/customname:
+    api_key: "test-apikey"
+    dataset: "test-dataset"
+    api_url: "https://api.testhost.io"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [honeycomb]
