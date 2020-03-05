@@ -20,6 +20,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-collector/client"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/processor"
@@ -155,6 +156,23 @@ func TestAddLabels(t *testing.T) {
 		}
 		i++
 	}
+}
+
+func TestPassthroughStart(t *testing.T) {
+	next := &testConsumer{}
+	opts := []Option{WithPassthrough()}
+
+	p, err := NewTraceProcessor(
+		zap.NewNop(),
+		next,
+		kube.NewFakeClient,
+		opts...,
+	)
+	require.NoError(t, err)
+
+	// Just make sure this doesn't fail when Passthrough is enabled
+	p.Start(component.NewMockHost())
+	p.Shutdown()
 }
 
 func fakeClientFromProcessor(t *testing.T, p processor.TraceProcessor) *kube.FakeClient {
