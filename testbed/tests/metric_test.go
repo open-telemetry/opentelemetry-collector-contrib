@@ -34,7 +34,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 29,
-				ExpectedMaxRAM: 59,
+				ExpectedMaxRAM: 65,
 			},
 		},
 		{
@@ -43,7 +43,7 @@ func TestMetric10kDPS(t *testing.T) {
 			NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 115,
-				ExpectedMaxRAM: 48,
+				ExpectedMaxRAM: 55,
 			},
 		},
 		{
@@ -52,7 +52,7 @@ func TestMetric10kDPS(t *testing.T) {
 			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 58,
+				ExpectedMaxRAM: 65,
 			},
 		},
 	}
