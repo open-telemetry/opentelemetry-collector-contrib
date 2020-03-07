@@ -172,16 +172,22 @@ func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *trac
 		}
 	}
 
+	if span.Attributes == nil {
+		span.Attributes = &tracepb.Span_Attributes{}
+	}
+
+	if span.Attributes.AttributeMap == nil {
+		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 0)
+	}
+
 	// Check if the receiver detected client IP.
 	if podIP == "" {
 		if c, ok := client.FromContext(ctx); ok {
 			podIP = c.IP
-			if span.Attributes != nil && span.Attributes.AttributeMap != nil {
-				span.Attributes.AttributeMap[ipLabelName] = &tracepb.AttributeValue{
-					Value: &tracepb.AttributeValue_StringValue{
-						StringValue: &tracepb.TruncatableString{
-							Value: podIP}}}
-			}
+			span.Attributes.AttributeMap[ipLabelName] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{
+					StringValue: &tracepb.TruncatableString{
+						Value: podIP}}}
 		}
 	}
 
