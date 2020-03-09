@@ -41,6 +41,7 @@ type kubernetesprocessor struct {
 	nextConsumer    consumer.TraceConsumer
 	kc              kube.Client
 	passthroughMode bool
+	podIPDebugging  bool
 	rules           kube.ExtractionRules
 	filters         kube.Filters
 }
@@ -93,12 +94,19 @@ func (kp *kubernetesprocessor) Shutdown() error {
 	return nil
 }
 
+func (kp *kubernetesprocessor) debugIPMaybe(msg string, ip string) {
+	if kp.podIPDebugging {
+		kp.logger.Debug(msg, zap.String("podIP", ip))
+	}
+}
+
 func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	var podIP string
 	// check if the application, a collector/agent or a prior processor has already
 	// annotated the batch with IP.
 	if td.Resource != nil {
 		podIP = td.Resource.Labels[ipLabelName]
+		kp.debugIPMaybe("Pod IP in Resource", podIP)
 	}
 
 	// Jaeger client libs tag the process with the process/resource IP and
@@ -107,6 +115,7 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 	if podIP == "" && td.SourceFormat == sourceFormatJaeger {
 		if td.Node != nil {
 			podIP = td.Node.Attributes[ipLabelName]
+			kp.debugIPMaybe("Pod IP in Node", podIP)
 		}
 	}
 
@@ -129,6 +138,7 @@ func (kp *kubernetesprocessor) consumeTraceBatch(podIP string, ctx context.Conte
 	if podIP == "" {
 		if c, ok := client.FromContext(ctx); ok {
 			podIP = c.IP
+			kp.debugIPMaybe("Pod IP in Context", podIP)
 		}
 	}
 
@@ -173,19 +183,27 @@ func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *trac
 		value := span.Attributes.AttributeMap[ipLabelName]
 		if value != nil {
 			podIP = value.GetStringValue().Value
+			kp.debugIPMaybe("Pod IP in SpanAttribute", podIP)
 		}
+	}
+
+	if span.Attributes == nil {
+		span.Attributes = &tracepb.Span_Attributes{}
+	}
+
+	if span.Attributes.AttributeMap == nil {
+		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 0)
 	}
 
 	// Check if the receiver detected client IP.
 	if podIP == "" {
 		if c, ok := client.FromContext(ctx); ok {
 			podIP = c.IP
-			if span.Attributes != nil && span.Attributes.AttributeMap != nil {
-				span.Attributes.AttributeMap[ipLabelName] = &tracepb.AttributeValue{
-					Value: &tracepb.AttributeValue_StringValue{
-						StringValue: &tracepb.TruncatableString{
-							Value: podIP}}}
-			}
+			kp.debugIPMaybe("Pod IP from Context", podIP)
+			span.Attributes.AttributeMap[ipLabelName] = &tracepb.AttributeValue{
+				Value: &tracepb.AttributeValue_StringValue{
+					StringValue: &tracepb.TruncatableString{
+						Value: podIP}}}
 		}
 	}
 

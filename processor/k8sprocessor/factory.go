@@ -61,6 +61,11 @@ func (f *Factory) CreateTraceProcessor(
 	if oCfg.Passthrough {
 		opts = append(opts, WithPassthrough())
 	}
+
+	if oCfg.PodIPDebugging {
+		opts = append(opts, WithPodIPDebugging())
+	}
+
 	// extraction rules
 	opts = append(opts, WithExtractMetadata(oCfg.Extract.Metadata...))
 	opts = append(opts, WithExtractLabels(oCfg.Extract.Labels...))
