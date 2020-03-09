@@ -63,6 +63,14 @@ func WithPassthrough() Option {
 	}
 }
 
+// WithPodIPDebugging makes the processor verbosly explain how each podIP was extracted
+func WithPodIPDebugging() Option {
+	return func(p *kubernetesprocessor) error {
+		p.podIPDebugging = true
+		return nil
+	}
+}
+
 // WithExtractMetadata allows specifying options to control extraction of pod metadata.
 func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
