@@ -16,6 +16,7 @@ package signalfxreceiver
 
 import (
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -28,7 +29,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
@@ -154,24 +155,22 @@ func (r *sfxReceiver) Shutdown() error {
 }
 
 func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
-	// Tracing the request to make it visible via z-pages.
-	reqCtx := req.Context()
-	spanCtx, span := trace.StartSpan(reqCtx, r.config.Name())
-	defer span.End()
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), "http", r.config.Name())
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, r.config.Name(), "http")
 
 	if req.Method != http.MethodPost {
-		r.failRequest(resp, http.StatusBadRequest, invalidMethodRespBody, nil, span)
+		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
 		return
 	}
 
 	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
-		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil, span)
+		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
 		return
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
-		r.failRequest(resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil, span)
+		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil)
 		return
 	}
 
@@ -180,57 +179,53 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		var err error
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
-			r.failRequest(resp, http.StatusBadRequest, errGzipReaderRespBody, err, span)
+			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, err)
 			return
 		}
 	}
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
-		r.failRequest(resp, http.StatusBadRequest, errReadBodyRespBody, err, span)
+		r.failRequest(ctx, resp, http.StatusBadRequest, errReadBodyRespBody, err)
 		return
 	}
 
 	msg := &sfxpb.DataPointUploadMessage{}
 	if err := proto.Unmarshal(body, msg); err != nil {
-		r.failRequest(resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err, span)
+		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return
 	}
 
-	recvCtx := observability.ContextWithReceiverName(spanCtx, r.config.Name())
 	if len(msg.Datapoints) == 0 {
-		observability.RecordMetricsForMetricsReceiver(recvCtx, 0, 0)
+		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, 0, nil)
 		resp.Write(okRespBody)
 		return
 	}
 
-	md, numDroppedTimeseries := SignalFxV2ToMetricsData(r.logger, msg.Datapoints)
+	md, _ := SignalFxV2ToMetricsData(r.logger, msg.Datapoints)
 
-	err = r.nextConsumer.ConsumeMetricsData(spanCtx, *md)
+	err = r.nextConsumer.ConsumeMetricsData(ctx, *md)
+	obsreport.EndMetricsReceiveOp(
+		ctx,
+		typeStr,
+		len(msg.Datapoints),
+		len(msg.Datapoints),
+		err)
 	if err != nil {
-		observability.RecordMetricsForMetricsReceiver(
-			recvCtx,
-			len(msg.Datapoints),
-			len(msg.Datapoints))
-		r.failRequest(resp, http.StatusInternalServerError, errNextConsumerRespBody, err, span)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
 		return
 	}
-
-	observability.RecordMetricsForMetricsReceiver(
-		recvCtx,
-		len(msg.Datapoints),
-		numDroppedTimeseries)
 
 	resp.WriteHeader(http.StatusAccepted)
 	resp.Write(okRespBody)
 }
 
 func (r *sfxReceiver) failRequest(
+	ctx context.Context,
 	resp http.ResponseWriter,
 	httpStatusCode int,
 	jsonResponse []byte,
 	err error,
-	reqSpan *trace.Span,
 ) {
 	resp.WriteHeader(httpStatusCode)
 	if len(jsonResponse) > 0 {
@@ -247,6 +242,7 @@ func (r *sfxReceiver) failRequest(
 	// Use the same pattern as strings.Builder String().
 	msg := *(*string)(unsafe.Pointer(&jsonResponse))
 
+	reqSpan := trace.FromContext(ctx)
 	reqSpan.AddAttributes(
 		trace.Int64Attribute(conventions.AttributeHTTPStatusCode, int64(httpStatusCode)),
 		trace.StringAttribute(conventions.AttributeHTTPStatusText, msg))

@@ -31,19 +31,18 @@ func TestReporterObservability(t *testing.T) {
 	const receiverName = "fake_carbon_receiver"
 	reporter := newReporter(receiverName, zap.NewNop())
 
-	receiverCtx, span := reporter.OnDataReceived(context.Background())
-	defer span.End()
+	ctx := reporter.OnDataReceived(context.Background())
 
-	reporter.OnMetricsProcessed(receiverCtx, span, 17, 13, nil)
+	reporter.OnMetricsProcessed(ctx, 17, 13, nil)
 
 	err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
 	require.NoError(t, err)
 
-	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 13)
-	require.NoError(t, err)
-
 	// Below just exercise the error paths.
 	err = errors.New("fake error for tests")
-	reporter.OnTranslationError(receiverCtx, span, err)
-	reporter.OnMetricsProcessed(receiverCtx, span, 10, 10, err)
+	reporter.OnTranslationError(ctx, err)
+	reporter.OnMetricsProcessed(ctx, 10, 10, err)
+
+	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 10)
+	require.NoError(t, err)
 }

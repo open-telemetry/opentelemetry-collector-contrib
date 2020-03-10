@@ -5,13 +5,13 @@ go 1.13
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
-	github.com/open-telemetry/opentelemetry-collector v0.2.6
+	github.com/open-telemetry/opentelemetry-collector v0.2.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0
@@ -29,9 +29,8 @@ require (
 )
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
-replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 
-replace github.com/open-telemetry/opentelemetry-collector => ../opentelemetry-collector
+replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.

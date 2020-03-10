@@ -4,9 +4,7 @@ go 1.13
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
-	github.com/open-telemetry/opentelemetry-collector v0.2.6
+	github.com/open-telemetry/opentelemetry-collector v0.2.7
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 )
-
-replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

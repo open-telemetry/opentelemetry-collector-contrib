@@ -48,8 +48,6 @@ func newLightStepTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		lsExporter.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(lsExporter.Shutdown))
 }
 
