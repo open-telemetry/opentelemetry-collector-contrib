@@ -9,7 +9,7 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.3.1
 	github.com/gorilla/mux v1.7.3
-	github.com/jaegertracing/jaeger v1.15.1
+	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector v0.2.6
 	github.com/prometheus/client_model v0.0.0-20191202183732-d1d2010b5bee // indirect
@@ -30,3 +30,5 @@ require (
 	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

@@ -9,3 +9,5 @@ require (
 	go.opentelemetry.io/otel v0.2.3
 	go.uber.org/zap v1.14.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

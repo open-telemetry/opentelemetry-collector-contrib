@@ -713,9 +713,7 @@ func newTraceExporter(config *Config, transportChannel transportChannel, logger 
 
 	exp, err := exporterhelper.NewTraceExporter(
 		config,
-		exporter.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		exporter.pushTraceData)
 
 	return exp, err
 }

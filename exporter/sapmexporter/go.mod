@@ -12,3 +12,5 @@ require (
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.23.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

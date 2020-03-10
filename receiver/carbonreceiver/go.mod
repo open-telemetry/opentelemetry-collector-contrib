@@ -11,3 +11,5 @@ require (
 	go.opencensus.io v0.22.1
 	go.uber.org/zap v1.13.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

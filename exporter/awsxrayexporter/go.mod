@@ -15,3 +15,5 @@ require (
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/tools v0.0.0-20191030062658-86caa796c7ab // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector
