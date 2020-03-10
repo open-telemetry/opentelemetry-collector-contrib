@@ -23,7 +23,7 @@ cov ext/opentelemetry-ext-jaeger
 cov ext/opentelemetry-ext-opentracing-shim
 cov ext/opentelemetry-ext-wsgi
 cov ext/opentelemetry-ext-zipkin
-cov examples/opentelemetry-example-app
+cov docs/examples/opentelemetry-example-app
 
 coverage report
 coverage xml
