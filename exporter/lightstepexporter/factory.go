@@ -26,7 +26,8 @@ const (
 )
 
 // Factory is the factory for the LightStep exporter.
-type Factory struct{}
+type Factory struct {
+}
 
 // Type gets the type of the exporter configuration created by this factory.
 func (f *Factory) Type() string {
