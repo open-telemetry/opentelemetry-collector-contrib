@@ -52,7 +52,7 @@ func TestMetric10kDPS(t *testing.T) {
 			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 65,
+				ExpectedMaxRAM: 70,
 			},
 		},
 	}
