@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
@@ -54,6 +55,7 @@ func components() (config.Factories, error) {
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
+		&redisreceiver.Factory{},
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

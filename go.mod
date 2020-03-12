@@ -18,6 +18,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0
@@ -29,6 +30,7 @@ require (
 )
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
+
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -55,6 +57,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stack
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./receiver/redisreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ./receiver/sapmreceiver
 
