@@ -94,7 +94,7 @@ func evictedKeys() *redisMetric {
 
 func rejectedConnections() *redisMetric {
 	return &redisMetric{
-		key:        "rejected_connectionsx",
+		key:        "rejected_connections",
 		metricType: cumulativeInt,
 	}
 }
