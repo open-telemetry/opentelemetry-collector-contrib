@@ -42,8 +42,8 @@ func TestMissingMetricValue(t *testing.T) {
 func TestAllMetrics(t *testing.T) {
 	svc := newMetricsService(newFakeClient())
 	md, err := svc.getMetricsData(getDefaultRedisMetrics())
-	require.NotNil(t, err)
-	println(md)
+	require.Nil(t, err)
+	require.Equal(t, 29, len(md.Metrics))
 }
 
 func getProtoMetric(t *testing.T, redisMetric *redisMetric) *metricsProto.Metric {

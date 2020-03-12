@@ -16,10 +16,7 @@ type redisMetric struct {
 }
 
 func getDefaultRedisMetrics() []*redisMetric {
-	var redisMetrics []*redisMetric
-	return append(
-		redisMetrics,
-
+	return []*redisMetric{
 		uptimeInSeconds(),
 		uptimeInDays(),
 
@@ -70,7 +67,7 @@ func getDefaultRedisMetrics() []*redisMetric {
 		replBacklogFirstByteOffset(),
 
 		masterReplOffset(),
-	)
+	}
 }
 
 type metricType int
