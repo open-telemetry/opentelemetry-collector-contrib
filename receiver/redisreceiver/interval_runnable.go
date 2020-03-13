@@ -4,32 +4,42 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.uber.org/zap"
 )
 
-type tickable interface {
+type intervalRunnable interface {
 	setup() error
 	run() error
 }
 
-var _ tickable = (*redisTickable)(nil)
+var _ intervalRunnable = (*redisRunnable)(nil)
 
-type redisTickable struct {
+type redisRunnable struct {
 	ctx             context.Context
 	metricsConsumer consumer.MetricsConsumer
 	metricsService  *metricsService
 	redisMetrics    []*redisMetric
 }
 
-func newRedisTickable(ctx context.Context, client client, metricsConsumer consumer.MetricsConsumer) *redisTickable {
-	return &redisTickable{ctx: ctx, metricsService: newMetricsService(client), metricsConsumer: metricsConsumer}
+func newRedisRunnable(
+	ctx context.Context,
+	client client,
+	metricsConsumer consumer.MetricsConsumer,
+	logger *zap.Logger,
+) *redisRunnable {
+	return &redisRunnable{
+		ctx:             ctx,
+		metricsService:  newMetricsService(client, logger),
+		metricsConsumer: metricsConsumer,
+	}
 }
 
-func (r *redisTickable) setup() error {
+func (r *redisRunnable) setup() error {
 	r.redisMetrics = getDefaultRedisMetrics()
 	return nil
 }
 
-func (r *redisTickable) run() error {
+func (r *redisRunnable) run() error {
 	md, err := r.metricsService.getMetricsData(r.redisMetrics)
 	if err != nil {
 		return err

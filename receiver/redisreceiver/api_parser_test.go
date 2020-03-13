@@ -12,8 +12,8 @@ func newFakeApiService() *apiParser {
 
 func TestService_ServerInfo(t *testing.T) {
 	s := newFakeApiService()
-	all, err := s.info()
+	info, err := s.info()
 	require.Nil(t, err)
-	require.Equal(t, 121, len(all))
-	require.Equal(t, "1.24", all["allocator_frag_ratio"])
+	require.Equal(t, 121, len(info))
+	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }

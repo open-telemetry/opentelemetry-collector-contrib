@@ -6,9 +6,9 @@ import (
 	metricsProto "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-type pointFcn func(s string) (*metricsProto.Point, error)
+type pointConverter func(s string) (*metricsProto.Point, error)
 
-var _ pointFcn = strToInt64Point
+var _ pointConverter = strToInt64Point
 
 func strToInt64Point(s string) (*metricsProto.Point, error) {
 	i, err := strconv.ParseInt(s, 10, 64)
@@ -17,6 +17,8 @@ func strToInt64Point(s string) (*metricsProto.Point, error) {
 	}
 	return &metricsProto.Point{Value: &metricsProto.Point_Int64Value{Int64Value: i}}, nil
 }
+
+var _ pointConverter = strToDoublePoint
 
 func strToDoublePoint(s string) (*metricsProto.Point, error) {
 	f, err := strconv.ParseFloat(s, 64)

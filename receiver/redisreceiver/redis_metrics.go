@@ -84,24 +84,26 @@ const (
 func buildProtoMetrics(
 	redisInfo map[string]string,
 	redisMetrics []*redisMetric,
-) ([]*metricsProto.Metric, error) {
+) ([]*metricsProto.Metric, []error) {
+	var parsingErrors []error
 	var protoMetrics []*metricsProto.Metric
 	for _, redisMetric := range redisMetrics {
 		strVal := redisInfo[redisMetric.key]
 		if len(strVal) == 0 {
 			continue
 		}
-		protoMetric, err := buildSingleProtoMetric(strVal, redisMetric)
-		if err != nil {
-			return nil, err
+		protoMetric, parsingError := buildSingleProtoMetric(strVal, redisMetric)
+		if parsingError != nil {
+			parsingErrors = append(parsingErrors, parsingError)
+			continue
 		}
 		protoMetrics = append(protoMetrics, protoMetric)
 	}
-	return protoMetrics, nil
+	return protoMetrics, parsingErrors
 }
 
 func buildSingleProtoMetric(strVal string, redisMetric *redisMetric) (*metricsProto.Metric, error) {
-	f := getPointFuncion(redisMetric)
+	f := getPointConverter(redisMetric)
 	if f == nil {
 		return nil, errors.New("oops") // todo constant?
 	}
@@ -126,14 +128,13 @@ func buildSingleProtoMetric(strVal string, redisMetric *redisMetric) (*metricsPr
 	return metric, nil
 }
 
-func getPointFuncion(metric *redisMetric) pointFcn {
+func getPointConverter(metric *redisMetric) pointConverter {
 	switch metric.metricType {
 	case cumulativeInt, gaugeInt:
 		return strToInt64Point
 	case cumulativeDouble, gaugeDouble:
 		return strToDoublePoint
 	}
-	// todo handle gaugeDistribution?
 	return nil
 }
 

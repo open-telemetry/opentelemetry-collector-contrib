@@ -6,6 +6,7 @@ import (
 	metricsProto "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestMemoryMetric(t *testing.T) {
@@ -40,7 +41,7 @@ func TestMissingMetricValue(t *testing.T) {
 }
 
 func TestAllMetrics(t *testing.T) {
-	svc := newMetricsService(newFakeClient())
+	svc := newMetricsService(newFakeClient(), nil)
 	md, err := svc.getMetricsData(getDefaultRedisMetrics())
 	require.Nil(t, err)
 	require.Equal(t, 29, len(md.Metrics))
@@ -53,7 +54,8 @@ func getProtoMetric(t *testing.T, redisMetric *redisMetric) *metricsProto.Metric
 }
 
 func getMetricData(t *testing.T, metric *redisMetric) *consumerdata.MetricsData {
-	svc := newMetricsService(newFakeClient())
+	logger, _ := zap.NewDevelopment()
+	svc := newMetricsService(newFakeClient(), logger)
 	md, err := svc.getMetricsData([]*redisMetric{metric})
 	require.Nil(t, err)
 	return md
