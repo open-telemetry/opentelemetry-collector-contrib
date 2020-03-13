@@ -37,14 +37,14 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["jaeger_thrift_http"]
+	e0 := cfg.Exporters["jaeger_thrift"]
 
 	// URL doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	defaultCfg.URL = "http://some.location:14268/api/traces"
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "jaeger_thrift_http/2"
+	expectedName := "jaeger_thrift/2"
 
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{

@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "jaeger_thrift_http"
+	typeStr = "jaeger_thrift"
 )
 
 // Factory is the factory for Jaeger Thrift over HTTP exporter.

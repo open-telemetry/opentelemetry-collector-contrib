@@ -16,7 +16,7 @@ Example:
 
 ```yaml
 exporters:
-  jaeger_thrift_http:
+  jaeger_thrift:
     url: "http://some.other.location/api/traces"
     timeout: 2s
     headers:
