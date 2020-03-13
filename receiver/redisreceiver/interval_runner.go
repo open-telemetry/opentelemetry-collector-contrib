@@ -38,8 +38,8 @@ func (s *intervalRunner) setup() error {
 
 func (s *intervalRunner) run() error {
 	for range s.ticker.C {
-		for _, tickable := range s.intervalRunnables {
-			err := tickable.run()
+		for _, runnable := range s.intervalRunnables {
+			err := runnable.run()
 			if err != nil {
 				return err
 			}

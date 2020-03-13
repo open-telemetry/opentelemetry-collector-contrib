@@ -6,7 +6,7 @@ import (
 )
 
 func TestScheduler(t *testing.T) {
-	f := &fakeTickable{}
+	f := &fakeRunnable{}
 	s := newIntervalRunner(time.Second, f)
 	go func() {
 		_ = s.start()
@@ -15,13 +15,13 @@ func TestScheduler(t *testing.T) {
 	// getting here is success
 }
 
-type fakeTickable struct{
+type fakeRunnable struct{
 }
 
-func (t *fakeTickable) setup() error {
+func (t *fakeRunnable) setup() error {
 	return nil
 }
 
-func (fakeTickable) run() error {
+func (fakeRunnable) run() error {
 	return nil
 }
