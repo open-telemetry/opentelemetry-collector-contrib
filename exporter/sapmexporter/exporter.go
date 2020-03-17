@@ -55,8 +55,6 @@ func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (exporter.TraceExport
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		se.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(se.Shutdown))
 }
 

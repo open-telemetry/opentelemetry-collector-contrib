@@ -17,8 +17,6 @@ package transport
 import (
 	"context"
 	"sync"
-
-	"go.opencensus.io/trace"
 )
 
 // MockReporter provides a Reporter that provides some useful functionalities for
@@ -36,16 +34,15 @@ func NewMockReporter(expectedOnMetricsProcessedCalls int) *MockReporter {
 	return &m
 }
 
-func (m *MockReporter) OnDataReceived(ctx context.Context) (context.Context, *trace.Span) {
-	return trace.StartSpan(ctx, "mockReporter.OnDataReceived")
+func (m *MockReporter) OnDataReceived(ctx context.Context) context.Context {
+	return ctx
 }
 
-func (m *MockReporter) OnTranslationError(ctx context.Context, span *trace.Span, err error) {
+func (m *MockReporter) OnTranslationError(ctx context.Context, err error) {
 }
 
 func (m *MockReporter) OnMetricsProcessed(
 	ctx context.Context,
-	span *trace.Span,
 	numReceivedTimeseries int,
 	numInvalidTimeseries int,
 	err error,

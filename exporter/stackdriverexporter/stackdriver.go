@@ -56,8 +56,6 @@ func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		tExp.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
@@ -71,8 +69,6 @@ func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		mExp.pushMetricsData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
@@ -123,7 +119,7 @@ func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdat
 	spans := make([]*trace.SpanData, 0, len(td.Spans))
 
 	for _, span := range td.Spans {
-		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span)
+		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, td.Resource)
 		if err == nil {
 			spans = append(spans, sd)
 			goodSpans++

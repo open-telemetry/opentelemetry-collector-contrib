@@ -49,8 +49,6 @@ func newHoneycombTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		hce.pushTraceData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true),
 		exporterhelper.WithShutdown(hce.Shutdown))
 }
 

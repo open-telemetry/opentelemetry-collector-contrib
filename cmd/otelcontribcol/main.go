@@ -25,14 +25,14 @@ import (
 )
 
 func main() {
-	handleErr := func(err error) {
+	handleErr := func(message string, err error) {
 		if err != nil {
-			log.Fatalf("Failed to run the service: %v", err)
+			log.Fatalf("%s: %v", message, err)
 		}
 	}
 
 	factories, err := components()
-	handleErr(err)
+	handleErr("Failed to build components", err)
 
 	info := service.ApplicationStartInfo{
 		ExeName:  "otelcontribcol",
@@ -42,8 +42,8 @@ func main() {
 	}
 
 	svc, err := service.New(factories, info)
-	handleErr(err)
+	handleErr("Failed to construct the application", err)
 
 	err = svc.Start()
-	handleErr(err)
+	handleErr("Application run finished with error", err)
 }

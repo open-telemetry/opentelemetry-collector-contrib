@@ -109,9 +109,7 @@ func New(
 
 	exp, err := exporterhelper.NewMetricsExporter(
 		&config.ExporterSettings,
-		s.pushMetricsData,
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		s.pushMetricsData)
 
 	return exp, err
 }
