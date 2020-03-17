@@ -17,7 +17,7 @@ package carbonreceiver
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 
@@ -48,17 +48,15 @@ func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 // a client. The returned context should be used in other calls to the same
 // reporter instance. The caller code should include a call to end the
 // returned span.
-func (r *reporter) OnDataReceived(ctx context.Context) (context.Context, *trace.Span) {
-	rcvCtx := observability.ContextWithReceiverName(ctx, r.name)
-	span := trace.FromContext(rcvCtx)
-	span.SetName(r.spanName)
-	return rcvCtx, span
+func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
+	ctx = obsreport.ReceiverContext(ctx, r.name, "tcp", r.name)
+	return obsreport.StartMetricsReceiveOp(ctx, r.name, "tcp")
 }
 
 // OnTranslationError is used to report a translation error from original
 // format to the internal format of the Collector. The context and span
 // passed to it should be the ones returned by OnDataReceived.
-func (r *reporter) OnTranslationError(ctx context.Context, span *trace.Span, err error) {
+func (r *reporter) OnTranslationError(ctx context.Context, err error) {
 	if err == nil {
 		return
 	}
@@ -70,6 +68,7 @@ func (r *reporter) OnTranslationError(ctx context.Context, span *trace.Span, err
 
 	// Using annotations since multiple translation errors can happen in the
 	// same client message/request. The time itself is not relevant.
+	span := trace.FromContext(ctx)
 	span.Annotate([]trace.Attribute{
 		trace.StringAttribute("error", err.Error())},
 		"translation",
@@ -82,16 +81,10 @@ func (r *reporter) OnTranslationError(ctx context.Context, span *trace.Span, err
 // the next consumer - the reporter is expected to handle nil error too.
 func (r *reporter) OnMetricsProcessed(
 	ctx context.Context,
-	span *trace.Span,
 	numReceivedTimeseries int,
 	numInvalidTimeseries int,
 	err error,
 ) {
-	// TODO: the distinction between dropped and invalid is not precise.
-	// 	It can be a valid metric that it was dropped due to lack of resources.
-	// 	Will keep the ambiguity until standard observability metrics are
-	// 	fixed.
-	numDroppedTimeseries := numInvalidTimeseries
 	if err != nil {
 		r.logger.Debug(
 			"Carbon receiver failed to push metrics into pipeline",
@@ -100,17 +93,14 @@ func (r *reporter) OnMetricsProcessed(
 			zap.Int("numInvalidTimeseries", numInvalidTimeseries),
 			zap.Error(err))
 
+		span := trace.FromContext(ctx)
 		span.SetStatus(trace.Status{
 			Code:    trace.StatusCodeUnknown,
 			Message: err.Error(),
 		})
-
-		// In case of error assume that all time series were dropped.
-		numDroppedTimeseries = numReceivedTimeseries
 	}
 
-	observability.RecordMetricsForMetricsReceiver(
-		ctx, numReceivedTimeseries, numDroppedTimeseries)
+	obsreport.EndMetricsReceiveOp(ctx, "carbon", numReceivedTimeseries, numReceivedTimeseries, err)
 }
 
 func (r *reporter) OnDebugf(template string, args ...interface{}) {

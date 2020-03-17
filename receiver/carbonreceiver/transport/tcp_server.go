@@ -172,7 +172,7 @@ func (t *tcpServer) handleConnection(
 		bytes, err := reader.ReadBytes((byte)('\n'))
 
 		// It is possible to have new data in bytes and err to be io.EOF
-		ctx, span := t.reporter.OnDataReceived(context.Background())
+		ctx := t.reporter.OnDataReceived(context.Background())
 		var numReceivedTimeSeries, numInvalidTimeSeries int
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
@@ -180,7 +180,7 @@ func (t *tcpServer) handleConnection(
 			metric, err := p.Parse(line)
 			if err != nil {
 				numInvalidTimeSeries++
-				t.reporter.OnTranslationError(ctx, span, err)
+				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
 
@@ -188,7 +188,7 @@ func (t *tcpServer) handleConnection(
 				Metrics: []*metricspb.Metric{metric},
 			}
 			err = nextConsumer.ConsumeMetricsData(ctx, md)
-			t.reporter.OnMetricsProcessed(ctx, span, numReceivedTimeSeries, numInvalidTimeSeries, err)
+			t.reporter.OnMetricsProcessed(ctx, numReceivedTimeSeries, numInvalidTimeSeries, err)
 			if err != nil {
 				// The protocol doesn't account for returning errors.
 				// Since this is a TCP connection it seems reasonable to close the

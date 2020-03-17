@@ -19,7 +19,6 @@ import (
 	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"go.opencensus.io/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
@@ -53,22 +52,21 @@ type Reporter interface {
 	// a client. The returned context should be used in other calls to the same
 	// reporter instance. The caller code should include a call to end the
 	// returned span.
-	OnDataReceived(ctx context.Context) (context.Context, *trace.Span)
+	OnDataReceived(ctx context.Context) context.Context
 
 	// OnTranslationError is used to report a translation error from original
-	// format to the internal format of the Collector. The context and span
+	// format to the internal format of the Collector. The context
 	// passed to it should be the ones returned by OnDataReceived.
-	OnTranslationError(ctx context.Context, span *trace.Span, err error)
+	OnTranslationError(ctx context.Context, err error)
 
 	// OnMetricsProcessed is called when the received data is passed to next
-	// consumer on the pipeline. The context and span passed to it should be the
-	// ones returned by OnDataReceived. The error should be error returned by
+	// consumer on the pipeline. The context passed to it should be the
+	// one returned by OnDataReceived. The error should be error returned by
 	// the next consumer - the reporter is expected to handle nil error too.
 	OnMetricsProcessed(
 		ctx context.Context,
-		span *trace.Span,
-		numReceivedTimeseries int,
-		numInvalidTimeseries int,
+		numReceivedTimeSeries int,
+		numInvalidTimeSeries int,
 		err error)
 
 	// OnDebugf allows less structured reporting for debugging scenarios.

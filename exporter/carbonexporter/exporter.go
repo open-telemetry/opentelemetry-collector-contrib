@@ -53,9 +53,7 @@ func New(config Config) (exporter.MetricsExporter, error) {
 	return exporterhelper.NewMetricsExporter(
 		&effectiveConfig.ExporterSettings,
 		sender.pushMetricsData,
-		exporterhelper.WithShutdown(sender.Shutdown),
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(true))
+		exporterhelper.WithShutdown(sender.Shutdown))
 }
 
 // carbonSender is the struct tying the translation function and the TCP
