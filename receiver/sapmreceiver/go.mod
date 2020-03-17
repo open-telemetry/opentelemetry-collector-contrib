@@ -26,5 +26,3 @@ require (
 	google.golang.org/grpc v1.25.1 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

@@ -13,5 +13,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ../collectdreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector

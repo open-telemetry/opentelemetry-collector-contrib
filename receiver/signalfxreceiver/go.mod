@@ -15,5 +15,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../../exporter/signalfxexporter
-
-replace github.com/open-telemetry/opentelemetry-collector => ../../../opentelemetry-collector
