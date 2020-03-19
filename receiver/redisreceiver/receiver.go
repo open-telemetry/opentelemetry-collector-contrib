@@ -30,6 +30,7 @@ func newRedisReceiver(
 	}
 }
 
+// Setup and kick off the interval runner.
 func (r redisReceiver) Start(host component.Host) error {
 	client := newRedisClient(&redis.Options{
 		Addr:     r.config.Endpoint,

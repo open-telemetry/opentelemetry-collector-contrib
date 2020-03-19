@@ -19,6 +19,8 @@ type redisMetric struct {
 	mdType            metricspb.MetricDescriptor_Type
 }
 
+// Parse a numeric string to build a proto Metric based on the passed-in redisMetric.
+// The passed-in time is applied to the Point.
 func buildSingleProtoMetric(
 	redisMetric *redisMetric,
 	strVal string,
@@ -32,6 +34,7 @@ func buildSingleProtoMetric(
 	return pbMetric, nil
 }
 
+// Parse a numeric string to build a Point.
 func parsePoint(redisMetric *redisMetric, strVal string) (*metricspb.Point, error) {
 	switch redisMetric.mdType {
 	case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:

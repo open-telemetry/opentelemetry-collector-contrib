@@ -6,6 +6,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
+// Converts a numeric whole number string to a Point.
 func strToInt64Point(s string) (*metricspb.Point, error) {
 	i, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
@@ -14,6 +15,7 @@ func strToInt64Point(s string) (*metricspb.Point, error) {
 	return &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: i}}, nil
 }
 
+// Converts a numeric floating point string to a Point.
 func strToDoublePoint(s string) (*metricspb.Point, error) {
 	f, err := strconv.ParseFloat(s, 64)
 	if err != nil {

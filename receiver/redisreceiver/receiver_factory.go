@@ -37,6 +37,7 @@ func (f Factory) CreateTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumer,
 ) (receiver.TraceReceiver, error) {
+	// No trace receiver for now.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

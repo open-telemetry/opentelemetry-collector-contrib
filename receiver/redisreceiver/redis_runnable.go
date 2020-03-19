@@ -42,6 +42,11 @@ func (r *redisRunnable) Setup() error {
 	return nil
 }
 
+// Runs intermittently, querying Redis and building Metrics to send to the
+// next consumer. First builds 'fixed' metrics (non-keyspace metrics) defined
+// at startup time. Then builds 'keyspace' metrics if there are any keyspace
+// lines returned by Redis. There should be one keyspace line per active Redis
+// database, of which there can be 16.
 func (r *redisRunnable) Run() error {
 	info, err := r.redisSvc.info()
 	if err != nil {

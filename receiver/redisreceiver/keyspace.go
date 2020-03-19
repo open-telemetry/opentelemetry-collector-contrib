@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// Holds fields returned by INFO command: e.g.
-// db0:keys=1,expires=2,avg_ttl=3
+// Holds fields returned by the Keyspace section of the INFO command: e.g.
+// "db0:keys=1,expires=2,avg_ttl=3"
 type keyspace struct {
 	db      string
 	keys    int

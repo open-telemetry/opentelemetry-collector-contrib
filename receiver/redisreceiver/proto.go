@@ -139,7 +139,7 @@ func newProtoMetric(redisMetric *redisMetric, pt *metricspb.Point, currTime time
 	return pbMetric
 }
 
-// todo: Maybe this should be moved to a general purpose utility if we don't have one already
+// TODO: Maybe this should be moved to a general purpose utility if we don't have one already
 func timeToTimestamp(t *time.Time) *timestamp.Timestamp {
 	if t == nil {
 		return nil
