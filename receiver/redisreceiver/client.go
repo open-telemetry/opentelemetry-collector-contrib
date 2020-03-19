@@ -4,16 +4,21 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
+// implementation can be fake or real
 type client interface {
+	// retrieves a string of key/value pairs of redis metadata
 	retrieveInfo() (string, error)
+	// line delimiter
+	// redis lines are delimited by \r\n, files (for testing) by \n
 	delimiter() string
 }
 
-var _ client = (*redisClient)(nil)
-
+// wraps a real redis client, implements client interface
 type redisClient struct {
 	client *redis.Client
 }
+
+var _ client = (*redisClient)(nil)
 
 func newRedisClient(options *redis.Options) client {
 	return &redisClient{

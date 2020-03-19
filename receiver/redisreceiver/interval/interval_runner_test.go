@@ -1,4 +1,4 @@
-package redisreceiver
+package interval
 
 import (
 	"testing"
@@ -7,21 +7,21 @@ import (
 
 func TestScheduler(t *testing.T) {
 	f := &fakeRunnable{}
-	s := newIntervalRunner(time.Second, f)
+	s := NewRunner(time.Second, f)
 	go func() {
-		_ = s.start()
+		_ = s.Start()
 	}()
-	s.stop()
+	s.Stop()
 	// getting here is success
 }
 
 type fakeRunnable struct{
 }
 
-func (t *fakeRunnable) setup() error {
+func (t *fakeRunnable) Setup() error {
 	return nil
 }
 
-func (fakeRunnable) run() error {
+func (fakeRunnable) Run() error {
 	return nil
 }
