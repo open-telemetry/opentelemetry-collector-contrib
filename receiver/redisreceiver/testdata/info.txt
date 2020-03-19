@@ -134,3 +134,7 @@ used_cpu_user_children:0.001619
 
 # Cluster
 cluster_enabled:0
+
+# Keyspace
+db0:keys=1,expires=2,avg_ttl=3
+db1:keys=4,expires=5,avg_ttl=6

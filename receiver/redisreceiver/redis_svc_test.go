@@ -6,14 +6,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newFakeApiService() *apiParser {
-	return newApiParser(fakeClient{})
+func newFakeApiParser() *redisSvc {
+	return newRedisSvc(fakeClient{})
 }
 
-func TestService_ServerInfo(t *testing.T) {
-	s := newFakeApiService()
+func TestParser(t *testing.T) {
+	s := newFakeApiParser()
 	info, err := s.info()
 	require.Nil(t, err)
-	require.Equal(t, 121, len(info))
+	require.Equal(t, 123, len(info))
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }

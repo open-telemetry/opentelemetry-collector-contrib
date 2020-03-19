@@ -32,7 +32,7 @@ func readFile(fname string) (string, error) {
 	return string(file), nil
 }
 
-func TestInfo(t *testing.T) {
+func TestRetrieveInfo(t *testing.T) {
 	g := fakeClient{}
 	res, err := g.retrieveInfo()
 	require.Nil(t, err)
