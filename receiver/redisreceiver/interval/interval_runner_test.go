@@ -29,7 +29,7 @@ func TestScheduler(t *testing.T) {
 	// getting here is success
 }
 
-type fakeRunnable struct{
+type fakeRunnable struct {
 }
 
 func (t *fakeRunnable) Setup() error {
