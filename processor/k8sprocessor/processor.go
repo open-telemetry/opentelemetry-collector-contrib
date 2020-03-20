@@ -16,7 +16,6 @@ package k8sprocessor
 
 import (
 	"context"
-	"errors"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
