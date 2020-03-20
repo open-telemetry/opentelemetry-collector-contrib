@@ -18,10 +18,10 @@ func TestRedisRunnable(t *testing.T) {
 	err = runner.Run()
 	require.Nil(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	require.Equal(t, len(getDefaultRedisMetrics()) + 6, len(consumer.md.Metrics))
+	require.Equal(t, len(getDefaultRedisMetrics())+6, len(consumer.md.Metrics))
 }
 
-type fakeMetricsConsumer struct{
+type fakeMetricsConsumer struct {
 	md consumerdata.MetricsData
 }
 

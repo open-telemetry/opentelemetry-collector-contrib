@@ -69,21 +69,21 @@ func TestKeyspaceMetrics(t *testing.T) {
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
 	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
-	require.Equal(t, &metricspb.Point_Int64Value{Int64Value:1}, metric.Timeseries[0].Points[0].Value)
+	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 1}, metric.Timeseries[0].Points[0].Value)
 
 	metric = m[1]
 	require.Equal(t, "redis/db/expires", metric.MetricDescriptor.Name)
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
 	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
-	require.Equal(t, &metricspb.Point_Int64Value{Int64Value:2}, metric.Timeseries[0].Points[0].Value)
+	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 2}, metric.Timeseries[0].Points[0].Value)
 
 	metric = m[2]
 	require.Equal(t, "redis/db/avg_ttl", metric.MetricDescriptor.Name)
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
 	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
-	require.Equal(t, &metricspb.Point_Int64Value{Int64Value:3}, metric.Timeseries[0].Points[0].Value)
+	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 3}, metric.Timeseries[0].Points[0].Value)
 }
 
 func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, error, []error) {
