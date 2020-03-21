@@ -42,9 +42,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		AccessToken:   "",
-		SatelliteHost: "https://ingest.lightstep.com",
+		SatelliteHost: "ingest.lightstep.com",
 		SatellitePort: 443,
 		ServiceName:   "opentelemetry-collector",
+		PlainText:     false,
 	}
 }
 

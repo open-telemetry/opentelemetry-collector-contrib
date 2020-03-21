@@ -35,6 +35,7 @@ func newLightStepTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 		lightstep.WithHost(cfg.SatelliteHost),
 		lightstep.WithPort(cfg.SatellitePort),
 		lightstep.WithServiceName(cfg.ServiceName),
+		lightstep.WithPlainText(cfg.PlainText),
 	)
 
 	if err != nil {

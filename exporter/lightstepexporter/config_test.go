@@ -46,8 +46,9 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "lightstep/customname"},
 		AccessToken:      "abcdef12345",
-		SatelliteHost:    "https://custom.lightstep.com",
+		SatelliteHost:    "custom.lightstep.com",
 		SatellitePort:    8000,
 		ServiceName:      "myService",
+		PlainText:        true,
 	})
 }
