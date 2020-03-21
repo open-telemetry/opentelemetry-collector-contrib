@@ -125,6 +125,31 @@ func TestDeleteQueue(t *testing.T) {
 	// test delete loop
 }
 
+func TestNoHostnameExtractionRules(t *testing.T) {
+	c := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+
+	podName := "auth-service-abc12-xyz3"
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: api_v1.PodSpec{},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	c.Rules = ExtractionRules{
+		HostName: true,
+		Tags:     NewExtractionFieldTags(),
+	}
+
+	c.handlePodAdd(pod)
+	p, _ := c.GetPodByIP(pod.Status.PodIP)
+	assert.Equal(t, p.Attributes["k8s.pod.hostname"], podName)
+}
+
 func TestExtractionRules(t *testing.T) {
 	c := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
 
