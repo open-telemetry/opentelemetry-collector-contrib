@@ -5,20 +5,20 @@ processors:
   k8s_tagger:
   k8s_tagger/2:
     passthrough: false
+    owner_lookup_enabled: true
     extract:
       metadata:
         # extract the following well-known metadata fields
         - containerId
         - containerName
         - containerImage
-        - cluster
+        - clusterName
         - daemonSetName
-        - deployment
+        - deploymentName
         - hostName
         - namespace
         - namespaceId
-        - node
-        - owners
+        - nodeName
         - podId
         - podName
         - replicaSetName

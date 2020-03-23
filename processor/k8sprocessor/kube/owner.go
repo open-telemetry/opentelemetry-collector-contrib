@@ -132,7 +132,7 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 	startTime := time.Now()
 	callNotMade := false
 
-	// This *terribly* misses that: https://blog.golang.org/why-generics
+	// TODO: Use generics when released: https://blog.golang.org/why-generics
 	switch kind {
 	case "DaemonSet":
 		daemonSetAPI := op.clientset.ExtensionsV1beta1().DaemonSets(namespace)
@@ -151,7 +151,7 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 				}
 			}
 		}
-	case "Deployment":
+	case "DeploymentName":
 		deploymentsAPI := op.clientset.ExtensionsV1beta1().Deployments(namespace)
 
 		if name != nil {
@@ -252,10 +252,10 @@ func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string)
 // requests via deepCacheObject
 func (op *OwnerCache) warmupCache(namespace string) {
 	startTime := time.Now()
-	for _, kind := range []string{"DaemonSet", "Deployment", "ReplicaSet", "Service", "StatefulSet"} {
+	for _, kind := range []string{"DaemonSet", "DeploymentName", "ReplicaSet", "Service", "StatefulSet"} {
 		res := op.objectApiCall(namespace, kind, nil)
 		for _, it := range res.list {
-			op.cacheMetadataObject("DaemonSet", it)
+			op.cacheMetadataObject(kind, it)
 		}
 	}
 	op.logger.Info("Warming up cache",

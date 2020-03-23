@@ -15,8 +15,10 @@ There are several top level sections of the processor config:
 - `passthrough` (default = false): when set to true, only annotates resources with the pod IP and
 does not try to extract any other metadata. It does not need access to the K8S cluster API. 
 Agent/Collector must receive spans directly from services to be able to correctly detect the pod IPs.
-- `pod_ip_debugging` (default = false): when set to true, enables verbose logs that help
-with verification how the Pod IP is being assigned when doing metadata tagging
+- `owner_lookup_enabled` (default = false): when set to true, fields such as `daemonSetName`, 
+`replicaSetName`, etc. can be extracted, though it requires additional Kubernetes API calls to traverse 
+the `owner` relationship.  See the [list of fields](#k8sprocessor-extract) for more information over 
+which tags require the flag to be enabled. 
 - `extract`: the section (see [below](#k8sprocessor-extract)) allows specifying extraction rules
 - `filter`: the section (see [below](#k8sprocessor-filter)) allows specifying filters when matching pods
 
@@ -24,18 +26,51 @@ with verification how the Pod IP is being assigned when doing metadata tagging
 
 Allows specifying extraction rules to extract data from k8s pod specs.
 
-- `metadata` (default = empty): specifies a list of strings that denote extracted fields. See 
-[example config](#k8sprocessor-example) for the list of fields. 
-*Note: `owners` is a special field which enables traversing the ownership tree to pull data such 
-as `deploymentSetName`, `serviceName`, `daemonSetName`, `statefulSetName`, etc.)*
-- `tags` (default = empty): specifies an optional map of custom tags to be used. When provided, 
-specified fields use provided names when being tagged, e.g.:
+- `metadata` (default = empty): specifies a list of strings that denote extracted fields. Following fields
+can be extracted:
+    - `containerId`
+    - `containerName`
+    - `containerImage`
+    - `clusterName`
+    - `daemonSetName` _(`owner_lookup_enabled` must be set to `true`)_
+    - `deploymentName`
+    - `hostName`
+    - `namespace`
+    - `namespaceId` _(`owner_lookup_enabled` must be set to `true`)_
+    - `nodeName`
+    - `podId`
+    - `podName`
+    - `replicaSetName` _(`owner_lookup_enabled` must be set to `true`)_
+    - `serviceName` _(`owner_lookup_enabled` must be set to `true`)_
+    - `startTime`
+    - `statefulSetName` _(`owner_lookup_enabled` must be set to `true`)_
+      
+    Also, see [example config](#k8sprocessor-example). 
+- `tags`: specifies an optional map of custom tag names to be used. By default, following names are being assigned:
+	- `clusterName    `: `k8s.cluster.name`
+	- `containerID    `: `k8s.container.id`
+	- `containerImage `: `k8s.container.image`
+	- `containerName  `: `k8s.container.name`
+	- `daemonSetName  `: `k8s.daemonset.name`
+	- `deploymentName `: `k8s.deployment.name`
+	- `hostName       `: `k8s.pod.hostname`
+	- `namespaceName  `: `k8s.namespace.name`
+	- `namespaceID    `: `k8s.namespace.id`
+	- `nodeName       `: `k8s.node.name`
+	- `podID          `: `k8s.pod.id`
+	- `podName        `: `k8s.pod.name`
+	- `replicaSetName `: `k8s.replicaset.name`
+	- `serviceName    `: `k8s.service.name`
+	- `statefulSetName`: `k8s.statefulset.name`
+	- `startTime      `: `k8s.pod.startTime`
+
+    When custom value is specified, specified fields use provided names when being tagged, e.g.:
     ```yaml
     tags:
-      containerId: my-custom-tag-for-container
-      node: kubernetes.node
+      containerId: my-custom-tag-for-container-id
+      nodeName: node_name
     ```
-- `annotations` (default = empty): a list of rules for extraction and recording annotation data.
+ - `annotations` (default = empty): a list of rules for extraction and recording annotation data.
 See [field extract config](#k8sprocessor-field-extract) for an example on how to use it.
 - `labels` (default = empty): a list of rules for extraction and recording label data.
 See [field extract config](#k8sprocessor-field-extract) for an example on how to use it.
@@ -136,20 +171,20 @@ pods by generic k8s pod labels. Only the following operations (`op`) are support
 processors:
   k8s_tagger:
     passthrough: false
+    owner_lookup_enabled: true # To enable fetching additional metadata using `owner` relationship
     extract:
       metadata:
         # extract the following well-known metadata fields
         - containerId
         - containerName
         - containerImage
-        - cluster
+        - clusterName
         - daemonSetName
-        - deployment
+        - deploymentName
         - hostName
         - namespace
         - namespaceId
-        - node
-        - owners
+        - nodeName
         - podId
         - podName
         - replicaSetName
@@ -157,37 +192,37 @@ processors:
         - startTime
         - statefulSetName
       tags:
-        # It is possible to provide your custom key names for each of the extracted metadata:
-        containerId: k8s.pod.containerId
+        # It is possible to provide your custom key names for each of the extracted metadata fields, 
+        # e.g. to store podName as "pod_name" rather than the default "k8s.pod.name", use following:
+        podName: pod_name
 
       annotations:
         # Extract all annotations using a template
         - tag_name: k8s.annotation.%s
           key: "*"
       labels:
-        # Extract all labels using a template
-        - tag_name: k8s.label.%s
-          key: "*"
+        - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
+          key: label1
+        - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
+          key: label2
+          regex: field=(?P<value>.+)
 
     filter:
-      # The pods might be filtered, just uncomment the relevant section and 
-      # fill it with actual value, e.g.:
-      #
-      # namespace: ns2 # only look for pods running in ns2 namespace
-      # node: ip-111.us-west-2.compute.internal # only look for pods running on this node/host
-      # node_from_env_var: K8S_NODE # only look for pods running on the node/host specified by the K8S_NODE environment variable
-      # labels: # only consider pods that match the following labels
-      #  - key: key1 # match pods that have a label `key1=value1`. `op` defaults to "equals" when not specified
-      #    value: value1
-      #  - key: key2 # ignore pods that have a label `key2=value2`.
-      #    value: value2
-      #    op: not-equals
-      # fields: # works the same way as labels but for fields instead (like annotations)
-      #  - key: key1
-      #    value: value1
-      #  - key: key2
-      #    value: value2
-      #    op: not-equals
+      namespace: ns2 # only look for pods running in ns2 namespace
+      node: ip-111.us-west-2.compute.internal # only look for pods running on this node/host
+      node_from_env_var: K8S_NODE # only look for pods running on the node/host specified by the K8S_NODE environment variable
+      labels: # only consider pods that match the following labels
+       - key: key1 # match pods that have a label `key1=value1`. `op` defaults to "equals" when not specified
+         value: value1
+       - key: key2 # ignore pods that have a label `key2=value2`.
+         value: value2
+         op: not-equals
+      fields: # works the same way as labels but for fields instead (like annotations)
+       - key: key1
+         value: value1
+       - key: key2
+         value: value2
+         op: not-equals
 ```
 
 ### RBAC

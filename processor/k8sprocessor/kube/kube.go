@@ -35,15 +35,15 @@ const (
 	defaultTagDaemonSetName   = "k8s.daemonset.name"
 	defaultTagDeploymentName  = "k8s.deployment.name"
 	defaultTagHostName        = "k8s.pod.hostname"
+	defaultTagNamespaceName   = "k8s.namespace.name"
+	defaultTagNamespaceID     = "k8s.namespace.id"
+	defaultTagNodeName        = "k8s.node.name"
 	defaultTagPodID           = "k8s.pod.id"
 	defaultTagPodName         = "k8s.pod.name"
 	defaultTagReplicaSetName  = "k8s.replicaset.name"
 	defaultTagServiceName     = "k8s.service.name"
 	defaultTagStatefulSetName = "k8s.statefulset.name"
 	defaultTagStartTime       = "k8s.pod.startTime"
-	defaultTagNamespaceName   = "k8s.namespace.name"
-	defaultTagNamespaceID     = "k8s.namespace.id"
-	defaultTagNodeName        = "k8s.node.name"
 )
 
 var (
@@ -119,9 +119,8 @@ type ExtractionRules struct {
 	ContainerImage  bool
 	ContainerName   bool
 	DaemonSetName   bool
-	Deployment      bool
+	DeploymentName  bool
 	HostName        bool
-	Owners          bool
 	PodID           bool
 	PodName         bool
 	ReplicaSetName  bool
@@ -131,6 +130,8 @@ type ExtractionRules struct {
 	Namespace       bool
 	NamespaceID     bool
 	NodeName        bool
+
+	OwnerLookupEnabled bool
 
 	Tags        ExtractionFieldTags
 	Annotations []FieldExtractionRule
@@ -144,7 +145,7 @@ type ExtractionFieldTags struct {
 	ContainerImage  string
 	ContainerName   string
 	DaemonSetName   string
-	Deployment      string
+	DeploymentName  string
 	HostName        string
 	PodID           string
 	PodName         string
@@ -165,7 +166,7 @@ func NewExtractionFieldTags() ExtractionFieldTags {
 	tags.ContainerImage = defaultTagContainerImage
 	tags.ContainerName = defaultTagContainerName
 	tags.DaemonSetName = defaultTagDaemonSetName
-	tags.Deployment = defaultTagDeploymentName
+	tags.DeploymentName = defaultTagDeploymentName
 	tags.HostName = defaultTagHostName
 	tags.PodID = defaultTagPodID
 	tags.PodName = defaultTagPodName
