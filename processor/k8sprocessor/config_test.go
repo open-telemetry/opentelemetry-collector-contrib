@@ -59,11 +59,12 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger/2",
 			},
-			Passthrough: false,
+			Passthrough:        false,
+			OwnerLookupEnabled: true,
 			Extract: ExtractConfig{
 				Metadata: []string{
-					"containerId", "containerName", "containerImage", "cluster", "daemonSetName",
-					"deployment", "hostName", "namespace", "namespaceId", "node", "owners", "podId",
+					"containerId", "containerName", "containerImage", "clusterName", "daemonSetName",
+					"deploymentName", "hostName", "namespace", "namespaceId", "nodeName", "podId",
 					"podName", "replicaSetName", "serviceName", "startTime", "statefulSetName",
 				},
 				Tags: map[string]string{

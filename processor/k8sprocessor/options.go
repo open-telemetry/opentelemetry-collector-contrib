@@ -34,14 +34,13 @@ const (
 	metadataContainerID     = "containerId"
 	metadataContainerName   = "containerName"
 	metadataContainerImage  = "containerImage"
-	metadataClusterName     = "cluster"
+	metadataClusterName     = "clusterName"
 	metadataDaemonSetName   = "daemonSetName"
-	metadataDeployment      = "deployment"
+	metadataDeploymentName  = "deploymentName"
 	metadataHostName        = "hostName"
 	metadataNamespace       = "namespace"
 	metadataNamespaceID     = "namespaceId"
-	metadataNodeName        = "node"
-	metadataOwners          = "owners"
+	metadataNodeName        = "nodeName"
 	metadataPodID           = "podId"
 	metadataPodName         = "podName"
 	metadataReplicaSetName  = "replicaSetName"
@@ -63,10 +62,10 @@ func WithPassthrough() Option {
 	}
 }
 
-// WithPodIPDebugging makes the processor verbosly explain how each podIP was extracted
-func WithPodIPDebugging() Option {
+// WithOwnerLookupEnabled makes the processor pull additional owner data from K8S API
+func WithOwnerLookupEnabled() Option {
 	return func(p *kubernetesprocessor) error {
-		p.podIPDebugging = true
+		p.rules.OwnerLookupEnabled = true
 		return nil
 	}
 }
@@ -81,12 +80,11 @@ func WithExtractMetadata(fields ...string) Option {
 				metadataContainerImage,
 				metadataContainerName,
 				metadataDaemonSetName,
-				metadataDeployment,
+				metadataDeploymentName,
 				metadataHostName,
 				metadataNamespace,
 				metadataNamespaceID,
 				metadataNodeName,
-				metadataOwners,
 				metadataPodName,
 				metadataPodID,
 				metadataReplicaSetName,
@@ -107,8 +105,8 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.ContainerName = true
 			case metadataDaemonSetName:
 				p.rules.DaemonSetName = true
-			case metadataDeployment:
-				p.rules.Deployment = true
+			case metadataDeploymentName:
+				p.rules.DeploymentName = true
 			case metadataHostName:
 				p.rules.HostName = true
 			case metadataNamespace:
@@ -117,8 +115,6 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.NamespaceID = true
 			case metadataNodeName:
 				p.rules.NodeName = true
-			case metadataOwners:
-				p.rules.Owners = true
 			case metadataPodID:
 				p.rules.PodID = true
 			case metadataPodName:
@@ -155,8 +151,8 @@ func WithExtractTags(tagsMap map[string]string) Option {
 				tags.ContainerImage = tag
 			case strings.ToLower(metadataDaemonSetName):
 				tags.DaemonSetName = tag
-			case strings.ToLower(metadataDeployment):
-				tags.Deployment = tag
+			case strings.ToLower(metadataDeploymentName):
+				tags.DeploymentName = tag
 			case strings.ToLower(metadataHostName):
 				tags.HostName = tag
 			case strings.ToLower(metadataNamespace):

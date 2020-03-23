@@ -72,13 +72,15 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 	}
 	c.kc = kc
 
-	if newOwnerProviderFunc == nil {
-		newOwnerProviderFunc = newOwnerProvider
-	}
+	if c.Rules.OwnerLookupEnabled {
+		if newOwnerProviderFunc == nil {
+			newOwnerProviderFunc = newOwnerProvider
+		}
 
-	c.op, err = newOwnerProviderFunc(logger, kc, !limitsPodScope(filters))
-	if err != nil {
-		return nil, err
+		c.op, err = newOwnerProviderFunc(logger, kc, !shouldWarmCache(filters))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
@@ -209,11 +211,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.Deployment {
+	if c.Rules.DeploymentName {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
-			tags[c.Rules.Tags.Deployment] = parts[1]
+			tags[c.Rules.Tags.DeploymentName] = parts[1]
 		}
 	}
 
@@ -239,7 +241,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.Owners {
+	if c.Rules.OwnerLookupEnabled {
 		owners := c.op.GetOwners(pod)
 
 		for _, owner := range owners {
@@ -248,7 +250,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.DaemonSetName {
 					tags[c.Rules.Tags.DaemonSetName] = owner.name
 				}
-			case "Deployment":
+			case "DeploymentName":
 				// This should be already set earlier
 			case "ReplicaSet":
 				if c.Rules.ReplicaSetName {
@@ -264,6 +266,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 			default:
 				// Do nothing
+			}
+		}
+
+		if c.Rules.NamespaceID {
+			ns := c.op.GetNamespace(pod.Namespace)
+			if ns != nil {
+				tags[c.Rules.Tags.NamespaceID] = string(ns.UID)
 			}
 		}
 	}
@@ -288,13 +297,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.PodID {
 		tags[c.Rules.Tags.PodID] = string(pod.UID)
-	}
-
-	if c.Rules.NamespaceID {
-		ns := c.op.GetNamespace(pod.Namespace)
-		if ns != nil {
-			tags[c.Rules.Tags.NamespaceID] = string(ns.UID)
-		}
 	}
 
 	for _, r := range c.Rules.Labels {
@@ -415,9 +417,9 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 	return false
 }
 
-// limitsPodScope check if there are filters applied; if this is the case, then pod scope is being
-// limited and it is better to not do cache warmup and rely on lazy lookups
-func limitsPodScope(filters Filters) bool {
+// shouldWarmCache check if there are filters applied; if this is the case, then pod scope is being
+// limited and it is better to not do cache warmup and instead rely on just the lazy lookups
+func shouldWarmCache(filters Filters) bool {
 	if len(filters.Labels) > 0 {
 		return true
 	}

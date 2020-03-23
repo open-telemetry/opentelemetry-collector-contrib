@@ -62,15 +62,15 @@ func (f *Factory) CreateTraceProcessor(
 		opts = append(opts, WithPassthrough())
 	}
 
-	if oCfg.PodIPDebugging {
-		opts = append(opts, WithPodIPDebugging())
-	}
-
 	// extraction rules
 	opts = append(opts, WithExtractMetadata(oCfg.Extract.Metadata...))
 	opts = append(opts, WithExtractLabels(oCfg.Extract.Labels...))
 	opts = append(opts, WithExtractAnnotations(oCfg.Extract.Annotations...))
 	opts = append(opts, WithExtractTags(oCfg.Extract.Tags))
+
+	if oCfg.OwnerLookupEnabled {
+		opts = append(opts, WithOwnerLookupEnabled())
+	}
 
 	// filters
 	opts = append(opts, WithFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))

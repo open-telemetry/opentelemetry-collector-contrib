@@ -151,7 +151,8 @@ func TestNoHostnameExtractionRules(t *testing.T) {
 }
 
 func TestExtractionRules(t *testing.T) {
-	c := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+	// OwnerLookupEnabled is set to true so the newOwnerProviderFunc can be called in the initializer
+	c := newTestClientWithRulesAndFilters(t, ExtractionRules{OwnerLookupEnabled: true}, Filters{})
 
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -206,8 +207,8 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "deployment",
 		rules: ExtractionRules{
-			Deployment: true,
-			Tags:       NewExtractionFieldTags(),
+			DeploymentName: true,
+			Tags:           NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -215,24 +216,24 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			ClusterName:     true,
-			ContainerID:     true,
-			ContainerImage:  true,
-			ContainerName:   true,
-			DaemonSetName:   true,
-			Deployment:      true,
-			HostName:        true,
-			Owners:          true,
-			PodID:           true,
-			PodName:         true,
-			ReplicaSetName:  true,
-			ServiceName:     true,
-			StatefulSetName: true,
-			StartTime:       true,
-			Namespace:       true,
-			NamespaceID:     true,
-			NodeName:        true,
-			Tags:            NewExtractionFieldTags(),
+			ClusterName:        true,
+			ContainerID:        true,
+			ContainerImage:     true,
+			ContainerName:      true,
+			DaemonSetName:      true,
+			DeploymentName:     true,
+			HostName:           true,
+			PodID:              true,
+			PodName:            true,
+			ReplicaSetName:     true,
+			ServiceName:        true,
+			StatefulSetName:    true,
+			StartTime:          true,
+			Namespace:          true,
+			NamespaceID:        true,
+			NodeName:           true,
+			OwnerLookupEnabled: true,
+			Tags:               NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.cluster.name":    "cluster1",
@@ -257,9 +258,8 @@ func TestExtractionRules(t *testing.T) {
 			ContainerImage:  false,
 			ContainerName:   true,
 			DaemonSetName:   false,
-			Deployment:      false,
+			DeploymentName:  false,
 			HostName:        false,
-			Owners:          false,
 			PodID:           false,
 			PodName:         false,
 			ReplicaSetName:  false,
@@ -498,9 +498,8 @@ func newBenchmarkClient(b *testing.B) *WatchClient {
 		ContainerImage:  true,
 		ContainerName:   true,
 		DaemonSetName:   true,
-		Deployment:      true,
+		DeploymentName:  true,
 		HostName:        true,
-		Owners:          true,
 		PodID:           true,
 		PodName:         true,
 		ReplicaSetName:  true,

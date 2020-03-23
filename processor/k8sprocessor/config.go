@@ -28,9 +28,9 @@ type Config struct {
 	// directly from services to be able to correctly detect the pod IPs.
 	Passthrough bool `mapstructure:"passthrough"`
 
-	// PodIPDebugging enables verbose logs so it could be verified
-	// how the Pod IP is being assigned when doing metadata tagging
-	PodIPDebugging bool `mapstructure:"pod_ip_debugging"`
+	// OwnerLookupEnabled enables pulling owner data, which triggers
+	// additional calls to Kubernetes API
+	OwnerLookupEnabled bool `mapstructure:"owner_lookup_enabled"`
 
 	// Extract section allows specifying extraction rules to extract
 	// data from k8s pod specs
