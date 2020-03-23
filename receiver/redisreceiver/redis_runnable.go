@@ -68,12 +68,12 @@ func (r *redisRunnable) Run() error {
 		return err
 	}
 	now := time.Now()
-	metrics, warnings := buildFixedProtoMetrics(info, r.redisMetrics, now)
+	metrics, warnings := info.buildFixedProtoMetrics(r.redisMetrics, now)
 	if warnings != nil {
 		r.logger.Warn("errors parsing redis string", zap.Errors("parsing errors", warnings))
 	}
 
-	keyspaceMetrics, warnings := buildKeyspaceProtoMetrics(info, now)
+	keyspaceMetrics, warnings := info.buildKeyspaceProtoMetrics(now)
 	metrics = append(metrics, keyspaceMetrics...)
 	if warnings != nil {
 		r.logger.Warn("errors parsing keyspace string", zap.Errors("parsing errors", warnings))

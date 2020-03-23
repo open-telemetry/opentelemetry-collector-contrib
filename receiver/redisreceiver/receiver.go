@@ -26,7 +26,7 @@ import (
 
 type redisReceiver struct {
 	logger         *zap.Logger
-	config         *Config
+	config         *config
 	consumer       consumer.MetricsConsumer
 	intervalRunner *interval.Runner
 }
@@ -35,7 +35,7 @@ var _ receiver.MetricsReceiver = (*redisReceiver)(nil)
 
 func newRedisReceiver(
 	logger *zap.Logger,
-	config *Config,
+	config *config,
 	consumer consumer.MetricsConsumer,
 ) *redisReceiver {
 	return &redisReceiver{

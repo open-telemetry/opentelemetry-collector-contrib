@@ -27,23 +27,26 @@ type client interface {
 	delimiter() string
 }
 
-// Wraps a real redis client, implements client interface.
+// Wraps a real Redis client, implements `client` interface.
 type redisClient struct {
 	client *redis.Client
 }
 
 var _ client = (*redisClient)(nil)
 
+// Creates a new real Redis client from the passed-in redis.Options.
 func newRedisClient(options *redis.Options) client {
 	return &redisClient{
 		client: redis.NewClient(options),
 	}
 }
 
+// Redis strings are CRLF delimited.
 func (c *redisClient) delimiter() string {
 	return "\r\n"
 }
 
+// Retrieve Redis INFO. We retrieve all of the 'sections'.
 func (c *redisClient) retrieveInfo() (string, error) {
 	return c.client.Info().Result()
 }

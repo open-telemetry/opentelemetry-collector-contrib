@@ -23,7 +23,8 @@ import (
 
 func TestBuildSingleProtoMetric_PointTimestamp(t *testing.T) {
 	now := time.Now()
-	metric, err := buildSingleProtoMetric(uptimeInSeconds(), "42", now)
+	uptimeMetric := uptimeInSeconds()
+	metric, err := uptimeMetric.parseMetric("42", now)
 	require.Nil(t, err)
 	ts := metric.Timeseries[0]
 	pt := ts.Points[0]
@@ -33,7 +34,8 @@ func TestBuildSingleProtoMetric_PointTimestamp(t *testing.T) {
 }
 
 func TestBuildSingleProtoMetric_Labels(t *testing.T) {
-	metric, err := buildSingleProtoMetric(usedCpuSys(), "42", time.Time{})
+	cpuMetric := usedCPUSys()
+	metric, err := cpuMetric.parseMetric("42", time.Time{})
 	require.Nil(t, err)
 	require.Equal(t, 1, len(metric.MetricDescriptor.LabelKeys))
 	key := metric.MetricDescriptor.LabelKeys[0].Key

@@ -33,24 +33,23 @@ type redisMetric struct {
 	mdType            metricspb.MetricDescriptor_Type
 }
 
-// Parse a numeric string to build a proto Metric based on the passed-in redisMetric.
-// The passed-in time is applied to the Point.
-func buildSingleProtoMetric(
-	redisMetric *redisMetric,
+// Parse a numeric string to build a proto Metric based on this redisMetric. The
+// passed-in time is applied to the Point.
+func (m *redisMetric) parseMetric(
 	strVal string,
 	t time.Time,
 ) (*metricspb.Metric, error) {
-	pt, err := parsePoint(redisMetric, strVal)
+	pt, err := m.parsePoint(strVal)
 	if err != nil {
 		return nil, err
 	}
-	pbMetric := newProtoMetric(redisMetric, pt, t)
+	pbMetric := newProtoMetric(m, pt, t)
 	return pbMetric, nil
 }
 
 // Parse a numeric string to build a Point.
-func parsePoint(redisMetric *redisMetric, strVal string) (*metricspb.Point, error) {
-	switch redisMetric.mdType {
+func (m *redisMetric) parsePoint(strVal string) (*metricspb.Point, error) {
+	switch m.mdType {
 	case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
 		return strToInt64Point(strVal)
 	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
@@ -63,5 +62,5 @@ func parsePoint(redisMetric *redisMetric, strVal string) (*metricspb.Point, erro
 	// unexpected type is found, the only effect will be that that one metric will be missing
 	// from the output, in which case the error below is treated as a warning and is logged. Metrics
 	// collection shouldn't be adversely affected.
-	return nil, fmt.Errorf("unexpected point type %v", redisMetric.mdType)
+	return nil, fmt.Errorf("unexpected point type %v", m.mdType)
 }

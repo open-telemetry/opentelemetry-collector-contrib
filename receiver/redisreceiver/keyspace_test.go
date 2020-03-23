@@ -26,5 +26,5 @@ func TestParseKeyspace(t *testing.T) {
 	require.Equal(t, "9", ks.db)
 	require.Equal(t, 1, ks.keys)
 	require.Equal(t, 2, ks.expires)
-	require.Equal(t, 3, ks.avgTtl)
+	require.Equal(t, 3, ks.avgTTL)
 }

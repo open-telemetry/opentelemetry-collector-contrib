@@ -12,32 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package interval is a work in progress. Later versions may support parallel
+// execution.
 package interval
 
 import "time"
 
-// Runner takes a list of `intervalRunnable`s,
-// calls setup() on all of them and then calls run() on
-// all of them. It currently does so sequentially and
-// within the same goroutine.
+// Runner takes a list of `Runnable`s, calls Setup() on each of them and then
+// calls Run() on each of them, using a Ticker, sequentially and within the same
+// goroutine. Call Stop() to turn off the Ticker.
 type Runner struct {
 	runnables []Runnable
 	ticker    *time.Ticker
 }
 
-// Creates a new Runner. Pass in a duration (time between calls)
-// and one or more runnables to be run on the defined interval.
-func NewRunner(
-	interval time.Duration,
-	runnables ...Runnable,
-) *Runner {
+// NewRunner creates a new interval runner. Pass in a duration (time between
+// calls) and one or more Runnables to be run on the defined interval.
+func NewRunner(interval time.Duration, runnables ...Runnable) *Runner {
 	return &Runner{
 		runnables: runnables,
 		ticker:    time.NewTicker(interval),
 	}
 }
 
-// Runnables must implement this interface.
+// Runnable must be implemented by types passed into the Runner constructor.
 type Runnable interface {
 	// called once at Start() time
 	Setup() error
@@ -46,7 +44,8 @@ type Runnable interface {
 	Run() error
 }
 
-// Call this to setup() then have
+// Start kicks off this Runner. Calls Setup() and Run() on the passed-in
+// Runnables.
 func (r *Runner) Start() error {
 	err := r.setup()
 	if err != nil {
@@ -81,6 +80,7 @@ func (r *Runner) run() error {
 	return nil
 }
 
+// Stop turns off this Runner's ticker.
 func (r *Runner) Stop() {
 	r.ticker.Stop()
 }

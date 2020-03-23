@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-type Config struct {
+type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// The duration between Redis metric fetches.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`

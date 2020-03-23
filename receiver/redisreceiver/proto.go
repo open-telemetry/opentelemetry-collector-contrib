@@ -15,8 +15,6 @@
 package redisreceiver
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -25,52 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
 
-// Builds proto metrics from the combination of a metrics map and a redisMetricCollection list. These are the
-// fixed, non keyspace metrics.
-func buildFixedProtoMetrics(redisInfo map[string]string, metrics []*redisMetric, t time.Time) ([]*metricspb.Metric, []error) {
-	var warnings []error
-	var protoMetrics []*metricspb.Metric
-	for _, redisMetric := range metrics {
-		strVal, ok := redisInfo[redisMetric.key]
-		if !ok {
-			warnings = append(warnings, fmt.Errorf("info key not found: %v", redisMetric.key))
-			continue
-		}
-		if len(strVal) == 0 {
-			continue
-		}
-		protoMetric, parsingError := buildSingleProtoMetric(redisMetric, strVal, t)
-		if parsingError != nil {
-			warnings = append(warnings, parsingError)
-			continue
-		}
-		protoMetrics = append(protoMetrics, protoMetric)
-	}
-	return protoMetrics, warnings
-}
-
-// Builds proto metrics from any 'keyspace' metrics in Redis INFO:
-// e.g. "db0:keys=1,expires=2,avg_ttl=3"
-func buildKeyspaceProtoMetrics(redisInfo map[string]string, t time.Time) ([]*metricspb.Metric, []error) {
-	var warnings []error
-	var out []*metricspb.Metric
-	const RedisMaxDbs = 16
-	for i := 0; i < RedisMaxDbs; i++ {
-		key := "db" + strconv.Itoa(i)
-		str, ok := redisInfo[key]
-		if !ok {
-			break
-		}
-		keyspace, parsingError := parseKeyspaceString(i, str)
-		if parsingError != nil {
-			warnings = append(warnings, parsingError)
-			continue
-		}
-		keyspaceMetrics := buildKeyspaceTriplet(keyspace, t)
-		out = append(out, keyspaceMetrics...)
-	}
-	return out, warnings
-}
+// Helper functions that produce protobuf
 
 func newMetricsData(protoMetrics []*metricspb.Metric) *consumerdata.MetricsData {
 	return &consumerdata.MetricsData{
@@ -86,7 +39,7 @@ func buildKeyspaceTriplet(k *keyspace, t time.Time) []*metricspb.Metric {
 	return []*metricspb.Metric{
 		buildKeyspaceKeysMetric(k, t),
 		buildKeyspaceExpiresMetric(k, t),
-		buildKeyspaceTtlMetric(k, t),
+		buildKeyspaceTTLMetric(k, t),
 	}
 }
 
@@ -110,14 +63,14 @@ func buildKeyspaceExpiresMetric(k *keyspace, t time.Time) *metricspb.Metric {
 	return newProtoMetric(ttlRedisMetric, ttlPt, t)
 }
 
-func buildKeyspaceTtlMetric(k *keyspace, t time.Time) *metricspb.Metric {
+func buildKeyspaceTTLMetric(k *keyspace, t time.Time) *metricspb.Metric {
 	ttlRedisMetric := &redisMetric{
 		name:   "redis/db/avg_ttl",
 		units:  "ms",
 		labels: map[string]string{"db": k.db},
 		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
 	}
-	ttlPt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.avgTtl)}}
+	ttlPt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.avgTTL)}}
 	return newProtoMetric(ttlRedisMetric, ttlPt, t)
 }
 

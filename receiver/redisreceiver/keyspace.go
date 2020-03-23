@@ -25,7 +25,7 @@ type keyspace struct {
 	db      string
 	keys    int
 	expires int
-	avgTtl  int
+	avgTTL  int
 }
 
 // Turns a keyspace value (the part after the colon
@@ -46,7 +46,7 @@ func parseKeyspaceString(db int, str string) (*keyspace, error) {
 		case "expires":
 			out.expires = val
 		case "avg_ttl":
-			out.avgTtl = val
+			out.avgTTL = val
 		}
 	}
 	return &out, nil

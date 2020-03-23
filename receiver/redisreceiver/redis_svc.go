@@ -34,7 +34,7 @@ func newRedisSvc(client client) *redisSvc {
 }
 
 // Calls the Redis INFO command on the client and returns a map.
-func (p redisSvc) info() (map[string]string, error) {
+func (p redisSvc) info() (info, error) {
 	str, err := p.client.retrieveInfo()
 	if err != nil {
 		return nil, err

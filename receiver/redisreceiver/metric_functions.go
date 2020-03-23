@@ -24,9 +24,9 @@ func getDefaultRedisMetrics() []*redisMetric {
 	return []*redisMetric{
 		uptimeInSeconds(),
 
-		usedCpuSys(),
-		usedCpuSysChildren(),
-		usedCpuUser(),
+		usedCPUSys(),
+		usedCPUSysChildren(),
+		usedCPUUser(),
 
 		connectedClients(),
 
@@ -81,7 +81,7 @@ func uptimeInSeconds() *redisMetric {
 	}
 }
 
-func usedCpuSys() *redisMetric {
+func usedCPUSys() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys",
 		name:   "redis/cpu/time",
@@ -91,7 +91,7 @@ func usedCpuSys() *redisMetric {
 	}
 }
 
-func usedCpuUser() *redisMetric {
+func usedCPUUser() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_user",
 		name:   "redis/cpu/time",
@@ -101,7 +101,7 @@ func usedCpuUser() *redisMetric {
 	}
 }
 
-func usedCpuSysChildren() *redisMetric {
+func usedCPUSysChildren() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys_children",
 		name:   "redis/cpu/time",

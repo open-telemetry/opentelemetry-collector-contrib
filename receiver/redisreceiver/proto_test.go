@@ -42,7 +42,7 @@ func TestUptimeInSeconds(t *testing.T) {
 }
 
 func TestUsedCpuSys(t *testing.T) {
-	md := getMetricData(t, usedCpuSys())
+	md := getMetricData(t, usedCPUSys())
 	metric := md.Metrics[0]
 	require.Equal(t, metricspb.MetricDescriptor_GAUGE_DOUBLE, metric.MetricDescriptor.Type)
 	require.Equal(t, "s", metric.MetricDescriptor.Unit)
@@ -51,7 +51,7 @@ func TestUsedCpuSys(t *testing.T) {
 
 func TestMissingMetricValue(t *testing.T) {
 	redisMetrics := []*redisMetric{{key: "config_file"}}
-	_, err, warnings := fetchMetrics(redisMetrics)
+	_, warnings, err := fetchMetrics(redisMetrics)
 	require.Nil(t, err)
 	// treat a missing value as not worthy of a warning
 	require.Nil(t, warnings)
@@ -59,14 +59,14 @@ func TestMissingMetricValue(t *testing.T) {
 
 func TestMissingMetric(t *testing.T) {
 	redisMetrics := []*redisMetric{{key: "foo"}}
-	_, err, warnings := fetchMetrics(redisMetrics)
+	_, warnings, err := fetchMetrics(redisMetrics)
 	require.Nil(t, err)
 	require.Equal(t, 1, len(warnings))
 }
 
 func TestAllMetrics(t *testing.T) {
 	redisMetrics := getDefaultRedisMetrics()
-	protoMetrics, err, warnings := fetchMetrics(redisMetrics)
+	protoMetrics, warnings, err := fetchMetrics(redisMetrics)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	require.Equal(t, len(redisMetrics), len(protoMetrics))
@@ -75,7 +75,7 @@ func TestAllMetrics(t *testing.T) {
 func TestKeyspaceMetrics(t *testing.T) {
 	svc := newRedisSvc(newFakeClient())
 	info, _ := svc.info()
-	m, err := buildKeyspaceProtoMetrics(info, time.Time{})
+	m, err := info.buildKeyspaceProtoMetrics(time.Time{})
 	require.Nil(t, err)
 
 	metric := m[0]
@@ -100,11 +100,14 @@ func TestKeyspaceMetrics(t *testing.T) {
 	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 3}, metric.Timeseries[0].Points[0].Value)
 }
 
-func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, error, []error) {
+func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, []error, error) {
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
-	protoMetrics, warnings := buildFixedProtoMetrics(info, redisMetrics, time.Time{})
-	return protoMetrics, err, warnings
+	if err != nil {
+		return nil, nil, err
+	}
+	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, time.Time{})
+	return protoMetrics, warnings, nil
 }
 
 func getProtoMetric(t *testing.T, redisMetric *redisMetric) *metricspb.Metric {
@@ -114,19 +117,22 @@ func getProtoMetric(t *testing.T, redisMetric *redisMetric) *metricspb.Metric {
 }
 
 func getMetricData(t *testing.T, metric *redisMetric) *consumerdata.MetricsData {
-	md, err, warnings := getMetricDataErr(metric)
+	md, warnings, err := getMetricDataErr(metric)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	return md
 }
 
-func getMetricDataErr(metric *redisMetric) (*consumerdata.MetricsData, error, []error) {
+func getMetricDataErr(metric *redisMetric) (*consumerdata.MetricsData, []error, error) {
 	redisMetrics := []*redisMetric{metric}
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
-	protoMetrics, warnings := buildFixedProtoMetrics(info, redisMetrics, time.Time{})
+	if err != nil {
+		return nil, nil, err
+	}
+	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, time.Time{})
 	md := newMetricsData(protoMetrics)
-	return md, err, warnings
+	return md, warnings, nil
 }
 
 func requireIntPtEqual(t *testing.T, i int64, metric *metricspb.Metric) {

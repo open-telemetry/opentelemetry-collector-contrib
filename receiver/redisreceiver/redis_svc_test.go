@@ -20,12 +20,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newFakeApiParser() *redisSvc {
+func newFakeAPIParser() *redisSvc {
 	return newRedisSvc(fakeClient{})
 }
 
 func TestParser(t *testing.T) {
-	s := newFakeApiParser()
+	s := newFakeAPIParser()
 	info, err := s.info()
 	require.Nil(t, err)
 	require.Equal(t, 123, len(info))

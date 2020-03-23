@@ -30,21 +30,26 @@ const (
 
 var _ receiver.Factory = &Factory{}
 
+// Factory creates a RedisReceiver.
 type Factory struct {
 }
 
+// Type returns the type of this factory, "redis".
 func (f Factory) Type() string {
 	return typeStr
 }
 
+// CustomUnmarshaler creates a custom unmarshaler.
 func (f Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 	return nil
 }
 
+// CreateDefaultConfig creates a default config.
 func (f Factory) CreateDefaultConfig() configmodels.Receiver {
-	return &Config{}
+	return &config{}
 }
 
+// CreateTraceReceiver creates a trace Receiver. Not supported for now.
 func (f Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
@@ -55,10 +60,11 @@ func (f Factory) CreateTraceReceiver(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
+// CreateMetricsReceiver creates a Redis metrics receiver.
 func (f Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (receiver.MetricsReceiver, error) {
-	return newRedisReceiver(logger, cfg.(*Config), consumer), nil
+	return newRedisReceiver(logger, cfg.(*config), consumer), nil
 }
