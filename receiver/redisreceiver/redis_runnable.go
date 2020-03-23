@@ -18,9 +18,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 )
 
 var _ interval.Runnable = (*redisRunnable)(nil)

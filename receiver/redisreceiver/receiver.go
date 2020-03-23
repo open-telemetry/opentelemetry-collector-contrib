@@ -16,11 +16,12 @@ package redisreceiver
 
 import (
 	"github.com/go-redis/redis/v7"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 )
 
 type redisReceiver struct {
