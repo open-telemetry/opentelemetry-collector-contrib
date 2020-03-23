@@ -11,7 +11,7 @@ import sys
 
 import pytest
 
-PY_DIR_PATTERN = re.compile(r"^py[23][0-9]$")
+PY_DIR_PATTERN = re.compile(r"^py3[0-9]$")
 
 
 # Determine if the folder should be ignored
@@ -27,7 +27,6 @@ def pytest_ignore_collect(path, config):
     Example::
 
         File: tests/contrib/vertica/py35/test.py
-        Python 2.7: Skip
         Python 3.4: Skip
         Python 3.5: Collect
         Python 3.6: Collect

@@ -57,7 +57,6 @@ PATCH_MODULES = {
     # Ignore some web framework integrations that might be configured explicitly in code
     'django': False,
     'falcon': False,
-    'pylons': False,
     'pyramid': False,
 
     # Standard library modules off by default

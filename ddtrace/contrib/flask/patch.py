@@ -156,13 +156,6 @@ def patch():
         for signal in signals:
             module = 'flask'
 
-            # v0.9 missed importing `appcontext_tearing_down` in `flask/__init__.py`
-            #  https://github.com/pallets/flask/blob/0.9/flask/__init__.py#L35-L37
-            #  https://github.com/pallets/flask/blob/0.9/flask/signals.py#L52
-            # DEV: Version 0.9 doesn't have a patch version
-            if flask_version <= (0, 9) and signal == 'appcontext_tearing_down':
-                module = 'flask.signals'
-
             # DEV: Patch `receivers_for` instead of `connect` to ensure we don't mess with `disconnect`
             _w(module, '{}.receivers_for'.format(signal), traced_signal_receivers_for(signal))
 
@@ -240,13 +233,6 @@ def unpatch():
     for prop in props:
         # Handle 'flask.request_started.receivers_for'
         obj = flask
-
-        # v0.9.0 missed importing `appcontext_tearing_down` in `flask/__init__.py`
-        #  https://github.com/pallets/flask/blob/0.9/flask/__init__.py#L35-L37
-        #  https://github.com/pallets/flask/blob/0.9/flask/signals.py#L52
-        # DEV: Version 0.9 doesn't have a patch version
-        if flask_version <= (0, 9) and prop == 'appcontext_tearing_down.receivers_for':
-            obj = flask.signals
 
         if '.' in prop:
             attr, _, prop = prop.partition('.')

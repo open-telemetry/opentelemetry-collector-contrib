@@ -31,7 +31,7 @@ Available environment variables:
     DATADOG_TRACE_AGENT_PORT=8126: override the port that the default tracer will submit to (default: 8126)
     DATADOG_SERVICE_NAME : override the service name to be used for this program (no default)
                            This value is passed through when setting up middleware for web framework integrations.
-                           (e.g. pylons, flask, django)
+                           (e.g. flask, django)
                            For tracing without a web integration, prefer setting the service name in code.
     DATADOG_PRIORITY_SAMPLING=true|false : (default: false): enables Priority Sampling.
 """  # noqa: E501

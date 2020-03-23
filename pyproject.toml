@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 120
-target_version = ['py27', 'py34', 'py35', 'py36', 'py37', 'py38']
+target_version = ['py34', 'py35', 'py36', 'py37', 'py38']
 exclude = '''
 (
   \.eggs
@@ -70,7 +70,6 @@ exclude = '''
       | mysqldb
       | psycopg
       | pylibmc
-      | pylons
       | pymemcache
       | pymongo
       | pymysql
@@ -140,7 +139,6 @@ exclude = '''
       | patch.py
       | psycopg
       | pylibmc
-      | pylons
       | pymemcache
       | pymongo
       | pymysql

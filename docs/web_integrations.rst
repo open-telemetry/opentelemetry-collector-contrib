@@ -59,14 +59,6 @@ Molten
 
 .. automodule:: ddtrace.contrib.molten
 
-.. _pylons:
-
-Pylons
-^^^^^^
-
-.. automodule:: ddtrace.contrib.pylons
-
-
 .. _pyramid:
 
 Pyramid

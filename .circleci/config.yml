@@ -202,17 +202,6 @@ jobs:
       - *persist_to_workspace_step
       - *save_cache_step
 
-  pylons:
-    docker:
-      - *test_runner
-    resource_class: *resource_class
-    steps:
-      - checkout
-      - *restore_cache_step
-      - run: scripts/run-tox-scenario '^pylons_contrib-'
-      - *persist_to_workspace_step
-      - *save_cache_step
-
   aiohttp:
     docker:
       - *test_runner
@@ -318,7 +307,7 @@ jobs:
     steps:
       - checkout
       - *restore_cache_step
-      - run: tox -e 'falcon_contrib{,_autopatch}-{py27,py34,py35,py36}-falcon{10,11,12,13,14}' --result-json /tmp/falcon.results
+      - run: tox -e 'falcon_contrib{,_autopatch}-{py34,py35,py36}-falcon{10,11,12,13,14}' --result-json /tmp/falcon.results
       - *persist_to_workspace_step
       - *save_cache_step
 
@@ -720,7 +709,7 @@ jobs:
       - run:
           command: |
             mkdir -p /tmp/test-reports
-            tox -e 'benchmarks-{py27,py34,py35,py36,py37}' --result-json /tmp/benchmarks.results -- --benchmark-storage=file:///tmp/test-reports/ --benchmark-autosave
+            tox -e 'benchmarks-{py34,py35,py36,py37}' --result-json /tmp/benchmarks.results -- --benchmark-storage=file:///tmp/test-reports/ --benchmark-autosave
       - store_test_results:
           path: /tmp/test-reports
       - store_artifacts:
@@ -985,10 +974,6 @@ workflows:
           requires:
             - flake8
             - black
-      - pylons:
-          requires:
-            - flake8
-            - black
       - pymemcache:
           requires:
             - flake8
@@ -1097,7 +1082,6 @@ workflows:
             - opentracer
             - psycopg
             - pylibmc
-            - pylons
             - pymemcache
             - pymongo
             - pymysql

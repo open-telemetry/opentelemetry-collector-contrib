@@ -43,7 +43,6 @@ EXTRA_PATCHED_MODULES = {
     "django": True,
     "falcon": True,
     "flask": True,
-    "pylons": True,
     "pyramid": True,
 }
 

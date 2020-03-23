@@ -88,7 +88,7 @@ documentation][visualization docs].
 
 # enum34 is an enum backport for earlier versions of python
 # funcsigs backport required for vendored debtcollector
-install_requires = ["psutil>=5.0.0", "enum34; python_version<'3.4'", "funcsigs>=1.0.0;python_version=='2.7'"]
+install_requires = ["psutil>=5.0.0", "enum34; python_version<'3.4'"]
 
 # Base `setup()` kwargs without any C-extension registering
 setup_kwargs = dict(
@@ -113,7 +113,6 @@ setup_kwargs = dict(
     entry_points={"console_scripts": ["ddtrace-run = ddtrace.commands.ddtrace_run:main"]},
     classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",

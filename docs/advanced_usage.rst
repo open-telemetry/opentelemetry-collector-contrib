@@ -52,8 +52,6 @@ Supported web frameworks:
 +-------------------+---------+
 | :ref:`flask`      | True    |
 +-------------------+---------+
-| :ref:`pylons`     | True    |
-+-------------------+---------+
 | :ref:`pyramid`    | True    |
 +-------------------+---------+
 | :ref:`requests`   | True    |
@@ -197,7 +195,6 @@ Enabling APM events for all web frameworks can be accomplished by setting the en
 * :ref:`falcon`
 * :ref:`flask`
 * :ref:`molten`
-* :ref:`pylons`
 * :ref:`pyramid`
 * :ref:`requests`
 * :ref:`tornado`
@@ -237,8 +234,6 @@ For most libraries, APM events can be enabled with the environment variable ``DD
 | :ref:`molten`        | ``DD_MOLTEN_ANALYTICS_ENABLED``        |
 +----------------------+----------------------------------------+
 | :ref:`pylibmc`       | ``DD_PYLIBMC_ANALYTICS_ENABLED``       |
-+----------------------+----------------------------------------+
-| :ref:`pylons`        | ``DD_PYLONS_ANALYTICS_ENABLED``        |
 +----------------------+----------------------------------------+
 | :ref:`pymemcache`    | ``DD_PYMEMCACHE_ANALYTICS_ENABLED``    |
 +----------------------+----------------------------------------+
@@ -564,7 +559,7 @@ The available environment variables for ``ddtrace-run`` are:
   the tracer
 * ``DATADOG_SERVICE_NAME`` (no default): override the service name to be used
   for this program. This value is passed through when setting up middleware for
-  web framework integrations (e.g. pylons, flask, django). For tracing without a
+  web framework integrations (e.g. flask, django). For tracing without a
   web integration, prefer setting the service name in code.
 * ``DATADOG_PATCH_MODULES=module:patch,module:patch...`` e.g.
   ``boto:true,redis:false``: override the modules patched for this execution of
