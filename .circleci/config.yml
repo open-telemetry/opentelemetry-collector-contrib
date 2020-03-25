@@ -27,7 +27,7 @@ jobs:
       - checkout
       - run:
           name: Install bazzar
-          command: sudo apt-get install bzr -y
+          command: sudo apt update && sudo apt-get install bzr -y
       - run:
           name: Install tools
           command: make install-tools
