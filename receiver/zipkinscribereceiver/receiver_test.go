@@ -37,7 +37,7 @@ func TestNewReceiver(t *testing.T) {
 	type args struct {
 		addr         string
 		category     string
-		nextConsumer consumer.TraceConsumer
+		nextConsumer consumer.TraceConsumerOld
 	}
 	tests := []struct {
 		name    string
@@ -208,7 +208,7 @@ func newMockTraceSink(numReceiveTraceDataCount int) *mockTraceSink {
 	}
 }
 
-var _ consumer.TraceConsumer = (*mockTraceSink)(nil)
+var _ consumer.TraceConsumerOld = (*mockTraceSink)(nil)
 
 func (m *mockTraceSink) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
 	m.receivedData = append(m.receivedData, td)

@@ -20,10 +20,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +40,7 @@ const (
 type Factory struct {
 }
 
-var _ receiver.Factory = &Factory{}
+var _ component.ReceiverFactoryOld = &Factory{}
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *Factory) Type() string {
@@ -48,7 +48,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
@@ -70,8 +70,8 @@ func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
@@ -79,8 +79,8 @@ func (f *Factory) CreateTraceReceiver(
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	c := cfg.(*Config)
 	c.Encoding = strings.ToLower(c.Encoding)
 	// CollectD receiver only supports JSON encoding. We expose a config option

@@ -30,7 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -58,7 +57,7 @@ type sapmReceiver struct {
 	config *Config
 	server *http.Server
 
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 
 	// defaultResponse is a placeholder. For now this receiver returns an empty sapm response.
 	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
@@ -209,11 +208,11 @@ func (sr *sapmReceiver) Shutdown() error {
 	return err
 }
 
-// this validates at compile time that sapmReceiver implements the receiver.TraceReceiver interface
-var _ receiver.TraceReceiver = (*sapmReceiver)(nil)
+// this validates at compile time that sapmReceiver implements the component.TraceReceiver interface
+var _ component.TraceReceiver = (*sapmReceiver)(nil)
 
 // New creates a sapmReceiver that receives SAPM over http
-func New(ctx context.Context, logger *zap.Logger, config *Config, nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+func New(ctx context.Context, logger *zap.Logger, config *Config, nextConsumer consumer.TraceConsumerOld) (component.TraceReceiver, error) {
 	// build the response message
 	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
 	if err != nil {

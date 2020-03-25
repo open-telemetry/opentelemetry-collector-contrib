@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/lightstep/opentelemetry-exporter-go/lightstep"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.opentelemetry.io/otel/api/core"
@@ -30,7 +30,7 @@ type LightStepExporter struct {
 	exporter *lightstep.Exporter
 }
 
-func newLightStepTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
+func newLightStepTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
 	exporter, err := lightstep.NewExporter(
 		lightstep.WithAccessToken(cfg.AccessToken),
 		lightstep.WithHost(cfg.SatelliteHost),
