@@ -24,14 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
 )
 
+var _ receiver.MetricsReceiver = (*redisReceiver)(nil)
+
 type redisReceiver struct {
 	logger         *zap.Logger
 	config         *config
 	consumer       consumer.MetricsConsumer
 	intervalRunner *interval.Runner
 }
-
-var _ receiver.MetricsReceiver = (*redisReceiver)(nil)
 
 func newRedisReceiver(
 	logger *zap.Logger,

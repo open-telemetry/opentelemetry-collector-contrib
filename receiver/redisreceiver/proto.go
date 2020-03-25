@@ -76,14 +76,14 @@ func buildKeyspaceTTLMetric(k *keyspace, t time.Time) *metricspb.Metric {
 
 // Create new protobuf Metric.
 // Arguments:
-//   * redisMetric -- the fixed metadata to build the pb metric
-//   * pt -- the Point value: e.g. a Point_Int64Value
+//   * redisMetric -- the fixed metadata to build the protobuf metric
+//   * pt -- the protobuf Point to be wrapped
 //   * currTime -- the timestamp to be put on the Point (not on the timeseries)
 func newProtoMetric(redisMetric *redisMetric, pt *metricspb.Point, currTime time.Time) *metricspb.Metric {
-	// for cumulative types, set the start time to a non-nil value
-	var startTime *timestamp.Timestamp = nil
-	switch redisMetric.mdType {
-	case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
+	var startTime *timestamp.Timestamp
+
+	if redisMetric.mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
+		redisMetric.mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE {
 		startTime = &timestamp.Timestamp{} // todo: not sure about this
 	}
 

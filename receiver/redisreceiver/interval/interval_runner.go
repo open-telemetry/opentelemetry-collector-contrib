@@ -59,8 +59,8 @@ func (r *Runner) Start() error {
 }
 
 func (r *Runner) setup() error {
-	for _, r := range r.runnables {
-		err := r.Setup()
+	for _, runnable := range r.runnables {
+		err := runnable.Setup()
 		if err != nil {
 			return err
 		}

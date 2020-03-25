@@ -19,6 +19,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/require"
 )
@@ -98,6 +99,27 @@ func TestKeyspaceMetrics(t *testing.T) {
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
 	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
 	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 3}, metric.Timeseries[0].Points[0].Value)
+}
+
+func TestNewProtoMetric(t *testing.T) {
+	zeroTs := &timestamp.Timestamp{}
+	tests := []struct {
+		name     string
+		mdType   metricspb.MetricDescriptor_Type
+		expected *timestamp.Timestamp
+	}{
+		{"cumulative int", metricspb.MetricDescriptor_CUMULATIVE_INT64, zeroTs},
+		{"cumulative double", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, zeroTs},
+		{"gauge int", metricspb.MetricDescriptor_GAUGE_INT64, nil},
+		{"gauge double", metricspb.MetricDescriptor_GAUGE_DOUBLE, nil},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			m := &redisMetric{mdType: test.mdType}
+			proto := newProtoMetric(m, &metricspb.Point{}, time.Time{})
+			require.Equal(t, test.expected, proto.Timeseries[0].StartTimestamp)
+		})
+	}
 }
 
 func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, []error, error) {
