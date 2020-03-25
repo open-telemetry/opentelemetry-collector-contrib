@@ -21,10 +21,12 @@ type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	// AccessToken is your project access token in LightStep.
 	AccessToken string `mapstructure:"access_token"`
-	// SatelliteHost is the satellite pool URL.
+	// SatelliteHost is the satellite pool hostname.
 	SatelliteHost string `mapstructure:"satellite_host"`
 	// SatellitePort is the satellite pool port.
 	SatellitePort int `mapstructure:"satellite_port"`
 	// ServiceName is the LightStep service name for your spans.
 	ServiceName string `mapstructure:"service_name"`
+	// PlainText is true for plain text satellite pools.
+	PlainText bool `mapstructure:"plain_text"`
 }
