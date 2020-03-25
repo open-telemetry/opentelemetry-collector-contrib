@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/honeycombio/opentelemetry-exporter-go/honeycomb"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.opentelemetry.io/otel/api/core"
@@ -31,7 +31,7 @@ type HoneycombExporter struct {
 	exporter *honeycomb.Exporter
 }
 
-func newHoneycombTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
+func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
 	exporter, err := honeycomb.NewExporter(honeycomb.Config{
 		APIKey: cfg.APIKey,
 	},

@@ -31,7 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
 	"go.opencensus.io/trace"
@@ -71,26 +70,26 @@ var (
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 )
 
-// sfxReceiver implements the receiver.MetricsReceiver for SignalFx metric protocol.
+// sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
 type sfxReceiver struct {
 	sync.Mutex
 	logger       *zap.Logger
 	config       *Config
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.MetricsConsumerOld
 	server       *http.Server
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 }
 
-var _ receiver.MetricsReceiver = (*sfxReceiver)(nil)
+var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer

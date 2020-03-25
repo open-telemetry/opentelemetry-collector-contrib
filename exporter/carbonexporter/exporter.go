@@ -21,13 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 )
 
 // New returns a new Carbon exporter.
-func New(config Config) (exporter.MetricsExporter, error) {
+func New(config Config) (component.MetricsExporterOld, error) {
 	effectiveConfig := setDefaults(config)
 
 	// Resolve TCP address just to ensure that it is a valid one. It is better

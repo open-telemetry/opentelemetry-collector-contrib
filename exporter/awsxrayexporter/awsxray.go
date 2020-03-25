@@ -18,18 +18,18 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
 )
 
-// NewTraceExporter creates an exporter.TraceExporter that converts to an X-Ray PutTraceSegments
+// NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (exporter.TraceExporter, error) {
+func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TraceExporterOld, error) {
 	typeLog := zap.String("type", config.Type())
 	nameLog := zap.String("name", config.Name())
 	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))

@@ -28,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -38,16 +37,16 @@ var (
 	errAlreadyStopped  = errors.New("already stopped")
 )
 
-var _ receiver.MetricsReceiver = (*collectdReceiver)(nil)
+var _ component.MetricsReceiver = (*collectdReceiver)(nil)
 
-// collectdReceiver implements the receiver.MetricsReceiver for CollectD protocol.
+// collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
 type collectdReceiver struct {
 	sync.Mutex
 	logger             *zap.Logger
 	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumer
+	nextConsumer       consumer.MetricsConsumerOld
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -59,7 +58,7 @@ func New(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.MetricsConsumer) (receiver.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}

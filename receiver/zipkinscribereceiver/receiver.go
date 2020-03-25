@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/observability"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
 )
 
@@ -37,9 +36,9 @@ var (
 	errAlreadyStopped  = errors.New("already stopped")
 )
 
-var _ receiver.TraceReceiver = (*scribeReceiver)(nil)
+var _ component.TraceReceiver = (*scribeReceiver)(nil)
 
-// scribeReceiver implements the receiver.TraceReceiver for Zipkin Scribe protocol.
+// scribeReceiver implements the component.TraceReceiver for Zipkin Scribe protocol.
 type scribeReceiver struct {
 	sync.Mutex
 	addr      string
@@ -54,7 +53,7 @@ type scribeReceiver struct {
 func New(
 	addr string,
 	category string,
-	nextConsumer consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld) (component.TraceReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
@@ -123,7 +122,7 @@ type scribeCollector struct {
 	category            string
 	msgDecoder          *base64.Encoding
 	tBinProtocolFactory *thrift.TBinaryProtocolFactory
-	nextConsumer        consumer.TraceConsumer
+	nextConsumer        consumer.TraceConsumerOld
 	defaultCtx          context.Context
 }
 

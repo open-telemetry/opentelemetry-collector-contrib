@@ -18,9 +18,9 @@ package sapmexporter
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -38,7 +38,7 @@ func (se *sapmExporter) Shutdown() error {
 	return nil
 }
 
-func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (exporter.TraceExporter, error) {
+func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
 	err := cfg.validate()
 	if err != nil {
 		return nil, err

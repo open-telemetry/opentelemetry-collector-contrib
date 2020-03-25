@@ -29,9 +29,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
 	"go.uber.org/zap"
@@ -41,7 +41,7 @@ import (
 func New(
 	config *Config,
 	logger *zap.Logger,
-) (exporter.MetricsExporter, error) {
+) (component.MetricsExporterOld, error) {
 
 	if config == nil {
 		return nil, errors.New("nil config")

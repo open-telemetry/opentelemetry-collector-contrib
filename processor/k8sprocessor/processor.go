@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
@@ -35,21 +34,21 @@ const (
 
 type kubernetesprocessor struct {
 	logger          *zap.Logger
-	nextConsumer    consumer.TraceConsumer
+	nextConsumer    consumer.TraceConsumerOld
 	kc              kube.Client
 	passthroughMode bool
 	rules           kube.ExtractionRules
 	filters         kube.Filters
 }
 
-// NewTraceProcessor returns a processor.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
+// NewTraceProcessor returns a component.TraceProcessorOld that adds the WithAttributeMap(attributes) to all spans
 // passed to it.
 func NewTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	kubeClient kube.ClientProvider,
 	options ...Option,
-) (processor.TraceProcessor, error) {
+) (component.TraceProcessorOld, error) {
 	kp := &kubernetesprocessor{logger: logger, nextConsumer: nextConsumer}
 	for _, opt := range options {
 		if err := opt(kp); err != nil {
@@ -70,8 +69,8 @@ func NewTraceProcessor(
 	return kp, nil
 }
 
-func (kp *kubernetesprocessor) GetCapabilities() processor.Capabilities {
-	return processor.Capabilities{MutatesConsumedData: true}
+func (kp *kubernetesprocessor) GetCapabilities() component.ProcessorCapabilities {
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 func (kp *kubernetesprocessor) Start(host component.Host) error {

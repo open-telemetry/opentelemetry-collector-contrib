@@ -24,8 +24,8 @@ import (
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"go.uber.org/zap"
@@ -703,7 +703,7 @@ func (exporter *traceExporter) pushTraceData(
 }
 
 // Returns a new instance of the trace exporter
-func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (exporter.TraceExporter, error) {
+func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TraceExporterOld, error) {
 
 	exporter := &traceExporter{
 		config:           config,

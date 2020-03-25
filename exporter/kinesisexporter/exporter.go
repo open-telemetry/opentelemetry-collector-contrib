@@ -20,7 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.uber.org/zap"
@@ -32,7 +31,7 @@ type Exporter struct {
 	logger  *zap.Logger
 }
 
-var _ (exporter.TraceExporter) = (*Exporter)(nil)
+var _ (component.TraceExporterOld) = (*Exporter)(nil)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating

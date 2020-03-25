@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 type mockMetricsConsumer struct {
 }
 
-var _ (consumer.MetricsConsumer) = (*mockMetricsConsumer)(nil)
+var _ (consumer.MetricsConsumerOld) = (*mockMetricsConsumer)(nil)
 
 func (m *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	return nil
