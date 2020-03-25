@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
+	"go.opentelemetry.io/otel/api/core"
 )
 
 // LightStepExporter contains a pointer to a LightStep opentelemetry exporter.
@@ -58,6 +59,8 @@ func (e *LightStepExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	for _, span := range td.Spans {
 		sd, err := lightstep.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
+			lightStepServiceName := core.Key("lightstep.component_name")
+			sd.Attributes = append(sd.Attributes, lightStepServiceName.String(td.Node.ServiceInfo.Name))
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
 		} else {
