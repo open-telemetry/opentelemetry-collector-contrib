@@ -28,13 +28,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
-	"go.opencensus.io/trace"
 	"go.uber.org/zap"
 )
 
@@ -75,36 +74,37 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		return err
 	}
 
+	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), "http", "")
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), "http")
+	numSpans := 0
+
 	// process sapm batches
 	for _, batch := range sapm.Batches {
+
 		// convert the jager batches to OCProto
-		td, err := jaegertranslator.ProtoBatchToOCProto(*batch)
+		// TODO: the translator never returns error change the function signature.
+		td, _ := jaegertranslator.ProtoBatchToOCProto(*batch)
+		numSpans += len(td.Spans)
 		if err != nil {
-			return err
+			continue
 		}
 		td.SourceFormat = "sapm"
 
 		// pass the trace data to the next consumer
 		err = sr.nextConsumer.ConsumeTraceData(ctx, td)
 		if err != nil {
-			return fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
+			err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 		}
-
-		// We MUST unconditionally record metrics from this reception.
-		observability.RecordMetricsForTraceReceiver(ctx, len(batch.Spans), len(batch.Spans)-len(td.Spans))
 	}
 
-	return nil
+	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", numSpans, err)
+	return err
 }
 
 // HTTPHandlerFunction returns an http.HandlerFunc that handles SAPM requests
 func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Request) {
 	// create context with the receiver name from the request context
-	ctx := observability.ContextWithReceiverName(req.Context(), "sapm")
-
-	// trace this request
-	_, span := trace.StartSpan(ctx, traceSource)
-	defer span.End()
+	ctx := obsreport.ReceiverContext(req.Context(), sr.config.Name(), "http", "")
 
 	// handle the request payload
 	err := sr.handleRequest(ctx, req)

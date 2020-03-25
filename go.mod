@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4
-	github.com/open-telemetry/opentelemetry-collector v0.2.6
+	github.com/open-telemetry/opentelemetry-collector v0.2.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0

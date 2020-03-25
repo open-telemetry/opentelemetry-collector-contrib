@@ -53,8 +53,6 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 			}
 			return droppedSpans, err
 		},
-		exporterhelper.WithTracing(true),
-		exporterhelper.WithMetrics(false),
 		exporterhelper.WithShutdown(logger.Sync),
 	)
 }

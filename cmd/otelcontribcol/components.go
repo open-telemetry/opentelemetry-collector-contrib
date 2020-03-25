@@ -48,7 +48,7 @@ func components() (config.Factories, error) {
 		return config.Factories{}, err
 	}
 
-	receivers := []receiver.Factory{
+	receivers := []receiver.BaseFactory{
 		&collectdreceiver.Factory{},
 		&sapmreceiver.Factory{},
 		&zipkinscribereceiver.Factory{},
