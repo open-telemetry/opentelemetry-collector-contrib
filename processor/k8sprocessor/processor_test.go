@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -175,7 +174,7 @@ func TestPassthroughStart(t *testing.T) {
 	p.Shutdown()
 }
 
-func fakeClientFromProcessor(t *testing.T, p processor.TraceProcessor) *kube.FakeClient {
+func fakeClientFromProcessor(t *testing.T, p component.TraceProcessorOld) *kube.FakeClient {
 	kp, ok := p.(*kubernetesprocessor)
 	if !ok {
 		assert.FailNow(t, "could not assert processor %s to kubernetesprocessor", p)

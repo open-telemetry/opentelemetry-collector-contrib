@@ -21,8 +21,8 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
@@ -46,7 +46,7 @@ func (se *stackdriverExporter) Shutdown() error {
 	return nil
 }
 
-func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
 	sde, serr := newStackdriverExporter(cfg)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
@@ -59,7 +59,7 @@ func newStackdriverTraceExporter(cfg *Config) (exporter.TraceExporter, error) {
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
-func newStackdriverMetricsExporter(cfg *Config) (exporter.MetricsExporter, error) {
+func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporterOld, error) {
 	sde, serr := newStackdriverExporter(cfg)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)

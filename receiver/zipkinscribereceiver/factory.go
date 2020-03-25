@@ -17,10 +17,10 @@ package zipkinscribereceiver
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +45,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
@@ -66,8 +66,8 @@ func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 
 	rCfg := cfg.(*Config)
 	return New(rCfg.Endpoint, rCfg.Category, nextConsumer)
@@ -77,7 +77,7 @@ func (f *Factory) CreateTraceReceiver(
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

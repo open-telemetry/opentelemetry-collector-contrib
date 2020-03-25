@@ -41,7 +41,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	defaultConfig := (&Factory{}).CreateDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.MetricsConsumerOld
 	}
 	tests := []struct {
 		name    string

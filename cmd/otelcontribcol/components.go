@@ -15,12 +15,10 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/defaults"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/processor"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
@@ -47,7 +45,7 @@ func components() (config.Factories, error) {
 		return config.Factories{}, err
 	}
 
-	receivers := []receiver.BaseFactory{
+	receivers := []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
 		&sapmreceiver.Factory{},
 		&zipkinscribereceiver.Factory{},
@@ -58,12 +56,12 @@ func components() (config.Factories, error) {
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
-	factories.Receivers, err = receiver.Build(receivers...)
+	factories.Receivers, err = component.MakeReceiverFactoryMap(receivers...)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	exporters := []exporter.Factory{
+	exporters := []component.ExporterFactoryBase{
 		&stackdriverexporter.Factory{},
 		&azuremonitorexporter.Factory{},
 		&signalfxexporter.Factory{},
@@ -77,18 +75,18 @@ func components() (config.Factories, error) {
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
 	}
-	factories.Exporters, err = exporter.Build(exporters...)
+	factories.Exporters, err = component.MakeExporterFactoryMap(exporters...)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	processors := []processor.Factory{
+	processors := []component.ProcessorFactoryBase{
 		&k8sprocessor.Factory{},
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
 	}
-	factories.Processors, err = processor.Build(processors...)
+	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {
 		errs = append(errs, err)
 	}
