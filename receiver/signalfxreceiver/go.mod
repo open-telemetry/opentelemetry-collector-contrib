@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
 
-go 1.12
+go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
