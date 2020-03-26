@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
 
-go 1.12
+go 1.14
 
 require (
 	github.com/aws/aws-sdk-go v1.23.12

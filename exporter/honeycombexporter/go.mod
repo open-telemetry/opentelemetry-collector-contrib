@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexproter
 
-go 1.12
+go 1.14
 
 require (
 	github.com/honeycombio/opentelemetry-exporter-go v0.2.3

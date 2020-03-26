@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib
 
-go 1.13
+go 1.14
 
 require (
 	github.com/client9/misspell v0.3.4

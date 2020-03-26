@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
-go 1.12
+go 1.14
 
 require (
 	github.com/open-telemetry/opentelemetry-collector v0.2.8

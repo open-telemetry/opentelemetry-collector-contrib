@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter
 
-go 1.12
+go 1.14
 
 require (
 	github.com/lightstep/opentelemetry-exporter-go v0.1.5
