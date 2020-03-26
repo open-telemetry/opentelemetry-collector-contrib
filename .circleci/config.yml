@@ -10,7 +10,7 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - publish:
+      - publish-stable:
           requires:
             - build
           filters:
@@ -18,6 +18,14 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9].[0-9].[0-9]+.*/
+      - publish-dev:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+            tags:
+              ignore: /.*/
 
 jobs:
   build:
@@ -28,12 +36,15 @@ jobs:
       - run:
           name: Install bazzar
           command: sudo apt update && sudo apt-get install bzr -y
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
       - run:
           name: Install tools
           command: make install-tools
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
+      - run:
+          name: create modules dir
+          command: mkdir -p /home/circleci/go/pkg/mod
       - run:
           name: Verify
           command: make ci
@@ -41,7 +52,7 @@ jobs:
           name: Build collector 
           command: make otelcontribcol
       - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
           paths:
             - "/home/circleci/go/pkg/mod"
       - store_artifacts:
@@ -52,7 +63,7 @@ jobs:
           root: .
           paths:
             - .
-  publish:
+  publish-stable:
     docker:
       - image: cimg/go:1.14
     steps:
@@ -63,13 +74,35 @@ jobs:
           name: Build image
           command: |
             make docker-otelcontribcol
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:latest
+            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:latest
       - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
       - run:
           name: Push image
           command: |
-            docker push omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker push omnition/opentelemetry-collector-contrib:latest
+            docker push otel/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
+            docker push otel/opentelemetry-collector-contrib:latest
+
+  publish-dev:
+    docker:
+      - image: circleci/golang:1.14
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:${CIRCLE_SHA1:1}
+            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/opentelemetry-collector-contrib-dev:${CIRCLE_SHA1:1}
+            docker push otel/opentelemetry-collector-contrib-dev:latest
