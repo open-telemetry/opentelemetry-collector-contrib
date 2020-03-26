@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexproter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
 
 go 1.12
 
