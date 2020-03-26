@@ -1,1 +1,1 @@
-agent: ../../bin/{{.GOOS}}/otelcontribcol
+agent: ../../bin/{{.GOOS}}_{{.GOARCH}}/otelcontribcol

@@ -70,7 +70,7 @@ install-tools:
 
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)/otelcontribcol $(BUILD_INFO) ./cmd/otelcontribcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/$(GOOS)_$(GOARCH)/otelcontribcol $(BUILD_INFO) ./cmd/otelcontribcol
 
 .PHONY: run
 run:
