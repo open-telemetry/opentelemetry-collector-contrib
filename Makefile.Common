@@ -18,6 +18,7 @@ GOIMPORTS=goimports
 GOLINT=golint
 GOVET=go vet
 GOOS=$(shell go env GOOS)
+GOARCH=$(shell go env GOARCH)
 ADDLICENCESE= addlicense
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
