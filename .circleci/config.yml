@@ -31,12 +31,19 @@ jobs:
       - run:
           name: Install tools
           command: make install-tools
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
       - run:
           name: Verify
           command: make ci
       - run:
           name: Build collector 
           command: make otelcontribcol
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
