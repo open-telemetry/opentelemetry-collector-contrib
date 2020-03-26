@@ -11,7 +11,7 @@ Example configuration:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    refresh_interval: "10s"
+    refresh_interval: 10s
     password: "s3cret"
 ```
 
