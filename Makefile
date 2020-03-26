@@ -21,7 +21,7 @@ e2e-test: otelcontribcol
 	$(MAKE) -C testbed runtests
 
 .PHONY: ci
-ci: all test-with-cover
+ci: all binaries-all-sys test-with-cover
 	$(MAKE) -C testbed install-tools
 	$(MAKE) -C testbed runtests
 
@@ -78,8 +78,8 @@ run:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=linux $(MAKE) $(COMPONENT)
-	cp ./bin/linux/$(COMPONENT) ./cmd/$(COMPONENT)/
+	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
+	cp ./bin/linux_amd64/$(COMPONENT) ./cmd/$(COMPONENT)/
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
@@ -98,6 +98,7 @@ binaries: otelcontribcol
 
 .PHONY: binaries-all-sys
 binaries-all-sys:
-	GOOS=darwin $(MAKE) binaries
-	GOOS=linux $(MAKE) binaries
-	GOOS=windows $(MAKE) binaries
+	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+	GOOS=windows GOARCH=amd64 $(MAKE) binaries
