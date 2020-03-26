@@ -25,5 +25,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../receiver/sapmreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../receiver/signalfxreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector/testbed => ../../opentelemetry-collector/testbed
