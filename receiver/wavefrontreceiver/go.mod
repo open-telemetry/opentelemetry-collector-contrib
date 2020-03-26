@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver
 
-go 1.13
+go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
 
-go 1.12
+go 1.14
 
 require (
 	cloud.google.com/go v0.45.1 // indirect

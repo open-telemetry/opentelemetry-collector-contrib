@@ -22,21 +22,28 @@ workflows:
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13
+      - image: cimg/go:1.14
     steps:
       - checkout
       - run:
           name: Install bazzar
-          command: sudo apt-get install bzr -y
+          command: sudo apt update && sudo apt-get install bzr -y
       - run:
           name: Install tools
           command: make install-tools
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}
       - run:
           name: Verify
           command: make ci
       - run:
           name: Build collector 
           command: make otelcontribcol
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/go/pkg/mod"
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
@@ -47,7 +54,7 @@ jobs:
             - .
   publish:
     docker:
-      - image: circleci/golang:1.13
+      - image: cimg/go:1.14
     steps:
       - attach_workspace:
           at: .

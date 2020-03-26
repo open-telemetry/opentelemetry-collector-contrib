@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter
 
-go 1.12
+go 1.14
 
 require (
 	// TODO: pin a released version
