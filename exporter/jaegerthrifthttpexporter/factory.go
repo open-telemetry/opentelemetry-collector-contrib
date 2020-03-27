@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +53,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 func (f *Factory) CreateTraceExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
-) (exporter.TraceExporter, error) {
+) (component.TraceExporterOld, error) {
 
 	expCfg := config.(*Config)
 	_, err := url.ParseRequestURI(expCfg.URL)
@@ -89,6 +89,6 @@ func (f *Factory) CreateTraceExporter(
 func (f *Factory) CreateMetricsExporter(
 	logger *zap.Logger,
 	cfg configmodels.Exporter,
-) (exporter.MetricsExporter, error) {
+) (component.MetricsExporterOld, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
