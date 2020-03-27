@@ -33,9 +33,6 @@ jobs:
       - image: cimg/go:1.14
     steps:
       - checkout
-      - run:
-          name: Install bazzar
-          command: sudo apt update && sudo apt-get install bzr -y
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
             - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
