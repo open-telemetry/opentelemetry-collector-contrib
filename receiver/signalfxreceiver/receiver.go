@@ -155,7 +155,7 @@ func (r *sfxReceiver) Shutdown() error {
 
 func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), "http", r.config.Name())
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, r.config.Name(), "http")
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), "http")
 
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
@@ -255,6 +255,7 @@ func (r *sfxReceiver) failRequest(
 		traceStatus.Message = err.Error()
 	}
 	reqSpan.SetStatus(traceStatus)
+	reqSpan.End()
 
 	r.logger.Debug(
 		"SignalFx receiver request failed",
