@@ -53,7 +53,7 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporterOld, error
 	}
 	tExp := &stackdriverExporter{exporter: sde}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		cfg,
 		tExp.pushTraceData,
 		exporterhelper.WithShutdown(tExp.Shutdown))
