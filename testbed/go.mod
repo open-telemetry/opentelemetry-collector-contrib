@@ -3,14 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector v0.2.8
+	github.com/open-telemetry/opentelemetry-collector v0.2.10
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
-	github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20200325235920-6c32d115c19d
 	go.uber.org/zap v1.13.0
 )
 

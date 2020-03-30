@@ -711,7 +711,7 @@ func newTraceExporter(config *Config, transportChannel transportChannel, logger 
 		logger:           logger,
 	}
 
-	exp, err := exporterhelper.NewTraceExporter(
+	exp, err := exporterhelper.NewTraceExporterOld(
 		config,
 		exporter.pushTraceData)
 

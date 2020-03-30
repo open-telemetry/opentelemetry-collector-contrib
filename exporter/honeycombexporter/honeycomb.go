@@ -46,7 +46,7 @@ func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) 
 	hce := HoneycombExporter{
 		exporter: exporter,
 	}
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		cfg,
 		hce.pushTraceData,
 		exporterhelper.WithShutdown(hce.Shutdown))
