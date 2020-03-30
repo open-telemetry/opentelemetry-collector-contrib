@@ -17,7 +17,6 @@ package honeycombexporter
 import (
 	"context"
 	"encoding/json"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -25,6 +24,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
