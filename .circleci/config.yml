@@ -1,5 +1,11 @@
 version: 2
 
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
 workflows:
   version: 2
   build-publish:
@@ -67,8 +73,7 @@ jobs:
     docker:
       - image: cimg/go:1.14
     steps:
-      - attach_workspace:
-          at: .
+      - attach_to_workspace
       - setup_remote_docker
       - run:
           name: Build image
