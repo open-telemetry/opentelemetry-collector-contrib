@@ -22,7 +22,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
+	github.com/open-telemetry/opentelemetry-collector/testbed v0.0.0-20200329190716-01289761c2f7 // indirect
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
+	github.com/tcnksm/ghr v0.13.0 // indirect
 	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f
 	golang.org/x/tools v0.0.0-20200228224639-71482053b885
 	honnef.co/go/tools v0.0.1-2019.2.3
