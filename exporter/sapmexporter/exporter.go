@@ -52,7 +52,7 @@ func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExpor
 		client: client,
 		logger: logger,
 	}
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown))

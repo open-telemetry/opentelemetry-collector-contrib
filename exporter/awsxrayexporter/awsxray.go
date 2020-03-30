@@ -37,7 +37,7 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 		return nil, err
 	}
 	xrayClient := NewXRay(logger, awsConfig, session)
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		config,
 		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
