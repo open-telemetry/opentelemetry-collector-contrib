@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
@@ -72,6 +73,7 @@ func components() (config.Factories, error) {
 		&awsxrayexporter.Factory{},
 		&carbonexporter.Factory{},
 		&honeycombexporter.Factory{},
+		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
 	}
 	for _, exp := range factories.Exporters {
