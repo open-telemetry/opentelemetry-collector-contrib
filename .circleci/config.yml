@@ -6,6 +6,28 @@ commands:
       - attach_workspace:
           at: ~/
 
+  publish_docker_images:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    steps:
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:<< parameters.tag >>
+            docker push otel/<< parameters.repo >>:latest
+
 workflows:
   version: 2
   build-publish:
@@ -75,45 +97,22 @@ jobs:
     steps:
       - attach_to_workspace
       - setup_remote_docker
-      - run:
-          name: Build image
-          command: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib:latest
-      - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push otel/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker push otel/opentelemetry-collector-contrib:latest
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib
+          tag: ${CIRCLE_TAG:1}
       - run:
           name: Calculate checksums 
-          command: shasum -a 256 bin/* > bin/checksums.txt
+          command: cd bin && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
 
   publish-dev:
     docker:
-      - image: circleci/golang:1.14
-
+      - image: cimg/go:1.14
     steps:
       - attach_to_workspace
       - setup_remote_docker
-      - run:
-          name: Build image
-          command: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:${CIRCLE_SHA1}
-            docker tag otelcontribcol:latest otel/opentelemetry-collector-contrib-dev:latest
-      - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push otel/opentelemetry-collector-contrib-dev:${CIRCLE_SHA1}
-            docker push otel/opentelemetry-collector-contrib-dev:latest
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib-dev
+          tag: ${CIRCLE_TAG:1}
