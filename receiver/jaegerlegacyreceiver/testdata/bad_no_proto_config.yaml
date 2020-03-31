@@ -1,0 +1,16 @@
+receivers:
+  jaeger_legacy:
+    protocols:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [jaeger_legacy]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]
