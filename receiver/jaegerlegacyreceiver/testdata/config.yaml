@@ -1,0 +1,32 @@
+receivers:
+  # The following demonstrates specifying different endpoints.
+  # The Jaeger Legacy receiver connects to ports on all available network interfaces.
+  # Ex: `endpoint: "9876"` is incorrect.
+  # Ex: `endpoint: "1.2.3.4:9876"`  and ":9876" is correct.
+  jaeger_legacy/customname:
+    protocols:
+      thrift_tchannel:
+        endpoint: "0.0.0.0:123"
+  # The following demonstrates how to enable protocols with defaults.
+  jaeger_legacy/defaults:
+    protocols:
+      thrift_tchannel:
+  # The following demonstrates how to disable a protocol.  This particular config
+  # will not start any jaeger protocols.
+  jaeger_legacy/disabled:
+    protocols:
+      thrift_tchannel:
+        disabled: true
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [jaeger_legacy/defaults]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]
