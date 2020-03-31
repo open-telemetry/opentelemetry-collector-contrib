@@ -60,7 +60,7 @@ func New(
 		client:  &http.Client{Timeout: clientTimeout},
 	}
 
-	exp, err := exporterhelper.NewTraceExporter(
+	exp, err := exporterhelper.NewTraceExporterOld(
 		config,
 		s.pushTraceData)
 
