@@ -47,7 +47,7 @@ func newLightStepTraceExporter(cfg *Config) (component.TraceExporterOld, error) 
 		exporter: exporter,
 	}
 
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		cfg,
 		lsExporter.pushTraceData,
 		exporterhelper.WithShutdown(lsExporter.Shutdown))

@@ -46,7 +46,7 @@ func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) 
 	hce := HoneycombExporter{
 		exporter: exporter,
 	}
-	return exporterhelper.NewTraceExporter(
+	return exporterhelper.NewTraceExporterOld(
 		cfg,
 		hce.pushTraceData,
 		exporterhelper.WithShutdown(hce.Shutdown))
@@ -61,6 +61,10 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 		if err == nil {
 			serviceName := core.Key("service_name")
 			sd.Attributes = append(sd.Attributes, serviceName.String(td.Node.ServiceInfo.Name))
+			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
+				sd.Attributes = append(sd.Attributes,
+					convertNodeAttributes(td.Node.Attributes)...)
+			}
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
 		} else {
@@ -69,6 +73,16 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	}
 
 	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
+}
+
+func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
+	result := make([]core.KeyValue, len(attributes))
+	index := 0
+	for key, val := range attributes {
+		result[index] = core.Key(key).String(val)
+		index++
+	}
+	return result
 }
 
 func (e *HoneycombExporter) Shutdown() error {
