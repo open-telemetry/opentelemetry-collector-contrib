@@ -22,6 +22,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -51,7 +52,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler is used to add defaults for named but empty protocols
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		// first load the config normally
 		err := sourceViperSection.UnmarshalExact(intoCfg)
@@ -100,8 +101,8 @@ func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 
 	// Convert settings in the source config to Configuration struct
 	// that JaegerLegacy receiver understands.
@@ -137,7 +138,7 @@ func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+) (component.MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

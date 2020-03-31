@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
@@ -51,7 +50,7 @@ type jReceiver struct {
 	// mu protects the fields of this type
 	mu sync.Mutex
 
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 
 	startOnce sync.Once
@@ -65,7 +64,7 @@ type jReceiver struct {
 }
 
 type jTchannelReceiver struct {
-	nextConsumer consumer.TraceConsumer
+	nextConsumer consumer.TraceConsumerOld
 	instanceName string
 
 	tchannel *tchannel.Channel
@@ -85,9 +84,9 @@ const (
 func New(
 	instanceName string,
 	config *Configuration,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TraceConsumerOld,
 	logger *zap.Logger,
-) (receiver.TraceReceiver, error) {
+) (component.TraceReceiver, error) {
 	return &jReceiver{
 		config:       config,
 		nextConsumer: nextConsumer,
@@ -100,7 +99,7 @@ func New(
 	}, nil
 }
 
-var _ receiver.TraceReceiver = (*jReceiver)(nil)
+var _ component.TraceReceiver = (*jReceiver)(nil)
 
 func (jr *jReceiver) collectorThriftAddr() string {
 	var port int
@@ -164,7 +163,7 @@ func (jr *jReceiver) stopTraceReceptionLocked() error {
 func consumeTraceData(
 	ctx context.Context,
 	batches []*jaeger.Batch,
-	consumer consumer.TraceConsumer,
+	consumer consumer.TraceConsumerOld,
 ) ([]*jaeger.BatchSubmitResponse, int, error) {
 
 	jbsr := make([]*jaeger.BatchSubmitResponse, 0, len(batches))
