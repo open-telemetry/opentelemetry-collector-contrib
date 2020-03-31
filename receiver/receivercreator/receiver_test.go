@@ -44,7 +44,7 @@ type mockMetricsConsumer struct {
 	TotalMetrics int
 }
 
-var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
+var _ consumer.MetricsConsumerOld = &mockMetricsConsumer{}
 
 func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	p.Metrics = append(p.Metrics, md)

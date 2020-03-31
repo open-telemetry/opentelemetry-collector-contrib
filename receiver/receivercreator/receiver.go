@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -35,35 +34,35 @@ var (
 	factories          = buildFactoryMap(&config.ExampleReceiverFactory{})
 )
 
-type factoryMap map[string]receiver.BaseFactory
+type factoryMap map[string]component.ReceiverFactoryBase
 
-func (fm factoryMap) get(receiverType string) (receiver.BaseFactory, error) {
+func (fm factoryMap) get(receiverType string) (component.ReceiverFactoryBase, error) {
 	if factory, ok := factories[receiverType]; ok {
 		return factory, nil
 	}
 	return nil, fmt.Errorf("factory does not exist for receiver type %q", receiverType)
 }
 
-func buildFactoryMap(factories ...receiver.BaseFactory) factoryMap {
-	ret, err := receiver.Build(factories...)
-	if err != nil {
-		panic(fmt.Sprintf("failed to build factory map for receiver_creator: %s", err))
+func buildFactoryMap(factories ...component.ReceiverFactoryBase) factoryMap {
+	ret := map[string]component.ReceiverFactoryBase{}
+	for _, f := range factories {
+		ret[f.Type()] = f
 	}
 	return ret
 }
 
-var _ receiver.MetricsReceiver = (*receiverCreator)(nil)
+var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.MetricsConsumer.
 type receiverCreator struct {
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.MetricsConsumerOld
 	logger       *zap.Logger
 	cfg          *Config
-	receivers    []receiver.Receiver
+	receivers    []component.Receiver
 }
 
 // New creates the receiver_creator with the given parameters.
-func New(logger *zap.Logger, nextConsumer consumer.MetricsConsumer, cfg *Config) (receiver.MetricsReceiver, error) {
+func New(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Config) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
@@ -107,13 +106,12 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(
 }
 
 // createRuntimeReceiver creates a receiver that is to discovered at runtime
-func (dr *receiverCreator) createRuntimeReceiver(cfg configmodels.Receiver) (receiver.MetricsReceiver, error) {
+func (dr *receiverCreator) createRuntimeReceiver(cfg configmodels.Receiver) (component.MetricsReceiver, error) {
 	factory, err := factories.get(cfg.Type())
 	if err != nil {
 		return nil, err
 	}
-	receiverFactory := factory.(receiver.Factory)
-
+	receiverFactory := factory.(component.ReceiverFactoryOld)
 	return receiverFactory.CreateMetricsReceiver(dr.logger, cfg, dr)
 }
 

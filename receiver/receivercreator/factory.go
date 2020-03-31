@@ -18,10 +18,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -36,7 +37,7 @@ const (
 type Factory struct {
 }
 
-var _ receiver.Factory = (*Factory)(nil)
+var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *Factory) Type() string {
@@ -44,7 +45,7 @@ func (f *Factory) Type() string {
 }
 
 // CustomUnmarshaler returns custom unmarshaler for receiver_creator config.
-func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
 			// Nothing to do if there is no config given.
@@ -53,7 +54,8 @@ func (f *Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
 		c := intoCfg.(*Config)
 
 		for subreceiverKey := range v.GetStringMap(viperKey) {
-			subreceiver, err := newSubreceiverConfig(subreceiverKey, sourceViperSection.GetStringMap(subreceiverKey+".config"))
+			cfgSection := sourceViperSection.Sub(subreceiverKey).GetStringMap("config")
+			subreceiver, err := newSubreceiverConfig(subreceiverKey, cfgSection)
 			if err != nil {
 				return err
 			}
@@ -84,7 +86,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels.Receiver,
-	consumer.TraceConsumer) (receiver.TraceReceiver, error) {
+	consumer.TraceConsumerOld) (component.TraceReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
@@ -92,7 +94,7 @@ func (f *Factory) CreateTraceReceiver(context.Context, *zap.Logger, configmodels
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	return New(logger, consumer, cfg.(*Config))
 }
