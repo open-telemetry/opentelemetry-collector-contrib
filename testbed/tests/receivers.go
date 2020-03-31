@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -33,7 +33,7 @@ import (
 // SapmDataReceiver implements Sapm format receiver.
 type SapmDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.TraceReceiver
+	receiver component.TraceReceiver
 }
 
 // NewSapmDataReceiver creates a new SapmDataReceiver.
@@ -82,7 +82,7 @@ func (sr *SapmDataReceiver) ProtocolName() string {
 // SFxMetricsDataReceiver implements SignalFx format receiver.
 type SFxMetricsDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.MetricsReceiver
+	receiver component.MetricsReceiver
 }
 
 // Ensure SFxMetricsDataReceiver implements MetricDataSender.
@@ -130,7 +130,7 @@ func (sr *SFxMetricsDataReceiver) ProtocolName() string {
 // CarbonDataReceiver implements Carbon format receiver.
 type CarbonDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.MetricsReceiver
+	receiver component.MetricsReceiver
 }
 
 // Ensure CarbonDataReceiver implements MetricDataSender.

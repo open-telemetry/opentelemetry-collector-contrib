@@ -43,7 +43,7 @@ func TestNewReceiver(t *testing.T) {
 		addr         string
 		timeout      time.Duration
 		attrsPrefix  string
-		nextConsumer consumer.MetricsConsumer
+		nextConsumer consumer.MetricsConsumerOld
 	}
 	tests := []struct {
 		name    string
@@ -233,7 +233,7 @@ func newMockMetricsSink(numReceiveTraceDataCount int) *mockMetricsSink {
 	return sink
 }
 
-var _ consumer.MetricsConsumer = (*mockMetricsSink)(nil)
+var _ consumer.MetricsConsumerOld = (*mockMetricsSink)(nil)
 
 func (m *mockMetricsSink) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	m.queue <- md

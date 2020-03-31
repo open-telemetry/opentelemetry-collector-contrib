@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -31,7 +31,7 @@ import (
 
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
-	exporter exporter.TraceExporter
+	exporter component.TraceExporterOld
 	port     int
 }
 
@@ -90,7 +90,7 @@ func (je *SapmDataSender) ProtocolName() string {
 
 // SFxMetricsDataSender implements MetricDataSender for SignalFx metrics protocol.
 type SFxMetricsDataSender struct {
-	exporter exporter.MetricsExporter
+	exporter component.MetricsExporterOld
 	port     int
 }
 
@@ -149,7 +149,7 @@ func (sf *SFxMetricsDataSender) ProtocolName() string {
 
 // CarbonDataSender implements MetricDataSender for Carbon metrics protocol.
 type CarbonDataSender struct {
-	exporter exporter.MetricsExporter
+	exporter component.MetricsExporterOld
 	port     int
 }
 

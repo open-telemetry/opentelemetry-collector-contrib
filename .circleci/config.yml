@@ -1,4 +1,32 @@
-version: 2
+version: 2.1
+
+commands:
+  attach_to_workspace:
+    steps:
+      - attach_workspace:
+          at: ~/
+
+  publish_docker_images:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    steps:
+      - run:
+          name: Build image
+          command: |
+            make docker-otelcontribcol
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:<< parameters.tag >>
+            docker push otel/<< parameters.repo >>:latest
 
 workflows:
   version: 2
@@ -10,7 +38,7 @@ workflows:
               only: /.*/
             tags:
               only: /.*/
-      - publish:
+      - publish-stable:
           requires:
             - build
           filters:
@@ -18,51 +46,74 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9].[0-9].[0-9]+.*/
+      - publish-dev:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master
+            tags:
+              ignore: /.*/
 
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13
+      - image: cimg/go:1.14
     steps:
       - checkout
       - run:
           name: Install bazzar
-          command: sudo apt-get install bzr -y
+          command: sudo apt update && sudo apt-get install bzr -y
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
       - run:
           name: Install tools
           command: make install-tools
+      - run:
+          name: create modules dir
+          command: mkdir -p /home/circleci/go/pkg/mod
       - run:
           name: Verify
           command: make ci
       - run:
           name: Build collector 
           command: make otelcontribcol
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+          paths:
+            - "/home/circleci/go/pkg/mod"
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
       - persist_to_workspace:
-          root: .
+          root: ~/
           paths:
-            - .
-  publish:
+            - go
+            - project
+  publish-stable:
     docker:
-      - image: circleci/golang:1.13
+      - image: cimg/go:1.14
     steps:
-      - attach_workspace:
-          at: .
+      - attach_to_workspace
       - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib
+          tag: ${CIRCLE_TAG:1}
       - run:
-          name: Build image
-          command: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker tag otelcontribcol:latest omnition/opentelemetry-collector-contrib:latest
+          name: Calculate checksums 
+          command: cd bin && shasum -a 256 * > checksums.txt
       - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push omnition/opentelemetry-collector-contrib:${CIRCLE_TAG:1}
-            docker push omnition/opentelemetry-collector-contrib:latest
+          name: Create Github release and upload artifacts
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+
+  publish-dev:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - publish_docker_images:
+          repo: opentelemetry-collector-contrib-dev
+          tag: ${CIRCLE_SHA1}

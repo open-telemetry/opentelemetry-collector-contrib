@@ -23,7 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -35,7 +34,7 @@ var (
 	errEmptyEndpoint   = errors.New("empty endpoint")
 )
 
-// carbonreceiver implements a receiver.MetricsReceiver for Carbon plaintext, aka "line", protocol.
+// carbonreceiver implements a component.MetricsReceiver for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
 	sync.Mutex
@@ -45,20 +44,20 @@ type carbonReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumer
+	nextConsumer consumer.MetricsConsumerOld
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 }
 
-var _ receiver.MetricsReceiver = (*carbonReceiver)(nil)
+var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 
 // New creates the Carbon receiver with the given configuration.
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer

@@ -26,6 +26,7 @@ import (
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/google/addlicense"
 	_ "github.com/pavius/impi/cmd/impi"
+	_ "github.com/tcnksm/ghr"
 	_ "golang.org/x/lint/golint"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "honnef.co/go/tools/cmd/staticcheck"

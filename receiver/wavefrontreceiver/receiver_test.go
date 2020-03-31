@@ -151,7 +151,7 @@ type waitableMetricsConsumer struct {
 	metrics []*metricspb.Metric
 }
 
-var _ (consumer.MetricsConsumer) = (*waitableMetricsConsumer)(nil)
+var _ (consumer.MetricsConsumerOld) = (*waitableMetricsConsumer)(nil)
 
 func (w *waitableMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
 	w.mtx.Lock()
