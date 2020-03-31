@@ -43,4 +43,3 @@ func (c *fakeMetricsConsumer) ConsumeMetricsData(_ context.Context, md consumerd
 	c.md = md
 	return nil
 }
-
