@@ -17,10 +17,10 @@ package redisreceiver
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -28,20 +28,19 @@ const (
 	typeStr = "redis"
 )
 
-var _ receiver.Factory = &Factory{}
+var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Factory creates a RedisReceiver.
 type Factory struct {
 }
 
+func (f Factory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return nil
+}
+
 // Type returns the type of this factory, "redis".
 func (f Factory) Type() string {
 	return typeStr
-}
-
-// CustomUnmarshaler creates a custom unmarshaler.
-func (f Factory) CustomUnmarshaler() receiver.CustomUnmarshaler {
-	return nil
 }
 
 // CreateDefaultConfig creates a default config.
@@ -54,8 +53,8 @@ func (f Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (receiver.TraceReceiver, error) {
+	nextConsumer consumer.TraceConsumerOld,
+) (component.TraceReceiver, error) {
 	// No trace receiver for now.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
@@ -64,7 +63,7 @@ func (f Factory) CreateTraceReceiver(
 func (f Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumer,
-) (receiver.MetricsReceiver, error) {
+	consumer consumer.MetricsConsumerOld,
+) (component.MetricsReceiver, error) {
 	return newRedisReceiver(logger, cfg.(*config), consumer), nil
 }

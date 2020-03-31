@@ -31,7 +31,7 @@ var _ interval.Runnable = (*redisRunnable)(nil)
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
 	ctx             context.Context
-	metricsConsumer consumer.MetricsConsumer
+	metricsConsumer consumer.MetricsConsumerOld
 	redisSvc        *redisSvc
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
@@ -40,7 +40,7 @@ type redisRunnable struct {
 func newRedisRunnable(
 	ctx context.Context,
 	client client,
-	metricsConsumer consumer.MetricsConsumer,
+	metricsConsumer consumer.MetricsConsumerOld,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
