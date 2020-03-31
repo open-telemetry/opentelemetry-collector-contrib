@@ -116,4 +116,4 @@ jobs:
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
-          tag: ${CIRCLE_TAG:1}
+          tag: ${CIRCLE_SHA1}
