@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 commands:
   attach_to_workspace:
@@ -88,9 +88,10 @@ jobs:
       - store_test_results:
           path: testbed/tests/results/junit
       - persist_to_workspace:
-          root: .
+          root: ~/
           paths:
-            - .
+            - go
+            - project
   publish-stable:
     docker:
       - image: cimg/go:1.14
