@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -63,22 +64,42 @@ func (r *redisRunnable) Setup() error {
 // lines returned by Redis. There should be one keyspace line per active Redis
 // database, of which there can be 16.
 func (r *redisRunnable) Run() error {
+	const dataformat = "redis"
+	const transport = "http" // todo verify this
+	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataformat, transport)
+
 	info, err := r.redisSvc.info()
 	if err != nil {
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
 		return err
 	}
 	now := time.Now()
 	metrics, warnings := info.buildFixedProtoMetrics(r.redisMetrics, now)
 	if warnings != nil {
-		r.logger.Warn("errors parsing redis string", zap.Errors("parsing errors", warnings))
+		r.logger.Warn(
+			"errors parsing redis string",
+			zap.Errors("parsing errors", warnings),
+		)
 	}
 
 	keyspaceMetrics, warnings := info.buildKeyspaceProtoMetrics(now)
 	metrics = append(metrics, keyspaceMetrics...)
 	if warnings != nil {
-		r.logger.Warn("errors parsing keyspace string", zap.Errors("parsing errors", warnings))
+		r.logger.Warn(
+			"errors parsing keyspace string",
+			zap.Errors("parsing errors", warnings),
+		)
 	}
 
 	md := newMetricsData(metrics)
-	return r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
+
+	err = r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
+	if err != nil {
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+	}
+
+	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
+	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, numTimeSeries, err)
+
+	return nil
 }

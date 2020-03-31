@@ -16,6 +16,7 @@ package redisreceiver
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -63,4 +64,22 @@ func (m *redisMetric) parsePoint(strVal string) (*metricspb.Point, error) {
 	// from the output, in which case the error below is treated as a warning and is logged. Metrics
 	// collection shouldn't be adversely affected.
 	return nil, fmt.Errorf("unexpected point type %v", m.mdType)
+}
+
+// Converts a numeric whole number string to a Point.
+func strToInt64Point(s string) (*metricspb.Point, error) {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: i}}, nil
+}
+
+// Converts a numeric floating point string to a Point.
+func strToDoublePoint(s string) (*metricspb.Point, error) {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &metricspb.Point{Value: &metricspb.Point_DoubleValue{DoubleValue: f}}, nil
 }

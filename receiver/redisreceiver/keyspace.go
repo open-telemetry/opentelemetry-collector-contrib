@@ -32,22 +32,26 @@ type keyspace struct {
 // e.g. "keys=1,expires=2,avg_ttl=3") into a keyspace struct
 func parseKeyspaceString(db int, str string) (*keyspace, error) {
 	pairs := strings.Split(str, ",")
-	out := keyspace{db: strconv.Itoa(db)}
+	ks := keyspace{db: strconv.Itoa(db)}
 	for _, pairStr := range pairs {
+		var field *int
 		pair := strings.Split(pairStr, "=")
 		key := pair[0]
-		val, err := strconv.Atoi(pair[1])
-		if err != nil {
-			return nil, err
-		}
 		switch key {
 		case "keys":
-			out.keys = val
+			field = &ks.keys
 		case "expires":
-			out.expires = val
+			field = &ks.expires
 		case "avg_ttl":
-			out.avgTTL = val
+			field = &ks.avgTTL
+		}
+		if field != nil {
+			val, err := strconv.Atoi(pair[1])
+			if err != nil {
+				return nil, err
+			}
+			*field = val
 		}
 	}
-	return &out, nil
+	return &ks, nil
 }

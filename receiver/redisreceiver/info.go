@@ -41,7 +41,7 @@ func (i info) buildFixedProtoMetrics(
 			warnings = append(warnings, fmt.Errorf("info key not found: %v", redisMetric.key))
 			continue
 		}
-		if len(strVal) == 0 {
+		if strVal == "" {
 			continue
 		}
 		protoMetric, parsingError := redisMetric.parseMetric(strVal, t)

@@ -18,7 +18,7 @@ import (
 	"github.com/go-redis/redis/v7"
 )
 
-// Interface for a Redis client. Implementation can be fake or real.
+// Interface for a Redis client. Implementation can be faked for testing.
 type client interface {
 	// retrieves a string of key/value pairs of redis metadata
 	retrieveInfo() (string, error)
