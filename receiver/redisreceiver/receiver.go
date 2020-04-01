@@ -49,7 +49,7 @@ func (r redisReceiver) Start(host component.Host) error {
 		Password: r.config.Password,
 	})
 	redisRunnable := newRedisRunnable(host.Context(), client, r.consumer, r.logger)
-	r.intervalRunner = interval.NewRunner(r.config.RefreshInterval, redisRunnable)
+	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {
 		if err := r.intervalRunner.Start(); err != nil {

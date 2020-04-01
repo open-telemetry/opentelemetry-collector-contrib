@@ -47,7 +47,7 @@ Example configuration:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    refresh_interval: 10s
+    collection_interval: 10s
     password: "s3cret"
 ```
 
@@ -82,7 +82,7 @@ the following:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    refresh_interval: 10s
+    collection_interval: 10s
     password: $REDIS_PASSWORD
 ```
 
