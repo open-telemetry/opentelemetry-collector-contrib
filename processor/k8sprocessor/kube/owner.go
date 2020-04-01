@@ -15,17 +15,29 @@
 package kube
 
 import (
-	"time"
+	"sort"
 
-	gocache "github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
 )
+
+// OwnerProvider allows to dynamically assign constructor
+type OwnerProvider func(
+	logger *zap.Logger,
+	client *kubernetes.Clientset,
+	labelSelector labels.Selector,
+	fieldSelector fields.Selector,
+	namespace string,
+) (OwnerAPI, error)
 
 // ObjectOwner keeps single entry
 type ObjectOwner struct {
@@ -38,265 +50,190 @@ type ObjectOwner struct {
 
 // OwnerAPI describes functions that could allow retrieving owner info
 type OwnerAPI interface {
-	GetNamespace(namespace string) *ObjectOwner
 	GetOwners(pod *api_v1.Pod) []*ObjectOwner
+	GetServices(pod *api_v1.Pod) []string
+	Start()
+	Stop()
 }
 
 // OwnerCache is a simple structure which aids querying for owners
 type OwnerCache struct {
-	objectOwnersCache  *gocache.Cache
-	namespaces         *gocache.Cache
-	clientset          *kubernetes.Clientset
-	logger             *zap.Logger
-	cacheWarmupEnabled bool
+	objectOwners map[string]*ObjectOwner
+	podServices  map[string][]string
+
+	clientset *kubernetes.Clientset
+	logger    *zap.Logger
+
+	stopCh    chan struct{}
+	informers []cache.SharedIndexInformer
 }
 
-// OwnerProvider allows to dynamically assign constructor
-type OwnerProvider func(
-	logger *zap.Logger,
-	client *kubernetes.Clientset,
-	cacheWarmupEnabled bool,
-) (OwnerAPI, error)
+// Start runs the informers
+func (op *OwnerCache) Start() {
+	op.logger.Info("Staring K8S resource informers", zap.Int("#infomers", len(op.informers)))
+	for _, informer := range op.informers {
+		go informer.Run(op.stopCh)
+	}
+}
+
+// Stop shutdowns the informers
+func (op *OwnerCache) Stop() {
+	close(op.stopCh)
+}
 
 func newOwnerProvider(
 	logger *zap.Logger,
 	clientset *kubernetes.Clientset,
-	cacheWarmupEnabled bool) (OwnerAPI, error) {
+	labelSelector labels.Selector,
+	fieldSelector fields.Selector,
+	namespace string) (OwnerAPI, error) {
 	ownerCache := OwnerCache{}
-	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
-	ownerCache.namespaces = gocache.New(15*time.Minute, 30*time.Minute)
+	ownerCache.objectOwners = map[string]*ObjectOwner{}
+	ownerCache.podServices = map[string][]string{}
 	ownerCache.clientset = clientset
 	ownerCache.logger = logger
-	ownerCache.cacheWarmupEnabled = cacheWarmupEnabled
+
+	factory := informers.NewSharedInformerFactoryWithOptions(clientset, watchSyncPeriod,
+		informers.WithNamespace(namespace),
+		informers.WithTweakListOptions(func(opts *meta_v1.ListOptions) {
+			opts.LabelSelector = labelSelector.String()
+			opts.FieldSelector = fieldSelector.String()
+		}))
+
+	ownerCache.addOwnerInformer("ReplicaSet",
+		factory.Extensions().V1beta1().ReplicaSets().Informer(),
+		ownerCache.cacheObject,
+		ownerCache.deleteObject)
+
+	ownerCache.addOwnerInformer("Deployment",
+		factory.Extensions().V1beta1().Deployments().Informer(),
+		ownerCache.cacheObject,
+		ownerCache.deleteObject)
+
+	ownerCache.addOwnerInformer("StatefulSet",
+		factory.Apps().V1().StatefulSets().Informer(),
+		ownerCache.cacheObject,
+		ownerCache.deleteObject)
+
+	ownerCache.addOwnerInformer("Endpoint",
+		factory.Core().V1().Endpoints().Informer(),
+		ownerCache.cacheEndpoint,
+		ownerCache.deleteEndpoint)
+
 	return &ownerCache, nil
 }
 
-// GetNamespace retrieves relevant metadata from API or from cache
-func (op *OwnerCache) GetNamespace(namespace string) *ObjectOwner {
-	ns, found := op.namespaces.Get(string(namespace))
-	if !found {
-		startTime := time.Now()
-		nn, _ := op.clientset.CoreV1().Namespaces().Get(namespace, meta_v1.GetOptions{})
-		observability.RecordAPICallMadeAndLatency(&startTime)
+func (op *OwnerCache) addOwnerInformer(
+	kind string,
+	informer cache.SharedIndexInformer,
+	cacheFunc func(kind string, obj interface{}),
+	deleteFunc func(obj interface{})) {
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			observability.RecordOtherAdded()
+			cacheFunc(kind, obj)
+		},
+		UpdateFunc: func(_, obj interface{}) {
+			observability.RecordOtherUpdated()
+			cacheFunc(kind, obj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			observability.RecordOtherDeleted()
+			deleteFunc(obj)
+		},
+	})
 
-		if nn != nil {
-			oo := ObjectOwner{
-				UID:       nn.UID,
-				namespace: nn.Namespace,
-				ownerUIDs: []types.UID{},
-				kind:      "namespace",
-				name:      nn.Name,
-			}
-
-			op.namespaces.Add(namespace, &oo, gocache.DefaultExpiration)
-
-			// This is a good opportunity to do cache warmup!
-			if op.cacheWarmupEnabled {
-				op.warmupCache(namespace)
-			}
-
-			return &oo
-		}
-	}
-
-	return ns.(*ObjectOwner)
+	op.informers = append(op.informers, informer)
 }
 
-func (op *OwnerCache) cacheMetadataObject(kind string, obj *meta_v1.ObjectMeta) {
+func (op *OwnerCache) deleteObject(obj interface{}) {
+	delete(op.objectOwners, string(obj.(meta_v1.Object).GetUID()))
+}
+
+func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
+	meta := obj.(meta_v1.Object)
+
 	oo := ObjectOwner{
-		UID:       obj.UID,
-		namespace: obj.Namespace,
+		UID:       meta.GetUID(),
+		namespace: meta.GetNamespace(),
 		ownerUIDs: []types.UID{},
 		kind:      kind,
-		name:      obj.Name,
+		name:      meta.GetName(),
 	}
-	for _, or := range obj.OwnerReferences {
+	for _, or := range meta.GetOwnerReferences() {
 		oo.ownerUIDs = append(oo.ownerUIDs, or.UID)
 	}
 
-	// First set the cache
-	op.objectOwnersCache.Add(string(obj.UID), &oo, gocache.DefaultExpiration)
+	op.objectOwners[string(oo.UID)] = &oo
 }
 
-type objectOrList struct {
-	obj  *meta_v1.ObjectMeta
-	list []*meta_v1.ObjectMeta
-}
+func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
+	services := op.podServices[pod]
 
-// objectApiCall queries for ObjectMeta; if name is nil, then all objects of given type from
-// namespace are retrieved; otherwise only the one with specified name. Errors are quietly ignored
-func (op *OwnerCache) objectApiCall(namespace string, kind string, name *string) objectOrList {
-	result := objectOrList{}
-	result.list = make([]*meta_v1.ObjectMeta, 0)
-
-	startTime := time.Now()
-	callNotMade := false
-
-	// TODO: Use generics when released: https://blog.golang.org/why-generics
-	switch kind {
-	case "DaemonSet":
-		daemonSetAPI := op.clientset.ExtensionsV1beta1().DaemonSets(namespace)
-
-		if name != nil {
-			ds, _ := daemonSetAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := daemonSetAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
+	for _, it := range services {
+		if it == endpoint {
+			return
 		}
-	case "DeploymentName":
-		deploymentsAPI := op.clientset.ExtensionsV1beta1().Deployments(namespace)
-
-		if name != nil {
-			ds, _ := deploymentsAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := deploymentsAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
-		}
-	case "Pod":
-		podsAPI := op.clientset.CoreV1().Pods(namespace)
-
-		if name != nil {
-			ds, _ := podsAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := podsAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
-		}
-	case "ReplicaSet":
-		replicaSetsAPI := op.clientset.ExtensionsV1beta1().ReplicaSets(namespace)
-
-		if name != nil {
-			ds, _ := replicaSetsAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := replicaSetsAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
-		}
-	case "Service":
-		servicesAPI := op.clientset.CoreV1().Services(namespace)
-
-		if name != nil {
-			ds, _ := servicesAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := servicesAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
-		}
-	case "StatefulSet":
-		statefulSetsAPI := op.clientset.AppsV1().StatefulSets(namespace)
-
-		if name != nil {
-			ds, _ := statefulSetsAPI.Get(*name, meta_v1.GetOptions{})
-			if ds != nil {
-				result.obj = &ds.ObjectMeta
-			}
-		} else {
-			dss, _ := statefulSetsAPI.List(meta_v1.ListOptions{})
-			if dss != nil {
-				result.list = make([]*meta_v1.ObjectMeta, len(dss.Items))
-				for i, it := range dss.Items {
-					result.list[i] = &it.ObjectMeta
-				}
-			}
-		}
-	default:
-		// Just mark we didn't call any API
-		callNotMade = true
 	}
 
-	if !callNotMade {
-		observability.RecordAPICallMadeAndLatency(&startTime)
-	}
-
-	return result
+	services = append(services, endpoint)
+	sort.Strings(services)
+	op.podServices[pod] = services
 }
 
-// warmupCache makes sure that enough objects are cached to not spend too much time on lazy
-// requests via deepCacheObject
-func (op *OwnerCache) warmupCache(namespace string) {
-	startTime := time.Now()
-	for _, kind := range []string{"DaemonSet", "DeploymentName", "ReplicaSet", "Service", "StatefulSet"} {
-		res := op.objectApiCall(namespace, kind, nil)
-		for _, it := range res.list {
-			op.cacheMetadataObject(kind, it)
+func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
+	services := op.podServices[pod]
+	newServices := []string{}
+
+	for _, it := range services {
+		if it != endpoint {
+			newServices = append(newServices, it)
 		}
 	}
-	op.logger.Info("Warming up cache",
-		zap.String("namespace", namespace),
-		zap.Int64("duration_ms", time.Since(startTime).Milliseconds()))
+
+	op.podServices[pod] = newServices
 }
 
-// deepCacheObject is a lazily executed function that makes a set of API calls to
-// traverse the owners tree and cache it
-func (op *OwnerCache) deepCacheObject(namespace string, kind string, name string) {
-	res := op.objectApiCall(namespace, kind, &name)
-	if res.obj != nil {
-		// First set the cache
-		op.cacheMetadataObject(kind, res.obj)
+func (op *OwnerCache) genericEndpointOp(obj interface{}, endpointFunc func(pod string, endpoint string)) {
+	ep := obj.(*api_v1.Endpoints)
 
-		// Then continue traverse
-		for _, or := range res.obj.OwnerReferences {
-			_, found := op.objectOwnersCache.Get(string(or.UID))
-			if !found {
-				op.deepCacheObject(namespace, or.Kind, or.Name)
+	for _, it := range ep.Subsets {
+		for _, addr := range it.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				endpointFunc(addr.TargetRef.Name, ep.Name)
+			}
+		}
+		for _, addr := range it.NotReadyAddresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				endpointFunc(addr.TargetRef.Name, ep.Name)
 			}
 		}
 	}
 }
 
-// GetOwners fetches deep tree of owners for a given pod
+func (op *OwnerCache) deleteEndpoint(obj interface{}) {
+	op.genericEndpointOp(obj, op.deleteEndpointFromPod)
+}
+
+func (op *OwnerCache) cacheEndpoint(kind string, obj interface{}) {
+	op.genericEndpointOp(obj, op.addEndpointToPod)
+}
+
+// GetServices returns a slice with matched services - in case no services are found, it returns an empty slice
+func (op *OwnerCache) GetServices(pod *api_v1.Pod) []string {
+	if oo, found := op.podServices[pod.Name]; found {
+		return oo
+	}
+	return []string{}
+}
+
+// GetOwners goes through the cached data and assigns relevant metadata for pod
 func (op *OwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 	objectOwners := []*ObjectOwner{}
 
 	visited := map[types.UID]bool{}
 	queue := []types.UID{}
 
-	// Make sure the tree is cached/traversed first
-	for _, or := range pod.OwnerReferences {
-		_, found := op.objectOwnersCache.Get(string(or.UID))
-		if !found {
-			op.deepCacheObject(pod.Namespace, or.Kind, or.Name)
-		}
-	}
-
-	// Now we can address this by UID, which should make things simpler, starting with pod owner references
 	for _, or := range pod.OwnerReferences {
 		if _, uidVisited := visited[or.UID]; !uidVisited {
 			queue = append(queue, or.UID)
@@ -307,8 +244,7 @@ func (op *OwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 	for len(queue) > 0 {
 		uid := queue[0]
 		queue = queue[1:]
-		if x, found := op.objectOwnersCache.Get(string(uid)); found {
-			oo := x.(*ObjectOwner)
+		if oo, found := op.objectOwners[string(uid)]; found {
 			objectOwners = append(objectOwners, oo)
 
 			for _, ownerUID := range oo.ownerUIDs {

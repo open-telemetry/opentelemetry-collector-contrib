@@ -230,7 +230,6 @@ func TestExtractionRules(t *testing.T) {
 			StatefulSetName:    true,
 			StartTime:          true,
 			Namespace:          true,
-			NamespaceID:        true,
 			NodeName:           true,
 			OwnerLookupEnabled: true,
 			Tags:               NewExtractionFieldTags(),
@@ -246,8 +245,8 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
 			"k8s.replicaset.name": "SomeReplicaSet",
+			"k8s.service.name":    "foo, bar",
 			"k8s.namespace.name":  "ns1",
-			"k8s.namespace.id":    "33333-66666",
 			"k8s.node.name":       "node1",
 		},
 	}, {
@@ -267,7 +266,6 @@ func TestExtractionRules(t *testing.T) {
 			StatefulSetName: false,
 			StartTime:       false,
 			Namespace:       false,
-			NamespaceID:     false,
 			NodeName:        false,
 			Tags: ExtractionFieldTags{
 				ClusterName:   "cc",
@@ -507,7 +505,6 @@ func newBenchmarkClient(b *testing.B) *WatchClient {
 		StatefulSetName: true,
 		StartTime:       true,
 		Namespace:       true,
-		NamespaceID:     true,
 		NodeName:        true,
 		Tags:            NewExtractionFieldTags(),
 	}

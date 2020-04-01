@@ -39,7 +39,6 @@ const (
 	metadataDeploymentName  = "deploymentName"
 	metadataHostName        = "hostName"
 	metadataNamespace       = "namespace"
-	metadataNamespaceID     = "namespaceId"
 	metadataNodeName        = "nodeName"
 	metadataPodID           = "podId"
 	metadataPodName         = "podName"
@@ -83,7 +82,6 @@ func WithExtractMetadata(fields ...string) Option {
 				metadataDeploymentName,
 				metadataHostName,
 				metadataNamespace,
-				metadataNamespaceID,
 				metadataNodeName,
 				metadataPodName,
 				metadataPodID,
@@ -111,8 +109,6 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.HostName = true
 			case metadataNamespace:
 				p.rules.Namespace = true
-			case metadataNamespaceID:
-				p.rules.NamespaceID = true
 			case metadataNodeName:
 				p.rules.NodeName = true
 			case metadataPodID:
@@ -157,8 +153,6 @@ func WithExtractTags(tagsMap map[string]string) Option {
 				tags.HostName = tag
 			case strings.ToLower(metadataNamespace):
 				tags.Namespace = tag
-			case strings.ToLower(metadataNamespaceID):
-				tags.NamespaceID = tag
 			case strings.ToLower(metadataNodeName):
 				tags.NodeName = tag
 			case strings.ToLower(metadataPodID):

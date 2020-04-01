@@ -16,7 +16,7 @@ There are several top level sections of the processor config:
 does not try to extract any other metadata. It does not need access to the K8S cluster API. 
 Agent/Collector must receive spans directly from services to be able to correctly detect the pod IPs.
 - `owner_lookup_enabled` (default = false): when set to true, fields such as `daemonSetName`, 
-`replicaSetName`, etc. can be extracted, though it requires additional Kubernetes API calls to traverse 
+`replicaSetName`, `service`, etc. can be extracted, though it requires fetching additional data to traverse 
 the `owner` relationship.  See the [list of fields](#k8sprocessor-extract) for more information over 
 which tags require the flag to be enabled. 
 - `extract`: the section (see [below](#k8sprocessor-extract)) allows specifying extraction rules
@@ -36,12 +36,12 @@ can be extracted:
     - `deploymentName`
     - `hostName`
     - `namespace`
-    - `namespaceId` _(`owner_lookup_enabled` must be set to `true`)_
     - `nodeName`
     - `podId`
     - `podName`
     - `replicaSetName` _(`owner_lookup_enabled` must be set to `true`)_
-    - `serviceName` _(`owner_lookup_enabled` must be set to `true`)_
+    - `serviceName` _(`owner_lookup_enabled` must be set to `true`)_ - in case more than one service is assigned 
+    to the pod, they are comma-separated
     - `startTime`
     - `statefulSetName` _(`owner_lookup_enabled` must be set to `true`)_
       
@@ -55,7 +55,6 @@ can be extracted:
 	- `deploymentName `: `k8s.deployment.name`
 	- `hostName       `: `k8s.pod.hostname`
 	- `namespaceName  `: `k8s.namespace.name`
-	- `namespaceID    `: `k8s.namespace.id`
 	- `nodeName       `: `k8s.node.name`
 	- `podID          `: `k8s.pod.id`
 	- `podName        `: `k8s.pod.name`
@@ -183,7 +182,6 @@ processors:
         - deploymentName
         - hostName
         - namespace
-        - namespaceId
         - nodeName
         - podId
         - podName

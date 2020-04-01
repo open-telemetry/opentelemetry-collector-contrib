@@ -36,7 +36,6 @@ const (
 	defaultTagDeploymentName  = "k8s.deployment.name"
 	defaultTagHostName        = "k8s.pod.hostname"
 	defaultTagNamespaceName   = "k8s.namespace.name"
-	defaultTagNamespaceID     = "k8s.namespace.id"
 	defaultTagNodeName        = "k8s.node.name"
 	defaultTagPodID           = "k8s.pod.id"
 	defaultTagPodName         = "k8s.pod.name"
@@ -128,7 +127,6 @@ type ExtractionRules struct {
 	StatefulSetName bool
 	StartTime       bool
 	Namespace       bool
-	NamespaceID     bool
 	NodeName        bool
 
 	OwnerLookupEnabled bool
@@ -150,7 +148,6 @@ type ExtractionFieldTags struct {
 	PodID           string
 	PodName         string
 	Namespace       string
-	NamespaceID     string
 	NodeName        string
 	ReplicaSetName  string
 	ServiceName     string
@@ -171,7 +168,6 @@ func NewExtractionFieldTags() ExtractionFieldTags {
 	tags.PodID = defaultTagPodID
 	tags.PodName = defaultTagPodName
 	tags.Namespace = defaultTagNamespaceName
-	tags.NamespaceID = defaultTagNamespaceID
 	tags.NodeName = defaultTagNodeName
 	tags.ReplicaSetName = defaultTagReplicaSetName
 	tags.ServiceName = defaultTagServiceName
