@@ -33,13 +33,14 @@ type Config struct {
 
 // ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
 type ResourceMapping struct {
-	SourceResourceType string `mapstructure:"source_resource_type"`
-	TargetResourceType string `mapstructure:"target_resource_type"`
+	SourceType string `mapstructure:"source_type"`
+	TargetType string `mapstructure:"target_type"`
 
 	LabelMappings []LabelMapping `mapstructure:"label_mappings"`
 }
 
 type LabelMapping struct {
-	SourceLabelKey string `mapstructure:"source_label_key"`
-	TargetLabelKey string `mapstructure:"target_label_key"`
+	SourceKey string `mapstructure:"source_key"`
+	TargetKey string `mapstructure:"target_key"`
+	Optional  bool   `mapstructure:"optional"`
 }

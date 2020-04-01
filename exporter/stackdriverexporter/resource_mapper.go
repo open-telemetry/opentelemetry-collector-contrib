@@ -12,20 +12,22 @@ type resourceMapper struct {
 
 func (mr *resourceMapper) mapResource(res *resource.Resource) *monitoredrespb.MonitoredResource {
 	for _, mapping := range mr.mappings {
-		if res.Type != mapping.SourceResourceType {
+		if res.Type != mapping.SourceType {
 			continue
 		}
 
 		result := &monitoredrespb.MonitoredResource{
-			Type: mapping.TargetResourceType,
+			Type: mapping.TargetType,
 		}
 
-		if len(mapping.LabelMappings) > 0 {
-			result.Labels = transformLabels(mapping.LabelMappings, res.Labels)
-		} else {
-			result.Labels = res.Labels
+		labels, ok := transformLabels(mapping.LabelMappings, res.Labels)
+
+		if !ok {
+			// Skip mapping, fallback to default handling
+			continue
 		}
 
+		result.Labels = labels
 		return result
 	}
 
@@ -34,23 +36,17 @@ func (mr *resourceMapper) mapResource(res *resource.Resource) *monitoredrespb.Mo
 }
 
 // transformLabels transforms labels according to the configured mappings.
-func transformLabels(labelMappings []LabelMapping, input map[string]string) map[string]string {
+// Returns true if all required labels in match are found.
+func transformLabels(labelMappings []LabelMapping, input map[string]string) (map[string]string, bool) {
 	output := make(map[string]string, len(input))
 	// Convert matching labels
-	renamedLabels := make(map[string]struct{}, len(labelMappings))
 	for _, labelMapping := range labelMappings {
-		if v, ok := input[labelMapping.SourceLabelKey]; ok {
-			output[labelMapping.TargetLabelKey] = v
-			renamedLabels[labelMapping.SourceLabelKey] = struct{}{}
+		if v, ok := input[labelMapping.SourceKey]; ok {
+			output[labelMapping.TargetKey] = v
+		} else if !labelMapping.Optional {
+			// Required label is missing
+			return nil, false
 		}
 	}
-	// Copy remaining labels "as is"
-	for k, v := range input {
-		_, renamed := renamedLabels[k] // Skip labels that were renamed
-		_, exists := output[k]         // Skip duplicate labels
-		if !exists && !renamed {
-			output[k] = v
-		}
-	}
-	return output
+	return output, true
 }

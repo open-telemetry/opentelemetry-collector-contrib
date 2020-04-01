@@ -14,15 +14,16 @@ exporters:
     skip_create_metric_descriptor: true
     use_insecure: true
     resource_mappings:
-      - source_resource_type: source.resource1
-        target_resource_type: target-resource1
+      - source_type: source.resource1
+        target_type: target-resource1
         label_mappings:
-          - source_label_key: source.label1
-            target_label_key: target_label_1
-          - source_label_key: sourceLabel2
-            target_label_key: target_label_2
-      - source_resource_type: source.resource2
-        target_resource_type: target-resource2
+          - source_key: contrib.opencensus.io/exporter/stackdriver/project_id
+            target_key: project_id
+            optional: true
+          - source_key: source.label1
+            target_key: target_label_1
+      - source_type: source.resource2
+        target_type: target-resource2
   stackdriver/disabled: # will be ignored
     disabled: true
 

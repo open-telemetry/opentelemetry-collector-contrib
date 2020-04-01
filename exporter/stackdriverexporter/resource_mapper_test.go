@@ -16,18 +16,23 @@ func TestResourceMapper(t *testing.T) {
 	rm := resourceMapper{
 		mappings: []ResourceMapping{
 			{
-				SourceResourceType: "source.resource1",
-				TargetResourceType: "target_resource_1",
+				SourceType: "source.resource1",
+				TargetType: "target_resource_1",
 				LabelMappings: []LabelMapping{
 					{
-						SourceLabelKey: "source.label1",
-						TargetLabelKey: "target_label_1",
+						SourceKey: "contrib.opencensus.io/exporter/stackdriver/project_id",
+						TargetKey: "project_id",
+						Optional:  true,
+					},
+					{
+						SourceKey: "renamedLabel",
+						TargetKey: "target_label",
 					},
 				},
 			},
 			{
-				SourceResourceType: "source.resource2",
-				TargetResourceType: "target_resource_2",
+				SourceType: "source.resource2",
+				TargetType: "target_resource_2",
 			},
 		},
 	}
@@ -38,45 +43,80 @@ func TestResourceMapper(t *testing.T) {
 		wantResource   *monitoredres.MonitoredResource
 	}{
 		{
-			name: "Converted resource with matching labels",
+			name: "Converted resource with all matching labels",
 			sourceResource: &resource.Resource{
 				Type: "source.resource1",
 				Labels: map[string]string{
-					"source.label1": "value1",
+					"renamedLabel": "value1",
 					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+					"unknown": "value1",
 				},
 			},
 			wantResource: &monitoredres.MonitoredResource{
 				// Resource type transformed
 				Type: "target_resource_1",
 				Labels: map[string]string{
-					// One of the labels transformed
-					"target_label_1": "value1",
-					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+					// Both labels transformed
+					"project_id":   "123",
+					"target_label": "value1",
 				},
 			},
 		},
 		{
-			name: "Converted resource without matching labels",
+			name: "Converted resource with optional label missing",
 			sourceResource: &resource.Resource{
-				Type: "source.resource2",
+				Type: "source.resource1",
 				Labels: map[string]string{
-					"source.label1": "value1",
-					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+					"renamedLabel": "value1",
+					"unknown":      "value1",
 				},
 			},
 			wantResource: &monitoredres.MonitoredResource{
 				// Resource type transformed
-				Type: "target_resource_2",
+				Type: "target_resource_1",
 				Labels: map[string]string{
-					// Labels passed through with no changes
-					"source.label1": "value1",
-					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+					// Required label transformed
+					"target_label": "value1",
 				},
 			},
 		},
 		{
-			name: "Resource without match",
+			name: "Converted resource with required label missing",
+			sourceResource: &resource.Resource{
+				Type: "source.resource1",
+				Labels: map[string]string{
+					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+				},
+			},
+			// Resource with missing required labels should be converted via default implementation
+			wantResource: &monitoredres.MonitoredResource{
+				// Resource type transformed
+				Type: "global",
+				Labels: map[string]string{
+					// project_id is transformed by default function
+					"project_id": "123",
+				},
+			},
+		},
+		{
+			name: "Resource without matching labels",
+			sourceResource: &resource.Resource{
+				Type: "source.resource2",
+				Labels: map[string]string{
+					"someLabel": "value1",
+					"contrib.opencensus.io/exporter/stackdriver/project_id": "123",
+				},
+			},
+			// Resource without matching labels should drop all labels
+			wantResource: &monitoredres.MonitoredResource{
+				// Resource type transformed
+				Type: "target_resource_2",
+				// All labels are dropped
+				Labels: map[string]string{},
+			},
+		},
+		{
+			name: "Resource without matching type",
 			sourceResource: &resource.Resource{
 				Type: "source.resource3",
 				Labels: map[string]string{
@@ -91,6 +131,7 @@ func TestResourceMapper(t *testing.T) {
 			// Resource without matching config should be converted via default implementation
 			wantResource: &monitoredres.MonitoredResource{
 				Type: "global",
+				// All labels are transformed by default function
 				Labels: map[string]string{
 					"project_id": "123",
 					"location":   "zone1",

@@ -54,22 +54,24 @@ func TestLoadConfig(t *testing.T) {
 			UseInsecure:                true,
 			ResourceMappings: []ResourceMapping{
 				{
-					SourceResourceType: "source.resource1",
-					TargetResourceType: "target-resource1",
+					SourceType: "source.resource1",
+					TargetType: "target-resource1",
 					LabelMappings: []LabelMapping{
 						{
-							SourceLabelKey: "source.label1",
-							TargetLabelKey: "target_label_1",
+							SourceKey: "contrib.opencensus.io/exporter/stackdriver/project_id",
+							TargetKey: "project_id",
+							Optional:  true,
 						},
 						{
-							SourceLabelKey: "sourceLabel2",
-							TargetLabelKey: "target_label_2",
+							SourceKey: "source.label1",
+							TargetKey: "target_label_1",
+							Optional:  false,
 						},
 					},
 				},
 				{
-					SourceResourceType: "source.resource2",
-					TargetResourceType: "target-resource2",
+					SourceType: "source.resource2",
+					TargetType: "target-resource2",
 				},
 			},
 		})
