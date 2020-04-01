@@ -15,63 +15,51 @@
 package kube
 
 import (
-	"time"
-
-	gocache "github.com/patrickmn/go-cache"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
 )
 
 // fakeOwnerCache is a simple structure which aids querying for owners
 type fakeOwnerCache struct {
-	logger            *zap.Logger
-	objectOwnersCache *gocache.Cache
-	apiCallDuration   time.Duration
+	logger       *zap.Logger
+	objectOwners map[string]*ObjectOwner
 }
 
 // NewOwnerProvider creates new instance of the owners api
 func newFakeOwnerProvider(logger *zap.Logger,
 	clientset *kubernetes.Clientset,
-	cacheWarmupEnabled bool) (OwnerAPI, error) {
+	labelSelector labels.Selector,
+	fieldSelector fields.Selector,
+	namespace string) (OwnerAPI, error) {
 	ownerCache := fakeOwnerCache{}
-	ownerCache.objectOwnersCache = gocache.New(15*time.Minute, 30*time.Minute)
-	ownerCache.apiCallDuration = 50 * time.Millisecond
+	ownerCache.objectOwners = map[string]*ObjectOwner{}
 	ownerCache.logger = logger
+
+	oo := ObjectOwner{
+		UID:       "1a1658f9-7818-11e9-90f1-02324f7e0d1e",
+		namespace: "kube-system",
+		ownerUIDs: []types.UID{},
+		kind:      "ReplicaSet",
+		name:      "SomeReplicaSet",
+	}
+	ownerCache.objectOwners[string(oo.UID)] = &oo
+
 	return &ownerCache, nil
 }
 
-// GetNamespace retrieves relevant metadata from API or from cache
-func (op *fakeOwnerCache) GetNamespace(namespace string) *ObjectOwner {
-	oo := ObjectOwner{
-		UID:       "33333-66666",
-		namespace: namespace,
-		ownerUIDs: []types.UID{},
-		kind:      "namespace",
-		name:      namespace,
-	}
+// Start
+func (op *fakeOwnerCache) Start() {}
 
-	return &oo
-}
+// Stop
+func (op *fakeOwnerCache) Stop() {}
 
-func (op *fakeOwnerCache) deepCacheObject(namespace string, kind string, name string, objectUID types.UID) {
-	startTime := time.Now()
-
-	time.Sleep(op.apiCallDuration)
-
-	oo := ObjectOwner{
-		UID:       objectUID,
-		namespace: namespace,
-		ownerUIDs: []types.UID{},
-		kind:      kind,
-		name:      name,
-	}
-	observability.RecordAPICallMadeAndLatency(&startTime)
-
-	op.objectOwnersCache.Add(string(oo.UID), &oo, gocache.DefaultExpiration)
+// GetServices fetches list of services for a given pod
+func (op *fakeOwnerCache) GetServices(pod *api_v1.Pod) []string {
+	return []string{"foo", "bar"}
 }
 
 // GetOwners fetches deep tree of owners for a given pod
@@ -80,19 +68,11 @@ func (op *fakeOwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 
 	// Make sure the tree is cached/traversed first
 	for _, or := range pod.OwnerReferences {
-		_, found := op.objectOwnersCache.Get(string(or.UID))
-		if !found {
-			op.deepCacheObject(pod.Namespace, or.Kind, or.Name, or.UID)
+		oo, found := op.objectOwners[string(or.UID)]
+		if found {
+			objectOwners = append(objectOwners, oo)
 		}
 	}
-	oo := ObjectOwner{
-		UID:       "12345",
-		namespace: pod.Namespace,
-		ownerUIDs: []types.UID{},
-		kind:      "ReplicaSet",
-		name:      "SomeReplicaSet",
-	}
 
-	objectOwners = append(objectOwners, &oo)
 	return objectOwners
 }

@@ -72,21 +72,22 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 	}
 	c.kc = kc
 
+	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.Rules.OwnerLookupEnabled {
 		if newOwnerProviderFunc == nil {
 			newOwnerProviderFunc = newOwnerProvider
 		}
 
-		c.op, err = newOwnerProviderFunc(logger, kc, !shouldWarmCache(filters))
+		c.op, err = newOwnerProviderFunc(logger, kc, labelSelector, fieldSelector, c.Filters.Namespace)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
-	if err != nil {
-		return nil, err
-	}
 	logger.Info(
 		"k8s filtering",
 		zap.String("labelSelector", labelSelector.String()),
@@ -102,6 +103,10 @@ func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSe
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
+	if c.op != nil {
+		c.op.Start()
+	}
+
 	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
@@ -113,6 +118,10 @@ func (c *WatchClient) Start() {
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
+
+	if c.op != nil {
+		c.op.Stop()
+	}
 }
 
 func (c *WatchClient) handlePodAdd(obj interface{}) {
@@ -256,10 +265,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				if c.Rules.ReplicaSetName {
 					tags[c.Rules.Tags.ReplicaSetName] = owner.name
 				}
-			case "Service":
-				if c.Rules.ServiceName {
-					tags[c.Rules.Tags.ServiceName] = owner.name
-				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetName {
 					tags[c.Rules.Tags.StatefulSetName] = owner.name
@@ -269,12 +274,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			}
 		}
 
-		if c.Rules.NamespaceID {
-			ns := c.op.GetNamespace(pod.Namespace)
-			if ns != nil {
-				tags[c.Rules.Tags.NamespaceID] = string(ns.UID)
-			}
+		if c.Rules.ServiceName {
+			tags[c.Rules.Tags.ServiceName] = strings.Join(c.op.GetServices(pod), ", ")
 		}
+
 	}
 
 	if len(pod.Status.ContainerStatuses) > 0 {
@@ -412,24 +415,6 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 		if rexp.MatchString(pod.Name) {
 			return true
 		}
-	}
-
-	return false
-}
-
-// shouldWarmCache check if there are filters applied; if this is the case, then pod scope is being
-// limited and it is better to not do cache warmup and instead rely on just the lazy lookups
-func shouldWarmCache(filters Filters) bool {
-	if len(filters.Labels) > 0 {
-		return true
-	}
-
-	if len(filters.Fields) > 0 {
-		return true
-	}
-
-	if filters.Node != "" {
-		return true
 	}
 
 	return false

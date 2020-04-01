@@ -17,7 +17,6 @@ processors:
         - deploymentName
         - hostName
         - namespace
-        - namespaceId
         - nodeName
         - podId
         - podName

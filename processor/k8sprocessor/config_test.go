@@ -64,8 +64,8 @@ func TestLoadConfig(t *testing.T) {
 			Extract: ExtractConfig{
 				Metadata: []string{
 					"containerId", "containerName", "containerImage", "clusterName", "daemonSetName",
-					"deploymentName", "hostName", "namespace", "namespaceId", "nodeName", "podId",
-					"podName", "replicaSetName", "serviceName", "startTime", "statefulSetName",
+					"deploymentName", "hostName", "namespace", "nodeName", "podId", "podName",
+					"replicaSetName", "serviceName", "startTime", "statefulSetName",
 				},
 				Tags: map[string]string{
 					"containerid": "my.namespace.containerId",

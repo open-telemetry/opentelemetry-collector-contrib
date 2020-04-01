@@ -30,9 +30,10 @@ func init() {
 		viewPodsUpdated,
 		viewPodsAdded,
 		viewPodsDeleted,
+		viewOtherUpdated,
+		viewOtherAdded,
+		viewOtherDeleted,
 		viewIPLookupMiss,
-		viewAPICallMade,
-		viewAPICallLatency,
 	)
 }
 
@@ -41,10 +42,11 @@ var (
 	mPodsAdded   = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
 	mPodsDeleted = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
 
-	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
+	mOtherUpdated = stats.Int64("otelsvc/k8s/other_updated", "Number of other update events received", "1")
+	mOtherAdded   = stats.Int64("otelsvc/k8s/other_added", "Number of other add events received", "1")
+	mOtherDeleted = stats.Int64("otelsvc/k8s/other_deleted", "Number of other delete events received", "1")
 
-	mAPICallMade    = stats.Int64("otelsvc/k8s/api_call_made", "Number of times K8S API calls were made", "1")
-	mAPICallLatency = stats.Float64("otelsvc/k8s/api_call_latency", "The latency in milliseconds per K8S API call", "ms")
+	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
 )
 
 var viewPodsUpdated = &view.View{
@@ -68,25 +70,32 @@ var viewPodsDeleted = &view.View{
 	Aggregation: view.Sum(),
 }
 
+var viewOtherUpdated = &view.View{
+	Name:        mOtherUpdated.Name(),
+	Description: mOtherUpdated.Description(),
+	Measure:     mOtherUpdated,
+	Aggregation: view.Sum(),
+}
+
+var viewOtherAdded = &view.View{
+	Name:        mOtherAdded.Name(),
+	Description: mOtherAdded.Description(),
+	Measure:     mOtherAdded,
+	Aggregation: view.Sum(),
+}
+
+var viewOtherDeleted = &view.View{
+	Name:        mOtherDeleted.Name(),
+	Description: mOtherDeleted.Description(),
+	Measure:     mOtherDeleted,
+	Aggregation: view.Sum(),
+}
+
 var viewIPLookupMiss = &view.View{
 	Name:        mIPLookupMiss.Name(),
 	Description: mIPLookupMiss.Description(),
 	Measure:     mIPLookupMiss,
 	Aggregation: view.Sum(),
-}
-
-var viewAPICallMade = &view.View{
-	Name:        mAPICallMade.Name(),
-	Description: mAPICallMade.Description(),
-	Measure:     mAPICallMade,
-	Aggregation: view.Sum(),
-}
-
-var viewAPICallLatency = &view.View{
-	Name:        mAPICallLatency.Name(),
-	Description: mAPICallLatency.Description(),
-	Measure:     mAPICallLatency,
-	Aggregation: view.Distribution(0, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000),
 }
 
 // RecordPodUpdated increments the metric that records pod update events received.
@@ -104,15 +113,24 @@ func RecordPodDeleted() {
 	stats.Record(context.Background(), mPodsDeleted.M(int64(1)))
 }
 
+// RecordOtherUpdated increments the metric that records other update events received.
+func RecordOtherUpdated() {
+	stats.Record(context.Background(), mOtherUpdated.M(int64(1)))
+}
+
+// RecordOtherAdded increments the metric that records other add events receiver.
+func RecordOtherAdded() {
+	stats.Record(context.Background(), mOtherAdded.M(int64(1)))
+}
+
+// RecordOtherDeleted increments the metric that records other events deleted.
+func RecordOtherDeleted() {
+	stats.Record(context.Background(), mOtherDeleted.M(int64(1)))
+}
+
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
 func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
-}
-
-// RecordAPICallMadeAndLatency increments the metrics that records K8S lookups and measures their duration
-func RecordAPICallMadeAndLatency(startTime *time.Time) {
-	stats.Record(context.Background(), mAPICallMade.M(int64(1)))
-	stats.Record(context.Background(), mAPICallLatency.M(sinceInMilliseconds(startTime)))
 }
 
 func sinceInMilliseconds(startTime *time.Time) float64 {
