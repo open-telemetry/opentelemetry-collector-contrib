@@ -109,9 +109,6 @@ func TestEndToEnd(t *testing.T) {
 	assert.Equal(t, "my-metric", mockConsumer.Metrics[0].Metrics[0].MetricDescriptor.Name)
 
 	shutdown()
-
-	// Check that all receivers were shutdown.
-	assert.Len(t, dyn.receivers, 0)
 }
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {

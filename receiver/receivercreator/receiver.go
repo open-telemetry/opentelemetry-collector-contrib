@@ -18,13 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
@@ -105,7 +105,7 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(
 	return receiverConfig, nil
 }
 
-// createRuntimeReceiver creates a receiver that is to discovered at runtime
+// createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (dr *receiverCreator) createRuntimeReceiver(cfg configmodels.Receiver) (component.MetricsReceiver, error) {
 	factory, err := factories.get(cfg.Type())
 	if err != nil {
@@ -145,22 +145,19 @@ func (dr *receiverCreator) Start(host component.Host) error {
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
 func (dr *receiverCreator) Shutdown() error {
-	var errs []string
+	var errs []error
 
 	for _, recvr := range dr.receivers {
 		if err := recvr.Shutdown(); err != nil {
 			// TODO: Should keep track of which receiver the error is associated with
 			// but require some restructuring.
-			errs = append(errs, err.Error())
+			errs = append(errs, err)
 		}
 	}
 
 	if len(errs) > 0 {
-		// Or maybe just return a general error and log the failed shutdowns?
-		return fmt.Errorf("shutdown on %d receivers failed: %s", len(errs), strings.Join(errs, "; "))
+		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), oterr.CombineErrors(errs))
 	}
-
-	dr.receivers = nil
 
 	return nil
 }

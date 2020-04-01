@@ -19,19 +19,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
+// subreceiverConfig is the configuration of a single subreceiver configured inside
+// receiver_creator.
 type subreceiverConfig struct {
-	// Rule is the discovery rule that when matched will create an subreceiverConfig
-	// of this receiver
+	// Rule is the discovery rule that when matched will create a receiver instance
+	// based on subreceiverConfig.
 	Rule string `mapstructure:"rule"`
 
-	// receiverType is set based on the configured name
+	// receiverType is set based on the configured receiver name.
 	receiverType string
-	// config is the subreceiver config definition
+	// config is a map containing the default set of values used when instantiating
+	// the receiver at runtime.
 	config map[string]interface{}
-	// fullName is the full subreceiver name (ie <receiver type>/<id>)
+	// fullName is the full subreceiver name (ie <receiver type>/<id>).
 	fullName string
 }
 
+// newSubreceiverConfig creates a subreceiverConfig instance from the full name of a subreceiver
+// and its arbitrary config map values.
 func newSubreceiverConfig(name string, config map[string]interface{}) (*subreceiverConfig, error) {
 	typeStr, fullName, err := otelconfig.DecodeTypeAndName(name)
 	if err != nil {
