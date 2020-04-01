@@ -25,13 +25,13 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	facotries.Exporters[typeStr] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), facotries,
+		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
 	require.NoError(t, err)
@@ -52,5 +52,25 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			ResourceMappings: []ResourceMapping{
+				{
+					SourceResourceType: "source.resource1",
+					TargetResourceType: "target-resource1",
+					LabelMappings: []LabelMapping{
+						{
+							SourceLabelKey: "source.label1",
+							TargetLabelKey: "target_label_1",
+						},
+						{
+							SourceLabelKey: "sourceLabel2",
+							TargetLabelKey: "target_label_2",
+						},
+					},
+				},
+				{
+					SourceResourceType: "source.resource2",
+					TargetResourceType: "target-resource2",
+				},
+			},
 		})
 }

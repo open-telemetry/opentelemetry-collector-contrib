@@ -104,6 +104,12 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 	if cfg.SkipCreateMetricDescriptor {
 		options.SkipCMD = true
 	}
+	if len(cfg.ResourceMappings) > 0 {
+		rm := resourceMapper{
+			mappings: cfg.ResourceMappings,
+		}
+		options.MapResource = rm.mapResource
+	}
 	return stackdriver.NewExporter(options)
 }
 

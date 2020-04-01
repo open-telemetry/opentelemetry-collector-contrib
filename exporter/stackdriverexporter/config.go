@@ -27,5 +27,19 @@ type Config struct {
 	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
 	// Only has effect if Endpoint is not ""
-	UseInsecure bool `mapstructure:"use_insecure"`
+	UseInsecure      bool              `mapstructure:"use_insecure"`
+	ResourceMappings []ResourceMapping `mapstructure:"resource_mappings"`
+}
+
+// ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
+type ResourceMapping struct {
+	SourceResourceType string `mapstructure:"source_resource_type"`
+	TargetResourceType string `mapstructure:"target_resource_type"`
+
+	LabelMappings []LabelMapping `mapstructure:"label_mappings"`
+}
+
+type LabelMapping struct {
+	SourceLabelKey string `mapstructure:"source_label_key"`
+	TargetLabelKey string `mapstructure:"target_label_key"`
 }
