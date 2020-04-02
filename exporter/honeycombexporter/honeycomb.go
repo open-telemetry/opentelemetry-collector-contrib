@@ -59,11 +59,16 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	for _, span := range td.Spans {
 		sd, err := honeycomb.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
-			serviceName := core.Key("service_name")
-			sd.Attributes = append(sd.Attributes, serviceName.String(td.Node.ServiceInfo.Name))
-			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
+			if td.Node != nil && td.Node.ServiceInfo != nil {
+				serviceName := core.Key("service_name")
 				sd.Attributes = append(sd.Attributes,
-					convertNodeAttributes(td.Node.Attributes)...)
+					serviceName.String(td.Node.ServiceInfo.Name))
+			}
+			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
+				if td.Node != nil && td.Node.Attributes != nil {
+					sd.Attributes = append(sd.Attributes,
+						convertNodeAttributes(td.Node.Attributes)...)
+				}
 			}
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
