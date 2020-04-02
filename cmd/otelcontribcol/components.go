@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
@@ -32,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
@@ -52,6 +54,7 @@ func components() (config.Factories, error) {
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
+		&jaegerlegacyreceiver.Factory{},
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -70,6 +73,7 @@ func components() (config.Factories, error) {
 		&awsxrayexporter.Factory{},
 		&carbonexporter.Factory{},
 		&honeycombexporter.Factory{},
+		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
 	}
 	for _, exp := range factories.Exporters {
