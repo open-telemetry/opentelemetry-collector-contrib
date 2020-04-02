@@ -42,5 +42,7 @@ type ResourceMapping struct {
 type LabelMapping struct {
 	SourceKey string `mapstructure:"source_key"`
 	TargetKey string `mapstructure:"target_key"`
-	Optional  bool   `mapstructure:"optional"`
+	// Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
+	// When required label is missing, we fallback to default resource mapping.
+	Optional bool `mapstructure:"optional"`
 }
