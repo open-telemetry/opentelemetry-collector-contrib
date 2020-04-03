@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.14
 
 require (
-	github.com/apache/thrift v0.12.0
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/open-telemetry/opentelemetry-collector v0.2.10
