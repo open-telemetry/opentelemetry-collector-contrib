@@ -25,13 +25,13 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := config.ExampleComponents()
+	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	facotries.Exporters[typeStr] = factory
+	factories.Exporters[typeStr] = factory
 	cfg, err := config.LoadConfigFile(
-		t, path.Join(".", "testdata", "config.yaml"), facotries,
+		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
 	require.NoError(t, err)
@@ -52,5 +52,27 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			ResourceMappings: []ResourceMapping{
+				{
+					SourceType: "source.resource1",
+					TargetType: "target-resource1",
+					LabelMappings: []LabelMapping{
+						{
+							SourceKey: "contrib.opencensus.io/exporter/stackdriver/project_id",
+							TargetKey: "project_id",
+							Optional:  true,
+						},
+						{
+							SourceKey: "source.label1",
+							TargetKey: "target_label_1",
+							Optional:  false,
+						},
+					},
+				},
+				{
+					SourceType: "source.resource2",
+					TargetType: "target-resource2",
+				},
+			},
 		})
 }
