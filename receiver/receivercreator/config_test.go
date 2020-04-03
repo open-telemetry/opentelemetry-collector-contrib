@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Len(t, r1.subreceiverConfigs, 1)
 	assert.Contains(t, r1.subreceiverConfigs, "examplereceiver/1")
 	assert.Equal(t, "test rule", r1.subreceiverConfigs["examplereceiver/1"].Rule)
-	assert.Equal(t, map[string]interface{}{
+	assert.Equal(t, userConfigMap{
 		"endpoint": "localhost:12345",
 	}, r1.subreceiverConfigs["examplereceiver/1"].config)
 }
