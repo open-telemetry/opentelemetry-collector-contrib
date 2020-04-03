@@ -15,9 +15,18 @@
 package receivercreator
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
+
+type factoryLookup interface {
+	// GetFactory of the specified kind. Returns the factory for a component type.
+	GetFactory(kind component.Kind, componentType string) component.Factory
+}
+
+// userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
+type userConfigMap map[string]interface{}
 
 // subreceiverConfig is the configuration of a single subreceiver configured inside
 // receiver_creator.
@@ -28,16 +37,16 @@ type subreceiverConfig struct {
 
 	// receiverType is set based on the configured receiver name.
 	receiverType string
-	// config is a map containing the default set of values used when instantiating
-	// the receiver at runtime.
-	config map[string]interface{}
+	// config is the map configured by the user in the config file. It is the contents of the map from
+	// the "config" section. The keys and values are arbitrarily configured by the user.
+	config userConfigMap
 	// fullName is the full subreceiver name (ie <receiver type>/<id>).
 	fullName string
 }
 
 // newSubreceiverConfig creates a subreceiverConfig instance from the full name of a subreceiver
 // and its arbitrary config map values.
-func newSubreceiverConfig(name string, config map[string]interface{}) (*subreceiverConfig, error) {
+func newSubreceiverConfig(name string, config userConfigMap) (*subreceiverConfig, error) {
 	typeStr, fullName, err := otelconfig.DecodeTypeAndName(name)
 	if err != nil {
 		return nil, err

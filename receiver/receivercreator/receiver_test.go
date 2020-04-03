@@ -22,7 +22,6 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -53,13 +52,13 @@ func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consume
 }
 
 func TestEndToEnd(t *testing.T) {
-	cfg := exampleCreatorFactory(t)
+	host, cfg := exampleCreatorFactory(t)
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	mockConsumer := &mockMetricsConsumer{}
 	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
-	require.NoError(t, dynReceiver.Start(component.NewMockHost()))
+	require.NoError(t, dynReceiver.Start(host))
 
 	var shutdownOnce sync.Once
 	shutdown := func() {
@@ -112,7 +111,7 @@ func TestEndToEnd(t *testing.T) {
 }
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	cfg := exampleCreatorFactory(t)
+	host, cfg := exampleCreatorFactory(t)
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, &mockMetricsConsumer{})
@@ -120,7 +119,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	dr := dynReceiver.(*receiverCreator)
 	subConfig := dr.cfg.subreceiverConfigs["examplereceiver/1"]
 	require.NotNil(t, subConfig)
-	loadedConfig, err := dr.loadRuntimeReceiverConfig(subConfig, map[string]interface{}{
+	loadedConfig, err := dr.loadRuntimeReceiverConfig(host, subConfig, map[string]interface{}{
 		"endpoint": "localhost:12345",
 	})
 	require.NoError(t, err)
@@ -132,7 +131,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 
 	// Test that metric receiver can be created from loaded config.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := dr.createRuntimeReceiver(loadedConfig)
+		recvr, err := dr.createRuntimeReceiver(host, loadedConfig)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
 		exampleReceiver := recvr.(*config.ExampleReceiverProducer)

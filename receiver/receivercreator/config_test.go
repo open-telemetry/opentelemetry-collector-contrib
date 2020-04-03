@@ -18,13 +18,34 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func exampleCreatorFactory(t *testing.T) *configmodels.Config {
+type mockHostFactories struct {
+	component.MockHost
+	factories config.Factories
+}
+
+// GetFactory of the specified kind. Returns the factory for a component type.
+func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType string) component.Factory {
+	switch kind {
+	case component.KindReceiver:
+		return mh.factories.Receivers[componentType]
+	case component.KindProcessor:
+		return mh.factories.Processors[componentType]
+	case component.KindExporter:
+		return mh.factories.Exporters[componentType]
+	case component.KindExtension:
+		return mh.factories.Extensions[componentType]
+	}
+	return nil
+}
+
+func exampleCreatorFactory(t *testing.T) (component.Host, *configmodels.Config) {
 	factories, err := config.ExampleComponents()
 	require.Nil(t, err)
 
@@ -39,11 +60,11 @@ func exampleCreatorFactory(t *testing.T) *configmodels.Config {
 
 	assert.Equal(t, len(cfg.Receivers), 2)
 
-	return cfg
+	return &mockHostFactories{factories: factories}, cfg
 }
 
 func TestLoadConfig(t *testing.T) {
-	cfg := exampleCreatorFactory(t)
+	_, cfg := exampleCreatorFactory(t)
 	factory := &Factory{}
 
 	r0 := cfg.Receivers["receiver_creator"]

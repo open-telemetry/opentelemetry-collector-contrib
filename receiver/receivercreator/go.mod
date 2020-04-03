@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
-	github.com/open-telemetry/opentelemetry-collector v0.3.0
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200402210402-81cc48ca892c
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.13.0
