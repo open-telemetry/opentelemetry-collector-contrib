@@ -3,8 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 go 1.14
 
 require (
-	// TODO: pin a released version
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.0
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.1
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/protobuf v1.3.5
 	github.com/open-telemetry/opentelemetry-collector v0.2.10
