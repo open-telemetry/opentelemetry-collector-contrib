@@ -57,7 +57,7 @@ func TestNewReceiver(t *testing.T) {
 			args: args{
 				addr:         ":0",
 				category:     "any",
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: exportertest.NewNopTraceExporterOld(),
 			},
 		},
 	}
@@ -129,7 +129,7 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 		t.Fatalf("failed to open a port: %v", err)
 	}
 	defer l.Close()
-	traceReceiver, err := New(l.Addr().String(), "zipkin", exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(l.Addr().String(), "zipkin", exportertest.NewNopTraceExporterOld())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}

@@ -33,7 +33,7 @@ import (
 func TestNewTraceProcessor(t *testing.T) {
 	_, err := NewTraceProcessor(
 		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
+		exportertest.NewNopTraceExporterOld(),
 		kube.NewFakeClient,
 	)
 	require.NoError(t, err)
