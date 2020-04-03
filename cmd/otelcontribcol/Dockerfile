@@ -1,4 +1,4 @@
-FROM golang:1.13.8 as builder
+FROM golang:1.14.1 as builder
 ADD . /src
 WORKDIR /src
 RUN make install-tools
@@ -10,6 +10,6 @@ RUN apk --update add ca-certificates
 
 FROM scratch
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=builder /src/bin/linux/otelcontribcol /
+COPY --from=builder /src/bin/otelcontribcol_linux_amd64 /otelcontribcol
 ENTRYPOINT ["/otelcontribcol"]
 EXPOSE 55678 55679

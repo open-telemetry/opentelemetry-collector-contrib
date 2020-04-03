@@ -569,6 +569,7 @@ github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4 h1:Bptr91tgP3H4/
 github.com/google/addlicense v0.0.0-20190907113143-be125746c2c4/go.mod h1:QtPG26W17m+OIQgE6gQ24gC1M6pUaMBAbFrTIDtwG/E=
 github.com/google/addlicense v0.0.0-20200109101052-9fa18aaf59fb h1:FfgCsW/7lTRIO+goS2tQXkAuVqHEN4CpfZ01hKPXUow=
 github.com/google/addlicense v0.0.0-20200109101052-9fa18aaf59fb/go.mod h1:QtPG26W17m+OIQgE6gQ24gC1M6pUaMBAbFrTIDtwG/E=
+github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2/go.mod h1:EMjYTRimagHs1FwlIqKyX3wAM0u3rA+McvlIIWmSamA=
 github.com/google/btree v0.0.0-20160524151835-7d79101e329e/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0 h1:0udJVsspx3VBr5FwtLhQQtuAsVc79tTq0ocGIPAU6qo=
