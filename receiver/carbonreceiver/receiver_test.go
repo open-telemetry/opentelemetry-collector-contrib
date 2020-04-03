@@ -52,7 +52,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					Transport:        defaultConfig.Transport,
 					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -79,7 +79,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -97,7 +97,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -121,7 +121,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -139,7 +139,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
@@ -199,7 +199,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(exportertest.SinkMetricsExporterOld)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)

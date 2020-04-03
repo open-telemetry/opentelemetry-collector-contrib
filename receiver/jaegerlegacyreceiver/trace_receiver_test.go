@@ -29,12 +29,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber/jaeger-lib/metrics"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 )
 
 const jaegerReceiver = "jaeger_receiver_test"
@@ -49,7 +50,7 @@ func TestPortsNotOpen(t *testing.T) {
 	// an empty config should result in no open ports
 	config := &Configuration{}
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -75,7 +76,7 @@ func TestThriftTChannelReception(t *testing.T) {
 	config := &Configuration{
 		CollectorThriftPort: int(port),
 	}
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(exportertest.SinkTraceExporterOld)
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
@@ -99,7 +100,7 @@ func TestThriftTChannelReception(t *testing.T) {
 	nowPlus10min2sec := now.Add(d10min).Add(d2sec)
 
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
-	batch, err := jaegertranslator.OCProtoToJaegerThrift(want[0])
+	batch, err := jaegerthrifthttpexporter.OCProtoToJaegerThrift(want[0])
 	assert.NoError(t, err, "should not have failed proto/thrift translation")
 
 	//confirm port is open before attempting
