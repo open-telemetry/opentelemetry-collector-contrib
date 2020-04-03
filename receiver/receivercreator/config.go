@@ -15,15 +15,9 @@
 package receivercreator
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
-
-type factoryLookup interface {
-	// GetFactory of the specified kind. Returns the factory for a component type.
-	GetFactory(kind component.Kind, componentType string) component.Factory
-}
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
 type userConfigMap map[string]interface{}

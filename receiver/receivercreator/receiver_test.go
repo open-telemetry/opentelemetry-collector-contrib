@@ -19,6 +19,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -117,9 +119,11 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, &mockMetricsConsumer{})
 	require.NoError(t, err)
 	dr := dynReceiver.(*receiverCreator)
+	exampleFactory := host.GetFactory(component.KindReceiver, "examplereceiver").(component.ReceiverFactoryOld)
+	assert.NotNil(t, exampleFactory)
 	subConfig := dr.cfg.subreceiverConfigs["examplereceiver/1"]
 	require.NotNil(t, subConfig)
-	loadedConfig, err := dr.loadRuntimeReceiverConfig(host, subConfig, map[string]interface{}{
+	loadedConfig, err := dr.loadRuntimeReceiverConfig(exampleFactory, subConfig, userConfigMap{
 		"endpoint": "localhost:12345",
 	})
 	require.NoError(t, err)
@@ -131,7 +135,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 
 	// Test that metric receiver can be created from loaded config.
 	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := dr.createRuntimeReceiver(host, loadedConfig)
+		recvr, err := dr.createRuntimeReceiver(exampleFactory, loadedConfig)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
 		exampleReceiver := recvr.(*config.ExampleReceiverProducer)

@@ -59,10 +59,7 @@ func New(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Conf
 
 // loadRuntimeReceiverConfig loads the given subreceiverConfig merged with config values
 // that may have been discovered at runtime.
-func (dr *receiverCreator) loadRuntimeReceiverConfig(
-	lookup factoryLookup,
-	staticSubConfig *subreceiverConfig,
-	subConfigFromEnv map[string]interface{}) (configmodels.Receiver, error) {
+func (dr *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverFactoryOld, staticSubConfig *subreceiverConfig, subConfigFromEnv map[string]interface{}) (configmodels.Receiver, error) {
 	// Load config under <receiver>/<id> since loadReceiver and CustomUnmarshaler expects this structure.
 	viperConfig := viper.New()
 	viperConfig.Set(staticSubConfig.fullName, map[string]interface{}{})
@@ -78,13 +75,8 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge subreceiver config from discovered runtime values: %v", err)
 	}
 
-	factory := lookup.GetFactory(component.KindReceiver, staticSubConfig.receiverType)
-	if factory == nil {
-		return nil, fmt.Errorf("failed to lookup receiver factory of type %q", staticSubConfig.receiverType)
-	}
-
 	receiverConfig, err := config.LoadReceiver(staticSubConfig.fullName, viperConfig, map[string]component.ReceiverFactoryBase{
-		staticSubConfig.receiverType: factory.(component.ReceiverFactoryOld),
+		staticSubConfig.receiverType: factory,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load subreceiver config: %v", err)
@@ -96,13 +88,8 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (dr *receiverCreator) createRuntimeReceiver(lookup factoryLookup, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	factory := lookup.GetFactory(component.KindReceiver, cfg.Type())
-	if factory == nil {
-		return nil, fmt.Errorf("failed to lookup receiver factory of type %q", cfg.Type())
-	}
-	receiverFactory := factory.(component.ReceiverFactoryOld)
-	return receiverFactory.CreateMetricsReceiver(dr.logger, cfg, dr)
+func (dr *receiverCreator) createRuntimeReceiver(factory component.ReceiverFactoryOld, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
+	return factory.CreateMetricsReceiver(dr.logger, cfg, dr)
 }
 
 // Start receiver_creator.
@@ -110,11 +97,20 @@ func (dr *receiverCreator) Start(host component.Host) error {
 	// TODO: Temporarily load a single instance of all subreceivers for testing.
 	// Will be done in reaction to observer events later.
 	for _, subconfig := range dr.cfg.subreceiverConfigs {
-		cfg, err := dr.loadRuntimeReceiverConfig(host, subconfig, map[string]interface{}{})
+		factory := host.GetFactory(component.KindReceiver, subconfig.receiverType)
+
+		if factory == nil {
+			dr.logger.Error("unable to lookup factory for receiver", zap.String("receiver", subconfig.receiverType))
+			continue
+		}
+
+		receiverFactory := factory.(component.ReceiverFactoryOld)
+
+		cfg, err := dr.loadRuntimeReceiverConfig(receiverFactory, subconfig, userConfigMap{})
 		if err != nil {
 			return err
 		}
-		recvr, err := dr.createRuntimeReceiver(host, cfg)
+		recvr, err := dr.createRuntimeReceiver(receiverFactory, cfg)
 		if err != nil {
 			return err
 		}
