@@ -68,7 +68,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -80,7 +80,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 	}
@@ -101,7 +101,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(exportertest.SinkMetricsExporterOld)
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 
@@ -313,7 +313,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(exportertest.SinkMetricsExporterOld)
 			rcv, err := New(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
