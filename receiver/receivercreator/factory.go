@@ -53,7 +53,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 		c := intoCfg.(*Config)
 
 		for subreceiverKey := range v.GetStringMap(viperKey) {
-			cfgSection := sourceViperSection.Sub(subreceiverKey).GetStringMap("config")
+			cfgSection := sourceViperSection.GetStringMap(subreceiverKey + "::config")
 			subreceiver, err := newSubreceiverConfig(subreceiverKey, cfgSection)
 			if err != nil {
 				return err

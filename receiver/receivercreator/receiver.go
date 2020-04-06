@@ -57,21 +57,23 @@ func new(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Conf
 // loadRuntimeReceiverConfig loads the given subreceiverConfig merged with config values
 // that may have been discovered at runtime.
 func (rc *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverFactoryOld,
-	staticSubConfig *subreceiverConfig, discoveredConfig map[string]interface{}) (configmodels.Receiver, error) {
-	// Load config under <receiver>/<id> since loadReceiver and CustomUnmarshaler expects this structure.
-	viperConfig := config.NewViper()
-	viperConfig.Set(staticSubConfig.fullName, userConfigMap{})
-	subreceiverConfig := viperConfig.Sub(staticSubConfig.fullName)
+	staticSubConfig *subreceiverConfig, discoveredConfig userConfigMap) (configmodels.Receiver, error) {
+	mergedConfig := config.NewViper()
 
 	// Merge in the config values specified in the config file.
-	if err := subreceiverConfig.MergeConfigMap(staticSubConfig.config); err != nil {
+	if err := mergedConfig.MergeConfigMap(staticSubConfig.config); err != nil {
 		return nil, fmt.Errorf("failed to merge subreceiver config from config file: %v", err)
 	}
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := subreceiverConfig.MergeConfigMap(discoveredConfig); err != nil {
+	if err := mergedConfig.MergeConfigMap(discoveredConfig); err != nil {
 		return nil, fmt.Errorf("failed to merge subreceiver config from discovered runtime values: %v", err)
 	}
+
+	viperConfig := config.NewViper()
+
+	// Load config under <receiver>/<id> since loadReceiver and CustomUnmarshaler expects this structure.
+	viperConfig.Set(staticSubConfig.fullName, mergedConfig.AllSettings())
 
 	receiverConfig, err := config.LoadReceiver(staticSubConfig.fullName, viperConfig, map[string]component.ReceiverFactoryBase{
 		staticSubConfig.receiverType: factory,
@@ -81,7 +83,7 @@ func (rc *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverF
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", rc.cfg.Name(), staticSubConfig.fullName, subreceiverConfig.GetString("endpoint")))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", rc.cfg.Name(), staticSubConfig.fullName, mergedConfig.GetString("endpoint")))
 	return receiverConfig, nil
 }
 
