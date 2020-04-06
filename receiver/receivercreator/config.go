@@ -28,7 +28,6 @@ type subreceiverConfig struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on subreceiverConfig.
 	Rule string `mapstructure:"rule"`
-
 	// receiverType is set based on the configured receiver name.
 	receiverType string
 	// config is the map configured by the user in the config file. It is the contents of the map from
