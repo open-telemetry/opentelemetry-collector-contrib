@@ -19,11 +19,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
