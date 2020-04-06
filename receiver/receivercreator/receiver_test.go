@@ -138,6 +138,6 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
 		exampleReceiver := recvr.(*config.ExampleReceiverProducer)
-		assert.Equal(t, dr, exampleReceiver.MetricsConsumer)
+		assert.Equal(t, dr.nextConsumer, exampleReceiver.MetricsConsumer)
 	})
 }

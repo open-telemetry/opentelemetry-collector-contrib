@@ -95,5 +95,5 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
-	return New(logger, consumer, cfg.(*Config))
+	return new(logger, consumer, cfg.(*Config))
 }

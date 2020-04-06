@@ -15,7 +15,6 @@
 package receivercreator
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -23,9 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/oterr"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -43,8 +40,8 @@ type receiverCreator struct {
 	receivers    []component.Receiver
 }
 
-// New creates the receiver_creator with the given parameters.
-func New(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Config) (component.MetricsReceiver, error) {
+// new creates the receiver_creator with the given parameters.
+func new(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Config) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
@@ -59,10 +56,11 @@ func New(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Conf
 
 // loadRuntimeReceiverConfig loads the given subreceiverConfig merged with config values
 // that may have been discovered at runtime.
-func (dr *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverFactoryOld, staticSubConfig *subreceiverConfig, subConfigFromEnv map[string]interface{}) (configmodels.Receiver, error) {
+func (rc *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverFactoryOld,
+	staticSubConfig *subreceiverConfig, discoveredConfig map[string]interface{}) (configmodels.Receiver, error) {
 	// Load config under <receiver>/<id> since loadReceiver and CustomUnmarshaler expects this structure.
-	viperConfig := viper.New()
-	viperConfig.Set(staticSubConfig.fullName, map[string]interface{}{})
+	viperConfig := config.NewViper()
+	viperConfig.Set(staticSubConfig.fullName, userConfigMap{})
 	subreceiverConfig := viperConfig.Sub(staticSubConfig.fullName)
 
 	// Merge in the config values specified in the config file.
@@ -70,8 +68,8 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverF
 		return nil, fmt.Errorf("failed to merge subreceiver config from config file: %v", err)
 	}
 
-	// Merge in subConfigFromEnv containing values discovered at runtime.
-	if err := subreceiverConfig.MergeConfigMap(subConfigFromEnv); err != nil {
+	// Merge in discoveredConfig containing values discovered at runtime.
+	if err := subreceiverConfig.MergeConfigMap(discoveredConfig); err != nil {
 		return nil, fmt.Errorf("failed to merge subreceiver config from discovered runtime values: %v", err)
 	}
 
@@ -83,34 +81,34 @@ func (dr *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverF
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", dr.cfg.Name(), staticSubConfig.fullName, subreceiverConfig.GetString("endpoint")))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", rc.cfg.Name(), staticSubConfig.fullName, subreceiverConfig.GetString("endpoint")))
 	return receiverConfig, nil
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (dr *receiverCreator) createRuntimeReceiver(factory component.ReceiverFactoryOld, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(dr.logger, cfg, dr)
+func (rc *receiverCreator) createRuntimeReceiver(factory component.ReceiverFactoryOld, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
+	return factory.CreateMetricsReceiver(rc.logger, cfg, rc.nextConsumer)
 }
 
 // Start receiver_creator.
-func (dr *receiverCreator) Start(host component.Host) error {
+func (rc *receiverCreator) Start(host component.Host) error {
 	// TODO: Temporarily load a single instance of all subreceivers for testing.
 	// Will be done in reaction to observer events later.
-	for _, subconfig := range dr.cfg.subreceiverConfigs {
+	for _, subconfig := range rc.cfg.subreceiverConfigs {
 		factory := host.GetFactory(component.KindReceiver, subconfig.receiverType)
 
 		if factory == nil {
-			dr.logger.Error("unable to lookup factory for receiver", zap.String("receiver", subconfig.receiverType))
+			rc.logger.Error("unable to lookup factory for receiver", zap.String("receiver", subconfig.receiverType))
 			continue
 		}
 
 		receiverFactory := factory.(component.ReceiverFactoryOld)
 
-		cfg, err := dr.loadRuntimeReceiverConfig(receiverFactory, subconfig, userConfigMap{})
+		cfg, err := rc.loadRuntimeReceiverConfig(receiverFactory, subconfig, userConfigMap{})
 		if err != nil {
 			return err
 		}
-		recvr, err := dr.createRuntimeReceiver(receiverFactory, cfg)
+		recvr, err := rc.createRuntimeReceiver(receiverFactory, cfg)
 		if err != nil {
 			return err
 		}
@@ -119,7 +117,7 @@ func (dr *receiverCreator) Start(host component.Host) error {
 			return fmt.Errorf("failed starting subreceiver %s: %v", cfg.Name(), err)
 		}
 
-		dr.receivers = append(dr.receivers, recvr)
+		rc.receivers = append(rc.receivers, recvr)
 	}
 
 	// TODO: Can result in some receivers left running if an error is encountered
@@ -130,10 +128,10 @@ func (dr *receiverCreator) Start(host component.Host) error {
 }
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
-func (dr *receiverCreator) Shutdown() error {
+func (rc *receiverCreator) Shutdown() error {
 	var errs []error
 
-	for _, recvr := range dr.receivers {
+	for _, recvr := range rc.receivers {
 		if err := recvr.Shutdown(); err != nil {
 			// TODO: Should keep track of which receiver the error is associated with
 			// but require some restructuring.
@@ -146,9 +144,4 @@ func (dr *receiverCreator) Shutdown() error {
 	}
 
 	return nil
-}
-
-// ConsumeMetricsData receives metrics from receivers created at runtime to forward on.
-func (dr *receiverCreator) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return dr.nextConsumer.ConsumeMetricsData(ctx, md)
 }
