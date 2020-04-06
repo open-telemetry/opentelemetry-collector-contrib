@@ -254,7 +254,7 @@ func TestReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(exportertest.SinkTraceExporterOld)
 
 			sr, err := New(context.Background(), zap.NewNop(), tt.args.config, sink)
 			defer sr.Shutdown()

@@ -29,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 )
 
 // Default timeout for http request in seconds
@@ -80,7 +79,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 	td consumerdata.TraceData,
 ) (droppedSpans int, err error) {
 
-	tBatch, err := jaegertranslator.OCProtoToJaegerThrift(td)
+	tBatch, err := OCProtoToJaegerThrift(td)
 	if err != nil {
 		return len(td.Spans), consumererror.Permanent(err)
 	}
