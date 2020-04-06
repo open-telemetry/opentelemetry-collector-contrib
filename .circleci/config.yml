@@ -25,8 +25,8 @@ commands:
       - run:
           name: Push image
           command: |
-            docker push otel/<< parameters.repo >>:<< parameters.tag >>
-            docker push otel/<< parameters.repo >>:latest
+            docker push sumologic/<< parameters.repo >>:<< parameters.tag >>
+            docker push sumologic/<< parameters.repo >>:latest
 
 workflows:
   version: 2
