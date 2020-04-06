@@ -15,6 +15,7 @@
 package jaegerlegacyreceiver
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"testing"
@@ -54,11 +55,9 @@ func TestPortsNotOpen(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	assert.NoError(t, jr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
 
 	// there is a race condition here that we're ignoring.
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
@@ -80,11 +79,9 @@ func TestThriftTChannelReception(t *testing.T) {
 
 	jr, err := New(jaegerReceiver, config, sink, zap.NewNop())
 	assert.NoError(t, err, "should not have failed to create a new receiver")
-	defer jr.Shutdown()
+	defer jr.Shutdown(context.Background())
 
-	mh := component.NewMockHost()
-	err = jr.Start(mh)
-	assert.NoError(t, err, "should not have failed to start trace reception")
+	assert.NoError(t, jr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
 	t.Log("StartTraceReception")
 
 	b := tchannel.NewBuilder()

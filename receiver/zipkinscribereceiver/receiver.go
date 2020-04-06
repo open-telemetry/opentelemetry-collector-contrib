@@ -71,7 +71,7 @@ func New(
 	return r, nil
 }
 
-func (r *scribeReceiver) Start(host component.Host) error {
+func (r *scribeReceiver) Start(_ context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
@@ -105,7 +105,7 @@ func (r *scribeReceiver) Start(host component.Host) error {
 	return err
 }
 
-func (r *scribeReceiver) Shutdown() error {
+func (r *scribeReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 

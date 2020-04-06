@@ -19,9 +19,9 @@ import (
 
 	"github.com/honeycombio/opentelemetry-exporter-go/honeycomb"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.opentelemetry.io/otel/api/core"
 )
 
@@ -77,7 +77,7 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 		}
 	}
 
-	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
 func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
@@ -90,7 +90,7 @@ func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
 	return result
 }
 
-func (e *HoneycombExporter) Shutdown() error {
+func (e *HoneycombExporter) Shutdown(context.Context) error {
 	e.exporter.Close()
 	return nil
 }

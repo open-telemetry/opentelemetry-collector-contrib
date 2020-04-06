@@ -81,7 +81,7 @@ func testTraceExporter(td consumerdata.TraceData, t *testing.T) []honeycombData 
 	ctx := context.Background()
 	err = exporter.ConsumeTraceData(ctx, td)
 	require.NoError(t, err)
-	exporter.Shutdown()
+	exporter.Shutdown(context.Background())
 
 	return got
 }
