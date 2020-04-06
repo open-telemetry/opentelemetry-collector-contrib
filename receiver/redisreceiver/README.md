@@ -12,8 +12,7 @@ Status: beta
 
 The Redis INFO command returns information and statistics about a Redis
 server (see [https://redis.io/commands/info](https://redis.io/commands/info) for
-details).
-The Redis receiver extracts values from the result and converts them to open
+details). The Redis receiver extracts values from the result and converts them to open
 telemetry metrics. Details about the metrics produced by the Redis receiver
 can be found by browsing [metric_functions.go](metric_functions.go).
 
@@ -57,13 +56,13 @@ The hostname and port of the Redis instance, separated by a colon.
 
 _Required._
 
-### refresh_interval
+### collection_interval
 
 This receiver runs on an interval. Each time it runs, it queries Redis, creates
-metrics, and sends them to the next consumer. The `refresh_interval`
-configuration option tells this receiver the interval duration between runs.
+metrics, and sends them to the next consumer. The `collection_interval`
+configuration option tells this receiver the duration between runs.
 
-This value be a string readable by Golang's `ParseDuration` function:
+This value must be a string readable by Golang's `ParseDuration` function:
 e.g. "1h30m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 _Required._

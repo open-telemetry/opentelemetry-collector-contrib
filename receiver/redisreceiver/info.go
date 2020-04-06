@@ -15,9 +15,9 @@
 package redisreceiver
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
@@ -31,7 +31,7 @@ type info map[string]string
 // like warnings.
 func (i info) buildFixedProtoMetrics(
 	metrics []*redisMetric,
-	t time.Time,
+	t *timeBundle,
 ) ([]*metricspb.Metric, []error) {
 	var warnings []error
 	var protoMetrics []*metricspb.Metric
@@ -56,7 +56,7 @@ func (i info) buildFixedProtoMetrics(
 
 // Builds proto metrics from any 'keyspace' metrics in Redis INFO:
 // e.g. "db0:keys=1,expires=2,avg_ttl=3"
-func (i info) buildKeyspaceProtoMetrics(t time.Time) ([]*metricspb.Metric, []error) {
+func (i info) buildKeyspaceProtoMetrics(t *timeBundle) ([]*metricspb.Metric, []error) {
 	var warnings []error
 	var out []*metricspb.Metric
 	const RedisMaxDbs = 16
@@ -75,4 +75,13 @@ func (i info) buildKeyspaceProtoMetrics(t time.Time) ([]*metricspb.Metric, []err
 		out = append(out, keyspaceMetrics...)
 	}
 	return out, warnings
+}
+
+func (i info) getUptimeInSeconds() (int, error) {
+	const uptimeKey = "uptime_in_seconds"
+	uptimeStr, ok := i[uptimeKey]
+	if !ok {
+		return 0, errors.New(uptimeKey + " missing from redis info")
+	}
+	return strconv.Atoi(uptimeStr)
 }

@@ -35,6 +35,7 @@ type redisRunnable struct {
 	redisSvc        *redisSvc
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
+	timeBundle      *timeBundle
 }
 
 func newRedisRunnable(
@@ -51,18 +52,18 @@ func newRedisRunnable(
 	}
 }
 
-// Builds a data structure of all of the keys, types, converters and such
-// to later extract data from Redis.
+// Builds a data structure of all of the keys, types, converters and such to
+// later extract data from Redis.
 func (r *redisRunnable) Setup() error {
 	r.redisMetrics = getDefaultRedisMetrics()
 	return nil
 }
 
-// Runs intermittently, querying Redis and building Metrics to send to the
-// next consumer. First builds 'fixed' metrics (non-keyspace metrics) defined
-// at startup time. Then builds 'keyspace' metrics if there are any keyspace
-// lines returned by Redis. There should be one keyspace line per active Redis
-// database, of which there can be 16.
+// Run is called periodically, querying Redis and building Metrics to send to
+// the next consumer. First builds 'fixed' metrics (non-keyspace metrics)
+// defined at startup time. Then builds 'keyspace' metrics if there are any
+// keyspace lines returned by Redis. There should be one keyspace line per
+// active Redis database, of which there can be 16.
 func (r *redisRunnable) Run() error {
 	const dataformat = "redis"
 	const transport = "http" // todo verify this
@@ -71,10 +72,22 @@ func (r *redisRunnable) Run() error {
 	info, err := r.redisSvc.info()
 	if err != nil {
 		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
-		return err
+		return nil
 	}
-	now := time.Now()
-	metrics, warnings := info.buildFixedProtoMetrics(r.redisMetrics, now)
+
+	uptime, err := info.getUptimeInSeconds()
+	if err != nil {
+		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		return nil
+	}
+
+	if r.timeBundle == nil {
+		r.timeBundle = newTimeBundle(time.Now(), uptime)
+	} else {
+		r.timeBundle.update(time.Now(), uptime)
+	}
+
+	metrics, warnings := info.buildFixedProtoMetrics(r.redisMetrics, r.timeBundle)
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing redis string",
@@ -82,7 +95,7 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	keyspaceMetrics, warnings := info.buildKeyspaceProtoMetrics(now)
+	keyspaceMetrics, warnings := info.buildKeyspaceProtoMetrics(r.timeBundle)
 	metrics = append(metrics, keyspaceMetrics...)
 	if warnings != nil {
 		r.logger.Warn(

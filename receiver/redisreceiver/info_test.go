@@ -15,41 +15,15 @@
 package redisreceiver
 
 import (
-	"io/ioutil"
-	"path"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-var _ client = (*fakeClient)(nil)
-
-type fakeClient struct{}
-
-func newFakeClient() *fakeClient {
-	return &fakeClient{}
-}
-
-func (c fakeClient) delimiter() string {
-	return "\n"
-}
-
-func (fakeClient) retrieveInfo() (string, error) {
-	return readFile("info")
-}
-
-func readFile(fname string) (string, error) {
-	file, err := ioutil.ReadFile(path.Join("testdata", fname+".txt"))
-	if err != nil {
-		return "", err
-	}
-	return string(file), nil
-}
-
-func TestRetrieveInfo(t *testing.T) {
-	g := fakeClient{}
-	res, err := g.retrieveInfo()
+func TestGetUptime(t *testing.T) {
+	svc := newRedisSvc(newFakeClient())
+	info, _ := svc.info()
+	uptime, err := info.getUptimeInSeconds()
 	require.Nil(t, err)
-	require.True(t, strings.HasPrefix(res, "# Server"))
+	require.Equal(t, 104946, uptime)
 }

@@ -15,10 +15,9 @@
 package redisreceiver
 
 import (
-	"time"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 )
@@ -35,7 +34,7 @@ func newMetricsData(protoMetrics []*metricspb.Metric) *consumerdata.MetricsData 
 	}
 }
 
-func buildKeyspaceTriplet(k *keyspace, t time.Time) []*metricspb.Metric {
+func buildKeyspaceTriplet(k *keyspace, t *timeBundle) []*metricspb.Metric {
 	return []*metricspb.Metric{
 		buildKeyspaceKeysMetric(k, t),
 		buildKeyspaceExpiresMetric(k, t),
@@ -43,35 +42,35 @@ func buildKeyspaceTriplet(k *keyspace, t time.Time) []*metricspb.Metric {
 	}
 }
 
-func buildKeyspaceKeysMetric(k *keyspace, t time.Time) *metricspb.Metric {
-	ttlRedisMetric := &redisMetric{
+func buildKeyspaceKeysMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
+	m := &redisMetric{
 		name:   "redis/db/keys",
 		labels: map[string]string{"db": k.db},
 		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
 	}
-	ttlPt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.keys)}}
-	return newProtoMetric(ttlRedisMetric, ttlPt, t)
+	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.keys)}}
+	return newProtoMetric(m, pt, t)
 }
 
-func buildKeyspaceExpiresMetric(k *keyspace, t time.Time) *metricspb.Metric {
-	ttlRedisMetric := &redisMetric{
+func buildKeyspaceExpiresMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
+	m := &redisMetric{
 		name:   "redis/db/expires",
 		labels: map[string]string{"db": k.db},
 		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
 	}
-	ttlPt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.expires)}}
-	return newProtoMetric(ttlRedisMetric, ttlPt, t)
+	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.expires)}}
+	return newProtoMetric(m, pt, t)
 }
 
-func buildKeyspaceTTLMetric(k *keyspace, t time.Time) *metricspb.Metric {
-	ttlRedisMetric := &redisMetric{
+func buildKeyspaceTTLMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
+	m := &redisMetric{
 		name:   "redis/db/avg_ttl",
 		units:  "ms",
 		labels: map[string]string{"db": k.db},
 		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
 	}
-	ttlPt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.avgTTL)}}
-	return newProtoMetric(ttlRedisMetric, ttlPt, t)
+	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.avgTTL)}}
+	return newProtoMetric(m, pt, t)
 }
 
 // Create new protobuf Metric.
@@ -79,22 +78,24 @@ func buildKeyspaceTTLMetric(k *keyspace, t time.Time) *metricspb.Metric {
 //   * redisMetric -- the fixed metadata to build the protobuf metric
 //   * pt -- the protobuf Point to be wrapped
 //   * currTime -- the timestamp to be put on the Point (not on the timeseries)
-func newProtoMetric(redisMetric *redisMetric, pt *metricspb.Point, currTime time.Time) *metricspb.Metric {
+func newProtoMetric(m *redisMetric, pt *metricspb.Point, t *timeBundle) *metricspb.Metric {
 	var startTime *timestamp.Timestamp
 
-	if redisMetric.mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
-		redisMetric.mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE {
-		startTime = &timestamp.Timestamp{} // todo: not sure about this
+	if m.mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
+		m.mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE {
+		ts, _ := ptypes.TimestampProto(t.serverStart)
+		startTime = ts
 	}
 
-	pt.Timestamp = timeToTimestamp(&currTime)
-	labelKeys, labelVals := buildLabels(redisMetric.labels, redisMetric.labelDescriptions)
+	ts, _ := ptypes.TimestampProto(t.current)
+	pt.Timestamp = ts
+	labelKeys, labelVals := buildLabels(m.labels, m.labelDescriptions)
 	pbMetric := &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:        redisMetric.name,
-			Description: redisMetric.desc,
-			Unit:        redisMetric.units,
-			Type:        redisMetric.mdType,
+			Name:        m.name,
+			Description: m.desc,
+			Unit:        m.units,
+			Type:        m.mdType,
 			LabelKeys:   labelKeys,
 		},
 		Timeseries: []*metricspb.TimeSeries{{
@@ -104,17 +105,6 @@ func newProtoMetric(redisMetric *redisMetric, pt *metricspb.Point, currTime time
 		}},
 	}
 	return pbMetric
-}
-
-// TODO: Maybe this should be moved to a general purpose utility if we don't have one already
-func timeToTimestamp(t *time.Time) *timestamp.Timestamp {
-	if t == nil {
-		return nil
-	}
-	return &timestamp.Timestamp{
-		Seconds: t.Unix(),
-		Nanos:   int32(t.Nanosecond()),
-	}
 }
 
 func buildLabels(
@@ -130,7 +120,10 @@ func buildLabels(
 			labelKey.Description = desc
 		}
 		keys = append(keys, labelKey)
-		values = append(values, &metricspb.LabelValue{Value: val})
+		values = append(values, &metricspb.LabelValue{
+			Value:    val,
+			HasValue: true,
+		})
 	}
 	return keys, values
 }

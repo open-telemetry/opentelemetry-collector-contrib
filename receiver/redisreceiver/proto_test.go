@@ -19,6 +19,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/require"
@@ -76,7 +77,7 @@ func TestAllMetrics(t *testing.T) {
 func TestKeyspaceMetrics(t *testing.T) {
 	svc := newRedisSvc(newFakeClient())
 	info, _ := svc.info()
-	m, err := info.buildKeyspaceProtoMetrics(time.Time{})
+	m, err := info.buildKeyspaceProtoMetrics(getDefaultTimeBundle())
 	require.Nil(t, err)
 
 	metric := m[0]
@@ -102,21 +103,22 @@ func TestKeyspaceMetrics(t *testing.T) {
 }
 
 func TestNewProtoMetric(t *testing.T) {
-	zeroTs := &timestamp.Timestamp{}
+	serverStartTime, _ := ptypes.TimestampProto(time.Unix(900, 0))
 	tests := []struct {
 		name     string
 		mdType   metricspb.MetricDescriptor_Type
 		expected *timestamp.Timestamp
 	}{
-		{"cumulative int", metricspb.MetricDescriptor_CUMULATIVE_INT64, zeroTs},
-		{"cumulative double", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, zeroTs},
+		{"cumulative int", metricspb.MetricDescriptor_CUMULATIVE_INT64, serverStartTime},
+		{"cumulative double", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, serverStartTime},
 		{"gauge int", metricspb.MetricDescriptor_GAUGE_INT64, nil},
 		{"gauge double", metricspb.MetricDescriptor_GAUGE_DOUBLE, nil},
 	}
+	bundle := getDefaultTimeBundle()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			m := &redisMetric{mdType: test.mdType}
-			proto := newProtoMetric(m, &metricspb.Point{}, time.Time{})
+			proto := newProtoMetric(m, &metricspb.Point{}, bundle)
 			require.Equal(t, test.expected, proto.Timeseries[0].StartTimestamp)
 		})
 	}
@@ -128,7 +130,7 @@ func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, []error, er
 	if err != nil {
 		return nil, nil, err
 	}
-	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, time.Time{})
+	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, getDefaultTimeBundle())
 	return protoMetrics, warnings, nil
 }
 
@@ -152,9 +154,13 @@ func getMetricDataErr(metric *redisMetric) (*consumerdata.MetricsData, []error, 
 	if err != nil {
 		return nil, nil, err
 	}
-	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, time.Time{})
+	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, getDefaultTimeBundle())
 	md := newMetricsData(protoMetrics)
 	return md, warnings, nil
+}
+
+func getDefaultTimeBundle() *timeBundle {
+	return newTimeBundle(time.Unix(1000, 0), 100)
 }
 
 func requireIntPtEqual(t *testing.T, i int64, metric *metricspb.Metric) {

@@ -17,7 +17,6 @@ package redisreceiver
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
@@ -36,10 +35,7 @@ type redisMetric struct {
 
 // Parse a numeric string to build a proto Metric based on this redisMetric. The
 // passed-in time is applied to the Point.
-func (m *redisMetric) parseMetric(
-	strVal string,
-	t time.Time,
-) (*metricspb.Metric, error) {
+func (m *redisMetric) parseMetric(strVal string, t *timeBundle) (*metricspb.Metric, error) {
 	pt, err := m.parsePoint(strVal)
 	if err != nil {
 		return nil, err
