@@ -73,14 +73,14 @@ func (kp *kubernetesprocessor) GetCapabilities() component.ProcessorCapabilities
 	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
-func (kp *kubernetesprocessor) Start(host component.Host) error {
+func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}
 	return nil
 }
 
-func (kp *kubernetesprocessor) Shutdown() error {
+func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 	if !kp.passthroughMode {
 		kp.kc.Stop()
 	}

@@ -19,9 +19,9 @@ import (
 
 	"github.com/lightstep/opentelemetry-exporter-go/lightstep"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.opentelemetry.io/otel/api/core"
 )
 
@@ -69,11 +69,11 @@ func (e *LightStepExporter) pushTraceData(ctx context.Context, td consumerdata.T
 		}
 	}
 
-	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
 // Shutdown closes the LightStep opentelemetry exporter.
-func (e *LightStepExporter) Shutdown() error {
+func (e *LightStepExporter) Shutdown(context.Context) error {
 	e.exporter.Close()
 	return nil
 }

@@ -15,6 +15,7 @@
 package jaegerthrifthttpexporter
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -60,7 +61,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown())
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
 func TestFactory_CreateTraceExporter(t *testing.T) {

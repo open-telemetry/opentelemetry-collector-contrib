@@ -33,7 +33,7 @@ type sapmExporter struct {
 	logger *zap.Logger
 }
 
-func (se *sapmExporter) Shutdown() error {
+func (se *sapmExporter) Shutdown(context.Context) error {
 	se.client.Stop()
 	return nil
 }
