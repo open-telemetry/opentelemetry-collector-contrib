@@ -1,0 +1,20 @@
+receivers:
+  receiver_creator:
+  receiver_creator/1:
+    examplereceiver/1:
+      rule: test rule
+      config:
+        endpoint: localhost:12345
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [receiver_creator/1]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
