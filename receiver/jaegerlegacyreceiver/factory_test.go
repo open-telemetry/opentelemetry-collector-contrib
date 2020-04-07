@@ -122,12 +122,11 @@ func TestCreateNoProtocols(t *testing.T) {
 
 func TestCustomUnmarshalErrors(t *testing.T) {
 	factory := Factory{}
-	v := viper.New()
 
 	f := factory.CustomUnmarshaler()
 	assert.NotNil(t, f, "custom unmarshal function should not be nil")
 
-	err := f(v, "", viper.New(), nil)
+	err := f(viper.New(), nil)
 	assert.Error(t, err, "should not have been able to marshal to a nil config")
 }
 

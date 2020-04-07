@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmex
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200406204246-eea53c92e34a
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200407222724-46a32a504b8f
 	github.com/signalfx/sapm-proto v0.3.0
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/multierr v1.4.0 // indirect

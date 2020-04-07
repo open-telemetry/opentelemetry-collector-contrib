@@ -45,14 +45,15 @@ func (f *Factory) Type() string {
 
 // CustomUnmarshaler returns custom unmarshaler for receiver_creator config.
 func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
+	return func(sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
 			// Nothing to do if there is no config given.
 			return nil
 		}
 		c := intoCfg.(*Config)
 
-		for subreceiverKey := range v.GetStringMap(viperKey) {
+		// TODO: Change the sub-receivers to be under "receivers" to allow other config for the main receiver-creator receiver.
+		for subreceiverKey := range sourceViperSection.AllSettings() {
 			cfgSection := sourceViperSection.GetStringMap(subreceiverKey + "::config")
 			subreceiver, err := newSubreceiverConfig(subreceiverKey, cfgSection)
 			if err != nil {
@@ -62,7 +63,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			// Unmarshals receiver_creator configuration like rule.
 			// TODO: validate discovery rule
 			if err := sourceViperSection.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
-				return fmt.Errorf("failed to deserialize sub-receiver %q inside receiver_creator %q: %s", subreceiverKey, viperKey, err)
+				return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
 			}
 
 			c.subreceiverConfigs[subreceiverKey] = subreceiver
