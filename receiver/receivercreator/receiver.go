@@ -15,14 +15,15 @@
 package receivercreator
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +94,7 @@ func (rc *receiverCreator) createRuntimeReceiver(factory component.ReceiverFacto
 }
 
 // Start receiver_creator.
-func (rc *receiverCreator) Start(host component.Host) error {
+func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error {
 	// TODO: Temporarily load a single instance of all subreceivers for testing.
 	// Will be done in reaction to observer events later.
 	for _, subconfig := range rc.cfg.subreceiverConfigs {
@@ -115,7 +116,7 @@ func (rc *receiverCreator) Start(host component.Host) error {
 			return err
 		}
 
-		if err := recvr.Start(host); err != nil {
+		if err := recvr.Start(ctx, host); err != nil {
 			return fmt.Errorf("failed starting subreceiver %s: %v", cfg.Name(), err)
 		}
 
@@ -130,11 +131,11 @@ func (rc *receiverCreator) Start(host component.Host) error {
 }
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
-func (rc *receiverCreator) Shutdown() error {
+func (rc *receiverCreator) Shutdown(ctx context.Context) error {
 	var errs []error
 
 	for _, recvr := range rc.receivers {
-		if err := recvr.Shutdown(); err != nil {
+		if err := recvr.Shutdown(ctx); err != nil {
 			// TODO: Should keep track of which receiver the error is associated with
 			// but require some restructuring.
 			errs = append(errs, err)
@@ -142,7 +143,7 @@ func (rc *receiverCreator) Shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), oterr.CombineErrors(errs))
+		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), componenterror.CombineErrors(errs))
 	}
 
 	return nil

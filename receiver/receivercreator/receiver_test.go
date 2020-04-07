@@ -59,12 +59,12 @@ func TestEndToEnd(t *testing.T) {
 	mockConsumer := &mockMetricsConsumer{}
 	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
-	require.NoError(t, dynReceiver.Start(host))
+	require.NoError(t, dynReceiver.Start(context.Background(), host))
 
 	var shutdownOnce sync.Once
 	shutdown := func() {
 		shutdownOnce.Do(func() {
-			assert.NoError(t, dynReceiver.Shutdown())
+			assert.NoError(t, dynReceiver.Shutdown(context.Background()))
 		})
 	}
 
