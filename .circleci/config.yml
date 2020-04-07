@@ -17,8 +17,8 @@ commands:
           name: Build image
           command: |
             make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+            docker tag otelcontribcol:latest sumologic/<< parameters.repo >>:<< parameters.tag >>
+            docker tag otelcontribcol:latest sumologic/<< parameters.repo >>:latest
       - run:
           name: Login to Docker Hub
           command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
