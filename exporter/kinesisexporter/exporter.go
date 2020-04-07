@@ -37,12 +37,12 @@ var _ (component.TraceExporterOld) = (*Exporter)(nil)
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned. If error is returned by
 // Start() then the collector startup will be aborted.
-func (e Exporter) Start(host component.Host) error {
+func (e Exporter) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
 // Shutdown is invoked during exporter shutdown.
-func (e Exporter) Shutdown() error {
+func (e Exporter) Shutdown(context.Context) error {
 	e.kinesis.Flush()
 	return nil
 }

@@ -28,9 +28,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
 	"go.opencensus.io/trace"
@@ -122,11 +122,11 @@ func New(
 // StartMetricsReception tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *sfxReceiver) Start(host component.Host) error {
+func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := oterr.ErrAlreadyStarted
+	err := componenterror.ErrAlreadyStarted
 	r.startOnce.Do(func() {
 		err = nil
 
@@ -142,11 +142,11 @@ func (r *sfxReceiver) Start(host component.Host) error {
 
 // StopMetricsReception tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
-func (r *sfxReceiver) Shutdown() error {
+func (r *sfxReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := oterr.ErrAlreadyStopped
+	err := componenterror.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
 		err = r.server.Close()
 	})

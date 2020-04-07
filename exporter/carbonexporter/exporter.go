@@ -77,7 +77,7 @@ func (cs *carbonSender) pushMetricsData(
 	return dropped, nil
 }
 
-func (cs *carbonSender) Shutdown() error {
+func (cs *carbonSender) Shutdown(context.Context) error {
 	cs.connPool.Close()
 	return nil
 }

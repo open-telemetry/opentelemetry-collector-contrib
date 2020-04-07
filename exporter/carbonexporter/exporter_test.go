@@ -149,11 +149,11 @@ func TestConsumeMetricsData(t *testing.T) {
 			require.NoError(t, err)
 
 			mh := component.NewMockHost()
-			require.NoError(t, exp.Start(mh))
+			require.NoError(t, exp.Start(context.Background(), mh))
 
 			if !tt.createServer {
 				require.Error(t, exp.ConsumeMetricsData(context.Background(), tt.md))
-				assert.NoError(t, exp.Shutdown())
+				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
 			}
 
@@ -163,7 +163,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				// See comment about recvfrom at connPool.Write for detailed
 				// information.
 				exp.ConsumeMetricsData(context.Background(), tt.md)
-				assert.NoError(t, exp.Shutdown())
+				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
 			}
 
@@ -194,7 +194,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}()
 
 			require.NoError(t, exp.ConsumeMetricsData(context.Background(), tt.md))
-			assert.NoError(t, exp.Shutdown())
+			assert.NoError(t, exp.Shutdown(context.Background()))
 
 			wg.Wait()
 		})
@@ -271,7 +271,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 
 	close(startCh) // Release all workers
 	writersWG.Wait()
-	sender.Shutdown()
+	sender.Shutdown(context.Background())
 
 	recvWG.Wait()
 }

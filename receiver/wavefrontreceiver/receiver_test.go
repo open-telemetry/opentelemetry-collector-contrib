@@ -46,9 +46,8 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), rCfg, &waitableConsumer)
 	require.NoError(t, err)
 
-	mh := component.NewMockHost()
-	require.NoError(t, rcvr.Start(mh))
-	defer rcvr.Shutdown()
+	require.NoError(t, rcvr.Start(context.Background(), component.NewMockHost()))
+	defer rcvr.Shutdown(context.Background())
 
 	tests := []struct {
 		name string

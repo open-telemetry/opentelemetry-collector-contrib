@@ -22,9 +22,9 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 	"go.opencensus.io/trace"
 	"google.golang.org/api/option"
@@ -40,7 +40,7 @@ func (*stackdriverExporter) Name() string {
 	return "stackdriver"
 }
 
-func (se *stackdriverExporter) Shutdown() error {
+func (se *stackdriverExporter) Shutdown(context.Context) error {
 	se.exporter.Flush()
 	se.exporter.StopMetricsExporter()
 	return nil
@@ -140,5 +140,5 @@ func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdat
 		errs = append(errs, err)
 	}
 
-	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
