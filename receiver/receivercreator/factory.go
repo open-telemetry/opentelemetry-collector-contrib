@@ -55,7 +55,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 		// TODO: Change the sub-receivers to be under "receivers" to allow other config for the main receiver-creator receiver.
 		for subreceiverKey := range sourceViperSection.AllSettings() {
 			cfgSection := sourceViperSection.GetStringMap(subreceiverKey + "::config")
-			subreceiver, err := newSubreceiverConfig(subreceiverKey, cfgSection)
+			subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
 			if err != nil {
 				return err
 			}
@@ -66,7 +66,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 				return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
 			}
 
-			c.subreceiverConfigs[subreceiverKey] = subreceiver
+			c.receiverTemplates[subreceiverKey] = subreceiver
 		}
 
 		return nil
@@ -80,7 +80,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		subreceiverConfigs: map[string]*subreceiverConfig{},
+		receiverTemplates: map[string]receiverTemplate{},
 	}
 }
 
@@ -96,5 +96,5 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
-	return new(logger, consumer, cfg.(*Config))
+	return newReceiverCreator(logger, consumer, cfg.(*Config))
 }
