@@ -47,7 +47,7 @@ receivers:
   redis:
     endpoint: "localhost:6379"
     collection_interval: 10s
-    password: "s3cret"
+    password: $REDIS_PASSWORD
 ```
 
 ### endpoint

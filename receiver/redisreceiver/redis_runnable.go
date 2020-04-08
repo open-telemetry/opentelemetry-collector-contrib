@@ -107,10 +107,6 @@ func (r *redisRunnable) Run() error {
 	md := newMetricsData(metrics)
 
 	err = r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
-	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
-	}
-
 	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
 	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, numTimeSeries, err)
 

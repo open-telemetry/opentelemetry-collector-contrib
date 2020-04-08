@@ -15,6 +15,7 @@
 package redisreceiver
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -36,6 +37,12 @@ func parseKeyspaceString(db int, str string) (*keyspace, error) {
 	for _, pairStr := range pairs {
 		var field *int
 		pair := strings.Split(pairStr, "=")
+		if len(pair) != 2 {
+			return nil, fmt.Errorf(
+				"unexpected keyspace pair '%s'",
+				pairStr,
+			)
+		}
 		key := pair[0]
 		switch key {
 		case "keys":

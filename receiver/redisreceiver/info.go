@@ -29,12 +29,10 @@ type info map[string]string
 // (INFO from Redis) and redisMetrics (built at startup). These are the fixed,
 // non keyspace metrics. Returns a list of parsing errors, which can be treated
 // like warnings.
-func (i info) buildFixedProtoMetrics(
-	metrics []*redisMetric,
-	t *timeBundle,
-) ([]*metricspb.Metric, []error) {
-	var warnings []error
-	var protoMetrics []*metricspb.Metric
+func (i info) buildFixedProtoMetrics(metrics []*redisMetric, t *timeBundle) (
+	protoMetrics []*metricspb.Metric,
+	warnings []error,
+) {
 	for _, redisMetric := range metrics {
 		strVal, ok := i[redisMetric.key]
 		if !ok {
@@ -55,10 +53,12 @@ func (i info) buildFixedProtoMetrics(
 }
 
 // Builds proto metrics from any 'keyspace' metrics in Redis INFO:
-// e.g. "db0:keys=1,expires=2,avg_ttl=3"
-func (i info) buildKeyspaceProtoMetrics(t *timeBundle) ([]*metricspb.Metric, []error) {
-	var warnings []error
-	var out []*metricspb.Metric
+// e.g. "db0:keys=1,expires=2, avg_ttl=3". Returns proto metrics and parsing
+// errors, to be treated as warnings, if there were any.
+func (i info) buildKeyspaceProtoMetrics(t *timeBundle) (
+	protoMetrics []*metricspb.Metric,
+	warnings []error,
+) {
 	const RedisMaxDbs = 16
 	for db := 0; db < RedisMaxDbs; db++ {
 		key := "db" + strconv.Itoa(db)
@@ -72,9 +72,9 @@ func (i info) buildKeyspaceProtoMetrics(t *timeBundle) ([]*metricspb.Metric, []e
 			continue
 		}
 		keyspaceMetrics := buildKeyspaceTriplet(keyspace, t)
-		out = append(out, keyspaceMetrics...)
+		protoMetrics = append(protoMetrics, keyspaceMetrics...)
 	}
-	return out, warnings
+	return protoMetrics, warnings
 }
 
 func (i info) getUptimeInSeconds() (int, error) {

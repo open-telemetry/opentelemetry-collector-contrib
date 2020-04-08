@@ -28,3 +28,18 @@ func TestParseKeyspace(t *testing.T) {
 	require.Equal(t, 2, ks.expires)
 	require.Equal(t, 3, ks.avgTTL)
 }
+
+func TestParseMalformedKeyspace(t *testing.T) {
+	tests := []struct{ name, keyspace string }{
+		{"missing value", "keys=1,expires=2,avg_ttl="},
+		{"missing equals", "keys=1,expires=2,avg_ttl"},
+		{"unexpected key", "xyz,keys=1,expires=2"},
+		{"no usable data", "foo"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := parseKeyspaceString(0, test.keyspace)
+			require.NotNil(t, err)
+		})
+	}
+}
