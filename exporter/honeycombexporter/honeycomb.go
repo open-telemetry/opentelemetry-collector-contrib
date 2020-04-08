@@ -19,9 +19,9 @@ import (
 
 	"github.com/honeycombio/opentelemetry-exporter-go/honeycomb"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.opentelemetry.io/otel/api/core"
 )
 
@@ -59,11 +59,16 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	for _, span := range td.Spans {
 		sd, err := honeycomb.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
-			serviceName := core.Key("service_name")
-			sd.Attributes = append(sd.Attributes, serviceName.String(td.Node.ServiceInfo.Name))
-			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
+			if td.Node != nil && td.Node.ServiceInfo != nil {
+				serviceName := core.Key("service_name")
 				sd.Attributes = append(sd.Attributes,
-					convertNodeAttributes(td.Node.Attributes)...)
+					serviceName.String(td.Node.ServiceInfo.Name))
+			}
+			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
+				if td.Node != nil && td.Node.Attributes != nil {
+					sd.Attributes = append(sd.Attributes,
+						convertNodeAttributes(td.Node.Attributes)...)
+				}
 			}
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
@@ -72,7 +77,7 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 		}
 	}
 
-	return len(td.Spans) - goodSpans, oterr.CombineErrors(errs)
+	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
 func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
@@ -85,7 +90,7 @@ func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
 	return result
 }
 
-func (e *HoneycombExporter) Shutdown() error {
+func (e *HoneycombExporter) Shutdown(context.Context) error {
 	e.exporter.Close()
 	return nil
 }

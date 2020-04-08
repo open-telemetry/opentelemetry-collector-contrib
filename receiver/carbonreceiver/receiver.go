@@ -15,14 +15,15 @@
 package carbonreceiver
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -113,11 +114,11 @@ func buildTransportServer(config Config, logger *zap.Logger) (transport.Server, 
 // Start tells the receiver to start its processing.
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
-func (r *carbonReceiver) Start(host component.Host) error {
+func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := oterr.ErrAlreadyStarted
+	err := componenterror.ErrAlreadyStarted
 	r.startOnce.Do(func() {
 		err = nil
 		go func() {
@@ -132,11 +133,11 @@ func (r *carbonReceiver) Start(host component.Host) error {
 
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
-func (r *carbonReceiver) Shutdown() error {
+func (r *carbonReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := oterr.ErrAlreadyStopped
+	err := componenterror.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
 		err = r.server.Close()
 	})

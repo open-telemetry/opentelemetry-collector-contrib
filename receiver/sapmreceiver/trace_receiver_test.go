@@ -107,7 +107,7 @@ func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
 					},
 				},
 			},
-			SourceFormat: "sapm",
+			SourceFormat: traceSource,
 		},
 	}
 }
@@ -254,16 +254,14 @@ func TestReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(exportertest.SinkTraceExporterOld)
 
 			sr, err := New(context.Background(), zap.NewNop(), tt.args.config, sink)
-			defer sr.Shutdown()
 			assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 			t.Log("Starting")
+			defer sr.Shutdown(context.Background())
 
-			mh := component.NewMockHost()
-			err = sr.Start(mh)
-			assert.NoError(t, err, "should not have failed to start trace reception")
+			assert.NoError(t, sr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
 			t.Log("Trace Reception Started")
 
 			t.Log("Sending Sapm Request")

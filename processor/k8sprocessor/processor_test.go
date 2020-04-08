@@ -33,7 +33,7 @@ import (
 func TestNewTraceProcessor(t *testing.T) {
 	_, err := NewTraceProcessor(
 		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
+		exportertest.NewNopTraceExporterOld(),
 		kube.NewFakeClient,
 	)
 	require.NoError(t, err)
@@ -170,8 +170,8 @@ func TestPassthroughStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Just make sure this doesn't fail when Passthrough is enabled
-	p.Start(component.NewMockHost())
-	p.Shutdown()
+	assert.NoError(t, p.Start(context.Background(), component.NewMockHost()))
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func fakeClientFromProcessor(t *testing.T, p component.TraceProcessorOld) *kube.FakeClient {

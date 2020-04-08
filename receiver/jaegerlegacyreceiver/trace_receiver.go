@@ -24,9 +24,9 @@ import (
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
@@ -113,13 +113,13 @@ func (jr *jReceiver) collectorThriftEnabled() bool {
 	return jr.config != nil && jr.config.CollectorThriftPort > 0
 }
 
-func (jr *jReceiver) Start(host component.Host) error {
+func (jr *jReceiver) Start(_ context.Context, host component.Host) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
-	var err = oterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 	jr.startOnce.Do(func() {
-		if err = jr.startCollector(host); err != nil && err != oterr.ErrAlreadyStarted {
+		if err = jr.startCollector(host); err != nil && err != componenterror.ErrAlreadyStarted {
 			jr.stopTraceReceptionLocked()
 			return
 		}
@@ -129,7 +129,7 @@ func (jr *jReceiver) Start(host component.Host) error {
 	return err
 }
 
-func (jr *jReceiver) Shutdown() error {
+func (jr *jReceiver) Shutdown(context.Context) error {
 	jr.mu.Lock()
 	defer jr.mu.Unlock()
 
@@ -137,7 +137,7 @@ func (jr *jReceiver) Shutdown() error {
 }
 
 func (jr *jReceiver) stopTraceReceptionLocked() error {
-	var err = oterr.ErrAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
 		var errs []error
 

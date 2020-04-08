@@ -36,35 +36,37 @@ type honeycombData struct {
 	Data map[string]interface{} `json:"data"`
 }
 
-func TestExporter(t *testing.T) {
-	var got []honeycombData
-
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+func testingServer(callback func(data []honeycombData)) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		uncompressed, err := zstd.NewReader(req.Body)
 		if err != nil {
-			http.Error(rw, err.Error(), 500)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer req.Body.Close()
 		b, err := ioutil.ReadAll(uncompressed)
 		if err != nil {
-			http.Error(rw, err.Error(), 500)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		var data []honeycombData
 		err = json.Unmarshal(b, &data)
 		if err != nil {
-			http.Error(rw, err.Error(), 500)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		got = append(got, data...)
-
+		callback(data)
 		rw.Write([]byte(`OK`))
 	}))
-	defer server.Close()
+}
 
+func testTraceExporter(td consumerdata.TraceData, t *testing.T) []honeycombData {
+	var got []honeycombData
+	server := testingServer(func(data []honeycombData) {
+		got = append(got, data...)
+	})
+	defer server.Close()
 	cfg := Config{
 		APIKey:  "test",
 		Dataset: "test",
@@ -76,6 +78,15 @@ func TestExporter(t *testing.T) {
 	exporter, err := factory.CreateTraceExporter(logger, &cfg)
 	require.NoError(t, err)
 
+	ctx := context.Background()
+	err = exporter.ConsumeTraceData(ctx, td)
+	require.NoError(t, err)
+	exporter.Shutdown(context.Background())
+
+	return got
+}
+
+func TestExporter(t *testing.T) {
 	td := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
@@ -109,12 +120,7 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-
-	ctx := context.Background()
-	err = exporter.ConsumeTraceData(ctx, td)
-	require.NoError(t, err)
-	exporter.Shutdown()
-
+	got := testTraceExporter(td, t)
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
@@ -154,6 +160,41 @@ func TestExporter(t *testing.T) {
 				"trace.span_id":     "0400000000000000",
 				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
 				"A":                 "B",
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("otel span: (-want +got):\n%s", diff)
+	}
+}
+
+func TestEmptyNode(t *testing.T) {
+	td := consumerdata.TraceData{
+		Node: nil,
+		Spans: []*tracepb.Span{
+			{
+				TraceId:                 []byte{0x01},
+				SpanId:                  []byte{0x02},
+				Name:                    &tracepb.TruncatableString{Value: "root"},
+				Kind:                    tracepb.Span_SERVER,
+				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+			},
+		},
+	}
+
+	got := testTraceExporter(td, t)
+
+	want := []honeycombData{
+		{
+			Data: map[string]interface{}{
+				"duration_ms":       float64(0),
+				"has_remote_parent": false,
+				"name":              "root",
+				"status.code":       float64(0),
+				"status.message":    "OK",
+				"trace.span_id":     "0200000000000000",
+				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
 			},
 		},
 	}

@@ -31,11 +31,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/open-telemetry/opentelemetry-collector/testutils/metricstestutils"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
@@ -68,7 +68,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -80,7 +80,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 	}
@@ -101,16 +101,14 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(exportertest.SinkMetricsExporterOld)
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 
-	mh := component.NewMockHost()
-	err = r.Start(mh)
-	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), component.NewMockHost()))
 	runtime.Gosched()
-	defer r.Shutdown()
-	require.Equal(t, oterr.ErrAlreadyStarted, r.Start(mh))
+	defer r.Shutdown(context.Background())
+	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), component.NewMockHost()))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -136,8 +134,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(mh))
-	defer exp.Shutdown()
+	require.NoError(t, exp.Start(context.Background(), component.NewMockHost()))
+	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
 	// Description, unit and start time are expected to be dropped during conversions.
 	for _, metric := range want.Metrics {
@@ -152,8 +150,8 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.Equal(t, 1, len(got))
 	assert.Equal(t, want, got[0])
 
-	assert.NoError(t, r.Shutdown())
-	assert.Equal(t, oterr.ErrAlreadyStopped, r.Shutdown())
+	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 }
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
@@ -313,7 +311,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(exportertest.SinkMetricsExporterOld)
 			rcv, err := New(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 

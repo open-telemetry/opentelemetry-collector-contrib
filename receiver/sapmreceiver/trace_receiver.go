@@ -27,9 +27,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -87,7 +87,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		if err != nil {
 			continue
 		}
-		td.SourceFormat = "sapm"
+		td.SourceFormat = traceSource
 
 		// pass the trace data to the next consumer
 		err = sr.nextConsumer.ConsumeTraceData(ctx, td)
@@ -162,11 +162,11 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 }
 
 // StartTraceReception starts the sapmReceiver's server
-func (sr *sapmReceiver) Start(host component.Host) error {
+func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
-	var err = oterr.ErrAlreadyStarted
+	var err = componenterror.ErrAlreadyStarted
 	sr.startOnce.Do(func() {
 		var ln net.Listener
 
@@ -193,11 +193,11 @@ func (sr *sapmReceiver) Start(host component.Host) error {
 }
 
 // StopTraceRetention stops the the sapmReceiver's server
-func (sr *sapmReceiver) Shutdown() error {
+func (sr *sapmReceiver) Shutdown(context.Context) error {
 	sr.mu.Lock()
 	defer sr.mu.Unlock()
 
-	var err = oterr.ErrAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	sr.stopOnce.Do(func() {
 		if sr.server != nil {
 			err = sr.server.Close()

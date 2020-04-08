@@ -31,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -57,7 +58,7 @@ func TestNewReceiver(t *testing.T) {
 			args: args{
 				addr:         ":0",
 				category:     "any",
-				nextConsumer: exportertest.NewNopTraceExporter(),
+				nextConsumer: exportertest.NewNopTraceExporterOld(),
 			},
 		},
 	}
@@ -129,13 +130,13 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 		t.Fatalf("failed to open a port: %v", err)
 	}
 	defer l.Close()
-	traceReceiver, err := New(l.Addr().String(), "zipkin", exportertest.NewNopTraceExporter())
+	traceReceiver, err := New(l.Addr().String(), "zipkin", exportertest.NewNopTraceExporterOld())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.Start(component.NewMockHost())
+	err = traceReceiver.Start(context.Background(), component.NewMockHost())
 	if err == nil {
-		traceReceiver.Shutdown()
+		traceReceiver.Shutdown(context.Background())
 		t.Fatal("conflict on port was expected")
 	}
 }
@@ -157,15 +158,9 @@ func TestScribeReceiverServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	traceReceiver.Start(component.NewMockHost())
-	if err != nil {
-		t.Fatalf("Failed to start trace reception: %v", err)
-	}
+	require.NoError(t, traceReceiver.Start(context.Background(), component.NewMockHost()), "Failed to start trace reception: %v", err)
 	defer func() {
-		err := traceReceiver.Shutdown()
-		if err != nil {
-			t.Fatalf("Error stopping trace reception: %v", err)
-		}
+		require.NoError(t, traceReceiver.Shutdown(context.Background()), "Error stopping trace reception: %v", err)
 	}()
 
 	var trans thrift.TTransport

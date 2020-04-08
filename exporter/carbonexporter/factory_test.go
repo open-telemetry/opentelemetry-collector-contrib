@@ -15,6 +15,7 @@
 package carbonexporter
 
 import (
+	"context"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
@@ -66,5 +67,5 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown())
+	assert.NoError(t, exp.Shutdown(context.Background()))
 }

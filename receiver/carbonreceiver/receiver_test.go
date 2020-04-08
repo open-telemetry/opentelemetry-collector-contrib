@@ -15,6 +15,7 @@
 package carbonreceiver
 
 import (
+	"context"
 	"errors"
 	"net"
 	"runtime"
@@ -23,10 +24,10 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
-	"github.com/open-telemetry/opentelemetry-collector/oterr"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +53,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -63,7 +64,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					Transport:        defaultConfig.Transport,
 					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -79,7 +80,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -97,7 +98,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -121,7 +122,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
@@ -139,7 +140,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporter),
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
@@ -150,7 +151,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
-				got.Shutdown()
+				assert.NoError(t, got.Shutdown(context.Background()))
 			} else {
 				assert.Nil(t, got)
 			}
@@ -199,7 +200,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(exportertest.SinkMetricsExporterOld)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
@@ -208,11 +209,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			r.reporter = mr
 
 			mh := component.NewMockHost()
-			err = r.Start(mh)
-			require.NoError(t, err)
+			require.NoError(t, r.Start(context.Background(), mh))
 			runtime.Gosched()
-			defer r.Shutdown()
-			require.Equal(t, oterr.ErrAlreadyStarted, r.Start(mh))
+			defer r.Shutdown(context.Background())
+			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), mh))
 
 			snd := tt.clientFn(t)
 
@@ -235,8 +235,8 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			tss := metric.GetTimeseries()
 			require.Equal(t, 1, len(tss))
 
-			assert.NoError(t, r.Shutdown())
-			assert.Equal(t, oterr.ErrAlreadyStopped, r.Shutdown())
+			assert.NoError(t, r.Shutdown(context.Background()))
+			assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 		})
 	}
 }

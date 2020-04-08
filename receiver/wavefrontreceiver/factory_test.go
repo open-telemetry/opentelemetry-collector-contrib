@@ -37,15 +37,15 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporter))
+	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporter))
+	tReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, new(exportertest.SinkTraceExporter))
+	mReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, new(exportertest.SinkTraceExporterOld))
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }

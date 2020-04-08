@@ -79,7 +79,7 @@ func New(
 }
 
 // StartMetricsReception starts an HTTP server that can process CollectD JSON requests.
-func (cdr *collectdReceiver) Start(host component.Host) error {
+func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	cdr.Lock()
 	defer cdr.Unlock()
 
@@ -98,7 +98,7 @@ func (cdr *collectdReceiver) Start(host component.Host) error {
 }
 
 // StopMetricsReception stops the CollectD receiver.
-func (cdr *collectdReceiver) Shutdown() error {
+func (cdr *collectdReceiver) Shutdown(context.Context) error {
 	cdr.Lock()
 	defer cdr.Unlock()
 

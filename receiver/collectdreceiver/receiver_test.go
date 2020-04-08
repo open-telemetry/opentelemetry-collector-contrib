@@ -65,7 +65,7 @@ func TestNewReceiver(t *testing.T) {
 				addr:         ":0",
 				timeout:      defaultTimeout,
 				attrsPrefix:  "default_attr_",
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: exportertest.NewNopMetricsExporterOld(),
 			},
 		},
 	}
@@ -160,12 +160,9 @@ func TestCollectDServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	cdr.Start(component.NewMockHost())
-	if err != nil {
-		t.Fatalf("Failed to start metrics reception: %v", err)
-	}
+	require.NoError(t, cdr.Start(context.Background(), component.NewMockHost()))
 	defer func() {
-		err := cdr.Shutdown()
+		err := cdr.Shutdown(context.Background())
 		if err != nil {
 			t.Fatalf("Error stopping metrics reception: %v", err)
 		}
