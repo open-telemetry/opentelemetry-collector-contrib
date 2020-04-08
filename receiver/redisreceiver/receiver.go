@@ -15,6 +15,8 @@
 package redisreceiver
 
 import (
+	"context"
+
 	"github.com/go-redis/redis/v7"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -43,12 +45,12 @@ func newRedisReceiver(
 }
 
 // Set up and kick off the interval runner.
-func (r redisReceiver) Start(host component.Host) error {
+func (r redisReceiver) Start(ctx context.Context, host component.Host) error {
 	client := newRedisClient(&redis.Options{
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
 	})
-	redisRunnable := newRedisRunnable(host.Context(), client, r.consumer, r.logger)
+	redisRunnable := newRedisRunnable(ctx, client, r.consumer, r.logger)
 	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {
@@ -60,7 +62,7 @@ func (r redisReceiver) Start(host component.Host) error {
 	return nil
 }
 
-func (r redisReceiver) Shutdown() error {
+func (r redisReceiver) Shutdown(ctx context.Context) error {
 	r.intervalRunner.Stop()
 	return nil
 }
