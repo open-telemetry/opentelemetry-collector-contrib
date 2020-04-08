@@ -20,6 +20,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0
@@ -63,6 +64,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver => ./receiver/jaegerlegacyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./receiver/redisreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ./receiver/receivercreator
 
