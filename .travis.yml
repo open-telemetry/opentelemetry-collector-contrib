@@ -1,0 +1,26 @@
+dist: xenial
+
+language: python
+
+cache: pip
+
+python:
+  - '3.4'
+  - '3.5'
+  - '3.6'
+  - '3.7'
+  - '3.8'
+  - 'pypy3'
+
+services:
+  - docker
+
+install:
+  - pip install tox-travis
+
+script:
+  - tox
+
+after_success:
+  - pip install codecov
+  - codecov -v
