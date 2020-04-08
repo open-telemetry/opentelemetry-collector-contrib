@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.23.20 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/protobuf v1.3.5
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200406204246-eea53c92e34a
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200407222724-46a32a504b8f
 	github.com/stretchr/testify v1.4.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/multierr v1.4.0 // indirect

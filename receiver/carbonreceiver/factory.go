@@ -50,7 +50,7 @@ func (f *Factory) Type() string {
 // CustomUnmarshaler returns the custom function to handle the special settings
 // used on the receiver.
 func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
+	return func(sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
 			// The section is empty nothing to do, using the default config.
 			return nil

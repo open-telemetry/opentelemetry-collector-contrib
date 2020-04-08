@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/defaults"
+	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
@@ -43,7 +43,7 @@ import (
 
 func components() (config.Factories, error) {
 	errs := []error{}
-	factories, err := defaults.Components()
+	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return config.Factories{}, err
 	}
