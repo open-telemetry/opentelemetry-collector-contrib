@@ -25,7 +25,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
@@ -46,7 +46,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), rCfg, &waitableConsumer)
 	require.NoError(t, err)
 
-	require.NoError(t, rcvr.Start(context.Background(), component.NewMockHost()))
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	defer rcvr.Shutdown(context.Background())
 
 	tests := []struct {

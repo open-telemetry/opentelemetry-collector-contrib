@@ -66,7 +66,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporterOld, e
 	}
 	mExp := &stackdriverExporter{exporter: sde}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporterOld(
 		cfg,
 		mExp.pushMetricsData,
 		exporterhelper.WithShutdown(mExp.Shutdown))

@@ -107,7 +107,7 @@ func New(
 		}},
 	}
 
-	exp, err := exporterhelper.NewMetricsExporter(
+	exp, err := exporterhelper.NewMetricsExporterOld(
 		&config.ExporterSettings,
 		s.pushMetricsData)
 

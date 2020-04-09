@@ -27,7 +27,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -134,7 +134,7 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
-	err = traceReceiver.Start(context.Background(), component.NewMockHost())
+	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
 		traceReceiver.Shutdown(context.Background())
 		t.Fatal("conflict on port was expected")
@@ -158,7 +158,7 @@ func TestScribeReceiverServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	require.NoError(t, traceReceiver.Start(context.Background(), component.NewMockHost()), "Failed to start trace reception: %v", err)
+	require.NoError(t, traceReceiver.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace reception: %v", err)
 	defer func() {
 		require.NoError(t, traceReceiver.Shutdown(context.Background()), "Error stopping trace reception: %v", err)
 	}()

@@ -24,7 +24,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -160,7 +160,7 @@ func TestCollectDServer(t *testing.T) {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
 
-	require.NoError(t, cdr.Start(context.Background(), component.NewMockHost()))
+	require.NoError(t, cdr.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		err := cdr.Shutdown(context.Background())
 		if err != nil {

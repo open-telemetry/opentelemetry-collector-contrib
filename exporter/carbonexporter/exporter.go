@@ -50,7 +50,7 @@ func New(config Config) (component.MetricsExporterOld, error) {
 		connPool: newTCPConnPool(effectiveConfig.Endpoint, effectiveConfig.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	return exporterhelper.NewMetricsExporterOld(
 		&effectiveConfig.ExporterSettings,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
