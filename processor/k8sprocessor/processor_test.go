@@ -21,6 +21,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"github.com/open-telemetry/opentelemetry-collector/client"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/stretchr/testify/assert"
@@ -170,7 +171,7 @@ func TestPassthroughStart(t *testing.T) {
 	require.NoError(t, err)
 
 	// Just make sure this doesn't fail when Passthrough is enabled
-	assert.NoError(t, p.Start(context.Background(), component.NewMockHost()))
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 

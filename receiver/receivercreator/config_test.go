@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,7 @@ import (
 )
 
 type mockHostFactories struct {
-	component.MockHost
+	componenttest.NopHost
 	factories config.Factories
 }
 

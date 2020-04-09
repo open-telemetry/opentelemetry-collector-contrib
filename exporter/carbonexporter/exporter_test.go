@@ -29,7 +29,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
@@ -148,8 +148,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			exp, err := New(config)
 			require.NoError(t, err)
 
-			mh := component.NewMockHost()
-			require.NoError(t, exp.Start(context.Background(), mh))
+			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 			if !tt.createServer {
 				require.Error(t, exp.ConsumeMetricsData(context.Background(), tt.md))

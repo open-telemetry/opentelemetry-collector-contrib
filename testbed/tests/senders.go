@@ -35,8 +35,8 @@ type SapmDataSender struct {
 	port     int
 }
 
-// Ensure SapmDataSender implements TraceDataSender.
-var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
+// Ensure SapmDataSender implements TraceDataSenderOld.
+var _ testbed.TraceDataSenderOld = (*SapmDataSender)(nil)
 
 // NewSapmDataSender creates a new Sapm protocol sender that will send
 // to the specified port after Start is called.
@@ -94,8 +94,8 @@ type SFxMetricsDataSender struct {
 	port     int
 }
 
-// Ensure SFxMetricsDataSender implements MetricDataSender.
-var _ testbed.MetricDataSender = (*SFxMetricsDataSender)(nil)
+// Ensure SFxMetricsDataSender implements MetricDataSenderOld.
+var _ testbed.MetricDataSenderOld = (*SFxMetricsDataSender)(nil)
 
 // NewSFxMetricDataSender creates a new SignalFx metric protocol sender that will send
 // to the specified port after Start is called.
@@ -153,8 +153,8 @@ type CarbonDataSender struct {
 	port     int
 }
 
-// Ensure CarbonDataSender implements MetricDataSender.
-var _ testbed.MetricDataSender = (*CarbonDataSender)(nil)
+// Ensure CarbonDataSender implements MetricDataSenderOld.
+var _ testbed.MetricDataSenderOld = (*CarbonDataSender)(nil)
 
 // NewCarbonDataSender creates a new Carbon metric protocol sender that will send
 // to the specified port after Start is called.

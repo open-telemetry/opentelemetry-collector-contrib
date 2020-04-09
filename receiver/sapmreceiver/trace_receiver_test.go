@@ -30,7 +30,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -261,7 +261,7 @@ func TestReception(t *testing.T) {
 			t.Log("Starting")
 			defer sr.Shutdown(context.Background())
 
-			assert.NoError(t, sr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
+			assert.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
 			t.Log("Trace Reception Started")
 
 			t.Log("Sending Sapm Request")

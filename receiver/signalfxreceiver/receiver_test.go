@@ -30,8 +30,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -105,10 +105,10 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 
-	require.NoError(t, r.Start(context.Background(), component.NewMockHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer r.Shutdown(context.Background())
-	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), component.NewMockHost()))
+	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -134,7 +134,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)
-	require.NoError(t, exp.Start(context.Background(), component.NewMockHost()))
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
 	// Description, unit and start time are expected to be dropped during conversions.
