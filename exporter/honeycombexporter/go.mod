@@ -12,5 +12,4 @@ require (
 	github.com/stretchr/testify v1.5.1
 	go.opentelemetry.io/otel v0.3.0
 	go.uber.org/zap v1.14.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )

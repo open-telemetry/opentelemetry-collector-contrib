@@ -35,7 +35,7 @@ test-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@echo pre-compiling tests
-	set -e; for dir in $(ALL_TEST_DIRS); do \
+	set -e; for dir in $(ALL_MODULES); do \
 	  echo "go test ./... + coverage in $${dir}"; \
 	  (cd "$${dir}" && \
 	    $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... && \
@@ -50,7 +50,7 @@ gotidy:
 .PHONY: for-all
 for-all:
 	@$${CMD}
-	@set -e; for dir in $(ALL_TEST_DIRS); do \
+	@set -e; for dir in $(ALL_MODULES); do \
 	  (cd "$${dir}" && \
 	  	echo "running $${CMD} in $${dir}" && \
 	 	$${CMD} ); \
@@ -103,3 +103,13 @@ binaries-all-sys:
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: update-dep
+update-dep:
+	$(MAKE) for-all CMD="$(PWD)/scripts/update-dep"
+	$(MAKE) otelcontribcol
+	$(MAKE) gotidy
+
+.PHONY: update-otel
+update-otel:
+	$(MAKE) update-dep MODULE=github.com/open-telemetry/opentelemetry-collector VERSION=master

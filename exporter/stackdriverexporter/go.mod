@@ -13,5 +13,4 @@ require (
 	google.golang.org/api v0.10.0
 	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7
 	google.golang.org/grpc v1.28.1
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )

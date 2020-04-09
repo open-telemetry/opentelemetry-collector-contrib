@@ -7,7 +7,6 @@ require (
 	github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
