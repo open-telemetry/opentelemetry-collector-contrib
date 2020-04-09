@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
@@ -208,11 +208,10 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			mr := transport.NewMockReporter(1)
 			r.reporter = mr
 
-			mh := component.NewMockHost()
-			require.NoError(t, r.Start(context.Background(), mh))
+			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			runtime.Gosched()
 			defer r.Shutdown(context.Background())
-			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), mh))
+			require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 			snd := tt.clientFn(t)
 
