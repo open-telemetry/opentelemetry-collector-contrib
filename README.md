@@ -6,7 +6,7 @@ specific receivers/exporters and/or components that are only
 useful to a relatively small number of users. 
 
 ## Docker Images
-Docker images for all releases are published at https://hub.docker.com/r/omnition/opentelemetry-collector-contrib
+Docker images for all releases are published at https://hub.docker.com/r/otel/opentelemetry-collector-contrib
 
 ## Contributing
 If you would like to contribute please read [contributing guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md)
