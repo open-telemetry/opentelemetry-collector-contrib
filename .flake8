@@ -1,0 +1,18 @@
+[flake8]
+ignore =
+  E501  # line too long, defer to black
+  F401  # unused import, defer to pylint
+  W503  # allow line breaks after binary ops, not after
+  E203  # allow whitespace before ':' (https://github.com/psf/black#slices)
+exclude =
+  .bzr
+  .git
+  .hg
+  .svn
+  .tox
+  CVS
+  .venv*/
+  venv*/
+  target
+  reference/
+  __pycache__

@@ -1,0 +1,9 @@
+[tool.black]
+line-length = 79
+exclude = '''
+(
+  /(
+    reference # original files from DataDog
+  )/
+)
+'''
