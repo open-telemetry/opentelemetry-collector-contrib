@@ -9,5 +9,4 @@ require (
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.12.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )
