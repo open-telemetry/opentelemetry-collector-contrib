@@ -8,7 +8,6 @@ require (
 	github.com/stretchr/testify v1.4.0
 	go.opentelemetry.io/otel v0.2.3
 	go.uber.org/zap v1.14.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7

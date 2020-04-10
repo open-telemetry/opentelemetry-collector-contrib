@@ -8,7 +8,6 @@ require (
 	github.com/spf13/viper v1.6.2
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.13.0
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )
 
 // Same version as from go.mod. Required to make go list -m work.

@@ -15,5 +15,4 @@ require (
 	go.uber.org/zap v1.13.0
 	google.golang.org/appengine v1.6.2 // indirect
 	google.golang.org/grpc v1.28.1
-	k8s.io/client-go v12.0.0+incompatible // indirect
 )
