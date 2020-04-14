@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/lightstep/opentelemetry-exporter-go v0.1.5
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200408203355-0e1b2e323d39
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200413233902-380a0e75c518
 	github.com/stretchr/testify v1.4.0
 	go.opentelemetry.io/otel v0.2.3
 	go.uber.org/zap v1.14.0

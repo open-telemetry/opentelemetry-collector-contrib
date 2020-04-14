@@ -6,7 +6,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/golang/protobuf v1.3.5
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200408203355-0e1b2e323d39
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200413233902-380a0e75c518
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/zap v1.10.0
 )

@@ -33,7 +33,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 29,
+				ExpectedMaxCPU: 40,
 				ExpectedMaxRAM: 70,
 			},
 		},
@@ -42,7 +42,7 @@ func TestMetric10kDPS(t *testing.T) {
 			NewCarbonDataSender(testbed.GetAvailablePort(t)),
 			NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 115,
+				ExpectedMaxCPU: 200,
 				ExpectedMaxRAM: 65,
 			},
 		},
@@ -51,8 +51,8 @@ func TestMetric10kDPS(t *testing.T) {
 			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
 			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 70,
+				ExpectedMaxCPU: 80,
+				ExpectedMaxRAM: 80,
 			},
 		},
 	}
@@ -63,7 +63,6 @@ func TestMetric10kDPS(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{ItemsPerBatch: 100},
 				test.resourceSpec,
 			)
 		})

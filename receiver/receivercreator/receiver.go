@@ -76,9 +76,7 @@ func (rc *receiverCreator) loadRuntimeReceiverConfig(factory component.ReceiverF
 	// Load config under <receiver>/<id> since loadReceiver and CustomUnmarshaler expects this structure.
 	viperConfig.Set(staticSubConfig.fullName, mergedConfig.AllSettings())
 
-	receiverConfig, err := config.LoadReceiver(staticSubConfig.fullName, viperConfig, map[string]component.ReceiverFactoryBase{
-		staticSubConfig.receiverType: factory,
-	})
+	receiverConfig, err := config.LoadReceiver(mergedConfig, staticSubConfig.receiverType, staticSubConfig.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load subreceiver config: %v", err)
 	}
