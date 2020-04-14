@@ -38,7 +38,8 @@ type resourceWatcher struct {
 }
 
 // newResourceWatcher creates a Kubernetes resource watcher.
-func newResourceWatcher(logger *zap.Logger, config *Config, client kubernetes.Interface, collectMetadata bool) (*resourceWatcher, error) {
+func newResourceWatcher(logger *zap.Logger, config *Config,
+	client kubernetes.Interface, collectMetadata bool) (*resourceWatcher, error) {
 	rw := &resourceWatcher{
 		client:        client,
 		logger:        logger,
@@ -62,7 +63,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 		factory.Core().V1().ReplicationControllers().Informer(),
 	)
 	rw.setupInformers(&corev1.ResourceQuota{}, factory.Core().V1().ResourceQuotas().Informer())
-	rw.setupInformers(&corev1.Service{}, factory.Core().V1().Services().Informer())
+	// rw.setupInformers(&corev1.Service{}, factory.Core().V1().Services().Informer())
 	rw.setupInformers(&appsv1.DaemonSet{}, factory.Apps().V1().DaemonSets().Informer())
 	rw.setupInformers(&appsv1.Deployment{}, factory.Apps().V1().Deployments().Informer())
 	rw.setupInformers(&appsv1.ReplicaSet{}, factory.Apps().V1().ReplicaSets().Informer())

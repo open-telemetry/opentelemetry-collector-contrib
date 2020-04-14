@@ -111,7 +111,6 @@ rules:
   - pods/status
   - replicationcontrollers
   - replicationcontrollers/status
-  - services
   - resourcequotas
   verbs:
   - get
