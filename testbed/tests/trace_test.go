@@ -62,7 +62,6 @@ func TestTrace10kSPS(t *testing.T) {
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{},
 				test.resourceSpec,
 			)
 		})
