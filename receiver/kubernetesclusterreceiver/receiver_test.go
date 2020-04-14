@@ -87,7 +87,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	expectedResources := 2 * numPods
 	require.Eventually(t, func() bool {
 		return len(consumer.AllMetrics()) == expectedResources
-	}, 2*time.Second, 10*time.Millisecond,
+	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
 	r.Shutdown(ctx)
