@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/jwangsadinata/go-multimap"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"go.uber.org/zap"
@@ -35,22 +34,20 @@ type observerHandler struct {
 	// receiverTemplates maps receiver template full name to a receiverTemplate value.
 	receiverTemplates map[string]receiverTemplate
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
-	receiversByEndpointID multimap.MultiMap
+	receiversByEndpointID receiverMap
 	// runner starts and stops receiver instances.
 	runner runner
 }
 
 // Shutdown all receivers started at runtime.
-func (re *observerHandler) Shutdown() error {
-	re.Lock()
-	defer re.Unlock()
+func (obs *observerHandler) Shutdown() error {
+	obs.Lock()
+	defer obs.Unlock()
 
 	var errs []error
 
-	for _, rcvr := range re.receiversByEndpointID.Values() {
-		rcvr := rcvr.(component.Receiver)
-
-		if err := re.runner.shutdown(rcvr); err != nil {
+	for _, rcvr := range obs.receiversByEndpointID.Values() {
+		if err := obs.runner.shutdown(rcvr); err != nil {
 			// TODO: Should keep track of which receiver the error is associated with
 			// but require some restructuring.
 			errs = append(errs, err)
@@ -65,49 +62,48 @@ func (re *observerHandler) Shutdown() error {
 }
 
 // OnAdd responds to endpoint add notifications.
-func (re *observerHandler) OnAdd(added []observer.Endpoint) {
-	re.Lock()
-	defer re.Unlock()
+func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
+	obs.Lock()
+	defer obs.Unlock()
 
 	for _, e := range added {
-		for _, template := range re.receiverTemplates {
+		for _, template := range obs.receiverTemplates {
 			if !ruleMatches(template.Rule, e) {
 				continue
 			}
-			rcvr, err := re.runner.start(template.receiverConfig, userConfigMap{
-				"endpoint": e.Target(),
+			rcvr, err := obs.runner.start(template.receiverConfig, userConfigMap{
+				endpointConfigKey: e.Target(),
 			})
 			if err != nil {
-				re.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
+				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
 				continue
 			}
 
-			re.receiversByEndpointID.Put(e.ID(), rcvr)
+			obs.receiversByEndpointID.Put(e.ID(), rcvr)
 		}
 	}
 }
 
 // OnRemove responds to endpoint removal notifications.
-func (re *observerHandler) OnRemove(removed []observer.Endpoint) {
-	re.Lock()
-	defer re.Unlock()
+func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
+	obs.Lock()
+	defer obs.Unlock()
 
 	for _, e := range removed {
-		entries, _ := re.receiversByEndpointID.Get(e.ID())
-		for _, rcvr := range entries {
+		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID()) {
 			rcvr := rcvr.(component.Receiver)
-			if err := re.runner.shutdown(rcvr); err != nil {
-				re.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
+			if err := obs.runner.shutdown(rcvr); err != nil {
+				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
 				continue
 			}
 		}
-		re.receiversByEndpointID.RemoveAll(e.ID())
+		obs.receiversByEndpointID.RemoveAll(e.ID())
 	}
 }
 
 // OnChange responds to endpoint change notifications.
-func (re *observerHandler) OnChange(changed []observer.Endpoint) {
+func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 	// TODO: optimize to only restart if effective config has changed.
-	re.OnRemove(changed)
-	re.OnAdd(changed)
+	obs.OnRemove(changed)
+	obs.OnAdd(changed)
 }

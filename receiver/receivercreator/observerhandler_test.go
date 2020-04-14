@@ -17,12 +17,10 @@ package receivercreator
 import (
 	"testing"
 
-	"github.com/jwangsadinata/go-multimap/setmultimap"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -52,11 +50,11 @@ func TestOnAdd(t *testing.T) {
 		receiverTemplates: map[string]receiverTemplate{
 			"name/1": {rcvrCfg, "enabled"},
 		},
-		receiversByEndpointID: setmultimap.New(),
+		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	runner.On("start", rcvrCfg, userConfigMap{"endpoint": "localhost"}).Return(&config.ExampleReceiverProducer{}, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(&config.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
 		observer.NewHostEndpoint("id-1", "localhost", nil),
@@ -72,7 +70,7 @@ func TestOnRemove(t *testing.T) {
 	rcvr := &config.ExampleReceiverProducer{}
 	handler := &observerHandler{
 		logger:                zap.NewNop(),
-		receiversByEndpointID: setmultimap.New(),
+		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
@@ -99,14 +97,14 @@ func TestOnChange(t *testing.T) {
 		receiverTemplates: map[string]receiverTemplate{
 			"name/1": {rcvrCfg, "enabled"},
 		},
-		receiversByEndpointID: setmultimap.New(),
+		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
 	handler.receiversByEndpointID.Put("id-1", oldRcvr)
 
 	runner.On("shutdown", oldRcvr).Return(nil)
-	runner.On("start", rcvrCfg, userConfigMap{"endpoint": "localhost"}).Return(newRcvr, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(newRcvr, nil)
 
 	handler.OnChange([]observer.Endpoint{
 		observer.NewHostEndpoint("id-1", "localhost", nil),
@@ -114,7 +112,6 @@ func TestOnChange(t *testing.T) {
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	rcvrs, ok := handler.receiversByEndpointID.Get("id-1")
-	require.True(t, ok)
+	rcvrs := handler.receiversByEndpointID.Get("id-1")
 	assert.Same(t, newRcvr, rcvrs[0])
 }

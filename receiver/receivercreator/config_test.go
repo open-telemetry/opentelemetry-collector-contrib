@@ -78,6 +78,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
 	assert.Equal(t, "enabled", r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Equal(t, userConfigMap{
-		"endpoint": "localhost:12345",
+		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["examplereceiver/1"].config)
 }

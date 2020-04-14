@@ -30,7 +30,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	require.NoError(t, err)
 
 	loadedConfig, err := run.loadRuntimeReceiverConfig(exampleFactory, template.receiverConfig, userConfigMap{
-		"endpoint": "localhost:12345",
+		endpointConfigKey: "localhost:12345",
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, loadedConfig)

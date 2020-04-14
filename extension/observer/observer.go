@@ -32,7 +32,7 @@ const (
 type Endpoint interface {
 	// ID uniquely identifies this endpoint.
 	ID() string
-	// Target is an address or hostname of the endpoint.
+	// Target is an IP address or hostname of the endpoint.
 	Target() string
 	// String pretty formats the endpoint.
 	String() string
@@ -82,7 +82,7 @@ var _ Endpoint = (*HostEndpoint)(nil)
 // PortEndpoint is an endpoint that has a target as well as a port.
 type PortEndpoint struct {
 	endpointBase
-	Port int32
+	Port uint16
 }
 
 func (p *PortEndpoint) String() string {
@@ -90,7 +90,7 @@ func (p *PortEndpoint) String() string {
 }
 
 // NewPortEndpoint creates a PortEndpoint.
-func NewPortEndpoint(id string, target string, port int32, labels map[string]string) *PortEndpoint {
+func NewPortEndpoint(id string, target string, port uint16, labels map[string]string) *PortEndpoint {
 	return &PortEndpoint{endpointBase: endpointBase{
 		id:     id,
 		target: target,
@@ -102,8 +102,11 @@ var _ Endpoint = (*PortEndpoint)(nil)
 
 // Observable is an interface that provides notification of endpoint changes.
 type Observable interface {
-	// TODO: Stopping
+	// TODO: Stopping.
 	// ListAndWatch provides initial state sync as well as change notification.
+	// notify.OnAdd will be called one or more times if there are endpoints discovered.
+	// (It would not be called if there are no endpoints present.) The endpoint synchronization
+	// happens asynchronously to this call.
 	ListAndWatch(notify Notify)
 }
 
@@ -113,6 +116,7 @@ type Notify interface {
 	OnAdd(added []Endpoint)
 	// OnRemove is called when one or more endpoints are removed.
 	OnRemove(removed []Endpoint)
-	// OnChange is called when one ore more endpoints are modified.
+	// OnChange is called when one ore more endpoints are modified but the identity is not changed
+	// (e.g. labels).
 	OnChange(changed []Endpoint)
 }

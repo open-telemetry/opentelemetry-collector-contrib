@@ -16,6 +16,7 @@ package receivercreator
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -23,6 +24,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -30,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -84,11 +87,11 @@ func TestMockedEndToEnd(t *testing.T) {
 	defer shutdown()
 
 	require.Eventuallyf(t, func() bool {
-		return dyn.responder.receiversByEndpointID.Size() == 1
-	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.responder.receiversByEndpointID)
+		return dyn.observerHandler.receiversByEndpointID.Size() == 1
+	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
-	for _, receiver := range dyn.responder.receiversByEndpointID.Values() {
+	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*config.ExampleReceiverProducer)
 		assert.NoError(t, example.MetricsConsumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
 			Node: &commonpb.Node{
@@ -123,5 +126,18 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	shutdown()
 
-	assert.True(t, dyn.responder.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
+	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
+}
+
+func TestSafeHost(t *testing.T) {
+	core, obs := zapObserver.New(zap.ErrorLevel)
+	host := &safeHost{
+		Host:   componenttest.NewNopHost(),
+		logger: zap.New(core),
+	}
+	host.ReportFatalError(errors.New("runtime error"))
+	require.Equal(t, 1, obs.Len())
+	log := obs.All()[0]
+	assert.Equal(t, "receiver reported a fatal error", log.Message)
+	assert.Equal(t, "runtime error", log.ContextMap()["error"])
 }

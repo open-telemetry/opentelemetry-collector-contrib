@@ -18,13 +18,15 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jwangsadinata/go-multimap/setmultimap"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
+
+// endpointConfigKey is the key name mapping to ReceiverSettings.Endpoint.
+const endpointConfigKey = "endpoint"
 
 var (
 	errNilNextConsumer = errors.New("nil nextConsumer")
@@ -34,11 +36,11 @@ var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.MetricsConsumer.
 type receiverCreator struct {
-	nextConsumer consumer.MetricsConsumerOld
-	logger       *zap.Logger
-	cfg          *Config
-	responder    *observerHandler
-	observer     observer.Observable
+	nextConsumer    consumer.MetricsConsumerOld
+	logger          *zap.Logger
+	cfg             *Config
+	observerHandler observerHandler
+	observer        observer.Observable
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
@@ -55,12 +57,25 @@ func newReceiverCreator(logger *zap.Logger, nextConsumer consumer.MetricsConsume
 	return r, nil
 }
 
+// safeHost provides a safer version of host for receivers started at runtime.
+type safeHost struct {
+	component.Host
+	logger *zap.Logger
+}
+
+// ReportFatalError causes a log to be made instead of terminating the process as Host does by default.
+func (h *safeHost) ReportFatalError(err error) {
+	h.logger.Error("receiver reported a fatal error", zap.Error(err))
+}
+
+var _ component.Host = (*safeHost)(nil)
+
 // Start receiver_creator.
 func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error {
-	rc.responder = &observerHandler{
+	rc.observerHandler = observerHandler{
 		logger:                rc.logger,
 		receiverTemplates:     rc.cfg.receiverTemplates,
-		receiversByEndpointID: setmultimap.New(),
+		receiversByEndpointID: receiverMap{},
 		runner: &receiverRunner{
 			logger:       rc.logger,
 			nextConsumer: rc.nextConsumer,
@@ -68,15 +83,15 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 			// TODO: not really sure what context should be used here for starting subreceivers
 			// as don't think it makes sense to use Start context as the lifetimes are different.
 			ctx:  context.Background(),
-			host: host,
+			host: &safeHost{host, rc.logger},
 		}}
 
-	rc.observer.ListAndWatch(rc.responder)
+	rc.observer.ListAndWatch(&rc.observerHandler)
 
 	return nil
 }
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
 func (rc *receiverCreator) Shutdown(ctx context.Context) error {
-	return rc.responder.Shutdown()
+	return rc.observerHandler.Shutdown()
 }

@@ -4,7 +4,6 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
-	github.com/jwangsadinata/go-multimap v0.0.0-20190620162914-c29f3d7f33b6
 	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200413233902-380a0e75c518
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0
 	github.com/spf13/viper v1.6.2

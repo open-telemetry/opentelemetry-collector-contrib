@@ -80,7 +80,8 @@ func (run *receiverRunner) shutdown(rcvr component.Receiver) error {
 func (run *receiverRunner) loadRuntimeReceiverConfig(
 	factory component.ReceiverFactoryOld,
 	receiver receiverConfig,
-	discoveredConfig userConfigMap) (configmodels.Receiver, error) {
+	discoveredConfig userConfigMap,
+) (configmodels.Receiver, error) {
 	mergedConfig := config.NewViper()
 
 	// Merge in the config values specified in the config file.
@@ -99,7 +100,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, mergedConfig.GetString("endpoint")))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, mergedConfig.GetString(endpointConfigKey)))
 	return receiverConfig, nil
 }
 
