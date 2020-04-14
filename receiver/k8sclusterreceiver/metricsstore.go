@@ -1,0 +1,78 @@
+// Copyright 2020 OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package k8sclusterreceiver
+
+import (
+	"sync"
+
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"k8s.io/apimachinery/pkg/types"
+)
+
+// metricsStore keeps track of the metrics being pushed along the pipeline
+// every interval. Since Kubernetes events that generate these metrics are
+// aperiodic, the values in this cache will be pushed along the pipeline
+// until the next Kubernetes event pertaining to an object.
+type metricsStore struct {
+	sync.RWMutex
+	metricsCache map[types.UID][]consumerdata.MetricsData
+}
+
+// This probably wouldn't be required once the new OTLP ResourceMetrics
+// struct is made available.
+type resourceMetrics struct {
+	resource *resourcepb.Resource
+	metrics  []*metricspb.Metric
+}
+
+// updates metricsStore with latest metrics.
+func (ms *metricsStore) update(key types.UID, rms []*resourceMetrics) {
+	ms.Lock()
+	defer ms.Unlock()
+
+	mds := make([]consumerdata.MetricsData, len(rms))
+	for i, rm := range rms {
+
+		mds[i].Resource = rm.resource
+		mds[i].Metrics = rm.metrics
+
+	}
+
+	ms.metricsCache[key] = mds
+}
+
+// removes entry from metric cache when resources are deleted.
+func (ms *metricsStore) remove(key types.UID) {
+	ms.Lock()
+	defer ms.Unlock()
+
+	delete(ms.metricsCache, key)
+}
+
+// getMetrics returns metricsCache stored in the cache at a given point in time.
+func (ms *metricsStore) getMetrics() []consumerdata.MetricsData {
+	ms.RLock()
+	defer ms.RUnlock()
+
+	out := make([]consumerdata.MetricsData, 0)
+
+	for _, mds := range ms.metricsCache {
+		out = append(out, mds...)
+	}
+
+	return out
+}

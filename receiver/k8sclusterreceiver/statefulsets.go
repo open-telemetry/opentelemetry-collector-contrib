@@ -1,0 +1,118 @@
+// Copyright 2020 OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package k8sclusterreceiver
+
+import (
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opencensus.io/resource/resourcekeys"
+	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
+)
+
+const (
+	// Keys for stateful set properties.
+	statefulSetCurrentVersion = "current_revision"
+	statefulSetUpdateVersion  = "update_revision"
+)
+
+var statefulSetReplicasDesiredMetric = &metricspb.MetricDescriptor{
+	Name:        "kubernetes/stateful_set/desired_pods",
+	Description: "Number of desired pods in the stateful set (the `spec.replicas` field)",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+var statefulSetReplicasReadyMetric = &metricspb.MetricDescriptor{
+	Name:        "kubernetes/stateful_set/ready_pods",
+	Description: "Number of pods created by the stateful set that have the `Ready` condition",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+var statefulSetReplicasCurrentMetric = &metricspb.MetricDescriptor{
+	Name:        "kubernetes/stateful_set/current_pods",
+	Description: "The number of pods created by the StatefulSet controller from the StatefulSet version",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+var statefulSetReplicasUpdatedMetric = &metricspb.MetricDescriptor{
+	Name:        "kubernetes/stateful_set/updated_pods",
+	Description: "Number of pods created by the StatefulSet controller from the StatefulSet version",
+	Unit:        "1",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+}
+
+func getMetricsForStatefulSet(ss *appsv1.StatefulSet) []*resourceMetrics {
+	if ss.Spec.Replicas == nil {
+		return []*resourceMetrics{}
+	}
+
+	metrics := []*metricspb.Metric{
+		{
+			MetricDescriptor: statefulSetReplicasDesiredMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(*ss.Spec.Replicas)),
+			},
+		},
+		{
+			MetricDescriptor: statefulSetReplicasReadyMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(ss.Status.ReadyReplicas)),
+			},
+		},
+		{
+			MetricDescriptor: statefulSetReplicasCurrentMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(ss.Status.CurrentReplicas)),
+			},
+		},
+		{
+			MetricDescriptor: statefulSetReplicasUpdatedMetric,
+			Timeseries: []*metricspb.TimeSeries{
+				utils.GetInt64TimeSeries(int64(ss.Status.UpdatedReplicas)),
+			},
+		},
+	}
+
+	return []*resourceMetrics{
+		{
+			resource: getResourceForStatefulSet(ss),
+			metrics:  metrics,
+		},
+	}
+}
+
+func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
+	return &resourcepb.Resource{
+		Type: resourcekeys.K8SType,
+		Labels: map[string]string{
+			k8sKeyStatefulSetUID:             string(ss.UID),
+			k8sKeyStatefulSetName:            ss.Name,
+			resourcekeys.K8SKeyNamespaceName: ss.Namespace,
+			resourcekeys.K8SKeyClusterName:   ss.ClusterName,
+		},
+	}
+}
+
+func getMetadataForStatefulSet(ss *appsv1.StatefulSet) []*KubernetesMetadata {
+	rp := getGenericMetadata(&ss.ObjectMeta, "statefulset")
+	rp.properties[statefulSetCurrentVersion] = ss.Status.CurrentRevision
+	rp.properties[statefulSetUpdateVersion] = ss.Status.UpdateRevision
+
+	return []*KubernetesMetadata{rp}
+}
