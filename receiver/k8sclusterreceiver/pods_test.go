@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/resource/resourcekeys"
 	corev1 "k8s.io/api/core/v1"
@@ -165,5 +166,63 @@ func newPodWithContainer(id string) *corev1.Pod {
 				},
 			},
 		},
+	}
+}
+
+func TestListResourceMetrics(t *testing.T) {
+	rms := map[string]*resourceMetrics{
+		"resource-1": {resource: &resourcepb.Resource{Type: "type-1"}},
+		"resource-2": {resource: &resourcepb.Resource{Type: "type-2"}},
+		"resource-3": {resource: &resourcepb.Resource{Type: "type-1"}},
+	}
+
+	actual := listResourceMetrics(rms)
+	expected := []*resourceMetrics{
+		{resource: &resourcepb.Resource{Type: "type-1"}},
+		{resource: &resourcepb.Resource{Type: "type-2"}},
+		{resource: &resourcepb.Resource{Type: "type-1"}},
+	}
+
+	require.ElementsMatch(t, expected, actual)
+}
+
+func TestPhaseToInt(t *testing.T) {
+	tests := []struct {
+		name  string
+		phase corev1.PodPhase
+		want  int32
+	}{
+		{
+			name:  "Pod phase pending",
+			phase: corev1.PodPending,
+			want:  1,
+		},
+		{
+			name:  "Pod phase running",
+			phase: corev1.PodRunning,
+			want:  2,
+		},
+		{
+			name:  "Pod phase succeeded",
+			phase: corev1.PodSucceeded,
+			want:  3,
+		},
+		{
+			name:  "Pod phase failed",
+			phase: corev1.PodFailed,
+			want:  4,
+		},
+		{
+			name:  "Pod phase unknown",
+			phase: corev1.PodUnknown,
+			want:  5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := phaseToInt(tt.phase); got != tt.want {
+				t.Errorf("phaseToInt() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

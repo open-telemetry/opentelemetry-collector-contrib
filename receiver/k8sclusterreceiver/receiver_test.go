@@ -52,7 +52,7 @@ func TestReceiver(t *testing.T) {
 	expectedResources := 2*numPods + numNodes
 	require.Eventually(t, func() bool {
 		return len(r.resourceWatcher.dataCollector.collectMetrics()) == expectedResources
-	}, 2*time.Second, 10*time.Millisecond,
+	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
 	numPodsToDelete := 1
@@ -62,7 +62,7 @@ func TestReceiver(t *testing.T) {
 	expectedResources = 2*(numPods-numPodsToDelete) + numNodes
 	require.Eventually(t, func() bool {
 		return len(r.resourceWatcher.dataCollector.collectMetrics()) == expectedResources
-	}, 2*time.Second, 10*time.Millisecond,
+	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
 
 	r.Shutdown(ctx)

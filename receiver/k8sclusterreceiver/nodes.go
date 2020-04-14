@@ -36,14 +36,15 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 	metrics := make([]*metricspb.Metric, len(nodeConditionTypesToReport))
 
 	for i, nodeConditionTypeValue := range nodeConditionTypesToReport {
-		nodeConditionMetric := fmt.Sprintf("kubernetes/node/condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
 
 		metrics[i] = &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        nodeConditionMetric,
-				Description: fmt.Sprintf("Whether this node is %s (1), not %s (0) or in an unknown state (-1)", nodeConditionTypeValue, nodeConditionTypeValue),
-				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+				Name: nodeConditionMetric,
+				Description: fmt.Sprintf("Whether this node is %s (1), "+
+					"not %s (0) or in an unknown state (-1)", nodeConditionTypeValue, nodeConditionTypeValue),
+				Type: metricspb.MetricDescriptor_GAUGE_INT64,
 			},
 			Timeseries: []*metricspb.TimeSeries{
 				utils.GetInt64TimeSeries(nodeConditionValue(node, v1NodeConditionTypeValue)),
@@ -57,6 +58,10 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 			metrics:  metrics,
 		},
 	}
+}
+
+func getNodeConditionMetric(nodeConditionTypeValue string) string {
+	return fmt.Sprintf("kubernetes/node/condition_%s", strcase.ToSnake(nodeConditionTypeValue))
 }
 
 func getResourceForNode(node *corev1.Node) *resourcepb.Resource {

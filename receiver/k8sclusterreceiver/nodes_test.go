@@ -75,3 +75,96 @@ func newNode(id string) *corev1.Node {
 		},
 	}
 }
+
+func TestGetNodeConditionMetric(t *testing.T) {
+	tests := []struct {
+		name                   string
+		nodeConditionTypeValue string
+		want                   string
+	}{
+		{"Metric for Node condition Ready",
+			"Ready",
+			"kubernetes/node/condition_ready",
+		},
+		{"Metric for Node condition MemoryPressure",
+			"MemoryPressure",
+			"kubernetes/node/condition_memory_pressure",
+		},
+		{"Metric for Node condition DiskPressure",
+			"DiskPressure",
+			"kubernetes/node/condition_disk_pressure",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getNodeConditionMetric(tt.nodeConditionTypeValue); got != tt.want {
+				t.Errorf("getNodeConditionMetric() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNodeConditionValue(t *testing.T) {
+	type args struct {
+		node     *corev1.Node
+		condType corev1.NodeConditionType
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "Node with Ready condition true",
+			args: args{
+				node: &corev1.Node{Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   corev1.NodeReady,
+							Status: corev1.ConditionTrue,
+						},
+					},
+				}},
+				condType: corev1.NodeReady,
+			},
+			want: 1,
+		},
+		{
+			name: "Node with Ready condition false",
+			args: args{
+				node: &corev1.Node{Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   corev1.NodeReady,
+							Status: corev1.ConditionFalse,
+						},
+					},
+				}},
+				condType: corev1.NodeReady,
+			},
+			want: 0,
+		},
+		{
+			name: "Node with Ready condition unknown",
+			args: args{
+				node: &corev1.Node{Status: corev1.NodeStatus{
+					Conditions: []corev1.NodeCondition{
+						{
+							Type:   corev1.NodeReady,
+							Status: corev1.ConditionUnknown,
+						},
+					},
+				}},
+				condType: corev1.NodeReady,
+			},
+			want: -1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := nodeConditionValue(tt.args.node, tt.args.condType); got != tt.want {
+				t.Errorf("nodeConditionValue() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
