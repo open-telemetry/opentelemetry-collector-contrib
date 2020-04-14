@@ -51,7 +51,7 @@ func TestReceiver(t *testing.T) {
 	// each metric data struct corresponds to one resource.
 	expectedResources := 2*numPods + numNodes
 	require.Eventually(t, func() bool {
-		return len(r.resourceWatcher.dataCollector.collectMetrics()) == expectedResources
+		return len(r.resourceWatcher.dataCollector.collectMetricData()) == expectedResources
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -61,7 +61,7 @@ func TestReceiver(t *testing.T) {
 	// Expects metric data from a node, since other resources were deleted.
 	expectedResources = 2*(numPods-numPodsToDelete) + numNodes
 	require.Eventually(t, func() bool {
-		return len(r.resourceWatcher.dataCollector.collectMetrics()) == expectedResources
+		return len(r.resourceWatcher.dataCollector.collectMetricData()) == expectedResources
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
 

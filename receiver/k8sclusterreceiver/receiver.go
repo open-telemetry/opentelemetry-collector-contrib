@@ -65,7 +65,7 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 }
 
 func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) {
-	for _, m := range kr.resourceWatcher.dataCollector.collectMetrics() {
+	for _, m := range kr.resourceWatcher.dataCollector.collectMetricData() {
 		kr.consumer.ConsumeMetricsData(ctx, m)
 	}
 }

@@ -94,15 +94,27 @@ func (dc *dataCollector) setupMetadataStore(o runtime.Object, store cache.Store)
 }
 
 func (dc *dataCollector) removeFromMetricsStore(obj interface{}) {
-	dc.metricsStore.remove(obj, dc.logger)
+	if err := dc.metricsStore.remove(obj); err != nil {
+		dc.logger.Error(
+			"failed to remove from metric cache",
+			zap.String("obj", reflect.TypeOf(obj).String()),
+			zap.Error(err),
+		)
+	}
 }
 
-func (dc *dataCollector) updateMetricsStore(obj interface{}, rms []*resourceMetrics) {
-	dc.metricsStore.update(obj, rms, dc.logger)
+func (dc *dataCollector) updateMetricsStore(obj interface{}, rm []*resourceMetrics) {
+	if err := dc.metricsStore.update(obj, rm); err != nil {
+		dc.logger.Error(
+			"failed to update metric cache",
+			zap.String("obj", reflect.TypeOf(obj).String()),
+			zap.Error(err),
+		)
+	}
 }
 
-func (dc *dataCollector) collectMetrics() []consumerdata.MetricsData {
-	return dc.metricsStore.getMetrics()
+func (dc *dataCollector) collectMetricData() []consumerdata.MetricsData {
+	return dc.metricsStore.getMetricData()
 }
 
 // syncMetrics updates the metric store with latest metrics from the kubernetes object.

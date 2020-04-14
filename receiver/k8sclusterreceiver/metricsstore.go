@@ -15,13 +15,11 @@
 package k8sclusterreceiver
 
 import (
-	"reflect"
 	"sync"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -45,19 +43,14 @@ type resourceMetrics struct {
 }
 
 // updates metricsStore with latest metrics.
-func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics, logger *zap.Logger) {
+func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics) error {
 	ms.Lock()
 	defer ms.Unlock()
 
 	key, err := utils.GetUIDForObject(obj.(runtime.Object))
 
 	if err != nil {
-		logger.Error(
-			"failed to update metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
-		return
+		return err
 	}
 
 	mds := make([]consumerdata.MetricsData, len(rms))
@@ -69,29 +62,28 @@ func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics, logger *
 	}
 
 	ms.metricsCache[key] = mds
+
+	return nil
 }
 
 // removes entry from metric cache when resources are deleted.
-func (ms *metricsStore) remove(obj interface{}, logger *zap.Logger) {
+func (ms *metricsStore) remove(obj interface{}) error {
 	ms.Lock()
 	defer ms.Unlock()
 
 	key, err := utils.GetUIDForObject(obj.(runtime.Object))
 
 	if err != nil {
-		logger.Error(
-			"failed to remove from metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
-		return
+		return err
 	}
 
 	delete(ms.metricsCache, key)
+
+	return nil
 }
 
-// getMetrics returns metricsCache stored in the cache at a given point in time.
-func (ms *metricsStore) getMetrics() []consumerdata.MetricsData {
+// getMetricData returns metricsCache stored in the cache at a given point in time.
+func (ms *metricsStore) getMetricData() []consumerdata.MetricsData {
 	ms.RLock()
 	defer ms.RUnlock()
 
