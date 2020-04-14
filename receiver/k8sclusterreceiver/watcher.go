@@ -28,14 +28,10 @@ import (
 )
 
 type resourceWatcher struct {
-	client kubernetes.Interface
-
+	client                kubernetes.Interface
 	sharedInformerFactory informers.SharedInformerFactory
-
-	dataCollector *dataCollector
-
-	logger *zap.Logger
-
+	dataCollector         *dataCollector
+	logger                *zap.Logger
 	// This field is temporary and will be removed once the
 	// metadata syncing details are finalized.
 	collectMedata bool
@@ -83,7 +79,6 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 // startWatchingResources starts up all informers.
 func (rw *resourceWatcher) startWatchingResources(stopper <-chan struct{}) {
 	rw.sharedInformerFactory.Start(stopper)
-
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
@@ -117,5 +112,4 @@ func (rw *resourceWatcher) addOrUpdateResource(obj interface{}) {
 	if rw.collectMedata {
 		rw.dataCollector.syncMetadata(obj)
 	}
-
 }

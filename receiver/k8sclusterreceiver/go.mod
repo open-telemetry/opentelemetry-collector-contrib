@@ -12,5 +12,5 @@ require (
 	go.uber.org/zap v1.14.1
 	k8s.io/api v0.17.4
 	k8s.io/apimachinery v0.17.4
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 )

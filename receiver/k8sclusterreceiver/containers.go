@@ -263,7 +263,7 @@ func getAllContainerLabels(id string, name string, image string,
 }
 
 func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
-	properties := make(map[string]string)
+	properties := map[string]string{}
 
 	if cs.State.Running != nil {
 		properties[containerKeyStatus] = "running"

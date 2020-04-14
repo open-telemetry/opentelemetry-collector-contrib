@@ -173,7 +173,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: otelcontribcol
-  namespace: "default"
+  namespace: default
 EOF
 ```
 
@@ -214,5 +214,3 @@ spec:
             name: otelcontribcol
 EOF
 ```
-
-

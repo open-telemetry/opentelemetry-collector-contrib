@@ -54,7 +54,7 @@ func getMetricsForPod(pod *corev1.Pod) []*resourceMetrics {
 
 	podRes := getResourceForPod(pod)
 
-	containerResByName := make(map[string]*resourceMetrics)
+	containerResByName := map[string]*resourceMetrics{}
 
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.ContainerID == "" {
@@ -171,7 +171,7 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync properties accordingly.
 func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]string {
-	properties := make(map[string]string)
+	properties := map[string]string{}
 
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, "Job")
 	if jobRef != nil {
@@ -195,7 +195,7 @@ func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]stri
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync properties accordingly.
 func collectPodReplicaSetProperties(pod *corev1.Pod, store cache.Store) map[string]string {
-	properties := make(map[string]string)
+	properties := map[string]string{}
 
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, "ReplicaSet")
 	if rsRef != nil {
@@ -218,7 +218,7 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, store cache.Store) map[stri
 
 // getPodServiceTags returns a set of services associated with the pod.
 func getPodServiceTags(pod *corev1.Pod, store cache.Store) map[string]string {
-	properties := make(map[string]string)
+	properties := map[string]string{}
 	services := store.List()
 
 	for _, ser := range services {

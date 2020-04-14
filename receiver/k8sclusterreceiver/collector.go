@@ -27,8 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 // TODO: Consider moving some of these constants to
@@ -81,7 +79,7 @@ func newDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *data
 	return &dataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
-			metricsCache: make(map[types.UID][]consumerdata.MetricsData),
+			metricsCache: map[types.UID][]consumerdata.MetricsData{},
 		},
 		metadataStore: &metadataStore{
 			stores: map[string]cache.Store{},
@@ -96,22 +94,11 @@ func (dc *dataCollector) setupMetadataStore(o runtime.Object, store cache.Store)
 }
 
 func (dc *dataCollector) removeFromMetricsStore(obj interface{}) {
-	key, err := utils.GetUIDForObject(obj.(runtime.Object))
-
-	if err != nil {
-		dc.logger.Error(
-			"failed to remove from metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
-		return
-	}
-
-	dc.metricsStore.remove(key)
+	dc.metricsStore.remove(obj, dc.logger)
 }
 
-func (dc *dataCollector) updateMetricsStore(key types.UID, rms []*resourceMetrics) {
-	dc.metricsStore.update(key, rms)
+func (dc *dataCollector) updateMetricsStore(obj interface{}, rms []*resourceMetrics) {
+	dc.metricsStore.update(obj, rms, dc.logger)
 }
 
 func (dc *dataCollector) collectMetrics() []consumerdata.MetricsData {
@@ -120,7 +107,7 @@ func (dc *dataCollector) collectMetrics() []consumerdata.MetricsData {
 
 // syncMetrics updates the metric store with latest metrics from the kubernetes object.
 func (dc *dataCollector) syncMetrics(obj interface{}) {
-	rm := make([]*resourceMetrics, 0)
+	var rm []*resourceMetrics
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
@@ -147,7 +134,6 @@ func (dc *dataCollector) syncMetrics(obj interface{}) {
 		rm = getMetricsForCronJob(o)
 	case *v2beta1.HorizontalPodAutoscaler:
 		rm = getMetricsForHPA(o)
-	case *corev1.Service:
 	default:
 		dc.logger.Warn(
 			"Unsupported k8s resource type",
@@ -160,18 +146,7 @@ func (dc *dataCollector) syncMetrics(obj interface{}) {
 		return
 	}
 
-	key, err := utils.GetUIDForObject(obj.(runtime.Object))
-
-	if err != nil {
-		dc.logger.Error(
-			"failed to update metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
-		return
-	}
-
-	dc.updateMetricsStore(key, rm)
+	dc.updateMetricsStore(obj, rm)
 }
 
 // syncMetadata updates the metric store with latest metrics from the kubernetes object
@@ -198,7 +173,6 @@ func (dc *dataCollector) syncMetadata(obj interface{}) {
 		_ = getMetadataForCronJob(o)
 	case *v2beta1.HorizontalPodAutoscaler:
 		_ = getMetadataForHPA(o)
-	case *corev1.Service:
 	default:
 		dc.logger.Warn(
 			"Unsupported k8s resource type",

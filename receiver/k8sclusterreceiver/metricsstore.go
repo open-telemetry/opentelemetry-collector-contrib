@@ -15,12 +15,17 @@
 package k8sclusterreceiver
 
 import (
+	"reflect"
 	"sync"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.uber.org/zap"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 // metricsStore keeps track of the metrics being pushed along the pipeline
@@ -40,9 +45,20 @@ type resourceMetrics struct {
 }
 
 // updates metricsStore with latest metrics.
-func (ms *metricsStore) update(key types.UID, rms []*resourceMetrics) {
+func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics, logger *zap.Logger) {
 	ms.Lock()
 	defer ms.Unlock()
+
+	key, err := utils.GetUIDForObject(obj.(runtime.Object))
+
+	if err != nil {
+		logger.Error(
+			"failed to update metric cache",
+			zap.String("obj", reflect.TypeOf(obj).String()),
+			zap.Error(err),
+		)
+		return
+	}
 
 	mds := make([]consumerdata.MetricsData, len(rms))
 	for i, rm := range rms {
@@ -56,9 +72,20 @@ func (ms *metricsStore) update(key types.UID, rms []*resourceMetrics) {
 }
 
 // removes entry from metric cache when resources are deleted.
-func (ms *metricsStore) remove(key types.UID) {
+func (ms *metricsStore) remove(obj interface{}, logger *zap.Logger) {
 	ms.Lock()
 	defer ms.Unlock()
+
+	key, err := utils.GetUIDForObject(obj.(runtime.Object))
+
+	if err != nil {
+		logger.Error(
+			"failed to remove from metric cache",
+			zap.String("obj", reflect.TypeOf(obj).String()),
+			zap.Error(err),
+		)
+		return
+	}
 
 	delete(ms.metricsCache, key)
 }
@@ -68,7 +95,7 @@ func (ms *metricsStore) getMetrics() []consumerdata.MetricsData {
 	ms.RLock()
 	defer ms.RUnlock()
 
-	out := make([]consumerdata.MetricsData, 0)
+	var out []consumerdata.MetricsData
 
 	for _, mds := range ms.metricsCache {
 		out = append(out, mds...)
