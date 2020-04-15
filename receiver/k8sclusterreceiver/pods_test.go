@@ -55,7 +55,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 
 	rm = actualResourceMetrics[1]
 
-	require.Equal(t, 6, len(actualResourceMetrics[1].metrics))
+	require.Equal(t, 4, len(actualResourceMetrics[1].metrics))
 	testutils.AssertResource(t, *rm.resource, resourcekeys.ContainerType,
 		map[string]string{
 			"container.id":         "container-id",
@@ -75,11 +75,11 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/container/ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, *rm.metrics[2], "kubernetes/container/cpu_request",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
+	testutils.AssertMetricsWithLabels(t, *rm.metrics[2], "kubernetes/container/request",
+		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 10000)
 
-	testutils.AssertMetrics(t, *rm.metrics[3], "kubernetes/container/cpu_limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
+	testutils.AssertMetricsWithLabels(t, *rm.metrics[3], "kubernetes/container/limit",
+		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 20000)
 }
 
 func TestPodAndContainerMetadata(t *testing.T) {

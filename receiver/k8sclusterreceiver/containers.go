@@ -75,46 +75,6 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-var containerCPURequestMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/cpu_request",
-	Description: "CPU requested for the container",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var containerCPULimitMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/cpu_limit",
-	Description: "Maximum CPU limit set for the container",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var containerMemoryRequestMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/memory_request",
-	Description: "Memory requested for the container",
-	Unit:        "By",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var containerMemoryLimitMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/memory_limit",
-	Description: "Maximum memory limit set for the container",
-	Unit:        "By",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var containerEpemStorageRequestMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/ephemeral_storage_request",
-	Description: "Ephemeral storage requested for the container",
-	Unit:        "By",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
-var containerEpemStorageLimitMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/ephemeral_storage_limit",
-	Description: "Maximum ephemeral storage limit set for the container",
-	Unit:        "By",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-}
-
 var containerRequestMetric = &metricspb.MetricDescriptor{
 	Name:        "kubernetes/container/request",
 	Description: "Resource requested for the container",
@@ -134,87 +94,16 @@ var containerLimitMetric = &metricspb.MetricDescriptor{
 func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 	metrics := make([]*metricspb.Metric, 0)
 
-	if val, ok := c.Resources.Requests[corev1.ResourceCPU]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerCPURequestMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.MilliValue()),
-				},
-			},
-		}...)
-	}
-
-	if val, ok := c.Resources.Limits[corev1.ResourceCPU]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerCPULimitMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.MilliValue()),
-				},
-			},
-		}...)
-	}
-
-	if val, ok := c.Resources.Requests[corev1.ResourceMemory]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerMemoryRequestMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.Value()),
-				},
-			},
-		}...)
-	}
-
-	if val, ok := c.Resources.Limits[corev1.ResourceMemory]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerMemoryLimitMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.Value()),
-				},
-			},
-		}...)
-	}
-
-	if val, ok := c.Resources.Requests[corev1.ResourceEphemeralStorage]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerEpemStorageRequestMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.Value()),
-				},
-			},
-		}...)
-	}
-
-	if val, ok := c.Resources.Limits[corev1.ResourceEphemeralStorage]; ok {
-		metrics = append(metrics, []*metricspb.Metric{
-			{
-				MetricDescriptor: containerEpemStorageLimitMetric,
-				Timeseries: []*metricspb.TimeSeries{
-					utils.GetInt64TimeSeries(val.Value()),
-				},
-			},
-		}...)
-	}
-
-	// TODO: Choose between this and the above ways of capturing this information
-	// The below seems concise since part of the information (resource type) is
-	// captured as a label on the metric. However, it makes it difficult to handle
-	// units since it changes based on resource type.
-
 	for _, t := range []struct {
 		metric *metricspb.MetricDescriptor
 		rl     corev1.ResourceList
 	}{
 		{
-			resourceQuotaHardLimitMetric,
+			containerRequestMetric,
 			c.Resources.Requests,
 		},
 		{
-			resourceQuotaUsedMetric,
+			containerLimitMetric,
 			c.Resources.Limits,
 		},
 	} {
