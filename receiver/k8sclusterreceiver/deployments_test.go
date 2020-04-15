@@ -27,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
-func TestDeploymenttMetrics(t *testing.T) {
+func TestDeploymentMetrics(t *testing.T) {
 	dep := newDeployment("1")
 
 	actualResourceMetrics := getMetricsForDeployment(dep)

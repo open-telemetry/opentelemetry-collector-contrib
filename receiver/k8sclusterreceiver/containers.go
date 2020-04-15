@@ -66,7 +66,6 @@ func getStatusMetricsForContainer(cs corev1.ContainerStatus) []*metricspb.Metric
 	}
 
 	return metrics
-
 }
 
 func boolToInt(b bool) int {
@@ -237,7 +236,6 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 	}
 
 	return metrics
-
 }
 
 // getResourceForContainer returns a proto representation of the pod.

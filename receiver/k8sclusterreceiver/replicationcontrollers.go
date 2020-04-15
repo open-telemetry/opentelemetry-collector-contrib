@@ -22,7 +22,7 @@ import (
 
 func getMetricsForReplicationController(rc *corev1.ReplicationController) []*resourceMetrics {
 	if rc.Spec.Replicas == nil {
-		return []*resourceMetrics{}
+		return nil
 	}
 
 	return []*resourceMetrics{

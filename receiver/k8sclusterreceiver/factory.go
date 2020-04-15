@@ -35,7 +35,7 @@ const (
 
 var defaultNodeConditionsToReport = []string{"Ready"}
 
-var _ component.ReceiverFactoryOld = &Factory{}
+var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Factory is the factory for kubernetes-cluster receiver.
 type Factory struct {

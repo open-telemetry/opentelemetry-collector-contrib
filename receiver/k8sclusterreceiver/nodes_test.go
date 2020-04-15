@@ -95,6 +95,7 @@ func TestGetNodeConditionMetric(t *testing.T) {
 			"kubernetes/node/condition_disk_pressure",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := getNodeConditionMetric(tt.nodeConditionTypeValue); got != tt.want {
@@ -160,6 +161,7 @@ func TestNodeConditionValue(t *testing.T) {
 			want: -1,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := nodeConditionValue(tt.args.node, tt.args.condType); got != tt.want {

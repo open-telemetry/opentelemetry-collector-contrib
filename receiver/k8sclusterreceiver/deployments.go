@@ -22,7 +22,7 @@ import (
 
 func getMetricsForDeployment(dep *appsv1.Deployment) []*resourceMetrics {
 	if dep.Spec.Replicas == nil {
-		return []*resourceMetrics{}
+		return nil
 	}
 
 	return []*resourceMetrics{
@@ -35,7 +35,6 @@ func getMetricsForDeployment(dep *appsv1.Deployment) []*resourceMetrics {
 			),
 		},
 	}
-
 }
 
 func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {

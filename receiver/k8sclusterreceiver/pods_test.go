@@ -218,6 +218,7 @@ func TestPhaseToInt(t *testing.T) {
 			want:  5,
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := phaseToInt(tt.phase); got != tt.want {

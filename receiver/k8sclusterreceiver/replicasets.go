@@ -22,7 +22,7 @@ import (
 
 func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
 	if rs.Spec.Replicas == nil {
-		return []*resourceMetrics{}
+		return nil
 	}
 
 	return []*resourceMetrics{

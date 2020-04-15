@@ -52,7 +52,6 @@ var daemonSetReadyMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForDaemonSet(ds *appsv1.DaemonSet) []*resourceMetrics {
-
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: daemonSetCurrentScheduledMetric,
