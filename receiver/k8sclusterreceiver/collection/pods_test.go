@@ -20,7 +20,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/resource/resourcekeys"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,7 +39,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	rm := actualResourceMetrics[0]
 
 	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *rm.resource, resourcekeys.K8SType,
+	testutils.AssertResource(t, *rm.resource, k8sType,
 		map[string]string{
 			"k8s.pod.uid":        "test-pod-1-uid",
 			"k8s.pod.name":       "test-pod-1",
@@ -56,7 +55,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	rm = actualResourceMetrics[1]
 
 	require.Equal(t, 4, len(actualResourceMetrics[1].metrics))
-	testutils.AssertResource(t, *rm.resource, resourcekeys.ContainerType,
+	testutils.AssertResource(t, *rm.resource, "container",
 		map[string]string{
 			"container.id":         "container-id",
 			"container.spec.name":  "container-name",

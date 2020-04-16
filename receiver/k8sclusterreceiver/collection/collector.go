@@ -34,6 +34,10 @@ import (
 
 // Resource label keys.
 const (
+	// Resource Type
+	k8sType       = "k8s"
+	containerType = "container"
+
 	// Resource labels keys for UID.
 	k8sKeyPodUID                   = "k8s.pod.uid"
 	k8sKeyNodeUID                  = "k8s.node.uid"

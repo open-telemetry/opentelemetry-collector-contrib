@@ -20,7 +20,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/resource/resourcekeys"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -107,13 +107,13 @@ func listResourceMetrics(rms map[string]*resourceMetrics) []*resourceMetrics {
 // getResourceForPod returns a proto representation of the pod.
 func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 	return &resourcepb.Resource{
-		Type: resourcekeys.K8SType,
+		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyPodUID:                     string(pod.UID),
-			resourcekeys.K8SKeyPodName:       pod.Name,
-			k8sKeyNodeName:                   pod.Spec.NodeName,
-			resourcekeys.K8SKeyNamespaceName: pod.Namespace,
-			resourcekeys.K8SKeyClusterName:   pod.ClusterName,
+			k8sKeyPodUID:                      string(pod.UID),
+			conventions.AttributeK8sPod:       pod.Name,
+			k8sKeyNodeName:                    pod.Spec.NodeName,
+			conventions.AttributeK8sNamespace: pod.Namespace,
+			conventions.AttributeK8sCluster:   pod.ClusterName,
 		},
 	}
 }

@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/resource/resourcekeys"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
@@ -130,7 +130,7 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 // getResourceForContainer returns a proto representation of the pod.
 func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 	return &resourcepb.Resource{
-		Type:   resourcekeys.ContainerType,
+		Type:   containerType,
 		Labels: labels,
 	}
 }
@@ -144,7 +144,7 @@ func getAllContainerLabels(id string, name string, image string,
 
 	out[containerKeyID] = utils.StripContainerID(id)
 	out[containerKeySpecName] = name
-	out[resourcekeys.ContainerKeyImageName] = image
+	out[conventions.AttributeContainerImage] = image
 
 	return out
 }

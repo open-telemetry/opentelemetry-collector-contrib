@@ -19,7 +19,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/resource/resourcekeys"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,7 +35,7 @@ func TestCronJobMetrics(t *testing.T) {
 	require.Equal(t, 1, len(actualResourceMetrics))
 
 	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *actualResourceMetrics[0].resource, resourcekeys.K8SType,
+	testutils.AssertResource(t, *actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
 			"k8s.cronjob.uid":    "test-cronjob-1-uid",
 			"k8s.cronjob.name":   "test-cronjob-1",

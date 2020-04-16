@@ -19,7 +19,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/resource/resourcekeys"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -36,7 +35,7 @@ func TestDeploymentMetrics(t *testing.T) {
 	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
 
 	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, *rm.resource, resourcekeys.K8SType,
+	testutils.AssertResource(t, *rm.resource, k8sType,
 		map[string]string{
 			"k8s.deployment.uid":  "test-deployment-1-uid",
 			"k8s.deployment.name": "test-deployment-1",

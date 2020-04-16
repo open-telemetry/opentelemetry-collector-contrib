@@ -55,10 +55,8 @@ func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics) error {
 
 	mds := make([]consumerdata.MetricsData, len(rms))
 	for i, rm := range rms {
-
 		mds[i].Resource = rm.resource
 		mds[i].Metrics = rm.metrics
-
 	}
 
 	ms.metricsCache[key] = mds

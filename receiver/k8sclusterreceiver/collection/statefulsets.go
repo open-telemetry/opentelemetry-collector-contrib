@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/resource/resourcekeys"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
@@ -99,12 +99,12 @@ func getMetricsForStatefulSet(ss *appsv1.StatefulSet) []*resourceMetrics {
 
 func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
-		Type: resourcekeys.K8SType,
+		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyStatefulSetUID:             string(ss.UID),
-			k8sKeyStatefulSetName:            ss.Name,
-			resourcekeys.K8SKeyNamespaceName: ss.Namespace,
-			resourcekeys.K8SKeyClusterName:   ss.ClusterName,
+			k8sKeyStatefulSetUID:              string(ss.UID),
+			k8sKeyStatefulSetName:             ss.Name,
+			conventions.AttributeK8sNamespace: ss.Namespace,
+			conventions.AttributeK8sCluster:   ss.ClusterName,
 		},
 	}
 }

@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opencensus.io/resource/resourcekeys"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
@@ -49,11 +49,11 @@ func getMetricsForNamespace(ns *corev1.Namespace) []*resourceMetrics {
 
 func getResourceForNamespace(ns *corev1.Namespace) *resourcepb.Resource {
 	return &resourcepb.Resource{
-		Type: resourcekeys.K8SType,
+		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyNamespaceUID:               string(ns.UID),
-			resourcekeys.K8SKeyNamespaceName: ns.Namespace,
-			resourcekeys.K8SKeyClusterName:   ns.ClusterName,
+			k8sKeyNamespaceUID:                string(ns.UID),
+			conventions.AttributeK8sNamespace: ns.Namespace,
+			conventions.AttributeK8sCluster:   ns.ClusterName,
 		},
 	}
 }
