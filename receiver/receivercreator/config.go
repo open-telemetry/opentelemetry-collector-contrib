@@ -15,8 +15,12 @@
 package receivercreator
 
 import (
+	"reflect"
+
 	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 )
 
 // receiverConfig describes a receiver instance with a default config.
@@ -63,4 +67,22 @@ func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, e
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	receiverTemplates             map[string]receiverTemplate
+	// WatchObservers are the extensions to listen to endpoints from.
+	WatchObservers []string `mapstructure:"watch_observers"`
+}
+
+// Copied from the Viper but changed to use the same delimiter.
+// See https://github.com/spf13/viper/issues/871
+func viperSub(v *viper.Viper, key string) *viper.Viper {
+	subv := otelconfig.NewViper()
+	data := v.Get(key)
+	if data == nil {
+		return subv
+	}
+
+	if reflect.TypeOf(data).Kind() == reflect.Map {
+		subv.MergeConfigMap(cast.ToStringMap(data))
+		return subv
+	}
+	return subv
 }

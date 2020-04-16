@@ -17,6 +17,7 @@ package receivercreator
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -40,7 +41,6 @@ type receiverCreator struct {
 	logger          *zap.Logger
 	cfg             *Config
 	observerHandler observerHandler
-	observer        observer.Observable
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
@@ -86,7 +86,39 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 			host: &loggingHost{host, rc.logger},
 		}}
 
-	rc.observer.ListAndWatch(&rc.observerHandler)
+	observers := map[string]observer.Observable{}
+
+	// Match all configured observers to the extensions that are running.
+	for _, watchObserver := range rc.cfg.WatchObservers {
+		for cfg, ext := range host.GetExtensions() {
+			if cfg.Type() != watchObserver {
+				continue
+			}
+
+			obs, ok := ext.(observer.Observable)
+			if !ok {
+				return fmt.Errorf("extension %q in watch_observers is not an observer", watchObserver)
+			}
+			observers[watchObserver] = obs
+		}
+	}
+
+	// Make sure all observers are present before starting any.
+	for _, watchObserver := range rc.cfg.WatchObservers {
+		if observers[watchObserver] == nil {
+			return fmt.Errorf("failed to find observer %q", watchObserver)
+		}
+	}
+
+	if len(observers) == 0 {
+		rc.logger.Warn("no observers were configured and no subreceivers will be started",
+			zap.String("receiver", rc.cfg.Name()))
+	}
+
+	// Start all configured watchers.
+	for _, observable := range observers {
+		observable.ListAndWatch(&rc.observerHandler)
+	}
 
 	return nil
 }
