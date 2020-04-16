@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"testing"
@@ -29,7 +29,7 @@ import (
 )
 
 func TestCronJobMetrics(t *testing.T) {
-	cj := newCronJob("1")
+	cj := NewCronJob("1")
 
 	actualResourceMetrics := getMetricsForCronJob(cj)
 
@@ -50,7 +50,7 @@ func TestCronJobMetrics(t *testing.T) {
 }
 
 func TestCronJobMetadata(t *testing.T) {
-	cj := newCronJob("1")
+	cj := NewCronJob("1")
 
 	actualMetadata := getMetadataForCronJob(cj)
 
@@ -75,7 +75,7 @@ func TestCronJobMetadata(t *testing.T) {
 	)
 }
 
-func newCronJob(id string) *batchv1beta1.CronJob {
+func NewCronJob(id string) *batchv1beta1.CronJob {
 	return &batchv1beta1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
 			Name:        "test-cronjob-" + id,

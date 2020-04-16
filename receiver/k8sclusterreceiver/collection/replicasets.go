@@ -12,44 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
-	corev1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
-func getMetricsForReplicationController(rc *corev1.ReplicationController) []*resourceMetrics {
-	if rc.Spec.Replicas == nil {
+func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
+	if rs.Spec.Replicas == nil {
 		return nil
 	}
 
 	return []*resourceMetrics{
 		{
-			resource: getResourceForReplicationController(rc),
+			resource: getResourceForReplicaSet(rs),
 			metrics: getReplicaMetrics(
-				"replication_controller",
-				*rc.Spec.Replicas,
-				rc.Status.AvailableReplicas,
+				"replica_set",
+				*rs.Spec.Replicas,
+				rs.Status.AvailableReplicas,
 			),
 		},
 	}
 
 }
 
-func getResourceForReplicationController(rc *corev1.ReplicationController) *resourcepb.Resource {
+func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: resourcekeys.K8SType,
 		Labels: map[string]string{
-			k8sKeyReplicationControllerUID:   string(rc.UID),
-			k8sKeyReplicationControllerName:  rc.Name,
-			resourcekeys.K8SKeyNamespaceName: rc.Namespace,
-			resourcekeys.K8SKeyClusterName:   rc.ClusterName,
+			k8sKeyReplicaSetUID:              string(rs.UID),
+			k8sKeyReplicaSetName:             rs.Name,
+			resourcekeys.K8SKeyNamespaceName: rs.Namespace,
+			resourcekeys.K8SKeyClusterName:   rs.ClusterName,
 		},
 	}
 }
 
-func getMetadataForReplicationController(rc *corev1.ReplicationController) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&rc.ObjectMeta, "replicationcontroller")}
+func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) []*KubernetesMetadata {
+	return []*KubernetesMetadata{getGenericMetadata(&rs.ObjectMeta, "replicaset")}
 }

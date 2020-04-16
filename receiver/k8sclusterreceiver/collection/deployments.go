@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -20,36 +20,37 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
-	if rs.Spec.Replicas == nil {
+func getMetricsForDeployment(dep *appsv1.Deployment) []*resourceMetrics {
+	if dep.Spec.Replicas == nil {
 		return nil
 	}
 
 	return []*resourceMetrics{
 		{
-			resource: getResourceForReplicaSet(rs),
+			resource: getResourceForDeployment(dep),
 			metrics: getReplicaMetrics(
-				"replica_set",
-				*rs.Spec.Replicas,
-				rs.Status.AvailableReplicas,
+				"deployment",
+				*dep.Spec.Replicas,
+				dep.Status.AvailableReplicas,
 			),
 		},
 	}
-
 }
 
-func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
+func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: resourcekeys.K8SType,
 		Labels: map[string]string{
-			k8sKeyReplicaSetUID:              string(rs.UID),
-			k8sKeyReplicaSetName:             rs.Name,
-			resourcekeys.K8SKeyNamespaceName: rs.Namespace,
-			resourcekeys.K8SKeyClusterName:   rs.ClusterName,
+			k8sKeyDeploymentUID:              string(dep.UID),
+			k8sKeyDeploymentName:             dep.Name,
+			resourcekeys.K8SKeyNamespaceName: dep.Namespace,
+			resourcekeys.K8SKeyClusterName:   dep.ClusterName,
 		},
 	}
 }
 
-func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&rs.ObjectMeta, "replicaset")}
+func getMetadataForDeployment(dep *appsv1.Deployment) []*KubernetesMetadata {
+	rm := getGenericMetadata(&dep.ObjectMeta, "deployment")
+	rm.properties[k8sKeyDeploymentName] = dep.Name
+	return []*KubernetesMetadata{rm}
 }

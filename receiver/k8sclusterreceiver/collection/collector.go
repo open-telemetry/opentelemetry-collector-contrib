@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"reflect"
@@ -65,18 +65,20 @@ const (
 	containerKeySpecName = "container.spec.name"
 )
 
-// dataCollector wraps around a metricsStore and a metadaStore exposing
-// methods to perform on the underlying stores
-type dataCollector struct {
+// DataCollector wraps around a metricsStore and a metadaStore exposing
+// methods to perform on the underlying stores. DataCollector also provides
+// an interface to interact with refactored code from SignalFx Agent which is
+// confined to the collection package.
+type DataCollector struct {
 	logger                 *zap.Logger
 	metricsStore           *metricsStore
 	metadataStore          *metadataStore
 	nodeConditionsToReport []string
 }
 
-// newDataCollector returns a dataCollector.
-func newDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *dataCollector {
-	return &dataCollector{
+// newDataCollector returns a DataCollector.
+func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *DataCollector {
+	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{
 			metricsCache: map[types.UID][]consumerdata.MetricsData{},
@@ -88,12 +90,12 @@ func newDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *data
 	}
 }
 
-// setupMetadataStore initializes a metadata store for the kubernetes object.
-func (dc *dataCollector) setupMetadataStore(o runtime.Object, store cache.Store) {
+// SetupMetadataStore initializes a metadata store for the kubernetes object.
+func (dc *DataCollector) SetupMetadataStore(o runtime.Object, store cache.Store) {
 	dc.metadataStore.setupStore(o, store)
 }
 
-func (dc *dataCollector) removeFromMetricsStore(obj interface{}) {
+func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
 	if err := dc.metricsStore.remove(obj); err != nil {
 		dc.logger.Error(
 			"failed to remove from metric cache",
@@ -103,7 +105,7 @@ func (dc *dataCollector) removeFromMetricsStore(obj interface{}) {
 	}
 }
 
-func (dc *dataCollector) updateMetricsStore(obj interface{}, rm []*resourceMetrics) {
+func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetrics) {
 	if err := dc.metricsStore.update(obj, rm); err != nil {
 		dc.logger.Error(
 			"failed to update metric cache",
@@ -113,12 +115,12 @@ func (dc *dataCollector) updateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *dataCollector) collectMetricData() []consumerdata.MetricsData {
+func (dc *DataCollector) CollectMetricData() []consumerdata.MetricsData {
 	return dc.metricsStore.getMetricData()
 }
 
-// syncMetrics updates the metric store with latest metrics from the kubernetes object.
-func (dc *dataCollector) syncMetrics(obj interface{}) {
+// SyncMetrics updates the metric store with latest metrics from the kubernetes object.
+func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	var rm []*resourceMetrics
 
 	switch o := obj.(type) {
@@ -158,11 +160,11 @@ func (dc *dataCollector) syncMetrics(obj interface{}) {
 		return
 	}
 
-	dc.updateMetricsStore(obj, rm)
+	dc.UpdateMetricsStore(obj, rm)
 }
 
-// syncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *dataCollector) syncMetadata(obj interface{}) {
+// SyncMetadata updates the metric store with latest metrics from the kubernetes object
+func (dc *DataCollector) SyncMetadata(obj interface{}) {
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		_ = getMetadataForPod(o, dc.metadataStore)

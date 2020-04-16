@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"strings"
@@ -137,7 +137,8 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // getMetadataForPod returns all metadata associated with the pod.
 func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata {
-	properties := pod.Labels
+	properties := map[string]string{}
+	properties = utils.MergeStringMaps(properties, pod.Labels)
 
 	properties[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 

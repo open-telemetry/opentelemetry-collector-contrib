@@ -25,9 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
 func TestReceiver(t *testing.T) {
@@ -41,17 +44,17 @@ func TestReceiver(t *testing.T) {
 	// Setup k8s resources.
 	numPods := 2
 	numNodes := 1
-	createPodsWithContainer(t, client, numPods)
+	createPods(t, client, numPods)
 	createNodes(t, client, numNodes)
 
 	ctx := context.Background()
 	r.Start(ctx, componenttest.NewNopHost())
 
-	// Expects metric data from nodes, pods and containers where
-	// each metric data struct corresponds to one resource.
-	expectedResources := 2*numPods + numNodes
+	// Expects metric data from nodes and pods where each metric data
+	// struct corresponds to one resource.
+	expectedResources := numPods + numNodes
 	require.Eventually(t, func() bool {
-		return len(r.resourceWatcher.dataCollector.collectMetricData()) == expectedResources
+		return len(r.resourceWatcher.dataCollector.CollectMetricData()) == expectedResources
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -59,9 +62,9 @@ func TestReceiver(t *testing.T) {
 	deletePods(t, client, numPodsToDelete)
 
 	// Expects metric data from a node, since other resources were deleted.
-	expectedResources = 2*(numPods-numPodsToDelete) + numNodes
+	expectedResources = (numPods - numPodsToDelete) + numNodes
 	require.Eventually(t, func() bool {
-		return len(r.resourceWatcher.dataCollector.collectMetricData()) == expectedResources
+		return len(r.resourceWatcher.dataCollector.CollectMetricData()) == expectedResources
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
 
@@ -77,16 +80,13 @@ func TestReceiverWithManyResources(t *testing.T) {
 	require.NoError(t, err)
 
 	numPods := 1000
-	createPodsWithContainer(t, client, numPods)
+	createPods(t, client, numPods)
 
 	ctx := context.Background()
 	r.Start(ctx, componenttest.NewNopHost())
 
-	// Expects metric data from pods and containers where
-	// each metric data struct corresponds to one resource.
-	expectedResources := 2 * numPods
 	require.Eventually(t, func() bool {
-		return len(consumer.AllMetrics()) == expectedResources
+		return len(consumer.AllMetrics()) == numPods
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
@@ -108,11 +108,7 @@ func setupReceiver(client *fake.Clientset,
 		return nil, err
 	}
 
-	rw.dataCollector.metadataStore = &metadataStore{
-		map[string]cache.Store{
-			"Service": &MockStore{},
-		},
-	}
+	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{
 		resourceWatcher: rw,
@@ -122,9 +118,15 @@ func setupReceiver(client *fake.Clientset,
 	}, nil
 }
 
-func createPodsWithContainer(t *testing.T, client *fake.Clientset, numPods int) {
+func createPods(t *testing.T, client *fake.Clientset, numPods int) {
 	for i := 0; i < numPods; i++ {
-		p := newPodWithContainer(strconv.Itoa(i))
+		p := &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				UID:       types.UID("pod" + strconv.Itoa(i)),
+				Name:      strconv.Itoa(i),
+				Namespace: "test",
+			},
+		}
 		_, err := client.CoreV1().Pods(p.Namespace).Create(p)
 
 		if err != nil {
@@ -138,7 +140,7 @@ func createPodsWithContainer(t *testing.T, client *fake.Clientset, numPods int) 
 
 func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 	for i := 0; i < numPods; i++ {
-		err := client.CoreV1().Pods("test-namespace").Delete("test-pod-"+strconv.Itoa(i), &v1.DeleteOptions{})
+		err := client.CoreV1().Pods("test").Delete(strconv.Itoa(i), &v1.DeleteOptions{})
 
 		if err != nil {
 			t.Errorf("error deleting pod: %v", err)
@@ -151,7 +153,12 @@ func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 
 func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 	for i := 0; i < numNodes; i++ {
-		n := newNode(strconv.Itoa(i))
+		n := &corev1.Node{
+			ObjectMeta: v1.ObjectMeta{
+				UID:  types.UID("node" + strconv.Itoa(i)),
+				Name: strconv.Itoa(i),
+			},
+		}
 		_, err := client.CoreV1().Nodes().Create(n)
 
 		if err != nil {

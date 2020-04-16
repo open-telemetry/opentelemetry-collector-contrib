@@ -25,12 +25,14 @@ import (
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 type resourceWatcher struct {
 	client                kubernetes.Interface
 	sharedInformerFactory informers.SharedInformerFactory
-	dataCollector         *dataCollector
+	dataCollector         *collection.DataCollector
 	logger                *zap.Logger
 	// This field is temporary and will be removed once the
 	// metadata syncing details are finalized.
@@ -43,7 +45,7 @@ func newResourceWatcher(logger *zap.Logger, config *Config,
 	rw := &resourceWatcher{
 		client:        client,
 		logger:        logger,
-		dataCollector: newDataCollector(logger, config.NodeConditionTypesToReport),
+		dataCollector: collection.NewDataCollector(logger, config.NodeConditionTypesToReport),
 		collectMedata: collectMetadata,
 	}
 
@@ -89,7 +91,7 @@ func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.Share
 		UpdateFunc: rw.onUpdate,
 		DeleteFunc: rw.onDelete,
 	})
-	rw.dataCollector.setupMetadataStore(o, informer.GetStore())
+	rw.dataCollector.SetupMetadataStore(o, informer.GetStore())
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
@@ -97,7 +99,7 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
-	rw.dataCollector.removeFromMetricsStore(obj)
+	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
 func (rw *resourceWatcher) onUpdate(_ interface{}, newObj interface{}) {
@@ -107,10 +109,10 @@ func (rw *resourceWatcher) onUpdate(_ interface{}, newObj interface{}) {
 // addOrUpdateResource keeps the metric cache updated with latest metric
 // values that will be dispatched in the subsequent interval.
 func (rw *resourceWatcher) addOrUpdateResource(obj interface{}) {
-	rw.dataCollector.syncMetrics(obj)
+	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if rw.collectMedata {
-		rw.dataCollector.syncMetadata(obj)
+		rw.dataCollector.SyncMetadata(obj)
 	}
 }

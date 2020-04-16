@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"fmt"
@@ -93,7 +93,8 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func getMetadataForNode(node *corev1.Node) []*KubernetesMetadata {
-	properties := node.Labels
+	properties := map[string]string{}
+	properties = utils.MergeStringMaps(properties, node.Labels)
 
 	properties[k8sKeyNodeName] = node.Name
 	properties[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"testing"
@@ -20,68 +20,47 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/resource/resourcekeys"
-	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
-func TestJobMetrics(t *testing.T) {
-	j := newJob("1")
+func TestNamespaceMetrics(t *testing.T) {
+	n := newNamespace("1")
 
-	actualResourceMetrics := getMetricsForJob(j)
+	actualResourceMetrics := getMetricsForNamespace(n)
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 
-	require.Equal(t, 5, len(actualResourceMetrics[0].metrics))
+	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
 	testutils.AssertResource(t, *actualResourceMetrics[0].resource, resourcekeys.K8SType,
 		map[string]string{
-			"k8s.job.uid":        "test-job-1-uid",
-			"k8s.job.name":       "test-job-1",
+			"k8s.namespace.uid":  "test-namespace-1-uid",
 			"k8s.namespace.name": "test-namespace",
 			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "kubernetes/job/active_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
-
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[1], "kubernetes/job/desired_successful_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 10)
-
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[2], "kubernetes/job/failed_pods",
+	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "kubernetes/namespace/phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
-
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[3], "kubernetes/job/max_parallel_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
-
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[4], "kubernetes/job/successful_pods",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 
-func newJob(id string) *batchv1.Job {
-	p := int32(2)
-	c := int32(10)
-	return &batchv1.Job{
+func newNamespace(id string) *corev1.Namespace {
+	return &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-job-" + id,
+			Name:        "test-namespace-" + id,
 			Namespace:   "test-namespace",
-			UID:         types.UID("test-job-" + id + "-uid"),
+			UID:         types.UID("test-namespace-" + id + "-uid"),
 			ClusterName: "test-cluster",
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",
 			},
 		},
-		Spec: batchv1.JobSpec{
-			Parallelism: &p,
-			Completions: &c,
-		},
-		Status: batchv1.JobStatus{
-			Active:    2,
-			Succeeded: 3,
-			Failed:    0,
+		Status: corev1.NamespaceStatus{
+			Phase: corev1.NamespaceTerminating,
 		},
 	}
 }

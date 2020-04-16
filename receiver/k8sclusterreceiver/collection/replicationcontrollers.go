@@ -12,45 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
-	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func getMetricsForDeployment(dep *appsv1.Deployment) []*resourceMetrics {
-	if dep.Spec.Replicas == nil {
+func getMetricsForReplicationController(rc *corev1.ReplicationController) []*resourceMetrics {
+	if rc.Spec.Replicas == nil {
 		return nil
 	}
 
 	return []*resourceMetrics{
 		{
-			resource: getResourceForDeployment(dep),
+			resource: getResourceForReplicationController(rc),
 			metrics: getReplicaMetrics(
-				"deployment",
-				*dep.Spec.Replicas,
-				dep.Status.AvailableReplicas,
+				"replication_controller",
+				*rc.Spec.Replicas,
+				rc.Status.AvailableReplicas,
 			),
 		},
 	}
+
 }
 
-func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
+func getResourceForReplicationController(rc *corev1.ReplicationController) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: resourcekeys.K8SType,
 		Labels: map[string]string{
-			k8sKeyDeploymentUID:              string(dep.UID),
-			k8sKeyDeploymentName:             dep.Name,
-			resourcekeys.K8SKeyNamespaceName: dep.Namespace,
-			resourcekeys.K8SKeyClusterName:   dep.ClusterName,
+			k8sKeyReplicationControllerUID:   string(rc.UID),
+			k8sKeyReplicationControllerName:  rc.Name,
+			resourcekeys.K8SKeyNamespaceName: rc.Namespace,
+			resourcekeys.K8SKeyClusterName:   rc.ClusterName,
 		},
 	}
 }
 
-func getMetadataForDeployment(dep *appsv1.Deployment) []*KubernetesMetadata {
-	rm := getGenericMetadata(&dep.ObjectMeta, "deployment")
-	rm.properties[k8sKeyDeploymentName] = dep.Name
-	return []*KubernetesMetadata{rm}
+func getMetadataForReplicationController(rc *corev1.ReplicationController) []*KubernetesMetadata {
+	return []*KubernetesMetadata{getGenericMetadata(&rc.ObjectMeta, "replicationcontroller")}
 }

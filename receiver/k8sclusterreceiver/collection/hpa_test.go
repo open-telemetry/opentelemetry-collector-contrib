@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"testing"
@@ -20,17 +20,17 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/resource/resourcekeys"
-	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/autoscaling/v2beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
-func TestDaemonsetMetrics(t *testing.T) {
-	ds := newDaemonset("1")
+func TestHPAMetrics(t *testing.T) {
+	hpa := newHPA("1")
 
-	actualResourceMetrics := getMetricsForDaemonSet(ds)
+	actualResourceMetrics := getMetricsForHPA(hpa)
 
 	require.Equal(t, 1, len(actualResourceMetrics))
 	require.Equal(t, 4, len(actualResourceMetrics[0].metrics))
@@ -38,39 +38,42 @@ func TestDaemonsetMetrics(t *testing.T) {
 	rm := actualResourceMetrics[0]
 	testutils.AssertResource(t, *rm.resource, resourcekeys.K8SType,
 		map[string]string{
-			"k8s.daemonset.uid":  "test-daemonset-1-uid",
-			"k8s.daemonset.name": "test-daemonset-1",
+			"k8s.hpa.uid":        "test-hpa-1-uid",
+			"k8s.hpa.name":       "test-hpa-1",
 			"k8s.namespace.name": "test-namespace",
 			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/daemon_set/current_scheduled_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/hpa/max_replicas",
+		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/daemon_set/desired_scheduled_nodes",
+	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/hpa/min_replicas",
+		metricspb.MetricDescriptor_GAUGE_INT64, 2)
+
+	testutils.AssertMetrics(t, *rm.metrics[2], "kubernetes/hpa/current_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, *rm.metrics[2], "kubernetes/daemon_set/misscheduled_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 1)
-
-	testutils.AssertMetrics(t, *rm.metrics[3], "kubernetes/daemon_set/ready_nodes",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
+	testutils.AssertMetrics(t, *rm.metrics[3], "kubernetes/hpa/desired_replicas",
+		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 }
 
-func newDaemonset(id string) *appsv1.DaemonSet {
-	return &appsv1.DaemonSet{
+func newHPA(id string) *v2beta1.HorizontalPodAutoscaler {
+	minReplicas := int32(2)
+	return &v2beta1.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-daemonset-" + id,
+			Name:        "test-hpa-" + id,
 			Namespace:   "test-namespace",
-			UID:         types.UID("test-daemonset-" + id + "-uid"),
+			UID:         types.UID("test-hpa-" + id + "-uid"),
 			ClusterName: "test-cluster",
 		},
-		Status: appsv1.DaemonSetStatus{
-			CurrentNumberScheduled: 3,
-			NumberMisscheduled:     1,
-			DesiredNumberScheduled: 5,
-			NumberReady:            2,
+		Status: v2beta1.HorizontalPodAutoscalerStatus{
+			CurrentReplicas: 5,
+			DesiredReplicas: 7,
+		},
+		Spec: v2beta1.HorizontalPodAutoscalerSpec{
+			MinReplicas: &minReplicas,
+			MaxReplicas: 10,
 		},
 	}
 }

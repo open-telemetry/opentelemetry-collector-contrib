@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"fmt"
@@ -20,6 +20,8 @@ import (
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 const (
@@ -39,7 +41,8 @@ type KubernetesMetadata struct {
 // getGenericMetadata is responsible for collecting metadata from K8s resources that
 // live on v1.ObjectMeta.
 func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
-	properties := om.Labels
+	properties := map[string]string{}
+	properties = utils.MergeStringMaps(properties, om.Labels)
 
 	properties[k8sKeyWorkLoad] = resourceType
 	properties[k8sKeyWorkLoadName] = om.Name

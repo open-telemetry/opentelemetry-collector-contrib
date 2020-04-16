@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"testing"
@@ -88,7 +88,7 @@ func TestPodAndContainerMetadata(t *testing.T) {
 	actualMetadata := getMetadataForPod(pod,
 		&metadataStore{
 			map[string]cache.Store{
-				"Service": &MockStore{},
+				"Service": &testutils.MockStore{},
 			},
 		},
 	)

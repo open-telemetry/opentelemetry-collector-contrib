@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package k8sclusterreceiver
+package collection
 
 import (
 	"testing"
@@ -20,47 +20,52 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/resource/resourcekeys"
-	corev1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
 
-func TestNamespaceMetrics(t *testing.T) {
-	n := newNamespace("1")
+func TestDeploymentMetrics(t *testing.T) {
+	dep := newDeployment("1")
 
-	actualResourceMetrics := getMetricsForNamespace(n)
+	actualResourceMetrics := getMetricsForDeployment(dep)
 
 	require.Equal(t, 1, len(actualResourceMetrics))
+	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
 
-	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *actualResourceMetrics[0].resource, resourcekeys.K8SType,
+	rm := actualResourceMetrics[0]
+	testutils.AssertResource(t, *rm.resource, resourcekeys.K8SType,
 		map[string]string{
-			"k8s.namespace.uid":  "test-namespace-1-uid",
-			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
+			"k8s.deployment.uid":  "test-deployment-1-uid",
+			"k8s.deployment.name": "test-deployment-1",
+			"k8s.namespace.name":  "test-namespace",
+			"k8s.cluster.name":    "test-cluster",
 		},
 	)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "kubernetes/namespace/phase",
-		metricspb.MetricDescriptor_GAUGE_INT64, 0)
+	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/deployment/desired",
+		metricspb.MetricDescriptor_GAUGE_INT64, 10)
+
+	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/deployment/available",
+		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 
-func newNamespace(id string) *corev1.Namespace {
-	return &corev1.Namespace{
+func newDeployment(id string) *appsv1.Deployment {
+	desired := int32(10)
+	return &appsv1.Deployment{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-namespace-" + id,
+			Name:        "test-deployment-" + id,
 			Namespace:   "test-namespace",
-			UID:         types.UID("test-namespace-" + id + "-uid"),
+			UID:         types.UID("test-deployment-" + id + "-uid"),
 			ClusterName: "test-cluster",
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
 		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceTerminating,
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &desired,
+		},
+		Status: appsv1.DeploymentStatus{
+			AvailableReplicas: 3,
 		},
 	}
 }
