@@ -18,20 +18,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 )
 
-// receiverMap is a multimap for mapping one id to many receivers.
+// receiverMap is a multimap for mapping one id to many receivers. It does
+// not deduplicate the same value being associated with the same key.
 type receiverMap map[string][]component.Receiver
 
-// Put rcvr into key id.
+// Put rcvr into key id. If rcvr is a duplicate it will still be added.
 func (rm receiverMap) Put(id string, rcvr component.Receiver) {
 	rm[id] = append(rm[id], rcvr)
 }
 
 // Get receivers by id.
-func (rm receiverMap) Get(id string) (out []component.Receiver) {
-	for _, rcvr := range rm[id] {
-		out = append(out, rcvr)
-	}
-	return
+func (rm receiverMap) Get(id string) []component.Receiver {
+	return rm[id]
 }
 
 // Remove all receivers by id.
