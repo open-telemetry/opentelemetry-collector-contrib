@@ -61,7 +61,6 @@ func TestOnAdd(t *testing.T) {
 	})
 
 	runner.AssertExpectations(t)
-
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
 }
 
@@ -83,7 +82,6 @@ func TestOnRemove(t *testing.T) {
 	})
 
 	runner.AssertExpectations(t)
-
 	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 }
 
@@ -112,6 +110,5 @@ func TestOnChange(t *testing.T) {
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	rcvrs := handler.receiversByEndpointID.Get("id-1")
-	assert.Same(t, newRcvr, rcvrs[0])
+	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("id-1")[0])
 }

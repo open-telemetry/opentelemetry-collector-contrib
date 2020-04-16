@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"go.uber.org/zap"
 
@@ -91,7 +90,6 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 
 	for _, e := range removed {
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID()) {
-			rcvr := rcvr.(component.Receiver)
 			if err := obs.runner.shutdown(rcvr); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
 				continue
