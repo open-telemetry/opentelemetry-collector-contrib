@@ -33,10 +33,10 @@ type metadataStore struct {
 func (ms *metadataStore) setupStore(o runtime.Object, store cache.Store) {
 	switch o.(type) {
 	case *corev1.Service:
-		ms.stores["Service"] = store
+		ms.stores[k8sKindService] = store
 	case *batchv1.Job:
-		ms.stores["Job"] = store
+		ms.stores[k8sKindJob] = store
 	case *appsv1.ReplicaSet:
-		ms.stores["ReplicaSet"] = store
+		ms.stores[k8sKindReplicaSet] = store
 	}
 }

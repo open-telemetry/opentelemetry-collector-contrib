@@ -61,7 +61,7 @@ func getMetricsForPod(pod *corev1.Pod) []*resourceMetrics {
 			continue
 		}
 
-		contLabels := getAllContainerLabels(cs.ContainerID, cs.Name, cs.Image, podRes.Labels)
+		contLabels := getAllContainerLabels(cs, podRes.Labels)
 		containerResByName[cs.Name] = &resourceMetrics{resource: getResourceForContainer(contLabels)}
 
 		containerResByName[cs.Name].metrics = getStatusMetricsForContainer(cs)
@@ -137,8 +137,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // getMetadataForPod returns all metadata associated with the pod.
 func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata {
-	properties := map[string]string{}
-	properties = utils.MergeStringMaps(properties, pod.Labels)
+	properties := utils.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	properties[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 
@@ -147,17 +146,17 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 		properties[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
 
 		// defer syncing replicaset and job workload properties.
-		if or.Kind == "ReplicaSet" || or.Kind == "Job" {
+		if or.Kind == k8sKindReplicaSet || or.Kind == k8sKindJob {
 			continue
 		}
 		properties[k8sKeyWorkLoad] = or.Kind
 		properties[k8sKeyWorkLoadName] = or.Name
 	}
 
-	properties = utils.MergeStringMaps(properties, getPodServiceTags(pod, mc.stores["Service"]))
+	properties = utils.MergeStringMaps(properties, getPodServiceTags(pod, mc.stores[k8sKindService]))
 	properties = utils.MergeStringMaps(properties,
-		collectPodJobProperties(pod, mc.stores["Job"]),
-		collectPodReplicaSetProperties(pod, mc.stores["ReplicaSet"]),
+		collectPodJobProperties(pod, mc.stores[k8sKindJob]),
+		collectPodReplicaSetProperties(pod, mc.stores[k8sKindReplicaSet]),
 	)
 
 	return append([]*KubernetesMetadata{
@@ -174,16 +173,16 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]string {
 	properties := map[string]string{}
 
-	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, "Job")
+	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindJob)
 	if jobRef != nil {
 		job, ok, _ := store.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
 		if ok {
 			jobObj := job.(*batchv1.Job)
-			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, "CronJob"); cronJobRef != nil {
+			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
 				properties = utils.MergeStringMaps(getPodCronJobProperties(cronJobRef), properties)
 			} else {
 				properties = utils.MergeStringMaps(
-					getPodWorkloadProperties(jobObj.Name, "Job"),
+					getPodWorkloadProperties(jobObj.Name, k8sKindJob),
 					properties,
 				)
 			}
@@ -198,17 +197,17 @@ func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]stri
 func collectPodReplicaSetProperties(pod *corev1.Pod, store cache.Store) map[string]string {
 	properties := map[string]string{}
 
-	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, "ReplicaSet")
+	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindReplicaSet)
 	if rsRef != nil {
 		replicaSet, ok, _ := store.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
 		if ok {
 			replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
-			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, "Deployment"); deployRef != nil {
+			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
 				properties = utils.MergeStringMaps(getPodDeploymentProperties(rsRef), properties)
 
 			} else {
 				properties = utils.MergeStringMaps(
-					getPodWorkloadProperties(replicaSetObj.Name, "ReplicaSet"),
+					getPodWorkloadProperties(replicaSetObj.Name, k8sKindReplicaSet),
 					properties,
 				)
 			}
@@ -235,7 +234,7 @@ func getPodServiceTags(pod *corev1.Pod, store cache.Store) map[string]string {
 
 // getPodCronJobProperties returns properties of a CronJob associated with the pod.
 func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
-	k := strings.ToLower(cronJobRef.Kind)
+	k := strings.ToLower(k8sKindCronJob)
 	return map[string]string{
 		k8sKeyWorkLoad:     k,
 		k8sKeyWorkLoadName: cronJobRef.Name,
@@ -246,7 +245,7 @@ func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
 
 // getPodDeploymentProperties returns properties of a Deployment associated with the pod.
 func getPodDeploymentProperties(rsRef *v1.OwnerReference) map[string]string {
-	k := strings.ToLower(rsRef.Kind)
+	k := strings.ToLower(k8sKindReplicaSet)
 	return map[string]string{
 		k8sKeyWorkLoad:       k,
 		k8sKeyWorkLoadName:   rsRef.Name,

@@ -41,13 +41,13 @@ type KubernetesMetadata struct {
 // getGenericMetadata is responsible for collecting metadata from K8s resources that
 // live on v1.ObjectMeta.
 func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetadata {
-	properties := map[string]string{}
-	properties = utils.MergeStringMaps(properties, om.Labels)
+	rType := strings.ToLower(resourceType)
+	properties := utils.MergeStringMaps(map[string]string{}, om.Labels)
 
-	properties[k8sKeyWorkLoad] = resourceType
+	properties[k8sKeyWorkLoad] = rType
 	properties[k8sKeyWorkLoadName] = om.Name
 	properties[fmt.Sprintf("%s.creation_timestamp",
-		resourceType)] = om.GetCreationTimestamp().Format(time.RFC3339)
+		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
 
 	for _, or := range om.OwnerReferences {
 		properties[strings.ToLower(or.Kind)] = or.Name
@@ -55,7 +55,7 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	}
 
 	return &KubernetesMetadata{
-		resourceIDKey: fmt.Sprintf("k8s.%s.uid", resourceType),
+		resourceIDKey: fmt.Sprintf("k8s.%s.uid", rType),
 		resourceID:    string(om.UID),
 		properties:    properties,
 	}

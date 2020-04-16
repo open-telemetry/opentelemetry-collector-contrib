@@ -67,6 +67,16 @@ const (
 	// Resource labels for container.
 	containerKeyID       = "container.id"
 	containerKeySpecName = "container.spec.name"
+
+	// Kubernetes resource kinds
+	k8sKindCronJob               = "CronJob"
+	k8sKindDaemonSet             = "DaemonSet"
+	k8sKindDeployment            = "Deployment"
+	k8sKindJob                   = "Job"
+	k8sKindReplicationController = "ReplicationController"
+	k8sKindReplicaSet            = "ReplicaSet"
+	k8sKindService               = "Service"
+	k8sStatefulSet               = "StatefulSet"
 )
 
 // DataCollector wraps around a metricsStore and a metadaStore exposing
@@ -100,7 +110,7 @@ func (dc *DataCollector) SetupMetadataStore(o runtime.Object, store cache.Store)
 }
 
 func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
-	if err := dc.metricsStore.remove(obj); err != nil {
+	if err := dc.metricsStore.remove(obj.(runtime.Object)); err != nil {
 		dc.logger.Error(
 			"failed to remove from metric cache",
 			zap.String("obj", reflect.TypeOf(obj).String()),
@@ -110,7 +120,7 @@ func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
 }
 
 func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetrics) {
-	if err := dc.metricsStore.update(obj, rm); err != nil {
+	if err := dc.metricsStore.update(obj.(runtime.Object), rm); err != nil {
 		dc.logger.Error(
 			"failed to update metric cache",
 			zap.String("obj", reflect.TypeOf(obj).String()),

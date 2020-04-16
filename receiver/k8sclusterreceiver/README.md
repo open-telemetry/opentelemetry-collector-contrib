@@ -23,10 +23,23 @@ default: `10s`
 
 #### node_conditions_to_report
 
-The node conditions this receiver should report. See [here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) 
-for list of node conditions. If this option is set to `[Ready]`, a metrics called 
-`kubernetes/node/condition_ready` will reported. Its value will be `1` if the node 
-is ready, otherwise `0`.
+An array of node conditions this receiver should report. See [here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition)
+for list of node conditions. The receiver will emit one metric per entry in the
+array.
+
+```yaml
+...
+k8s_cluster:
+  node_conditions_to_report:
+    - Ready
+    - MemoryPressure
+...
+```
+
+For example, with the above config the receiver will emit two metrics
+`kubernetes/node/condition_ready` and `kubernetes/node/condition_memory_pressure`, one
+for each condition in the config. The value will be `1` if the `ConditionStatus` for the
+corresponding `Condition` is `True`, `0` if it is `False` and -1 if it is `Unknown`.
 
 
 default: `[Ready]`

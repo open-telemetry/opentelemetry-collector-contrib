@@ -93,8 +93,7 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func getMetadataForNode(node *corev1.Node) []*KubernetesMetadata {
-	properties := map[string]string{}
-	properties = utils.MergeStringMaps(properties, node.Labels)
+	properties := utils.MergeStringMaps(map[string]string{}, node.Labels)
 
 	properties[k8sKeyNodeName] = node.Name
 	properties[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)

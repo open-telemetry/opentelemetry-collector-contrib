@@ -43,12 +43,11 @@ type resourceMetrics struct {
 }
 
 // updates metricsStore with latest metrics.
-func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics) error {
+func (ms *metricsStore) update(obj runtime.Object, rms []*resourceMetrics) error {
 	ms.Lock()
 	defer ms.Unlock()
 
-	key, err := utils.GetUIDForObject(obj.(runtime.Object))
-
+	key, err := utils.GetUIDForObject(obj)
 	if err != nil {
 		return err
 	}
@@ -60,23 +59,20 @@ func (ms *metricsStore) update(obj interface{}, rms []*resourceMetrics) error {
 	}
 
 	ms.metricsCache[key] = mds
-
 	return nil
 }
 
 // removes entry from metric cache when resources are deleted.
-func (ms *metricsStore) remove(obj interface{}) error {
+func (ms *metricsStore) remove(obj runtime.Object) error {
 	ms.Lock()
 	defer ms.Unlock()
 
-	key, err := utils.GetUIDForObject(obj.(runtime.Object))
-
+	key, err := utils.GetUIDForObject(obj)
 	if err != nil {
 		return err
 	}
 
 	delete(ms.metricsCache, key)
-
 	return nil
 }
 

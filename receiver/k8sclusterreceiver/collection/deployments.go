@@ -50,7 +50,7 @@ func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 }
 
 func getMetadataForDeployment(dep *appsv1.Deployment) []*KubernetesMetadata {
-	rm := getGenericMetadata(&dep.ObjectMeta, "deployment")
+	rm := getGenericMetadata(&dep.ObjectMeta, k8sKindDeployment)
 	rm.properties[k8sKeyDeploymentName] = dep.Name
 	return []*KubernetesMetadata{rm}
 }

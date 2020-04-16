@@ -113,5 +113,5 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 }
 
 func getPropertiesForJob(cj *batchv1.Job) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&cj.ObjectMeta, "job")}
+	return []*KubernetesMetadata{getGenericMetadata(&cj.ObjectMeta, k8sKindJob)}
 }

@@ -27,6 +27,11 @@ const (
 	// Keys for container properties.
 	containerKeyStatus       = "container.status"
 	containerKeyStatusReason = "container.status.reason"
+
+	// Values for container properties
+	containerStatusRunning    = "running"
+	containerStatusWaiting    = "waiting"
+	containerStatusTerminated = "terminated"
 )
 
 var containerRestartMetric = &metricspb.MetricDescriptor{
@@ -60,7 +65,7 @@ func getStatusMetricsForContainer(cs corev1.ContainerStatus) []*metricspb.Metric
 		{
 			MetricDescriptor: containerReadyMetric,
 			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(int64(boolToInt(cs.Ready))),
+				utils.GetInt64TimeSeries(boolToInt64(cs.Ready)),
 			},
 		},
 	}
@@ -68,7 +73,7 @@ func getStatusMetricsForContainer(cs corev1.ContainerStatus) []*metricspb.Metric
 	return metrics
 }
 
-func boolToInt(b bool) int {
+func boolToInt64(b bool) int64 {
 	if b {
 		return 1
 	}
@@ -137,14 +142,14 @@ func getResourceForContainer(labels map[string]string) *resourcepb.Resource {
 
 // getAllContainerLabels returns all container labels, including ones from
 // the pod in which the container is running.
-func getAllContainerLabels(id string, name string, image string,
+func getAllContainerLabels(cs corev1.ContainerStatus,
 	dims map[string]string) map[string]string {
 
 	out := utils.CloneStringMap(dims)
 
-	out[containerKeyID] = utils.StripContainerID(id)
-	out[containerKeySpecName] = name
-	out[conventions.AttributeContainerImage] = image
+	out[containerKeyID] = utils.StripContainerID(cs.ContainerID)
+	out[containerKeySpecName] = cs.Name
+	out[conventions.AttributeContainerImage] = cs.Image
 
 	return out
 }
@@ -153,16 +158,16 @@ func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
 	properties := map[string]string{}
 
 	if cs.State.Running != nil {
-		properties[containerKeyStatus] = "running"
+		properties[containerKeyStatus] = containerStatusRunning
 	}
 
 	if cs.State.Terminated != nil {
-		properties[containerKeyStatus] = "terminated"
+		properties[containerKeyStatus] = containerStatusTerminated
 		properties[containerKeyStatusReason] = cs.State.Terminated.Reason
 	}
 
 	if cs.State.Waiting != nil {
-		properties[containerKeyStatus] = "waiting"
+		properties[containerKeyStatus] = containerStatusWaiting
 		properties[containerKeyStatusReason] = cs.State.Waiting.Reason
 	}
 

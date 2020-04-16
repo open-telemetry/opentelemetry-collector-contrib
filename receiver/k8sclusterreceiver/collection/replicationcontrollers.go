@@ -51,5 +51,5 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 }
 
 func getMetadataForReplicationController(rc *corev1.ReplicationController) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&rc.ObjectMeta, "replicationcontroller")}
+	return []*KubernetesMetadata{getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController)}
 }
