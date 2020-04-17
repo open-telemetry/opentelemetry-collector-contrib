@@ -57,18 +57,18 @@ func newReceiverCreator(logger *zap.Logger, nextConsumer consumer.MetricsConsume
 	return r, nil
 }
 
-// safeHost provides a safer version of host for receivers started at runtime.
-type safeHost struct {
+// loggingHost provides a safer version of host that logs errors instead of exiting the process.
+type loggingHost struct {
 	component.Host
 	logger *zap.Logger
 }
 
 // ReportFatalError causes a log to be made instead of terminating the process as Host does by default.
-func (h *safeHost) ReportFatalError(err error) {
+func (h *loggingHost) ReportFatalError(err error) {
 	h.logger.Error("receiver reported a fatal error", zap.Error(err))
 }
 
-var _ component.Host = (*safeHost)(nil)
+var _ component.Host = (*loggingHost)(nil)
 
 // Start receiver_creator.
 func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error {
@@ -83,7 +83,7 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 			// TODO: not really sure what context should be used here for starting subreceivers
 			// as don't think it makes sense to use Start context as the lifetimes are different.
 			ctx:  context.Background(),
-			host: &safeHost{host, rc.logger},
+			host: &loggingHost{host, rc.logger},
 		}}
 
 	rc.observer.ListAndWatch(&rc.observerHandler)

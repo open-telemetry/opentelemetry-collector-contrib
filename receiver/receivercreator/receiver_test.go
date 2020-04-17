@@ -131,7 +131,7 @@ func TestMockedEndToEnd(t *testing.T) {
 
 func TestSafeHost(t *testing.T) {
 	core, obs := zapObserver.New(zap.ErrorLevel)
-	host := &safeHost{
+	host := &loggingHost{
 		Host:   componenttest.NewNopHost(),
 		logger: zap.New(core),
 	}
