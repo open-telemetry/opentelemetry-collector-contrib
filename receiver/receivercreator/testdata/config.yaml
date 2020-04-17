@@ -2,7 +2,7 @@ receivers:
   receiver_creator:
   receiver_creator/1:
     examplereceiver/1:
-      rule: test rule
+      rule: enabled
       config:
         endpoint: localhost:12345
 

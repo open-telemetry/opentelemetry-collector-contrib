@@ -16,13 +16,15 @@ package receivercreator
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
@@ -30,6 +32,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	zapObserver "go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -52,29 +57,41 @@ func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consume
 	return nil
 }
 
-func TestEndToEnd(t *testing.T) {
+type mockObserver struct {
+}
+
+func (m *mockObserver) ListAndWatch(notify observer.Notify) {
+	notify.OnAdd([]observer.Endpoint{observer.NewHostEndpoint("foobar", "169.168.1.100", nil)})
+}
+
+var _ observer.Observable = (*mockObserver)(nil)
+
+func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	mockConsumer := &mockMetricsConsumer{}
-	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
+	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
-	require.NoError(t, dynReceiver.Start(context.Background(), host))
+	dyn := rcvr.(*receiverCreator)
+	dyn.observer = &mockObserver{}
+	require.NoError(t, rcvr.Start(context.Background(), host))
 
 	var shutdownOnce sync.Once
 	shutdown := func() {
 		shutdownOnce.Do(func() {
-			assert.NoError(t, dynReceiver.Shutdown(context.Background()))
+			assert.NoError(t, rcvr.Shutdown(context.Background()))
 		})
 	}
 
 	defer shutdown()
 
-	dyn := dynReceiver.(*receiverCreator)
-	assert.Len(t, dyn.receivers, 1)
+	require.Eventuallyf(t, func() bool {
+		return dyn.observerHandler.receiversByEndpointID.Size() == 1
+	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
-	for _, receiver := range dyn.receivers {
+	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*config.ExampleReceiverProducer)
 		assert.NoError(t, example.MetricsConsumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
 			Node: &commonpb.Node{
@@ -106,38 +123,21 @@ func TestEndToEnd(t *testing.T) {
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
 	assert.Len(t, mockConsumer.Metrics, 1)
-	assert.Equal(t, "my-metric", mockConsumer.Metrics[0].Metrics[0].MetricDescriptor.Name)
 
 	shutdown()
+
+	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
 }
 
-func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
-	host, cfg := exampleCreatorFactory(t)
-	dynCfg := cfg.Receivers["receiver_creator/1"]
-	factory := &Factory{}
-	dynReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, &mockMetricsConsumer{})
-	require.NoError(t, err)
-	dr := dynReceiver.(*receiverCreator)
-	exampleFactory := host.GetFactory(component.KindReceiver, "examplereceiver").(component.ReceiverFactoryOld)
-	assert.NotNil(t, exampleFactory)
-	subConfig := dr.cfg.subreceiverConfigs["examplereceiver/1"]
-	require.NotNil(t, subConfig)
-	loadedConfig, err := dr.loadRuntimeReceiverConfig(exampleFactory, subConfig, userConfigMap{
-		"endpoint": "localhost:12345",
-	})
-	require.NoError(t, err)
-	assert.NotNil(t, loadedConfig)
-	exampleConfig := loadedConfig.(*config.ExampleReceiver)
-	// Verify that the overridden endpoint is used instead of the one in the config file.
-	assert.Equal(t, "localhost:12345", exampleConfig.Endpoint)
-	assert.Equal(t, "receiver_creator/1/examplereceiver/1{endpoint=\"localhost:12345\"}", exampleConfig.Name())
-
-	// Test that metric receiver can be created from loaded config.
-	t.Run("test create receiver from loaded config", func(t *testing.T) {
-		recvr, err := dr.createRuntimeReceiver(exampleFactory, loadedConfig)
-		require.NoError(t, err)
-		assert.NotNil(t, recvr)
-		exampleReceiver := recvr.(*config.ExampleReceiverProducer)
-		assert.Equal(t, dr.nextConsumer, exampleReceiver.MetricsConsumer)
-	})
+func TestSafeHost(t *testing.T) {
+	core, obs := zapObserver.New(zap.ErrorLevel)
+	host := &loggingHost{
+		Host:   componenttest.NewNopHost(),
+		logger: zap.New(core),
+	}
+	host.ReportFatalError(errors.New("runtime error"))
+	require.Equal(t, 1, obs.Len())
+	log := obs.All()[0]
+	assert.Equal(t, "receiver reported a fatal error", log.Message)
+	assert.Equal(t, "runtime error", log.ContextMap()["error"])
 }
