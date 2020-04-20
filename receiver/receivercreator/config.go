@@ -23,6 +23,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	// receiversConfigKey is the config key name used to specify the subreceivers.
+	receiversConfigKey = "receivers"
+)
+
 // receiverConfig describes a receiver instance with a default config.
 type receiverConfig struct {
 	// fullName is the full subreceiver name (ie <receiver type>/<id>).
