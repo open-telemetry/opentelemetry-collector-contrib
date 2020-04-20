@@ -111,7 +111,7 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 	}
 
 	if len(observers) == 0 {
-		rc.logger.Warn("no observers were configured and no subreceivers will be started",
+		rc.logger.Warn("no observers were configured and no subreceivers will be started. receiver_creator will be disabled",
 			zap.String("receiver", rc.cfg.Name()))
 	}
 
