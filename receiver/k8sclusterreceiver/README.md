@@ -125,6 +125,7 @@ rules:
   - replicationcontrollers
   - replicationcontrollers/status
   - resourcequotas
+  - services
   verbs:
   - get
   - list

@@ -161,10 +161,6 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 	case *v2beta1.HorizontalPodAutoscaler:
 		rm = getMetricsForHPA(o)
 	default:
-		dc.logger.Warn(
-			"Unsupported k8s resource type",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-		)
 		return
 	}
 
@@ -184,7 +180,6 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) {
 		_ = getMetadataForNode(o)
 	case *corev1.ReplicationController:
 		_ = getMetadataForReplicationController(o)
-	case *corev1.ResourceQuota:
 	case *appsv1.Deployment:
 		_ = getMetadataForDeployment(o)
 	case *appsv1.ReplicaSet:
@@ -200,10 +195,6 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) {
 	case *v2beta1.HorizontalPodAutoscaler:
 		_ = getMetadataForHPA(o)
 	default:
-		dc.logger.Warn(
-			"Unsupported k8s resource type",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-		)
 		return
 	}
 
