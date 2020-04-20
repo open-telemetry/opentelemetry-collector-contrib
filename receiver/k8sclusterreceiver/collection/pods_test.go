@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
@@ -85,11 +84,7 @@ func TestPodAndContainerMetadata(t *testing.T) {
 	pod := newPodWithContainer("1")
 
 	actualMetadata := getMetadataForPod(pod,
-		&metadataStore{
-			map[string]cache.Store{
-				"Service": &testutils.MockStore{},
-			},
-		},
+		&metadataStore{},
 	)
 
 	require.Equal(t, 2, len(actualMetadata))

@@ -97,9 +97,7 @@ func NewDataCollector(logger *zap.Logger, nodeConditionsToReport []string) *Data
 		metricsStore: &metricsStore{
 			metricsCache: map[types.UID][]consumerdata.MetricsData{},
 		},
-		metadataStore: &metadataStore{
-			stores: map[string]cache.Store{},
-		},
+		metadataStore:          &metadataStore{},
 		nodeConditionsToReport: nodeConditionsToReport,
 	}
 }

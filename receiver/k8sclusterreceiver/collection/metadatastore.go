@@ -26,17 +26,19 @@ import (
 // This store is used while collecting metadata about Pods to be able
 // to correlate other Kubernetes objects with a Pod.
 type metadataStore struct {
-	stores map[string]cache.Store
+	services    cache.Store
+	jobs        cache.Store
+	replicaSets cache.Store
 }
 
 // setupStore tracks metadata of services, jobs and replicasets.
 func (ms *metadataStore) setupStore(o runtime.Object, store cache.Store) {
 	switch o.(type) {
 	case *corev1.Service:
-		ms.stores[k8sKindService] = store
+		ms.services = store
 	case *batchv1.Job:
-		ms.stores[k8sKindJob] = store
+		ms.jobs = store
 	case *appsv1.ReplicaSet:
-		ms.stores[k8sKindReplicaSet] = store
+		ms.replicaSets = store
 	}
 }

@@ -153,11 +153,23 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 		properties[k8sKeyWorkLoadName] = or.Name
 	}
 
-	properties = utils.MergeStringMaps(properties, getPodServiceTags(pod, mc.stores[k8sKindService]))
-	properties = utils.MergeStringMaps(properties,
-		collectPodJobProperties(pod, mc.stores[k8sKindJob]),
-		collectPodReplicaSetProperties(pod, mc.stores[k8sKindReplicaSet]),
-	)
+	if mc.services != nil {
+		properties = utils.MergeStringMaps(properties,
+			getPodServiceTags(pod, mc.services),
+		)
+	}
+
+	if mc.jobs != nil {
+		properties = utils.MergeStringMaps(properties,
+			collectPodJobProperties(pod, mc.jobs),
+		)
+	}
+
+	if mc.replicaSets != nil {
+		properties = utils.MergeStringMaps(properties,
+			collectPodReplicaSetProperties(pod, mc.replicaSets),
+		)
+	}
 
 	return append([]*KubernetesMetadata{
 		{
@@ -170,12 +182,12 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync properties accordingly.
-func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store) map[string]string {
 	properties := map[string]string{}
 
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindJob)
 	if jobRef != nil {
-		job, ok, _ := store.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+		job, ok, _ := JobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
 		if ok {
 			jobObj := job.(*batchv1.Job)
 			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
@@ -194,12 +206,12 @@ func collectPodJobProperties(pod *corev1.Pod, store cache.Store) map[string]stri
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync properties accordingly.
-func collectPodReplicaSetProperties(pod *corev1.Pod, store cache.Store) map[string]string {
+func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store) map[string]string {
 	properties := map[string]string{}
 
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindReplicaSet)
 	if rsRef != nil {
-		replicaSet, ok, _ := store.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+		replicaSet, ok, _ := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
 		if ok {
 			replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
 			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
@@ -217,11 +229,10 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, store cache.Store) map[stri
 }
 
 // getPodServiceTags returns a set of services associated with the pod.
-func getPodServiceTags(pod *corev1.Pod, store cache.Store) map[string]string {
+func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
 	properties := map[string]string{}
-	services := store.List()
 
-	for _, ser := range services {
+	for _, ser := range services.List() {
 		serObj := ser.(*corev1.Service)
 		if serObj.Namespace == pod.Namespace &&
 			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
