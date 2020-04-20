@@ -106,7 +106,7 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 	// Make sure all observers are present before starting any.
 	for _, watchObserver := range rc.cfg.WatchObservers {
 		if observers[watchObserver] == nil {
-			return fmt.Errorf("failed to find observer %q", watchObserver)
+			return fmt.Errorf("failed to find observer %q in the extensions list", watchObserver)
 		}
 	}
 
