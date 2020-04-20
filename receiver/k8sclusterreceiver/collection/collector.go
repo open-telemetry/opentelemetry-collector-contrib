@@ -212,4 +212,5 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) {
 	// TODO:
 	// 	1) Send properties along the pipeline
 	//  2) Handle properties from more than one source for the same resource
+	// Github issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/180
 }
