@@ -19,10 +19,17 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+const (
+	dataformat = "k8s_cluster"
+	transport  = "http"
 )
 
 var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
@@ -49,7 +56,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				kr.dispatchMetricData(ctx)
+				c := obsreport.StartMetricsReceiveOp(ctx, dataformat, transport)
+
+				numTimeseries, numPoints, errs := kr.dispatchMetricData(c)
+				err := componenterror.CombineErrors(errs)
+
+				obsreport.EndMetricsReceiveOp(c, dataformat, numPoints, numTimeseries, err)
 			case <-c.Done():
 				return
 			}
@@ -64,10 +76,16 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) {
+func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) (numTimeseries int, numPoints int, errs []error) {
 	for _, m := range kr.resourceWatcher.dataCollector.CollectMetricData() {
-		kr.consumer.ConsumeMetricsData(ctx, m)
+		if err := kr.consumer.ConsumeMetricsData(ctx, m); err != nil {
+			errs = append(errs, err)
+			numTs, numPts := obsreport.CountMetricPoints(m)
+			numTimeseries += numTs
+			numPoints += numPts
+		}
 	}
+	return numTimeseries, numPoints, errs
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
