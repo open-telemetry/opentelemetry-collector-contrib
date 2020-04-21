@@ -26,9 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-// endpointConfigKey is the key name mapping to ReceiverSettings.Endpoint.
-const endpointConfigKey = "endpoint"
-
 var (
 	errNilNextConsumer = errors.New("nil nextConsumer")
 )

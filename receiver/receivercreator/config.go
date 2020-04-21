@@ -26,6 +26,10 @@ import (
 const (
 	// receiversConfigKey is the config key name used to specify the subreceivers.
 	receiversConfigKey = "receivers"
+	// endpointConfigKey is the key name mapping to ReceiverSettings.Endpoint.
+	endpointConfigKey = "endpoint"
+	// configKey is the key name in a subreceiver.
+	configKey = "config"
 )
 
 // receiverConfig describes a receiver instance with a default config.
