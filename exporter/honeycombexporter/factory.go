@@ -15,6 +15,8 @@
 package honeycombexporter
 
 import (
+	"os"
+
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -41,8 +43,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		APIKey:  "",
-		Dataset: "",
+		APIKey:  os.Getenv("HONEYCOMB_WRITE_KEY"),
+		Dataset: os.Getenv("HONEYCOMB_DATASET"),
 		APIURL:  "https://api.honeycomb.io",
 	}
 }

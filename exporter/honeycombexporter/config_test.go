@@ -15,6 +15,7 @@
 package honeycombexporter
 
 import (
+	"os"
 	"path"
 	"testing"
 
@@ -41,6 +42,40 @@ func TestLoadConfig(t *testing.T) {
 
 	r0 := cfg.Exporters["honeycomb"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
+
+	r1 := cfg.Exporters["honeycomb/customname"].(*Config)
+	assert.Equal(t, r1, &Config{
+		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "honeycomb/customname"},
+		APIKey:           "test-apikey",
+		Dataset:          "test-dataset",
+		APIURL:           "https://api.testhost.io",
+	})
+}
+
+func TestLoadConfigFromEnv(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Exporters[typeStr] = factory
+	cfg, err := config.LoadConfigFile(
+		t, path.Join(".", "testdata", "config.yaml"), factories,
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Exporters), 2)
+
+	r0 := cfg.Exporters["honeycomb"]
+	assert.Equal(t, r0, factory.CreateDefaultConfig())
+
+	_ = os.Setenv("HONEYCOMB_WRITE_KEY", "test-apikey-from-env")
+	_ = os.Setenv("HONEYCOMB_DATASET", "test-dataset-from-env")
+
+	dc := factory.CreateDefaultConfig().(*Config)
+	assert.Equal(t, dc.APIKey, "test-apikey-from-env")
+	assert.Equal(t, dc.Dataset, "test-dataset-from-env")
 
 	r1 := cfg.Exporters["honeycomb/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
