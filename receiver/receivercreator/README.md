@@ -1,17 +1,28 @@
 # receiver_creator
 
-This receiver can instantiate other receivers at runtime.
+This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule.
 
-TODO: More after it can react to observer events.
+## TODO
+* Observer endpoint details
+* Rule matching
 
 ## Example
 ```yaml
+extensions:
+  # Configures the Kubernetes observer to watch for pod start and stop events.
+  k8s_observer:
+
 receivers:
   receiver_creator/1:
-    examplereceiver/1:
-      rule: <TODO>
-      config:
-        endpoint: localhost:12345
+    # Name of the extensions to watch for endpoints to start and stop.
+    watch_observers: [k8s_observer]
+    receivers:
+        redis/1:
+          # If this rule matches an instance of this receiver will be started.
+          rule: port == 6379
+          config:
+            # Static receiver-specific config.
+            password: secret
 
 processors:
   exampleprocessor:

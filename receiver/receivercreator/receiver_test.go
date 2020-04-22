@@ -24,9 +24,11 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
@@ -60,6 +62,16 @@ func (p *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consume
 type mockObserver struct {
 }
 
+func (m *mockObserver) Start(ctx context.Context, host component.Host) error {
+	return nil
+}
+
+func (m *mockObserver) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+var _ component.ServiceExtension = (*mockObserver)(nil)
+
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{observer.NewHostEndpoint("foobar", "169.168.1.100", nil)})
 }
@@ -68,13 +80,18 @@ var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
+	host.extensions = map[configmodels.Extension]component.ServiceExtension{
+		&configmodels.ExtensionSettings{
+			TypeVal: "mock_observer",
+			NameVal: "mock_observer",
+		}: &mockObserver{},
+	}
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	mockConsumer := &mockMetricsConsumer{}
 	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
 	dyn := rcvr.(*receiverCreator)
-	dyn.observer = &mockObserver{}
 	require.NoError(t, rcvr.Start(context.Background(), host))
 
 	var shutdownOnce sync.Once
