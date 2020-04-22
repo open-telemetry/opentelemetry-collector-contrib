@@ -28,7 +28,8 @@ import (
 
 type mockHostFactories struct {
 	componenttest.NopHost
-	factories config.Factories
+	factories  config.Factories
+	extensions map[configmodels.Extension]component.ServiceExtension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
@@ -46,7 +47,11 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType strin
 	return nil
 }
 
-func exampleCreatorFactory(t *testing.T) (component.Host, *configmodels.Config) {
+func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+	return mh.extensions
+}
+
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Config) {
 	factories, err := config.ExampleComponents()
 	require.Nil(t, err)
 
@@ -80,4 +85,5 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["examplereceiver/1"].config)
+	assert.Equal(t, []string{"mock_observer"}, r1.WatchObservers)
 }
