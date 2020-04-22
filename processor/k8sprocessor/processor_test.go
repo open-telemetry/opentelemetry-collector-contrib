@@ -55,7 +55,7 @@ func TestIPDetection(t *testing.T) {
 
 	require.Len(t, next.data, 1)
 	require.NotNil(t, next.data[0].Resource)
-	assert.Equal(t, next.data[0].Resource.Labels["ip"], "1.1.1.1")
+	assert.Equal(t, next.data[0].Resource.Labels["k8s.pod.ip"], "1.1.1.1")
 }
 
 func TestNoIP(t *testing.T) {
@@ -113,7 +113,7 @@ func TestJaegerIP(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, next.data, 2)
 	assert.NotNil(t, next.data[1].Resource)
-	assert.Equal(t, next.data[1].Resource.Labels["ip"], "1.1.1.1")
+	assert.Equal(t, next.data[1].Resource.Labels["k8s.pod.ip"], "1.1.1.1")
 }
 
 func TestAddLabels(t *testing.T) {
@@ -148,7 +148,7 @@ func TestAddLabels(t *testing.T) {
 		require.Len(t, next.data, i+1)
 		td := next.data[i]
 		require.NotNil(t, td.Resource)
-		assert.Equal(t, td.Resource.Labels["ip"], ip)
+		assert.Equal(t, td.Resource.Labels["k8s.pod.ip"], ip)
 		for k, v := range attrs {
 			vv, ok := td.Resource.Labels[k]
 			assert.True(t, ok)
