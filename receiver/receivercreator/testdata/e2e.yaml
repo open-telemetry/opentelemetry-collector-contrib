@@ -1,0 +1,14 @@
+receivers:
+  receiver_creator/1:
+    redis/1:
+      rule: enabled
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [receiver_creator/1]
+      processors: []
+      exporters: [exampleexporter]
