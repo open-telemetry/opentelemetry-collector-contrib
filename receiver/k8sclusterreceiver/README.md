@@ -192,12 +192,12 @@ EOF
 
 #### Deployment
 
-Create a [ReplicaSet](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/) to deploy the collector.
+Create a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) to deploy the collector.
 
 ```bash
 <<EOF | kubectl apply -f -
 apiVersion: apps/v1
-kind: ReplicaSet
+kind: Deployment
 metadata:
   name: otelcontribcol
   labels:

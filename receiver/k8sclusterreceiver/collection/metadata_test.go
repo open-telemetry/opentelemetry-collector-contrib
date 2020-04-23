@@ -53,7 +53,7 @@ func Test_getGenericMetadata(t *testing.T) {
 	assert.Equal(t, "test-uid", rm.resourceID)
 	assert.Equal(t, map[string]string{
 		"k8s.workload.name":               "test-name",
-		"k8s.workload":                    "resourcetype",
+		"k8s.workload.kind":               "resourcetype",
 		"resourcetype.creation_timestamp": now.Format(time.RFC3339),
 		"owner-kind-1":                    "owner1",
 		"owner-kind-1_uid":                "owner1",

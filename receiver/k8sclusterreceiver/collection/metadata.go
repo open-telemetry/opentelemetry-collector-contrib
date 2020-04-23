@@ -26,7 +26,7 @@ import (
 
 const (
 	// Keys for K8s properties
-	k8sKeyWorkLoad     = "k8s.workload"
+	k8sKeyWorkLoadKind = "k8s.workload.kind"
 	k8sKeyWorkLoadName = "k8s.workload.name"
 )
 
@@ -44,7 +44,7 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	rType := strings.ToLower(resourceType)
 	properties := utils.MergeStringMaps(map[string]string{}, om.Labels)
 
-	properties[k8sKeyWorkLoad] = rType
+	properties[k8sKeyWorkLoadKind] = rType
 	properties[k8sKeyWorkLoadName] = om.Name
 	properties[fmt.Sprintf("%s.creation_timestamp",
 		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
@@ -55,8 +55,12 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	}
 
 	return &KubernetesMetadata{
-		resourceIDKey: fmt.Sprintf("k8s.%s.uid", rType),
+		resourceIDKey: getResourceIDKey(rType),
 		resourceID:    string(om.UID),
 		properties:    properties,
 	}
+}
+
+func getResourceIDKey(rType string) string {
+	return fmt.Sprintf("k8s.%s.uid", rType)
 }

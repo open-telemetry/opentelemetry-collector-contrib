@@ -34,6 +34,7 @@ import (
 
 // Resource label keys.
 const (
+	// TODO: Remove after switch to new Metrics definition
 	// Resource Type
 	k8sType       = "k8s"
 	containerType = "container"

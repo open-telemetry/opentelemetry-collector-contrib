@@ -149,7 +149,7 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 		if or.Kind == k8sKindReplicaSet || or.Kind == k8sKindJob {
 			continue
 		}
-		properties[k8sKeyWorkLoad] = or.Kind
+		properties[k8sKeyWorkLoadKind] = or.Kind
 		properties[k8sKeyWorkLoadName] = or.Name
 	}
 
@@ -247,7 +247,7 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
 	k := strings.ToLower(k8sKindCronJob)
 	return map[string]string{
-		k8sKeyWorkLoad:     k,
+		k8sKeyWorkLoadKind: k,
 		k8sKeyWorkLoadName: cronJobRef.Name,
 		k8sKeyCronJobName:  cronJobRef.Name,
 		k + "_uid":         string(cronJobRef.UID),
@@ -258,7 +258,7 @@ func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
 func getPodDeploymentProperties(rsRef *v1.OwnerReference) map[string]string {
 	k := strings.ToLower(k8sKindReplicaSet)
 	return map[string]string{
-		k8sKeyWorkLoad:       k,
+		k8sKeyWorkLoadKind:   k,
 		k8sKeyWorkLoadName:   rsRef.Name,
 		k8sKeyDeploymentName: rsRef.Name,
 		k + "_uid":           string(rsRef.UID),
@@ -268,7 +268,7 @@ func getPodDeploymentProperties(rsRef *v1.OwnerReference) map[string]string {
 // getPodWorkloadProperties returns properties of a Kubernetes workload associated with the pod.
 func getPodWorkloadProperties(workloadName string, workloadType string) map[string]string {
 	return map[string]string{
-		k8sKeyWorkLoad:     strings.ToLower(workloadType),
+		k8sKeyWorkLoadKind: strings.ToLower(workloadType),
 		k8sKeyWorkLoadName: workloadName,
 	}
 }
