@@ -16,7 +16,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-20200417175348-2f20d0c404f4 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8s v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
@@ -59,6 +59,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapme
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8s => ./extension/observer/k8s
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 
