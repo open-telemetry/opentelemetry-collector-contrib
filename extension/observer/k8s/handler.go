@@ -106,7 +106,7 @@ func getProtocol(protocol v1.Protocol) observer.Protocol {
 	return observer.ProtocolUnknown
 }
 
-// OnUpdate is called to an existing pod changing.
+// OnUpdate is called in response to an existing pod changing.
 func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 	oldEndpoints := map[string]observer.Endpoint{}
 	newEndpoints := map[string]observer.Endpoint{}
