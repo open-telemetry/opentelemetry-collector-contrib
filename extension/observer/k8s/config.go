@@ -22,7 +22,8 @@ import (
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-	// For example, node name can be passed to each agent with the downward API as follows
+	// Node should be set to the node name to limit discovered endpoints to. For example, node name can
+	// be set using the downward API inside the collector pod spec as follows:
 	//
 	// env:
 	//   - name: K8S_NODE_NAME
@@ -30,6 +31,6 @@ type Config struct {
 	//       fieldRef:
 	//         fieldPath: spec.nodeName
 	//
-	// Then set this value to ${K8S_NODE_NAME}
+	// Then set this value to ${K8S_NODE_NAME} in the configuration.
 	Node string `mapstructure:"node"`
 }

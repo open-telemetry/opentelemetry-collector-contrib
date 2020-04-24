@@ -107,19 +107,22 @@ func getProtocol(protocol v1.Protocol) observer.Protocol {
 }
 
 // OnUpdate is called to an existing pod changing.
-func (h *handler) OnUpdate(oldObj, newObj interface{}) {
+func (h *handler) OnUpdate(oldPod, newPod interface{}) {
 	oldEndpoints := map[string]observer.Endpoint{}
 	newEndpoints := map[string]observer.Endpoint{}
 
-	for _, e := range h.convertPodToEndpoints(oldObj.(*v1.Pod)) {
+	// Convert pods to endpoints and map by ID for easier lookup.
+	for _, e := range h.convertPodToEndpoints(oldPod.(*v1.Pod)) {
 		oldEndpoints[e.ID] = e
 	}
-	for _, e := range h.convertPodToEndpoints(newObj.(*v1.Pod)) {
+	for _, e := range h.convertPodToEndpoints(newPod.(*v1.Pod)) {
 		newEndpoints[e.ID] = e
 	}
 
 	var removedEndpoints, updatedEndpoints, addedEndpoints []observer.Endpoint
 
+	// Find endpoints that are present in oldPod and newPod and see if they've
+	// changed. Otherwise if it wasn't in oldPod it's a new endpoint.
 	for _, e := range newEndpoints {
 		if existing, ok := oldEndpoints[e.ID]; ok {
 			if !reflect.DeepEqual(existing, e) {
@@ -130,6 +133,8 @@ func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// If an endpoint is present in the oldPod but not in the newPod then
+	// send as removed.
 	for _, e := range oldEndpoints {
 		if _, ok := newEndpoints[e.ID]; !ok {
 			removedEndpoints = append(removedEndpoints, e)
@@ -159,7 +164,7 @@ func (h *handler) OnDelete(obj interface{}) {
 	var pod *v1.Pod
 	switch o := obj.(type) {
 	case *cache.DeletedFinalStateUnknown:
-		// Assuming we never saw the pod state where newObserver endpoints would have been created
+		// Assuming we never saw the pod state where new endpoints would have been created
 		// to begin with it seems that we can't leak endpoints here.
 		pod = o.Obj.(*v1.Pod)
 	case *v1.Pod:

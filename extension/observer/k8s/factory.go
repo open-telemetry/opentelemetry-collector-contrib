@@ -84,7 +84,7 @@ func NewFactory() component.ExtensionFactory {
 	return &Factory{createK8sConfig: func() (*rest.Config, error) {
 		restConfig, err := rest.InClusterConfig()
 		if err != nil {
-			return nil, fmt.Errorf("failed creating Kubernetes in-cluster REST config: %v", err)
+			return nil, err
 		}
 		return restConfig, nil
 	}}
