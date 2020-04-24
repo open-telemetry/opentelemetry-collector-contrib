@@ -64,6 +64,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				nil,
 			)
 		})
 	}
