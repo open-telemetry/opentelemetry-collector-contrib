@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/stretchr/testify/assert"
@@ -35,11 +36,12 @@ func TestCreateReceiver(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	tReceiver, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	mReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, nil)
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, nil)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
@@ -50,7 +52,8 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = ""
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no endpoints must fail")
 }
 
@@ -60,7 +63,8 @@ func TestCreateNoPort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:"
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
 }
 
@@ -70,6 +74,7 @@ func TestCreateLargePort(t *testing.T) {
 	rCfg := cfg.(*Config)
 
 	rCfg.Endpoint = "localhost:65536"
-	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	_, err := factory.CreateTraceReceiver(context.Background(), params, cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
 }

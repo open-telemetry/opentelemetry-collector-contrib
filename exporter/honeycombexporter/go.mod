@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/honeycombio/opentelemetry-exporter-go v0.3.1
 	github.com/klauspost/compress v1.10.2
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200414190247-75ae9198a89e
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200423174807-6c194144a519
 	github.com/stretchr/testify v1.5.1
 	go.opentelemetry.io/otel v0.3.0
 	go.uber.org/zap v1.14.0

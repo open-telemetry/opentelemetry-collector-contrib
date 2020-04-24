@@ -4,13 +4,12 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.49.0 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/protobuf v1.3.5
-	github.com/google/go-cmp v0.4.0
 	github.com/gorilla/mux v1.7.3
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200414190247-75ae9198a89e
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200423174807-6c194144a519
+	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/signalfx/sapm-proto v0.3.0
 	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.3
