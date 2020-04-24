@@ -26,7 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"go.uber.org/zap"
 )
 
 const (
@@ -83,9 +82,9 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// assert config is SAPM config
 	rCfg := cfg.(*Config)
@@ -104,14 +103,15 @@ func (f *Factory) CreateTraceReceiver(
 	}
 
 	// Create the receiver.
-	return New(ctx, logger, rCfg, nextConsumer)
+	return New(ctx, params, rCfg, nextConsumer)
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	_ context.Context,
+	_ component.ReceiverCreateParams,
+	_ configmodels.Receiver,
+	_ consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
