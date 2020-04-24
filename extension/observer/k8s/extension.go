@@ -49,7 +49,7 @@ func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
 	k.informer.AddEventHandler(&handler{watcher: listener, idNamespace: k.config.Name()})
 }
 
-// newObserver creates a newObserver k8s observer extension.
+// newObserver creates a new k8s observer extension.
 func newObserver(logger *zap.Logger, config *Config, listWatch cache.ListerWatcher) (component.ServiceExtension, error) {
 	informer := cache.NewSharedInformer(listWatch, &v1.Pod{}, 0)
 	return &k8sObserver{logger: logger, informer: informer, stop: make(chan struct{}), config: config}, nil
