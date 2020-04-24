@@ -49,7 +49,8 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 		},
 	}
 	var err error
-	sr.receiver, err = sapmreceiver.New(context.Background(), zap.L(), &sapmCfg, tc)
+	params := component.ReceiverCreateParams{Logger: zap.L()}
+	sr.receiver, err = sapmreceiver.New(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err
 	}

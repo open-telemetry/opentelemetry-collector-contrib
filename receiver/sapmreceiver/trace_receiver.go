@@ -57,7 +57,7 @@ type sapmReceiver struct {
 	config *Config
 	server *http.Server
 
-	nextConsumer consumer.TraceConsumerOld
+	nextConsumer consumer.TraceConsumer
 
 	// defaultResponse is a placeholder. For now this receiver returns an empty sapm response.
 	// This defaultResponse is an optimization so we don't have to proto.Marshal the response
@@ -82,15 +82,14 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 
 		// convert the jager batches to OCProto
 		// TODO: the translator never returns error change the function signature.
-		td, _ := jaegertranslator.ProtoBatchToOCProto(*batch)
-		numSpans += len(td.Spans)
+		td := jaegertranslator.ProtoBatchToInternalTraces(*batch)
+		numSpans += td.SpanCount()
 		if err != nil {
 			continue
 		}
-		td.SourceFormat = traceSource
 
 		// pass the trace data to the next consumer
-		err = sr.nextConsumer.ConsumeTraceData(ctx, td)
+		err = sr.nextConsumer.ConsumeTraces(ctx, td)
 		if err != nil {
 			err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 		}
@@ -212,14 +211,19 @@ func (sr *sapmReceiver) Shutdown(context.Context) error {
 var _ component.TraceReceiver = (*sapmReceiver)(nil)
 
 // New creates a sapmReceiver that receives SAPM over http
-func New(ctx context.Context, logger *zap.Logger, config *Config, nextConsumer consumer.TraceConsumerOld) (component.TraceReceiver, error) {
+func New(
+	ctx context.Context,
+	params component.ReceiverCreateParams,
+	config *Config,
+	nextConsumer consumer.TraceConsumer,
+) (component.TraceReceiver, error) {
 	// build the response message
 	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %s receiver: %v", config.Name(), err)
 	}
 	return &sapmReceiver{
-		logger:          logger,
+		logger:          params.Logger,
 		config:          config,
 		nextConsumer:    nextConsumer,
 		defaultResponse: defaultResponse,
