@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Exporters[typeStr] = factory
+	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: expectedName,
 		},
 		Endpoint: "localhost:8080",

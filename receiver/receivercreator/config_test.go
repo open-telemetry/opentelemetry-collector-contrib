@@ -33,7 +33,7 @@ type mockHostFactories struct {
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType string) component.Factory {
+func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return mh.factories.Receivers[componentType]
@@ -56,7 +56,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Conf
 	require.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -85,5 +85,5 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["examplereceiver/1"].config)
-	assert.Equal(t, []string{"mock_observer"}, r1.WatchObservers)
+	assert.Equal(t, []configmodels.Type{"mock_observer"}, r1.WatchObservers)
 }

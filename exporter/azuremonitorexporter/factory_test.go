@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
@@ -25,7 +26,7 @@ import (
 func TestExporterTypeKey(t *testing.T) {
 	factory := Factory{}
 
-	assert.Equal(t, typeStr, factory.Type())
+	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 }
 
 func TestCreateMetricsExporter(t *testing.T) {

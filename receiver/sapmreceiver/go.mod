@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200423174807-6c194144a519
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200424155504-9d16f5971ef9
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/signalfx/sapm-proto v0.3.0
 	github.com/stretchr/testify v1.4.0

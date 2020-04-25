@@ -39,8 +39,8 @@ func (f Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 }
 
 // Type returns the type of this factory, "redis".
-func (f Factory) Type() string {
-	return typeStr
+func (f Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CreateDefaultConfig creates a default config.
