@@ -837,8 +837,8 @@ github.com/onsi/gomega v1.7.1/go.mod h1:XdKZgCCFLUoM/7CFJVPcG8C1xQ1AJ0vpAezJrB7J
 github.com/onsi/gomega v1.8.1/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
 github.com/onsi/gomega v1.9.0 h1:R1uwffexN6Pr340GtYRIdZmAiN4J+iw6WG4wog1DUXg=
 github.com/onsi/gomega v1.9.0/go.mod h1:Ho0h+IUsWyvy1OpqCwxlQ/21gkhVunqlU8fDGcoTdcA=
-github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200423174807-6c194144a519 h1:j4lzNcXgPE50pZ7n77s/Mnh7EKBZ2e+k34Qhsuiv36c=
-github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200423174807-6c194144a519/go.mod h1:aZAL+YwTtk+1YkTj8dDgTvv06dU8twzOdRowRtBfEKo=
+github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200424155504-9d16f5971ef9 h1:maf2tPAv8QV17gSAePuzREqKvConQ+ozOkNM0pFgbyA=
+github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200424155504-9d16f5971ef9/go.mod h1:aZAL+YwTtk+1YkTj8dDgTvv06dU8twzOdRowRtBfEKo=
 github.com/open-telemetry/opentelemetry-proto v0.3.0 h1:+ASAtcayvoELyCF40+rdCMlBOhZIn5TPDez85zSYc30=
 github.com/open-telemetry/opentelemetry-proto v0.3.0/go.mod h1:PMR5GI0F7BSpio+rBGFxNm6SLzg3FypDTcFuQZnO+F8=
 github.com/opencontainers/go-digest v1.0.0-rc1/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=

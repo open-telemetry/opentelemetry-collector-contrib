@@ -68,7 +68,7 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 		URL: "http://some.other.location/api/traces",
@@ -94,7 +94,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 			name: "empty_url",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
+					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
 			},
@@ -104,7 +104,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 			name: "invalid_url",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
+					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
 				URL: ".localhost:123",
@@ -115,7 +115,7 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 			name: "negative_duration",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
+					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
 				URL:     "localhost:123",

@@ -38,7 +38,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, typeStr, factory.Type())
+	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.NoError(t, err)
 }
@@ -77,7 +77,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 		AccessToken: "testToken",
@@ -104,7 +104,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			name: "negative_duration",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
+					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
 				AccessToken: "testToken",
@@ -117,7 +117,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			name: "empty_realm_and_url",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
-					TypeVal: typeStr,
+					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
 			},

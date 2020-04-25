@@ -46,7 +46,7 @@ var _ runner = (*receiverRunner)(nil)
 
 // start a receiver instance from its static config and discovered config.
 func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
-	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
+	factory := run.host.GetFactory(component.KindReceiver, configmodels.Type(receiver.typeStr))
 
 	if factory == nil {
 		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.typeStr)
@@ -94,7 +94,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := config.LoadReceiver(mergedConfig, receiver.typeStr, receiver.fullName, factory)
+	receiverConfig, err := config.LoadReceiver(mergedConfig, configmodels.Type(receiver.typeStr), receiver.fullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}

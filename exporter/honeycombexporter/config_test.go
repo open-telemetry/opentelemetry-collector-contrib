@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Exporters[typeStr] = factory
+	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 
 	r1 := cfg.Exporters["honeycomb/customname"].(*Config)
 	assert.Equal(t, r1, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "honeycomb/customname"},
+		ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "honeycomb/customname"},
 		APIKey:           "test-apikey",
 		Dataset:          "test-dataset",
 		APIURL:           "https://api.testhost.io",

@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Exporters[typeStr] = factory
+	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ExporterSettings:   configmodels.ExporterSettings{TypeVal: typeStr, NameVal: exporterType},
+			ExporterSettings:   configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: exporterType},
 			Endpoint:           defaultEndpoint,
 			InstrumentationKey: "abcdefg",
 			MaxBatchSize:       100,

@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, typeStr, factory.Type())
+	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
 	assert.NoError(t, err)
 }
