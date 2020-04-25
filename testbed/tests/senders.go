@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -31,12 +32,12 @@ import (
 
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
-	exporter component.TraceExporterOld
+	exporter component.TraceExporter
 	port     int
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
-var _ testbed.TraceDataSenderOld = (*SapmDataSender)(nil)
+var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
 
 // NewSapmDataSender creates a new Sapm protocol sender that will send
 // to the specified port after Start is called.
@@ -52,7 +53,8 @@ func (je *SapmDataSender) Start() error {
 
 	var err error
 	factory := sapmexporter.Factory{}
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
@@ -63,8 +65,8 @@ func (je *SapmDataSender) Start() error {
 }
 
 // SendSpans sends spans. Can be called after Start.
-func (je *SapmDataSender) SendSpans(traces consumerdata.TraceData) error {
-	return je.exporter.ConsumeTraceData(context.Background(), traces)
+func (je *SapmDataSender) SendSpans(traces pdata.Traces) error {
+	return je.exporter.ConsumeTraces(context.Background(), traces)
 }
 
 // Flush previously sent spans.
