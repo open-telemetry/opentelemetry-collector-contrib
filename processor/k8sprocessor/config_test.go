@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
 	factory := &Factory{}
-	factories.Processors[typeStr] = factory
+	factories.Processors[configmodels.Type(typeStr)] = factory
 	require.NoError(t, err)
 
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())

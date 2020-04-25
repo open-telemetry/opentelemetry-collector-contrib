@@ -30,7 +30,7 @@ import (
 // NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
 func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TraceExporterOld, error) {
-	typeLog := zap.String("type", config.Type())
+	typeLog := zap.String("type", string(config.Type()))
 	nameLog := zap.String("name", config.Name())
 	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
 	if err != nil {

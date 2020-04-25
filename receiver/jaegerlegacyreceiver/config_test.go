@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["jaeger_legacy/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: "jaeger_legacy/customname",
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"thrift_tchannel": {
@@ -57,7 +57,7 @@ func TestLoadConfig(t *testing.T) {
 	rDefaults := cfg.Receivers["jaeger_legacy/defaults"].(*Config)
 	assert.Equal(t, rDefaults,
 		&Config{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: "jaeger_legacy/defaults",
 			Protocols: map[string]*receiver.SecureReceiverSettings{
 				"thrift_tchannel": {
@@ -74,7 +74,7 @@ func TestFailedLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	_, err = config.LoadConfigFile(t, path.Join(".", "testdata", "bad_proto_config.yaml"), factories)
 	assert.EqualError(t, err, `error reading settings for receiver type "jaeger_legacy": unknown Jaeger Legacy protocol badproto`)
 
