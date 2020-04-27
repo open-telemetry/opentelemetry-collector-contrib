@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := &Factory{}
 	receiverType := "k8s_cluster"
-	factories.Receivers[receiverType] = factory
+	factories.Receivers[configmodels.Type(receiverType)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: receiverType,
+				TypeVal: configmodels.Type(receiverType),
 				NameVal: "k8s_cluster/all_settings",
 			},
 			CollectionInterval:         30 * time.Second,
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: receiverType,
+				TypeVal: configmodels.Type(receiverType),
 				NameVal: "k8s_cluster/partial_settings",
 			},
 			CollectionInterval:         30 * time.Second,

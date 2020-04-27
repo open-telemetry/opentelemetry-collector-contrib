@@ -41,7 +41,7 @@ var _ component.ReceiverFactoryOld = (*Factory)(nil)
 type Factory struct {
 }
 
-func (f Factory) Type() string {
+func (f Factory) Type() configmodels.Type {
 	return typeStr
 }
 
