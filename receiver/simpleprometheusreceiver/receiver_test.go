@@ -76,10 +76,10 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				TLSCredentials: &tlsCredentials{
-					CAFilePath:         "path1",
-					CertFilePath:       "path2",
-					KeyFilePath:        "path3",
+				TLSConfig: &tlsConfig{
+					CAFile:             "path1",
+					CertFile:           "path2",
+					KeyFile:            "path3",
 					InsecureSkipVerify: true,
 				},
 			},

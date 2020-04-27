@@ -5,7 +5,7 @@ receivers:
     collection_interval: 30s
     metrics_path: /v2/metrics
     use_service_account: true
-    tls_credentials:
+    tls_config:
       ca_file: "path"
       cert_file: "path"
       key_file: "path"

@@ -30,19 +30,19 @@ type Config struct {
 	// Whether or not to use pod service account to authenticate.
 	UseServiceAccount bool `mapstructure:"use_service_account"`
 	// TLS configs in case connection is over HTTPS
-	TLSCredentials *tlsCredentials `mapstructure:"tls_credentials"`
+	TLSConfig *tlsConfig `mapstructure:"tls_config"`
 }
 
 // TODO: Move to a common package for use by other receivers and also pull
 // in other utilities from
 // https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
-type tlsCredentials struct {
+type tlsConfig struct {
 	// Path to the CA cert that has signed the TLS cert.
-	CAFilePath string `mapstructure:"ca_file"`
+	CAFile string `mapstructure:"ca_file"`
 	// Path to the client TLS cert to use for TLS required connections.
-	CertFilePath string `mapstructure:"cert_file"`
+	CertFile string `mapstructure:"cert_file"`
 	// Path to the client TLS key to use for TLS required connections.
-	KeyFilePath string `mapstructure:"key_file"`
+	KeyFile string `mapstructure:"key_file"`
 	// Whether or not to verify the exporter's TLS cert.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }

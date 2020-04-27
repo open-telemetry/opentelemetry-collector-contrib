@@ -52,10 +52,10 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "prometheus_simple/all_settings",
 				Endpoint: "localhost:1234",
 			},
-			TLSCredentials: &tlsCredentials{
-				CAFilePath:         "path",
-				CertFilePath:       "path",
-				KeyFilePath:        "path",
+			TLSConfig: &tlsConfig{
+				CAFile:             "path",
+				CertFile:           "path",
+				KeyFile:            "path",
 				InsecureSkipVerify: true,
 			},
 			CollectionInterval: 30 * time.Second,

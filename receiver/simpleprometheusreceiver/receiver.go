@@ -79,13 +79,13 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	scheme := "http"
 
-	if cfg.TLSCredentials != nil {
+	if cfg.TLSConfig != nil {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.TLSCredentials.CAFilePath,
-			CertFile:           cfg.TLSCredentials.CertFilePath,
-			KeyFile:            cfg.TLSCredentials.KeyFilePath,
-			InsecureSkipVerify: cfg.TLSCredentials.InsecureSkipVerify,
+			CAFile:             cfg.TLSConfig.CAFile,
+			CertFile:           cfg.TLSConfig.CertFile,
+			KeyFile:            cfg.TLSConfig.KeyFile,
+			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
 		}
 	}
 
