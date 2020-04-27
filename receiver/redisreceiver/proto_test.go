@@ -25,8 +25,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestServerName(t *testing.T) {
+	md := getMetricData(t, usedMemory(), "")
+	_, found := md.Resource.Labels["server_name"]
+	require.False(t, found)
+	md = getMetricData(t, usedMemory(), "x")
+	val := md.Resource.Labels["server_name"]
+	require.Equal(t, "x", val)
+}
+
 func TestMemoryMetric(t *testing.T) {
-	md := getMetricData(t, usedMemory())
+	md := getMetricData(t, usedMemory(), "")
 	require.Equal(t, 1, len(md.Metrics))
 	require.NotNil(t, md.Resource)
 	metric := md.Metrics[0]
@@ -38,15 +47,15 @@ func TestMemoryMetric(t *testing.T) {
 }
 
 func TestUptimeInSeconds(t *testing.T) {
-	metric := getProtoMetric(t, uptimeInSeconds())
+	metric := getProtoMetric(t, uptimeInSeconds(), "")
 	require.Equal(t, "s", metric.MetricDescriptor.Unit)
 	requireIntPtEqual(t, 104946, metric)
 }
 
 func TestUsedCpuSys(t *testing.T) {
-	md := getMetricData(t, usedCPUSys())
+	md := getMetricData(t, usedCPUSys(), "")
 	metric := md.Metrics[0]
-	require.Equal(t, metricspb.MetricDescriptor_GAUGE_DOUBLE, metric.MetricDescriptor.Type)
+	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metric.MetricDescriptor.Type)
 	require.Equal(t, "s", metric.MetricDescriptor.Unit)
 	requireDoublePtEqual(t, 185.649184, metric)
 }
@@ -84,21 +93,21 @@ func TestKeyspaceMetrics(t *testing.T) {
 	require.Equal(t, "redis/db/keys", metric.MetricDescriptor.Name)
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
-	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
+	require.Equal(t, metricspb.MetricDescriptor_GAUGE_INT64, metric.MetricDescriptor.Type)
 	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 1}, metric.Timeseries[0].Points[0].Value)
 
 	metric = m[1]
 	require.Equal(t, "redis/db/expires", metric.MetricDescriptor.Name)
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
-	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
+	require.Equal(t, metricspb.MetricDescriptor_GAUGE_INT64, metric.MetricDescriptor.Type)
 	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 2}, metric.Timeseries[0].Points[0].Value)
 
 	metric = m[2]
 	require.Equal(t, "redis/db/avg_ttl", metric.MetricDescriptor.Name)
 	require.Equal(t, "db", metric.MetricDescriptor.LabelKeys[0].Key)
 	require.Equal(t, "0", metric.Timeseries[0].LabelValues[0].Value)
-	require.Equal(t, metricspb.MetricDescriptor_CUMULATIVE_INT64, metric.MetricDescriptor.Type)
+	require.Equal(t, metricspb.MetricDescriptor_GAUGE_INT64, metric.MetricDescriptor.Type)
 	require.Equal(t, &metricspb.Point_Int64Value{Int64Value: 3}, metric.Timeseries[0].Points[0].Value)
 }
 
@@ -134,20 +143,20 @@ func fetchMetrics(redisMetrics []*redisMetric) ([]*metricspb.Metric, []error, er
 	return protoMetrics, warnings, nil
 }
 
-func getProtoMetric(t *testing.T, redisMetric *redisMetric) *metricspb.Metric {
-	md := getMetricData(t, redisMetric)
+func getProtoMetric(t *testing.T, redisMetric *redisMetric, serverName string) *metricspb.Metric {
+	md := getMetricData(t, redisMetric, serverName)
 	metric := md.Metrics[0]
 	return metric
 }
 
-func getMetricData(t *testing.T, metric *redisMetric) *consumerdata.MetricsData {
-	md, warnings, err := getMetricDataErr(metric)
+func getMetricData(t *testing.T, metric *redisMetric, serverName string) *consumerdata.MetricsData {
+	md, warnings, err := getMetricDataErr(metric, serverName)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	return md
 }
 
-func getMetricDataErr(metric *redisMetric) (*consumerdata.MetricsData, []error, error) {
+func getMetricDataErr(metric *redisMetric, serverName string) (*consumerdata.MetricsData, []error, error) {
 	redisMetrics := []*redisMetric{metric}
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
@@ -155,7 +164,7 @@ func getMetricDataErr(metric *redisMetric) (*consumerdata.MetricsData, []error, 
 		return nil, nil, err
 	}
 	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, getDefaultTimeBundle())
-	md := newMetricsData(protoMetrics)
+	md := newMetricsData(protoMetrics, serverName)
 	return md, warnings, nil
 }
 

@@ -77,7 +77,7 @@ func uptimeInSeconds() *redisMetric {
 		key:    "uptime_in_seconds",
 		name:   "redis/uptime",
 		units:  "s",
-		mdType: metricspb.MetricDescriptor_GAUGE_INT64,
+		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
 	}
 }
 
@@ -86,8 +86,8 @@ func usedCPUSys() *redisMetric {
 		key:    "used_cpu_sys",
 		name:   "redis/cpu/time",
 		units:  "s",
-		mdType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
-		labels: map[string]string{"state": "sys"},
+		mdType: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		labels: map[string]string{"state": "sys"}, // todo `state`?
 	}
 }
 
@@ -96,7 +96,7 @@ func usedCPUUser() *redisMetric {
 		key:    "used_cpu_user",
 		name:   "redis/cpu/time",
 		units:  "s",
-		mdType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		mdType: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
 		labels: map[string]string{"state": "user"},
 	}
 }
@@ -106,7 +106,7 @@ func usedCPUSysChildren() *redisMetric {
 		key:    "used_cpu_sys_children",
 		name:   "redis/cpu/time",
 		units:  "s",
-		mdType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		mdType: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
 		labels: map[string]string{"state": "children"},
 	}
 }
