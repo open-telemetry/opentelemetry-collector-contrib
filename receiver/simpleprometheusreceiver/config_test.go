@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := &Factory{}
 	receiverType := "prometheus_simple"
-	factories.Receivers[receiverType] = factory
+	factories.Receivers[configmodels.Type(receiverType)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  receiverType,
+				TypeVal:  configmodels.Type(receiverType),
 				NameVal:  "prometheus_simple/all_settings",
 				Endpoint: "localhost:1234",
 			},
@@ -67,7 +67,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  receiverType,
+				TypeVal:  configmodels.Type(receiverType),
 				NameVal:  "prometheus_simple/partial_settings",
 				Endpoint: "localhost:1234",
 			},
