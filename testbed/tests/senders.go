@@ -48,7 +48,8 @@ func NewSapmDataSender(port int) *SapmDataSender {
 // Start the sender.
 func (je *SapmDataSender) Start() error {
 	cfg := &sapmexporter.Config{
-		Endpoint: fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
+		Endpoint:           fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
+		DisableCompression: true,
 	}
 
 	var err error
