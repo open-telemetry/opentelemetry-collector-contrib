@@ -43,6 +43,8 @@ replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-201612212036
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/config => ./internal/config
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ./exporter/awsxrayexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter => ./exporter/azuremonitorexporter

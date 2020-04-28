@@ -19,20 +19,22 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
+	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/config"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := otelconfig.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	receiverType := "prometheus_simple"
 	factories.Receivers[configmodels.Type(receiverType)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := otelconfig.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -52,9 +54,9 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "prometheus_simple/all_settings",
 				Endpoint: "localhost:1234",
 			},
-			httpConfig: httpConfig{
+			HTTPConfig: config.HTTPConfig{
 				TLSEnabled: true,
-				TLSConfig: tlsConfig{
+				TLSConfig: config.TLSConfig{
 					CAFile:             "path",
 					CertFile:           "path",
 					KeyFile:            "path",
@@ -86,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "prometheus_simple/partial_tls_settings",
 				Endpoint: "localhost:1234",
 			},
-			httpConfig: httpConfig{
+			HTTPConfig: config.HTTPConfig{
 				TLSEnabled: true,
 			},
 			CollectionInterval: 30 * time.Second,

@@ -23,9 +23,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	prometheusconfig "github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/config"
 )
 
 func Test_getPrometheusConfig(t *testing.T) {
@@ -45,8 +47,8 @@ func Test_getPrometheusConfig(t *testing.T) {
 				MetricsPath:        "/metric",
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				PrometheusConfig: &prometheusconfig.Config{
+					ScrapeConfigs: []*prometheusconfig.ScrapeConfig{
 						{
 							ScrapeInterval:  model.Duration(10 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
@@ -76,9 +78,9 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				httpConfig: httpConfig{
+				HTTPConfig: config.HTTPConfig{
 					TLSEnabled: true,
-					TLSConfig: tlsConfig{
+					TLSConfig: config.TLSConfig{
 						CAFile:             "path1",
 						CertFile:           "path2",
 						KeyFile:            "path3",
@@ -87,8 +89,8 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				PrometheusConfig: &prometheusconfig.Config{
+					ScrapeConfigs: []*prometheusconfig.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
 							HonorTimestamps: true,
@@ -126,13 +128,13 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				httpConfig: httpConfig{
+				HTTPConfig: config.HTTPConfig{
 					TLSEnabled: true,
 				},
 			},
 			want: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
+				PrometheusConfig: &prometheusconfig.Config{
+					ScrapeConfigs: []*prometheusconfig.ScrapeConfig{
 						{
 							JobName:         "prometheus_simple/localhost:1234",
 							HonorTimestamps: true,
