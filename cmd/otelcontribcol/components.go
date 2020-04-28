@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
@@ -71,6 +72,7 @@ func components() (config.Factories, error) {
 		&wavefrontreceiver.Factory{},
 		&jaegerlegacyreceiver.Factory{},
 		&redisreceiver.Factory{},
+		&k8sclusterreceiver.Factory{},
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

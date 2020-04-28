@@ -75,27 +75,16 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 
 	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), "http", "")
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), "http")
-	numSpans := 0
 
-	// process sapm batches
-	for _, batch := range sapm.Batches {
+	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 
-		// convert the jager batches to OCProto
-		// TODO: the translator never returns error change the function signature.
-		td := jaegertranslator.ProtoBatchToInternalTraces(*batch)
-		numSpans += td.SpanCount()
-		if err != nil {
-			continue
-		}
-
-		// pass the trace data to the next consumer
-		err = sr.nextConsumer.ConsumeTraces(ctx, td)
-		if err != nil {
-			err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
-		}
+	// pass the trace data to the next consumer
+	err = sr.nextConsumer.ConsumeTraces(ctx, td)
+	if err != nil {
+		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
 	}
 
-	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", numSpans, err)
+	obsreport.EndTraceDataReceiveOp(ctx, "protobuf", td.SpanCount(), err)
 	return err
 }
 

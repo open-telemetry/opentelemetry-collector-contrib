@@ -38,8 +38,8 @@ type Factory struct {
 var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
@@ -51,7 +51,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 	}

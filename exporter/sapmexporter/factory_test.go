@@ -15,8 +15,10 @@
 package sapmexporter
 
 import (
+	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -34,12 +36,13 @@ func TestCreateExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := factory.CreateTraceExporter(zap.NewNop(), eCfg)
+	te, err := factory.CreateTraceExporter(context.Background(), params, eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(zap.NewNop(), eCfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)
 	assert.Error(t, err)
 	assert.Nil(t, me)
 }

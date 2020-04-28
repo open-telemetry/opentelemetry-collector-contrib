@@ -42,8 +42,8 @@ type Factory struct {
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
@@ -51,7 +51,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 		Endpoint:         defaultEndpoint,

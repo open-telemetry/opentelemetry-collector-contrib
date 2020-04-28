@@ -47,8 +47,8 @@ type Factory struct {
 }
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CustomUnmarshaler is used to add defaults for named but empty protocols
@@ -90,7 +90,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for JaegerLegacy receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		TypeVal:   typeStr,
+		TypeVal:   configmodels.Type(typeStr),
 		NameVal:   typeStr,
 		Protocols: map[string]*receiver.SecureReceiverSettings{},
 	}
@@ -124,7 +124,7 @@ func (f *Factory) CreateTraceReceiver(
 	if protoTChannel == nil || config.CollectorThriftPort == 0 {
 		err := fmt.Errorf("%v protocol endpoint with non-zero port must be enabled for %s receiver",
 			protoThriftTChannel,
-			typeStr,
+			configmodels.Type(typeStr),
 		)
 		return nil, err
 	}

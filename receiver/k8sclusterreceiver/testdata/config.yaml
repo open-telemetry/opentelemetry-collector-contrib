@@ -1,0 +1,21 @@
+receivers:
+  k8s_cluster:
+  k8s_cluster/all_settings:
+    collection_interval: 30s
+    node_conditions_to_report: ["Ready", "MemoryPressure"]
+  k8s_cluster/partial_settings:
+    collection_interval: 30s
+
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [k8s_cluster]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

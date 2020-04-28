@@ -30,7 +30,7 @@ import (
 func TestTypeStr(t *testing.T) {
 	factory := Factory{}
 
-	assert.Equal(t, "jaeger_legacy", factory.Type())
+	assert.Equal(t, configmodels.Type("jaeger_legacy"), factory.Type())
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
