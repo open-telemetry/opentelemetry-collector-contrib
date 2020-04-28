@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package k8s implements a k8s observer extension for monitoring pods.
-package k8s
+package k8s_observer

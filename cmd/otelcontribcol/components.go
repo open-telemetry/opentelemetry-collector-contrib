@@ -50,7 +50,7 @@ func components() (config.Factories, error) {
 	}
 
 	extensions := []component.ExtensionFactory{
-		k8s.NewFactory(),
+		k8s_observer.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
