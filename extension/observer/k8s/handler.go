@@ -34,7 +34,10 @@ type handler struct {
 
 // OnAdd is called in response to a pod being added.
 func (h *handler) OnAdd(obj interface{}) {
-	pod := obj.(*v1.Pod)
+	pod, ok := obj.(*v1.Pod)
+	if !ok {
+		return
+	}
 	h.watcher.OnAdd(h.convertPodToEndpoints(pod))
 }
 
@@ -107,15 +110,24 @@ func getProtocol(protocol v1.Protocol) observer.Protocol {
 }
 
 // OnUpdate is called in response to an existing pod changing.
-func (h *handler) OnUpdate(oldPod, newPod interface{}) {
+func (h *handler) OnUpdate(oldObj, newObj interface{}) {
+	oldPod, ok := oldObj.(*v1.Pod)
+	if !ok {
+		return
+	}
+	newPod, ok := newObj.(*v1.Pod)
+	if !ok {
+		return
+	}
+
 	oldEndpoints := map[string]observer.Endpoint{}
 	newEndpoints := map[string]observer.Endpoint{}
 
 	// Convert pods to endpoints and map by ID for easier lookup.
-	for _, e := range h.convertPodToEndpoints(oldPod.(*v1.Pod)) {
+	for _, e := range h.convertPodToEndpoints(oldPod) {
 		oldEndpoints[e.ID] = e
 	}
-	for _, e := range h.convertPodToEndpoints(newPod.(*v1.Pod)) {
+	for _, e := range h.convertPodToEndpoints(newPod) {
 		newEndpoints[e.ID] = e
 	}
 
