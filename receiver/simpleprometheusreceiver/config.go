@@ -23,19 +23,25 @@ import (
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	httpConfig                    `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.
 	MetricsPath string `mapstructure:"metrics_path"`
 	// Whether or not to use pod service account to authenticate.
 	UseServiceAccount bool `mapstructure:"use_service_account"`
-	// TLS configs in case connection is over HTTPS
-	TLSConfig *tlsConfig `mapstructure:"tls_config"`
 }
 
 // TODO: Move to a common package for use by other receivers and also pull
 // in other utilities from
 // https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
+type httpConfig struct {
+	// Whether not TLS is enabled
+	TLSEnabled bool `mapstructure:"tls_enabled"`
+	tlsConfig  `mapstructure:",squash"`
+}
+
+// tlsConfig holds common TLS config options
 type tlsConfig struct {
 	// Path to the CA cert that has signed the TLS cert.
 	CAFile string `mapstructure:"ca_file"`

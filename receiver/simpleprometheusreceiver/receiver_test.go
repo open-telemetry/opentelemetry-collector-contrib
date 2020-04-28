@@ -76,11 +76,14 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				TLSConfig: &tlsConfig{
-					CAFile:             "path1",
-					CertFile:           "path2",
-					KeyFile:            "path3",
-					InsecureSkipVerify: true,
+				httpConfig: httpConfig{
+					TLSEnabled: true,
+					tlsConfig: tlsConfig{
+						CAFile:             "path1",
+						CertFile:           "path2",
+						KeyFile:            "path3",
+						InsecureSkipVerify: true,
+					},
 				},
 			},
 			want: &prometheusreceiver.Config{
@@ -108,6 +111,42 @@ func Test_getPrometheusConfig(t *testing.T) {
 									CertFile:           "path2",
 									KeyFile:            "path3",
 									InsecureSkipVerify: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Test with TLS - default CA",
+			config: &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					Endpoint: "localhost:1234",
+				},
+				CollectionInterval: 10 * time.Second,
+				MetricsPath:        "/metrics",
+				httpConfig: httpConfig{
+					TLSEnabled: true,
+				},
+			},
+			want: &prometheusreceiver.Config{
+				PrometheusConfig: &config.Config{
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							JobName:         "prometheus_simple/localhost:1234",
+							HonorTimestamps: true,
+							ScrapeInterval:  model.Duration(10 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							MetricsPath:     "/metrics",
+							Scheme:          "https",
+							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
+								StaticConfigs: []*targetgroup.Group{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:1234")},
+										},
+									},
 								},
 							},
 						},

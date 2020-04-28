@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 3)
+	assert.Equal(t, len(cfg.Receivers), 4)
 
 	r1 := cfg.Receivers[receiverType]
 	assert.Equal(t, r1, factory.CreateDefaultConfig())
@@ -52,11 +52,14 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "prometheus_simple/all_settings",
 				Endpoint: "localhost:1234",
 			},
-			TLSConfig: &tlsConfig{
-				CAFile:             "path",
-				CertFile:           "path",
-				KeyFile:            "path",
-				InsecureSkipVerify: true,
+			httpConfig: httpConfig{
+				TLSEnabled: true,
+				tlsConfig: tlsConfig{
+					CAFile:             "path",
+					CertFile:           "path",
+					KeyFile:            "path",
+					InsecureSkipVerify: true,
+				},
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/v2/metrics",
@@ -70,6 +73,21 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal:  configmodels.Type(receiverType),
 				NameVal:  "prometheus_simple/partial_settings",
 				Endpoint: "localhost:1234",
+			},
+			CollectionInterval: 30 * time.Second,
+			MetricsPath:        "/metrics",
+		})
+
+	r4 := cfg.Receivers["prometheus_simple/partial_tls_settings"].(*Config)
+	assert.Equal(t, r4,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  configmodels.Type(receiverType),
+				NameVal:  "prometheus_simple/partial_tls_settings",
+				Endpoint: "localhost:1234",
+			},
+			httpConfig: httpConfig{
+				TLSEnabled: true,
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/metrics",

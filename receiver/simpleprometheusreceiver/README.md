@@ -12,11 +12,11 @@ receiver to scrape metrics from a single target. Here's an example config.
         collection_interval: 10s
         use_service_account: true
         endpoint: "172.17.0.5:9153"
-        tls_credentials:
-            ca_file: "/path/to/ca"
-            cert_file: "/path/to/cert"
-            key_file: "/path/to/key"
-            insecure_skip_verify: true
+        tls_enabled: true
+        ca_file: "/path/to/ca"
+        cert_file: "/path/to/cert"
+        key_file: "/path/to/key"
+        insecure_skip_verify: true
     exporters:
       signalfx:
         access_token: <SIGNALFX_ACCESS_TOKEN>
@@ -56,9 +56,11 @@ Whether or not to use the Kubernetes Pod service account for authentication.
 
 default: `false`
 
-#### tls_credentials
+#### tls_enabled
 
-If `tls_credentials` is configured, receiver will use `https`.
+Whether or not to use TLS. Only if `tls_enabled` is set to `true`, values provided
+for `ca_file`, `cert_file`, `key_file` and `insecure_skip_verify` will be accounted
+for.
 
 ##### ca_file
 
