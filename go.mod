@@ -64,7 +64,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stack
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8s => ./extension/observer/k8s_observer
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8s => ./extension/observer/k8sobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 

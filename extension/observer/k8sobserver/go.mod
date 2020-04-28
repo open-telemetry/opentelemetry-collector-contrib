@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8s
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
 
 go 1.14
 
