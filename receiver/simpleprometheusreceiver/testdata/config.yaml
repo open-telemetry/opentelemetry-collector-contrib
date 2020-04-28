@@ -6,10 +6,11 @@ receivers:
     metrics_path: /v2/metrics
     use_service_account: true
     tls_enabled: true
-    ca_file: "path"
-    cert_file: "path"
-    key_file: "path"
-    insecure_skip_verify: true
+    tls_config:
+      ca_file: "path"
+      cert_file: "path"
+      key_file: "path"
+      insecure_skip_verify: true
   prometheus_simple/partial_settings:
     collection_interval: 30s
     endpoint: "localhost:1234"

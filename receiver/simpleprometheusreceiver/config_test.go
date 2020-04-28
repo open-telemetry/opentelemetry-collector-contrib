@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			httpConfig: httpConfig{
 				TLSEnabled: true,
-				tlsConfig: tlsConfig{
+				TLSConfig: tlsConfig{
 					CAFile:             "path",
 					CertFile:           "path",
 					KeyFile:            "path",

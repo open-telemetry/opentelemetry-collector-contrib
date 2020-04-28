@@ -37,8 +37,8 @@ type Config struct {
 // https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
 type httpConfig struct {
 	// Whether not TLS is enabled
-	TLSEnabled bool `mapstructure:"tls_enabled"`
-	tlsConfig  `mapstructure:",squash"`
+	TLSEnabled bool      `mapstructure:"tls_enabled"`
+	TLSConfig  tlsConfig `mapstructure:"tls_config"`
 }
 
 // tlsConfig holds common TLS config options

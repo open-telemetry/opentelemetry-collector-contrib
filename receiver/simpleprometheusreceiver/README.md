@@ -13,10 +13,11 @@ receiver to scrape metrics from a single target. Here's an example config.
         use_service_account: true
         endpoint: "172.17.0.5:9153"
         tls_enabled: true
-        ca_file: "/path/to/ca"
-        cert_file: "/path/to/cert"
-        key_file: "/path/to/key"
-        insecure_skip_verify: true
+        tls_config:
+            ca_file: "/path/to/ca"
+            cert_file: "/path/to/cert"
+            key_file: "/path/to/key"
+            insecure_skip_verify: true
     exporters:
       signalfx:
         access_token: <SIGNALFX_ACCESS_TOKEN>
@@ -58,9 +59,15 @@ default: `false`
 
 #### tls_enabled
 
-Whether or not to use TLS. Only if `tls_enabled` is set to `true`, values provided
-for `ca_file`, `cert_file`, `key_file` and `insecure_skip_verify` will be accounted
-for.
+Whether or not to use TLS. Only if `tls_enabled` is set to `true`, the values under
+`tls_config` are accounted for.
+
+default: `false`
+
+
+#### tls_config
+
+Configure the below options in `tls_config`.
 
 ##### ca_file
 

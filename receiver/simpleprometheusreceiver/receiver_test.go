@@ -78,7 +78,7 @@ func Test_getPrometheusConfig(t *testing.T) {
 				MetricsPath:        "/metrics",
 				httpConfig: httpConfig{
 					TLSEnabled: true,
-					tlsConfig: tlsConfig{
+					TLSConfig: tlsConfig{
 						CAFile:             "path1",
 						CertFile:           "path2",
 						KeyFile:            "path3",

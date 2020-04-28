@@ -82,10 +82,10 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		scheme = "https"
 		httpConfig.TLSConfig = configutil.TLSConfig{
-			CAFile:             cfg.CAFile,
-			CertFile:           cfg.CertFile,
-			KeyFile:            cfg.KeyFile,
-			InsecureSkipVerify: cfg.InsecureSkipVerify,
+			CAFile:             cfg.TLSConfig.CAFile,
+			CertFile:           cfg.TLSConfig.CertFile,
+			KeyFile:            cfg.TLSConfig.KeyFile,
+			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
 		}
 	}
 
