@@ -44,6 +44,9 @@ type Config struct {
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
 	MaxConnections uint `mapstructure:"max_connections"`
+
+	// Disable GZip compression.
+	DisableCompression bool `mapstructure:"disable_compression"`
 }
 
 func (c *Config) validate() error {
@@ -77,6 +80,10 @@ func (c *Config) clientOptions() []sapmclient.Option {
 
 	if c.AccessToken != "" {
 		opts = append(opts, sapmclient.WithAccessToken(c.AccessToken))
+	}
+
+	if c.DisableCompression {
+		opts = append(opts, sapmclient.WithDisabledCompression())
 	}
 
 	return opts
