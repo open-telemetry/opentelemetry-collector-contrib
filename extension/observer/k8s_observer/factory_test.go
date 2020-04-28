@@ -41,8 +41,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
-			NameVal: typeStr,
 			TypeVal: typeStr,
+			NameVal: string(typeStr),
 		},
 	},
 		cfg)

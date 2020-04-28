@@ -29,7 +29,7 @@ import (
 
 const (
 	// The value of extension "type" in configuration.
-	typeStr = "k8s_observer"
+	typeStr configmodels.Type = "k8s_observer"
 )
 
 // Factory is the factory for the extension.
@@ -40,7 +40,7 @@ type Factory struct {
 var _ (component.Factory) = (*Factory)(nil)
 
 // Type gets the type of the config created by this factory.
-func (f *Factory) Type() string {
+func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
 
@@ -49,7 +49,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 	return &Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: typeStr,
-			NameVal: typeStr,
+			NameVal: string(typeStr),
 		},
 	}
 }
