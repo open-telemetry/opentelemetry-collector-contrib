@@ -72,7 +72,8 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:
-    endpoint: "http://localhost:%d/v2/trace"`, sr.Port)
+    endpoint: "http://localhost:%d/v2/trace"
+    disable_compression: true`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
