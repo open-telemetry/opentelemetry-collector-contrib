@@ -73,7 +73,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 var _ component.ServiceExtension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
-	notify.OnAdd([]observer.Endpoint{observer.NewHostEndpoint("foobar", "169.168.1.100", nil)})
+	notify.OnAdd([]observer.Endpoint{{ID: "foobar", Target: "169.168.1.100", Details: nil}})
 }
 
 var _ observer.Observable = (*mockObserver)(nil)

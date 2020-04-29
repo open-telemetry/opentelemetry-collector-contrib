@@ -58,7 +58,7 @@ func TestOnAdd(t *testing.T) {
 	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(&config.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
+		{ID: "id-1", Target: "localhost", Details: nil},
 	})
 
 	runner.AssertExpectations(t)
@@ -78,9 +78,7 @@ func TestOnRemove(t *testing.T) {
 
 	runner.On("shutdown", rcvr).Return(nil)
 
-	handler.OnRemove([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
-	})
+	handler.OnRemove([]observer.Endpoint{{ID: "id-1", Target: "localhost", Details: nil}})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
@@ -105,9 +103,7 @@ func TestOnChange(t *testing.T) {
 	runner.On("shutdown", oldRcvr).Return(nil)
 	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(newRcvr, nil)
 
-	handler.OnChange([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
-	})
+	handler.OnChange([]observer.Endpoint{{ID: "id-1", Target: "localhost", Details: nil}})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
