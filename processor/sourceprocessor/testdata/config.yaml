@@ -1,0 +1,23 @@
+receivers:
+  examplereceiver:
+
+processors:
+  # The following specifies an empty source - it will have no effect on trace or metrics data.
+  source:
+  # The following specifies a non-trivial source
+  source/2:
+    source_name: "%{namespace}.%{pod}.%{container}/foo"
+    source_category: "%{namespace}/%{pod_name}/bar"
+    source_category_prefix: "kubernetes/"
+    source_category_replace_dash: "/"
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [source/2]
+      exporters: [exampleexporter]
+

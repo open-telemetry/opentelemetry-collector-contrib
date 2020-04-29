@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.14
 
 require (
+	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200427150635-ca4b8231de7c
@@ -17,6 +18,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver v0.0.0
@@ -28,7 +30,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
+	github.com/stretchr/testify v1.5.1
 	github.com/tcnksm/ghr v0.13.0
+	go.uber.org/zap v1.14.0
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 	golang.org/x/tools v0.0.0-20200228224639-71482053b885
 	honnef.co/go/tools v0.0.1-2020.1.3
