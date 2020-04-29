@@ -71,14 +71,14 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				continue
 			}
 			rcvr, err := obs.runner.start(template.receiverConfig, userConfigMap{
-				endpointConfigKey: e.Target(),
+				endpointConfigKey: e.Target,
 			})
 			if err != nil {
 				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
 				continue
 			}
 
-			obs.receiversByEndpointID.Put(e.ID(), rcvr)
+			obs.receiversByEndpointID.Put(e.ID, rcvr)
 		}
 	}
 }
@@ -89,13 +89,13 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range removed {
-		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID()) {
+		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
 			if err := obs.runner.shutdown(rcvr); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
 				continue
 			}
 		}
-		obs.receiversByEndpointID.RemoveAll(e.ID())
+		obs.receiversByEndpointID.RemoveAll(e.ID)
 	}
 }
 

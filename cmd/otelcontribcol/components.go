@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -48,6 +49,19 @@ func components() (config.Factories, error) {
 	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return config.Factories{}, err
+	}
+
+	extensions := []component.ExtensionFactory{
+		k8sobserver.NewFactory(),
+	}
+
+	for _, ext := range factories.Extensions {
+		extensions = append(extensions, ext)
+	}
+
+	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
+	if err != nil {
+		errs = append(errs, err)
 	}
 
 	receivers := []component.ReceiverFactoryBase{
