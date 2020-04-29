@@ -45,7 +45,7 @@ func newRedisReceiver(
 }
 
 // Set up and kick off the interval runner.
-func (r redisReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *redisReceiver) Start(ctx context.Context, host component.Host) error {
 	client := newRedisClient(&redis.Options{
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
@@ -62,7 +62,7 @@ func (r redisReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (r redisReceiver) Shutdown(ctx context.Context) error {
+func (r *redisReceiver) Shutdown(ctx context.Context) error {
 	r.intervalRunner.Stop()
 	return nil
 }
