@@ -19,13 +19,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/http"
 )
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	config.HTTPConfig             `mapstructure:",squash"`
+	http.HTTPConfig               `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.

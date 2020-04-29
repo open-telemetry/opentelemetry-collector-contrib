@@ -27,7 +27,7 @@ import (
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/http"
 )
 
 func Test_getPrometheusConfig(t *testing.T) {
@@ -78,9 +78,9 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				HTTPConfig: config.HTTPConfig{
+				HTTPConfig: http.HTTPConfig{
 					TLSEnabled: true,
-					TLSConfig: config.TLSConfig{
+					TLSConfig: http.TLSConfig{
 						CAFile:             "path1",
 						CertFile:           "path2",
 						KeyFile:            "path3",
@@ -128,7 +128,7 @@ func Test_getPrometheusConfig(t *testing.T) {
 				},
 				CollectionInterval: 10 * time.Second,
 				MetricsPath:        "/metrics",
-				HTTPConfig: config.HTTPConfig{
+				HTTPConfig: http.HTTPConfig{
 					TLSEnabled: true,
 				},
 			},
