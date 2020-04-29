@@ -18,3 +18,4 @@ exclude =
   ext/opentelemetry-ext-jaeger/src/opentelemetry/ext/jaeger/gen/
   ext/opentelemetry-ext-jaeger/build/*
   docs/examples/opentelemetry-example-app/src/opentelemetry_example_app/grpc/gen/
+  docs/examples/opentelemetry-example-app/build/*
