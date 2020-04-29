@@ -32,7 +32,7 @@ require (
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/stretchr/testify v1.5.1
 	github.com/tcnksm/ghr v0.13.0
-	go.uber.org/zap v1.14.0
+	go.uber.org/zap v1.14.1
 	golang.org/x/lint v0.0.0-20200130185559-910be7a94367
 	golang.org/x/tools v0.0.0-20200228224639-71482053b885
 	honnef.co/go/tools v0.0.1-2020.1.3
@@ -89,6 +89,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourcesprocessor => ./processor/sourceprocessor/
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ./processor/sourceprocessor/
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
