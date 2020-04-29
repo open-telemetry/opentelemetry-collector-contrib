@@ -39,33 +39,39 @@ type Factory struct {
 var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CustomUnmarshaler returns custom unmarshaler for receiver_creator config.
 func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
+	return func(sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
 			// Nothing to do if there is no config given.
 			return nil
 		}
 		c := intoCfg.(*Config)
 
-		for subreceiverKey := range v.GetStringMap(viperKey) {
-			cfgSection := sourceViperSection.GetStringMap(subreceiverKey + "::config")
-			subreceiver, err := newSubreceiverConfig(subreceiverKey, cfgSection)
+		if err := sourceViperSection.Unmarshal(&c); err != nil {
+			return err
+		}
+
+		receiversCfg := viperSub(sourceViperSection, receiversConfigKey)
+
+		for subreceiverKey := range receiversCfg.AllSettings() {
+			cfgSection := viperSub(receiversCfg, subreceiverKey).GetStringMap(configKey)
+			subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
 			if err != nil {
 				return err
 			}
 
 			// Unmarshals receiver_creator configuration like rule.
 			// TODO: validate discovery rule
-			if err := sourceViperSection.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
-				return fmt.Errorf("failed to deserialize sub-receiver %q inside receiver_creator %q: %s", subreceiverKey, viperKey, err)
+			if err := receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
+				return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
 			}
 
-			c.subreceiverConfigs[subreceiverKey] = subreceiver
+			c.receiverTemplates[subreceiverKey] = subreceiver
 		}
 
 		return nil
@@ -76,10 +82,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		subreceiverConfigs: map[string]*subreceiverConfig{},
+		receiverTemplates: map[string]receiverTemplate{},
 	}
 }
 
@@ -95,5 +101,5 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
-	return new(logger, consumer, cfg.(*Config))
+	return newReceiverCreator(logger, consumer, cfg.(*Config))
 }

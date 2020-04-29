@@ -19,8 +19,8 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -38,7 +38,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
+func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
 	err := cfg.validate()
 	if err != nil {
 		return nil, err
@@ -50,27 +50,28 @@ func newSAPMTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExpor
 	}
 	se := sapmExporter{
 		client: client,
-		logger: logger,
+		logger: params.Logger,
 	}
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown))
 }
 
-func (se *sapmExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
-	jBatch, err := jaeger.OCProtoToJaegerProto(td)
+// pushTraceData exports traces in SAPM proto and returns number of dropped spans and error if export failed
+func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpansCount int, err error) {
+	batches, err := jaeger.InternalTracesToJaegerProto(td)
 	if err != nil {
-		return 0, consumererror.Permanent(err)
+		return td.SpanCount(), consumererror.Permanent(err)
 	}
-	err = se.client.Export(ctx, jBatch)
+	err = se.client.Export(ctx, batches)
 	if err != nil {
 		if sendErr, ok := err.(*sapmclient.ErrSend); ok {
 			if sendErr.Permanent {
 				return 0, consumererror.Permanent(sendErr)
 			}
 		}
-		return 0, err
+		return td.SpanCount(), err
 	}
-	return len(td.Spans), nil
+	return 0, nil
 }

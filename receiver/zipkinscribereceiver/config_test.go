@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
+				TypeVal:  configmodels.Type(typeStr),
 				NameVal:  "zipkin-scribe/category",
 				Endpoint: "127.0.0.1:12345",
 			},

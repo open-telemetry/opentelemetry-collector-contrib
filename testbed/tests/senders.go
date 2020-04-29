@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -31,11 +32,11 @@ import (
 
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
-	exporter component.TraceExporterOld
+	exporter component.TraceExporter
 	port     int
 }
 
-// Ensure SapmDataSender implements TraceDataSender.
+// Ensure SapmDataSender implements TraceDataSenderOld.
 var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
 
 // NewSapmDataSender creates a new Sapm protocol sender that will send
@@ -47,12 +48,14 @@ func NewSapmDataSender(port int) *SapmDataSender {
 // Start the sender.
 func (je *SapmDataSender) Start() error {
 	cfg := &sapmexporter.Config{
-		Endpoint: fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
+		Endpoint:           fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
+		DisableCompression: true,
 	}
 
 	var err error
 	factory := sapmexporter.Factory{}
-	exporter, err := factory.CreateTraceExporter(zap.L(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
@@ -63,8 +66,8 @@ func (je *SapmDataSender) Start() error {
 }
 
 // SendSpans sends spans. Can be called after Start.
-func (je *SapmDataSender) SendSpans(traces consumerdata.TraceData) error {
-	return je.exporter.ConsumeTraceData(context.Background(), traces)
+func (je *SapmDataSender) SendSpans(traces pdata.Traces) error {
+	return je.exporter.ConsumeTraces(context.Background(), traces)
 }
 
 // Flush previously sent spans.
@@ -94,8 +97,8 @@ type SFxMetricsDataSender struct {
 	port     int
 }
 
-// Ensure SFxMetricsDataSender implements MetricDataSender.
-var _ testbed.MetricDataSender = (*SFxMetricsDataSender)(nil)
+// Ensure SFxMetricsDataSender implements MetricDataSenderOld.
+var _ testbed.MetricDataSenderOld = (*SFxMetricsDataSender)(nil)
 
 // NewSFxMetricDataSender creates a new SignalFx metric protocol sender that will send
 // to the specified port after Start is called.
@@ -153,8 +156,8 @@ type CarbonDataSender struct {
 	port     int
 }
 
-// Ensure CarbonDataSender implements MetricDataSender.
-var _ testbed.MetricDataSender = (*CarbonDataSender)(nil)
+// Ensure CarbonDataSender implements MetricDataSenderOld.
+var _ testbed.MetricDataSenderOld = (*CarbonDataSender)(nil)
 
 // NewCarbonDataSender creates a new Carbon metric protocol sender that will send
 // to the specified port after Start is called.

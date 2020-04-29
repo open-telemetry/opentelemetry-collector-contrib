@@ -36,15 +36,15 @@ type Factory struct {
 }
 
 // Type gets the type of the config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CreateDefaultConfig creates the default configuration for processor.
 func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 	}

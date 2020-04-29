@@ -30,15 +30,15 @@ type Factory struct {
 }
 
 // Type gets the type of the exporter configuration created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CreateDefaultConfig creates a default configuration for this exporter.
 func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 		AccessToken:   "",

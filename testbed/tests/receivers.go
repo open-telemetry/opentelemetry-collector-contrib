@@ -49,7 +49,8 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 		},
 	}
 	var err error
-	sr.receiver, err = sapmreceiver.New(context.Background(), zap.L(), &sapmCfg, tc)
+	params := component.ReceiverCreateParams{Logger: zap.L()}
+	sr.receiver, err = sapmreceiver.New(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,8 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:
-    endpoint: "http://localhost:%d/v2/trace"`, sr.Port)
+    endpoint: "http://localhost:%d/v2/trace"
+    disable_compression: true`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

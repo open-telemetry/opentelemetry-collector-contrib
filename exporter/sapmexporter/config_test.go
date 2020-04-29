@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := &Factory{}
-	facotries.Exporters[typeStr] = factory
+	facotries.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), facotries,
 	)
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Exporters["sapm/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "sapm/customname"},
+			ExporterSettings: configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "sapm/customname"},
 			Endpoint:         "test-endpoint",
 			AccessToken:      "abcd1234",
 			NumWorkers:       3,

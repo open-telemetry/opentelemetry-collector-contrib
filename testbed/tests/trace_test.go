@@ -56,14 +56,20 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 	}
 
+	processors := map[string]string{
+		"batch": `
+  batch:
+`,
+	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			scenarios.Scenario10kItemsPerSecond(
 				t,
 				test.sender,
 				test.receiver,
-				testbed.LoadOptions{},
 				test.resourceSpec,
+				processors,
 			)
 		})
 	}

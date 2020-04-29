@@ -26,7 +26,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/open-telemetry/opentelemetry-collector/testutils"
@@ -57,7 +57,7 @@ func TestPortsNotOpen(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	assert.NoError(t, jr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
+	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
 
 	// there is a race condition here that we're ignoring.
 	//  this test may occasionally pass incorrectly, but it will not fail incorrectly
@@ -81,7 +81,7 @@ func TestThriftTChannelReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed to create a new receiver")
 	defer jr.Shutdown(context.Background())
 
-	assert.NoError(t, jr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
+	assert.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
 	t.Log("StartTraceReception")
 
 	b := tchannel.NewBuilder()

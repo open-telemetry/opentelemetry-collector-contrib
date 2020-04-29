@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Updates MODULE inside go.mod if it is already present to version VERSION.
+
+set -e
+
+if grep -q "$MODULE " go.mod; then
+  go get $MODULE@$VERSION
+fi
+

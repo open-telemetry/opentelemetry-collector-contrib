@@ -1,10 +1,12 @@
 receivers:
   receiver_creator:
   receiver_creator/1:
-    examplereceiver/1:
-      rule: test rule
-      config:
-        endpoint: localhost:12345
+    watch_observers: [mock_observer]
+    receivers:
+      examplereceiver/1:
+        rule: enabled
+        config:
+          endpoint: localhost:12345
 
 processors:
   exampleprocessor:

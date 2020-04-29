@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
@@ -26,12 +27,13 @@ import (
 )
 
 type mockHostFactories struct {
-	component.MockHost
-	factories config.Factories
+	componenttest.NopHost
+	factories  config.Factories
+	extensions map[configmodels.Extension]component.ServiceExtension
 }
 
 // GetFactory of the specified kind. Returns the factory for a component type.
-func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType string) component.Factory {
+func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType configmodels.Type) component.Factory {
 	switch kind {
 	case component.KindReceiver:
 		return mh.factories.Receivers[componentType]
@@ -45,12 +47,16 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType strin
 	return nil
 }
 
-func exampleCreatorFactory(t *testing.T) (component.Host, *configmodels.Config) {
+func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+	return mh.extensions
+}
+
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Config) {
 	factories, err := config.ExampleComponents()
 	require.Nil(t, err)
 
 	factory := &Factory{}
-	factories.Receivers[typeStr] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -73,10 +79,11 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["receiver_creator/1"].(*Config)
 
 	assert.NotNil(t, r1)
-	assert.Len(t, r1.subreceiverConfigs, 1)
-	assert.Contains(t, r1.subreceiverConfigs, "examplereceiver/1")
-	assert.Equal(t, "test rule", r1.subreceiverConfigs["examplereceiver/1"].Rule)
+	assert.Len(t, r1.receiverTemplates, 1)
+	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
+	assert.Equal(t, "enabled", r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Equal(t, userConfigMap{
-		"endpoint": "localhost:12345",
-	}, r1.subreceiverConfigs["examplereceiver/1"].config)
+		endpointConfigKey: "localhost:12345",
+	}, r1.receiverTemplates["examplereceiver/1"].config)
+	assert.Equal(t, []configmodels.Type{"mock_observer"}, r1.WatchObservers)
 }

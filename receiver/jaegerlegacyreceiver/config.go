@@ -15,6 +15,7 @@
 package jaegerlegacyreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/receiver"
 )
 
@@ -23,7 +24,7 @@ const protocolsFieldName = "protocols"
 
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal   string                                      `mapstructure:"-"`
+	TypeVal   configmodels.Type                           `mapstructure:"-"`
 	NameVal   string                                      `mapstructure:"-"`
 	Protocols map[string]*receiver.SecureReceiverSettings `mapstructure:"protocols"`
 }
@@ -39,13 +40,13 @@ func (rs *Config) SetName(name string) {
 }
 
 // Type sets the receiver type.
-func (rs *Config) Type() string {
+func (rs *Config) Type() configmodels.Type {
 	return rs.TypeVal
 }
 
 // SetType sets the receiver type.
-func (rs *Config) SetType(typeStr string) {
-	rs.TypeVal = typeStr
+func (rs *Config) SetType(typeStr configmodels.Type) {
+	rs.TypeVal = configmodels.Type(typeStr)
 }
 
 // IsEnabled returns true if the entity is enabled.

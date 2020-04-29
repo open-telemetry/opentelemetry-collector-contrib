@@ -24,17 +24,16 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
@@ -42,74 +41,45 @@ import (
 	"go.uber.org/zap"
 )
 
-func expectedTraceData(t1, t2, t3 time.Time) []consumerdata.TraceData {
-	traceID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}
-	parentSpanID := []byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}
-	childSpanID := []byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}
+func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
+	traceID := pdata.TraceID(
+		[]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+	parentSpanID := pdata.SpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pdata.SpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
-	return []consumerdata.TraceData{
-		{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "issaTest"},
-				LibraryInfo: &commonpb.LibraryInfo{},
-				Identifier:  &commonpb.ProcessIdentifier{},
-				Attributes: map[string]string{
-					"bool":   "true",
-					"string": "yes",
-					"int64":  "10000000",
-				},
-			},
-			Spans: []*tracepb.Span{
-				{
-					TraceId:      traceID,
-					SpanId:       childSpanID,
-					ParentSpanId: parentSpanID,
-					Name:         &tracepb.TruncatableString{Value: "DBSearch"},
-					StartTime:    &timestamp.Timestamp{Seconds: t1.UnixNano() / 1e9, Nanos: int32(t1.UnixNano() % 1e9)},
-					EndTime:      &timestamp.Timestamp{Seconds: t2.UnixNano() / 1e9, Nanos: int32(t2.UnixNano() % 1e9)},
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeNotFound,
-						Message: "Stale indices",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-					Links: &tracepb.Span_Links{
-						Link: []*tracepb.Span_Link{
-							{
-								TraceId: traceID,
-								SpanId:  parentSpanID,
-								Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
-							},
-						},
-					},
-				},
-				{
-					TraceId:   traceID,
-					SpanId:    parentSpanID,
-					Name:      &tracepb.TruncatableString{Value: "ProxyFetch"},
-					StartTime: &timestamp.Timestamp{Seconds: t2.UnixNano() / 1e9, Nanos: int32(t2.UnixNano() % 1e9)},
-					EndTime:   &timestamp.Timestamp{Seconds: t3.UnixNano() / 1e9, Nanos: int32(t3.UnixNano() % 1e9)},
-					Status: &tracepb.Status{
-						Code:    trace.StatusCodeInternal,
-						Message: "Frontend crash",
-					},
-					Attributes: &tracepb.Span_Attributes{
-						AttributeMap: map[string]*tracepb.AttributeValue{
-							"error": {
-								Value: &tracepb.AttributeValue_BoolValue{BoolValue: true},
-							},
-						},
-					},
-				},
-			},
-			SourceFormat: traceSource,
-		},
-	}
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	rs.Resource().InitEmpty()
+	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().InsertBool("bool", true)
+	rs.Resource().Attributes().InsertString("string", "yes")
+	rs.Resource().Attributes().InsertInt("int64", 10000000)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	rs.InstrumentationLibrarySpans().At(0).Spans().Resize(2)
+
+	span0 := rs.InstrumentationLibrarySpans().At(0).Spans().At(0)
+	span0.SetSpanID(childSpanID)
+	span0.SetParentSpanID(parentSpanID)
+	span0.SetTraceID(traceID)
+	span0.SetName("DBSearch")
+	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
+	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
+	span0.Status().InitEmpty()
+	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span0.Status().SetMessage("Stale indices")
+
+	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
+	span1.SetSpanID(parentSpanID)
+	span1.SetTraceID(traceID)
+	span1.SetName("ProxyFetch")
+	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
+	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
+	span1.Status().InitEmpty()
+	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
+	span1.Status().SetMessage("Frontend crash")
+
+	return traces
 }
 
 func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
@@ -225,7 +195,7 @@ func TestReception(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want []consumerdata.TraceData
+		want pdata.Traces
 	}{
 		{
 			name: "receive uncompressed sapm",
@@ -254,14 +224,15 @@ func TestReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			sink := new(exportertest.SinkTraceExporterOld)
+			sink := new(exportertest.SinkTraceExporter)
 
-			sr, err := New(context.Background(), zap.NewNop(), tt.args.config, sink)
+			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+			sr, err := New(context.Background(), params, tt.args.config, sink)
 			assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 			t.Log("Starting")
 			defer sr.Shutdown(context.Background())
 
-			assert.NoError(t, sr.Start(context.Background(), component.NewMockHost()), "should not have failed to start trace reception")
+			assert.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
 			t.Log("Trace Reception Started")
 
 			t.Log("Sending Sapm Request")
@@ -272,13 +243,11 @@ func TestReception(t *testing.T) {
 
 			// retrieve received traces
 			got := sink.AllTraces()
+			assert.Equal(t, 1, len(got))
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
-			if diff := cmp.Diff(got, tt.want); diff != "" {
-				t.Errorf("Mismatched responses\n-Got +Want:\n\t%s", diff)
-			}
-
+			assert.EqualValues(t, tt.want, got[0])
 		})
 	}
 }

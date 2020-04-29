@@ -43,14 +43,14 @@ type Factory struct {
 var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() string {
-	return typeStr
+func (f *Factory) Type() configmodels.Type {
+	return configmodels.Type(typeStr)
 }
 
 // CustomUnmarshaler returns the custom function to handle the special settings
 // used on the receiver.
 func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return func(v *viper.Viper, viperKey string, sourceViperSection *viper.Viper, intoCfg interface{}) error {
+	return func(sourceViperSection *viper.Viper, intoCfg interface{}) error {
 		if sourceViperSection == nil {
 			// The section is empty nothing to do, using the default config.
 			return nil
@@ -89,7 +89,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
+			TypeVal:  configmodels.Type(typeStr),
 			NameVal:  typeStr,
 			Endpoint: "localhost:2003",
 		},

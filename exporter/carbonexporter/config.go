@@ -45,7 +45,7 @@ type Config struct {
 func defaultConfig() *Config {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
+			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 		Endpoint: DefaultEndpoint,

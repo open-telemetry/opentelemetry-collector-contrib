@@ -31,7 +31,8 @@ import (
 const (
 	sourceFormatJaeger string = "jaeger"
 	sourceFormatZipkin string = "zipkin"
-	ipLabelName        string = "ip"
+	k8sIPLabelName     string = "k8s.pod.ip"
+	clientIPLabelName  string = "ip"
 )
 
 type kubernetesprocessor struct {
@@ -94,7 +95,7 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 	// check if the application, a collector/agent or a prior processor has already
 	// annotated the batch with IP.
 	if td.Resource != nil {
-		podIP = td.Resource.Labels[ipLabelName]
+		podIP = kp.k8sIPFromAttributes(td.Resource.Labels)
 	}
 
 	// Jaeger client libs tag the process with the process/resource IP and
@@ -102,7 +103,7 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 	// TODO: Should jaeger translator map jaeger process to OC resource instead?
 	if podIP == "" && td.SourceFormat == sourceFormatJaeger {
 		if td.Node != nil {
-			podIP = td.Node.Attributes[ipLabelName]
+			podIP = kp.k8sIPFromAttributes(td.Node.Attributes)
 		}
 	}
 
@@ -135,7 +136,7 @@ func (kp *kubernetesprocessor) consumeTraceBatch(podIP string, ctx context.Conte
 		if td.Resource.Labels == nil {
 			td.Resource.Labels = map[string]string{}
 		}
-		td.Resource.Labels[ipLabelName] = podIP
+		td.Resource.Labels[k8sIPLabelName] = podIP
 	}
 
 	// Don't invoke any k8s client functionality in passthrough mode.
@@ -166,7 +167,10 @@ func (kp *kubernetesprocessor) consumeTraceBatch(podIP string, ctx context.Conte
 func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *tracepb.Span) error {
 	podIP := ""
 	if span.Attributes != nil && span.Attributes.AttributeMap != nil {
-		value := span.Attributes.AttributeMap[ipLabelName]
+		value := span.Attributes.AttributeMap[k8sIPLabelName]
+		if value == nil {
+			value = span.Attributes.AttributeMap[clientIPLabelName]
+		}
 		if value != nil {
 			podIP = value.GetStringValue().Value
 		}
@@ -184,7 +188,7 @@ func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *trac
 	if podIP == "" {
 		if c, ok := client.FromContext(ctx); ok {
 			podIP = c.IP
-			span.Attributes.AttributeMap[ipLabelName] = &tracepb.AttributeValue{
+			span.Attributes.AttributeMap[k8sIPLabelName] = &tracepb.AttributeValue{
 				Value: &tracepb.AttributeValue_StringValue{
 					StringValue: &tracepb.TruncatableString{
 						Value: podIP}}}
@@ -218,4 +222,12 @@ func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]strin
 		return nil
 	}
 	return pod.Attributes
+}
+
+func (kp *kubernetesprocessor) k8sIPFromAttributes(attrs map[string]string) string {
+	ip := attrs[k8sIPLabelName]
+	if ip == "" {
+		ip = attrs[clientIPLabelName]
+	}
+	return ip
 }
