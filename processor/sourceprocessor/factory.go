@@ -15,19 +15,18 @@
 package sourceprocessor
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "source"
-	defaultSourceName = "%{namespace}.%{pod}.%{container}"
-	defaultSourceCategory = "%{namespace}/%{pod_name}"
-	defaultSourceCategoryPrefix = "kubernetes/"
+	typeStr                          = "source"
+	defaultSourceName                = "%{namespace}.%{pod}.%{container}"
+	defaultSourceCategory            = "%{namespace}/%{pod_name}"
+	defaultSourceCategoryPrefix      = "kubernetes/"
 	defaultSourceCategoryReplaceDash = "/"
 )
 
@@ -47,9 +46,9 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		SourceName: defaultSourceName,
-		SourceCategory: defaultSourceCategory,
-		SourceCategoryPrefix: defaultSourceCategoryPrefix,
+		SourceName:                defaultSourceName,
+		SourceCategory:            defaultSourceCategory,
+		SourceCategoryPrefix:      defaultSourceCategoryPrefix,
 		SourceCategoryReplaceDash: defaultSourceCategoryReplaceDash,
 	}
 }

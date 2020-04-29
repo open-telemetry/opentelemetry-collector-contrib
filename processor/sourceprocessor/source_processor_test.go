@@ -16,12 +16,11 @@ package sourceprocessor
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -30,9 +29,9 @@ var (
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
-		SourceName: "%{namespace}.%{pod}.%{container}",
-		SourceCategory: "%{namespace}/%{pod_name}",
-		SourceCategoryPrefix: "prefix/",
+		SourceName:                "%{namespace}.%{pod}.%{container}",
+		SourceCategory:            "%{namespace}/%{pod_name}",
+		SourceCategoryPrefix:      "prefix/",
 		SourceCategoryReplaceDash: "#",
 	}
 
@@ -42,10 +41,6 @@ var (
 		"pod":       "pod-1",
 		"pod_name":  "some-pod",
 		"container": "container-1",
-	}
-
-	resourceLabels2 = map[string]string{
-		"foo":  "bar",
 	}
 
 	mergedResourceLabels = map[string]string{
@@ -65,7 +60,7 @@ func newTraceData(labels map[string]string) pdata.Traces {
 	rs := td.ResourceSpans().At(0)
 	rs.Resource().InitEmpty()
 	attrs := rs.Resource().Attributes()
-	for k,v := range labels {
+	for k, v := range labels {
 		attrs.UpsertString(k, v)
 	}
 	return td

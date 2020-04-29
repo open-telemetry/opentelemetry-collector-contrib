@@ -18,10 +18,9 @@ import (
 	"path"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -44,9 +43,9 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "source",
 			NameVal: "source/2",
 		},
-		SourceName: "%{namespace}.%{pod}.%{container}/foo",
-		SourceCategory: "%{namespace}/%{pod_name}/bar",
-		SourceCategoryPrefix: "kubernetes/",
+		SourceName:                "%{namespace}.%{pod}.%{container}/foo",
+		SourceCategory:            "%{namespace}/%{pod_name}/bar",
+		SourceCategoryPrefix:      "kubernetes/",
 		SourceCategoryReplaceDash: "/",
 	})
 }

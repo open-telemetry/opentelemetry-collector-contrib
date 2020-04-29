@@ -88,9 +88,8 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 	return stp.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-
 // GetCapabilities returns the Capabilities assocciated with the resource processor.
-func (rtp *sourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
+func (stp *sourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
@@ -105,7 +104,7 @@ func (*sourceTraceProcessor) Shutdown(_context context.Context) error {
 }
 
 func extractFormat(format string, name string) attributeFiller {
-	r, _ := regexp.Compile("\\%\\{(\\w+)\\}")
+	r, _ := regexp.Compile(`\%\{(\w+)\}`)
 
 	labels := make([]string, 0)
 	matches := r.FindAllStringSubmatch(format, -1)
@@ -115,21 +114,21 @@ func extractFormat(format string, name string) attributeFiller {
 	template := r.ReplaceAllString(format, "%s")
 
 	return attributeFiller{
-		name: name,
-		compiledFormat: template,
+		name:            name,
+		compiledFormat:  template,
 		dashReplacement: "",
-		labels: labels,
-		prefix: "",
+		labels:          labels,
+		prefix:          "",
 	}
 }
 
 func createSourceHostFiller() attributeFiller {
 	return attributeFiller{
-		name: "_sourceHost",
-		compiledFormat: "",
+		name:            "_sourceHost",
+		compiledFormat:  "",
 		dashReplacement: "",
-		labels: make([]string, 0),
-		prefix: "",
+		labels:          make([]string, 0),
+		prefix:          "",
 	}
 }
 
@@ -138,10 +137,9 @@ func createSourceNameFiller(cfg *Config) attributeFiller {
 	return filler
 }
 
-
 func createSourceCategoryFiller(cfg *Config) attributeFiller {
 	filler := extractFormat(cfg.SourceCategory, "_sourceCategory")
-	filler.compiledFormat = cfg.SourceCategoryPrefix+filler.compiledFormat
+	filler.compiledFormat = cfg.SourceCategoryPrefix + filler.compiledFormat
 	filler.dashReplacement = cfg.SourceCategoryReplaceDash
 	filler.prefix = cfg.SourceCategoryPrefix
 	return filler
@@ -154,9 +152,8 @@ func (f *attributeFiller) fillResourceOrUseAnnotation(input *pdata.Resource, ann
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
 		return annotationFiller.fillResource(input)
-	} else {
-		return f.fillResource(input)
 	}
+	return f.fillResource(input)
 }
 
 func (f *attributeFiller) fillResource(input *pdata.Resource) bool {
@@ -183,9 +180,8 @@ func (f *attributeFiller) resourceLabelValues(input *pdata.Resource) []interface
 		value, ok := attrs.Get(label)
 		if !ok {
 			return nil
-		} else {
-			arr = append(arr, value.StringVal())
 		}
+		arr = append(arr, value.StringVal())
 	}
 	return arr
 }

@@ -20,9 +20,9 @@ import (
 
 // Config defines configuration for Resource processor.
 type Config struct {
-	configmodels.ProcessorSettings   `mapstructure:",squash"`
-	SourceName                string `mapstructure:"source_name"`
-	SourceCategory            string `mapstructure:"source_category"`
-	SourceCategoryPrefix      string `mapstructure:"source_category_prefix"`
-	SourceCategoryReplaceDash string `mapstructure:"source_category_replace_dash"`
+	configmodels.ProcessorSettings `mapstructure:",squash"`
+	SourceName                     string `mapstructure:"source_name"`
+	SourceCategory                 string `mapstructure:"source_category"`
+	SourceCategoryPrefix           string `mapstructure:"source_category_prefix"`
+	SourceCategoryReplaceDash      string `mapstructure:"source_category_replace_dash"`
 }
