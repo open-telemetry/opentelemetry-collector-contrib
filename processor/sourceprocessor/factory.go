@@ -15,10 +15,12 @@
 package sourceprocessor
 
 import (
+	"context"
+
 	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"go.uber.org/zap"
 )
 
 const (
@@ -33,6 +35,8 @@ const (
 // Factory is the factory for OpenCensus exporter.
 type Factory struct {
 }
+
+var _ component.ProcessorFactory = (*Factory)(nil)
 
 // Type gets the type of the Option config created by this factory.
 func (Factory) Type() configmodels.Type {
@@ -54,7 +58,22 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (Factory) CreateTraceProcessor(logger *zap.Logger, nextConsumer consumer.TraceConsumer, cfg configmodels.Processor) (component.TraceProcessor, error) {
+func (f *Factory) CreateTraceProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
+	cfg configmodels.Processor) (component.TraceProcessor, error) {
+
 	oCfg := cfg.(*Config)
 	return newSourceTraceProcessor(nextConsumer, oCfg)
+}
+
+// CreateMetricsProcessor creates a metric processor based on this config.
+func (f *Factory) CreateMetricsProcessor(
+	_ context.Context,
+	_ component.ProcessorCreateParams,
+	_ consumer.MetricsConsumer,
+	_ configmodels.Processor) (component.MetricsProcessor, error) {
+	// Span Processor does not support Metrics.
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
