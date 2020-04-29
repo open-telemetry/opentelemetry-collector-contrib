@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -26,6 +27,7 @@ import (
 
 // handler handles k8s cache informer callbacks.
 type handler struct {
+	logger *zap.Logger
 	// idNamespace should be some unique token to distinguish multiple handler instances.
 	idNamespace string
 	// watcher is the callback for discovered endpoints.
@@ -38,6 +40,8 @@ func (h *handler) OnAdd(obj interface{}) {
 	if !ok {
 		return
 	}
+
+	h.logger.Debug("discovered new pod", zap.Reflect("pod", obj))
 	h.watcher.OnAdd(h.convertPodToEndpoints(pod))
 }
 
@@ -120,6 +124,8 @@ func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	h.logger.Debug("pod was updated", zap.Reflect("oldPod", oldPod), zap.Reflect("newPod", newPod))
+
 	oldEndpoints := map[string]observer.Endpoint{}
 	newEndpoints := map[string]observer.Endpoint{}
 
@@ -185,5 +191,6 @@ func (h *handler) OnDelete(obj interface{}) {
 	if pod == nil {
 		return
 	}
+	h.logger.Debug("pod was deleted", zap.Reflect("pod", pod))
 	h.watcher.OnRemove(h.convertPodToEndpoints(pod))
 }

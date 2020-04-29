@@ -1,8 +1,9 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiver_creator
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator
 
 go 1.14
 
 require (
+	github.com/antonmedv/expr v1.8.4
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200430150857-2de54643695a
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0

@@ -73,7 +73,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 var _ component.ServiceExtension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
-	notify.OnAdd([]observer.Endpoint{{ID: "foobar", Target: "169.168.1.100", Details: nil}})
+	notify.OnAdd([]observer.Endpoint{portEndpoint})
 }
 
 var _ observer.Observable = (*mockObserver)(nil)
@@ -146,7 +146,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
 }
 
-func TestSafeHost(t *testing.T) {
+func TestLoggingHost(t *testing.T) {
 	core, obs := zapObserver.New(zap.ErrorLevel)
 	host := &loggingHost{
 		Host:   componenttest.NewNopHost(),

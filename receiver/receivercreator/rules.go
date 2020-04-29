@@ -15,10 +15,79 @@
 package receivercreator
 
 import (
+	"errors"
+	"fmt"
+	"regexp"
+
+	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/vm"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
-func ruleMatches(rule string, e observer.Endpoint) bool {
-	// TODO
-	return rule == "enabled"
+// rule wraps expr rule for later evaluation.
+type rule struct {
+	program *vm.Program
+}
+
+var ruleRe = regexp.MustCompile("^type.(Pod|Port)")
+
+// newRule creates a new rule instance.
+func newRule(ruleStr string) (rule, error) {
+	if ruleStr == "" {
+		return rule{}, errors.New("rule cannot be empty")
+	}
+	if !ruleRe.MatchString(ruleStr) {
+		// TODO: Try validating against bytecode instead.
+		return rule{}, errors.New("rule must specify type")
+	}
+
+	// TODO: Maybe use https://godoc.org/github.com/antonmedv/expr#Env in type checking
+	// depending on type == specified.
+	v, err := expr.Compile(ruleStr)
+	if err != nil {
+		return rule{}, err
+	}
+	return rule{v}, nil
+}
+
+// eval the rule against the given endpoint.
+func (r *rule) eval(endpoint observer.Endpoint) (bool, error) {
+	var env map[string]interface{}
+
+	ruleTypes := struct {
+		Port bool
+		Pod  bool
+	}{}
+
+	switch o := endpoint.Details.(type) {
+	case observer.Pod:
+		ruleTypes.Pod = true
+		env = map[string]interface{}{
+			"type":   ruleTypes,
+			"name":   o.Name,
+			"labels": o.Labels,
+		}
+	case observer.Port:
+		ruleTypes.Port = true
+		env = map[string]interface{}{
+			"type":     ruleTypes,
+			"name":     o.Name,
+			"port":     o.Port,
+			"pod_name": o.Pod.Name,
+			"labels":   o.Pod.Labels,
+			"protocol": o.Protocol,
+		}
+	default:
+		return false, fmt.Errorf("unknown endpoint details type %T", endpoint.Details)
+	}
+
+	res, err := expr.Run(r.program, env)
+	if err != nil {
+		return false, err
+	}
+	if ret, ok := res.(bool); ok {
+		return ret, nil
+	}
+	return false, errors.New("rule did not return a boolean")
 }

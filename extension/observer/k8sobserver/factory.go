@@ -25,6 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -82,11 +83,11 @@ func (f *Factory) CreateExtension(
 // NewFactory should be called to create a factory with default values.
 func NewFactory() component.ExtensionFactory {
 	return &Factory{createK8sConfig: func() (*rest.Config, error) {
-		restConfig, err := rest.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-		return restConfig, nil
+		// TODO: will be made configurable when shared k8s config library lands shortly in separate PR.
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		configOverrides := &clientcmd.ConfigOverrides{}
+		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+			loadingRules, configOverrides).ClientConfig()
 	}}
 }
 

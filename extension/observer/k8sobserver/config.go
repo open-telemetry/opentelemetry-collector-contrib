@@ -33,4 +33,7 @@ type Config struct {
 	//
 	// Then set this value to ${K8S_NODE_NAME} in the configuration.
 	Node string `mapstructure:"node"`
+
+	// StatusAddr is the address to [address]:port to listen on for status endpoint.
+	StatusAddr string `mapstructure:"status_addr"`
 }

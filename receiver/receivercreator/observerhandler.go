@@ -67,9 +67,18 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 	for _, e := range added {
 		for _, template := range obs.receiverTemplates {
-			if !ruleMatches(template.Rule, e) {
+			if matches, err := template.rule.eval(e); err != nil {
+				obs.logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
+				continue
+			} else if !matches {
 				continue
 			}
+
+			obs.logger.Info("starting receiver",
+				zap.String("name", template.fullName),
+				zap.String("type", string(template.typeStr)),
+				zap.String("endpoint", e.ID))
+
 			rcvr, err := obs.runner.start(template.receiverConfig, userConfigMap{
 				endpointConfigKey: e.Target,
 			})
@@ -90,6 +99,8 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 
 	for _, e := range removed {
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
+			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint", e.ID))
+
 			if err := obs.runner.shutdown(rcvr); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
 				continue
