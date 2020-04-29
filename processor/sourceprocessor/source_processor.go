@@ -41,9 +41,14 @@ type attributeFiller struct {
 }
 
 const (
-	sourceHostSpecialAnnotation     string = "sumologic.com/sourceHost"
-	sourceNameSpecialAnnotation     string = "sumologic.com/sourceName"
-	sourceCategorySpecialAnnotation string = "sumologic.com/sourceCategory"
+	alphanums = "bcdfghjklmnpqrstvwxz2456789"
+
+	annotationPrefix                = "annotation:"
+	podTemplateHashKey              = "label:pod-template-hash"
+	podNameKey                      = "pod_name"
+	sourceHostSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceHost"
+	sourceNameSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceName"
+	sourceCategorySpecialAnnotation = annotationPrefix + "sumologic.com/sourceCategory"
 )
 
 func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceTraceProcessor, error) {
@@ -64,6 +69,7 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 		}
 		res := rs.Resource()
 		if !res.IsNil() {
+			enrichPodName(res)
 			stp.sourceHostFiller.fillResourceOrUseAnnotation(&res, sourceHostSpecialAnnotation)
 			stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&res, sourceCategorySpecialAnnotation)
 			stp.sourceNameFiller.fillResourceOrUseAnnotation(&res, sourceNameSpecialAnnotation)
@@ -101,6 +107,52 @@ func (*sourceTraceProcessor) Start(_context context.Context, _host component.Hos
 // Shutdown is invoked during service shutdown.
 func (*sourceTraceProcessor) Shutdown(_context context.Context) error {
 	return nil
+}
+
+// Convert the pod_template_hash to an alphanumeric string using the same logic Kubernetes
+// uses at https://github.com/kubernetes/apimachinery/blob/18a5ff3097b4b189511742e39151a153ee16988b/pkg/util/rand/rand.go#L119
+func SafeEncodeString(s string) string {
+	r := make([]byte, len(s))
+	for i, b := range []rune(s) {
+		r[i] = alphanums[(int(b) % len(alphanums))]
+	}
+	return string(r)
+}
+
+func enrichPodName(res pdata.Resource) bool {
+	// This replicates sanitize_pod_name function
+	// Strip out dynamic bits from pod name.
+	// NOTE: Kubernetes deployments append a template hash.
+	// At the moment this can be in 3 different forms:
+	//   1) pre-1.8: numeric in pod_template_hash and pod_parts[-2]
+	//   2) 1.8-1.11: numeric in pod_template_hash, hash in pod_parts[-2]
+	//   3) post-1.11: hash in pod_template_hash and pod_parts[-2]
+
+	if res.IsNil() {
+		return false
+	}
+	pod, found := res.Attributes().Get("pod")
+	if !found {
+		return false
+	}
+
+	podParts := strings.Split(pod.StringVal(), "-")
+	if len(podParts) < 2 {
+		// This is unexpected, fallback
+		return false
+	}
+
+	podTemplateHashAttr, found := res.Attributes().Get(podTemplateHashKey)
+
+	if found && len(podParts) > 2 {
+		podTemplateHash := podTemplateHashAttr.StringVal()
+		if podTemplateHash == podParts[len(podParts)-2] || SafeEncodeString(podTemplateHash) == podParts[len(podParts)-2] {
+			res.Attributes().UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
+			return true
+		}
+	}
+	res.Attributes().UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
+	return true
 }
 
 func extractFormat(format string, name string) attributeFiller {

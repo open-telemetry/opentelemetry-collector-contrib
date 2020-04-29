@@ -36,21 +36,26 @@ var (
 	}
 
 	resourceLabels = map[string]string{
-		"namespace": "namespace-1",
-		"pod_id":    "pod-1234",
-		"pod":       "pod-1",
-		"pod_name":  "some-pod",
-		"container": "container-1",
+		"namespace":               "namespace-1",
+		"pod_id":                  "pod-1234",
+		"pod":                     "pod-5db86d8867-sdqlj",
+		"label:pod-template-hash": "5db86d8867",
+		"container":               "container-1",
+	}
+
+	resourceLabels2 = map[string]string{
+		"pod_id": "pod-1234",
 	}
 
 	mergedResourceLabels = map[string]string{
-		"namespace":       "namespace-1",
-		"pod_id":          "pod-1234",
-		"pod":             "pod-1",
-		"container":       "container-1",
-		"pod_name":        "some-pod",
-		"_sourceName":     "namespace-1.pod-1.container-1",
-		"_sourceCategory": "prefix/namespace#1/some#pod",
+		"container":               "container-1",
+		"namespace":               "namespace-1",
+		"pod_id":                  "pod-1234",
+		"pod":                     "pod-5db86d8867-sdqlj",
+		"pod_name":                "pod",
+		"label:pod-template-hash": "5db86d8867",
+		"_sourceName":             "namespace-1.pod-5db86d8867-sdqlj.container-1",
+		"_sourceCategory":         "prefix/namespace#1/pod",
 	}
 )
 
@@ -78,37 +83,37 @@ func assertAttributesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
 	assert.Equal(t, t1, t2)
 }
 
-//func TestTraceSourceProcessor(t *testing.T) {
-//	want := newTraceData(mergedResourceLabels)
-//	test := newTraceData(resourceLabels)
-//
-//	ttn := &testTraceConsumer{}
-//	rtp, _ := newSourceTraceProcessor(ttn, cfg)
-//	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
-//
-//	rtp.ConsumeTraces(context.Background(), test)
-//
-//	assertAttributesEqual(t, ttn.td, want)
-//}
-//
-//func TestTraceSourceProcessorEmpty(t *testing.T) {
-//	want := newTraceData(resourceLabels2)
-//	test := newTraceData(resourceLabels2)
-//
-//	ttn := &testTraceConsumer{}
-//	rtp, _ := newSourceTraceProcessor(ttn, cfg)
-//
-//	rtp.ConsumeTraces(context.Background(), test)
-//	assertAttributesEqual(t, ttn.td, want)
-//}
-
-func TestTraceSourceProcessorAnnotations(t *testing.T) {
-	resourceLabels["sumologic.com/sourceHost"] = "sh:%{pod_id}"
-	resourceLabels["sumologic.com/sourceCategory"] = "sc:%{pod_id}"
+func TestTraceSourceProcessor(t *testing.T) {
+	want := newTraceData(mergedResourceLabels)
 	test := newTraceData(resourceLabels)
 
-	mergedResourceLabels["sumologic.com/sourceHost"] = "sh:%{pod_id}"
-	mergedResourceLabels["sumologic.com/sourceCategory"] = "sc:%{pod_id}"
+	ttn := &testTraceConsumer{}
+	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+	assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+
+	rtp.ConsumeTraces(context.Background(), test)
+
+	assertAttributesEqual(t, ttn.td, want)
+}
+
+func TestTraceSourceProcessorEmpty(t *testing.T) {
+	want := newTraceData(resourceLabels2)
+	test := newTraceData(resourceLabels2)
+
+	ttn := &testTraceConsumer{}
+	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+
+	rtp.ConsumeTraces(context.Background(), test)
+	assertAttributesEqual(t, ttn.td, want)
+}
+
+func TestTraceSourceProcessorAnnotations(t *testing.T) {
+	resourceLabels["annotation:sumologic.com/sourceHost"] = "sh:%{pod_id}"
+	resourceLabels["annotation:sumologic.com/sourceCategory"] = "sc:%{pod_id}"
+	test := newTraceData(resourceLabels)
+
+	mergedResourceLabels["annotation:sumologic.com/sourceHost"] = "sh:%{pod_id}"
+	mergedResourceLabels["annotation:sumologic.com/sourceCategory"] = "sc:%{pod_id}"
 	mergedResourceLabels["_sourceHost"] = "sh:pod-1234"
 	mergedResourceLabels["_sourceCategory"] = "prefix/sc:pod#1234"
 	want := newTraceData(mergedResourceLabels)
