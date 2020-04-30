@@ -16,6 +16,7 @@ package kube
 
 import (
 	"sort"
+	"sync"
 
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
@@ -60,6 +61,7 @@ type OwnerAPI interface {
 type OwnerCache struct {
 	objectOwners map[string]*ObjectOwner
 	podServices  map[string][]string
+	cacheMutex   sync.RWMutex
 
 	clientset *kubernetes.Clientset
 	logger    *zap.Logger
@@ -90,6 +92,8 @@ func newOwnerProvider(
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwners = map[string]*ObjectOwner{}
 	ownerCache.podServices = map[string][]string{}
+	ownerCache.cacheMutex = sync.RWMutex{}
+
 	ownerCache.clientset = clientset
 	ownerCache.logger = logger
 
@@ -147,7 +151,9 @@ func (op *OwnerCache) addOwnerInformer(
 }
 
 func (op *OwnerCache) deleteObject(obj interface{}) {
+	op.cacheMutex.Lock()
 	delete(op.objectOwners, string(obj.(meta_v1.Object).GetUID()))
+	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
@@ -164,11 +170,15 @@ func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
 		oo.ownerUIDs = append(oo.ownerUIDs, or.UID)
 	}
 
+	op.cacheMutex.Lock()
 	op.objectOwners[string(oo.UID)] = &oo
+	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
+	op.cacheMutex.RLock()
 	services := op.podServices[pod]
+	op.cacheMutex.RUnlock()
 
 	for _, it := range services {
 		if it == endpoint {
@@ -178,11 +188,17 @@ func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
 
 	services = append(services, endpoint)
 	sort.Strings(services)
+
+	op.cacheMutex.Lock()
 	op.podServices[pod] = services
+	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
+	op.cacheMutex.RLock()
 	services := op.podServices[pod]
+	op.cacheMutex.RUnlock()
+
 	newServices := []string{}
 
 	for _, it := range services {
@@ -191,7 +207,9 @@ func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
 		}
 	}
 
+	op.cacheMutex.Lock()
 	op.podServices[pod] = newServices
+	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) genericEndpointOp(obj interface{}, endpointFunc func(pod string, endpoint string)) {
@@ -221,7 +239,11 @@ func (op *OwnerCache) cacheEndpoint(kind string, obj interface{}) {
 
 // GetServices returns a slice with matched services - in case no services are found, it returns an empty slice
 func (op *OwnerCache) GetServices(pod *api_v1.Pod) []string {
-	if oo, found := op.podServices[pod.Name]; found {
+	op.cacheMutex.RLock()
+	oo, found := op.podServices[pod.Name]
+	op.cacheMutex.RUnlock()
+
+	if found {
 		return oo
 	}
 	return []string{}
@@ -244,7 +266,10 @@ func (op *OwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 	for len(queue) > 0 {
 		uid := queue[0]
 		queue = queue[1:]
-		if oo, found := op.objectOwners[string(uid)]; found {
+
+		op.cacheMutex.RLock()
+		oo, found := op.objectOwners[string(uid)]
+		if found {
 			objectOwners = append(objectOwners, oo)
 
 			for _, ownerUID := range oo.ownerUIDs {
@@ -254,6 +279,7 @@ func (op *OwnerCache) GetOwners(pod *api_v1.Pod) []*ObjectOwner {
 				}
 			}
 		}
+		op.cacheMutex.RUnlock()
 	}
 
 	return objectOwners
