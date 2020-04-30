@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/service/xray"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
@@ -25,6 +26,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
+)
+
+const (
+	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
 // NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
@@ -39,19 +44,31 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	xrayClient := NewXRay(logger, awsConfig, session)
 	return exporterhelper.NewTraceExporterOld(
 		config,
-		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
+		func(ctx context.Context, td consumerdata.TraceData) (totalDroppedSpans int, err error) {
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
-			droppedSpans, input := assembleRequest(td, logger)
-			logger.Debug("request: " + input.String())
-			output, err := xrayClient.PutTraceSegments(input)
-			if config.(*Config).LocalMode {
-				err = nil // test mode, ignore errors
+			totalDroppedSpans = 0
+			totalSpans := len(td.Spans)
+			for offset := 0; offset < totalSpans; offset += maxSegmentsPerPut {
+				nextOffset := offset + maxSegmentsPerPut
+				if nextOffset > totalSpans {
+					nextOffset = totalSpans
+				}
+				droppedSpans, input := assembleRequest(td.Spans[offset:nextOffset], logger)
+				totalDroppedSpans += droppedSpans
+				logger.Debug("request: " + input.String())
+				output, localErr := xrayClient.PutTraceSegments(input)
+				if !config.(*Config).LocalMode {
+					err = localErr // not test mode, so record error
+				}
+				logger.Debug("response: " + output.String())
+				if output != nil && output.UnprocessedTraceSegments != nil {
+					totalDroppedSpans += len(output.UnprocessedTraceSegments)
+				}
+				if err != nil {
+					break
+				}
 			}
-			logger.Debug("response: " + output.String())
-			if output != nil && output.UnprocessedTraceSegments != nil {
-				droppedSpans += len(output.UnprocessedTraceSegments)
-			}
-			return droppedSpans, err
+			return totalDroppedSpans, err
 		},
 		exporterhelper.WithShutdown(func(context.Context) error {
 			return logger.Sync()
@@ -59,10 +76,10 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	)
 }
 
-func assembleRequest(td consumerdata.TraceData, logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
-	documents := make([]*string, len(td.Spans))
+func assembleRequest(spans []*tracepb.Span, logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
+	documents := make([]*string, len(spans))
 	droppedSpans := int(0)
-	for i, span := range td.Spans {
+	for i, span := range spans {
 		if span == nil || span.Name == nil {
 			droppedSpans++
 			continue
