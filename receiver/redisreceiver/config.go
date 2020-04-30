@@ -24,9 +24,9 @@ type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// The duration between Redis metric fetches.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
-	// The optional name of the Redis server. If present, this value will be added
-	// as a "server_name" Resource label.
-	ServerName string `mapstructure:"server_name"`
+	// The logical name of the Redis server. This value will be added as a
+	// "service.name" Resource label.
+	ServiceName string `mapstructure:"service_name"`
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`

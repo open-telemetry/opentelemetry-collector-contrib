@@ -24,15 +24,11 @@ import (
 
 // Helper functions that produce protobuf
 
-func newMetricsData(protoMetrics []*metricspb.Metric, serverName string) *consumerdata.MetricsData {
-	labels := map[string]string{"type": typeStr}
-	if serverName != "" {
-		labels["server_name"] = serverName
-	}
+func newMetricsData(protoMetrics []*metricspb.Metric, serviceName string) *consumerdata.MetricsData {
 	return &consumerdata.MetricsData{
 		Resource: &resourcepb.Resource{
 			Type:   typeStr,
-			Labels: labels,
+			Labels: map[string]string{"service.name": serviceName},
 		},
 		Metrics: protoMetrics,
 	}

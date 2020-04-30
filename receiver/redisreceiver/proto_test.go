@@ -25,13 +25,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestServerName(t *testing.T) {
-	md := getMetricData(t, usedMemory(), "")
-	_, found := md.Resource.Labels["server_name"]
-	require.False(t, found)
-	md = getMetricData(t, usedMemory(), "x")
-	val := md.Resource.Labels["server_name"]
-	require.Equal(t, "x", val)
+func TestServiceName(t *testing.T) {
+	const serviceName = "foo-service"
+	md := getMetricData(t, usedMemory(), serviceName)
+	val := md.Resource.Labels["service.name"]
+	require.Equal(t, serviceName, val)
 }
 
 func TestMemoryMetric(t *testing.T) {
