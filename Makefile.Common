@@ -24,6 +24,8 @@ MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 STATICCHECK=staticcheck
 IMPI=impi
+# BUILD_TYPE should be one of (dev, release).
+BUILD_TYPE?=release
 
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
