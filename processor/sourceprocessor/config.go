@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 )
 
-// Config defines configuration for Resource processor.
+// Config defines configuration for Source processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 	SourceName                     string `mapstructure:"source_name"`
