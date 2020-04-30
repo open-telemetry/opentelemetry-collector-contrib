@@ -46,7 +46,7 @@ Example configuration:
 receivers:
   redis:
     endpoint: "localhost:6379"
-    server_name: "my-test-redis"
+    service_name: "my-test-redis"
     collection_interval: 10s
     password: $REDIS_PASSWORD
 ```
@@ -68,13 +68,13 @@ e.g. "1h30m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 _Required._
 
-### server_name
+### service_name
 
-The name of the Redis server. If present, this value will be added as a
-`server_name` Resource label. Useful for distinguishing between multiple
-Redis servers.
+The logical name of the Redis server. This value will be added as a
+`service.name` Resource label and may end up as a dimension on exported
+metrics, depending on the exporter.
 
-_Optional._
+_Required._
 
 ### password
 
@@ -90,6 +90,7 @@ the following:
 receivers:
   redis:
     endpoint: "localhost:6379"
+    service_name: "my-test-redis"
     collection_interval: 10s
     password: $REDIS_PASSWORD
 ```

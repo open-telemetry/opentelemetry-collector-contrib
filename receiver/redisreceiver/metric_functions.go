@@ -51,8 +51,6 @@ func getDefaultRedisMetrics() []*redisMetric {
 
 		instantaneousOpsPerSec(),
 
-		rdbBgsaveInProgress(),
-
 		totalConnectionsReceived(),
 		totalCommandsProcessed(),
 
@@ -72,6 +70,7 @@ func getDefaultRedisMetrics() []*redisMetric {
 	}
 }
 
+// Number of seconds since Redis server start
 func uptimeInSeconds() *redisMetric {
 	return &redisMetric{
 		key:    "uptime_in_seconds",
@@ -81,6 +80,7 @@ func uptimeInSeconds() *redisMetric {
 	}
 }
 
+// System CPU consumed by the Redis server in seconds since server start
 func usedCPUSys() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys",
@@ -91,6 +91,7 @@ func usedCPUSys() *redisMetric {
 	}
 }
 
+// User CPU consumed by the Redis server in seconds since server start
 func usedCPUUser() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_user",
@@ -101,6 +102,7 @@ func usedCPUUser() *redisMetric {
 	}
 }
 
+// User CPU consumed by the background processes in seconds since server start
 func usedCPUSysChildren() *redisMetric {
 	return &redisMetric{
 		key:    "used_cpu_sys_children",
@@ -111,6 +113,7 @@ func usedCPUSysChildren() *redisMetric {
 	}
 }
 
+// Number of client connections (excluding connections from replicas)
 func connectedClients() *redisMetric {
 	return &redisMetric{
 		key:    "connected_clients",
@@ -119,6 +122,7 @@ func connectedClients() *redisMetric {
 	}
 }
 
+// Biggest input buffer among current client connections
 func clientRecentMaxInputBuffer() *redisMetric {
 	return &redisMetric{
 		key:    "client_recent_max_input_buffer",
@@ -127,6 +131,7 @@ func clientRecentMaxInputBuffer() *redisMetric {
 	}
 }
 
+// Longest output list among current client connections
 func clientRecentMaxOutputBuffer() *redisMetric {
 	return &redisMetric{
 		key:    "client_recent_max_output_buffer",
@@ -135,6 +140,7 @@ func clientRecentMaxOutputBuffer() *redisMetric {
 	}
 }
 
+// Number of clients pending on a blocking call
 func blockedClients() *redisMetric {
 	return &redisMetric{
 		key:    "blocked_clients",
@@ -143,6 +149,7 @@ func blockedClients() *redisMetric {
 	}
 }
 
+// Total number of key expiration events
 func expiredKeys() *redisMetric {
 	return &redisMetric{
 		key:    "expired_keys",
@@ -151,6 +158,7 @@ func expiredKeys() *redisMetric {
 	}
 }
 
+// Number of evicted keys due to maxmemory limit
 func evictedKeys() *redisMetric {
 	return &redisMetric{
 		key:    "evicted_keys",
@@ -159,6 +167,7 @@ func evictedKeys() *redisMetric {
 	}
 }
 
+// Total number of connections accepted by the server
 func totalConnectionsReceived() *redisMetric {
 	return &redisMetric{
 		key:    "total_connections_received",
@@ -167,6 +176,7 @@ func totalConnectionsReceived() *redisMetric {
 	}
 }
 
+// Number of connections rejected because of maxclients limit
 func rejectedConnections() *redisMetric {
 	return &redisMetric{
 		key:    "rejected_connections",
@@ -175,6 +185,7 @@ func rejectedConnections() *redisMetric {
 	}
 }
 
+// Total number of bytes allocated by Redis using its allocator
 func usedMemory() *redisMetric {
 	return &redisMetric{
 		key:    "used_memory",
@@ -185,6 +196,7 @@ func usedMemory() *redisMetric {
 	}
 }
 
+// Peak memory consumed by Redis (in bytes)
 func usedMemoryPeak() *redisMetric {
 	return &redisMetric{
 		key:    "used_memory_peak",
@@ -194,6 +206,7 @@ func usedMemoryPeak() *redisMetric {
 	}
 }
 
+// Number of bytes that Redis allocated as seen by the operating system
 func usedMemoryRss() *redisMetric {
 	return &redisMetric{
 		key:    "used_memory_rss",
@@ -203,6 +216,7 @@ func usedMemoryRss() *redisMetric {
 	}
 }
 
+// Number of bytes used by the Lua engine
 func usedMemoryLua() *redisMetric {
 	return &redisMetric{
 		key:    "used_memory_lua",
@@ -212,6 +226,7 @@ func usedMemoryLua() *redisMetric {
 	}
 }
 
+// Ratio between used_memory_rss and used_memory
 func memFragmentationRatio() *redisMetric {
 	return &redisMetric{
 		key:    "mem_fragmentation_ratio",
@@ -220,6 +235,7 @@ func memFragmentationRatio() *redisMetric {
 	}
 }
 
+// Number of changes since the last dump
 func rdbChangesSinceLastSave() *redisMetric {
 	return &redisMetric{
 		key:    "rdb_changes_since_last_save",
@@ -228,14 +244,7 @@ func rdbChangesSinceLastSave() *redisMetric {
 	}
 }
 
-func rdbBgsaveInProgress() *redisMetric {
-	return &redisMetric{
-		key:    "rdb_bgsave_in_progress",
-		name:   "redis/rdb/bgsave_in_progress",
-		mdType: metricspb.MetricDescriptor_GAUGE_INT64,
-	}
-}
-
+// Number of commands processed per second
 func instantaneousOpsPerSec() *redisMetric {
 	return &redisMetric{
 		key:    "instantaneous_ops_per_sec",
@@ -245,6 +254,7 @@ func instantaneousOpsPerSec() *redisMetric {
 	}
 }
 
+// Total number of commands processed by the server
 func totalCommandsProcessed() *redisMetric {
 	return &redisMetric{
 		key:    "total_commands_processed",
@@ -253,6 +263,7 @@ func totalCommandsProcessed() *redisMetric {
 	}
 }
 
+// The total number of bytes read from the network
 func totalNetInputBytes() *redisMetric {
 	return &redisMetric{
 		key:    "total_net_input_bytes",
@@ -262,6 +273,7 @@ func totalNetInputBytes() *redisMetric {
 	}
 }
 
+// The total number of bytes written to the network
 func totalNetOutputBytes() *redisMetric {
 	return &redisMetric{
 		key:    "total_net_output_bytes",
@@ -271,6 +283,7 @@ func totalNetOutputBytes() *redisMetric {
 	}
 }
 
+// Number of successful lookup of keys in the main dictionary
 func keyspaceHits() *redisMetric {
 	return &redisMetric{
 		key:    "keyspace_hits",
@@ -279,6 +292,7 @@ func keyspaceHits() *redisMetric {
 	}
 }
 
+// Number of failed lookup of keys in the main dictionary
 func keyspaceMisses() *redisMetric {
 	return &redisMetric{
 		key:    "keyspace_misses",
@@ -287,6 +301,7 @@ func keyspaceMisses() *redisMetric {
 	}
 }
 
+// Duration of the latest fork operation in microseconds
 func latestForkUsec() *redisMetric {
 	return &redisMetric{
 		key:    "latest_fork_usec",
@@ -296,6 +311,7 @@ func latestForkUsec() *redisMetric {
 	}
 }
 
+// Number of connected replicas
 func connectedSlaves() *redisMetric {
 	return &redisMetric{
 		key:    "connected_slaves",
@@ -304,6 +320,7 @@ func connectedSlaves() *redisMetric {
 	}
 }
 
+// The master offset of the replication backlog buffer
 func replBacklogFirstByteOffset() *redisMetric {
 	return &redisMetric{
 		key:    "repl_backlog_first_byte_offset",
@@ -312,6 +329,7 @@ func replBacklogFirstByteOffset() *redisMetric {
 	}
 }
 
+// The server's current replication offset
 func masterReplOffset() *redisMetric {
 	return &redisMetric{
 		key:    "master_repl_offset",
