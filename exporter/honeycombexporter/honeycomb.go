@@ -64,10 +64,20 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 				sd.Attributes = append(sd.Attributes,
 					serviceName.String(td.Node.ServiceInfo.Name))
 			}
+			if td.Resource != nil {
+				resourceType := td.Resource.GetType()
+				if resourceType != "" {
+					resourceTypeAttr := core.Key("opencensus.resourcetype")
+					sd.Attributes = append(sd.Attributes,
+						resourceTypeAttr.String(resourceType))
+				}
+				sd.Attributes = append(sd.Attributes,
+					createAttributes(td.Resource.GetLabels())...)
+			}
 			if !sd.ParentSpanID.IsValid() || sd.HasRemoteParent {
 				if td.Node != nil && td.Node.Attributes != nil {
 					sd.Attributes = append(sd.Attributes,
-						convertNodeAttributes(td.Node.Attributes)...)
+						createAttributes(td.Node.Attributes)...)
 				}
 			}
 			e.exporter.ExportSpan(ctx, sd)
@@ -80,7 +90,7 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
-func convertNodeAttributes(attributes map[string]string) []core.KeyValue {
+func createAttributes(attributes map[string]string) []core.KeyValue {
 	result := make([]core.KeyValue, len(attributes))
 	index := 0
 	for key, val := range attributes {

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
@@ -94,6 +95,12 @@ func TestExporter(t *testing.T) {
 				"A": "B",
 			},
 		},
+		Resource: &resourcepb.Resource{
+			Type: "foobar",
+			Labels: map[string]string{
+				"B": "C",
+			},
+		},
 		Spans: []*tracepb.Span{
 			{
 				TraceId:                 []byte{0x01},
@@ -124,42 +131,48 @@ func TestExporter(t *testing.T) {
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": false,
-				"name":              "root",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.span_id":     "0200000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
-				"A":                 "B",
+				"duration_ms":             float64(0),
+				"has_remote_parent":       false,
+				"name":                    "root",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.span_id":           "0200000000000000",
+				"trace.trace_id":          "01000000-0000-0000-0000-000000000000",
+				"A":                       "B",
+				"B":                       "C",
+				"opencensus.resourcetype": "foobar",
 			},
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": false,
-				"name":              "client",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.parent_id":   "0200000000000000",
-				"trace.span_id":     "0300000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
+				"duration_ms":             float64(0),
+				"has_remote_parent":       false,
+				"name":                    "client",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.parent_id":         "0200000000000000",
+				"trace.span_id":           "0300000000000000",
+				"trace.trace_id":          "01000000-0000-0000-0000-000000000000",
+				"opencensus.resourcetype": "foobar",
+				"B":                       "C",
 			},
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": true,
-				"name":              "server",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.parent_id":   "0300000000000000",
-				"trace.span_id":     "0400000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
-				"A":                 "B",
+				"duration_ms":             float64(0),
+				"has_remote_parent":       true,
+				"name":                    "server",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.parent_id":         "0300000000000000",
+				"trace.span_id":           "0400000000000000",
+				"trace.trace_id":          "01000000-0000-0000-0000-000000000000",
+				"A":                       "B",
+				"B":                       "C",
+				"opencensus.resourcetype": "foobar",
 			},
 		},
 	}
