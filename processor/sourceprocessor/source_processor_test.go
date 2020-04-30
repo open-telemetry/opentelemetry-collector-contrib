@@ -73,11 +73,18 @@ func newTraceData(labels map[string]string) pdata.Traces {
 
 func prepareAttributes(t pdata.Traces) {
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
-		t.ResourceSpans().At(i).Resource().Attributes().Sort()
+		rss := t.ResourceSpans().At(i)
+		rss.Resource().Attributes().Sort()
+		for j := 0; j < rss.InstrumentationLibrarySpans().Len(); j++ {
+			ss := rss.InstrumentationLibrarySpans().At(j).Spans()
+			for k := 0; k < ss.Len(); k++ {
+				ss.At(k).Attributes().Sort()
+			}
+		}
 	}
 }
 
-func assertAttributesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
+func assertTracesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
 	prepareAttributes(t1)
 	prepareAttributes(t2)
 	assert.Equal(t, t1, t2)
@@ -93,7 +100,7 @@ func TestTraceSourceProcessor(t *testing.T) {
 
 	rtp.ConsumeTraces(context.Background(), test)
 
-	assertAttributesEqual(t, ttn.td, want)
+	assertTracesEqual(t, ttn.td, want)
 }
 
 func TestTraceSourceProcessorEmpty(t *testing.T) {
@@ -104,7 +111,35 @@ func TestTraceSourceProcessorEmpty(t *testing.T) {
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)
 
 	rtp.ConsumeTraces(context.Background(), test)
-	assertAttributesEqual(t, ttn.td, want)
+	assertTracesEqual(t, ttn.td, want)
+}
+
+func newTraceDataWithSpans(labels map[string]string) pdata.Traces {
+	// This will be very small attribute set, the actual data will be at span level
+	td := newTraceData(resourceLabels2)
+	ils := td.ResourceSpans().At(0).InstrumentationLibrarySpans()
+	ils.Resize(1)
+	spans := ils.At(0).Spans()
+	spans.Resize(1)
+	spans.At(0).InitEmpty()
+	spans.At(0).SetName("foo")
+	spanAttrs := spans.At(0).Attributes()
+	for k, v := range labels {
+		spanAttrs.UpsertString(k, v)
+	}
+	return td
+}
+
+func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
+	test := newTraceDataWithSpans(resourceLabels)
+	want := newTraceDataWithSpans(mergedResourceLabels)
+
+	ttn := &testTraceConsumer{}
+	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+
+	rtp.ConsumeTraces(context.Background(), test)
+
+	assertTracesEqual(t, ttn.td, want)
 }
 
 func TestTraceSourceProcessorAnnotations(t *testing.T) {
@@ -124,7 +159,7 @@ func TestTraceSourceProcessorAnnotations(t *testing.T) {
 
 	rtp.ConsumeTraces(context.Background(), test)
 
-	assertAttributesEqual(t, ttn.td, want)
+	assertTracesEqual(t, ttn.td, want)
 }
 
 type testTraceConsumer struct {

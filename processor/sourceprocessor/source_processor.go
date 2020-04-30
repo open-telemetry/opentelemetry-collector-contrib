@@ -68,28 +68,44 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 			continue
 		}
 		res := rs.Resource()
+		filledAny := false
 		if !res.IsNil() {
-			enrichPodName(res)
-			stp.sourceHostFiller.fillResourceOrUseAnnotation(&res, sourceHostSpecialAnnotation)
-			stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&res, sourceCategorySpecialAnnotation)
-			stp.sourceNameFiller.fillResourceOrUseAnnotation(&res, sourceNameSpecialAnnotation)
+			atts := res.Attributes()
+
+			// TODO: move this to k8sprocessor
+			enrichPodName(&atts)
+
+			filledAny = stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation) || filledAny
+			filledAny = stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation) || filledAny
+			filledAny = stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation) || filledAny
 		}
 
-		// TODO: iterate over span attributes too
-		//ilss := rss.At(i).InstrumentationLibrarySpans()
-		//for j := 0; j < ilss.Len(); j++ {
-		//	ils := ilss.At(j)
-		//	if ils.IsNil() {
-		//		continue
-		//	}
-		//	spans := ils.Spans()
-		//	for k := 0; k < spans.Len(); k++ {
-		//		s := spans.At(k)
-		//		if s.IsNil() {
-		//			continue
-		//		}
-		//	}
-		//}
+		if !filledAny {
+			// Perhaps this is coming through Zipkin and in such case the attributes are stored in each span attributes, doh!
+			ilss := rs.InstrumentationLibrarySpans()
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				if ils.IsNil() {
+					continue
+				}
+				spans := ils.Spans()
+				for k := 0; k < spans.Len(); k++ {
+					s := spans.At(k)
+					if s.IsNil() {
+						continue
+					}
+					atts := s.Attributes()
+
+					// TODO: move this to k8sprocessor
+					enrichPodName(&atts)
+
+					stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation)
+					stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation)
+					stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation)
+				}
+			}
+		}
+
 	}
 	return stp.nextConsumer.ConsumeTraces(ctx, td)
 }
@@ -119,7 +135,7 @@ func SafeEncodeString(s string) string {
 	return string(r)
 }
 
-func enrichPodName(res pdata.Resource) bool {
+func enrichPodName(atts *pdata.AttributeMap) bool {
 	// This replicates sanitize_pod_name function
 	// Strip out dynamic bits from pod name.
 	// NOTE: Kubernetes deployments append a template hash.
@@ -128,10 +144,10 @@ func enrichPodName(res pdata.Resource) bool {
 	//   2) 1.8-1.11: numeric in pod_template_hash, hash in pod_parts[-2]
 	//   3) post-1.11: hash in pod_template_hash and pod_parts[-2]
 
-	if res.IsNil() {
+	if atts == nil {
 		return false
 	}
-	pod, found := res.Attributes().Get("pod")
+	pod, found := atts.Get("pod")
 	if !found {
 		return false
 	}
@@ -142,16 +158,16 @@ func enrichPodName(res pdata.Resource) bool {
 		return false
 	}
 
-	podTemplateHashAttr, found := res.Attributes().Get(podTemplateHashKey)
+	podTemplateHashAttr, found := atts.Get(podTemplateHashKey)
 
 	if found && len(podParts) > 2 {
 		podTemplateHash := podTemplateHashAttr.StringVal()
 		if podTemplateHash == podParts[len(podParts)-2] || SafeEncodeString(podTemplateHash) == podParts[len(podParts)-2] {
-			res.Attributes().UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
+			atts.UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
 			return true
 		}
 	}
-	res.Attributes().UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
+	atts.UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
 	return true
 }
 
@@ -197,39 +213,38 @@ func createSourceCategoryFiller(cfg *Config) attributeFiller {
 	return filler
 }
 
-func (f *attributeFiller) fillResourceOrUseAnnotation(input *pdata.Resource, annotationKey string) bool {
-	val, found := input.Attributes().Get(annotationKey)
+func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string) bool {
+	val, found := atts.Get(annotationKey)
 	if found {
 		annotationFiller := extractFormat(val.StringVal(), f.name)
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
-		return annotationFiller.fillResource(input)
+		return annotationFiller.fillAttributes(atts)
 	}
-	return f.fillResource(input)
+	return f.fillAttributes(atts)
 }
 
-func (f *attributeFiller) fillResource(input *pdata.Resource) bool {
+func (f *attributeFiller) fillAttributes(atts *pdata.AttributeMap) bool {
 	if len(f.compiledFormat) == 0 {
 		return false
 	}
 
-	labelValues := f.resourceLabelValues(input)
+	labelValues := f.resourceLabelValues(atts)
 	if labelValues != nil {
 		str := fmt.Sprintf(f.compiledFormat, labelValues...)
 		if f.dashReplacement != "" {
 			str = strings.ReplaceAll(str, "-", f.dashReplacement)
 		}
-		input.Attributes().UpsertString(f.name, str)
+		atts.UpsertString(f.name, str)
 		return true
 	}
 	return false
 }
 
-func (f *attributeFiller) resourceLabelValues(input *pdata.Resource) []interface{} {
+func (f *attributeFiller) resourceLabelValues(atts *pdata.AttributeMap) []interface{} {
 	arr := make([]interface{}, 0)
-	attrs := input.Attributes()
 	for _, label := range f.labels {
-		value, ok := attrs.Get(label)
+		value, ok := atts.Get(label)
 		if !ok {
 			return nil
 		}
