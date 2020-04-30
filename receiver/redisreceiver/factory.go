@@ -34,22 +34,22 @@ var _ component.ReceiverFactoryOld = (*Factory)(nil)
 type Factory struct {
 }
 
-func (f Factory) CustomUnmarshaler() component.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
 // Type returns the type of this factory, "redis".
-func (f Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+func (f *Factory) Type() configmodels.Type {
+	return typeStr
 }
 
 // CreateDefaultConfig creates a default config.
-func (f Factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &config{}
 }
 
 // CreateTraceReceiver creates a trace Receiver. Not supported for now.
-func (f Factory) CreateTraceReceiver(
+func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
@@ -60,7 +60,7 @@ func (f Factory) CreateTraceReceiver(
 }
 
 // CreateMetricsReceiver creates a Redis metrics receiver.
-func (f Factory) CreateMetricsReceiver(
+func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
