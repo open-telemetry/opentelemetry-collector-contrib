@@ -9,7 +9,7 @@ require (
 	github.com/gorilla/mux v1.7.3
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200427150635-ca4b8231de7c
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200430150857-2de54643695a
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
 	github.com/signalfx/sapm-proto v0.5.1
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
