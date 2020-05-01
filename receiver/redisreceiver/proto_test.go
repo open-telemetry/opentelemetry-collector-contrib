@@ -38,7 +38,11 @@ func TestMemoryMetric(t *testing.T) {
 	require.NotNil(t, md.Resource)
 	metric := md.Metrics[0]
 	require.Equal(t, "redis/memory/used", metric.MetricDescriptor.Name)
-	require.Equal(t, "memory used", metric.MetricDescriptor.Description)
+	require.Equal(
+		t,
+		"Total number of bytes allocated by Redis using its allocator",
+		metric.MetricDescriptor.Description,
+	)
 	require.Equal(t, "By", metric.MetricDescriptor.Unit)
 	require.Equal(t, metricspb.MetricDescriptor_GAUGE_INT64, metric.MetricDescriptor.Type)
 	requireIntPtEqual(t, 854160, metric)
