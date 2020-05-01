@@ -15,15 +15,10 @@ BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: common otelcontribcol
+all: test-with-cover binaries
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol
-	$(MAKE) -C testbed runtests
-
-.PHONY: ci
-ci: all binaries-all-sys test-with-cover
-	$(MAKE) -C testbed install-tools
+e2e-test: binaries
 	$(MAKE) -C testbed runtests
 
 .PHONY: precommit
@@ -70,10 +65,6 @@ install-tools:
 	  github.com/pavius/impi/cmd/impi \
 	  github.com/tcnksm/ghr
 
-.PHONY: otelcontribcol
-otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
-
 .PHONY: run
 run:
 	GO111MODULE=on go run --race ./cmd/otelcontribcol/... --config ${RUN_CONFIG}
@@ -96,19 +87,33 @@ docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
 .PHONY: binaries
-binaries: otelcontribcol
+binaries:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
+
 
 .PHONY: binaries-all-sys
-binaries-all-sys:
+binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+
+.PHONY: binaries-darwin_amd64
+binaries-darwin_amd64:
 	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: binaries-linux_amd64
+binaries-linux_amd64:
 	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+
+.PHONY: binaries-linux_arm64
+binaries-linux_arm64:
 	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+
+.PHONY: binaries-windows_amd64
+binaries-windows_amd64:
 	GOOS=windows GOARCH=amd64 $(MAKE) binaries
 
 .PHONY: update-dep
 update-dep:
 	$(MAKE) for-all CMD="$(PWD)/scripts/update-dep"
-	$(MAKE) otelcontribcol
+	$(MAKE) binaries
 	$(MAKE) gotidy
 
 .PHONY: update-otel
