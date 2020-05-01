@@ -26,7 +26,10 @@ type config struct {
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// The logical name of the Redis server. This value will be added as a
 	// "service.name" Resource label.
-	ServiceName string `mapstructure:"service_name"`
+	ServiceName string `mapstructure:"service.name"`
+
+	// TODO allow users to add additional resource key value pairs?
+
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`
