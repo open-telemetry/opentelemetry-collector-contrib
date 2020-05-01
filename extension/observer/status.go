@@ -28,6 +28,7 @@ type Status struct {
 	state map[string]Endpoint
 }
 
+// OnAdd is called when endpoints are added.
 func (s *Status) OnAdd(added []Endpoint) {
 	s.Lock()
 	defer s.Unlock()
@@ -36,6 +37,7 @@ func (s *Status) OnAdd(added []Endpoint) {
 	}
 }
 
+// OnRemove is called when endpoints are removed.
 func (s *Status) OnRemove(removed []Endpoint) {
 	s.Lock()
 	defer s.Unlock()
@@ -45,6 +47,7 @@ func (s *Status) OnRemove(removed []Endpoint) {
 	}
 }
 
+// OnChange is called when endpoints are changed.
 func (s *Status) OnChange(changed []Endpoint) {
 	s.Lock()
 	defer s.Unlock()
@@ -70,6 +73,7 @@ func (s *Status) json() ([]byte, error) {
 	return json.Marshal(endpoints)
 }
 
+// StatusMux returns a mux that serves observer status.
 func StatusMux(obs Observable) *http.ServeMux {
 	mux := http.NewServeMux()
 	s := &Status{state: map[string]Endpoint{}}
@@ -77,7 +81,7 @@ func StatusMux(obs Observable) *http.ServeMux {
 	mux.HandleFunc("/status", func(writer http.ResponseWriter, request *http.Request) {
 		data, err := s.json()
 		if err != nil {
-			_, _ = fmt.Fprint(writer, "failed to get status: %v", err)
+			_, _ = fmt.Fprintf(writer, "failed to get status: %v", err)
 			writer.WriteHeader(http.StatusInternalServerError)
 			return
 		}
