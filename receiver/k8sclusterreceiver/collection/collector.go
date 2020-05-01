@@ -173,31 +173,34 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) {
+func (dc *DataCollector) SyncMetadata(obj interface{}) map[string]*KubernetesMetadata {
+	km := map[string]*KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		_ = getMetadataForPod(o, dc.metadataStore)
+		km = getMetadataForPod(o, dc.metadataStore)
 	case *corev1.Node:
-		_ = getMetadataForNode(o)
+		km = getMetadataForNode(o)
 	case *corev1.ReplicationController:
-		_ = getMetadataForReplicationController(o)
+		km = getMetadataForReplicationController(o)
 	case *appsv1.Deployment:
-		_ = getMetadataForDeployment(o)
+		km = getMetadataForDeployment(o)
 	case *appsv1.ReplicaSet:
-		_ = getMetadataForReplicaSet(o)
+		km = getMetadataForReplicaSet(o)
 	case *appsv1.DaemonSet:
-		_ = getMetadataForDaemonSet(o)
+		km = getMetadataForDaemonSet(o)
 	case *appsv1.StatefulSet:
-		_ = getMetadataForStatefulSet(o)
+		km = getMetadataForStatefulSet(o)
 	case *batchv1.Job:
-		_ = getPropertiesForJob(o)
+		km = getMetadataForJob(o)
 	case *batchv1beta1.CronJob:
-		_ = getMetadataForCronJob(o)
+		km = getMetadataForCronJob(o)
 	case *v2beta1.HorizontalPodAutoscaler:
-		_ = getMetadataForHPA(o)
+		km = getMetadataForHPA(o)
 	default:
-		return
+		return nil
 	}
+
+	return km
 
 	// TODO:
 	// 	1) Send properties along the pipeline

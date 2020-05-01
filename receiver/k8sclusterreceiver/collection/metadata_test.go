@@ -15,6 +15,7 @@
 package collection
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -62,4 +63,127 @@ func Test_getGenericMetadata(t *testing.T) {
 		"foo":                             "bar",
 		"foo1":                            "",
 	}, rm.properties)
+}
+
+func TestGetPropertiesDelta(t *testing.T) {
+	type args struct {
+		oldProps map[string]string
+		newProps map[string]string
+	}
+	tests := []struct {
+		name     string
+		args     args
+		toAdd    map[string]string
+		toRemove map[string]string
+		toUpdate map[string]string
+	}{
+		{
+			"Add to new",
+			args{
+				oldProps: map[string]string{},
+				newProps: map[string]string{
+					"foo": "bar",
+				},
+			},
+			map[string]string{
+				"foo": "bar",
+			},
+			map[string]string{},
+			map[string]string{},
+		},
+		{
+			"Add to existing",
+			args{
+				oldProps: map[string]string{
+					"oldfoo": "bar",
+				},
+				newProps: map[string]string{
+					"oldfoo": "bar",
+					"foo":    "bar",
+				},
+			},
+			map[string]string{
+				"foo": "bar",
+			},
+			map[string]string{},
+			map[string]string{},
+		},
+		{
+			"Modify existing",
+			args{
+				oldProps: map[string]string{
+					"foo": "bar",
+				},
+				newProps: map[string]string{
+					"foo": "newbar",
+				},
+			},
+			map[string]string{},
+			map[string]string{},
+			map[string]string{
+				"foo": "newbar",
+			},
+		},
+		{
+			"Remove existing",
+			args{
+				oldProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+				newProps: map[string]string{
+					"foo1": "bar1",
+				},
+			},
+			map[string]string{},
+			map[string]string{
+				"foo": "bar",
+			},
+			map[string]string{},
+		},
+		{
+			"Properties with empty values",
+			args{
+				oldProps: map[string]string{
+					"foo":         "bar",
+					"foo2":        "bar2",
+					"service_abc": "",
+					"admin":       "",
+					"test":        "",
+				},
+				newProps: map[string]string{
+					"foo":         "bar2",
+					"foo1":        "bar1",
+					"service_def": "",
+					"test":        "",
+				},
+			},
+			map[string]string{
+				"service_def": "",
+				"foo1":        "bar1",
+			},
+			map[string]string{
+				"foo2":        "bar2",
+				"service_abc": "",
+				"admin":       "",
+			},
+			map[string]string{
+				"foo": "bar2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			add, remove, update := getPropertiesDelta(tt.args.oldProps, tt.args.newProps)
+			if !reflect.DeepEqual(add, tt.toAdd) {
+				t.Errorf("getPropertiesDelta() add = %v, want %v", add, tt.toAdd)
+			}
+			if !reflect.DeepEqual(remove, tt.toRemove) {
+				t.Errorf("getPropertiesDelta() remove = %v, want %v", remove, tt.toRemove)
+			}
+			if !reflect.DeepEqual(update, tt.toUpdate) {
+				t.Errorf("getPropertiesDelta() update = %v, want %v", update, tt.toUpdate)
+			}
+		})
+	}
 }

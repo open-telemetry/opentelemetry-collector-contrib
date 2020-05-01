@@ -70,7 +70,7 @@ func TestCronJobMetadata(t *testing.T) {
 				"k8s.workload.name":          "test-cronjob-1",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-cronjob-1-uid"],
 	)
 }
 

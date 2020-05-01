@@ -50,6 +50,8 @@ func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet)}
+func getMetadataForReplicaSet(rs *appsv1.ReplicaSet) map[string]*KubernetesMetadata {
+	return map[string]*KubernetesMetadata{
+		string(rs.UID): getGenericMetadata(&rs.ObjectMeta, k8sKindReplicaSet),
+	}
 }

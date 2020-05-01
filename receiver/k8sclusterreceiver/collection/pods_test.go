@@ -100,7 +100,7 @@ func TestPodAndContainerMetadata(t *testing.T) {
 				"foo1":                   "",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-pod-1-uid"],
 	)
 
 	// Assert metadata from Container.
@@ -112,7 +112,7 @@ func TestPodAndContainerMetadata(t *testing.T) {
 				"container.status": "running",
 			},
 		},
-		*actualMetadata[1],
+		*actualMetadata["container-id"],
 	)
 }
 

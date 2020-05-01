@@ -95,24 +95,28 @@ func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.Share
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
-	rw.addOrUpdateResource(obj)
+	rw.dataCollector.SyncMetrics(obj)
+
+	// Sync metadata only if there's at least one destination for it to sent.
+	if rw.collectMedata {
+		newMetadata := rw.dataCollector.SyncMetadata(obj)
+		collection.GetKubernetesMetadataUpdate(map[string]*collection.KubernetesMetadata{}, newMetadata)
+	}
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
 	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
-func (rw *resourceWatcher) onUpdate(_ interface{}, newObj interface{}) {
-	rw.addOrUpdateResource(newObj)
-}
-
-// addOrUpdateResource keeps the metric cache updated with latest metric
-// values that will be dispatched in the subsequent interval.
-func (rw *resourceWatcher) addOrUpdateResource(obj interface{}) {
-	rw.dataCollector.SyncMetrics(obj)
+func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+	// Sync metrics from the new object
+	rw.dataCollector.SyncMetrics(newObj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if rw.collectMedata {
-		rw.dataCollector.SyncMetadata(obj)
+		oldMetadata := rw.dataCollector.SyncMetadata(oldObj)
+		newMetadata := rw.dataCollector.SyncMetadata(newObj)
+
+		collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
 	}
 }

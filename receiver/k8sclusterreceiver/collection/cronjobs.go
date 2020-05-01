@@ -66,9 +66,9 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForCronJob(cj *batchv1beta1.CronJob) []*KubernetesMetadata {
+func getMetadataForCronJob(cj *batchv1beta1.CronJob) map[string]*KubernetesMetadata {
 	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
 	rm.properties[cronJobKeySchedule] = cj.Spec.Schedule
 	rm.properties[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
-	return []*KubernetesMetadata{rm}
+	return map[string]*KubernetesMetadata{string(cj.UID): rm}
 }

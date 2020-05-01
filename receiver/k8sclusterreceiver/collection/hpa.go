@@ -99,6 +99,8 @@ func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resourc
 	}
 }
 
-func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&hpa.ObjectMeta, "hpa")}
+func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) map[string]*KubernetesMetadata {
+	return map[string]*KubernetesMetadata{
+		string(hpa.UID): getGenericMetadata(&hpa.ObjectMeta, "hpa"),
+	}
 }

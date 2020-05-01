@@ -30,8 +30,7 @@ const (
 	k8sKeyWorkLoadName = "k8s.workload.name"
 )
 
-// KubernetesMetadata currently provides a reasonable way to store metadata
-// and may changes depending on how we decide to handle property updates.
+// KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
 	resourceIDKey string
 	resourceID    string
@@ -63,4 +62,88 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 
 func getResourceIDKey(rType string) string {
 	return fmt.Sprintf("k8s.%s.uid", rType)
+}
+
+// mergeKubernetesMetadataMaps merges maps of string (resource id) to
+// KubernetesMetadata into a single map.
+func mergeKubernetesMetadataMaps(maps ...map[string]*KubernetesMetadata) map[string]*KubernetesMetadata {
+	out := map[string]*KubernetesMetadata{}
+	for _, m := range maps {
+		for id, km := range m {
+			out[id] = km
+		}
+	}
+
+	return out
+}
+
+// KubernetesMetadataUpdate provides a delta view of properties on a resource.
+type KubernetesMetadataUpdate struct {
+	ResourceIDKey      string
+	ResourceID         string
+	PropertiesToAdd    map[string]string
+	PropertiesToUpdate map[string]string
+	PropertiesToRemove map[string]string
+}
+
+// GetKubernetesMetadataUpdate processes kubernetes metadata updates and returns
+// a map of a delta of properties mapped to each resource.
+func GetKubernetesMetadataUpdate(old, new map[string]*KubernetesMetadata) map[string]*KubernetesMetadataUpdate {
+	out := map[string]*KubernetesMetadataUpdate{}
+
+	for id, oldMetadata := range old {
+		// if an object with the same id has a previous revision, take a delta
+		// of the properties.
+		if newMetadata, ok := new[id]; ok {
+			toAdd, toRemove, toUpdate := getPropertiesDelta(oldMetadata.properties, newMetadata.properties)
+			out[id] = &KubernetesMetadataUpdate{
+				ResourceIDKey:      oldMetadata.resourceIDKey,
+				ResourceID:         id,
+				PropertiesToAdd:    toAdd,
+				PropertiesToRemove: toRemove,
+				PropertiesToUpdate: toUpdate,
+			}
+		}
+	}
+
+	// In case there are resources in the current revision, that was not in the
+	// previous revision, collect properties to be added
+	for id, km := range new {
+		// if an id is seen for the first time, all properties need to be added.
+		if _, ok := old[id]; !ok {
+			out[id] = &KubernetesMetadataUpdate{
+				ResourceIDKey:   km.resourceIDKey,
+				ResourceID:      id,
+				PropertiesToAdd: km.properties,
+			}
+		}
+	}
+
+	return out
+}
+
+func getPropertiesDelta(oldProps, newProps map[string]string) (map[string]string, map[string]string, map[string]string) {
+	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
+
+	// If properties exist in the previous revision as well, collect if
+	// the new values are different. Otherwise, the property is a new value
+	// and has to be added.
+	for key, newVal := range newProps {
+		if oldVal, ok := oldProps[key]; ok {
+			if oldVal != newVal {
+				toUpdate[key] = newVal
+			}
+		} else {
+			toAdd[key] = newVal
+		}
+	}
+
+	// Properties that don't exist in the latest revision should be removed
+	for key, val := range oldProps {
+		if _, ok := newProps[key]; !ok {
+			toRemove[key] = val
+		}
+	}
+
+	return toAdd, toRemove, toUpdate
 }

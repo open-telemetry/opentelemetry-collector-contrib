@@ -78,7 +78,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 				"update_revision":                "update_revision",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-statefulset-1-uid"],
 	)
 }
 

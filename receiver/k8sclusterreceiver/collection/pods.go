@@ -136,7 +136,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // getMetadataForPod returns all metadata associated with the pod.
-func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata {
+func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[string]*KubernetesMetadata {
 	properties := utils.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	properties[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
@@ -171,13 +171,15 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) []*KubernetesMetadata
 		)
 	}
 
-	return append([]*KubernetesMetadata{
+	podID := string(pod.UID)
+	return mergeKubernetesMetadataMaps(map[string]*KubernetesMetadata{
+		podID:
 		{
 			resourceIDKey: k8sKeyPodUID,
-			resourceID:    string(pod.UID),
+			resourceID:    podID,
 			properties:    properties,
 		},
-	}, getPodContainerProperties(pod)...)
+	}, getPodContainerProperties(pod))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
@@ -273,15 +275,16 @@ func getPodWorkloadProperties(workloadName string, workloadType string) map[stri
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) []*KubernetesMetadata {
-	rm := make([]*KubernetesMetadata, 0)
+func getPodContainerProperties(pod *corev1.Pod) map[string]*KubernetesMetadata {
+	km := map[string]*KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
 		// Skip if container id returned is empty.
 		if cs.ContainerID == "" {
 			continue
 		}
 
-		rm = append(rm, getMetadataForContainer(cs))
+		md := getMetadataForContainer(cs)
+		km[md.resourceID] = md
 	}
-	return rm
+	return km
 }
