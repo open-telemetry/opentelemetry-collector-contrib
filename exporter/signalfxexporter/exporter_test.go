@@ -114,7 +114,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
-			sender := &httpSender{
+			sender := &sfxDPClient{
 				ingestURL: serverURL,
 				headers:   map[string]string{"test_header_": "test"},
 				client: &http.Client{
