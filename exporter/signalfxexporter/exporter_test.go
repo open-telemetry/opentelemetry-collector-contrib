@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"sync"
 	"testing"
@@ -110,9 +111,12 @@ func TestConsumeMetricsData(t *testing.T) {
 			}))
 			defer server.Close()
 
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
 			sender := &httpSender{
-				url:     server.URL,
-				headers: map[string]string{"test_header_": "test"},
+				ingestURL: serverURL,
+				headers:   map[string]string{"test_header_": "test"},
 				client: &http.Client{
 					Timeout: 1 * time.Second,
 				},

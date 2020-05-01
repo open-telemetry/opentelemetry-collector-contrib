@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"path"
 	"sync"
 	"time"
 
@@ -37,6 +36,11 @@ import (
 	"go.uber.org/zap"
 )
 
+type exporterOptions struct {
+	ingestURL   *url.URL
+	httpTimeout time.Duration
+}
+
 // New returns a new SignalFx exporter.
 func New(
 	config *Config,
@@ -47,45 +51,17 @@ func New(
 		return nil, errors.New("nil config")
 	}
 
+	options, err := config.getOptionsFromConfig()
+	if err != nil {
+		return nil,
+			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+	}
+
+	logger.Info("SignalFx Config", zap.String("ingest_url", options.ingestURL.String()))
+
 	if config.Name() == "" {
 		config.SetType(typeStr)
 		config.SetName(typeStr)
-	}
-
-	if config.Realm == "" && config.URL == "" {
-		err := fmt.Errorf(
-			"%q config requires a non-empty \"realm\" or \"url\"",
-			config.Name())
-		return nil, err
-	}
-
-	var actualURL string
-	if config.URL == "" {
-		actualURL = fmt.Sprintf(
-			"https://ingest.%s.signalfx.com/v2/datapoint", config.Realm)
-	} else {
-		// Ignore realm and use the URL. Typically used for debugging.
-		u, err := url.Parse(config.URL)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"%q invalid \"url\": %v", config.Name(), err)
-		}
-		if u.Path == "" || u.Path == "/" {
-			u.Path = path.Join(u.Path, "v2/datapoint")
-		}
-		actualURL = u.String()
-		logger.Info("SingalFX Config", zap.String("actual_url", actualURL))
-	}
-
-	if config.Timeout == 0 {
-		config.Timeout = 5 * time.Second
-	}
-
-	if config.Timeout < 0 {
-		err := fmt.Errorf(
-			"%q config cannot have a negative \"timeout\"",
-			config.Name())
-		return nil, err
 	}
 
 	headers, err := buildHeaders(config)
@@ -94,8 +70,8 @@ func New(
 	}
 
 	s := &httpSender{
-		url:     actualURL,
-		headers: headers,
+		ingestURL: options.ingestURL,
+		headers:   headers,
 		client: &http.Client{
 			// TODO: What other settings of http.Client to expose via config?
 			//  Or what others change from default values?
@@ -116,11 +92,11 @@ func New(
 
 // httpSender sends the data to the SignalFx backend.
 type httpSender struct {
-	url     string
-	headers map[string]string
-	client  *http.Client
-	logger  *zap.Logger
-	zippers sync.Pool
+	ingestURL *url.URL
+	headers   map[string]string
+	client    *http.Client
+	logger    *zap.Logger
+	zippers   sync.Pool
 }
 
 func (s *httpSender) pushMetricsData(
@@ -138,7 +114,7 @@ func (s *httpSender) pushMetricsData(
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", s.url, body)
+	req, err := http.NewRequest("POST", s.ingestURL.String(), body)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
