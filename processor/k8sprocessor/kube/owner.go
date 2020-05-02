@@ -105,12 +105,12 @@ func newOwnerProvider(
 		}))
 
 	ownerCache.addOwnerInformer("ReplicaSet",
-		factory.Extensions().V1beta1().ReplicaSets().Informer(),
+		factory.Apps().V1().ReplicaSets().Informer(),
 		ownerCache.cacheObject,
 		ownerCache.deleteObject)
 
 	ownerCache.addOwnerInformer("Deployment",
-		factory.Extensions().V1beta1().Deployments().Informer(),
+		factory.Apps().V1().Deployments().Informer(),
 		ownerCache.cacheObject,
 		ownerCache.deleteObject)
 
