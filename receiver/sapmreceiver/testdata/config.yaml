@@ -9,11 +9,6 @@ receivers:
   sapm/customname:
       endpoint: "0.0.0.0:7276"
 
-  # The following demonstrates disabling the receiver.
-  sapm/disabled:
-      endpoint: "0.0.0.0:7276"
-      disabled: true
-
 processors:
   exampleprocessor:
 
