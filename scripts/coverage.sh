@@ -18,7 +18,7 @@ coverage erase
 cov opentelemetry-api
 cov opentelemetry-sdk
 cov ext/opentelemetry-ext-flask
-cov ext/opentelemetry-ext-http-requests
+cov ext/opentelemetry-ext-requests
 cov ext/opentelemetry-ext-jaeger
 cov ext/opentelemetry-ext-opentracing-shim
 cov ext/opentelemetry-ext-wsgi
