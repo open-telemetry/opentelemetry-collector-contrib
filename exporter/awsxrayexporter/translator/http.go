@@ -52,6 +52,10 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		componentValue string
 	)
 
+	if span.Attributes == nil {
+		return filtered, nil
+	}
+
 	for key, value := range span.Attributes.AttributeMap {
 		switch key {
 		case semconventions.AttributeComponent:
