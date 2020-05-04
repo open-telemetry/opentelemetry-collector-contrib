@@ -13,10 +13,6 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST=go test
-GOFMT=gofmt
-GOIMPORTS=goimports
-GOLINT=golint
-GOVET=go vet
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
 ADDLICENCESE= addlicense
@@ -36,7 +32,7 @@ all-srcs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: addlicense fmt impi vet lint goimports misspell staticcheck test
+common: checklicense impi lint misspell test
 
 .PHONY: test
 test:
@@ -52,7 +48,7 @@ benchmark:
 
 .PHONY: addlicense
 addlicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y 2019 -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -y -c 'OpenTelemetry Authors' $(ALL_SRC) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
@@ -61,38 +57,32 @@ addlicense:
 			echo "Add License finished successfully"; \
 		fi
 
-.PHONY: fmt
-fmt:
-	@FMTOUT=`$(GOFMT) -s -l $(ALL_SRC) 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Fmt finished successfully"; \
-	fi
+.PHONY: checklicense
+checklicense:
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+		if [ "$$ADDLICENCESEOUT" ]; then \
+			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
+			echo "$$ADDLICENCESEOUT\n"; \
+			echo "Use 'make addlicense' to fix this."; \
+			exit 1; \
+		else \
+			echo "Check License finished successfully"; \
+		fi
+
+.PHONY: lint-static-check
+lint-static-check:
+	@STATIC_CHECK_OUT=`$(STATICCHECK) ./... 2>&1`; \
+		if [ "$$STATIC_CHECK_OUT" ]; then \
+			echo "$(STATICCHECK) FAILED => static check errors:\n"; \
+			echo "$$STATIC_CHECK_OUT\n"; \
+			exit 1; \
+		else \
+			echo "Static check finished successfully"; \
+		fi
 
 .PHONY: lint
-lint:
-	@LINTOUT=`$(GOLINT) $(ALL_PKGS) 2>&1`; \
-	if [ "$$LINTOUT" ]; then \
-		echo "$(GOLINT) FAILED => clean the following lint errors:\n"; \
-		echo "$$LINTOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Lint finished successfully"; \
-	fi
-
-.PHONY: goimports
-goimports:
-	@IMPORTSOUT=`$(GOIMPORTS) -local github.com/open-telemetry/opentelemetry-collector-contrib -d . 2>&1`; \
-	if [ "$$IMPORTSOUT" ]; then \
-		echo "$(GOIMPORTS) FAILED => fix the following goimports errors:\n"; \
-		echo "$$IMPORTSOUT\n"; \
-		exit 1; \
-	else \
-	    echo "Goimports finished successfully"; \
-	fi
+lint: lint-static-check
+	$(LINT) run
 
 .PHONY: misspell
 misspell:
@@ -101,15 +91,6 @@ misspell:
 .PHONY: misspell-correction
 misspell-correction:
 	$(MISSPELL_CORRECTION) $(ALL_SRC_AND_DOC)
-
-.PHONY: staticcheck
-staticcheck:
-	$(STATICCHECK) ./...
-
-.PHONY: vet
-vet:
-	@$(GOVET) ./...
-	@echo "Vet finished successfully"
 
 .PHONY: impi
 impi:

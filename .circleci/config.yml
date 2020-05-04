@@ -122,6 +122,9 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: go/bin
+      - run:
+          name: Lint
+          command: make -j4 checklicense impi lint misspell
 
   build:
     executor: golang

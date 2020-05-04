@@ -11,11 +11,13 @@ BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
 BUILD_X3=-X github.com/open-telemetry/opentelemetry-collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
+LINT=golangci-lint
+STATIC_CHECK=staticcheck
 
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: test-with-cover binaries
+all: common binaries
 
 .PHONY: e2e-test
 e2e-test: binaries
@@ -55,15 +57,12 @@ for-all:
 
 .PHONY: install-tools
 install-tools:
-	GO111MODULE=on go install \
-	  github.com/google/addlicense \
-	  golang.org/x/lint/golint \
- 	  github.com/golangci/golangci-lint/cmd/golangci-lint \
-	  golang.org/x/tools/cmd/goimports \
-	  github.com/client9/misspell/cmd/misspell \
-	  honnef.co/go/tools/cmd/staticcheck \
-	  github.com/pavius/impi/cmd/impi \
-	  github.com/tcnksm/ghr
+	go install github.com/client9/misspell/cmd/misspell
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	go install github.com/google/addlicense
+	go install honnef.co/go/tools/cmd/staticcheck
+	go install github.com/pavius/impi/cmd/impi
+	go install github.com/tcnksm/ghr
 
 .PHONY: run
 run:
