@@ -113,7 +113,7 @@ func (f *Factory) CreateTraceReceiver(
 
 	config := Configuration{}
 
-	if protoTChannel != nil && protoTChannel.IsEnabled() {
+	if protoTChannel != nil {
 		var err error
 		config.CollectorThriftPort, err = extractPortFromEndpoint(protoTChannel.Endpoint)
 		if err != nil {
