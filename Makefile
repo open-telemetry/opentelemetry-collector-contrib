@@ -17,10 +17,10 @@ STATIC_CHECK=staticcheck
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: common binaries
+all: common otelcontribcol
 
 .PHONY: e2e-test
-e2e-test: binaries
+e2e-test: otelcontribcol
 	$(MAKE) -C testbed runtests
 
 .PHONY: precommit
@@ -85,34 +85,34 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
-.PHONY: binaries
-binaries:
+.PHONY: otelcontribcol
+otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
 
 
-.PHONY: binaries-all-sys
-binaries-all-sys: binaries-darwin_amd64 binaries-linux_amd64 binaries-linux_arm64 binaries-windows_amd64
+.PHONY: otelcontribcol-all-sys
+otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
 
-.PHONY: binaries-darwin_amd64
-binaries-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) binaries
+.PHONY: otelcontribcol-darwin_amd64
+otelcontribcol-darwin_amd64:
+	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcontribcol
 
-.PHONY: binaries-linux_amd64
-binaries-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) binaries
+.PHONY: otelcontribcol-linux_amd64
+otelcontribcol-linux_amd64:
+	GOOS=linux   GOARCH=amd64 $(MAKE) otelcontribcol
 
-.PHONY: binaries-linux_arm64
-binaries-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) binaries
+.PHONY: otelcontribcol-linux_arm64
+otelcontribcol-linux_arm64:
+	GOOS=linux   GOARCH=arm64 $(MAKE) otelcontribcol
 
-.PHONY: binaries-windows_amd64
-binaries-windows_amd64:
-	GOOS=windows GOARCH=amd64 $(MAKE) binaries
+.PHONY: otelcontribcol-windows_amd64
+otelcontribcol-windows_amd64:
+	GOOS=windows GOARCH=amd64 $(MAKE) otelcontribcol
 
 .PHONY: update-dep
 update-dep:
 	$(MAKE) for-all CMD="$(PWD)/scripts/update-dep"
-	$(MAKE) binaries
+	$(MAKE) otelcontribcol
 	$(MAKE) gotidy
 
 .PHONY: update-otel

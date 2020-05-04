@@ -132,7 +132,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Build collector for linux_amd64
-          command: make binaries
+          command: make otelcontribcol
       - persist_to_workspace:
           root: ~/
           paths: project/bin
@@ -144,7 +144,7 @@ jobs:
       - attach_to_workspace
       - run:
           name: Build collector for all archs
-          command: grep ^binaries-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+          command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
       - persist_to_workspace:
           root: ~/
           paths: project/bin
