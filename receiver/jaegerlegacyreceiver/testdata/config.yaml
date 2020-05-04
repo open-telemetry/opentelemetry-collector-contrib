@@ -11,12 +11,6 @@ receivers:
   jaeger_legacy/defaults:
     protocols:
       thrift_tchannel:
-  # The following demonstrates how to disable a protocol.  This particular config
-  # will not start any jaeger protocols.
-  jaeger_legacy/disabled:
-    protocols:
-      thrift_tchannel:
-        disabled: true
 
 processors:
   exampleprocessor:

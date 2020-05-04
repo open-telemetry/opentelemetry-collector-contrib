@@ -24,8 +24,6 @@ exporters:
             target_key: target_label_1
       - source_type: source.resource2
         target_type: target-resource2
-  stackdriver/disabled: # will be ignored
-    disabled: true
 
 service:
   pipelines:
