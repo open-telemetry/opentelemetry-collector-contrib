@@ -26,6 +26,7 @@ import (
 )
 
 type sourceTraceProcessor struct {
+	collector            string
 	sourceCategoryFiller attributeFiller
 	sourceNameFiller     attributeFiller
 	sourceHostFiller     attributeFiller
@@ -43,8 +44,8 @@ type attributeFiller struct {
 const (
 	alphanums = "bcdfghjklmnpqrstvwxz2456789"
 
-	annotationPrefix                = "annotation:"
-	podTemplateHashKey              = "label:pod-template-hash"
+	annotationPrefix                = "pod_annotation_"
+	podTemplateHashKey              = "pod_labels_pod-template-hash"
 	podNameKey                      = "pod_name"
 	sourceHostSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceHost"
 	sourceNameSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceName"
@@ -54,6 +55,7 @@ const (
 func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceTraceProcessor, error) {
 	return &sourceTraceProcessor{
 		nextConsumer:         next,
+		collector:            cfg.Collector,
 		sourceHostFiller:     createSourceHostFiller(),
 		sourceCategoryFiller: createSourceCategoryFiller(cfg),
 		sourceNameFiller:     createSourceNameFiller(cfg),
@@ -68,19 +70,26 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 			continue
 		}
 		res := rs.Resource()
-		filledAny := false
+		filledAnySource := false
+		filledOtherMeta := false
+
 		if !res.IsNil() {
 			atts := res.Attributes()
 
 			// TODO: move this to k8sprocessor
 			enrichPodName(&atts)
+			atts.UpsertString("_source", "traces")
+			if stp.collector != "" {
+				atts.UpsertString("_collector", stp.collector)
+			}
+			filledOtherMeta = true
 
-			filledAny = stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation) || filledAny
-			filledAny = stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation) || filledAny
-			filledAny = stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation) || filledAny
+			filledAnySource = stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation) || filledAnySource
+			filledAnySource = stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation) || filledAnySource
+			filledAnySource = stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation) || filledAnySource
 		}
 
-		if !filledAny {
+		if !filledAnySource {
 			// Perhaps this is coming through Zipkin and in such case the attributes are stored in each span attributes, doh!
 			ilss := rs.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
@@ -98,6 +107,12 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 
 					// TODO: move this to k8sprocessor
 					enrichPodName(&atts)
+					if !filledOtherMeta {
+						atts.UpsertString("_source", "traces")
+						if stp.collector != "" {
+							atts.UpsertString("_collector", stp.collector)
+						}
+					}
 
 					stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation)
 					stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation)

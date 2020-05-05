@@ -26,6 +26,7 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr                          = "source"
+	defaultCollector                 = ""
 	defaultSourceName                = "%{namespace}.%{pod}.%{container}"
 	defaultSourceCategory            = "%{namespace}/%{pod_name}"
 	defaultSourceCategoryPrefix      = "kubernetes/"
@@ -50,6 +51,7 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Collector:                 defaultCollector,
 		SourceName:                defaultSourceName,
 		SourceCategory:            defaultSourceCategory,
 		SourceCategoryPrefix:      defaultSourceCategoryPrefix,

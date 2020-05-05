@@ -29,33 +29,53 @@ var (
 			TypeVal: "resource",
 			NameVal: "resource",
 		},
+		Collector:                 "foocollector",
 		SourceName:                "%{namespace}.%{pod}.%{container}",
 		SourceCategory:            "%{namespace}/%{pod_name}",
 		SourceCategoryPrefix:      "prefix/",
 		SourceCategoryReplaceDash: "#",
 	}
 
-	resourceLabels = map[string]string{
-		"namespace":               "namespace-1",
-		"pod_id":                  "pod-1234",
-		"pod":                     "pod-5db86d8867-sdqlj",
-		"label:pod-template-hash": "5db86d8867",
-		"container":               "container-1",
+	k8sLabels = map[string]string{
+		"namespace":                    "namespace-1",
+		"pod_id":                       "pod-1234",
+		"pod":                          "pod-5db86d8867-sdqlj",
+		"pod_labels_pod-template-hash": "5db86d8867",
+		"container":                    "container-1",
 	}
 
-	resourceLabels2 = map[string]string{
+	mergedK8sLabels = map[string]string{
+		"container":                    "container-1",
+		"namespace":                    "namespace-1",
+		"pod_id":                       "pod-1234",
+		"pod":                          "pod-5db86d8867-sdqlj",
+		"pod_name":                     "pod",
+		"pod_labels_pod-template-hash": "5db86d8867",
+		"_sourceName":                  "namespace-1.pod-5db86d8867-sdqlj.container-1",
+		"_sourceCategory":              "prefix/namespace#1/pod",
+	}
+
+	mergedK8sLabelsWithMeta = map[string]string{
+		"container":                    "container-1",
+		"namespace":                    "namespace-1",
+		"pod_id":                       "pod-1234",
+		"pod":                          "pod-5db86d8867-sdqlj",
+		"pod_name":                     "pod",
+		"pod_labels_pod-template-hash": "5db86d8867",
+		"_source":                      "traces",
+		"_collector":                   "foocollector",
+		"_sourceName":                  "namespace-1.pod-5db86d8867-sdqlj.container-1",
+		"_sourceCategory":              "prefix/namespace#1/pod",
+	}
+
+	limitedLabels = map[string]string{
 		"pod_id": "pod-1234",
 	}
 
-	mergedResourceLabels = map[string]string{
-		"container":               "container-1",
-		"namespace":               "namespace-1",
-		"pod_id":                  "pod-1234",
-		"pod":                     "pod-5db86d8867-sdqlj",
-		"pod_name":                "pod",
-		"label:pod-template-hash": "5db86d8867",
-		"_sourceName":             "namespace-1.pod-5db86d8867-sdqlj.container-1",
-		"_sourceCategory":         "prefix/namespace#1/pod",
+	lmitedLabelsWithMeta = map[string]string{
+		"pod_id":     "pod-1234",
+		"_source":    "traces",
+		"_collector": "foocollector",
 	}
 )
 
@@ -91,8 +111,8 @@ func assertTracesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
 }
 
 func TestTraceSourceProcessor(t *testing.T) {
-	want := newTraceData(mergedResourceLabels)
-	test := newTraceData(resourceLabels)
+	want := newTraceData(mergedK8sLabelsWithMeta)
+	test := newTraceData(k8sLabels)
 
 	ttn := &testTraceConsumer{}
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)
@@ -104,8 +124,8 @@ func TestTraceSourceProcessor(t *testing.T) {
 }
 
 func TestTraceSourceProcessorEmpty(t *testing.T) {
-	want := newTraceData(resourceLabels2)
-	test := newTraceData(resourceLabels2)
+	want := newTraceData(lmitedLabelsWithMeta)
+	test := newTraceData(limitedLabels)
 
 	ttn := &testTraceConsumer{}
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)
@@ -114,9 +134,9 @@ func TestTraceSourceProcessorEmpty(t *testing.T) {
 	assertTracesEqual(t, ttn.td, want)
 }
 
-func newTraceDataWithSpans(labels map[string]string) pdata.Traces {
+func newTraceDataWithSpans(_resourceLabels map[string]string, _spanLabels map[string]string) pdata.Traces {
 	// This will be very small attribute set, the actual data will be at span level
-	td := newTraceData(resourceLabels2)
+	td := newTraceData(_resourceLabels)
 	ils := td.ResourceSpans().At(0).InstrumentationLibrarySpans()
 	ils.Resize(1)
 	spans := ils.At(0).Spans()
@@ -124,15 +144,15 @@ func newTraceDataWithSpans(labels map[string]string) pdata.Traces {
 	spans.At(0).InitEmpty()
 	spans.At(0).SetName("foo")
 	spanAttrs := spans.At(0).Attributes()
-	for k, v := range labels {
+	for k, v := range _spanLabels {
 		spanAttrs.UpsertString(k, v)
 	}
 	return td
 }
 
 func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
-	test := newTraceDataWithSpans(resourceLabels)
-	want := newTraceDataWithSpans(mergedResourceLabels)
+	test := newTraceDataWithSpans(limitedLabels, k8sLabels)
+	want := newTraceDataWithSpans(lmitedLabelsWithMeta, mergedK8sLabels)
 
 	ttn := &testTraceConsumer{}
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)
@@ -143,15 +163,15 @@ func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
 }
 
 func TestTraceSourceProcessorAnnotations(t *testing.T) {
-	resourceLabels["annotation:sumologic.com/sourceHost"] = "sh:%{pod_id}"
-	resourceLabels["annotation:sumologic.com/sourceCategory"] = "sc:%{pod_id}"
-	test := newTraceData(resourceLabels)
+	k8sLabels["pod_annotation_sumologic.com/sourceHost"] = "sh:%{pod_id}"
+	k8sLabels["pod_annotation_sumologic.com/sourceCategory"] = "sc:%{pod_id}"
+	test := newTraceData(k8sLabels)
 
-	mergedResourceLabels["annotation:sumologic.com/sourceHost"] = "sh:%{pod_id}"
-	mergedResourceLabels["annotation:sumologic.com/sourceCategory"] = "sc:%{pod_id}"
-	mergedResourceLabels["_sourceHost"] = "sh:pod-1234"
-	mergedResourceLabels["_sourceCategory"] = "prefix/sc:pod#1234"
-	want := newTraceData(mergedResourceLabels)
+	mergedK8sLabelsWithMeta["pod_annotation_sumologic.com/sourceHost"] = "sh:%{pod_id}"
+	mergedK8sLabelsWithMeta["pod_annotation_sumologic.com/sourceCategory"] = "sc:%{pod_id}"
+	mergedK8sLabelsWithMeta["_sourceHost"] = "sh:pod-1234"
+	mergedK8sLabelsWithMeta["_sourceCategory"] = "prefix/sc:pod#1234"
+	want := newTraceData(mergedK8sLabelsWithMeta)
 
 	ttn := &testTraceConsumer{}
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)

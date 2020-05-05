@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "source",
 			NameVal: "source/2",
 		},
+		Collector:                 "somecollector",
 		SourceName:                "%{namespace}.%{pod}.%{container}/foo",
 		SourceCategory:            "%{namespace}/%{pod_name}/bar",
 		SourceCategoryPrefix:      "kubernetes/",

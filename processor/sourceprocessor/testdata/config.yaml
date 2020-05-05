@@ -6,6 +6,7 @@ processors:
   source:
   # The following specifies a non-trivial source
   source/2:
+    collector: "somecollector"
     source_name: "%{namespace}.%{pod}.%{container}/foo"
     source_category: "%{namespace}/%{pod_name}/bar"
     source_category_prefix: "kubernetes/"

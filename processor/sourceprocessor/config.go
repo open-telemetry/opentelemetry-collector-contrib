@@ -21,6 +21,7 @@ import (
 // Config defines configuration for Source processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+	Collector                      string `mapstructure:"collector"`
 	SourceName                     string `mapstructure:"source_name"`
 	SourceCategory                 string `mapstructure:"source_category"`
 	SourceCategoryPrefix           string `mapstructure:"source_category_prefix"`
