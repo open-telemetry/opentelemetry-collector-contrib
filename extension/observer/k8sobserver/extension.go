@@ -16,9 +16,6 @@ package k8sobserver
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"net/http"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"go.uber.org/zap"
@@ -33,34 +30,15 @@ type k8sObserver struct {
 	informer cache.SharedInformer
 	stop     chan struct{}
 	config   *Config
-	server   *http.Server
 }
 
 func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
 	go k.informer.Run(k.stop)
-
-	// Use custom status port until there's a way to export status via zpages or something else.
-	if k.config.StatusAddr != "" {
-		k.server = &http.Server{
-			Addr:    k.config.StatusAddr,
-			Handler: observer.StatusMux(k),
-		}
-		listen, err := net.Listen("tcp", k.config.StatusAddr)
-		if err != nil {
-			return fmt.Errorf("unable to start status listener: %v", err)
-		}
-		go k.server.Serve(listen)
-	}
 	return nil
 }
 
 func (k *k8sObserver) Shutdown(ctx context.Context) error {
 	close(k.stop)
-	if k.server != nil {
-		if err := k.server.Shutdown(ctx); err != nil {
-			k.logger.Error("failed shutting down status server", zap.Error(err))
-		}
-	}
 	return nil
 }
 
@@ -68,7 +46,7 @@ var _ (component.ServiceExtension) = (*k8sObserver)(nil)
 
 // ListAndWatch notifies watcher with the current state and sends subsequent state changes.
 func (k *k8sObserver) ListAndWatch(listener observer.Notify) {
-	k.informer.AddEventHandler(&handler{logger: k.logger, watcher: listener, idNamespace: k.config.Name()})
+	k.informer.AddEventHandler(&handler{watcher: listener, idNamespace: k.config.Name()})
 }
 
 // newObserver creates a new k8s observer extension.
