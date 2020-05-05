@@ -49,16 +49,16 @@ func TestOnAdd(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "enabled"},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(&config.ExampleReceiverProducer{}, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(&config.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
-		{ID: "id-1", Target: "localhost", Details: nil},
+		portEndpoint,
 	})
 
 	runner.AssertExpectations(t)
@@ -74,11 +74,11 @@ func TestOnRemove(t *testing.T) {
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("id-1", rcvr)
+	handler.receiversByEndpointID.Put("port-1", rcvr)
 
 	runner.On("shutdown", rcvr).Return(nil)
 
-	handler.OnRemove([]observer.Endpoint{{ID: "id-1", Target: "localhost", Details: nil}})
+	handler.OnRemove([]observer.Endpoint{portEndpoint})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
@@ -92,20 +92,20 @@ func TestOnChange(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "enabled"},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("id-1", oldRcvr)
+	handler.receiversByEndpointID.Put("port-1", oldRcvr)
 
 	runner.On("shutdown", oldRcvr).Return(nil)
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(newRcvr, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(newRcvr, nil)
 
-	handler.OnChange([]observer.Endpoint{{ID: "id-1", Target: "localhost", Details: nil}})
+	handler.OnChange([]observer.Endpoint{portEndpoint})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("id-1")[0])
+	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0])
 }

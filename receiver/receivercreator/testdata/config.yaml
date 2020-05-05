@@ -4,7 +4,7 @@ receivers:
     watch_observers: [mock_observer]
     receivers:
       examplereceiver/1:
-        rule: enabled
+        rule: type.port
         config:
           endpoint: localhost:12345
 
