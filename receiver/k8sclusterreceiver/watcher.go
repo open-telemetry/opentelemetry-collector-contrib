@@ -15,6 +15,10 @@
 package k8sclusterreceiver
 
 import (
+	"fmt"
+
+	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -27,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 type resourceWatcher struct {
@@ -34,19 +39,18 @@ type resourceWatcher struct {
 	sharedInformerFactory informers.SharedInformerFactory
 	dataCollector         *collection.DataCollector
 	logger                *zap.Logger
-	// This field is temporary and will be removed once the
-	// metadata syncing details are finalized.
-	collectMedata bool
+	metadataConsumers     []metadataConsumer
 }
+
+type metadataConsumer func(metadata map[string]*collection.KubernetesMetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(logger *zap.Logger, config *Config,
-	client kubernetes.Interface, collectMetadata bool) (*resourceWatcher, error) {
+	client kubernetes.Interface) (*resourceWatcher, error) {
 	rw := &resourceWatcher{
 		client:        client,
 		logger:        logger,
 		dataCollector: collection.NewDataCollector(logger, config.NodeConditionTypesToReport),
-		collectMedata: collectMetadata,
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -98,10 +102,12 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
-	if rw.collectMedata {
-		newMetadata := rw.dataCollector.SyncMetadata(obj)
-		collection.GetKubernetesMetadataUpdate(map[string]*collection.KubernetesMetadata{}, newMetadata)
+	if len(rw.metadataConsumers) == 0 {
+		return
 	}
+
+	newMetadata := rw.dataCollector.SyncMetadata(obj)
+	rw.syncMetadataUpdate(map[string]*collection.KubernetesMetadata{}, newMetadata)
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
@@ -113,10 +119,52 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	rw.dataCollector.SyncMetrics(newObj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
-	if rw.collectMedata {
-		oldMetadata := rw.dataCollector.SyncMetadata(oldObj)
-		newMetadata := rw.dataCollector.SyncMetadata(newObj)
+	if len(rw.metadataConsumers) == 0 {
+		return
+	}
 
-		collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
+	oldMetadata := rw.dataCollector.SyncMetadata(oldObj)
+	newMetadata := rw.dataCollector.SyncMetadata(newObj)
+
+	rw.syncMetadataUpdate(oldMetadata, newMetadata)
+}
+
+func (rw *resourceWatcher) setupMetadataExporters(
+	exporters map[configmodels.DataType]map[configmodels.Exporter]component.Exporter,
+	metadataExportersFromConfig []string) error {
+	var out []metadataConsumer
+	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
+
+	for pipelineType, exps := range exporters {
+		for cfg, exp := range exps {
+			if !metadataExportersSet[string(cfg.Type())] {
+				continue
+			}
+			kme, ok := exp.(collection.KubernetesMetadataExporter)
+			if !ok {
+				return fmt.Errorf("%v exporter does not implement KubernetesMetadataExporter", cfg.Type())
+			}
+			out = append(out, kme.ConsumeKubernetesMetadata)
+			rw.logger.Info("Configured Kubernetes MetadataExporter",
+				zap.String("pipeline_type", pipelineType.GetString()),
+				zap.String("exporter_type", string(cfg.Type())),
+			)
+		}
+	}
+
+	rw.metadataConsumers = out
+	return nil
+}
+
+func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[string]*collection.KubernetesMetadata) {
+	kubernetesMetadataUpdate := collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
+
+	if len(kubernetesMetadataUpdate) == 0 {
+		return
+	}
+
+	// TODO: Make this asynchronous
+	for _, consume := range rw.metadataConsumers {
+		consume(kubernetesMetadataUpdate)
 	}
 }

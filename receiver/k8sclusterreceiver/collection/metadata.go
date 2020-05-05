@@ -77,6 +77,12 @@ func mergeKubernetesMetadataMaps(maps ...map[string]*KubernetesMetadata) map[str
 	return out
 }
 
+// KubernetesMetadataExporter provides an interface to implement
+// ConsumeKubernetesMetadata in Exporters that support metadata.
+type KubernetesMetadataExporter interface {
+	ConsumeKubernetesMetadata(metadata map[string]*KubernetesMetadataUpdate) error
+}
+
 // KubernetesMetadataUpdate provides a delta view of properties on a resource.
 type KubernetesMetadataUpdate struct {
 	ResourceIDKey      string

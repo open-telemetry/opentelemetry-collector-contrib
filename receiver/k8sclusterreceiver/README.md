@@ -44,6 +44,27 @@ corresponding `Condition` is `True`, `0` if it is `False` and -1 if it is `Unkno
 
 default: `[Ready]`
 
+#### metadata_exporters
+
+A list of metadata exporters to which metadata being collected by this receiver
+should be synced. Exporters specified in this list are expected to implement the
+following interface. If an exporter that does not implement the interface is listed,
+setup will fail.
+
+```yaml
+type KubernetesMetadataExporter interface {
+  ConsumeKubernetesMetadata(metadata map[string]*KubernetesMetadataUpdate) error
+}
+
+type KubernetesMetadataUpdate struct {
+  ResourceIDKey      string
+  ResourceID         string
+  PropertiesToAdd    map[string]string
+  PropertiesToUpdate map[string]string
+  PropertiesToRemove map[string]string
+}
+```
+
 ### Example
 
 Here is an example deployment of the collector that sets up this receiver along with 

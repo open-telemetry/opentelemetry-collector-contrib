@@ -47,6 +47,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	var c context.Context
 	c, kr.cancel = context.WithCancel(ctx)
 
+	exporters := host.GetExporters()
+	if err := kr.resourceWatcher.setupMetadataExporters(exporters,
+		kr.config.MetadataExporters); err != nil {
+		return err
+	}
+
 	go func() {
 		kr.resourceWatcher.startWatchingResources(c.Done())
 
@@ -105,7 +111,7 @@ func newReceiver(
 	if err != nil {
 		return nil, err
 	}
-	resourceWatcher, err := newResourceWatcher(logger, config, client, false)
+	resourceWatcher, err := newResourceWatcher(logger, config, client)
 
 	if err != nil {
 		return nil, err
