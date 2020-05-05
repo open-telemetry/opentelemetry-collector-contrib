@@ -31,7 +31,7 @@ type rule struct {
 }
 
 // ruleRe is used to verify the rule starts type check.
-var ruleRe = regexp.MustCompile(`^type\.(Pod|Port)`)
+var ruleRe = regexp.MustCompile(`^type\.(pod|port)`)
 
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {
@@ -56,21 +56,21 @@ func newRule(ruleStr string) (rule, error) {
 func (r *rule) eval(endpoint observer.Endpoint) (bool, error) {
 	var env map[string]interface{}
 
-	ruleTypes := struct {
-		Port bool
-		Pod  bool
-	}{}
+	ruleTypes := map[string]interface{}{
+		"port": false,
+		"pod":  false,
+	}
 
 	switch o := endpoint.Details.(type) {
 	case observer.Pod:
-		ruleTypes.Pod = true
+		ruleTypes["pod"] = true
 		env = map[string]interface{}{
 			"type":   ruleTypes,
 			"name":   o.Name,
 			"labels": o.Labels,
 		}
 	case observer.Port:
-		ruleTypes.Port = true
+		ruleTypes["port"] = true
 		env = map[string]interface{}{
 			"type": ruleTypes,
 			"name": o.Name,

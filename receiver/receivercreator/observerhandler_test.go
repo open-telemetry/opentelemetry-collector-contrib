@@ -49,7 +49,7 @@ func TestOnAdd(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.Port`)},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
@@ -92,7 +92,7 @@ func TestOnChange(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.Port`)},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
