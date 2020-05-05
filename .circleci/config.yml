@@ -1,10 +1,34 @@
 version: 2.1
 
+executors:
+  golang:
+    docker:
+      - image: cimg/go:1.14
+
 commands:
   attach_to_workspace:
     steps:
       - attach_workspace:
           at: ~/
+
+  save_module_cache:
+    steps:
+      - save_cache:
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+          paths:
+            - "/home/circleci/go/pkg/mod"
+
+  restore_module_cache:
+    steps:
+      - run:
+          name: create modules dir
+          command: mkdir -p ~/go/pkg/mod
+      - restore_cache: # restores saved cache if no changes are detected since last run
+          keys:
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+      - persist_to_workspace:
+          root: ~/
+          paths: go/pkg/mod
 
   publish_docker_images:
     parameters:
@@ -32,10 +56,32 @@ workflows:
   version: 2
   build-publish:
     jobs:
-      - build:
+      - setup-and-lint:
           filters:
-            branches:
+            tags:
               only: /.*/
+      - build:
+          requires:
+            - setup-and-lint
+          filters:
+            tags:
+              only: /.*/
+      - cross-compile:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - loadtest:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+      - coverage:
+          requires:
+            - setup-and-lint
+          filters:
             tags:
               only: /.*/
       - publish-stable:
@@ -56,42 +102,77 @@ workflows:
               ignore: /.*/
 
 jobs:
-  build:
-    docker:
-      - image: cimg/go:1.14
+  setup-and-lint:
+    executor: golang
     steps:
       - checkout
+      - restore_module_cache
+      - persist_to_workspace:
+          root: ~/
+          paths: project
       - run:
           name: Install bazzar
           command: sudo apt update && sudo apt-get install bzr -y
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
       - run:
           name: Install tools
           command: make install-tools
       - run:
-          name: create modules dir
-          command: mkdir -p /home/circleci/go/pkg/mod
+          name: Install testbed tools
+          command: make -C testbed install-tools
+      - persist_to_workspace:
+          root: ~/
+          paths: go/bin
       - run:
-          name: Verify
-          command: make ci
+          name: Lint
+          command: make -j4 checklicense impi lint misspell
+
+  build:
+    executor: golang
+    steps:
+      - attach_to_workspace
       - run:
-          name: Build collector 
+          name: Build collector for linux_amd64
           command: make otelcontribcol
-      - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
-          paths:
-            - "/home/circleci/go/pkg/mod"
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  cross-compile:
+    executor: golang
+    parallelism: 4
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Build collector for all archs
+          command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
+
+  coverage:
+    executor: golang
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Coverage tests
+          command: make test-with-cover
+      - run:
+          name: Code coverage
+          command: bash <(curl -s https://codecov.io/bash)
+
+  loadtest:
+    executor: golang
+    resource_class: medium+
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Loadtest
+          command: make -C testbed runtests
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
-      - persist_to_workspace:
-          root: ~/
-          paths:
-            - go
-            - project
+
   publish-stable:
     docker:
       - image: cimg/go:1.14

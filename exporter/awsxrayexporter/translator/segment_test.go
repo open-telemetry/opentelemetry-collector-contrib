@@ -199,6 +199,31 @@ func TestFixAnnotationKey(t *testing.T) {
 	assert.Equal(t, "Key_1", fixedKey)
 }
 
+func TestServerSpanWithNilAttributes(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	labels := constructDefaultResourceLabels()
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes, labels)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
+	span.TimeEvents = &timeEvents
+	span.Attributes = nil
+
+	segment := MakeSegment(spanName, span)
+
+	assert.NotNil(t, segment)
+	assert.NotNil(t, segment.Cause)
+	assert.Equal(t, spanName, segment.Name)
+	assert.True(t, segment.Fault)
+	w := testWriters.borrow()
+	if err := w.Encode(segment); err != nil {
+		assert.Fail(t, "invalid json")
+	}
+	jsonStr := w.String()
+	testWriters.release(w)
+	assert.True(t, strings.Contains(jsonStr, spanName))
+}
+
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string,
 	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
 	var (

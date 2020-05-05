@@ -36,16 +36,19 @@ type redisRunnable struct {
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
 	timeBundle      *timeBundle
+	serviceName     string
 }
 
 func newRedisRunnable(
 	ctx context.Context,
 	client client,
+	serviceName string,
 	metricsConsumer consumer.MetricsConsumerOld,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
 		ctx:             ctx,
+		serviceName:     serviceName,
 		redisSvc:        newRedisSvc(client),
 		metricsConsumer: metricsConsumer,
 		logger:          logger,
@@ -104,7 +107,7 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	md := newMetricsData(metrics)
+	md := newMetricsData(metrics, r.serviceName)
 
 	err = r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
 	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)

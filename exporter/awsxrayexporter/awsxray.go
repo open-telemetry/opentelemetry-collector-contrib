@@ -17,11 +17,13 @@ package awsxrayexporter
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -57,12 +59,14 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 				totalDroppedSpans += droppedSpans
 				logger.Debug("request: " + input.String())
 				output, localErr := xrayClient.PutTraceSegments(input)
-				if !config.(*Config).LocalMode {
-					err = localErr // not test mode, so record error
+				if localErr != nil && !config.(*Config).LocalMode {
+					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
 				}
-				logger.Debug("response: " + output.String())
-				if output != nil && output.UnprocessedTraceSegments != nil {
-					totalDroppedSpans += len(output.UnprocessedTraceSegments)
+				if output != nil {
+					logger.Debug("response: " + output.String())
+					if output.UnprocessedTraceSegments != nil {
+						totalDroppedSpans += len(output.UnprocessedTraceSegments)
+					}
 				}
 				if err != nil {
 					break
@@ -94,4 +98,12 @@ func assembleRequest(spans []*tracepb.Span, logger *zap.Logger) (int, *xray.PutT
 		documents[i] = &jsonStr
 	}
 	return droppedSpans, &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
+}
+
+func wrapErrorIfBadRequest(err *error) error {
+	_, ok := (*err).(awserr.RequestFailure)
+	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
+		return consumererror.Permanent(*err)
+	}
+	return *err
 }
