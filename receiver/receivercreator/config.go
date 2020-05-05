@@ -34,13 +34,13 @@ const (
 
 // receiverConfig describes a receiver instance with a default config.
 type receiverConfig struct {
-	// fullName is the full subreceiver name (ie <receiver type>/<id>).
-	fullName string
-	// typeStr is set based on the configured receiver name.
-	typeStr configmodels.Type
-	// config is the map configured by the user in the config file. It is the contents of the map from
+	// FullName is the full subreceiver name (ie <receiver type>/<id>).
+	FullName string `json:"full_name"`
+	// Type is set based on the configured receiver name.
+	Type configmodels.Type `json:"type"`
+	// Config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	Config userConfigMap `json:"config"`
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -66,9 +66,9 @@ func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, e
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			typeStr:  typeStr,
-			fullName: fullName,
-			config:   config,
+			Type:     typeStr,
+			FullName: fullName,
+			Config:   config,
 		},
 	}, nil
 }
@@ -79,6 +79,8 @@ type Config struct {
 	receiverTemplates             map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
 	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
+	// StatusAddr is the [address]:port to serve status info.
+	StatusAddr string `mapstructure:"status_addr"`
 }
 
 // Copied from the Viper but changed to use the same delimiter.

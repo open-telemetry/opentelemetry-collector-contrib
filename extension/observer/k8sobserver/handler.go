@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 
@@ -26,6 +27,7 @@ import (
 
 // handler handles k8s cache informer callbacks.
 type handler struct {
+	logger *zap.Logger
 	// idNamespace should be some unique token to distinguish multiple handler instances.
 	idNamespace string
 	// watcher is the callback for discovered endpoints.
@@ -38,6 +40,7 @@ func (h *handler) OnAdd(obj interface{}) {
 	if !ok {
 		return
 	}
+
 	h.watcher.OnAdd(h.convertPodToEndpoints(pod))
 }
 

@@ -20,15 +20,23 @@ import (
 
 // receiverMap is a multimap for mapping one id to many receivers. It does
 // not deduplicate the same value being associated with the same key.
-type receiverMap map[string][]component.Receiver
+type receiverMap map[string][]receiverInstance
+
+// receiverInstance wraps a component.Receiver with the configuration
+// that was used to create it.
+type receiverInstance struct {
+	receiver         component.Receiver
+	ReceiverConfig   receiverConfig `json:"receiver_config"`
+	DiscoveredConfig userConfigMap  `json:"discovered_config"`
+}
 
 // Put rcvr into key id. If rcvr is a duplicate it will still be added.
-func (rm receiverMap) Put(id string, rcvr component.Receiver) {
+func (rm receiverMap) Put(id string, rcvr receiverInstance) {
 	rm[id] = append(rm[id], rcvr)
 }
 
 // Get receivers by id.
-func (rm receiverMap) Get(id string) []component.Receiver {
+func (rm receiverMap) Get(id string) []receiverInstance {
 	return rm[id]
 }
 
@@ -38,7 +46,7 @@ func (rm receiverMap) RemoveAll(id string) {
 }
 
 // Get all receivers in the map.
-func (rm receiverMap) Values() (out []component.Receiver) {
+func (rm receiverMap) Values() (out []receiverInstance) {
 	for _, m := range rm {
 		out = append(out, m...)
 	}

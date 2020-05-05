@@ -15,6 +15,7 @@
 package receivercreator
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -38,6 +39,12 @@ type observerHandler struct {
 	runner runner
 }
 
+func (obs *observerHandler) json() ([]byte, error) {
+	obs.Lock()
+	defer obs.Unlock()
+	return json.Marshal(obs.receiversByEndpointID)
+}
+
 // Shutdown all receivers started at runtime.
 func (obs *observerHandler) Shutdown() error {
 	obs.Lock()
@@ -46,7 +53,7 @@ func (obs *observerHandler) Shutdown() error {
 	var errs []error
 
 	for _, rcvr := range obs.receiversByEndpointID.Values() {
-		if err := obs.runner.shutdown(rcvr); err != nil {
+		if err := obs.runner.shutdown(rcvr.receiver); err != nil {
 			// TODO: Should keep track of which receiver the error is associated with
 			// but require some restructuring.
 			errs = append(errs, err)
@@ -75,19 +82,24 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			}
 
 			obs.logger.Info("starting receiver",
-				zap.String("name", template.fullName),
-				zap.String("type", string(template.typeStr)),
+				zap.String("name", template.FullName),
+				zap.String("type", string(template.Type)),
 				zap.String("endpoint", e.ID))
 
-			rcvr, err := obs.runner.start(template.receiverConfig, userConfigMap{
+			discoveredConfig := userConfigMap{
 				endpointConfigKey: e.Target,
-			})
+			}
+			rcvr, err := obs.runner.start(template.receiverConfig, discoveredConfig)
 			if err != nil {
-				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
+				obs.logger.Error("failed to start receiver", zap.String("receiver", template.FullName))
 				continue
 			}
 
-			obs.receiversByEndpointID.Put(e.ID, rcvr)
+			obs.receiversByEndpointID.Put(e.ID, receiverInstance{
+				receiver:         rcvr,
+				ReceiverConfig:   template.receiverConfig,
+				DiscoveredConfig: discoveredConfig,
+			})
 		}
 	}
 }
@@ -101,7 +113,7 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
 			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint", e.ID))
 
-			if err := obs.runner.shutdown(rcvr); err != nil {
+			if err := obs.runner.shutdown(rcvr.receiver); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))
 				continue
 			}

@@ -22,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -43,9 +44,23 @@ func (run *mockRunner) shutdown(rcvr component.Receiver) error {
 
 var _ runner = (*mockRunner)(nil)
 
+func TestJSON(t *testing.T) {
+	rm := receiverMap{}
+	rcvr := &config.ExampleReceiverProducer{}
+	rm.Put("port-1", receiverInstance{rcvr, receiverConfig{
+		"redis", "redis/1", userConfigMap{"endpoint": "1.2.3.4"}},
+		userConfigMap{"discovered": "val"}})
+	handler := &observerHandler{
+		receiversByEndpointID: rm,
+	}
+	data, err := handler.json()
+	require.NoError(t, err)
+	assert.Equal(t, `{"port-1":[{"receiver_config":{"full_name":"redis","type":"redis/1","config":{"endpoint":"1.2.3.4"}},"discovered_config":{"discovered":"val"}}]}`, string(data))
+}
+
 func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{Type: configmodels.Type("name"), Config: userConfigMap{"foo": "bar"}, FullName: "name/1"}
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
@@ -74,7 +89,7 @@ func TestOnRemove(t *testing.T) {
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("port-1", rcvr)
+	handler.receiversByEndpointID.Put("port-1", receiverInstance{rcvr, receiverConfig{}, nil})
 
 	runner.On("shutdown", rcvr).Return(nil)
 
@@ -86,7 +101,7 @@ func TestOnRemove(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	runner := &mockRunner{}
-	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
+	rcvrCfg := receiverConfig{Type: configmodels.Type("name"), Config: userConfigMap{"foo": "bar"}, FullName: "name/1"}
 	oldRcvr := &config.ExampleReceiverProducer{}
 	newRcvr := &config.ExampleReceiverProducer{}
 	handler := &observerHandler{
@@ -98,7 +113,7 @@ func TestOnChange(t *testing.T) {
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("port-1", oldRcvr)
+	handler.receiversByEndpointID.Put("port-1", receiverInstance{oldRcvr, receiverConfig{}, nil})
 
 	runner.On("shutdown", oldRcvr).Return(nil)
 	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(newRcvr, nil)
@@ -107,5 +122,8 @@ func TestOnChange(t *testing.T) {
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0])
+	assert.Equal(t,
+		receiverInstance{newRcvr, rcvrCfg, userConfigMap{
+			endpointConfigKey: "localhost:1234"}},
+		handler.receiversByEndpointID.Get("port-1")[0])
 }

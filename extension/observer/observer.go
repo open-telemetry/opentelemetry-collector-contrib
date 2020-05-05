@@ -33,11 +33,11 @@ const (
 // Endpoint is a service that can be contacted remotely.
 type Endpoint struct {
 	// ID uniquely identifies this endpoint.
-	ID string
+	ID string `json:"id"`
 	// Target is an IP address or hostname of the endpoint.
-	Target string
+	Target string `json:"target"`
 	// Details contains additional context about the endpoint such as a Pod or Port.
-	Details interface{}
+	Details interface{} `json:"details"`
 }
 
 func (e *Endpoint) String() string {
@@ -47,17 +47,17 @@ func (e *Endpoint) String() string {
 // Pod is a discovered k8s pod.
 type Pod struct {
 	// Name of the pod.
-	Name string
+	Name string `json:"name"`
 	// Labels is a map of user-specified metadata.
-	Labels map[string]string
+	Labels map[string]string `json:"labels"`
 }
 
 // Port is an endpoint that has a target as well as a port.
 type Port struct {
-	Name     string
-	Pod      Pod
-	Port     uint16
-	Protocol Protocol
+	Name     string   `json:"name"`
+	Pod      Pod      `json:"pod"`
+	Port     uint16   `json:"port"`
+	Protocol Protocol `json:"protocol"`
 }
 
 // Observable is an interface that provides notification of endpoint changes.

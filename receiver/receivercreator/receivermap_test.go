@@ -17,7 +17,6 @@ package receivercreator
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,9 +25,9 @@ func TestReceiverMap(t *testing.T) {
 	rm := receiverMap{}
 	assert.Equal(t, 0, rm.Size())
 
-	r1 := &config.ExampleReceiverProducer{}
-	r2 := &config.ExampleReceiverProducer{}
-	r3 := &config.ExampleReceiverProducer{}
+	r1 := receiverInstance{&config.ExampleReceiverProducer{}, receiverConfig{}, nil}
+	r2 := receiverInstance{&config.ExampleReceiverProducer{}, receiverConfig{}, nil}
+	r3 := receiverInstance{&config.ExampleReceiverProducer{}, receiverConfig{}, nil}
 
 	rm.Put("a", r1)
 	assert.Equal(t, 1, rm.Size())
@@ -39,7 +38,7 @@ func TestReceiverMap(t *testing.T) {
 	rm.Put("b", r3)
 	assert.Equal(t, 3, rm.Size())
 
-	assert.Equal(t, []component.Receiver{r1, r2}, rm.Get("a"))
+	assert.Equal(t, []receiverInstance{r1, r2}, rm.Get("a"))
 	assert.Nil(t, rm.Get("missing"))
 
 	rm.RemoveAll("missing")
@@ -54,5 +53,5 @@ func TestReceiverMap(t *testing.T) {
 	rm.Put("a", r1)
 	rm.Put("b", r2)
 	assert.Equal(t, 2, rm.Size())
-	assert.Equal(t, []component.Receiver{r1, r2}, rm.Values())
+	assert.Equal(t, []receiverInstance{r1, r2}, rm.Values())
 }

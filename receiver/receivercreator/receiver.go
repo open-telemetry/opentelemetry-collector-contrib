@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -39,6 +41,7 @@ type receiverCreator struct {
 	logger          *zap.Logger
 	cfg             *Config
 	observerHandler observerHandler
+	server          *http.Server
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
@@ -118,10 +121,40 @@ func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error
 		observable.ListAndWatch(&rc.observerHandler)
 	}
 
+	// Use custom status port until there's a way to export status via zpages or something else.
+	if rc.cfg.StatusAddr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/status", rc.Status)
+		rc.server = &http.Server{
+			Addr:    rc.cfg.StatusAddr,
+			Handler: mux,
+		}
+		listen, err := net.Listen("tcp", rc.cfg.StatusAddr)
+		if err != nil {
+			return fmt.Errorf("unable to start status listener: %v", err)
+		}
+		go rc.server.Serve(listen)
+	}
+
 	return nil
 }
 
 // Shutdown stops the receiver_creator and all its receivers started at runtime.
 func (rc *receiverCreator) Shutdown(ctx context.Context) error {
+	if rc.server != nil {
+		if err := rc.server.Shutdown(ctx); err != nil {
+			rc.logger.Error("failed shutting down status server", zap.Error(err))
+		}
+	}
 	return rc.observerHandler.Shutdown()
+}
+
+func (rc *receiverCreator) Status(writer http.ResponseWriter, req *http.Request) {
+	writer.Header().Set("content-type", "application/json")
+	data, err := rc.observerHandler.json()
+	if err != nil {
+		http.Error(writer, fmt.Sprintf("failed to get status: %v", err), http.StatusInternalServerError)
+		return
+	}
+	_, _ = writer.Write(data)
 }

@@ -46,10 +46,10 @@ var _ runner = (*receiverRunner)(nil)
 
 // start a receiver instance from its static config and discovered config.
 func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
-	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
+	factory := run.host.GetFactory(component.KindReceiver, receiver.Type)
 
 	if factory == nil {
-		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.typeStr)
+		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.Type)
 	}
 
 	receiverFactory := factory.(component.ReceiverFactoryOld)
@@ -85,7 +85,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	mergedConfig := config.NewViper()
 
 	// Merge in the config values specified in the config file.
-	if err := mergedConfig.MergeConfigMap(receiver.config); err != nil {
+	if err := mergedConfig.MergeConfigMap(receiver.Config); err != nil {
 		return nil, fmt.Errorf("failed to merge template config from config file: %v", err)
 	}
 
@@ -94,13 +94,13 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
 	}
 
-	receiverConfig, err := config.LoadReceiver(mergedConfig, configmodels.Type(receiver.typeStr), receiver.fullName, factory)
+	receiverConfig, err := config.LoadReceiver(mergedConfig, configmodels.Type(receiver.Type), receiver.FullName, factory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load template config: %v", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.fullName, mergedConfig.GetString(endpointConfigKey)))
+	receiverConfig.SetName(fmt.Sprintf("%s/%s{endpoint=%q}", run.idNamespace, receiver.FullName, mergedConfig.GetString(endpointConfigKey)))
 	return receiverConfig, nil
 }
 

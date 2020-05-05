@@ -108,8 +108,8 @@ func TestMockedEndToEnd(t *testing.T) {
 	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
-	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
-		example := receiver.(*config.ExampleReceiverProducer)
+	for _, inst := range dyn.observerHandler.receiversByEndpointID.Values() {
+		example := inst.receiver.(*config.ExampleReceiverProducer)
 		assert.NoError(t, example.MetricsConsumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
@@ -143,7 +143,7 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	shutdown()
 
-	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
+	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].receiver.(*config.ExampleReceiverProducer).Stopped)
 }
 
 func TestLoggingHost(t *testing.T) {

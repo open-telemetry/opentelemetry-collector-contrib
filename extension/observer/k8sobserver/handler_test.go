@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -27,6 +28,7 @@ func TestEndpointsAdded(t *testing.T) {
 	h := handler{
 		idNamespace: "test-1",
 		watcher:     &sink,
+		logger:      zap.NewNop(),
 	}
 	h.OnAdd(podWithNamedPorts)
 	assert.ElementsMatch(t, []observer.Endpoint{
@@ -59,6 +61,7 @@ func TestEndpointsRemoved(t *testing.T) {
 	h := handler{
 		idNamespace: "test-1",
 		watcher:     &sink,
+		logger:      zap.NewNop(),
 	}
 	h.OnDelete(podWithNamedPorts)
 	assert.ElementsMatch(t, []observer.Endpoint{
@@ -91,6 +94,7 @@ func TestEndpointsChanged(t *testing.T) {
 	h := handler{
 		idNamespace: "test-1",
 		watcher:     &sink,
+		logger:      zap.NewNop(),
 	}
 	// Nothing changed.
 	h.OnUpdate(podWithNamedPorts, podWithNamedPorts)

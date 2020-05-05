@@ -84,6 +84,6 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, `type.port`, r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
-	}, r1.receiverTemplates["examplereceiver/1"].config)
+	}, r1.receiverTemplates["examplereceiver/1"].Config)
 	assert.Equal(t, []configmodels.Type{"mock_observer"}, r1.WatchObservers)
 }
