@@ -30,7 +30,8 @@ type rule struct {
 	program *vm.Program
 }
 
-var ruleRe = regexp.MustCompile("^type.(Pod|Port)")
+// ruleRe is used to verify the rule starts type check.
+var ruleRe = regexp.MustCompile(`^type\.(Pod|Port)`)
 
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {
@@ -71,11 +72,13 @@ func (r *rule) eval(endpoint observer.Endpoint) (bool, error) {
 	case observer.Port:
 		ruleTypes.Port = true
 		env = map[string]interface{}{
-			"type":     ruleTypes,
-			"name":     o.Name,
-			"port":     o.Port,
-			"pod_name": o.Pod.Name,
-			"labels":   o.Pod.Labels,
+			"type": ruleTypes,
+			"name": o.Name,
+			"port": o.Port,
+			"pod": map[string]interface{}{
+				"name":   o.Pod.Name,
+				"labels": o.Pod.Labels,
+			},
 			"protocol": o.Protocol,
 		}
 	default:

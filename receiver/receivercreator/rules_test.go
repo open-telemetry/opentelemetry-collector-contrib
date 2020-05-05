@@ -44,7 +44,7 @@ func Test_ruleEval(t *testing.T) {
 	}{
 		// Doesn't work yet. See comment in newRule.
 		// {"unknown variable", args{`type == "port" && unknown_var == 1`, portEndpoint}, false, true},
-		{"basic port", args{`type.Port && name == "http"`, portEndpoint}, true, false},
+		{"basic port", args{`type.Port && name == "http" && pod.labels["app"] == "redis"`, portEndpoint}, true, false},
 		{"basic pod", args{`type.Pod && labels["region"] == "west-1"`, podEndpoint}, true, false},
 	}
 	for _, tt := range tests {
