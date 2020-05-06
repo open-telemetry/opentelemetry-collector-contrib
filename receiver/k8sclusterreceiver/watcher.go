@@ -130,26 +130,25 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
-	exporters map[configmodels.DataType]map[configmodels.Exporter]component.Exporter,
-	metadataExportersFromConfig []string) error {
+	exporters map[configmodels.Exporter]component.Exporter,
+	metadataExportersFromConfig []string,
+) error {
+
 	var out []metadataConsumer
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
 
-	for pipelineType, exps := range exporters {
-		for cfg, exp := range exps {
-			if !metadataExportersSet[string(cfg.Type())] {
-				continue
-			}
-			kme, ok := exp.(collection.KubernetesMetadataExporter)
-			if !ok {
-				return fmt.Errorf("%v exporter does not implement KubernetesMetadataExporter", cfg.Type())
-			}
-			out = append(out, kme.ConsumeKubernetesMetadata)
-			rw.logger.Info("Configured Kubernetes MetadataExporter",
-				zap.String("pipeline_type", pipelineType.GetString()),
-				zap.String("exporter_type", string(cfg.Type())),
-			)
+	for cfg, exp := range exporters {
+		if !metadataExportersSet[cfg.Name()] {
+			continue
 		}
+		kme, ok := exp.(collection.KubernetesMetadataExporter)
+		if !ok {
+			return fmt.Errorf("%s exporter does not implement KubernetesMetadataExporter", cfg.Name())
+		}
+		out = append(out, kme.ConsumeKubernetesMetadata)
+		rw.logger.Info("Configured Kubernetes MetadataExporter",
+			zap.String("exporter_name", cfg.Name()),
+		)
 	}
 
 	rw.metadataConsumers = out
@@ -163,7 +162,7 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[strin
 		return
 	}
 
-	// TODO: Make this asynchronous
+	// TODO: Asynchronously invoke consumers
 	for _, consume := range rw.metadataConsumers {
 		consume(kubernetesMetadataUpdate)
 	}

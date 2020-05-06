@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
@@ -48,8 +49,8 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	c, kr.cancel = context.WithCancel(ctx)
 
 	exporters := host.GetExporters()
-	if err := kr.resourceWatcher.setupMetadataExporters(exporters,
-		kr.config.MetadataExporters); err != nil {
+	if err := kr.resourceWatcher.setupMetadataExporters(
+		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 

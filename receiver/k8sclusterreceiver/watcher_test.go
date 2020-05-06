@@ -28,7 +28,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 		metadataConsumers []metadataConsumer
 	}
 	type args struct {
-		exporters                   map[configmodels.DataType]map[configmodels.Exporter]component.Exporter
+		exporters                   map[configmodels.Exporter]component.Exporter
 		metadataExportersFromConfig []string
 	}
 	tests := []struct {
@@ -41,10 +41,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			"Unsupported exporter",
 			fields{},
 			args{
-				exporters: map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
-					configmodels.MetricsDataType: {
-						mockExporterConfig{ExporterType: "exampleexporter"}: MockExporter{},
-					},
+				exporters: map[configmodels.Exporter]component.Exporter{
+					mockExporterConfig{ExporterName: "exampleexporter"}: MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"exampleexporter"},
 			},
@@ -55,10 +53,8 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeKubernetesMetadata},
 			},
-			args{exporters: map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
-				configmodels.MetricsDataType: {
-					mockExporterConfig{ExporterType: "exampleexporter"}: mockExporterWithK8sMetadata{},
-				},
+			args{exporters: map[configmodels.Exporter]component.Exporter{
+				mockExporterConfig{ExporterName: "exampleexporter"}: mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"exampleexporter"},
 			},
