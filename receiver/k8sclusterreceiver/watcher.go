@@ -135,7 +135,11 @@ func (rw *resourceWatcher) setupMetadataExporters(
 ) error {
 
 	var out []metadataConsumer
+
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
+	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {
+		return fmt.Errorf("failed to configure metadata_exporters: %v", err)
+	}
 
 	for cfg, exp := range exporters {
 		if !metadataExportersSet[cfg.Name()] {
@@ -152,6 +156,23 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	}
 
 	rw.metadataConsumers = out
+	return nil
+}
+
+func validateMetadataExporters(metadataExporters map[string]bool,
+	exporters map[configmodels.Exporter]component.Exporter) error {
+
+	configuredExporters := map[string]bool{}
+	for cfg, _ := range exporters {
+		configuredExporters[cfg.Name()] = true
+	}
+
+	for e, _ := range metadataExporters {
+		if !configuredExporters[e] {
+			return fmt.Errorf("%s exporter is not in collector config", e)
+		}
+	}
+
 	return nil
 }
 

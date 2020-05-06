@@ -60,6 +60,18 @@ func TestSetupMetadataExporters(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"Non-existent exporter",
+			fields{
+				metadataConsumers: []metadataConsumer{},
+			},
+			args{exporters: map[configmodels.Exporter]component.Exporter{
+				mockExporterConfig{ExporterName: "exampleexporter"}: mockExporterWithK8sMetadata{},
+			},
+				metadataExportersFromConfig: []string{"exampleexporter/1"},
+			},
+			true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

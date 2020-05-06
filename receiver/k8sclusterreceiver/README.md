@@ -49,7 +49,7 @@ default: `[Ready]`
 A list of metadata exporters to which metadata being collected by this receiver
 should be synced. Exporters specified in this list are expected to implement the
 following interface. If an exporter that does not implement the interface is listed,
-setup will fail.
+startup will fail.
 
 ```yaml
 type KubernetesMetadataExporter interface {
@@ -57,13 +57,15 @@ type KubernetesMetadataExporter interface {
 }
 
 type KubernetesMetadataUpdate struct {
-  ResourceIDKey      string
-  ResourceID         string
-  PropertiesToAdd    map[string]string
-  PropertiesToUpdate map[string]string
-  PropertiesToRemove map[string]string
+  ResourceIDKey         string
+  ResourceID            string
+  MetadataToAdd         map[string]string
+  MetadataToAddToUpdate map[string]string
+  MetadataToAddToRemove map[string]string
 }
 ```
+
+See [here](collection/metadata.go) for details about the above types.
 
 ### Example
 

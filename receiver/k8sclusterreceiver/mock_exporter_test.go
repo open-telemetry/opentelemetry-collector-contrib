@@ -36,10 +36,6 @@ func (m mockExporterConfig) SetName(name string) {
 	m.ExporterName = name
 }
 
-func (m mockExporterConfig) IsEnabled() bool {
-	return true
-}
-
 func (m mockExporterConfig) Type() configmodels.Type {
 	return m.ExporterType
 }

@@ -30,11 +30,15 @@ const (
 	k8sKeyWorkLoadName = "k8s.workload.name"
 )
 
-// KubernetesMetadata associates a resource to a set of metadata.
+// KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
+	// resourceIDKey is the label key of UID label for the resource.
 	resourceIDKey string
-	resourceID    string
-	metadata      map[string]string
+	// resourceID is the Kubernetes UID of the resource. In case of
+	// containers, this value is the container id.
+	resourceID string
+	// metadata is a set of key-value pairs that describe a resource.
+	metadata map[string]string
 }
 
 // getGenericMetadata is responsible for collecting metadata from K8s resources that
@@ -83,12 +87,22 @@ type KubernetesMetadataExporter interface {
 	ConsumeKubernetesMetadata(metadata map[string]*KubernetesMetadataUpdate) error
 }
 
-// KubernetesMetadataUpdate provides a delta view of metadata on a resource.
+// KubernetesMetadataUpdate provides a delta view of metadata on a resource between
+// two revisions of a resource.
 type KubernetesMetadataUpdate struct {
-	ResourceIDKey    string
-	ResourceID       string
-	MetadataToAdd    map[string]string
+	// ResourceIDKey is the label key of UID label for the resource.
+	ResourceIDKey string
+	// ResourceID is the Kubernetes UID of the resource. In case of
+	// containers, this value is the container id.
+	ResourceID string
+	// MetadataToAdd contains key-value pairs that are newly added to
+	// the resource description in the current revision.
+	MetadataToAdd map[string]string
+	// MetadataToUpdate contains key-value pairs that have been updated
+	// in the current revision compared to the previous revisions(s).
 	MetadataToUpdate map[string]string
+	// MetadataToRemove contains key-value pairs that no longer describe
+	// a resource and needs to be removed.
 	MetadataToRemove map[string]string
 }
 
