@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	// Keys for node properties.
+	// Keys for node metadata.
 	nodeCreationTime = "node.creation_timestamp"
 )
 
@@ -93,17 +93,17 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 }
 
 func getMetadataForNode(node *corev1.Node) map[string]*KubernetesMetadata {
-	properties := utils.MergeStringMaps(map[string]string{}, node.Labels)
+	metadata := utils.MergeStringMaps(map[string]string{}, node.Labels)
 
-	properties[k8sKeyNodeName] = node.Name
-	properties[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
+	metadata[k8sKeyNodeName] = node.Name
+	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
 	nodeID := string(node.UID)
 	return map[string]*KubernetesMetadata{
 		nodeID: {
 			resourceIDKey: k8sKeyNodeUID,
 			resourceID:    nodeID,
-			properties:    properties,
+			metadata:      metadata,
 		},
 	}
 }

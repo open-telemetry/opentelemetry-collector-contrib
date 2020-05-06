@@ -68,7 +68,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "k8s.statefulset.uid",
 			resourceID:    "test-statefulset-1-uid",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"k8s.workload.name":              "test-statefulset-1",
 				"k8s.workload.kind":              "statefulset",
 				"statefulset.creation_timestamp": "0001-01-01T00:00:00Z",

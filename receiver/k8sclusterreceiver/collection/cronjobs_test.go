@@ -60,7 +60,7 @@ func TestCronJobMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "k8s.cronjob.uid",
 			resourceID:    "test-cronjob-1-uid",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"cronjob.creation_timestamp": "0001-01-01T00:00:00Z",
 				"foo":                        "bar",
 				"foo1":                       "",

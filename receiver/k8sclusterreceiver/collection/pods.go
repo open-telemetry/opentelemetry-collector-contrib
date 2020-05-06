@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	// Keys for pod properties.
+	// Keys for pod metadata.
 	podCreationTime = "pod.creation_timestamp"
 )
 
@@ -137,36 +137,36 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 
 // getMetadataForPod returns all metadata associated with the pod.
 func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[string]*KubernetesMetadata {
-	properties := utils.MergeStringMaps(map[string]string{}, pod.Labels)
+	metadata := utils.MergeStringMaps(map[string]string{}, pod.Labels)
 
-	properties[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
+	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
 
 	for _, or := range pod.OwnerReferences {
-		properties[strings.ToLower(or.Kind)] = or.Name
-		properties[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
+		metadata[strings.ToLower(or.Kind)] = or.Name
+		metadata[strings.ToLower(or.Kind)+"_uid"] = string(or.UID)
 
-		// defer syncing replicaset and job workload properties.
+		// defer syncing replicaset and job workload metadata.
 		if or.Kind == k8sKindReplicaSet || or.Kind == k8sKindJob {
 			continue
 		}
-		properties[k8sKeyWorkLoadKind] = or.Kind
-		properties[k8sKeyWorkLoadName] = or.Name
+		metadata[k8sKeyWorkLoadKind] = or.Kind
+		metadata[k8sKeyWorkLoadName] = or.Name
 	}
 
 	if mc.services != nil {
-		properties = utils.MergeStringMaps(properties,
+		metadata = utils.MergeStringMaps(metadata,
 			getPodServiceTags(pod, mc.services),
 		)
 	}
 
 	if mc.jobs != nil {
-		properties = utils.MergeStringMaps(properties,
+		metadata = utils.MergeStringMaps(metadata,
 			collectPodJobProperties(pod, mc.jobs),
 		)
 	}
 
 	if mc.replicaSets != nil {
-		properties = utils.MergeStringMaps(properties,
+		metadata = utils.MergeStringMaps(metadata,
 			collectPodReplicaSetProperties(pod, mc.replicaSets),
 		)
 	}
@@ -177,13 +177,13 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[string]*Kubernete
 		{
 			resourceIDKey: k8sKeyPodUID,
 			resourceID:    podID,
-			properties:    properties,
+			metadata:      metadata,
 		},
 	}, getPodContainerProperties(pod))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
-// on Job to see if it was created by a CronJob. Sync properties accordingly.
+// on Job to see if it was created by a CronJob. Sync metadata accordingly.
 func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store) map[string]string {
 	properties := map[string]string{}
 
@@ -207,7 +207,7 @@ func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store) map[string]s
 }
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
-// on ReplicaSet to see if it was created by a Deployment. Sync properties accordingly.
+// on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
 func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store) map[string]string {
 	properties := map[string]string{}
 
@@ -245,7 +245,7 @@ func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 	return properties
 }
 
-// getPodCronJobProperties returns properties of a CronJob associated with the pod.
+// getPodCronJobProperties returns metadata of a CronJob associated with the pod.
 func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
 	k := strings.ToLower(k8sKindCronJob)
 	return map[string]string{
@@ -256,7 +256,7 @@ func getPodCronJobProperties(cronJobRef *v1.OwnerReference) map[string]string {
 	}
 }
 
-// getPodDeploymentProperties returns properties of a Deployment associated with the pod.
+// getPodDeploymentProperties returns metadata of a Deployment associated with the pod.
 func getPodDeploymentProperties(rsRef *v1.OwnerReference) map[string]string {
 	k := strings.ToLower(k8sKindReplicaSet)
 	return map[string]string{
@@ -267,7 +267,7 @@ func getPodDeploymentProperties(rsRef *v1.OwnerReference) map[string]string {
 	}
 }
 
-// getPodWorkloadProperties returns properties of a Kubernetes workload associated with the pod.
+// getPodWorkloadProperties returns metadata of a Kubernetes workload associated with the pod.
 func getPodWorkloadProperties(workloadName string, workloadType string) map[string]string {
 	return map[string]string{
 		k8sKeyWorkLoadKind: strings.ToLower(workloadType),

@@ -62,7 +62,7 @@ func Test_getGenericMetadata(t *testing.T) {
 		"owner-kind-2_uid":                "owner2",
 		"foo":                             "bar",
 		"foo1":                            "",
-	}, rm.properties)
+	}, rm.metadata)
 }
 
 func TestGetPropertiesDelta(t *testing.T) {
