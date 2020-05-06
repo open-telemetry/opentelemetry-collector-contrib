@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -57,10 +58,12 @@ func TestLoadConfig(t *testing.T) {
 			HTTPConfig: http.HTTPConfig{
 				TLSEnabled: true,
 				TLSConfig: http.TLSConfig{
-					CAFile:             "path",
-					CertFile:           "path",
-					KeyFile:            "path",
+					CAFile:             "path1",
 					InsecureSkipVerify: true,
+					TLSCredentials: receiver.TLSCredentials{
+						CertFile: "path2",
+						KeyFile:  "path3",
+					},
 				},
 			},
 			CollectionInterval: 30 * time.Second,

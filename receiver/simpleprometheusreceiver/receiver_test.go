@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"github.com/open-telemetry/opentelemetry-collector/receiver"
 	"github.com/open-telemetry/opentelemetry-collector/receiver/prometheusreceiver"
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -82,9 +83,11 @@ func Test_getPrometheusConfig(t *testing.T) {
 					TLSEnabled: true,
 					TLSConfig: http.TLSConfig{
 						CAFile:             "path1",
-						CertFile:           "path2",
-						KeyFile:            "path3",
 						InsecureSkipVerify: true,
+						TLSCredentials: receiver.TLSCredentials{
+							CertFile: "path2",
+							KeyFile:  "path3",
+						},
 					},
 				},
 			},

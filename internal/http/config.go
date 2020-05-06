@@ -13,6 +13,8 @@
 // limitations under the License.
 package http
 
+import "github.com/open-telemetry/opentelemetry-collector/receiver"
+
 // TODO: Pull in other utilities from
 // https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
 // HTTPConfig holds config options related to HTTP(S)
@@ -24,12 +26,9 @@ type HTTPConfig struct {
 
 // TLSConfig holds common TLS config options
 type TLSConfig struct {
+	receiver.TLSCredentials `mapstructure:",squash"`
 	// Path to the CA cert that has signed the TLS cert.
 	CAFile string `mapstructure:"ca_file"`
-	// Path to the client TLS cert to use for TLS required connections.
-	CertFile string `mapstructure:"cert_file"`
-	// Path to the client TLS key to use for TLS required connections.
-	KeyFile string `mapstructure:"key_file"`
 	// Whether or not to verify the exporter's TLS cert.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }

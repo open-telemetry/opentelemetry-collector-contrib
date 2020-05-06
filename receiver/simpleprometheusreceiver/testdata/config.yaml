@@ -7,9 +7,9 @@ receivers:
     use_service_account: true
     tls_enabled: true
     tls_config:
-      ca_file: "path"
-      cert_file: "path"
-      key_file: "path"
+      ca_file: "path1"
+      cert_file: "path2"
+      key_file: "path3"
       insecure_skip_verify: true
   prometheus_simple/partial_settings:
     collection_interval: 30s
