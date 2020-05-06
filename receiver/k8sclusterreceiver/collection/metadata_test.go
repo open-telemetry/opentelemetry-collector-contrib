@@ -71,11 +71,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 		newProps map[string]string
 	}
 	tests := []struct {
-		name     string
-		args     args
-		toAdd    map[string]string
-		toRemove map[string]string
-		toUpdate map[string]string
+		name       string
+		args       args
+		toAdd      map[string]string
+		toRemove   map[string]string
+		toUpdate   map[string]string
+		isNonEmpty bool
 	}{
 		{
 			"Add to new",
@@ -90,6 +91,7 @@ func TestGetPropertiesDelta(t *testing.T) {
 			},
 			map[string]string{},
 			map[string]string{},
+			true,
 		},
 		{
 			"Add to existing",
@@ -107,6 +109,7 @@ func TestGetPropertiesDelta(t *testing.T) {
 			},
 			map[string]string{},
 			map[string]string{},
+			true,
 		},
 		{
 			"Modify existing",
@@ -123,6 +126,7 @@ func TestGetPropertiesDelta(t *testing.T) {
 			map[string]string{
 				"foo": "newbar",
 			},
+			true,
 		},
 		{
 			"Remove existing",
@@ -140,6 +144,7 @@ func TestGetPropertiesDelta(t *testing.T) {
 				"foo": "bar",
 			},
 			map[string]string{},
+			true,
 		},
 		{
 			"Properties with empty values",
@@ -170,11 +175,29 @@ func TestGetPropertiesDelta(t *testing.T) {
 			map[string]string{
 				"foo": "bar2",
 			},
+			true,
+		},
+		{
+			"No update",
+			args{
+				oldProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+				newProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+			},
+			nil,
+			nil,
+			nil,
+			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			add, remove, update := getPropertiesDelta(tt.args.oldProps, tt.args.newProps)
+			add, remove, update, isNonEmpty := getPropertiesDelta(tt.args.oldProps, tt.args.newProps)
 			if !reflect.DeepEqual(add, tt.toAdd) {
 				t.Errorf("getPropertiesDelta() add = %v, want %v", add, tt.toAdd)
 			}
@@ -183,6 +206,9 @@ func TestGetPropertiesDelta(t *testing.T) {
 			}
 			if !reflect.DeepEqual(update, tt.toUpdate) {
 				t.Errorf("getPropertiesDelta() update = %v, want %v", update, tt.toUpdate)
+			}
+			if isNonEmpty != tt.isNonEmpty {
+				t.Errorf("getPropertiesDelta() isNop = %v, want %v", isNonEmpty, tt.isNonEmpty)
 			}
 		})
 	}

@@ -68,6 +68,6 @@ func (m mockExporterWithK8sMetadata) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m mockExporterWithK8sMetadata) ConsumeKubernetesMetadata(map[string]*collection.KubernetesMetadataUpdate) error {
+func (m mockExporterWithK8sMetadata) ConsumeKubernetesMetadata([]*collection.KubernetesMetadataUpdate) error {
 	return nil
 }

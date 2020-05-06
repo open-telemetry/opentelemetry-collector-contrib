@@ -84,7 +84,9 @@ func mergeKubernetesMetadataMaps(maps ...map[string]*KubernetesMetadata) map[str
 // KubernetesMetadataExporter provides an interface to implement
 // ConsumeKubernetesMetadata in Exporters that support metadata.
 type KubernetesMetadataExporter interface {
-	ConsumeKubernetesMetadata(metadata map[string]*KubernetesMetadataUpdate) error
+	// ConsumeKubernetesMetadata will be invoked every time there's an
+	// update to a resource that results in one or more KubernetesMetadataUpdate.
+	ConsumeKubernetesMetadata(metadata []*KubernetesMetadataUpdate) error
 }
 
 // KubernetesMetadataUpdate provides a delta view of metadata on a resource between
@@ -108,20 +110,22 @@ type KubernetesMetadataUpdate struct {
 
 // GetKubernetesMetadataUpdate processes kubernetes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetKubernetesMetadataUpdate(old, new map[string]*KubernetesMetadata) map[string]*KubernetesMetadataUpdate {
-	out := map[string]*KubernetesMetadataUpdate{}
+func GetKubernetesMetadataUpdate(old, new map[string]*KubernetesMetadata) []*KubernetesMetadataUpdate {
+	var out []*KubernetesMetadataUpdate
 
 	for id, oldMetadata := range old {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
 		if newMetadata, ok := new[id]; ok {
-			toAdd, toRemove, toUpdate := getPropertiesDelta(oldMetadata.metadata, newMetadata.metadata)
-			out[id] = &KubernetesMetadataUpdate{
-				ResourceIDKey:    oldMetadata.resourceIDKey,
-				ResourceID:       id,
-				MetadataToAdd:    toAdd,
-				MetadataToRemove: toRemove,
-				MetadataToUpdate: toUpdate,
+			if toAdd, toRemove, toUpdate, isNonEmpty :=
+				getPropertiesDelta(oldMetadata.metadata, newMetadata.metadata); isNonEmpty {
+				out = append(out, &KubernetesMetadataUpdate{
+					ResourceIDKey:    oldMetadata.resourceIDKey,
+					ResourceID:       id,
+					MetadataToAdd:    toAdd,
+					MetadataToRemove: toRemove,
+					MetadataToUpdate: toUpdate,
+				})
 			}
 		}
 	}
@@ -131,18 +135,23 @@ func GetKubernetesMetadataUpdate(old, new map[string]*KubernetesMetadata) map[st
 	for id, km := range new {
 		// if an id is seen for the first time, all metadata need to be added.
 		if _, ok := old[id]; !ok {
-			out[id] = &KubernetesMetadataUpdate{
+			out = append(out, &KubernetesMetadataUpdate{
 				ResourceIDKey: km.resourceIDKey,
 				ResourceID:    id,
 				MetadataToAdd: km.metadata,
-			}
+			})
 		}
 	}
 
 	return out
 }
 
-func getPropertiesDelta(oldProps, newProps map[string]string) (map[string]string, map[string]string, map[string]string) {
+// getPropertiesDelta returns 3 maps one each representing properties to be added,
+// removed and updated. It also returns a boolean as the forth return value. This
+// value is true if at least one of the 3 maps are non empty, otherwise false.
+func getPropertiesDelta(oldProps,
+	newProps map[string]string) (map[string]string, map[string]string, map[string]string, bool) {
+
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
 
 	// If metadata exist in the previous revision as well, collect if
@@ -165,5 +174,9 @@ func getPropertiesDelta(oldProps, newProps map[string]string) (map[string]string
 		}
 	}
 
-	return toAdd, toRemove, toUpdate
+	if len(toAdd) > 0 || len(toRemove) > 0 || len(toUpdate) > 0 {
+		return toAdd, toRemove, toUpdate, true
+	}
+
+	return nil, nil, nil, false
 }

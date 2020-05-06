@@ -42,7 +42,7 @@ type resourceWatcher struct {
 	metadataConsumers     []metadataConsumer
 }
 
-type metadataConsumer func(metadata map[string]*collection.KubernetesMetadataUpdate) error
+type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(logger *zap.Logger, config *Config,
