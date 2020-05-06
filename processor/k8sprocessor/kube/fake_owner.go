@@ -17,6 +17,7 @@ package kube
 import (
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -60,6 +61,17 @@ func (op *fakeOwnerCache) Stop() {}
 // GetServices fetches list of services for a given pod
 func (op *fakeOwnerCache) GetServices(pod *api_v1.Pod) []string {
 	return []string{"foo", "bar"}
+}
+
+// GetNamespace returns a namespace
+func (op *fakeOwnerCache) GetNamespace(pod *api_v1.Pod) *api_v1.Namespace {
+	namespace := api_v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   pod.Namespace,
+			Labels: map[string]string{"label": "namespace_label_value"},
+		},
+	}
+	return &namespace
 }
 
 // GetOwners fetches deep tree of owners for a given pod

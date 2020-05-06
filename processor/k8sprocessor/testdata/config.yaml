@@ -46,6 +46,9 @@ processors:
         # You can also extract all labels, e.g.:
         # - tag_name: k8s.label.%s
         #   key: "*"
+      namespace_labels:
+        - tag_name: "namespace_labels_%s"
+          key: "*"
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace

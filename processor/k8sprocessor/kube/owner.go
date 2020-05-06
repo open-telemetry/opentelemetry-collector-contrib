@@ -52,6 +52,7 @@ type ObjectOwner struct {
 // OwnerAPI describes functions that could allow retrieving owner info
 type OwnerAPI interface {
 	GetOwners(pod *api_v1.Pod) []*ObjectOwner
+	GetNamespace(pod *api_v1.Pod) *api_v1.Namespace
 	GetServices(pod *api_v1.Pod) []string
 	Start()
 	Stop()
@@ -61,6 +62,7 @@ type OwnerAPI interface {
 type OwnerCache struct {
 	objectOwners map[string]*ObjectOwner
 	podServices  map[string][]string
+	namespaces   map[string]*api_v1.Namespace
 	cacheMutex   sync.RWMutex
 
 	clientset *kubernetes.Clientset
@@ -104,6 +106,8 @@ func newOwnerProvider(
 			opts.FieldSelector = fieldSelector.String()
 		}))
 
+	ownerCache.addNamespaceInformer(factory)
+
 	ownerCache.addOwnerInformer("ReplicaSet",
 		factory.Apps().V1().ReplicaSets().Informer(),
 		ownerCache.cacheObject,
@@ -125,6 +129,40 @@ func newOwnerProvider(
 		ownerCache.deleteEndpoint)
 
 	return &ownerCache, nil
+}
+
+func (op *OwnerCache) upsertNamespace(obj interface{}) {
+	namespace := obj.(api_v1.Namespace)
+	op.cacheMutex.Lock()
+	op.namespaces[namespace.Name] = &namespace
+	op.cacheMutex.Unlock()
+}
+
+func (op *OwnerCache) deleteNamespace(obj interface{}) {
+	namespace := obj.(api_v1.Namespace)
+	op.cacheMutex.Lock()
+	delete(op.namespaces, namespace.Name)
+	op.cacheMutex.Unlock()
+}
+
+func (op *OwnerCache) addNamespaceInformer(factory informers.SharedInformerFactory) {
+	informer := factory.Core().V1().Namespaces().Informer()
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			observability.RecordOtherAdded()
+			op.upsertNamespace(obj)
+		},
+		UpdateFunc: func(_, obj interface{}) {
+			observability.RecordOtherUpdated()
+			op.upsertNamespace(obj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			observability.RecordOtherDeleted()
+			op.deleteNamespace(obj)
+		},
+	})
+
+	op.informers = append(op.informers, informer)
 }
 
 func (op *OwnerCache) addOwnerInformer(
@@ -235,6 +273,15 @@ func (op *OwnerCache) deleteEndpoint(obj interface{}) {
 
 func (op *OwnerCache) cacheEndpoint(kind string, obj interface{}) {
 	op.genericEndpointOp(obj, op.addEndpointToPod)
+}
+
+// GetNamespaces returns a cached namespace object (if one is found) or nil otherwise
+func (op *OwnerCache) GetNamespace(pod *api_v1.Pod) *api_v1.Namespace {
+	namespace, found := op.namespaces[pod.Namespace]
+	if found {
+		return namespace
+	}
+	return nil
 }
 
 // GetServices returns a slice with matched services - in case no services are found, it returns an empty slice
