@@ -39,21 +39,8 @@ import (
 const (
 	name    = "opentelemetry-collector"
 	version = "0.1.0"
-	product = "NewRelic-Go-OpenTelemetry"
+	product = "NewRelic-Collector-OpenTelemetry"
 )
-
-var _ io.Writer = logWriter{}
-
-// logWriter wraps a zap.Logger into an io.Writer.
-type logWriter struct {
-	logf func(string, ...zapcore.Field)
-}
-
-// Write implements io.Writer
-func (w logWriter) Write(p []byte) (n int, err error) {
-	w.logf(string(p))
-	return len(p), nil
-}
 
 type transformer struct {
 	ServiceName string
@@ -173,16 +160,12 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
 
-	opts := append([]func(*telemetry.Config){
-		func(cfg *telemetry.Config) {
-			cfg.Product = product
-			cfg.ProductVersion = version
-		},
+	opts := append(nrConfig.HarvestOptions(),
 		telemetry.ConfigBasicErrorLogger(logWriter{l.Error}),
 		telemetry.ConfigBasicDebugLogger(logWriter{l.Info}),
 		telemetry.ConfigBasicAuditLogger(logWriter{l.Debug}),
-		telemetry.ConfigAPIKey(nrConfig.APIKey),
-	}, nrConfig.Options...)
+	)
+
 	h, err := telemetry.NewHarvester(opts...)
 	if nil != err {
 		return nil, err
@@ -215,4 +198,17 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 func (e exporter) pushMetricData(ctx context.Context, td consumerdata.MetricsData) (int, error) {
 	// FIXME
 	return 0, nil
+}
+
+var _ io.Writer = logWriter{}
+
+// logWriter wraps a zap.Logger into an io.Writer.
+type logWriter struct {
+	logf func(string, ...zapcore.Field)
+}
+
+// Write implements io.Writer
+func (w logWriter) Write(p []byte) (n int, err error) {
+	w.logf(string(p))
+	return len(p), nil
 }
