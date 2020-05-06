@@ -100,8 +100,8 @@ func TestExportTraceData(t *testing.T) {
 			ID:      "0000000000000001",
 			TraceID: "01010101010101010101010101010101",
 			Attributes: map[string]interface{}{
-				"collector.name":    "opentelemetry-collector",
-				"collector.version": "0.1.0",
+				"collector.name":    name,
+				"collector.version": version,
 				"name":              "root",
 				"resource":          "R1",
 				"service.name":      "test-service",
@@ -111,8 +111,8 @@ func TestExportTraceData(t *testing.T) {
 			ID:      "0000000000000002",
 			TraceID: "01010101010101010101010101010101",
 			Attributes: map[string]interface{}{
-				"collector.name":    "opentelemetry-collector",
-				"collector.version": "0.1.0",
+				"collector.name":    name,
+				"collector.version": version,
 				"name":              "client",
 				"parent.id":         "0000000000000001",
 				"resource":          "R1",
@@ -123,8 +123,8 @@ func TestExportTraceData(t *testing.T) {
 			ID:      "0000000000000003",
 			TraceID: "01010101010101010101010101010101",
 			Attributes: map[string]interface{}{
-				"collector.name":    "opentelemetry-collector",
-				"collector.version": "0.1.0",
+				"collector.name":    name,
+				"collector.version": version,
 				"name":              "server",
 				"parent.id":         "0000000000000002",
 				"resource":          "R1",

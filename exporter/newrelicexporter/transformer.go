@@ -120,6 +120,8 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 				attrs[key] = v.BoolValue
 			case *tracepb.AttributeValue_IntValue:
 				attrs[key] = v.IntValue
+			case *tracepb.AttributeValue_DoubleValue:
+				attrs[key] = v.DoubleValue
 			case *tracepb.AttributeValue_StringValue:
 				attrs[key] = t.TruncatableString(v.StringValue)
 			}
