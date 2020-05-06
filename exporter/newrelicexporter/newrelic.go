@@ -57,11 +57,12 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
 
-	opts := append(nrConfig.HarvestOptions(),
+	opts := []func(*telemetry.Config){
+		nrConfig.HarvestOption,
 		telemetry.ConfigBasicErrorLogger(logWriter{l.Error}),
 		telemetry.ConfigBasicDebugLogger(logWriter{l.Info}),
 		telemetry.ConfigBasicAuditLogger(logWriter{l.Debug}),
-	)
+	}
 
 	h, err := telemetry.NewHarvester(opts...)
 	if nil != err {
@@ -84,10 +85,15 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 			errs = append(errs, err)
 			continue
 		}
+		err = e.harvester.RecordSpan(nrSpan)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 		goodSpans++
-		e.harvester.RecordSpan(nrSpan)
 	}
 	transformers.Put(transform)
+	e.harvester.HarvestNow(ctx)
 
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
@@ -95,4 +101,9 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 func (e exporter) pushMetricData(ctx context.Context, td consumerdata.MetricsData) (int, error) {
 	// FIXME
 	return 0, nil
+}
+
+func (e exporter) Shutdown(ctx context.Context) error {
+	e.harvester.HarvestNow(ctx)
+	return nil
 }

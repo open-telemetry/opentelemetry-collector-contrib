@@ -8,8 +8,7 @@ exporters:
   newrelic:
   newrelic/alt:
     apikey: a1b2c3d4
-    harvest_timeout: 30s
-    harvest_period: 10s
+    timeout: 30s
     common_attributes:
       server: test-server
       prod: true

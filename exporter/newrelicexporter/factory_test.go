@@ -16,9 +16,11 @@ package newrelicexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +28,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, configcheck.ValidateConfig(cfg))
+	require.NoError(t, configcheck.ValidateConfig(cfg))
+
+	nrCfg, ok := cfg.(*Config)
+	require.True(t, ok, "invalid Config: %#v", cfg)
+	assert.Equal(t, nrCfg.Timeout, time.Second*15)
 }
 
 func TestCreateExporter(t *testing.T) {

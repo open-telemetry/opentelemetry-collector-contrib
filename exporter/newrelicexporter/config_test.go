@@ -50,9 +50,8 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: "newrelic/alt",
 		},
-		APIKey:         "a1b2c3d4",
-		HarvestTimeout: time.Second * 30,
-		HarvestPeriod:  time.Second * 10,
+		APIKey:  "a1b2c3d4",
+		Timeout: time.Second * 30,
 		CommonAttributes: map[string]interface{}{
 			"server": "test-server",
 			"prod":   true,
@@ -63,14 +62,11 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	nrConfig := new(telemetry.Config)
-	for _, opt := range r1.HarvestOptions() {
-		opt(nrConfig)
-	}
+	r1.HarvestOption(nrConfig)
 
 	assert.Equal(t, nrConfig, &telemetry.Config{
 		APIKey:         "a1b2c3d4",
 		HarvestTimeout: time.Second * 30,
-		HarvestPeriod:  time.Second * 10,
 		CommonAttributes: map[string]interface{}{
 			"server": "test-server",
 			"prod":   true,

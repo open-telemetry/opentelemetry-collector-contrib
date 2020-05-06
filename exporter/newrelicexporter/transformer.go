@@ -15,7 +15,6 @@
 package newrelicexporter
 
 import (
-	"encoding/hex"
 	"errors"
 	"sync"
 	"time"
@@ -48,23 +47,36 @@ func (t *transformer) Span(span *tracepb.Span) (telemetry.Span, error) {
 
 	startTime := t.Timestamp(span.StartTime)
 
+	var (
+		traceID          trace.TraceID
+		spanID, parentID trace.SpanID
+	)
+
+	copy(traceID[:], span.GetTraceId())
+	copy(spanID[:], span.GetSpanId())
+	copy(parentID[:], span.GetParentSpanId())
 	sp := telemetry.Span{
-		ID:          hex.Dump(span.SpanId),
-		TraceID:     hex.Dump(span.TraceId),
-		Name:        span.Name.String(),
+		ID:          spanID.String(),
+		TraceID:     traceID.String(),
+		Name:        t.TruncatableString(span.GetName()),
 		Timestamp:   startTime,
 		Duration:    t.Timestamp(span.EndTime).Sub(startTime),
 		ServiceName: t.ServiceName,
 		Attributes:  t.SpanAttributes(span),
 	}
 
-	var parentSpanID trace.SpanID
-	copy(parentSpanID[:], span.ParentSpanId)
-	if parentSpanID != emptySpanID {
-		sp.ParentID = parentSpanID.String()
+	if parentID != emptySpanID {
+		sp.ParentID = parentID.String()
 	}
 
 	return sp, nil
+}
+
+func (t *transformer) TruncatableString(ts *tracepb.TruncatableString) string {
+	if ts == nil {
+		return ""
+	}
+	return ts.Value
 }
 
 func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} {
@@ -97,18 +109,20 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 		}
 	}
 
-	for key, attr := range span.Attributes.AttributeMap {
-		if attr == nil || attr.Value == nil {
-			continue
-		}
-		// Default to skipping if unknown type.
-		switch v := attr.Value.(type) {
-		case *tracepb.AttributeValue_BoolValue:
-			attrs[key] = v.BoolValue
-		case *tracepb.AttributeValue_IntValue:
-			attrs[key] = v.IntValue
-		case *tracepb.AttributeValue_StringValue:
-			attrs[key] = v.StringValue.String()
+	if span.Attributes != nil {
+		for key, attr := range span.Attributes.AttributeMap {
+			if attr == nil || attr.Value == nil {
+				continue
+			}
+			// Default to skipping if unknown type.
+			switch v := attr.Value.(type) {
+			case *tracepb.AttributeValue_BoolValue:
+				attrs[key] = v.BoolValue
+			case *tracepb.AttributeValue_IntValue:
+				attrs[key] = v.IntValue
+			case *tracepb.AttributeValue_StringValue:
+				attrs[key] = t.TruncatableString(v.StringValue)
+			}
 		}
 	}
 

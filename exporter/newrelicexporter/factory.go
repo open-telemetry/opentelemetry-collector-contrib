@@ -15,6 +15,8 @@
 package newrelicexporter
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -39,6 +41,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		Timeout: time.Second * 15,
 	}
 }
 
@@ -49,7 +52,7 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Expor
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporterOld(cfg, exp.pushTraceData)
+	return exporterhelper.NewTraceExporterOld(cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
 }
 
 // CreateMetricsExporter returns nil.
@@ -64,7 +67,7 @@ func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exp
 			return nil, err
 		}
 
-		return exporterhelper.NewMetricsExporterOld(cfg, exp.pushMetricData)
+		return exporterhelper.NewMetricsExporterOld(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
 	*/
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
