@@ -18,8 +18,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,6 +33,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+    "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
@@ -76,8 +81,10 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:1234",
+					SecureReceiverSettings: receiver.SecureReceiverSettings{
+						ReceiverSettings: configmodels.ReceiverSettings{
+							Endpoint: "localhost:1234",
+						},
 					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
@@ -160,24 +167,8 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	config := (&Factory{}).CreateDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
-	buildSFxMsgFn := func() *sfxpb.DataPointUploadMessage {
-		return &sfxpb.DataPointUploadMessage{
-			Datapoints: []*sfxpb.DataPoint{
-				{
-					Metric: strPtr("single"),
-					Timestamp: func() *int64 {
-						l := time.Now().Unix() * 1e3
-						return &l
-					}(),
-					Value: &sfxpb.Datum{
-						IntValue: int64Ptr(13),
-					},
-					MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
-					Dimensions: buildNDimensions(3),
-				},
-			},
-		}
-	}
+	currentTime := time.Now().Unix() * 1e3
+	sFxMsg := buildSFxMsg(&currentTime, 13, 3)
 
 	tests := []struct {
 		name           string
@@ -257,8 +248,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted",
 			req: func() *http.Request {
-				sfxMsg := buildSFxMsgFn()
-				msgBytes, err := proto.Marshal(sfxMsg)
+				msgBytes, err := proto.Marshal(sFxMsg)
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/x-protobuf")
@@ -272,8 +262,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted_gzipped",
 			req: func() *http.Request {
-				sfxMsg := buildSFxMsgFn()
-				msgBytes, err := proto.Marshal(sfxMsg)
+				msgBytes, err := proto.Marshal(sFxMsg)
 				require.NoError(t, err)
 
 				var buf bytes.Buffer
@@ -295,8 +284,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "bad_gzipped_msg",
 			req: func() *http.Request {
-				sfxMsg := buildSFxMsgFn()
-				msgBytes, err := proto.Marshal(sfxMsg)
+				msgBytes, err := proto.Marshal(sFxMsg)
 				require.NoError(t, err)
 
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
@@ -330,6 +318,119 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 			tt.assertResponse(t, resp.StatusCode, bodyStr)
 		})
+	}
+}
+
+func Test_sfxReceiver_TLS(t *testing.T) {
+	addr := testutils.GetAvailableLocalAddress(t)
+	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
+	cfg.Endpoint = addr
+	cfg.TLSCredentials = &receiver.TLSCredentials{
+		CertFile: "./testdata/testcert.crt",
+		KeyFile:  "./testdata/testkey.key",
+	}
+	sink := new(exportertest.SinkMetricsExporterOld)
+	r, err := New(zap.NewNop(), *cfg, sink)
+	require.NoError(t, err)
+	defer r.Shutdown(context.Background())
+
+	// NewNopHost swallows errors so using NewErrorWaitingHost to catch any potential errors starting the
+	// receiver.
+	mh := componenttest.NewErrorWaitingHost()
+	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
+
+	// If there are errors reported through host.ReportFatalError() this will retrieve it.
+	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
+	require.NoError(t, receivedErr, "should not have failed to start metric reception")
+	require.False(t, receivedError)
+	t.Log("Metric Reception Started")
+
+	msec := time.Now().Unix() * 1e3
+	want := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "single",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{
+								Value:    "v0",
+								HasValue: true,
+							},
+							{
+								Value:    "v1",
+								HasValue: true,
+							},
+							{
+								Value:    "v2",
+								HasValue: true,
+							},
+						},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: msec / 1e3,
+								Nanos:   int32(msec%1e3) * 1e3,
+							},
+							Value: &metricspb.Point_Int64Value{Int64Value: 13},
+						}},
+					},
+				},
+			},
+		},
+	}
+
+	t.Log("Sending SignalFx metric data Request")
+
+	body, err := proto.Marshal(buildSFxMsg(&msec, 13, 3))
+	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
+
+	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-protobuf")
+
+	caCert, err := ioutil.ReadFile("./testdata/testcert.crt")
+	require.NoError(t, err, fmt.Sprintf("failed to load certificate: %v", err))
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: caCertPool,
+			},
+		},
+	}
+
+	resp, err := client.Do(req)
+	require.NoError(t, err, fmt.Sprintf("should not have failed when sending to signalFx receiver %v", err))
+	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+	t.Log("SignalFx Request Received")
+
+	got := sink.AllMetrics()
+	require.Equal(t, 1, len(got))
+	assert.Equal(t, want, got[0])
+}
+
+func buildSFxMsg(time *int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+	return &sfxpb.DataPointUploadMessage{
+		Datapoints: []*sfxpb.DataPoint{
+			{
+				Metric:    strPtr("single"),
+				Timestamp: time,
+				Value: &sfxpb.Datum{
+					IntValue: int64Ptr(value),
+				},
+				MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
+				Dimensions: buildNDimensions(dimensions),
+			},
+		},
 	}
 }
 

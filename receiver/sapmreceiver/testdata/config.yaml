@@ -7,7 +7,14 @@ receivers:
   # Ex: `endpoint: "7276"` is incorrect.
   # Ex: `endpoint: "1.2.3.4:7276"`  and ":7276" is correct
   sapm/customname:
-      endpoint: "0.0.0.0:7276"
+    endpoint: "0.0.0.0:7276"
+
+  # The following demonstrates how to specify TLS for the receiver.
+  sapm/tls:
+    tls_credentials:
+      cert_file: /test.crt
+      key_file: /test.key
+
 
 processors:
   exampleprocessor:

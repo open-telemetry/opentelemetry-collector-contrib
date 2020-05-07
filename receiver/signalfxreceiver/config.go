@@ -14,9 +14,9 @@
 
 package signalfxreceiver
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import "go.opentelemetry.io/collector/receiver"
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	receiver.SecureReceiverSettings `mapstructure:",squash"`
 }

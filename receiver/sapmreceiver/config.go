@@ -15,10 +15,10 @@
 package sapmreceiver
 
 import (
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // Config defines configuration for SAPM receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	receiver.SecureReceiverSettings `mapstructure:",squash"`
 }
