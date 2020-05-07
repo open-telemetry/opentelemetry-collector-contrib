@@ -12,6 +12,8 @@ function cov {
         ${1}
 }
 
+PYTHON_VERSION=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
+PYTHON_VERSION_INFO=(${PYTHON_VERSION//./ })
 
 coverage erase
 
@@ -25,5 +27,10 @@ cov ext/opentelemetry-ext-wsgi
 cov ext/opentelemetry-ext-zipkin
 cov docs/examples/opentelemetry-example-app
 
-coverage report
+# aiohttp is only supported on Python 3.5+.
+if [ ${PYTHON_VERSION_INFO[1]} -gt 4 ]; then
+    cov ext/opentelemetry-ext-aiohttp-client
+fi
+
+coverage report --show-missing
 coverage xml
