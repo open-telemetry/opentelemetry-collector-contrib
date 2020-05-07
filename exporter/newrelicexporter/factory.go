@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -45,7 +44,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a LightStep trace exporter for this configuration.
+// CreateTraceExporter creates a New Relic trace exporter for this configuration.
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
 	exp, err := newExporter(logger, cfg)
 	if err != nil {
@@ -55,19 +54,12 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Expor
 	return exporterhelper.NewTraceExporterOld(cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
 }
 
-// CreateMetricsExporter returns nil.
+// CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
 func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
-	/*
-		c, ok := cfg.(*Config)
-		if !ok {
-			return nil, fmt.Errorf("invalid config: %#v", cfg)
-		}
-		exp, err := exporters.load(c)
-		if err != nil {
-			return nil, err
-		}
+	exp, err := newExporter(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
 
-		return exporterhelper.NewMetricsExporterOld(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
-	*/
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return exporterhelper.NewMetricsExporterOld(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
 }

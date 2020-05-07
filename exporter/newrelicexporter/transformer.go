@@ -16,14 +16,23 @@ package newrelicexporter
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"go.opencensus.io/trace"
+)
+
+const (
+	unitAttrKey        = "unit"
+	descriptionAttrKey = "description"
 )
 
 var transformers = sync.Pool{
@@ -31,8 +40,9 @@ var transformers = sync.Pool{
 }
 
 type transformer struct {
-	ServiceName string
-	Resource    *resourcepb.Resource
+	DeltaCalculator *cumulative.DeltaCalculator
+	ServiceName     string
+	Resource        *resourcepb.Resource
 }
 
 var (
@@ -148,4 +158,211 @@ func (t *transformer) isError(code int32) bool {
 		return false
 	}
 	return true
+}
+
+func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, error) {
+	if metric == nil || metric.MetricDescriptor == nil {
+		return nil, errors.New("empty metric")
+	}
+
+	var errs []error
+	md := metric.MetricDescriptor
+	baseAttrs := t.MetricAttributes(metric)
+
+	var metrics []telemetry.Metric
+	for _, ts := range metric.Timeseries {
+		startTime := t.Timestamp(ts.StartTimestamp)
+
+		attr, err := t.MergeAttributes(baseAttrs, md.LabelKeys, ts.LabelValues)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		for _, point := range ts.Points {
+			switch md.Type {
+			case
+				metricspb.MetricDescriptor_GAUGE_INT64,
+				metricspb.MetricDescriptor_GAUGE_DOUBLE:
+				metrics = append(metrics, t.Gauge(md.Name, attr, point))
+			case
+				metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
+				metricspb.MetricDescriptor_SUMMARY:
+				metrics = append(metrics, t.DeltaSummary(md.Name, attr, startTime, point))
+			case
+				metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
+				metrics = append(metrics, t.CumulativeCount(md.Name, attr, startTime, point))
+			case
+				metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
+				metrics = append(metrics, t.CumulativeSummary(md.Name, attr, startTime, point))
+			default:
+				errs = append(errs, fmt.Errorf("unsupported metric type: %s", md.Type.String()))
+			}
+		}
+	}
+	return metrics, componenterror.CombineErrors(errs)
+}
+
+func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {
+	length := 2
+
+	if t.Resource != nil {
+		length += len(t.Resource.Labels)
+	}
+
+	if metric.MetricDescriptor.Unit != "" {
+		length++
+	}
+
+	if metric.MetricDescriptor.Description != "" {
+		length++
+	}
+
+	attrs := make(map[string]interface{}, length)
+
+	if t.Resource != nil {
+		for k, v := range t.Resource.Labels {
+			attrs[k] = v
+		}
+	}
+
+	if metric.MetricDescriptor.Unit != "" {
+		attrs[unitAttrKey] = metric.MetricDescriptor.Unit
+	}
+
+	if metric.MetricDescriptor.Description != "" {
+		attrs[descriptionAttrKey] = metric.MetricDescriptor.Description
+	}
+
+	attrs["collector.name"] = name
+	attrs["collector.version"] = version
+
+	return attrs
+}
+
+func (t *transformer) MergeAttributes(base map[string]interface{}, lk []*metricspb.LabelKey, lv []*metricspb.LabelValue) (map[string]interface{}, error) {
+	if len(lk) != len(lv) {
+		return nil, fmt.Errorf("number of label keys (%d) different than label values (%d)", len(lk), len(lv))
+	}
+
+	attrs := make(map[string]interface{}, len(base)+len(lk))
+
+	for k, v := range base {
+		attrs[k] = v
+	}
+	for i, k := range lk {
+		v := lv[i]
+		if v.HasValue {
+			attrs[k.Key] = v.Value
+		}
+	}
+	return attrs, nil
+}
+
+func (t *transformer) Gauge(name string, attrs map[string]interface{}, point *metricspb.Point) telemetry.Metric {
+	m := telemetry.Gauge{
+		Name:       name,
+		Attributes: attrs,
+		Timestamp:  time.Now(),
+	}
+
+	switch t := point.Value.(type) {
+	case *metricspb.Point_Int64Value:
+		m.Value = float64(t.Int64Value)
+	case *metricspb.Point_DoubleValue:
+		m.Value = t.DoubleValue
+	}
+
+	return m
+}
+
+func (t *transformer) DeltaSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+	now := time.Now()
+	if point.Timestamp != nil {
+		now = t.Timestamp(point.Timestamp)
+	}
+
+	m := telemetry.Summary{
+		Name:       name,
+		Attributes: attrs,
+		Timestamp:  now,
+		Interval:   now.Sub(start),
+	}
+
+	switch t := point.Value.(type) {
+	case *metricspb.Point_DistributionValue:
+		m.Count = float64(t.DistributionValue.Count)
+		m.Sum = t.DistributionValue.Sum
+	case *metricspb.Point_SummaryValue:
+		m.Count = float64(t.SummaryValue.Count.Value)
+		m.Sum = t.SummaryValue.Sum.Value
+	}
+
+	return m
+}
+
+func (t *transformer) CumulativeCount(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+	var value float64
+	switch t := point.Value.(type) {
+	case *metricspb.Point_Int64Value:
+		value = float64(t.Int64Value)
+	case *metricspb.Point_DoubleValue:
+		value = t.DoubleValue
+	}
+
+	now := time.Now()
+	if point.Timestamp != nil {
+		now = t.Timestamp(point.Timestamp)
+	}
+
+	count, valid := t.DeltaCalculator.CountMetric(name, attrs, value, now)
+
+	// This is the first measurement or a reset happened.
+	if !valid {
+		count = telemetry.Count{
+			Name:       name,
+			Attributes: attrs,
+			Value:      value,
+			Timestamp:  now,
+			Interval:   now.Sub(start),
+		}
+	}
+
+	return count
+}
+
+func (t *transformer) CumulativeSummary(name string, attrs map[string]interface{}, start time.Time, point *metricspb.Point) telemetry.Metric {
+	var sum, count float64
+	switch t := point.Value.(type) {
+	case *metricspb.Point_DistributionValue:
+		sum = t.DistributionValue.Sum
+		count = float64(t.DistributionValue.Count)
+	}
+
+	now := time.Now()
+	if point.Timestamp != nil {
+		now = t.Timestamp(point.Timestamp)
+	}
+
+	cCount, cValid := t.DeltaCalculator.CountMetric(name+".count", attrs, count, now)
+	sCount, sValid := t.DeltaCalculator.CountMetric(name+".sum", attrs, sum, now)
+
+	summary := telemetry.Summary{
+		Name:       name,
+		Attributes: attrs,
+		Count:      cCount.Value,
+		Sum:        sCount.Value,
+		Timestamp:  now,
+		Interval:   sCount.Interval,
+	}
+
+	// This is the first measurement or a reset happened.
+	if !cValid || !sValid {
+		summary.Count = count
+		summary.Sum = sum
+		summary.Interval = now.Sub(start)
+	}
+
+	return summary
 }

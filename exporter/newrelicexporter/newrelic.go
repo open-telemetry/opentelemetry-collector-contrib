@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -48,7 +49,8 @@ func (w logWriter) Write(p []byte) (n int, err error) {
 
 // exporter exporters OpenTelemetry Collector data to New Relic.
 type exporter struct {
-	harvester *telemetry.Harvester
+	deltaCalculator *cumulative.DeltaCalculator
+	harvester       *telemetry.Harvester
 }
 
 func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
@@ -68,7 +70,11 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 	if nil != err {
 		return nil, err
 	}
-	return &exporter{h}, nil
+
+	return &exporter{
+		deltaCalculator: cumulative.NewDeltaCalculator(),
+		harvester:       h,
+	}, nil
 }
 
 func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
@@ -98,9 +104,31 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
-func (e exporter) pushMetricData(ctx context.Context, td consumerdata.MetricsData) (int, error) {
-	// FIXME
-	return 0, nil
+func (e exporter) pushMetricData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+	var errs []error
+	goodMetrics := 0
+
+	transform := transformers.Get().(*transformer)
+	transform.DeltaCalculator = e.deltaCalculator
+	transform.ServiceName = md.Node.ServiceInfo.Name
+	transform.Resource = md.Resource
+
+	for _, metric := range md.Metrics {
+		nrMetrics, err := transform.Metric(metric)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		// TODO: optimize this, RecordMetric locks each call.
+		for _, m := range nrMetrics {
+			e.harvester.RecordMetric(m)
+		}
+		goodMetrics++
+	}
+	transformers.Put(transform)
+	e.harvester.HarvestNow(ctx)
+
+	return len(md.Metrics) - goodMetrics, componenterror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {
