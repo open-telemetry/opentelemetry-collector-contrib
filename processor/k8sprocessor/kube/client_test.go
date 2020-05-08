@@ -129,6 +129,7 @@ func TestExtractionRules(t *testing.T) {
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
 			CreationTimestamp: meta_v1.Now(),
 			ClusterName:       "cluster1",
@@ -170,6 +171,7 @@ func TestExtractionRules(t *testing.T) {
 			Deployment: true,
 			Namespace:  true,
 			PodName:    true,
+			PodUID:     true,
 			Node:       true,
 			Cluster:    true,
 			StartTime:  true,
@@ -180,6 +182,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.cluster.name":    "cluster1",
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
+			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
 		},
 	}, {
