@@ -56,12 +56,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				c := obsreport.StartMetricsReceiveOp(ctx, dataformat, transport)
+				c2 := obsreport.StartMetricsReceiveOp(ctx, dataformat, transport)
 
-				numTimeseries, numPoints, errs := kr.dispatchMetricData(c)
+				numTimeseries, numPoints, errs := kr.dispatchMetricData(c2)
 				err := componenterror.CombineErrors(errs)
 
-				obsreport.EndMetricsReceiveOp(c, dataformat, numPoints, numTimeseries, err)
+				obsreport.EndMetricsReceiveOp(c2, dataformat, numPoints, numTimeseries, err)
 			case <-c.Done():
 				return
 			}

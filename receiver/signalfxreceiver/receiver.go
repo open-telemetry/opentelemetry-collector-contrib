@@ -112,9 +112,9 @@ func New(
 		},
 	}
 
-	mux := mux.NewRouter()
-	mux.HandleFunc("/v2/datapoint", r.handleReq)
-	r.server.Handler = mux
+	mx := mux.NewRouter()
+	mx.HandleFunc("/v2/datapoint", r.handleReq)
+	r.server.Handler = mx
 
 	return r, nil
 }
@@ -131,7 +131,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 		err = nil
 
 		go func() {
-			if err := r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err = r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				host.ReportFatalError(err)
 			}
 		}()
@@ -190,7 +190,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	msg := &sfxpb.DataPointUploadMessage{}
-	if err := proto.Unmarshal(body, msg); err != nil {
+	if err = proto.Unmarshal(body, msg); err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return
 	}

@@ -124,7 +124,10 @@ jobs:
           paths: go/bin
       - run:
           name: Lint
-          command: make -j4 checklicense impi lint misspell
+          command: CMD="make lint" make -j4 for-all
+      - run:
+          name: Checks
+          command: make -j4 checklicense impi misspell
 
   build:
     executor: golang

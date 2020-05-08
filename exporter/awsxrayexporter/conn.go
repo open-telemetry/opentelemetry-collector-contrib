@@ -127,7 +127,8 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 		awsRegion = cfg.Region
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
 	} else if !cfg.NoVerifySSL {
-		es, err := getDefaultSession(logger)
+		var es *session.Session
+		es, err = getDefaultSession(logger)
 		if err != nil {
 			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {

@@ -53,7 +53,6 @@ for-all:
 	 	$${CMD} ); \
 	done
 
-
 .PHONY: install-tools
 install-tools:
 	go install github.com/client9/misspell/cmd/misspell

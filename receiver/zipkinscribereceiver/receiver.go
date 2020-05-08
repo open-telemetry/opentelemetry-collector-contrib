@@ -138,7 +138,8 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 			continue
 		}
 
-		b, err := sc.msgDecoder.DecodeString(logEntry.Message)
+		var b []byte
+		b, err = sc.msgDecoder.DecodeString(logEntry.Message)
 		if err != nil {
 			// TODO: Should we continue to read? What error should we record here?
 			return scribe.ResultCode_OK, err
@@ -147,7 +148,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		r := bytes.NewReader(b)
 		st := thrift.NewStreamTransportR(r)
 		zs := &zipkincore.Span{}
-		if err := zs.Read(sc.tBinProtocolFactory.GetProtocol(st)); err != nil {
+		if err = zs.Read(sc.tBinProtocolFactory.GetProtocol(st)); err != nil {
 			// TODO: Should we continue to read? What error should we record here?
 			return scribe.ResultCode_OK, err
 		}

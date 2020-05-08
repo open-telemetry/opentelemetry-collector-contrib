@@ -59,11 +59,9 @@ func New(
 		client:  &http.Client{Timeout: clientTimeout},
 	}
 
-	exp, err := exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporterOld(
 		config,
 		s.pushTraceData)
-
-	return exp, err
 }
 
 // jaegerThriftHTTPSender forwards spans encoded in the jaeger thrift
