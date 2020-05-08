@@ -9,6 +9,7 @@ processors:
       metadata:
         # extract the following well-known metadata fields
         - podName
+        - podUID
         - deployment
         - cluster
         - namespace

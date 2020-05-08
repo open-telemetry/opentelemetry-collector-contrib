@@ -44,7 +44,7 @@ type ExtractConfig struct {
 	// The field accepts a list of strings.
 	//
 	// Metadata fields supported right now are,
-	//   namespace, podName, deployment, cluster, node and startTime
+	//   namespace, podName, podUID, deployment, cluster, node and startTime
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans.

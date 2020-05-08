@@ -199,6 +199,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	if c.Rules.PodUID {
+		uid := pod.GetUID()
+		tags[tagPodUID] = string(uid)
+	}
+
 	if c.Rules.Deployment {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
