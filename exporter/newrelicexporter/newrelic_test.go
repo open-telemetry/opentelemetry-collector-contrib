@@ -17,10 +17,13 @@ package newrelicexporter
 import (
 	"context"
 	"testing"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -133,6 +136,197 @@ func TestExportTraceData(t *testing.T) {
 		},
 	}
 
-	//assert.ElementsMatch(t, expected, m.Spans())
 	assert.Equal(t, expected, m.Spans())
+}
+
+func TestExportMetricData(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	m := &Mock{make([]Data, 0, 3)}
+	srv := m.Server()
+	defer srv.Close()
+
+	desc := "physical property of matter that quantitatively expresses hot and cold"
+	unit := "K"
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "temperature",
+					Description: desc,
+					Unit:        unit,
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "location"},
+						{Key: "elevation"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "Portland"},
+							{Value: "0"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.15,
+								},
+							},
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 101,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.15,
+								},
+							},
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 102,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.45,
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "Denver"},
+							{Value: "5280"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 99,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 290.05,
+								},
+							},
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 106,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.15,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	f := new(Factory)
+	c := f.CreateDefaultConfig().(*Config)
+	c.APIKey, c.MetricsURLOverride = "1", srv.URL
+	l := zap.NewNop()
+	exp, err := f.CreateMetricsExporter(l, c)
+	require.NoError(t, err)
+	require.NoError(t, exp.ConsumeMetricsData(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+
+	expected := []Metric{
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.15,
+			Timestamp: int64(100 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"resource":          "R1",
+				"service.name":      "test-service",
+				"location":          "Portland",
+				"elevation":         "0",
+			},
+		},
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.15,
+			Timestamp: int64(101 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"resource":          "R1",
+				"service.name":      "test-service",
+				"location":          "Portland",
+				"elevation":         "0",
+			},
+		},
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.45,
+			Timestamp: int64(102 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"resource":          "R1",
+				"service.name":      "test-service",
+				"location":          "Portland",
+				"elevation":         "0",
+			},
+		},
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     290.05,
+			Timestamp: int64(99 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"resource":          "R1",
+				"service.name":      "test-service",
+				"location":          "Denver",
+				"elevation":         "5280",
+			},
+		},
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.15,
+			Timestamp: int64(106 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"resource":          "R1",
+				"service.name":      "test-service",
+				"location":          "Denver",
+				"elevation":         "5280",
+			},
+		},
+	}
+
+	assert.Equal(t, expected, m.Metrics())
+}
+
+func TestExportCommonAttributes(t *testing.T) {
+	// TODO
 }

@@ -43,11 +43,13 @@ type Span struct {
 }
 
 type Metric struct {
-	Name       string                 `json:"name"`
-	Type       string                 `json:"type"`
-	Value      interface{}            `json:"value"`
-	timestamp  interface{}            `json:"-"`
-	Attributes map[string]interface{} `json:"attributes"`
+	Name             string                 `json:"name"`
+	Type             string                 `json:"type"`
+	Value            interface{}            `json:"value"`
+	Timestamp        int64                  `json:"timestamp"`
+	Interval         int64                  `json:"interval"`
+	Attributes       map[string]interface{} `json:"attributes"`
+	XXX_unrecognized []byte                 `json:"-"`
 }
 
 // Mock caches decompressed request bodies

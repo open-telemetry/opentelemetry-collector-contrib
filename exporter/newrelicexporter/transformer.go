@@ -31,8 +31,11 @@ import (
 )
 
 const (
-	unitAttrKey        = "unit"
-	descriptionAttrKey = "description"
+	unitAttrKey         = "unit"
+	descriptionAttrKey  = "description"
+	collectorNameKey    = "collector.name"
+	collectorVersionKey = "collector.version"
+	serviceNameKey      = "service.name"
 )
 
 var transformers = sync.Pool{
@@ -140,8 +143,8 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 
 	// Default attributes to tell New Relic about this collector.
 	// (overrides any existing)
-	attrs["collector.name"] = name
-	attrs["collector.version"] = version
+	attrs[collectorNameKey] = name
+	attrs[collectorVersionKey] = version
 
 	return attrs
 }
@@ -205,7 +208,7 @@ func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, erro
 }
 
 func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]interface{} {
-	length := 2
+	length := 3
 
 	if t.Resource != nil {
 		length += len(t.Resource.Labels)
@@ -235,8 +238,9 @@ func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]inte
 		attrs[descriptionAttrKey] = metric.MetricDescriptor.Description
 	}
 
-	attrs["collector.name"] = name
-	attrs["collector.version"] = version
+	attrs[collectorNameKey] = name
+	attrs[collectorVersionKey] = version
+	attrs[serviceNameKey] = t.ServiceName
 
 	return attrs
 }
@@ -253,7 +257,7 @@ func (t *transformer) MergeAttributes(base map[string]interface{}, lk []*metrics
 	}
 	for i, k := range lk {
 		v := lv[i]
-		if v.HasValue {
+		if v.Value != "" || v.HasValue {
 			attrs[k.Key] = v.Value
 		}
 	}
@@ -261,10 +265,15 @@ func (t *transformer) MergeAttributes(base map[string]interface{}, lk []*metrics
 }
 
 func (t *transformer) Gauge(name string, attrs map[string]interface{}, point *metricspb.Point) telemetry.Metric {
+	now := time.Now()
+	if point.Timestamp != nil {
+		now = t.Timestamp(point.Timestamp)
+	}
+
 	m := telemetry.Gauge{
 		Name:       name,
 		Attributes: attrs,
-		Timestamp:  time.Now(),
+		Timestamp:  now,
 	}
 
 	switch t := point.Value.(type) {
