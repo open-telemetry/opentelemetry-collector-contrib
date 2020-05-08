@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Passthrough: false,
 			Extract: ExtractConfig{
-				Metadata: []string{"podName", "deployment", "cluster", "namespace", "node", "startTime"},
+				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},

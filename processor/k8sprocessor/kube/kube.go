@@ -33,6 +33,7 @@ const (
 	tagNamespaceName  = "k8s.namespace.name"
 	tagNodeName       = "k8s.node.name"
 	tagPodName        = "k8s.pod.name"
+	tagPodUID         = "k8s.pod.uid"
 	tagStartTime      = "k8s.pod.startTime"
 )
 
@@ -107,6 +108,7 @@ type ExtractionRules struct {
 	Deployment bool
 	Namespace  bool
 	PodName    bool
+	PodUID     bool
 	Node       bool
 	Cluster    bool
 	StartTime  bool
