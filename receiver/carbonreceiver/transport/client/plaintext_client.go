@@ -74,25 +74,22 @@ func (g *Graphite) connect(transport Transport) error {
 	}
 
 	var err error
-	var conn net.Conn
-
 	switch transport {
 	case TCP:
-		conn, err = net.DialTimeout("tcp", address, g.Timeout)
+		g.Conn, err = net.DialTimeout("tcp", address, g.Timeout)
 	case UDP:
-		udpAddr, err := net.ResolveUDPAddr("udp", address)
+		var udpAddr *net.UDPAddr
+		udpAddr, err = net.ResolveUDPAddr("udp", address)
 		if err != nil {
 			return err
 		}
-		conn, err = net.DialUDP("udp", nil, udpAddr)
+		g.Conn, err = net.DialUDP("udp", nil, udpAddr)
 		if err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("unknown transport %d", transport)
 	}
-
-	g.Conn = conn
 
 	return err
 }

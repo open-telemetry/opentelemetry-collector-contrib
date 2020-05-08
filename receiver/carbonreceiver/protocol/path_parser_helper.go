@@ -58,9 +58,9 @@ type ParsedPath struct {
 type TargetMetricType string
 
 const (
-	DefaultMetricType    TargetMetricType = ""
-	GaugeMetricType                       = "gauge"
-	CumulativeMetricType                  = "cumulative"
+	DefaultMetricType    = TargetMetricType("")
+	GaugeMetricType      = TargetMetricType("gauge")
+	CumulativeMetricType = TargetMetricType("cumulative")
 )
 
 // PathParserHelper implements the common code to parse a Carbon line taking a

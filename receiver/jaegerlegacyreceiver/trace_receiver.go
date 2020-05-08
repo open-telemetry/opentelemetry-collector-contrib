@@ -15,9 +15,7 @@
 package jaegerlegacyreceiver
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -139,22 +137,11 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 func (jr *jReceiver) stopTraceReceptionLocked() error {
 	var err = componenterror.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
-		var errs []error
-
+		err = nil
 		if jr.tchanServer.tchannel != nil {
 			jr.tchanServer.tchannel.Close()
 			jr.tchanServer.tchannel = nil
 		}
-		if len(errs) == 0 {
-			err = nil
-			return
-		}
-		// Otherwise combine all these errors
-		buf := new(bytes.Buffer)
-		for _, err := range errs {
-			fmt.Fprintf(buf, "%s\n", err.Error())
-		}
-		err = errors.New(buf.String())
 	})
 
 	return err

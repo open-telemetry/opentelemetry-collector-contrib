@@ -35,14 +35,14 @@ type args struct {
 }
 
 func TestNew(t *testing.T) {
-	args := args{
+	ar := args{
 		config:      &configmodels.ExporterSettings{},
 		httpAddress: testHTTPAddress,
 		headers:     map[string]string{"test": "test"},
 		timeout:     10 * time.Nanosecond,
 	}
 
-	got, err := New(args.config, args.httpAddress, args.headers, args.timeout)
+	got, err := New(ar.config, ar.httpAddress, ar.headers, ar.timeout)
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -52,12 +52,12 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyExporterName(t *testing.T) {
-	args := args{
+	ar := args{
 		config:      nil,
 		httpAddress: testHTTPAddress,
 	}
 
-	got, err := New(args.config, args.httpAddress, args.headers, args.timeout)
+	got, err := New(ar.config, ar.httpAddress, ar.headers, ar.timeout)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 }

@@ -78,8 +78,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			wgListenAndServe.Add(1)
 			go func() {
 				defer wgListenAndServe.Done()
-				err := svr.ListenAndServe(p, mc, mr)
-				assert.Error(t, err)
+				assert.Error(t, svr.ListenAndServe(p, mc, mr))
 			}()
 
 			runtime.Gosched()
