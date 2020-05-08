@@ -17,6 +17,7 @@ package sentryexporter
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 )
 
@@ -24,7 +25,7 @@ import (
 type SentryExporter struct{}
 
 // Start the exporter
-func (e *SentryExporter) Start(ctx context.Context, host string) error {
+func (e *SentryExporter) Start(ctx context.Context, host component.Host) error {
 	// instantiate the Sentry SDK here, and store it on the SentryExporter
 	return nil
 }
