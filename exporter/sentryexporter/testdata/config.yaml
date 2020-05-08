@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+  
+processors:
+  exampleprocessor:
+  
+exporters:
+  sentry:
+  sentry/2:
+    dsn: https://public:private@host:port/1
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [sentry]
