@@ -15,15 +15,19 @@
 package newrelicexporter
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestTransformEmptySpan(t *testing.T) {
@@ -197,4 +201,307 @@ func TestTransformSpan(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, test.want, got)
 	}
+}
+
+func TestTransformEmptyMetric(t *testing.T) {
+	transform := &transformer{}
+	_, err := transform.Metric(nil)
+	assert.Error(t, err, "nil metric should return an error")
+	_, err = transform.Metric(&metricspb.Metric{})
+	assert.Error(t, err, "nil metric descriptor should return an error")
+}
+
+func testTransformMetric(t *testing.T, metric *metricspb.Metric, want []telemetry.Metric) {
+	transform := &transformer{
+		DeltaCalculator: cumulative.NewDeltaCalculator(),
+		ServiceName:     "test-service",
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+	}
+	got, err := transform.Metric(metric)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
+func TestTransformGuage(t *testing.T) {
+	ts := &timestamp.Timestamp{Seconds: 1}
+	expected := []telemetry.Metric{
+		telemetry.Gauge{
+			Name:      "gauge",
+			Value:     42.0,
+			Timestamp: time.Unix(1, 0),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"resource":          "R1",
+				"service.name":      "test-service",
+			},
+		},
+	}
+
+	gd := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "gauge",
+			Type: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts,
+						Value: &metricspb.Point_DoubleValue{
+							DoubleValue: 42.0,
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Double", func(t *testing.T) { testTransformMetric(t, gd, expected) })
+
+	gi := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "gauge",
+			Type: metricspb.MetricDescriptor_GAUGE_INT64,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts,
+						Value: &metricspb.Point_Int64Value{
+							Int64Value: 42,
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Int64", func(t *testing.T) { testTransformMetric(t, gi, expected) })
+}
+
+func TestTransformDeltaSummary(t *testing.T) {
+	start := &timestamp.Timestamp{Seconds: 1}
+	ts := &timestamp.Timestamp{Seconds: 2}
+	expected := []telemetry.Metric{
+		telemetry.Summary{
+			Name:      "summary",
+			Count:     2.0,
+			Sum:       7.0,
+			Timestamp: time.Unix(1, 0),
+			Interval:  time.Second,
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"resource":          "R1",
+				"service.name":      "test-service",
+			},
+		},
+	}
+
+	gd := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "summary",
+			Type: metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				StartTimestamp: start,
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts,
+						Value: &metricspb.Point_DistributionValue{
+							DistributionValue: &metricspb.DistributionValue{
+								Count: 2,
+								Sum:   7,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Distribution", func(t *testing.T) {
+		testTransformMetric(t, gd, expected)
+		// Should be a delta, running twice should not change state.
+		testTransformMetric(t, gd, expected)
+	})
+
+	s := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "summary",
+			Type: metricspb.MetricDescriptor_SUMMARY,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				StartTimestamp: start,
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts,
+						Value: &metricspb.Point_SummaryValue{
+							SummaryValue: &metricspb.SummaryValue{
+								Count: &wrapperspb.Int64Value{Value: 2},
+								Sum:   &wrapperspb.DoubleValue{Value: 7},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Summary", func(t *testing.T) {
+		testTransformMetric(t, s, expected)
+		// Should be a delta, running twice should not change state.
+		testTransformMetric(t, s, expected)
+	})
+}
+
+func TestTransformCumulativeCount(t *testing.T) {
+	start := &timestamp.Timestamp{Seconds: 1}
+	ts1 := &timestamp.Timestamp{Seconds: 2}
+	ts2 := &timestamp.Timestamp{Seconds: 3}
+	attrs := map[string]interface{}{
+		"collector.name":    name,
+		"collector.version": version,
+		"resource":          "R1",
+		"service.name":      "test-service",
+	}
+	jsonAttrs, err := json.Marshal(attrs)
+	require.NoError(t, err)
+	expected := []telemetry.Metric{
+		telemetry.Count{
+			Name:       "count",
+			Value:      5.0,
+			Timestamp:  time.Unix(1, 0),
+			Interval:   time.Second,
+			Attributes: attrs,
+		},
+		telemetry.Count{
+			Name:           "count",
+			Value:          2.0,
+			Timestamp:      time.Unix(2, 0),
+			Interval:       time.Second,
+			AttributesJSON: jsonAttrs,
+		},
+	}
+
+	cd := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "count",
+			Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				StartTimestamp: start,
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts1,
+						Value: &metricspb.Point_DoubleValue{
+							DoubleValue: 5.0,
+						},
+					},
+					{
+						Timestamp: ts2,
+						Value: &metricspb.Point_DoubleValue{
+							DoubleValue: 7.0,
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Double", func(t *testing.T) { testTransformMetric(t, cd, expected) })
+
+	ci := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "count",
+			Type: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				StartTimestamp: start,
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts1,
+						Value: &metricspb.Point_Int64Value{
+							Int64Value: 5,
+						},
+					},
+					{
+						Timestamp: ts2,
+						Value: &metricspb.Point_Int64Value{
+							Int64Value: 7,
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Int64", func(t *testing.T) { testTransformMetric(t, ci, expected) })
+}
+
+func TestTransformCumulativeSummary(t *testing.T) {
+	start := &timestamp.Timestamp{Seconds: 1}
+	ts1 := &timestamp.Timestamp{Seconds: 2}
+	ts2 := &timestamp.Timestamp{Seconds: 3}
+	attrs := map[string]interface{}{
+		"collector.name":    name,
+		"collector.version": version,
+		"resource":          "R1",
+		"service.name":      "test-service",
+	}
+	expected := []telemetry.Metric{
+		telemetry.Summary{
+			Name:       "summary",
+			Sum:        5.0,
+			Count:      53.0,
+			Timestamp:  time.Unix(1, 0),
+			Interval:   time.Second,
+			Attributes: attrs,
+		},
+		telemetry.Summary{
+			Name:       "summary",
+			Sum:        3.0,
+			Count:      3.0,
+			Timestamp:  time.Unix(2, 0),
+			Interval:   time.Second,
+			Attributes: attrs,
+		},
+	}
+
+	cd := &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name: "summary",
+			Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				StartTimestamp: start,
+				Points: []*metricspb.Point{
+					{
+						Timestamp: ts1,
+						Value: &metricspb.Point_DistributionValue{
+							DistributionValue: &metricspb.DistributionValue{
+								Count: 53,
+								Sum:   5,
+							},
+						},
+					},
+					{
+						Timestamp: ts2,
+						Value: &metricspb.Point_DistributionValue{
+							DistributionValue: &metricspb.DistributionValue{
+								Count: 56,
+								Sum:   8,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	t.Run("Distribution", func(t *testing.T) { testTransformMetric(t, cd, expected) })
 }

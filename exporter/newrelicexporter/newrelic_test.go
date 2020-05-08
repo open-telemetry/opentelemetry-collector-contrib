@@ -326,7 +326,3 @@ func TestExportMetricData(t *testing.T) {
 
 	assert.Equal(t, expected, m.Metrics())
 }
-
-func TestExportCommonAttributes(t *testing.T) {
-	// TODO
-}

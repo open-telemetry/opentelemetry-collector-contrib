@@ -295,7 +295,7 @@ func (t *transformer) DeltaSummary(name string, attrs map[string]interface{}, st
 	m := telemetry.Summary{
 		Name:       name,
 		Attributes: attrs,
-		Timestamp:  now,
+		Timestamp:  start,
 		Interval:   now.Sub(start),
 	}
 
@@ -333,7 +333,7 @@ func (t *transformer) CumulativeCount(name string, attrs map[string]interface{},
 			Name:       name,
 			Attributes: attrs,
 			Value:      value,
-			Timestamp:  now,
+			Timestamp:  start,
 			Interval:   now.Sub(start),
 		}
 	}
@@ -362,7 +362,7 @@ func (t *transformer) CumulativeSummary(name string, attrs map[string]interface{
 		Attributes: attrs,
 		Count:      cCount.Value,
 		Sum:        sCount.Value,
-		Timestamp:  now,
+		Timestamp:  sCount.Timestamp,
 		Interval:   sCount.Interval,
 	}
 
@@ -370,6 +370,7 @@ func (t *transformer) CumulativeSummary(name string, attrs map[string]interface{
 	if !cValid || !sValid {
 		summary.Count = count
 		summary.Sum = sum
+		summary.Timestamp = start
 		summary.Interval = now.Sub(start)
 	}
 
