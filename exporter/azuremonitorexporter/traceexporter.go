@@ -642,7 +642,7 @@ func sanitizeWithCallback(sanitizeFunc func() []string, warningCallback func(str
 	}
 }
 
-// populateResourceAttributes populates resource attributes ot telemetry envelope
+// populateResourceAttributes populates resource attributes to telemetry envelope.
 func (exporter *traceExporter) populateResourceAttributes(
 	traceData consumerdata.TraceData,
 	envelope *contracts.Envelope,
@@ -698,8 +698,29 @@ func (exporter *traceExporter) pushTraceData(
 
 	for _, wireFormatSpan := range traceData.Spans {
 		if envelope, err := exporter.spanToEnvelope(exporter.config.InstrumentationKey, wireFormatSpan); err == nil && exporter.transportChannel != nil {
-			// This populates ai.cloud.role and ai.cloud.roleinstance from Trace Resource attributes.
+			// The resource attributes needs to be given to populate ai.cloud.role and ai.cloud.roleinstance
+			// when you create new exporter.
+			//
+			// - service.name
+			// - service.namespace
+			// - host.hostname
+			//
+			// OTLP Exporter example:
+			//   ...
+			//   exp, _ := otlp.NewExporter(otlp.WithInsecure(), otlp.WithAddress("localhost:9090"))
+			//   tp, _ := sdktrace.NewProvider(
+			//   	sdktrace.WithSyncer(exp),
+			//   	sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+			//   	sdktrace.WithResourceAttributes(
+			//   		key.String(resourcekeys.ServiceKeyName, "your_service"),
+			//   		key.String(resourcekeys.ServiceKeyNamespace, "namespace"),
+			//   		key.String(resourcekeys.HostKeyHostName, "hostname"),
+			//   	),
+			//   )
+			//   global.SetTraceProvider(tp)
+			//
 			exporter.populateResourceAttributes(traceData, envelope)
+
 			// This is a fire and forget operation
 			exporter.transportChannel.Send(envelope)
 		} else {
