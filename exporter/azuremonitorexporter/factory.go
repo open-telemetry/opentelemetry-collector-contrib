@@ -68,8 +68,8 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, errUnexpectedConfigurationType
 	}
 
-	transportChannel := f.getTransportChannel(exporterConfig, logger)
-	return newTraceExporter(exporterConfig, transportChannel, logger)
+	tc := f.getTransportChannel(exporterConfig, logger)
+	return newTraceExporter(exporterConfig, tc, logger)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

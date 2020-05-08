@@ -177,7 +177,8 @@ func (t *tcpServer) handleConnection(
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
 			numReceivedTimeSeries++
-			metric, err := p.Parse(line)
+			var metric *metricspb.Metric
+			metric, err = p.Parse(line)
 			if err != nil {
 				numInvalidTimeSeries++
 				t.reporter.OnTranslationError(ctx, err)

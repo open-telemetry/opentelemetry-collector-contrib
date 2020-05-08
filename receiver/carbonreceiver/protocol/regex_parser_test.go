@@ -105,11 +105,11 @@ func Test_regexParser_parsePath(t *testing.T) {
 			{
 				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
-				MetricType: CumulativeMetricType,
+				MetricType: string(CumulativeMetricType),
 			},
 			{
 				Regexp:     `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,
-				MetricType: GaugeMetricType,
+				MetricType: string(GaugeMetricType),
 			},
 		},
 	}
@@ -214,7 +214,7 @@ func Benchmark_regexPathParser_ParsePath(b *testing.B) {
 			{
 				Regexp:     `(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.rpc\.count`,
 				NamePrefix: "rpc",
-				MetricType: CumulativeMetricType,
+				MetricType: string(CumulativeMetricType),
 			},
 			{
 				Regexp: `^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$`,

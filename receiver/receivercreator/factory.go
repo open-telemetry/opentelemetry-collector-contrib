@@ -66,7 +66,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			}
 
 			// Unmarshals receiver_creator configuration like rule.
-			if err := receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
+			if err = receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
 				return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
 			}
 

@@ -122,7 +122,8 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.startOnce.Do(func() {
 		err = nil
 		go func() {
-			if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
+			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter)
+			if err != nil {
 				host.ReportFatalError(err)
 			}
 		}()

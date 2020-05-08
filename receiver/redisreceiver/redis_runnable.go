@@ -68,19 +68,19 @@ func (r *redisRunnable) Setup() error {
 // keyspace lines returned by Redis. There should be one keyspace line per
 // active Redis database, of which there can be 16.
 func (r *redisRunnable) Run() error {
-	const dataformat = "redis"
+	const dataFormat = "redis"
 	const transport = "http" // todo verify this
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataformat, transport)
+	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataFormat, transport)
 
-	info, err := r.redisSvc.info()
+	inf, err := r.redisSvc.info()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
 		return nil
 	}
 
-	uptime, err := info.getUptimeInSeconds()
+	uptime, err := inf.getUptimeInSeconds()
 	if err != nil {
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, dataFormat, 0, 0, err)
 		return nil
 	}
 
@@ -90,7 +90,7 @@ func (r *redisRunnable) Run() error {
 		r.timeBundle.update(time.Now(), uptime)
 	}
 
-	metrics, warnings := info.buildFixedProtoMetrics(r.redisMetrics, r.timeBundle)
+	metrics, warnings := inf.buildFixedProtoMetrics(r.redisMetrics, r.timeBundle)
 	if warnings != nil {
 		r.logger.Warn(
 			"errors parsing redis string",
@@ -98,7 +98,7 @@ func (r *redisRunnable) Run() error {
 		)
 	}
 
-	keyspaceMetrics, warnings := info.buildKeyspaceProtoMetrics(r.timeBundle)
+	keyspaceMetrics, warnings := inf.buildKeyspaceProtoMetrics(r.timeBundle)
 	metrics = append(metrics, keyspaceMetrics...)
 	if warnings != nil {
 		r.logger.Warn(
@@ -111,7 +111,7 @@ func (r *redisRunnable) Run() error {
 
 	err = r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
 	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
-	obsreport.EndMetricsReceiveOp(ctx, dataformat, numPoints, numTimeSeries, err)
+	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, numTimeSeries, err)
 
 	return nil
 }
