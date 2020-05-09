@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200503151053-5d1aacc0e168
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200508195808-80ee56387e34
 	github.com/signalfx/sapm-proto v0.5.1
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.5.1
