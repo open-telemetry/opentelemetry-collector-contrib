@@ -109,10 +109,10 @@ func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[string]*KubernetesMetadata {
+func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[ResourceID]*KubernetesMetadata {
 	km := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
 	km.metadata[statefulSetCurrentVersion] = ss.Status.CurrentRevision
 	km.metadata[statefulSetUpdateVersion] = ss.Status.UpdateRevision
 
-	return map[string]*KubernetesMetadata{string(ss.UID): km}
+	return map[ResourceID]*KubernetesMetadata{ResourceID(ss.UID): km}
 }

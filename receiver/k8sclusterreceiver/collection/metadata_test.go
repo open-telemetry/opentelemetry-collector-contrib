@@ -15,11 +15,11 @@
 package collection
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,7 +51,7 @@ func Test_getGenericMetadata(t *testing.T) {
 	rm := getGenericMetadata(om, "resourcetype")
 
 	assert.Equal(t, "k8s.resourcetype.uid", rm.resourceIDKey)
-	assert.Equal(t, "test-uid", rm.resourceID)
+	assert.Equal(t, ResourceID("test-uid"), rm.resourceID)
 	assert.Equal(t, map[string]string{
 		"k8s.workload.name":               "test-name",
 		"k8s.workload.kind":               "resourcetype",
@@ -71,12 +71,9 @@ func TestGetPropertiesDelta(t *testing.T) {
 		newProps map[string]string
 	}
 	tests := []struct {
-		name       string
-		args       args
-		toAdd      map[string]string
-		toRemove   map[string]string
-		toUpdate   map[string]string
-		isNonEmpty bool
+		name          string
+		args          args
+		metadataDelta *MetadataDelta
 	}{
 		{
 			"Add to new",
@@ -86,12 +83,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			map[string]string{
-				"foo": "bar",
+			&MetadataDelta{
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
+				map[string]string{},
 			},
-			map[string]string{},
-			map[string]string{},
-			true,
 		},
 		{
 			"Add to existing",
@@ -104,12 +102,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo":    "bar",
 				},
 			},
-			map[string]string{
-				"foo": "bar",
+			&MetadataDelta{
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
+				map[string]string{},
 			},
-			map[string]string{},
-			map[string]string{},
-			true,
 		},
 		{
 			"Modify existing",
@@ -121,12 +120,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo": "newbar",
 				},
 			},
-			map[string]string{},
-			map[string]string{},
-			map[string]string{
-				"foo": "newbar",
+			&MetadataDelta{
+				map[string]string{},
+				map[string]string{},
+				map[string]string{
+					"foo": "newbar",
+				},
 			},
-			true,
 		},
 		{
 			"Remove existing",
@@ -139,12 +139,13 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"foo1": "bar1",
 				},
 			},
-			map[string]string{},
-			map[string]string{
-				"foo": "bar",
+			&MetadataDelta{
+				map[string]string{},
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
 			},
-			map[string]string{},
-			true,
 		},
 		{
 			"Properties with empty values",
@@ -163,19 +164,20 @@ func TestGetPropertiesDelta(t *testing.T) {
 					"test":        "",
 				},
 			},
-			map[string]string{
-				"service_def": "",
-				"foo1":        "bar1",
+			&MetadataDelta{
+				map[string]string{
+					"service_def": "",
+					"foo1":        "bar1",
+				},
+				map[string]string{
+					"foo2":        "bar2",
+					"service_abc": "",
+					"admin":       "",
+				},
+				map[string]string{
+					"foo": "bar2",
+				},
 			},
-			map[string]string{
-				"foo2":        "bar2",
-				"service_abc": "",
-				"admin":       "",
-			},
-			map[string]string{
-				"foo": "bar2",
-			},
-			true,
 		},
 		{
 			"No update",
@@ -190,26 +192,12 @@ func TestGetPropertiesDelta(t *testing.T) {
 				},
 			},
 			nil,
-			nil,
-			nil,
-			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			add, remove, update, isNonEmpty := getPropertiesDelta(tt.args.oldProps, tt.args.newProps)
-			if !reflect.DeepEqual(add, tt.toAdd) {
-				t.Errorf("getPropertiesDelta() add = %v, want %v", add, tt.toAdd)
-			}
-			if !reflect.DeepEqual(remove, tt.toRemove) {
-				t.Errorf("getPropertiesDelta() remove = %v, want %v", remove, tt.toRemove)
-			}
-			if !reflect.DeepEqual(update, tt.toUpdate) {
-				t.Errorf("getPropertiesDelta() update = %v, want %v", update, tt.toUpdate)
-			}
-			if isNonEmpty != tt.isNonEmpty {
-				t.Errorf("getPropertiesDelta() isNop = %v, want %v", isNonEmpty, tt.isNonEmpty)
-			}
+			delta := getMetadataDelta(tt.args.oldProps, tt.args.newProps)
+			require.Equal(t, tt.metadataDelta, delta)
 		})
 	}
 }

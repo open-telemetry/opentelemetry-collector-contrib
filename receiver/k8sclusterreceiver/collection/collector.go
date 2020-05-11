@@ -173,8 +173,8 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 }
 
 // SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) map[string]*KubernetesMetadata {
-	km := map[string]*KubernetesMetadata{}
+func (dc *DataCollector) SyncMetadata(obj interface{}) map[ResourceID]*KubernetesMetadata {
+	km := map[ResourceID]*KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
 		km = getMetadataForPod(o, dc.metadataStore)

@@ -107,7 +107,7 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 	}
 
 	newMetadata := rw.dataCollector.SyncMetadata(obj)
-	rw.syncMetadataUpdate(map[string]*collection.KubernetesMetadata{}, newMetadata)
+	rw.syncMetadataUpdate(map[collection.ResourceID]*collection.KubernetesMetadata{}, newMetadata)
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
@@ -176,9 +176,10 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 	return nil
 }
 
-func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata, newMetadata map[string]*collection.KubernetesMetadata) {
-	kubernetesMetadataUpdate := collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
+func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
+	newMetadata map[collection.ResourceID]*collection.KubernetesMetadata) {
 
+	kubernetesMetadataUpdate := collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
 	if len(kubernetesMetadataUpdate) == 0 {
 		return
 	}

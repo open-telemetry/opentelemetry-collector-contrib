@@ -99,8 +99,8 @@ func getResourceForDaemonSet(ds *appsv1.DaemonSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForDaemonSet(ds *appsv1.DaemonSet) map[string]*KubernetesMetadata {
-	return map[string]*KubernetesMetadata{
-		string(ds.UID): getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet),
+func getMetadataForDaemonSet(ds *appsv1.DaemonSet) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{
+		ResourceID(ds.UID): getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet),
 	}
 }

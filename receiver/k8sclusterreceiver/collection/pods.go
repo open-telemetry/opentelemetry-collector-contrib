@@ -136,7 +136,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // getMetadataForPod returns all metadata associated with the pod.
-func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[string]*KubernetesMetadata {
+func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*KubernetesMetadata {
 	metadata := utils.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
@@ -171,8 +171,8 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[string]*Kubernete
 		)
 	}
 
-	podID := string(pod.UID)
-	return mergeKubernetesMetadataMaps(map[string]*KubernetesMetadata{
+	podID := ResourceID(pod.UID)
+	return mergeKubernetesMetadataMaps(map[ResourceID]*KubernetesMetadata{
 		podID:
 		{
 			resourceIDKey: k8sKeyPodUID,
@@ -275,8 +275,8 @@ func getPodWorkloadProperties(workloadName string, workloadType string) map[stri
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[string]*KubernetesMetadata {
-	km := map[string]*KubernetesMetadata{}
+func getPodContainerProperties(pod *corev1.Pod) map[ResourceID]*KubernetesMetadata {
+	km := map[ResourceID]*KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
 		// Skip if container id returned is empty.
 		if cs.ContainerID == "" {

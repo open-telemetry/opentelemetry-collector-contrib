@@ -112,6 +112,6 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForJob(j *batchv1.Job) map[string]*KubernetesMetadata {
-	return map[string]*KubernetesMetadata{string(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob)}
+func getMetadataForJob(j *batchv1.Job) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob)}
 }

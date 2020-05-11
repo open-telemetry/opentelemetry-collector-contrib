@@ -50,8 +50,8 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 	}
 }
 
-func getMetadataForReplicationController(rc *corev1.ReplicationController) map[string]*KubernetesMetadata {
-	return map[string]*KubernetesMetadata{
-		string(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
+func getMetadataForReplicationController(rc *corev1.ReplicationController) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{
+		ResourceID(rc.UID): getGenericMetadata(&rc.ObjectMeta, k8sKindReplicationController),
 	}
 }
