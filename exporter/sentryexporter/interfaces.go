@@ -20,65 +20,20 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
-// StatusCode defines status codes for a finished span
-type StatusCode int
-
-// Enum for possible StatusCodes
-const (
-	Ok StatusCode = iota
-	Cancelled
-	Unknown
-	InvalidArgument
-	DeadlineExceeded
-	NotFound
-	AlreadyExists
-	PermissionDenied
-	ResourceExhausted
-	FailedPrecondition
-	Aborted
-	OutOfRange
-	Unimplemented
-	InternalError
-	Unavailable
-	DataLoss
-	Unauthenticated
-)
-
-func (statusCode StatusCode) String() string {
-	codes := [...]string{
-		"Ok",
-		"Cancelled",
-		"Unknown",
-		"InvalidArgument",
-		"DeadlineExceeded",
-		"NotFound",
-		"AlreadyExists",
-		"PermissionDenied",
-		"ResourceExhausted",
-		"FailedPrecondition",
-		"Aborted",
-		"OutOfRange",
-		"Unimplemented",
-		"InternalError",
-		"Unavailable",
-		"DataLoss",
-		"Unauthenticated",
-	}
-
-	return codes[statusCode]
-}
+// Tags describes a Sentry Tag
+type Tags map[string]string
 
 // SentrySpan describes a Span following the Sentry format
 type SentrySpan struct {
-	TraceID      string            `json:"trace_id"`
-	SpanID       string            `json:"span_id"`
-	ParentSpanID string            `json:"parent_span_id,omitempty"`
-	Description  string            `json:"description,omitempty"`
-	Op           string            `json:"op,omitempty"`
-	Tags         map[string]string `json:"tags,omitempty"`
-	EndTimestamp time.Time         `json:"end_timestamp"`
-	Timestamp    time.Time         `json:"timestamp"`
-	Status       StatusCode        `json:"status"`
+	TraceID      string `json:"trace_id"`
+	SpanID       string `json:"span_id"`
+	ParentSpanID string `json:"parent_span_id,omitempty"`
+	Description  string `json:"description,omitempty"`
+	Op           string `json:"op,omitempty"`
+	Tags         Tags   `json:"tags,omitempty"`
+	EndTimestamp string `json:"end_timestamp"`
+	Timestamp    string `json:"timestamp"`
+	Status       string `json:"status"`
 }
 
 // TraceContext describes the context of the trace
@@ -101,59 +56,3 @@ type SentryTransaction struct {
 	Spans          []*SentrySpan        `json:"spans,omitempty"`
 	Breadcrumbs    []*sentry.Breadcrumb `json:"breadcrumbs,omitempty"`
 }
-
-/*
-{
-	start_timestamp: ...
-	timestamp: ...
-	contexts: {
-		trace_id: ...
-		span_id: ...
-		parent_span_id: ...
-	}
-	transaction: ...
-	tags: []
-	spans: []
-	breadcrumbs: []
-}
-*/
-
-/*
-An application (hereby referred to as an Resource) has a set of InstrumentationLibrarySpans associated with it.
-InstrumentationLibrarySpans refers to a collection of Spans produced by an InstrumentationLibrary.
-
-We can say for Sentry, an InstrumentationLibrary produces an individual transaction, but
-
-Traces: {
-	ResourceSpans: [
-		{
-			InstrumentationLibrarySpans: [
-				{
-					Spans: [],
-				},
-			],
-		},
-	],
-},
-
-                                Application
-+--------------------------------------------------------------------------+
-|                         TracerProvider(Resource)                         |
-|                         MeterProvider(Resource)                          |
-|                                                                          |
-|      Instrumentation Library 1           Instrumentation Library 2       |
-|  +--------------------------------+  +--------------------------------+  |
-|  | Tracer(InstrumentationLibrary) |  | Tracer(InstrumentationLibrary) |  |
-|  | Meter(InstrumentationLibrary)  |  | Meter(InstrumentationLibrary)  |  |
-|  +--------------------------------+  +--------------------------------+  |
-|                                                                          |
-|      Instrumentation Library 3           Instrumentation Library 4       |
-|  +--------------------------------+  +--------------------------------+  |
-|  | Tracer(InstrumentationLibrary) |  | Tracer(InstrumentationLibrary) |  |
-|  | Meter(InstrumentationLibrary)  |  | Meter(InstrumentationLibrary)  |  |
-|  +--------------------------------+  +--------------------------------+  |
-|                                                                          |
-+--------------------------------------------------------------------------+
-
-For the Sentry Exporter, each InstrumentationLibrarySpan -> a Sentry transaction.
-*/

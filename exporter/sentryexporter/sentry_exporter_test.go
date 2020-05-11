@@ -15,21 +15,53 @@
 package sentryexporter
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGenerateSentryTraceID(t *testing.T) {
-	testTraceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	traceID, err := generateSentryTraceID(testTraceID)
-	assert.NoError(t, err)
-	assert.NotNil(t, traceID)
+// func TestGenerateSentryTraceID(t *testing.T) {
+// 	td := testdata.GenerateTraceDataOneSpan()
+// 	ilss := td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0)
+// 	assert.EqualValues(t, 2, ilss.Spans().Len())
+// }
 
-	fmt.Println(len(testTraceID.Bytes()))
+func TestGenerateTagsFromAttributes(t *testing.T) {
+	attrs := pdata.NewAttributeMap()
 
-	assert.Len(t, traceID, 32)
-	assert.Equal(t, traceID[:16], "1234567887654321")
+	attrs.InsertString("string-key", "string-value")
+	attrs.InsertBool("bool-key", true)
+	attrs.InsertDouble("double-key", 123.123)
+	attrs.InsertInt("int-key", 321)
+
+	tags := generateTagsFromAttributes(attrs)
+
+	stringVal, _ := tags["string-key"]
+	assert.Equal(t, stringVal, "string-value")
+	boolVal, _ := tags["bool-key"]
+	assert.Equal(t, boolVal, "true")
+	doubleVal, _ := tags["double-key"]
+	assert.Equal(t, doubleVal, "123.123")
+	intVal, _ := tags["int-key"]
+	assert.Equal(t, intVal, "321")
+}
+
+func TestGenerateStatusFromSpanStatus(t *testing.T) {
+	spanStatus := pdata.NewSpanStatus()
+
+	status1, message1 := generateStatusFromSpanStatus(spanStatus)
+
+	assert.Equal(t, "unknown", status1)
+	assert.Equal(t, "", message1)
+
+	spanStatus.InitEmpty()
+	spanStatus.SetMessage("message")
+	spanStatus.SetCode(pdata.StatusCode(otlptrace.Status_ResourceExhausted))
+
+	status2, message2 := generateStatusFromSpanStatus(spanStatus)
+
+	assert.Equal(t, "resource_exhausted", status2)
+	assert.Equal(t, "message", message2)
 }

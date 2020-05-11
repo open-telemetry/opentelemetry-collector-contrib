@@ -16,8 +16,7 @@ package sentryexporter
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
+	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
@@ -61,22 +60,89 @@ func spanToSentrySpan(span pdata.Span) (*SentrySpan, error) {
 		return nil, nil
 	}
 
-	// traceID, err := generateSentryTraceID(span.TraceID())
-	// if err != nil {
-	// 	return nil, err
-	// }
+	traceID := span.TraceID().String()
+	spanID := span.SpanID().String()
+	parentSpanID := span.ParentSpanID().String()
 
-	return nil, nil
+	description := span.Name()
+	// TODO: Generate Op
+	op := ""
+
+	tags := generateTagsFromAttributes(span.Attributes())
+
+	endTimestamp := span.EndTime().String()
+	timestamp := span.StartTime().String()
+
+	status, message := generateStatusFromSpanStatus(span.Status())
+	if message != "" {
+		tags["status_message"] = message
+	}
+
+	tags["span_kind"] = span.Kind().String()
+
+	sentrySpan := &SentrySpan{
+		TraceID:      traceID,
+		SpanID:       spanID,
+		ParentSpanID: parentSpanID,
+		Description:  description,
+		Op:           op,
+		Tags:         tags,
+		EndTimestamp: endTimestamp,
+		Timestamp:    timestamp,
+		Status:       status,
+	}
+
+	return sentrySpan, nil
 }
 
-// pdata.TraceID are
-func generateSentryTraceID(traceID pdata.TraceID) (string, error) {
-	secondHalf := make([]byte, 16)
-	rand.Read(secondHalf)
+func generateTagsFromAttributes(attrs pdata.AttributeMap) Tags {
+	tags := make(map[string]string)
+	if attrs.Len() == 0 {
+		return tags
+	}
 
-	sentryTraceID := append(traceID, secondHalf...)
+	attrs.ForEach(func(key string, attr pdata.AttributeValue) {
+		switch attr.Type() {
+		case pdata.AttributeValueSTRING:
+			tags[key] = attr.StringVal()
+		case pdata.AttributeValueBOOL:
+			tags[key] = strconv.FormatBool(attr.BoolVal())
+		case pdata.AttributeValueDOUBLE:
+			tags[key] = strconv.FormatFloat(attr.DoubleVal(), 'g', -1, 64)
+		case pdata.AttributeValueINT:
+			tags[key] = strconv.FormatInt(attr.IntVal(), 10)
+		}
+	})
 
-	return hex.EncodeToString(sentryTraceID), nil
+	return tags
+}
+
+func generateStatusFromSpanStatus(status pdata.SpanStatus) (string, string) {
+	if status.IsNil() {
+		return "unknown", ""
+	}
+
+	codes := [...]string{
+		"ok",
+		"cancelled",
+		"unknown",
+		"invalid_argument",
+		"deadline_exceeded",
+		"not_found",
+		"already_exists",
+		"permission_denied",
+		"resource_exhausted",
+		"failed_precondition",
+		"aborted",
+		"out_of_range",
+		"unimplemented",
+		"internal",
+		"unavailable",
+		"data_loss",
+		"unauthenticated",
+	}
+
+	return codes[status.Code()], status.Message()
 }
 
 // CreateSentryExporter returns a new Sentry Exporter
