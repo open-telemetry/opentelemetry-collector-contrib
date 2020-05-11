@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200508195808-80ee56387e34
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200511154150-871119061598
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
