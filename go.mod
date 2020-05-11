@@ -7,7 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/jstemmer/go-junit-report v0.9.1
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200508195808-80ee56387e34
+	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200511154150-871119061598
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
