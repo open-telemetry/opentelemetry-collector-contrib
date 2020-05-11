@@ -30,7 +30,7 @@ const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
 
 type HoneycombExporter struct {
 	exporter *honeycomb.Exporter
-	logger *zap.Logger
+	logger   *zap.Logger
 }
 
 func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
@@ -53,7 +53,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 
 	hce := HoneycombExporter{
 		exporter: exporter,
-		logger: logger,
+		logger:   logger,
 	}
 	return exporterhelper.NewTraceExporterOld(
 		cfg,
