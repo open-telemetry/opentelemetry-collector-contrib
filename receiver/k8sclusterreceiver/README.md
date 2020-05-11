@@ -53,15 +53,19 @@ startup will fail.
 
 ```yaml
 type KubernetesMetadataExporter interface {
-  ConsumeKubernetesMetadata(metadata map[string]*KubernetesMetadataUpdate) error
+  ConsumeKubernetesMetadata(metadata []*KubernetesMetadataUpdate) error
 }
 
 type KubernetesMetadataUpdate struct {
-  ResourceIDKey         string
-  ResourceID            string
-  MetadataToAdd         map[string]string
-  MetadataToAddToUpdate map[string]string
-  MetadataToAddToRemove map[string]string
+  ResourceIDKey string
+  ResourceID    ResourceID
+  MetadataDelta
+}
+
+type MetadataDelta struct {
+  MetadataToAdd    map[string]string
+  MetadataToRemove map[string]string
+  MetadataToUpdate map[string]string
 }
 ```
 

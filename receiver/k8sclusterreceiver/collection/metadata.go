@@ -165,7 +165,9 @@ type MetadataDelta struct {
 	MetadataToUpdate map[string]string
 }
 
-// getMetadataDelta returns MetadataDelta between two sets for properties
+// getMetadataDelta returns MetadataDelta between two sets for properties.
+// If the delta between old (oldProps) and new (newProps) revisions of a
+// resource end up being empty, nil is returned.
 func getMetadataDelta(oldProps, newProps map[string]string) *MetadataDelta {
 
 	toAdd, toRemove, toUpdate := map[string]string{}, map[string]string{}, map[string]string{}
