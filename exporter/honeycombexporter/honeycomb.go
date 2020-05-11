@@ -23,21 +23,26 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/api/core"
+	"go.uber.org/zap"
 )
 
 const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
 
 type HoneycombExporter struct {
 	exporter *honeycomb.Exporter
+	logger   *zap.Logger
 }
 
-func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
+func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
 	exporter, err := honeycomb.NewExporter(honeycomb.Config{
 		APIKey: cfg.APIKey,
 	},
 		honeycomb.TargetingDataset(cfg.Dataset),
 		honeycomb.WithAPIURL(cfg.APIURL),
 		honeycomb.WithUserAgentAddendum(oTelCollectorUserAgentStr),
+		honeycomb.CallingOnError(func(err error) {
+			logger.Warn(err.Error())
+		}),
 	)
 	if err != nil {
 		return nil, err
@@ -45,6 +50,7 @@ func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) 
 
 	hce := HoneycombExporter{
 		exporter: exporter,
+		logger:   logger,
 	}
 	return exporterhelper.NewTraceExporterOld(
 		cfg,
@@ -56,6 +62,9 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	var errs []error
 	goodSpans := 0
 
+	ctx, cancel := context.WithCancel(ctx)
+	go e.exporter.RunErrorLogger(ctx)
+	defer cancel()
 	for _, span := range td.Spans {
 		sd, err := honeycomb.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
