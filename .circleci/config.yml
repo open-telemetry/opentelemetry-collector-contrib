@@ -1,203 +1,203 @@
-version: 2.1
+# version: 2.1
 
-executors:
-  golang:
-    docker:
-      - image: cimg/go:1.14
+# executors:
+#   golang:
+#     docker:
+#       - image: cimg/go:1.14
 
-commands:
-  attach_to_workspace:
-    steps:
-      - attach_workspace:
-          at: ~/
+# commands:
+#   attach_to_workspace:
+#     steps:
+#       - attach_workspace:
+#           at: ~/
 
-  save_module_cache:
-    steps:
-      - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
-          paths:
-            - "/home/circleci/go/pkg/mod"
+#   save_module_cache:
+#     steps:
+#       - save_cache:
+#           key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+#           paths:
+#             - "/home/circleci/go/pkg/mod"
 
-  restore_module_cache:
-    steps:
-      - run:
-          name: create modules dir
-          command: mkdir -p ~/go/pkg/mod
-      - restore_cache: # restores saved cache if no changes are detected since last run
-          keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
-      - persist_to_workspace:
-          root: ~/
-          paths: go/pkg/mod
+#   restore_module_cache:
+#     steps:
+#       - run:
+#           name: create modules dir
+#           command: mkdir -p ~/go/pkg/mod
+#       - restore_cache: # restores saved cache if no changes are detected since last run
+#           keys:
+#             - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+#       - persist_to_workspace:
+#           root: ~/
+#           paths: go/pkg/mod
 
-  publish_docker_images:
-    parameters:
-      repo:
-        type: string
-      tag:
-        type: string
-    steps:
-      - run:
-          name: Build image
-          command: |
-            make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
-      - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
-      - run:
-          name: Push image
-          command: |
-            docker push otel/<< parameters.repo >>:<< parameters.tag >>
-            docker push otel/<< parameters.repo >>:latest
+#   publish_docker_images:
+#     parameters:
+#       repo:
+#         type: string
+#       tag:
+#         type: string
+#     steps:
+#       - run:
+#           name: Build image
+#           command: |
+#             make docker-otelcontribcol
+#             docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
+#             docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+#       - run:
+#           name: Login to Docker Hub
+#           command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+#       - run:
+#           name: Push image
+#           command: |
+#             docker push otel/<< parameters.repo >>:<< parameters.tag >>
+#             docker push otel/<< parameters.repo >>:latest
 
-workflows:
-  version: 2
-  build-publish:
-    jobs:
-      - setup-and-lint:
-          filters:
-            tags:
-              only: /.*/
-      - build:
-          requires:
-            - setup-and-lint
-          filters:
-            tags:
-              only: /.*/
-      - cross-compile:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - loadtest:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
-      - coverage:
-          requires:
-            - setup-and-lint
-          filters:
-            tags:
-              only: /.*/
-      - publish-stable:
-          requires:
-            - build
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only: /^v[0-9].[0-9].[0-9]+.*/
-      - publish-dev:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
-            tags:
-              ignore: /.*/
+# workflows:
+#   version: 2
+#   build-publish:
+#     jobs:
+#       - setup-and-lint:
+#           filters:
+#             tags:
+#               only: /.*/
+#       - build:
+#           requires:
+#             - setup-and-lint
+#           filters:
+#             tags:
+#               only: /.*/
+#       - cross-compile:
+#           requires:
+#             - build
+#           filters:
+#             tags:
+#               only: /.*/
+#       - loadtest:
+#           requires:
+#             - build
+#           filters:
+#             tags:
+#               only: /.*/
+#       - coverage:
+#           requires:
+#             - setup-and-lint
+#           filters:
+#             tags:
+#               only: /.*/
+#       - publish-stable:
+#           requires:
+#             - build
+#           filters:
+#             branches:
+#               ignore: /.*/
+#             tags:
+#               only: /^v[0-9].[0-9].[0-9]+.*/
+#       - publish-dev:
+#           requires:
+#             - build
+#           filters:
+#             branches:
+#               only: master
+#             tags:
+#               ignore: /.*/
 
-jobs:
-  setup-and-lint:
-    executor: golang
-    steps:
-      - checkout
-      - restore_module_cache
-      - persist_to_workspace:
-          root: ~/
-          paths: project
-      - run:
-          name: Install bazzar
-          command: sudo apt update && sudo apt-get install bzr -y
-      - run:
-          name: Install tools
-          command: make install-tools
-      - run:
-          name: Install testbed tools
-          command: make -C testbed install-tools
-      - persist_to_workspace:
-          root: ~/
-          paths: go/bin
-      - run:
-          name: Lint
-          command: CMD="make lint" make -j4 for-all
-      - run:
-          name: Checks
-          command: make -j4 checklicense impi misspell
+# jobs:
+#   setup-and-lint:
+#     executor: golang
+#     steps:
+#       - checkout
+#       - restore_module_cache
+#       - persist_to_workspace:
+#           root: ~/
+#           paths: project
+#       - run:
+#           name: Install bazzar
+#           command: sudo apt update && sudo apt-get install bzr -y
+#       - run:
+#           name: Install tools
+#           command: make install-tools
+#       - run:
+#           name: Install testbed tools
+#           command: make -C testbed install-tools
+#       - persist_to_workspace:
+#           root: ~/
+#           paths: go/bin
+#       - run:
+#           name: Lint
+#           command: CMD="make lint" make -j4 for-all
+#       - run:
+#           name: Checks
+#           command: make -j4 checklicense impi misspell
 
-  build:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make otelcontribcol
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
+#   build:
+#     executor: golang
+#     steps:
+#       - attach_to_workspace
+#       - run:
+#           name: Build collector for linux_amd64
+#           command: make otelcontribcol
+#       - persist_to_workspace:
+#           root: ~/
+#           paths: project/bin
 
-  cross-compile:
-    executor: golang
-    parallelism: 4
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Build collector for all archs
-          command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
+#   cross-compile:
+#     executor: golang
+#     parallelism: 4
+#     steps:
+#       - attach_to_workspace
+#       - run:
+#           name: Build collector for all archs
+#           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+#       - persist_to_workspace:
+#           root: ~/
+#           paths: project/bin
 
-  coverage:
-    executor: golang
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Coverage tests
-          command: make test-with-cover
-      - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+#   coverage:
+#     executor: golang
+#     steps:
+#       - attach_to_workspace
+#       - run:
+#           name: Coverage tests
+#           command: make test-with-cover
+#       - run:
+#           name: Code coverage
+#           command: bash <(curl -s https://codecov.io/bash)
 
-  loadtest:
-    executor: golang
-    resource_class: medium+
-    steps:
-      - attach_to_workspace
-      - run:
-          name: Loadtest
-          command: make -C testbed runtests
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
+#   loadtest:
+#     executor: golang
+#     resource_class: medium+
+#     steps:
+#       - attach_to_workspace
+#       - run:
+#           name: Loadtest
+#           command: make -C testbed runtests
+#       - store_artifacts:
+#           path: testbed/tests/results
+#       - store_test_results:
+#           path: testbed/tests/results/junit
 
-  publish-stable:
-    docker:
-      - image: cimg/go:1.14
-    steps:
-      - attach_to_workspace
-      - setup_remote_docker
-      - publish_docker_images:
-          repo: opentelemetry-collector-contrib
-          tag: ${CIRCLE_TAG:1}
-      - run:
-          name: Calculate checksums 
-          command: cd bin && shasum -a 256 * > checksums.txt
-      - run:
-          name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+#   publish-stable:
+#     docker:
+#       - image: cimg/go:1.14
+#     steps:
+#       - attach_to_workspace
+#       - setup_remote_docker
+#       - publish_docker_images:
+#           repo: opentelemetry-collector-contrib
+#           tag: ${CIRCLE_TAG:1}
+#       - run:
+#           name: Calculate checksums 
+#           command: cd bin && shasum -a 256 * > checksums.txt
+#       - run:
+#           name: Create Github release and upload artifacts
+#           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
 
-  publish-dev:
-    docker:
-      - image: cimg/go:1.14
-    steps:
-      - attach_to_workspace
-      - setup_remote_docker
-      - publish_docker_images:
-          repo: opentelemetry-collector-contrib-dev
-          tag: ${CIRCLE_SHA1}
+#   publish-dev:
+#     docker:
+#       - image: cimg/go:1.14
+#     steps:
+#       - attach_to_workspace
+#       - setup_remote_docker
+#       - publish_docker_images:
+#           repo: opentelemetry-collector-contrib-dev
+#           tag: ${CIRCLE_SHA1}
