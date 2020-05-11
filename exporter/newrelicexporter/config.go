@@ -44,6 +44,8 @@ type Config struct {
 	SpansURLOverride string `mapstructure:"spans_url_override"`
 }
 
+// HarvestOption sets all relevant Config values when instantiating a New
+// Relic Harvester.
 func (c Config) HarvestOption(cfg *telemetry.Config) {
 	cfg.APIKey = c.APIKey
 	cfg.HarvestPeriod = 0 // use collector harvest period.

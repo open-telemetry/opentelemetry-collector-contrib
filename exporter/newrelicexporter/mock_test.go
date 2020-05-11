@@ -23,33 +23,32 @@ import (
 )
 
 type Data struct {
-	Common  Common                 `json:"common"`
-	Spans   []Span                 `json:"spans"`
-	Metrics []Metric               `json:"metrics"`
-	XXX     map[string]interface{} `json:"-"`
+	Common          Common   `json:"common"`
+	Spans           []Span   `json:"spans"`
+	Metrics         []Metric `json:"metrics"`
+	XXXUnrecognized []byte   `json:"-"`
 }
 
 type Common struct {
-	timestamp  interface{}       `json:"-"`
-	interval   interface{}       `json:"-"`
-	Attributes map[string]string `json:"attributes"`
+	Attributes      map[string]string `json:"attributes"`
+	XXXUnrecognized []byte            `json:"-"`
 }
 
 type Span struct {
-	ID         string                 `json:"id"`
-	TraceID    string                 `json:"trace.id"`
-	Attributes map[string]interface{} `json:"attributes"`
-	timestamp  interface{}            `json:"-"`
+	ID              string                 `json:"id"`
+	TraceID         string                 `json:"trace.id"`
+	Attributes      map[string]interface{} `json:"attributes"`
+	XXXUnrecognized []byte                 `json:"-"`
 }
 
 type Metric struct {
-	Name             string                 `json:"name"`
-	Type             string                 `json:"type"`
-	Value            interface{}            `json:"value"`
-	Timestamp        int64                  `json:"timestamp"`
-	Interval         int64                  `json:"interval"`
-	Attributes       map[string]interface{} `json:"attributes"`
-	XXX_unrecognized []byte                 `json:"-"`
+	Name            string                 `json:"name"`
+	Type            string                 `json:"type"`
+	Value           interface{}            `json:"value"`
+	Timestamp       int64                  `json:"timestamp"`
+	Interval        int64                  `json:"interval"`
+	Attributes      map[string]interface{} `json:"attributes"`
+	XXXUnrecognized []byte                 `json:"-"`
 }
 
 // Mock caches decompressed request bodies

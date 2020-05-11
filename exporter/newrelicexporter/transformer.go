@@ -157,10 +157,7 @@ func (t *transformer) Timestamp(ts *timestamp.Timestamp) time.Time {
 }
 
 func (t *transformer) isError(code int32) bool {
-	if code == 0 {
-		return false
-	}
-	return true
+	return code != 0
 }
 
 func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, error) {
