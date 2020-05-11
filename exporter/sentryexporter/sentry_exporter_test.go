@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 )
@@ -66,8 +67,10 @@ func TestGenerateStatusFromSpanStatus(t *testing.T) {
 	assert.Equal(t, "resource_exhausted", status2)
 	assert.Equal(t, "message", message2)
 }
+
+// TODO: Finish this test plz
 func TestSpanToSentrySpan(t *testing.T) {
-	t.Skip("Skip this")
+	t.Skip("Finish this test")
 	testSpan := pdata.NewSpan()
 
 	// testSpan.InitEmpty()
@@ -98,6 +101,103 @@ func TestSpanToSentrySpan(t *testing.T) {
 	fmt.Println(sentrySpan2)
 	assert.Nil(t, sentrySpan2)
 	assert.False(t, isRootSpan2)
+}
+
+type SpanDescriptorsCase struct {
+	testName    string
+	name        string
+	attrs       pdata.AttributeMap
+	spanKind    pdata.SpanKind
+	op          string
+	description string
+}
+
+func generateSpanDescriptorsTestCases() []SpanDescriptorsCase {
+	return []SpanDescriptorsCase{
+		{
+			testName: "http-client",
+			name:     "/api/users/{user_id}",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("GET"),
+			}),
+			spanKind:    pdata.SpanKindCLIENT,
+			op:          "http.client",
+			description: "GET /api/users/{user_id}",
+		},
+		{
+			testName: "http-server",
+			name:     "/api/users/{user_id}",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeHTTPMethod: pdata.NewAttributeValueString("POST"),
+			}),
+			spanKind:    pdata.SpanKindSERVER,
+			op:          "http.server",
+			description: "POST /api/users/{user_id}",
+		},
+		{
+			testName: "db-call-without-statement",
+			name:     "SET mykey 'Val'",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeDBType: pdata.NewAttributeValueString("redis"),
+			}),
+			spanKind:    pdata.SpanKindCLIENT,
+			op:          "db",
+			description: "SET mykey 'Val'",
+		},
+		{
+			testName: "db-call-with-statement",
+			name:     "mysql call",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeDBType:      pdata.NewAttributeValueString("sql"),
+				conventions.AttributeDBStatement: pdata.NewAttributeValueString("SELECT * FROM table"),
+			}),
+			spanKind:    pdata.SpanKindCLIENT,
+			op:          "db",
+			description: "SELECT * FROM table",
+		},
+		{
+			testName: "rpc",
+			name:     "grpc.test.EchoService/Echo",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				conventions.AttributeRPCService: pdata.NewAttributeValueString("EchoService"),
+			}),
+			spanKind:    pdata.SpanKindCLIENT,
+			op:          "rpc",
+			description: "grpc.test.EchoService/Echo",
+		},
+		{
+			testName: "message-system",
+			name:     "message-destination",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"messaging.system": pdata.NewAttributeValueString("kafka"),
+			}),
+			spanKind:    pdata.SpanKindPRODUCER,
+			op:          "message",
+			description: "message-destination",
+		},
+		{
+			testName: "faas",
+			name:     "message-destination",
+			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+				"faas.trigger": pdata.NewAttributeValueString("pubsub"),
+			}),
+			spanKind:    pdata.SpanKindSERVER,
+			op:          "pubsub",
+			description: "message-destination",
+		},
+	}
+}
+
+func TestGenerateSpanDescriptors(t *testing.T) {
+	allTestCases := generateSpanDescriptorsTestCases()
+
+	for _, test := range allTestCases {
+		t.Run(test.testName, func(t *testing.T) {
+			op, description := generateSpanDescriptors(test.name, test.attrs, test.spanKind)
+			assert.Equal(t, test.op, op)
+			assert.Equal(t, test.description, description)
+		})
+	}
 }
 
 /*

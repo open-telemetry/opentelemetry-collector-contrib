@@ -22,7 +22,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/internal"
 	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 )
 
@@ -92,8 +91,8 @@ func spanToSentrySpan(span pdata.Span) (*SentrySpan, bool) {
 	op, description := generateSpanDescriptors(name, attributes, spanKind)
 	tags := generateTagsFromAttributes(attributes)
 
-	endTimestamp := internal.UnixNanoToTime(span.EndTime())
-	timestamp := internal.UnixNanoToTime(span.StartTime())
+	endTimestamp := UnixNanoToTime(span.EndTime())
+	timestamp := UnixNanoToTime(span.StartTime())
 
 	status, message := generateStatusFromSpanStatus(span.Status())
 	if message != "" {
