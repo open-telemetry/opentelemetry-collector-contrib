@@ -109,7 +109,7 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 // Start the sender.
 func (sf *SFxMetricsDataSender) Start() error {
 	cfg := &signalfxexporter.Config{
-		URL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
+		IngestURL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
 	}
 
 	factory := signalfxexporter.Factory{}

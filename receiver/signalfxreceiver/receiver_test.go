@@ -130,7 +130,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	}
 
 	expCfg := &signalfxexporter.Config{
-		URL: "http://" + addr + "/v2/datapoint",
+		IngestURL: "http://" + addr + "/v2/datapoint",
 	}
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)

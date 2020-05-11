@@ -15,6 +15,10 @@
 package signalfxexporter
 
 import (
+	"errors"
+	"fmt"
+	"net/url"
+	"path"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
@@ -31,12 +35,12 @@ type Config struct {
 	// default value is "us0"
 	Realm string `mapstructure:"realm"`
 
-	// URL is the destination to where SignalFx metrics will be sent to, it is
+	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
 	// URL is specified. If a path is not included the exporter will
 	// automatically append the appropriate path, eg.: "v2/datapoint".
 	// If a path is specified it will use the one set by the config.
-	URL string `mapstructure:"url"`
+	IngestURL string `mapstructure:"ingest_url"`
 
 	// Timeout is the maximum timeout for HTTP request sending trace data. The
 	// default value is 5 seconds.
@@ -47,4 +51,56 @@ type Config struct {
 	// exporter, eg: "User-Agent" can be set to a custom value if specified
 	// here.
 	Headers map[string]string `mapstructure:"headers"`
+}
+
+func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
+	if err := cfg.validateConfig(); err != nil {
+		return nil, err
+	}
+
+	ingestURL, err := cfg.getIngestURL()
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"ingest_url\": %v", err)
+	}
+
+	if cfg.Timeout == 0 {
+		cfg.Timeout = 5 * time.Second
+	}
+
+	return &exporterOptions{
+		ingestURL:   ingestURL,
+		httpTimeout: cfg.Timeout,
+	}, nil
+}
+
+func (cfg *Config) validateConfig() error {
+	if cfg.Realm == "" && cfg.IngestURL == "" {
+		return errors.New("requires a non-empty \"realm\" or \"ingest_url\"")
+	}
+
+	if cfg.Timeout < 0 {
+		return errors.New("cannot have a negative \"timeout\"")
+	}
+
+	return nil
+}
+
+func (cfg *Config) getIngestURL() (out *url.URL, err error) {
+	if cfg.IngestURL == "" {
+		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com/v2/datapoint", cfg.Realm))
+		if err != nil {
+			return out, err
+		}
+	} else {
+		// Ignore realm and use the IngestURL. Typically used for debugging.
+		out, err = url.Parse(cfg.IngestURL)
+		if err != nil {
+			return out, err
+		}
+		if out.Path == "" || out.Path == "/" {
+			out.Path = path.Join(out.Path, "v2/datapoint")
+		}
+	}
+
+	return out, err
 }
