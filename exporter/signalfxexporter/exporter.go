@@ -16,6 +16,7 @@ package signalfxexporter
 
 import (
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,9 +25,15 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdatautil"
+	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
 )
+
+type signalfxExporter struct {
+	pushMetricsData func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+}
 
 type exporterOptions struct {
 	ingestURL   *url.URL
@@ -61,7 +68,7 @@ func New(
 		return nil, err
 	}
 
-	s := &sfxDPClient{
+	dpClient := &sfxDPClient{
 		ingestURL: options.ingestURL,
 		headers:   headers,
 		client: &http.Client{
@@ -75,9 +82,25 @@ func New(
 		}},
 	}
 
-	exp, err := exporterhelper.NewMetricsExporterOld(
-		&config.ExporterSettings,
-		s.pushMetricsData)
+	return signalfxExporter{
+		pushMetricsData: dpClient.pushMetricsData,
+	}, nil
+}
 
-	return exp, err
+func (se signalfxExporter) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (se signalfxExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+func (se signalfxExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
+	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+
+	numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
+
+	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
+	return err
 }
