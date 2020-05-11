@@ -114,7 +114,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
-			sender := &sfxDPClient{
+			dpClient := &sfxDPClient{
 				ingestURL: serverURL,
 				headers:   map[string]string{"test_header_": "test"},
 				client: &http.Client{
@@ -126,7 +126,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				}},
 			}
 
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {

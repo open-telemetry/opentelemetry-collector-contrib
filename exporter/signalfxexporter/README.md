@@ -15,6 +15,8 @@ The following configuration options can also be configured:
 - `ingest_url` (default = https://ingest.`realm`.signalfx.com/v2/datapoint): Destination
 where SignalFx metrics are sent. If this option is specified, `realm` is ignored.
 If path is not specified, `/v2/datapoint` is used.
+- `api_url` (default = https://api.`realm`.signalfx.com/): Destination to which SignalFx
+[properties and tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata) are sent.
 
 Example:
 

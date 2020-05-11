@@ -42,6 +42,10 @@ type Config struct {
 	// If a path is specified it will use the one set by the config.
 	IngestURL string `mapstructure:"ingest_url"`
 
+	// APIURL is the destination to where SignalFx metadata will be sent. This
+	// value takes precedence over the value of Realm
+	APIURL string `mapstructure:"api_url"`
+
 	// Timeout is the maximum timeout for HTTP request sending trace data. The
 	// default value is 5 seconds.
 	Timeout time.Duration `mapstructure:"timeout"`
@@ -51,6 +55,9 @@ type Config struct {
 	// exporter, eg: "User-Agent" can be set to a custom value if specified
 	// here.
 	Headers map[string]string `mapstructure:"headers"`
+
+	// Whether to log dimension updates being sent to SignalFx.
+	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -63,19 +70,32 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		return nil, fmt.Errorf("invalid \"ingest_url\": %v", err)
 	}
 
+	apiURL, err := cfg.getAPIURL()
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"api_url\": %v", err)
+	}
+
 	if cfg.Timeout == 0 {
 		cfg.Timeout = 5 * time.Second
 	}
 
 	return &exporterOptions{
-		ingestURL:   ingestURL,
-		httpTimeout: cfg.Timeout,
+		ingestURL:    ingestURL,
+		apiURL:       apiURL,
+		httpTimeout:  cfg.Timeout,
+		token:        cfg.AccessToken,
+		logDimUpdate: cfg.LogDimensionUpdates,
 	}, nil
 }
 
 func (cfg *Config) validateConfig() error {
-	if cfg.Realm == "" && cfg.IngestURL == "" {
-		return errors.New("requires a non-empty \"realm\" or \"ingest_url\"")
+	if cfg.AccessToken == "" {
+		return errors.New("requires a non-empty \"access_token\"")
+	}
+
+	if cfg.Realm == "" && (cfg.IngestURL == "" || cfg.APIURL == "") {
+		return errors.New("requires a non-empty \"realm\", or" +
+			" \"ingest_url\" and \"api_url\" should be explicitly set")
 	}
 
 	if cfg.Timeout < 0 {
@@ -93,14 +113,22 @@ func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 		}
 	} else {
 		// Ignore realm and use the IngestURL. Typically used for debugging.
-		out, err = url.Parse(cfg.IngestURL)
+		u, err := url.Parse(cfg.IngestURL)
 		if err != nil {
 			return out, err
 		}
-		if out.Path == "" || out.Path == "/" {
-			out.Path = path.Join(out.Path, "v2/datapoint")
+		if u.Path == "" || u.Path == "/" {
+			u.Path = path.Join(u.Path, "v2/datapoint")
 		}
+		out = u
 	}
 
 	return out, err
+}
+
+func (cfg *Config) getAPIURL() (*url.URL, error) {
+	if cfg.APIURL == "" {
+		return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
+	}
+	return url.Parse(cfg.APIURL)
 }
