@@ -23,28 +23,37 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/api/core"
+	"go.uber.org/zap"
 )
 
 const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
 
 type HoneycombExporter struct {
 	exporter *honeycomb.Exporter
+	logger *zap.Logger
 }
 
-func newHoneycombTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
+func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
 	exporter, err := honeycomb.NewExporter(honeycomb.Config{
 		APIKey: cfg.APIKey,
 	},
 		honeycomb.TargetingDataset(cfg.Dataset),
 		honeycomb.WithAPIURL(cfg.APIURL),
 		honeycomb.WithUserAgentAddendum(oTelCollectorUserAgentStr),
+		honeycomb.CallingOnError(func(err error) {
+			logger.Warn(err.Error())
+		}),
 	)
 	if err != nil {
 		return nil, err
 	}
 
+	// This goroutine will return when Shutdown() is called on the exporter.
+	go exporter.RunErrorLogger(context.Background())
+
 	hce := HoneycombExporter{
 		exporter: exporter,
+		logger: logger,
 	}
 	return exporterhelper.NewTraceExporterOld(
 		cfg,
