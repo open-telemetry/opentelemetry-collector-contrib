@@ -16,27 +16,85 @@ package sentryexporter
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 )
 
 // SentryExporter defines the Sentry Exporter
-type SentryExporter struct{}
-
-// Start the exporter
-func (e *SentryExporter) Start(ctx context.Context, host component.Host) error {
-	// instantiate the Sentry SDK here, and store it on the SentryExporter
-	return nil
+type SentryExporter struct {
+	Dsn string
 }
 
-// ConsumeTraces receives pdata.Traces and sends them to Sentry
-func (e *SentryExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	return nil
+func (s *SentryExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpans int, err error) {
+	resourceSpans := td.ResourceSpans()
+
+	if resourceSpans.Len() == 0 {
+		return 0, nil
+	}
+
+	// Create a transaction for each resource
+	// TODO: Create batches? Idk
+	// transactions := make([]*SentryTransaction, 0, resourceSpans.Len())
+
+	for i := 0; i < resourceSpans.Len(); i++ {
+		rs := resourceSpans.At(i)
+		if rs.IsNil() {
+			continue
+		}
+
+		// TODO: Grab resource attributes to add to transaction
+		// resource := rs.Resource() && check resource.IsNil() -> attr := resource.Attributes()
+
+		// instrumentationLibrarySpans := rs.InstrumentationLibrarySpans()
+	}
+
+	// TODO: figure out how to send dropped spans
+	return 0, nil
 }
 
-// Shutdown the exporter
-func (e *SentryExporter) Shutdown(ctx context.Context) error {
-	// cleanup sentry sdk, close channels
-	return nil
+func spanToSentrySpan(span pdata.Span) (*SentrySpan, error) {
+	if span.IsNil() {
+		return nil, nil
+	}
+
+	// traceID, err := generateSentryTraceID(span.TraceID())
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	return nil, nil
 }
+
+// pdata.TraceID are
+func generateSentryTraceID(traceID pdata.TraceID) (string, error) {
+	secondHalf := make([]byte, 16)
+	rand.Read(secondHalf)
+
+	sentryTraceID := append(traceID, secondHalf...)
+
+	return hex.EncodeToString(sentryTraceID), nil
+}
+
+// CreateSentryExporter returns a new Sentry Exporter
+func CreateSentryExporter(config *Config) (component.TraceExporter, error) {
+	s := &SentryExporter{
+		Dsn: config.Dsn,
+	}
+
+	exp, err := exporterhelper.NewTraceExporter(config, s.pushTraceData)
+
+	return exp, err
+}
+
+// // Start the exporter
+// func (s *SentryExporter) Start(ctx context.Context, host component.Host) error {}
+
+// // ConsumeTraces receives pdata.Traces and sends them to Sentry
+// func (s *SentryExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {}
+
+// // Shutdown the exporter
+// func (s *SentryExporter) Shutdown(ctx context.Context) error {}

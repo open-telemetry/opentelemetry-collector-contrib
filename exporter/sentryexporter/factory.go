@@ -46,9 +46,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 
 // CreateTraceExporter creates a trace exporter based on the Sentry config
 func (f *Factory) CreateTraceExporter(ctx context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TraceExporter, error) {
+	config configmodels.Exporter) (component.TraceExporter, error) {
 
-	// Create exporter based on cfg config and ctx context
-	exp := &SentryExporter{}
-	return exp, nil
+	sentryConfig := config.(*Config)
+
+	// Create exporter based on sentry config
+	exp, err := CreateSentryExporter(sentryConfig)
+	return exp, err
 }
