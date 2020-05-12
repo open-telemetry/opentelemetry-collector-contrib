@@ -17,7 +17,6 @@ package newrelicexporter
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -37,10 +36,6 @@ const (
 	collectorVersionKey = "collector.version"
 	serviceNameKey      = "service.name"
 )
-
-var transformers = sync.Pool{
-	New: func() interface{} { return new(transformer) },
-}
 
 type transformer struct {
 	DeltaCalculator *cumulative.DeltaCalculator

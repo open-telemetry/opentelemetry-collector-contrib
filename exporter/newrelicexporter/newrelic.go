@@ -81,9 +81,10 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 	var errs []error
 	goodSpans := 0
 
-	transform := transformers.Get().(*transformer)
-	transform.ServiceName = td.Node.ServiceInfo.Name
-	transform.Resource = td.Resource
+	transform := &transformer{
+		ServiceName: td.Node.ServiceInfo.Name,
+		Resource:    td.Resource,
+	}
 
 	for _, span := range td.Spans {
 		nrSpan, err := transform.Span(span)
@@ -98,7 +99,7 @@ func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) 
 		}
 		goodSpans++
 	}
-	transformers.Put(transform)
+
 	e.harvester.HarvestNow(ctx)
 
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
@@ -108,10 +109,11 @@ func (e exporter) pushMetricData(ctx context.Context, md consumerdata.MetricsDat
 	var errs []error
 	goodMetrics := 0
 
-	transform := transformers.Get().(*transformer)
-	transform.DeltaCalculator = e.deltaCalculator
-	transform.ServiceName = md.Node.ServiceInfo.Name
-	transform.Resource = md.Resource
+	transform := &transformer{
+		DeltaCalculator: e.deltaCalculator,
+		ServiceName:     md.Node.ServiceInfo.Name,
+		Resource:        md.Resource,
+	}
 
 	for _, metric := range md.Metrics {
 		nrMetrics, err := transform.Metric(metric)
@@ -125,7 +127,7 @@ func (e exporter) pushMetricData(ctx context.Context, md consumerdata.MetricsDat
 		}
 		goodMetrics++
 	}
-	transformers.Put(transform)
+
 	e.harvester.HarvestNow(ctx)
 
 	return len(md.Metrics) - goodMetrics, componenterror.CombineErrors(errs)
