@@ -7,7 +7,7 @@ This exporter supports sending trace and metric data to [New Relic](https://newr
 The following configuration options are supported:
 
 * `apikey` (Required): Your New Relic [Insights Insert API Key](https://docs.newrelic.com/docs/insights/insights-data-sources/custom-data/send-custom-events-event-api#register).
-* `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15.
+* `timeout` (Optional): Amount of time spent attempting a request before abandoning and dropping data. Default is 15 seconds.
 * `common_attributes` (Optional): Attributes to apply to all metrics sent.
 * `metrics_url_override` (Optional): Overrides the endpoint to send metrics.
 * `spans_url_override` (Optional): Overrides the endpoint to send spans.
