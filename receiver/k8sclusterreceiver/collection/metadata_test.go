@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,7 +51,7 @@ func Test_getGenericMetadata(t *testing.T) {
 	rm := getGenericMetadata(om, "resourcetype")
 
 	assert.Equal(t, "k8s.resourcetype.uid", rm.resourceIDKey)
-	assert.Equal(t, "test-uid", rm.resourceID)
+	assert.Equal(t, ResourceID("test-uid"), rm.resourceID)
 	assert.Equal(t, map[string]string{
 		"k8s.workload.name":               "test-name",
 		"k8s.workload.kind":               "resourcetype",
@@ -61,5 +62,142 @@ func Test_getGenericMetadata(t *testing.T) {
 		"owner-kind-2_uid":                "owner2",
 		"foo":                             "bar",
 		"foo1":                            "",
-	}, rm.properties)
+	}, rm.metadata)
+}
+
+func TestGetPropertiesDelta(t *testing.T) {
+	type args struct {
+		oldProps map[string]string
+		newProps map[string]string
+	}
+	tests := []struct {
+		name          string
+		args          args
+		metadataDelta *MetadataDelta
+	}{
+		{
+			"Add to new",
+			args{
+				oldProps: map[string]string{},
+				newProps: map[string]string{
+					"foo": "bar",
+				},
+			},
+			&MetadataDelta{
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
+				map[string]string{},
+			},
+		},
+		{
+			"Add to existing",
+			args{
+				oldProps: map[string]string{
+					"oldfoo": "bar",
+				},
+				newProps: map[string]string{
+					"oldfoo": "bar",
+					"foo":    "bar",
+				},
+			},
+			&MetadataDelta{
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
+				map[string]string{},
+			},
+		},
+		{
+			"Modify existing",
+			args{
+				oldProps: map[string]string{
+					"foo": "bar",
+				},
+				newProps: map[string]string{
+					"foo": "newbar",
+				},
+			},
+			&MetadataDelta{
+				map[string]string{},
+				map[string]string{},
+				map[string]string{
+					"foo": "newbar",
+				},
+			},
+		},
+		{
+			"Remove existing",
+			args{
+				oldProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+				newProps: map[string]string{
+					"foo1": "bar1",
+				},
+			},
+			&MetadataDelta{
+				map[string]string{},
+				map[string]string{
+					"foo": "bar",
+				},
+				map[string]string{},
+			},
+		},
+		{
+			"Properties with empty values",
+			args{
+				oldProps: map[string]string{
+					"foo":         "bar",
+					"foo2":        "bar2",
+					"service_abc": "",
+					"admin":       "",
+					"test":        "",
+				},
+				newProps: map[string]string{
+					"foo":         "bar2",
+					"foo1":        "bar1",
+					"service_def": "",
+					"test":        "",
+				},
+			},
+			&MetadataDelta{
+				map[string]string{
+					"service_def": "",
+					"foo1":        "bar1",
+				},
+				map[string]string{
+					"foo2":        "bar2",
+					"service_abc": "",
+					"admin":       "",
+				},
+				map[string]string{
+					"foo": "bar2",
+				},
+			},
+		},
+		{
+			"No update",
+			args{
+				oldProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+				newProps: map[string]string{
+					"foo":  "bar",
+					"foo1": "bar1",
+				},
+			},
+			nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			delta := getMetadataDelta(tt.args.oldProps, tt.args.newProps)
+			require.Equal(t, tt.metadataDelta, delta)
+		})
+	}
 }

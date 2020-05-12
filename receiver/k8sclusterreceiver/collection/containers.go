@@ -24,11 +24,11 @@ import (
 )
 
 const (
-	// Keys for container properties.
+	// Keys for container metadata.
 	containerKeyStatus       = "container.status"
 	containerKeyStatusReason = "container.status.reason"
 
-	// Values for container properties
+	// Values for container metadata
 	containerStatusRunning    = "running"
 	containerStatusWaiting    = "waiting"
 	containerStatusTerminated = "terminated"
@@ -155,25 +155,25 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 }
 
 func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
-	properties := map[string]string{}
+	metadata := map[string]string{}
 
 	if cs.State.Running != nil {
-		properties[containerKeyStatus] = containerStatusRunning
+		metadata[containerKeyStatus] = containerStatusRunning
 	}
 
 	if cs.State.Terminated != nil {
-		properties[containerKeyStatus] = containerStatusTerminated
-		properties[containerKeyStatusReason] = cs.State.Terminated.Reason
+		metadata[containerKeyStatus] = containerStatusTerminated
+		metadata[containerKeyStatusReason] = cs.State.Terminated.Reason
 	}
 
 	if cs.State.Waiting != nil {
-		properties[containerKeyStatus] = containerStatusWaiting
-		properties[containerKeyStatusReason] = cs.State.Waiting.Reason
+		metadata[containerKeyStatus] = containerStatusWaiting
+		metadata[containerKeyStatusReason] = cs.State.Waiting.Reason
 	}
 
 	return &KubernetesMetadata{
 		resourceIDKey: containerKeyID,
-		resourceID:    utils.StripContainerID(cs.ContainerID),
-		properties:    properties,
+		resourceID:    ResourceID(utils.StripContainerID(cs.ContainerID)),
+		metadata:      metadata,
 	}
 }

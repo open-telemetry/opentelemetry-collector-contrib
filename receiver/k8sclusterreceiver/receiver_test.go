@@ -102,7 +102,7 @@ func setupReceiver(client *fake.Clientset,
 		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw, err := newResourceWatcher(logger, config, client, true)
+	rw, err := newResourceWatcher(logger, config, client)
 
 	if err != nil {
 		return nil, err

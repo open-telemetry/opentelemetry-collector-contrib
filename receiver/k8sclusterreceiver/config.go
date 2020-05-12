@@ -30,4 +30,6 @@ type Config struct {
 	// Node condition types to report. See all condition types, see
 	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#condition.
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
+	// List of exporters to which metadata from this receiver should be forwarded to.
+	MetadataExporters []string `mapstructure:"metadata_exporters"`
 }

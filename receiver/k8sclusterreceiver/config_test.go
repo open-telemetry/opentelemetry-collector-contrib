@@ -53,6 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
+			MetadataExporters:          []string{"exampleexporter"},
 		})
 
 	r3 := cfg.Receivers["k8s_cluster/partial_settings"].(*Config)
