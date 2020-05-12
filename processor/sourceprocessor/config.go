@@ -26,4 +26,8 @@ type Config struct {
 	SourceCategory                 string `mapstructure:"source_category"`
 	SourceCategoryPrefix           string `mapstructure:"source_category_prefix"`
 	SourceCategoryReplaceDash      string `mapstructure:"source_category_replace_dash"`
+	ExcludeNamespaceRegex          string `mapstructure:"exclude_namespace_regex"`
+	ExcludePodRegex                string `mapstructure:"exclude_pod_regex"`
+	ExcludeContainerRegex          string `mapstructure:"exclude_container_regex"`
+	ExcludeHostRegex               string `mapstructure:"exclude_host_regex"`
 }

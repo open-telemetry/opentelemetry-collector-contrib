@@ -11,6 +11,10 @@ processors:
     source_category: "%{namespace}/%{pod_name}/bar"
     source_category_prefix: "kubernetes/"
     source_category_replace_dash: "/"
+    exclude_namespace_regex: "excluded_namespace_regex"
+    exclude_pod_regex: "excluded_pod_regex"
+    exclude_container_regex: "excluded_container_regex"
+    exclude_host_regex: "excluded_host_regex"
 
 exporters:
   exampleexporter:

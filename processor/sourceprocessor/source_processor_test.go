@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	cfg = &Config{
+func createConfig() *Config {
+	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: "resource",
 			NameVal: "resource",
@@ -35,6 +35,10 @@ var (
 		SourceCategoryPrefix:      "prefix/",
 		SourceCategoryReplaceDash: "#",
 	}
+}
+
+var (
+	cfg = createConfig()
 
 	k8sLabels = map[string]string{
 		"namespace":                    "namespace-1",
@@ -72,7 +76,7 @@ var (
 		"pod_id": "pod-1234",
 	}
 
-	lmitedLabelsWithMeta = map[string]string{
+	limitedLabelsWithMeta = map[string]string{
 		"pod_id":     "pod-1234",
 		"_source":    "traces",
 		"_collector": "foocollector",
@@ -110,6 +114,17 @@ func assertTracesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
 	assert.Equal(t, t1, t2)
 }
 
+func assertSpansEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
+	prepareAttributes(t1)
+	prepareAttributes(t2)
+	assert.Equal(t, t1.ResourceSpans().Len(), t2.ResourceSpans().Len())
+	for i := 0; i < t1.ResourceSpans().Len(); i++ {
+		rss1 := t1.ResourceSpans().At(i)
+		rss2 := t2.ResourceSpans().At(i)
+		assert.Equal(t, rss1.InstrumentationLibrarySpans(), rss2.InstrumentationLibrarySpans())
+	}
+}
+
 func TestTraceSourceProcessor(t *testing.T) {
 	want := newTraceData(mergedK8sLabelsWithMeta)
 	test := newTraceData(k8sLabels)
@@ -124,7 +139,7 @@ func TestTraceSourceProcessor(t *testing.T) {
 }
 
 func TestTraceSourceProcessorEmpty(t *testing.T) {
-	want := newTraceData(lmitedLabelsWithMeta)
+	want := newTraceData(limitedLabelsWithMeta)
 	test := newTraceData(limitedLabels)
 
 	ttn := &testTraceConsumer{}
@@ -152,7 +167,7 @@ func newTraceDataWithSpans(_resourceLabels map[string]string, _spanLabels map[st
 
 func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
 	test := newTraceDataWithSpans(limitedLabels, k8sLabels)
-	want := newTraceDataWithSpans(lmitedLabelsWithMeta, mergedK8sLabels)
+	want := newTraceDataWithSpans(limitedLabelsWithMeta, mergedK8sLabels)
 
 	ttn := &testTraceConsumer{}
 	rtp, _ := newSourceTraceProcessor(ttn, cfg)
@@ -160,6 +175,63 @@ func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
 	rtp.ConsumeTraces(context.Background(), test)
 
 	assertTracesEqual(t, ttn.td, want)
+}
+
+func TestTraceSourceFilteringOutByRegex(t *testing.T) {
+	cfg1 := createConfig()
+	cfg1.ExcludePodRegex = ".*"
+
+	cfg2 := createConfig()
+	cfg2.ExcludeContainerRegex = ".*"
+
+	cfg3 := createConfig()
+	cfg3.ExcludeNamespaceRegex = ".*"
+
+	for _, config := range []*Config{cfg1, cfg2, cfg3} {
+		test := newTraceDataWithSpans(limitedLabels, k8sLabels)
+
+		want := newTraceDataWithSpans(limitedLabelsWithMeta, mergedK8sLabels)
+		want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().Resize(0)
+
+		ttn := &testTraceConsumer{}
+		rtp, _ := newSourceTraceProcessor(ttn, config)
+
+		rtp.ConsumeTraces(context.Background(), test)
+
+		assertTracesEqual(t, ttn.td, want)
+	}
+}
+
+func TestTraceSourceFilteringOutByExclude(t *testing.T) {
+	test := newTraceDataWithSpans(limitedLabels, k8sLabels)
+	test.ResourceSpans().At(0).Resource().Attributes().UpsertString("pod_annotation_sumologic.com/exclude", "true")
+
+	want := newTraceDataWithSpans(limitedLabelsWithMeta, mergedK8sLabels)
+	want.ResourceSpans().At(0).InstrumentationLibrarySpans().Resize(0)
+
+	ttn := &testTraceConsumer{}
+	rtp, _ := newSourceTraceProcessor(ttn, cfg)
+
+	rtp.ConsumeTraces(context.Background(), test)
+
+	assertSpansEqual(t, ttn.td, want)
+}
+
+func TestTraceSourceIncludePrecedence(t *testing.T) {
+	test := newTraceDataWithSpans(limitedLabels, k8sLabels)
+	test.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().UpsertString("pod_annotation_sumologic.com/include", "true")
+
+	want := newTraceDataWithSpans(limitedLabelsWithMeta, mergedK8sLabels)
+	want.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).Attributes().UpsertString("pod_annotation_sumologic.com/include", "true")
+
+	ttn := &testTraceConsumer{}
+	cfg1 := createConfig()
+	cfg1.ExcludePodRegex = ".*"
+	rtp, _ := newSourceTraceProcessor(ttn, cfg1)
+
+	rtp.ConsumeTraces(context.Background(), test)
+
+	assertSpansEqual(t, ttn.td, want)
 }
 
 func TestTraceSourceProcessorAnnotations(t *testing.T) {
