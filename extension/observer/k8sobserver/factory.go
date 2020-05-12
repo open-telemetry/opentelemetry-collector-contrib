@@ -35,7 +35,7 @@ const (
 
 // Factory is the factory for the extension.
 type Factory struct {
-	createK8sClientset func(config k8sconfig.K8sAPIConfig) (*kubernetes.Clientset, error)
+	createK8sClientset func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error)
 }
 
 var _ component.Factory = (*Factory)(nil)
@@ -52,7 +52,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
-		K8sAPIConfig: k8sconfig.K8sAPIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	}
 }
 
@@ -64,7 +64,7 @@ func (f *Factory) CreateExtension(
 ) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 
-	clientset, err := f.createK8sClientset(config.K8sAPIConfig)
+	clientset, err := f.createK8sClientset(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -78,14 +78,14 @@ func (f *Factory) CreateExtension(
 
 // NewFactory should be called to create a factory with default values.
 func NewFactory() component.ExtensionFactory {
-	return &Factory{createK8sClientset: func(config k8sconfig.K8sAPIConfig) (*kubernetes.Clientset, error) {
+	return &Factory{createK8sClientset: func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
 		return k8sconfig.MakeClient(config)
 	}}
 }
 
 // NewFactoryWithConfig creates a k8s observer factory with the given k8s API config.
 func NewFactoryWithConfig(config *rest.Config) *Factory {
-	return &Factory{createK8sClientset: func(k8sconfig.K8sAPIConfig) (*kubernetes.Clientset, error) {
+	return &Factory{createK8sClientset: func(k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
 		return kubernetes.NewForConfig(config)
 	}}
 }

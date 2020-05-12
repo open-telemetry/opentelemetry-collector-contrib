@@ -25,7 +25,7 @@ import (
 // Config defines configuration for kubernetes cluster receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	kubernetes.K8sAPIConfig       `mapstructure:",squash"`
+	kubernetes.APIConfig          `mapstructure:",squash"`
 
 	// Collection interval for metrics.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`

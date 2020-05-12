@@ -47,8 +47,8 @@ var authTypes = map[AuthType]bool{
 	AuthTypeKubeConfig:     true,
 }
 
-// K8sAPIConfig contains options relevant to connecting to the K8s API
-type K8sAPIConfig struct {
+// APIConfig contains options relevant to connecting to the K8s API
+type APIConfig struct {
 	// How to authenticate to the K8s API server.  This can be one of `none`
 	// (for no auth), `serviceAccount` (to use the standard service account
 	// token provided to the agent pod), or `kubeConfig` to use credentials
@@ -57,7 +57,7 @@ type K8sAPIConfig struct {
 }
 
 // Validate validates the K8s API config
-func (c K8sAPIConfig) Validate() error {
+func (c APIConfig) Validate() error {
 	if !authTypes[c.AuthType] {
 		return fmt.Errorf("invalid authType for kubernetes: %v", c.AuthType)
 	}
@@ -66,7 +66,7 @@ func (c K8sAPIConfig) Validate() error {
 }
 
 // CreateRestConfig creates an Kubernetes API config from user configuration.
-func CreateRestConfig(apiConf K8sAPIConfig) (*rest.Config, error) {
+func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	var authConf *rest.Config
 	var err error
 
@@ -117,7 +117,7 @@ func CreateRestConfig(apiConf K8sAPIConfig) (*rest.Config, error) {
 }
 
 // MakeClient can take configuration if needed for other types of auth
-func MakeClient(apiConf K8sAPIConfig) (*k8s.Clientset, error) {
+func MakeClient(apiConf APIConfig) (*k8s.Clientset, error) {
 	if err := apiConf.Validate(); err != nil {
 		return nil, err
 	}

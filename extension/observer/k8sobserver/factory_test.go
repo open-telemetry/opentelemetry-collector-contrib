@@ -34,7 +34,7 @@ func TestFactory_Type(t *testing.T) {
 	require.Equal(t, typeStr, factory.Type())
 }
 
-var nilClient = func(k8sconfig.K8sAPIConfig) (*kubernetes.Clientset, error) {
+var nilClient = func(k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
 	return &kubernetes.Clientset{}, nil
 }
 
@@ -46,7 +46,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
-		K8sAPIConfig: k8sconfig.K8sAPIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	},
 		cfg)
 

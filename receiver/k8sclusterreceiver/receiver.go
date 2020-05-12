@@ -102,7 +102,7 @@ func newReceiver(
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 
-	client, err := kubernetes.MakeClient(config.K8sAPIConfig)
+	client, err := kubernetes.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}

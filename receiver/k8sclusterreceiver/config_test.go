@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
 			MetadataExporters:          []string{"exampleexporter"},
-			K8sAPIConfig: k8sconfig.K8sAPIConfig{
+			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		})
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready"},
-			K8sAPIConfig: k8sconfig.K8sAPIConfig{
+			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		})

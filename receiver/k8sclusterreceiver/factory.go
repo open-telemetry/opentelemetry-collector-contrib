@@ -55,7 +55,7 @@ func (f Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
-		K8sAPIConfig: kubernetes.K8sAPIConfig{
+		APIConfig: kubernetes.APIConfig{
 			AuthType: kubernetes.AuthTypeServiceAccount,
 		},
 	}
