@@ -82,7 +82,8 @@ func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*
 		if val == "" {
 			properties[key] = nil
 		} else {
-			properties[key] = &val
+			propVal := val
+			properties[key] = &propVal
 		}
 	}
 	return properties, tagsToAdd, tagsToRemove

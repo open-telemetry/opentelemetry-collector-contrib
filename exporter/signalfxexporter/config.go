@@ -113,14 +113,13 @@ func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 		}
 	} else {
 		// Ignore realm and use the IngestURL. Typically used for debugging.
-		u, err := url.Parse(cfg.IngestURL)
+		out, err = url.Parse(cfg.IngestURL)
 		if err != nil {
 			return out, err
 		}
-		if u.Path == "" || u.Path == "/" {
-			u.Path = path.Join(u.Path, "v2/datapoint")
+		if out.Path == "" || out.Path == "/" {
+			out.Path = path.Join(out.Path, "v2/datapoint")
 		}
-		out = u
 	}
 
 	return out, err
