@@ -39,8 +39,10 @@ func getDimensionUpdateFromMetadata(metadata collection.KubernetesMetadataUpdate
 }
 
 func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*string, []string, []string) {
-	var tagsToAdd []string
-	var tagsToRemove []string
+	var (
+		tagsToAdd    []string
+		tagsToRemove []string
+	)
 	properties := map[string]*string{}
 
 	for label, val := range kmu.MetadataToAdd {
