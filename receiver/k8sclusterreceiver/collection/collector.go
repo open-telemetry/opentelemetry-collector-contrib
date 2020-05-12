@@ -196,8 +196,6 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[ResourceID]*Kubernete
 		km = getMetadataForCronJob(o)
 	case *v2beta1.HorizontalPodAutoscaler:
 		km = getMetadataForHPA(o)
-	default:
-		return nil
 	}
 
 	return km
