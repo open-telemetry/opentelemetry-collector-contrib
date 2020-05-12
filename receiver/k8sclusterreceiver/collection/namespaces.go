@@ -24,9 +24,7 @@ import (
 )
 
 func getMetricsForNamespace(ns *corev1.Namespace) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, 0)
-
-	metrics = []*metricspb.Metric{
+	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name:        "kubernetes/namespace/phase",

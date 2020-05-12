@@ -73,16 +73,7 @@ func (f *Factory) CreateTraceExporter(
 		return nil, err
 	}
 
-	exp, err := New(
-		config,
-		expCfg.URL,
-		expCfg.Headers,
-		expCfg.Timeout)
-	if err != nil {
-		return nil, err
-	}
-
-	return exp, nil
+	return New(config, expCfg.URL, expCfg.Headers, expCfg.Timeout)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

@@ -121,7 +121,7 @@ func (sr *SFxMetricsDataReceiver) GenConfigYAMLStr() string {
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   signalfx:
-    url: "http://localhost:%d/v2/datapoint"`, sr.Port)
+    ingest_url: "http://localhost:%d/v2/datapoint"`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

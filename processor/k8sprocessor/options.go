@@ -32,6 +32,7 @@ const (
 
 	metdataNamespace   = "namespace"
 	metadataPodName    = "podName"
+	metadataPodUID     = "podUID"
 	metadataStartTime  = "startTime"
 	metadataDeployment = "deployment"
 	metadataCluster    = "cluster"
@@ -52,12 +53,14 @@ func WithPassthrough() Option {
 }
 
 // WithExtractMetadata allows specifying options to control extraction of pod metadata.
+// If no fields explicitly provided, all metadata extracted by default.
 func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
 				metdataNamespace,
 				metadataPodName,
+				metadataPodUID,
 				metadataStartTime,
 				metadataDeployment,
 				metadataCluster,
@@ -70,6 +73,8 @@ func WithExtractMetadata(fields ...string) Option {
 				p.rules.Namespace = true
 			case metadataPodName:
 				p.rules.PodName = true
+			case metadataPodUID:
+				p.rules.PodUID = true
 			case metadataStartTime:
 				p.rules.StartTime = true
 			case metadataDeployment:

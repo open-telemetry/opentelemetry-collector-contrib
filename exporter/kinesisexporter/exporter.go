@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
+	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.uber.org/zap"
@@ -31,13 +31,13 @@ type Exporter struct {
 	logger  *zap.Logger
 }
 
-var _ (component.TraceExporterOld) = (*Exporter)(nil)
+var _ component.TraceExporter = (*Exporter)(nil)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after Start() has already returned. If error is returned by
 // Start() then the collector startup will be aborted.
-func (e Exporter) Start(_ context.Context, host component.Host) error {
+func (e Exporter) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -48,22 +48,24 @@ func (e Exporter) Shutdown(context.Context) error {
 }
 
 // ConsumeTraceData receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraceData(c context.Context, td consumerdata.TraceData) error {
-	pBatch, err := jaegertranslator.OCProtoToJaegerProto(td)
+func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
 		e.logger.Error("error translating span batch", zap.Error(err))
 		return consumererror.Permanent(err)
 	}
 	// TODO: Use a multi error type
 	var exportErr error
-	for _, span := range pBatch.GetSpans() {
-		if span.Process == nil {
-			span.Process = pBatch.Process
-		}
-		err := e.kinesis.ExportSpan(span)
-		if err != nil {
-			e.logger.Error("error exporting span to kinesis", zap.Error(err))
-			exportErr = err
+	for _, pBatch := range pBatches {
+		for _, span := range pBatch.GetSpans() {
+			if span.Process == nil {
+				span.Process = pBatch.Process
+			}
+			err := e.kinesis.ExportSpan(span)
+			if err != nil {
+				e.logger.Error("error exporting span to kinesis", zap.Error(err))
+				exportErr = err
+			}
 		}
 	}
 	return exportErr

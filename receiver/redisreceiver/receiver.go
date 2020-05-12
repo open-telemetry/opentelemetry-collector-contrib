@@ -46,11 +46,11 @@ func newRedisReceiver(
 
 // Set up and kick off the interval runner.
 func (r *redisReceiver) Start(ctx context.Context, host component.Host) error {
-	client := newRedisClient(&redis.Options{
+	c := newRedisClient(&redis.Options{
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
 	})
-	redisRunnable := newRedisRunnable(ctx, client, r.consumer, r.logger)
+	redisRunnable := newRedisRunnable(ctx, c, r.config.ServiceName, r.consumer, r.logger)
 	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {

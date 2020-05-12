@@ -111,7 +111,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				Realm:       "lab",
 				Timeout:     -2 * time.Second,
 			},
-			errorMessage: "\"signalfx\" config cannot have a negative \"timeout\"",
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_url",
@@ -121,7 +121,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 					NameVal: typeStr,
 				},
 			},
-			errorMessage: "\"signalfx\" config requires a non-empty \"realm\" or \"url\"",
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\" or \"ingest_url\"",
 		},
 	}
 	for _, tt := range tests {
