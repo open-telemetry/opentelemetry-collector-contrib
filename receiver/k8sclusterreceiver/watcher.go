@@ -163,11 +163,11 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 	exporters map[configmodels.Exporter]component.Exporter) error {
 
 	configuredExporters := map[string]bool{}
-	for cfg, _ := range exporters {
+	for cfg := range exporters {
 		configuredExporters[cfg.Name()] = true
 	}
 
-	for e, _ := range metadataExporters {
+	for e := range metadataExporters {
 		if !configuredExporters[e] {
 			return fmt.Errorf("%s exporter is not in collector config", e)
 		}

@@ -173,8 +173,7 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*Kuber
 
 	podID := ResourceID(pod.UID)
 	return mergeKubernetesMetadataMaps(map[ResourceID]*KubernetesMetadata{
-		podID:
-		{
+		podID: {
 			resourceIDKey: k8sKeyPodUID,
 			resourceID:    podID,
 			metadata:      metadata,
