@@ -126,22 +126,22 @@ func TestTransformSpan(t *testing.T) {
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"empty": nil,
-						"prod": &tracepb.AttributeValue{
+						"prod": {
 							Value: &tracepb.AttributeValue_BoolValue{
 								BoolValue: true,
 							},
 						},
-						"weight": &tracepb.AttributeValue{
+						"weight": {
 							Value: &tracepb.AttributeValue_IntValue{
 								IntValue: 10,
 							},
 						},
-						"score": &tracepb.AttributeValue{
+						"score": {
 							Value: &tracepb.AttributeValue_DoubleValue{
 								DoubleValue: 99.8,
 							},
 						},
-						"user": &tracepb.AttributeValue{
+						"user": {
 							Value: &tracepb.AttributeValue_StringValue{
 								StringValue: &tracepb.TruncatableString{Value: "alice"},
 							},

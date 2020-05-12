@@ -89,7 +89,7 @@ func (c *Mock) Server() *httptest.Server {
 		}
 
 		if !json.Valid(contents) {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "invalid JSON body", http.StatusBadRequest)
 			return
 		}
 		err = c.ParseRequest(contents)
