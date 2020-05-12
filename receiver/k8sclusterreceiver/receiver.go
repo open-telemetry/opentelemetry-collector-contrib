@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
@@ -46,6 +47,12 @@ type kubernetesReceiver struct {
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
 	c, kr.cancel = context.WithCancel(ctx)
+
+	exporters := host.GetExporters()
+	if err := kr.resourceWatcher.setupMetadataExporters(
+		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		return err
+	}
 
 	go func() {
 		kr.resourceWatcher.startWatchingResources(c.Done())
@@ -105,7 +112,7 @@ func newReceiver(
 	if err != nil {
 		return nil, err
 	}
-	resourceWatcher, err := newResourceWatcher(logger, config, client, false)
+	resourceWatcher, err := newResourceWatcher(logger, config, client)
 
 	if err != nil {
 		return nil, err

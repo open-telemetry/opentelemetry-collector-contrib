@@ -15,6 +15,10 @@
 package k8sclusterreceiver
 
 import (
+	"fmt"
+
+	"github.com/open-telemetry/opentelemetry-collector/component"
+	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -27,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 type resourceWatcher struct {
@@ -34,19 +39,18 @@ type resourceWatcher struct {
 	sharedInformerFactory informers.SharedInformerFactory
 	dataCollector         *collection.DataCollector
 	logger                *zap.Logger
-	// This field is temporary and will be removed once the
-	// metadata syncing details are finalized.
-	collectMedata bool
+	metadataConsumers     []metadataConsumer
 }
+
+type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(logger *zap.Logger, config *Config,
-	client kubernetes.Interface, collectMetadata bool) (*resourceWatcher, error) {
+	client kubernetes.Interface) (*resourceWatcher, error) {
 	rw := &resourceWatcher{
 		client:        client,
 		logger:        logger,
 		dataCollector: collection.NewDataCollector(logger, config.NodeConditionTypesToReport),
-		collectMedata: collectMetadata,
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -95,24 +99,93 @@ func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.Share
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
-	rw.addOrUpdateResource(obj)
+	rw.dataCollector.SyncMetrics(obj)
+
+	// Sync metadata only if there's at least one destination for it to sent.
+	if len(rw.metadataConsumers) == 0 {
+		return
+	}
+
+	newMetadata := rw.dataCollector.SyncMetadata(obj)
+	rw.syncMetadataUpdate(map[collection.ResourceID]*collection.KubernetesMetadata{}, newMetadata)
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
 	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
-func (rw *resourceWatcher) onUpdate(_ interface{}, newObj interface{}) {
-	rw.addOrUpdateResource(newObj)
-}
-
-// addOrUpdateResource keeps the metric cache updated with latest metric
-// values that will be dispatched in the subsequent interval.
-func (rw *resourceWatcher) addOrUpdateResource(obj interface{}) {
-	rw.dataCollector.SyncMetrics(obj)
+func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+	// Sync metrics from the new object
+	rw.dataCollector.SyncMetrics(newObj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
-	if rw.collectMedata {
-		rw.dataCollector.SyncMetadata(obj)
+	if len(rw.metadataConsumers) == 0 {
+		return
+	}
+
+	oldMetadata := rw.dataCollector.SyncMetadata(oldObj)
+	newMetadata := rw.dataCollector.SyncMetadata(newObj)
+
+	rw.syncMetadataUpdate(oldMetadata, newMetadata)
+}
+
+func (rw *resourceWatcher) setupMetadataExporters(
+	exporters map[configmodels.Exporter]component.Exporter,
+	metadataExportersFromConfig []string,
+) error {
+
+	var out []metadataConsumer
+
+	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
+	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {
+		return fmt.Errorf("failed to configure metadata_exporters: %v", err)
+	}
+
+	for cfg, exp := range exporters {
+		if !metadataExportersSet[cfg.Name()] {
+			continue
+		}
+		kme, ok := exp.(collection.KubernetesMetadataExporter)
+		if !ok {
+			return fmt.Errorf("%s exporter does not implement KubernetesMetadataExporter", cfg.Name())
+		}
+		out = append(out, kme.ConsumeKubernetesMetadata)
+		rw.logger.Info("Configured Kubernetes MetadataExporter",
+			zap.String("exporter_name", cfg.Name()),
+		)
+	}
+
+	rw.metadataConsumers = out
+	return nil
+}
+
+func validateMetadataExporters(metadataExporters map[string]bool,
+	exporters map[configmodels.Exporter]component.Exporter) error {
+
+	configuredExporters := map[string]bool{}
+	for cfg, _ := range exporters {
+		configuredExporters[cfg.Name()] = true
+	}
+
+	for e, _ := range metadataExporters {
+		if !configuredExporters[e] {
+			return fmt.Errorf("%s exporter is not in collector config", e)
+		}
+	}
+
+	return nil
+}
+
+func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
+	newMetadata map[collection.ResourceID]*collection.KubernetesMetadata) {
+
+	kubernetesMetadataUpdate := collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
+	if len(kubernetesMetadataUpdate) == 0 {
+		return
+	}
+
+	// TODO: Asynchronously invoke consumers
+	for _, consume := range rw.metadataConsumers {
+		consume(kubernetesMetadataUpdate)
 	}
 }

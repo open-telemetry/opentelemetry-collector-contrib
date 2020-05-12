@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	// Keys for stateful set properties.
+	// Keys for stateful set metadata.
 	statefulSetCurrentVersion = "current_revision"
 	statefulSetUpdateVersion  = "update_revision"
 )
@@ -109,10 +109,10 @@ func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForStatefulSet(ss *appsv1.StatefulSet) []*KubernetesMetadata {
-	rp := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
-	rp.properties[statefulSetCurrentVersion] = ss.Status.CurrentRevision
-	rp.properties[statefulSetUpdateVersion] = ss.Status.UpdateRevision
+func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[ResourceID]*KubernetesMetadata {
+	km := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
+	km.metadata[statefulSetCurrentVersion] = ss.Status.CurrentRevision
+	km.metadata[statefulSetUpdateVersion] = ss.Status.UpdateRevision
 
-	return []*KubernetesMetadata{rp}
+	return map[ResourceID]*KubernetesMetadata{ResourceID(ss.UID): km}
 }
