@@ -24,7 +24,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/kubernetes"
+
+	k8sconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -32,18 +34,19 @@ func TestFactory_Type(t *testing.T) {
 	require.Equal(t, typeStr, factory.Type())
 }
 
-var nilConfig = func() (*rest.Config, error) {
-	return &rest.Config{}, nil
+var nilClient = func(k8sconfig.K8sAPIConfig) (*kubernetes.Clientset, error) {
+	return &kubernetes.Clientset{}, nil
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
-	factory := Factory{createK8sConfig: nilConfig}
+	factory := Factory{createK8sClientset: nilClient}
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
 		ExtensionSettings: configmodels.ExtensionSettings{
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
+		K8sAPIConfig: k8sconfig.K8sAPIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	},
 		cfg)
 
@@ -54,7 +57,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateExtension(t *testing.T) {
-	factory := Factory{createK8sConfig: nilConfig}
+	factory := Factory{createK8sClientset: nilClient}
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
