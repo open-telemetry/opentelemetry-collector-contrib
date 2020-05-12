@@ -13,6 +13,23 @@ for more information.
 
 ### Config
 
+An example config,
+
+```yaml
+  k8s_cluster:
+    auth_type: kubeConfig
+    node_conditions_to_report: [Ready, MemoryPressure]
+```
+
+#### auth_type
+
+Determines how to authenticate to the K8s API server.  This can be one of
+`none` (for no auth), `serviceAccount` (to use the standard service account
+token provided to the agent pod), or `kubeConfig` to use credentials
+from `~/.kube/config`.
+
+default: `serviceAccount`
+
 #### collection_interval
 
 This receiver continuously watches for events using K8s API. However, the metrics
@@ -96,11 +113,10 @@ data:
     receivers:
       k8s_cluster:
         collection_interval: 10s
-        #k8s_config: k8s-config
     exporters:
       signalfx:
         access_token: <SIGNALFX_TOKEN>
-        url: <SIGNALFX_INGEST_URL>
+        ingest_url: <SIGNALFX_INGEST_URL>
 
     service:
       pipelines:

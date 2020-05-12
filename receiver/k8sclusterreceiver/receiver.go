@@ -24,8 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
 )
 
 const (
@@ -102,18 +102,12 @@ func newReceiver(
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 
-	k8sConfig, err := rest.InClusterConfig()
-
+	client, err := kubernetes.MakeClient(config.K8sAPIConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := kubernetes.NewForConfig(k8sConfig)
-	if err != nil {
-		return nil, err
-	}
 	resourceWatcher, err := newResourceWatcher(logger, config, client)
-
 	if err != nil {
 		return nil, err
 	}

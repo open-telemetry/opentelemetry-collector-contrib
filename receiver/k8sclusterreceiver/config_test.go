@@ -23,6 +23,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	k8sconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -54,6 +56,9 @@ func TestLoadConfig(t *testing.T) {
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready", "MemoryPressure"},
 			MetadataExporters:          []string{"exampleexporter"},
+			K8sAPIConfig: k8sconfig.K8sAPIConfig{
+				AuthType: k8sconfig.AuthTypeServiceAccount,
+			},
 		})
 
 	r3 := cfg.Receivers["k8s_cluster/partial_settings"].(*Config)
@@ -65,5 +70,8 @@ func TestLoadConfig(t *testing.T) {
 			},
 			CollectionInterval:         30 * time.Second,
 			NodeConditionTypesToReport: []string{"Ready"},
+			K8sAPIConfig: k8sconfig.K8sAPIConfig{
+				AuthType: k8sconfig.AuthTypeServiceAccount,
+			},
 		})
 }
