@@ -118,8 +118,8 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) 
 func MakeSegment(name string, span *tracepb.Span) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)
-		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
-		endTime                                = timestampToFloatSeconds(span.EndTime, span.StartTime)
+		startTime                              = timestampToFloatSeconds(span.StartTime)
+		endTime                                = timestampToFloatSeconds(span.EndTime)
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
 		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
@@ -253,16 +253,14 @@ func convertToAmazonSpanID(v []byte) string {
 	return hex.EncodeToString(v[0:8])
 }
 
-func timestampToFloatSeconds(ts *timestamp.Timestamp, startTs *timestamp.Timestamp) float64 {
+func timestampToFloatSeconds(ts *timestamp.Timestamp) float64 {
 	var (
 		t time.Time
 	)
 	if ts == nil {
 		t = time.Now()
-	} else if startTs == nil {
-		t = time.Unix(ts.Seconds, int64(ts.Nanos))
 	} else {
-		t = time.Unix(startTs.Seconds, int64(ts.Nanos))
+		t = time.Unix(ts.Seconds, int64(ts.Nanos))
 	}
 	return float64(t.UnixNano()) / 1e9
 }
