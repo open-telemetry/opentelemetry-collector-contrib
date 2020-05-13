@@ -109,3 +109,29 @@ func TestOnChange(t *testing.T) {
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
 	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0])
 }
+
+func TestDynamicConfig(t *testing.T) {
+	runner := &mockRunner{}
+	handler := &observerHandler{
+		logger:                zap.NewNop(),
+		receiversByEndpointID: receiverMap{},
+		runner:                runner,
+		receiverTemplates: map[string]receiverTemplate{
+			"name/1": {
+				receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
+				Rule:           "type.pod",
+				rule:           newRuleOrPanic("type.pod"),
+			},
+		},
+	}
+	runner.On("start", receiverConfig{
+		fullName: "name/1",
+		typeStr:  "name",
+		config:   userConfigMap{endpointConfigKey: "localhost:6379"},
+	}, userConfigMap{}).Return(&config.ExampleReceiverProducer{}, nil)
+	handler.OnAdd([]observer.Endpoint{
+		podEndpoint,
+	})
+
+	runner.AssertExpectations(t)
+}

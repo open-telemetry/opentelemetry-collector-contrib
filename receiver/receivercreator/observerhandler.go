@@ -66,8 +66,14 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
+		env, err := endpointToEnv(e)
+		if err != nil {
+			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", e.ID), zap.Error(err))
+			continue
+		}
+
 		for _, template := range obs.receiverTemplates {
-			if matches, err := template.rule.eval(e); err != nil {
+			if matches, err := template.rule.eval(env); err != nil {
 				obs.logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
 				continue
 			} else if !matches {
@@ -77,11 +83,35 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 			obs.logger.Info("starting receiver",
 				zap.String("name", template.fullName),
 				zap.String("type", string(template.typeStr)),
-				zap.String("endpoint", e.ID))
+				zap.String("endpoint", e.Target),
+				zap.String("endpoint_id", e.ID))
 
-			rcvr, err := obs.runner.start(template.receiverConfig, userConfigMap{
-				endpointConfigKey: e.Target,
-			})
+			resolvedConfig, err := expandMap(template.config, env)
+			if err != nil {
+				obs.logger.Error("unable to resolve template config", zap.String("receiver", template.fullName), zap.Error(err))
+				continue
+			}
+
+			discoveredConfig := userConfigMap{}
+
+			// If user didn't set endpoint set to default value.
+			if _, ok := resolvedConfig[endpointConfigKey]; !ok {
+				discoveredConfig[endpointConfigKey] = e.Target
+			}
+
+			resolvedDiscoveredConfig, err := expandMap(discoveredConfig, env)
+
+			if err != nil {
+				obs.logger.Error("unable to resolve discovered config", zap.String("receiver", template.fullName), zap.Error(err))
+				continue
+			}
+
+			rcvr, err := obs.runner.start(receiverConfig{
+				fullName: template.fullName,
+				typeStr:  template.typeStr,
+				config:   resolvedConfig,
+			}, resolvedDiscoveredConfig)
+
 			if err != nil {
 				obs.logger.Error("failed to start receiver", zap.String("receiver", template.fullName))
 				continue
@@ -99,7 +129,7 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 
 	for _, e := range removed {
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
-			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint", e.ID))
+			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", e.ID))
 
 			if err := obs.runner.shutdown(rcvr); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))

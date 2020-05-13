@@ -33,6 +33,42 @@ type rule struct {
 // ruleRe is used to verify the rule starts type check.
 var ruleRe = regexp.MustCompile(`^type\.(pod|port)`)
 
+type endpointEnv map[string]interface{}
+
+// endpointToEnv converts an endpoint into a map suitable for expr evaluation.
+func endpointToEnv(endpoint observer.Endpoint) (endpointEnv, error) {
+	ruleTypes := map[string]interface{}{
+		"port": false,
+		"pod":  false,
+	}
+
+	switch o := endpoint.Details.(type) {
+	case observer.Pod:
+		ruleTypes["pod"] = true
+		return map[string]interface{}{
+			"type":     ruleTypes,
+			"endpoint": endpoint.Target,
+			"name":     o.Name,
+			"labels":   o.Labels,
+		}, nil
+	case observer.Port:
+		ruleTypes["port"] = true
+		return map[string]interface{}{
+			"type":     ruleTypes,
+			"endpoint": endpoint.Target,
+			"name":     o.Name,
+			"port":     o.Port,
+			"pod": map[string]interface{}{
+				"name":   o.Pod.Name,
+				"labels": o.Pod.Labels,
+			},
+			"protocol": o.Protocol,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown endpoint details type %T", endpoint.Details)
+	}
+}
+
 // newRule creates a new rule instance.
 func newRule(ruleStr string) (rule, error) {
 	if ruleStr == "" {
@@ -53,38 +89,7 @@ func newRule(ruleStr string) (rule, error) {
 }
 
 // eval the rule against the given endpoint.
-func (r *rule) eval(endpoint observer.Endpoint) (bool, error) {
-	var env map[string]interface{}
-
-	ruleTypes := map[string]interface{}{
-		"port": false,
-		"pod":  false,
-	}
-
-	switch o := endpoint.Details.(type) {
-	case observer.Pod:
-		ruleTypes["pod"] = true
-		env = map[string]interface{}{
-			"type":   ruleTypes,
-			"name":   o.Name,
-			"labels": o.Labels,
-		}
-	case observer.Port:
-		ruleTypes["port"] = true
-		env = map[string]interface{}{
-			"type": ruleTypes,
-			"name": o.Name,
-			"port": o.Port,
-			"pod": map[string]interface{}{
-				"name":   o.Pod.Name,
-				"labels": o.Pod.Labels,
-			},
-			"protocol": o.Protocol,
-		}
-	default:
-		return false, fmt.Errorf("unknown endpoint details type %T", endpoint.Details)
-	}
-
+func (r *rule) eval(env endpointEnv) (bool, error) {
 	res, err := expr.Run(r.program, env)
 	if err != nil {
 		return false, err
