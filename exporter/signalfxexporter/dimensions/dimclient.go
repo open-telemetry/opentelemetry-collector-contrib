@@ -58,7 +58,7 @@ type DimensionClient struct {
 	// For easier unit testing
 	now func() time.Time
 
-	// TODO: Send these counters as internal metrics to SignalFx
+	// TODO: Look into collecting these metrics and other traces via obsreport
 	DimensionsCurrentlyDelayed int64
 	TotalDimensionsDropped     int64
 	// The number of dimension updates that happened to the same dimension
@@ -79,7 +79,7 @@ type queuedDimension struct {
 
 // NewDimensionClient returns a new client
 func NewDimensionClient(ctx context.Context, token string, apiURL *url.URL,
-	logUpdates bool, logger *zap.Logger) *DimensionClient {
+	logUpdates bool, logger *zap.Logger, sendDelay int) *DimensionClient {
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -102,7 +102,7 @@ func NewDimensionClient(ctx context.Context, token string, apiURL *url.URL,
 		ctx:           ctx,
 		Token:         token,
 		APIURL:        apiURL,
-		sendDelay:     10 * time.Second,
+		sendDelay:     time.Duration(sendDelay) * time.Second,
 		delayedSet:    make(map[DimensionKey]*DimensionUpdate),
 		delayedQueue:  make(chan *queuedDimension, 10000),
 		requestSender: sender,

@@ -90,10 +90,13 @@ func New(
 		}},
 	}
 
+	// Duration to wait between property updates. This might be worth
+	// being made configurable.
+	dimSendDelay := 10
 	dimClient := dimensions.NewDimensionClient(
 		context.Background(),
 		options.token, options.apiURL,
-		options.logDimUpdate, logger,
+		options.logDimUpdate, logger, dimSendDelay,
 	)
 	dimClient.Start()
 
