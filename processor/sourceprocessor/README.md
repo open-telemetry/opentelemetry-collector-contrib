@@ -16,3 +16,16 @@ certain expectations on the label names used by `k8sprocessor`
 - `exclude_pod_regex` (default = empty): all data with matching pod will be excluded
 - `exclude_container_regex` (default = empty): all data with matching container name will be excluded
 - `exclude_host_regex` (default = empty): all data with matching `_sourceHost` will be excluded
+
+#### <a name="k8sprocessor-example"></a>Example config:
+
+```yaml
+processors:
+  source:
+    collector: "mycollector"
+    source_name: "%{namespace}.%{pod}.%{container}"
+    source_category: "%{namespace}/%{pod_name}"
+    source_category_prefix: "kubernetes/"
+    source_category_replace_dash: "/"
+    exclude_namespace_regex: "kube-system"
+```
