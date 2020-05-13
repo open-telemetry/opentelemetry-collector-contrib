@@ -95,7 +95,23 @@ func newTraceData(labels map[string]string) pdata.Traces {
 	return td
 }
 
-func prepareAttributes(t pdata.Traces) {
+func newTraceDataWithSpans(_resourceLabels map[string]string, _spanLabels map[string]string) pdata.Traces {
+	// This will be very small attribute set, the actual data will be at span level
+	td := newTraceData(_resourceLabels)
+	ils := td.ResourceSpans().At(0).InstrumentationLibrarySpans()
+	ils.Resize(1)
+	spans := ils.At(0).Spans()
+	spans.Resize(1)
+	spans.At(0).InitEmpty()
+	spans.At(0).SetName("foo")
+	spanAttrs := spans.At(0).Attributes()
+	for k, v := range _spanLabels {
+		spanAttrs.UpsertString(k, v)
+	}
+	return td
+}
+
+func prepareAttributesForAssert(t pdata.Traces) {
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rss := t.ResourceSpans().At(i)
 		rss.Resource().Attributes().Sort()
@@ -109,14 +125,14 @@ func prepareAttributes(t pdata.Traces) {
 }
 
 func assertTracesEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
-	prepareAttributes(t1)
-	prepareAttributes(t2)
+	prepareAttributesForAssert(t1)
+	prepareAttributesForAssert(t2)
 	assert.Equal(t, t1, t2)
 }
 
 func assertSpansEqual(t *testing.T, t1 pdata.Traces, t2 pdata.Traces) {
-	prepareAttributes(t1)
-	prepareAttributes(t2)
+	prepareAttributesForAssert(t1)
+	prepareAttributesForAssert(t2)
 	assert.Equal(t, t1.ResourceSpans().Len(), t2.ResourceSpans().Len())
 	for i := 0; i < t1.ResourceSpans().Len(); i++ {
 		rss1 := t1.ResourceSpans().At(i)
@@ -147,22 +163,6 @@ func TestTraceSourceProcessorEmpty(t *testing.T) {
 
 	rtp.ConsumeTraces(context.Background(), test)
 	assertTracesEqual(t, ttn.td, want)
-}
-
-func newTraceDataWithSpans(_resourceLabels map[string]string, _spanLabels map[string]string) pdata.Traces {
-	// This will be very small attribute set, the actual data will be at span level
-	td := newTraceData(_resourceLabels)
-	ils := td.ResourceSpans().At(0).InstrumentationLibrarySpans()
-	ils.Resize(1)
-	spans := ils.At(0).Spans()
-	spans.Resize(1)
-	spans.At(0).InitEmpty()
-	spans.At(0).SetName("foo")
-	spanAttrs := spans.At(0).Attributes()
-	for k, v := range _spanLabels {
-		spanAttrs.UpsertString(k, v)
-	}
-	return td
 }
 
 func TestTraceSourceProcessorMetaAtSpan(t *testing.T) {
