@@ -25,12 +25,24 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                          = "source"
-	defaultCollector                 = ""
+	typeStr = "source"
+
+	defaultSource    = "traces"
+	defaultCollector = ""
+
 	defaultSourceName                = "%{namespace}.%{pod}.%{container}"
 	defaultSourceCategory            = "%{namespace}/%{pod_name}"
 	defaultSourceCategoryPrefix      = "kubernetes/"
 	defaultSourceCategoryReplaceDash = "/"
+
+	defaultAnnotationPrefix   = "pod_annotation_"
+	defaultContainerKey       = "container"
+	defaultNamespaceKey       = "namespace"
+	defaultPodIdKey           = "pod_id"
+	defaultPodKey             = "pod"
+	defaultPodNameKey         = "pod_name"
+	defaultPodTemplateHashKey = "pod_labels_pod-template-hash"
+	defaultSourceHostKey      = "source_host"
 )
 
 // Factory is the factory for OpenCensus exporter.
@@ -51,11 +63,21 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
+		Source:                    defaultSource,
 		Collector:                 defaultCollector,
 		SourceName:                defaultSourceName,
 		SourceCategory:            defaultSourceCategory,
 		SourceCategoryPrefix:      defaultSourceCategoryPrefix,
 		SourceCategoryReplaceDash: defaultSourceCategoryReplaceDash,
+
+		AnnotationPrefix:   defaultAnnotationPrefix,
+		ContainerKey:       defaultContainerKey,
+		NamespaceKey:       defaultNamespaceKey,
+		PodKey:             defaultPodKey,
+		PodIdKey:           defaultPodIdKey,
+		PodNameKey:         defaultPodNameKey,
+		PodTemplateHashKey: defaultPodTemplateHashKey,
+		SourceHostKey:      defaultSourceHostKey,
 	}
 }
 

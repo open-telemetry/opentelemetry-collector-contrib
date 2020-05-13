@@ -21,13 +21,24 @@ import (
 // Config defines configuration for Source processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
-	Collector                      string `mapstructure:"collector"`
-	SourceName                     string `mapstructure:"source_name"`
-	SourceCategory                 string `mapstructure:"source_category"`
-	SourceCategoryPrefix           string `mapstructure:"source_category_prefix"`
-	SourceCategoryReplaceDash      string `mapstructure:"source_category_replace_dash"`
-	ExcludeNamespaceRegex          string `mapstructure:"exclude_namespace_regex"`
-	ExcludePodRegex                string `mapstructure:"exclude_pod_regex"`
-	ExcludeContainerRegex          string `mapstructure:"exclude_container_regex"`
-	ExcludeHostRegex               string `mapstructure:"exclude_host_regex"`
+
+	Collector                 string `mapstructure:"collector"`
+	Source                    string `mapstructure:"source"`
+	SourceName                string `mapstructure:"source_name"`
+	SourceCategory            string `mapstructure:"source_category"`
+	SourceCategoryPrefix      string `mapstructure:"source_category_prefix"`
+	SourceCategoryReplaceDash string `mapstructure:"source_category_replace_dash"`
+	ExcludeNamespaceRegex     string `mapstructure:"exclude_namespace_regex"`
+	ExcludePodRegex           string `mapstructure:"exclude_pod_regex"`
+	ExcludeContainerRegex     string `mapstructure:"exclude_container_regex"`
+	ExcludeHostRegex          string `mapstructure:"exclude_host_regex"`
+
+	AnnotationPrefix   string `mapstructure:"annotation_prefix"`
+	ContainerKey       string `mapstructure:"container_key"`
+	NamespaceKey       string `mapstructure:"namespace_key"`
+	PodKey             string `mapstructure:"pod_key"`
+	PodIdKey           string `mapstructure:"pod_id_key"`
+	PodNameKey         string `mapstructure:"pod_name_key"`
+	PodTemplateHashKey string `mapstructure:"pod_template_hash_key"`
+	SourceHostKey      string `mapstructure:"source_host_key"`
 }
