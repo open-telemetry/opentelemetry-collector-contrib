@@ -16,11 +16,14 @@ package k8sobserver
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
+	k8sconfig.APIConfig            `mapstructure:",squash"`
 
 	// Node should be set to the node name to limit discovered endpoints to. For example, node name can
 	// be set using the downward API inside the collector pod spec as follows:
