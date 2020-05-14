@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubernetes
+package k8sconfig
 
 import (
 	"fmt"
@@ -65,8 +65,8 @@ func (c APIConfig) Validate() error {
 	return nil
 }
 
-// CreateRestConfig creates an Kubernetes API config from user configuration.
-func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
+// createRestConfig creates an Kubernetes API config from user configuration.
+func createRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	var authConf *rest.Config
 	var err error
 
@@ -122,7 +122,7 @@ func MakeClient(apiConf APIConfig) (*k8s.Clientset, error) {
 		return nil, err
 	}
 
-	authConf, err := CreateRestConfig(apiConf)
+	authConf, err := createRestConfig(apiConf)
 	if err != nil {
 		return nil, err
 	}

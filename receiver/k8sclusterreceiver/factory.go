@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 const (
@@ -55,8 +55,8 @@ func (f Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		CollectionInterval:         defaultCollectionInterval,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
-		APIConfig: kubernetes.APIConfig{
-			AuthType: kubernetes.AuthTypeServiceAccount,
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 	}
 }

@@ -19,13 +19,13 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config defines configuration for kubernetes cluster receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	kubernetes.APIConfig          `mapstructure:",squash"`
+	k8sconfig.APIConfig           `mapstructure:",squash"`
 
 	// Collection interval for metrics.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`

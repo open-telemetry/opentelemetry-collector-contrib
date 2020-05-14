@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	k8sconfig "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubernetes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
