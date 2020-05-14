@@ -94,6 +94,7 @@ func newOwnerProvider(
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwners = map[string]*ObjectOwner{}
 	ownerCache.podServices = map[string][]string{}
+	ownerCache.namespaces = map[string]*api_v1.Namespace{}
 	ownerCache.cacheMutex = sync.RWMutex{}
 
 	ownerCache.clientset = clientset
@@ -132,14 +133,14 @@ func newOwnerProvider(
 }
 
 func (op *OwnerCache) upsertNamespace(obj interface{}) {
-	namespace := obj.(api_v1.Namespace)
+	namespace := obj.(*api_v1.Namespace)
 	op.cacheMutex.Lock()
-	op.namespaces[namespace.Name] = &namespace
+	op.namespaces[namespace.Name] = namespace
 	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) deleteNamespace(obj interface{}) {
-	namespace := obj.(api_v1.Namespace)
+	namespace := obj.(*api_v1.Namespace)
 	op.cacheMutex.Lock()
 	delete(op.namespaces, namespace.Name)
 	op.cacheMutex.Unlock()
