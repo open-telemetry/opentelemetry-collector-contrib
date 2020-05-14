@@ -24,6 +24,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
@@ -118,8 +119,8 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) 
 func MakeSegment(name string, span *tracepb.Span) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)
-		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
-		endTime                                = timestampToFloatSeconds(span.EndTime, span.StartTime)
+		startTime                              = timestampToFloatSeconds(span.StartTime)
+		endTime                                = timestampToFloatSeconds(span.EndTime)
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
 		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
@@ -253,16 +254,10 @@ func convertToAmazonSpanID(v []byte) string {
 	return hex.EncodeToString(v[0:8])
 }
 
-func timestampToFloatSeconds(ts *timestamp.Timestamp, startTs *timestamp.Timestamp) float64 {
-	var (
-		t time.Time
-	)
-	if ts == nil {
+func timestampToFloatSeconds(ts *timestamp.Timestamp) float64 {
+	t, err := ptypes.Timestamp(ts)
+	if err != nil {
 		t = time.Now()
-	} else if startTs == nil {
-		t = time.Unix(ts.Seconds, int64(ts.Nanos))
-	} else {
-		t = time.Unix(startTs.Seconds, int64(ts.Nanos))
 	}
 	return float64(t.UnixNano()) / 1e9
 }
