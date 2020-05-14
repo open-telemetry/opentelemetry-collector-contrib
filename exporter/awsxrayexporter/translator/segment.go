@@ -24,6 +24,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
@@ -254,13 +255,9 @@ func convertToAmazonSpanID(v []byte) string {
 }
 
 func timestampToFloatSeconds(ts *timestamp.Timestamp) float64 {
-	var (
-		t time.Time
-	)
-	if ts == nil {
+	t, err := ptypes.Timestamp(ts)
+	if err != nil {
 		t = time.Now()
-	} else {
-		t = time.Unix(ts.Seconds, int64(ts.Nanos))
 	}
 	return float64(t.UnixNano()) / 1e9
 }
