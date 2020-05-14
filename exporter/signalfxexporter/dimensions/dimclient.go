@@ -128,6 +128,10 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
 			dc.TotalFlappyUpdates++
 		}
+
+		// Merge the latest updates into existing one.
+		delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
+		delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
 	} else {
 		atomic.AddInt64(&dc.DimensionsCurrentlyDelayed, int64(1))
 
@@ -146,6 +150,33 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 	}
 
 	return nil
+}
+
+// mergeProperties merges 2 or more maps of properties. This method gives
+// precedence to values of properties in later maps. i.e., if more than one
+// map has the same key, the last value seen will be the effective value in
+// the output.
+func mergeProperties(propMaps ...map[string]*string) map[string]*string {
+	out := map[string]*string{}
+	for _, propMap := range propMaps {
+		for k, v := range propMap {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// mergeTags merges 2 or more sets of tags. This method gives precedence to
+// tags seen in later sets. i.e., if more than one set has the same tag, the
+// last value seen will be the effective value in the output.
+func mergeTags(tagSets ...map[string]bool) map[string]bool {
+	out := map[string]bool{}
+	for _, tagSet := range tagSets {
+		for k, v := range tagSet {
+			out[k] = v
+		}
+	}
+	return out
 }
 
 func (dc *DimensionClient) processQueue() {
@@ -260,10 +291,23 @@ func (dc *DimensionClient) makeDimURL(key, value string) (*url.URL, error) {
 }
 
 func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request, error) {
+	var (
+		tagsToAdd    []string
+		tagsToRemove []string
+	)
+
+	for tag, shouldAdd := range dim.Tags {
+		if shouldAdd {
+			tagsToAdd = append(tagsToAdd, tag)
+		} else {
+			tagsToRemove = append(tagsToRemove, tag)
+		}
+	}
+
 	json, err := json.Marshal(map[string]interface{}{
 		"customProperties": dim.Properties,
-		"tags":             dim.TagsToAdd,
-		"tagsToRemove":     dim.TagsToRemove,
+		"tags":             tagsToAdd,
+		"tagsToRemove":     tagsToRemove,
 	})
 	if err != nil {
 		return nil, err

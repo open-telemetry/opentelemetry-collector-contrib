@@ -251,6 +251,73 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Test quick successive updates",
+			fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{
+						"property1": nil,
+						"property2": "val2",
+						"property3": nil,
+					},
+					"tags": []interface{}{
+						"tag_2",
+					},
+					"tagsToRemove": []interface{}{
+						"tag_1",
+					},
+				},
+			},
+			args{
+				[]*collection.KubernetesMetadataUpdate{
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"tag.1":     "",
+								"property1": "val1",
+								"property3": "val3",
+							},
+							MetadataToRemove: map[string]string{
+								"tag/2": "",
+							},
+							MetadataToUpdate: map[string]string{
+								"property2": "val22",
+							},
+						},
+					},
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"tag/2": "",
+							},
+							MetadataToRemove: map[string]string{
+								"tag.1":     "",
+								"property1": "val1",
+							},
+							MetadataToUpdate: map[string]string{
+								"property2": "val2",
+								"property3": "val33",
+							},
+						},
+					},
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{},
+							MetadataToRemove: map[string]string{
+								"property3": "val33",
+							},
+							MetadataToUpdate: map[string]string{},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

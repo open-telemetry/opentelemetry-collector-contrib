@@ -46,11 +46,13 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				},
 			}},
 			&DimensionUpdate{
-				Name:         "name",
-				Value:        "val",
-				Properties:   map[string]*string{},
-				TagsToAdd:    []string{"tag1"},
-				TagsToRemove: []string{"tag2"},
+				Name:       "name",
+				Value:      "val",
+				Properties: map[string]*string{},
+				Tags: map[string]bool{
+					"tag1": true,
+					"tag2": false,
+				},
 			},
 		},
 		{
@@ -80,8 +82,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"property3": "value33",
 					"property4": "",
 				}),
-				TagsToAdd:    nil,
-				TagsToRemove: nil,
+				Tags: map[string]bool{},
 			},
 		},
 		{
@@ -113,8 +114,10 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 					"prope_rty3": "value33",
 					"prope_rty4": "",
 				}),
-				TagsToAdd:    []string{"ta_g1"},
-				TagsToRemove: []string{"ta_g2"},
+				Tags: map[string]bool{
+					"ta_g1": true,
+					"ta_g2": false,
+				},
 			},
 		},
 	}

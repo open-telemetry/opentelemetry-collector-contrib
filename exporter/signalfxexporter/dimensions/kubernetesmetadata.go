@@ -27,23 +27,19 @@ var propNameSanitizer = strings.NewReplacer(
 	"/", "_")
 
 func getDimensionUpdateFromMetadata(metadata collection.KubernetesMetadataUpdate) *DimensionUpdate {
-	properties, tagsToAdd, tagsToRemove := getPropertiesAndTags(metadata)
+	properties, tags := getPropertiesAndTags(metadata)
 
 	return &DimensionUpdate{
-		Name:         propNameSanitizer.Replace(metadata.ResourceIDKey),
-		Value:        string(metadata.ResourceID),
-		Properties:   properties,
-		TagsToAdd:    tagsToAdd,
-		TagsToRemove: tagsToRemove,
+		Name:       propNameSanitizer.Replace(metadata.ResourceIDKey),
+		Value:      string(metadata.ResourceID),
+		Properties: properties,
+		Tags:       tags,
 	}
 }
 
-func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*string, []string, []string) {
-	var (
-		tagsToAdd    []string
-		tagsToRemove []string
-	)
+func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
+	tags := map[string]bool{}
 
 	for label, val := range kmu.MetadataToAdd {
 		key := propNameSanitizer.Replace(label)
@@ -52,7 +48,7 @@ func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*
 		}
 
 		if val == "" {
-			tagsToAdd = append(tagsToAdd, key)
+			tags[key] = true
 		} else {
 			propVal := val
 			properties[key] = &propVal
@@ -66,7 +62,7 @@ func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*
 		}
 
 		if val == "" {
-			tagsToRemove = append(tagsToRemove, key)
+			tags[key] = false
 		} else {
 			properties[key] = nil
 		}
@@ -88,7 +84,7 @@ func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*
 			properties[key] = &propVal
 		}
 	}
-	return properties, tagsToAdd, tagsToRemove
+	return properties, tags
 }
 
 func (dc *DimensionClient) PushKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
