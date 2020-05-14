@@ -35,6 +35,8 @@ const (
 
 // Factory is the factory for the extension.
 type Factory struct {
+	// createK8sClientset being a field in the struct provides an easy way
+	// to mock k8s config in tests.
 	createK8sClientset func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error)
 }
 
