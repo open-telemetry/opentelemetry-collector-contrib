@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestClientSpanWithStatementAttribute(t *testing.T) {

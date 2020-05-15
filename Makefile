@@ -43,6 +43,9 @@ test-with-cover:
 gotidy:
 	$(MAKE) for-all CMD="go mod tidy"
 
+.PHONY: gofmt
+gofmt:
+	$(MAKE) for-all CMD="make fmt"
 
 .PHONY: for-all
 for-all:
@@ -115,4 +118,4 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	$(MAKE) update-dep MODULE=github.com/open-telemetry/opentelemetry-collector VERSION=master
+	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=master

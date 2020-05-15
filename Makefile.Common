@@ -81,6 +81,12 @@ lint-static-check:
 			echo "Static check finished successfully"; \
 		fi
 
+
+.PHONY: fmt
+fmt:
+	gofmt  -w -s ./
+	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
+
 .PHONY: lint
 lint: lint-static-check
 	$(LINT) run

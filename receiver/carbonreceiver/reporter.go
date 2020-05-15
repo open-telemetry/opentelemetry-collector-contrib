@@ -17,8 +17,8 @@ package carbonreceiver
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
