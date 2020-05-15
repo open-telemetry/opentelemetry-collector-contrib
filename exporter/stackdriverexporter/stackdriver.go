@@ -21,11 +21,11 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )

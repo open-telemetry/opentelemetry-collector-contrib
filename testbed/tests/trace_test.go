@@ -20,8 +20,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	scenarios "go.opentelemetry.io/collector/testbed/tests"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
