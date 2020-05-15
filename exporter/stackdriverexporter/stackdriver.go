@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	spandatatranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/spandata"
 	"go.opencensus.io/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -125,7 +124,7 @@ func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdat
 	spans := make([]*trace.SpanData, 0, len(td.Spans))
 
 	for _, span := range td.Spans {
-		sd, err := spandatatranslator.ProtoSpanToOCSpanData(span, td.Resource)
+		sd, err := protoSpanToOCSpanData(span, td.Resource)
 		if err == nil {
 			spans = append(spans, sd)
 			goodSpans++
