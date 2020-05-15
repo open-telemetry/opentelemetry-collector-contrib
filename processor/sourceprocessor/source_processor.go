@@ -98,7 +98,7 @@ func compileRegex(regex string) *regexp.Regexp {
 
 	re, err := regexp.Compile(regex)
 	if err != nil {
-		log.Fatalf("Cannot compile reguler expression: %s Error: %v\n", regex, err)
+		log.Fatalf("Cannot compile regular expression: %s Error: %v\n", regex, err)
 	}
 
 	return re

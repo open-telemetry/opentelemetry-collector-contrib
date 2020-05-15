@@ -135,15 +135,15 @@ func newOwnerProvider(
 func (op *OwnerCache) upsertNamespace(obj interface{}) {
 	namespace := obj.(*api_v1.Namespace)
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.namespaces[namespace.Name] = namespace
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) deleteNamespace(obj interface{}) {
 	namespace := obj.(*api_v1.Namespace)
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	delete(op.namespaces, namespace.Name)
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) addNamespaceInformer(factory informers.SharedInformerFactory) {
@@ -191,8 +191,8 @@ func (op *OwnerCache) addOwnerInformer(
 
 func (op *OwnerCache) deleteObject(obj interface{}) {
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	delete(op.objectOwners, string(obj.(meta_v1.Object).GetUID()))
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
@@ -210,8 +210,8 @@ func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
 	}
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.objectOwners[string(oo.UID)] = &oo
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
@@ -229,8 +229,8 @@ func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
 	sort.Strings(services)
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.podServices[pod] = services
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
@@ -247,8 +247,8 @@ func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
 	}
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.podServices[pod] = newServices
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) genericEndpointOp(obj interface{}, endpointFunc func(pod string, endpoint string)) {
