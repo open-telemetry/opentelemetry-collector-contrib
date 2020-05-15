@@ -44,10 +44,25 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "source",
 			NameVal: "source/2",
 		},
+
 		Collector:                 "somecollector",
+		Source:                    "tracesource",
 		SourceName:                "%{namespace}.%{pod}.%{container}/foo",
 		SourceCategory:            "%{namespace}/%{pod_name}/bar",
 		SourceCategoryPrefix:      "kubernetes/",
 		SourceCategoryReplaceDash: "/",
+		ExcludeContainerRegex:     "excluded_container_regex",
+		ExcludeHostRegex:          "excluded_host_regex",
+		ExcludeNamespaceRegex:     "excluded_namespace_regex",
+		ExcludePodRegex:           "excluded_pod_regex",
+
+		AnnotationPrefix:   "pod_annotation_",
+		ContainerKey:       "container",
+		NamespaceKey:       "namespace",
+		PodKey:             "pod",
+		PodIdKey:           "pod_id",
+		PodNameKey:         "pod_name",
+		PodTemplateHashKey: "pod_labels_pod-template-hash",
+		SourceHostKey:      "source_host",
 	})
 }

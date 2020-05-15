@@ -73,6 +73,8 @@ can be extracted:
 See [field extract config](#k8sprocessor-field-extract) for an example on how to use it.
 - `labels` (default = empty): a list of rules for extraction and recording label data.
 See [field extract config](#k8sprocessor-field-extract) for an example on how to use it.
+- `namespace_labels` (default = empty): a list of rules for extraction and recording namespace label data.
+See [field extract config](#k8sprocessor-field-extract) for an example on how to use it.
 
 #### <a name="k8sprocessor-field-extract"></a> Field Extract Config
 

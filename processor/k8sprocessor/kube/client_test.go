@@ -305,7 +305,8 @@ func TestExtractionRules(t *testing.T) {
 		{
 			name: "generic-labels",
 			rules: ExtractionRules{
-				Tags: NewExtractionFieldTags(),
+				OwnerLookupEnabled: true,
+				Tags:               NewExtractionFieldTags(),
 				Annotations: []FieldExtractionRule{{
 					Name: "k8s.pod.annotation.%s",
 					Key:  "*",
@@ -316,11 +317,17 @@ func TestExtractionRules(t *testing.T) {
 					Key:  "*",
 				},
 				},
+				NamespaceLabels: []FieldExtractionRule{{
+					Name: "namespace_labels_%s",
+					Key:  "*",
+				},
+				},
 			},
 			attributes: map[string]string{
 				"k8s.pod.label.label1":           "lv1",
 				"k8s.pod.label.label2":           "k1=v1 k5=v5 extra!",
 				"k8s.pod.annotation.annotation1": "av1",
+				"namespace_labels_label":         "namespace_label_value",
 			},
 		},
 	}

@@ -303,34 +303,38 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		if r.Key == "*" {
-			// Special case, extract everything
-			for label, value := range pod.Labels {
-				tags[fmt.Sprintf(r.Name, label)] = c.extractField(value, r)
-			}
-		} else {
-			if v, ok := pod.Labels[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
+		extractLabelsIntoTags(r, pod.Labels, tags)
+	}
+
+	if len(c.Rules.NamespaceLabels) > 0 && c.Rules.OwnerLookupEnabled {
+		namespace := c.op.GetNamespace(pod)
+		if namespace != nil {
+			for _, r := range c.Rules.NamespaceLabels {
+				extractLabelsIntoTags(r, namespace.Labels, tags)
 			}
 		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.Key == "*" {
-			// Special case, extract everything
-			for label, value := range pod.Annotations {
-				tags[fmt.Sprintf(r.Name, label)] = c.extractField(value, r)
-			}
-		} else {
-			if v, ok := pod.Annotations[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
-			}
-		}
+		extractLabelsIntoTags(r, pod.Annotations, tags)
 	}
 	return tags
 }
 
-func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
+func extractLabelsIntoTags(r FieldExtractionRule, labels map[string]string, tags map[string]string) {
+	if r.Key == "*" {
+		// Special case, extract everything
+		for label, value := range labels {
+			tags[fmt.Sprintf(r.Name, label)] = extractField(value, r)
+		}
+	} else {
+		if v, ok := labels[r.Key]; ok {
+			tags[r.Name] = extractField(v, r)
+		}
+	}
+}
+
+func extractField(v string, r FieldExtractionRule) string {
 	// Check if a subset of the field should be extracted with a regular expression
 	// instead of the whole field.
 	if r.Regex == nil {

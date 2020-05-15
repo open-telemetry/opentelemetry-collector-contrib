@@ -67,6 +67,12 @@ type ExtractConfig struct {
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.
 	Labels []FieldExtractConfig `mapstructure:"labels"`
+
+	// NamespaceLabels allows extracting data from namespace labels and record it
+	// as resource attributes.
+	// It is a list of FieldExtractConfig type. See FieldExtractConfig
+	// documentation for more details.
+	NamespaceLabels []FieldExtractConfig `mapstructure:"namespace_labels"`
 }
 
 //FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.

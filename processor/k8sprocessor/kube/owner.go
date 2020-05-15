@@ -52,6 +52,7 @@ type ObjectOwner struct {
 // OwnerAPI describes functions that could allow retrieving owner info
 type OwnerAPI interface {
 	GetOwners(pod *api_v1.Pod) []*ObjectOwner
+	GetNamespace(pod *api_v1.Pod) *api_v1.Namespace
 	GetServices(pod *api_v1.Pod) []string
 	Start()
 	Stop()
@@ -61,6 +62,7 @@ type OwnerAPI interface {
 type OwnerCache struct {
 	objectOwners map[string]*ObjectOwner
 	podServices  map[string][]string
+	namespaces   map[string]*api_v1.Namespace
 	cacheMutex   sync.RWMutex
 
 	clientset *kubernetes.Clientset
@@ -92,6 +94,7 @@ func newOwnerProvider(
 	ownerCache := OwnerCache{}
 	ownerCache.objectOwners = map[string]*ObjectOwner{}
 	ownerCache.podServices = map[string][]string{}
+	ownerCache.namespaces = map[string]*api_v1.Namespace{}
 	ownerCache.cacheMutex = sync.RWMutex{}
 
 	ownerCache.clientset = clientset
@@ -103,6 +106,8 @@ func newOwnerProvider(
 			opts.LabelSelector = labelSelector.String()
 			opts.FieldSelector = fieldSelector.String()
 		}))
+
+	ownerCache.addNamespaceInformer(factory)
 
 	ownerCache.addOwnerInformer("ReplicaSet",
 		factory.Apps().V1().ReplicaSets().Informer(),
@@ -125,6 +130,40 @@ func newOwnerProvider(
 		ownerCache.deleteEndpoint)
 
 	return &ownerCache, nil
+}
+
+func (op *OwnerCache) upsertNamespace(obj interface{}) {
+	namespace := obj.(*api_v1.Namespace)
+	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
+	op.namespaces[namespace.Name] = namespace
+}
+
+func (op *OwnerCache) deleteNamespace(obj interface{}) {
+	namespace := obj.(*api_v1.Namespace)
+	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
+	delete(op.namespaces, namespace.Name)
+}
+
+func (op *OwnerCache) addNamespaceInformer(factory informers.SharedInformerFactory) {
+	informer := factory.Core().V1().Namespaces().Informer()
+	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			observability.RecordOtherAdded()
+			op.upsertNamespace(obj)
+		},
+		UpdateFunc: func(_, obj interface{}) {
+			observability.RecordOtherUpdated()
+			op.upsertNamespace(obj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			observability.RecordOtherDeleted()
+			op.deleteNamespace(obj)
+		},
+	})
+
+	op.informers = append(op.informers, informer)
 }
 
 func (op *OwnerCache) addOwnerInformer(
@@ -152,8 +191,8 @@ func (op *OwnerCache) addOwnerInformer(
 
 func (op *OwnerCache) deleteObject(obj interface{}) {
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	delete(op.objectOwners, string(obj.(meta_v1.Object).GetUID()))
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
@@ -171,8 +210,8 @@ func (op *OwnerCache) cacheObject(kind string, obj interface{}) {
 	}
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.objectOwners[string(oo.UID)] = &oo
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
@@ -190,8 +229,8 @@ func (op *OwnerCache) addEndpointToPod(pod string, endpoint string) {
 	sort.Strings(services)
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.podServices[pod] = services
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
@@ -208,8 +247,8 @@ func (op *OwnerCache) deleteEndpointFromPod(pod string, endpoint string) {
 	}
 
 	op.cacheMutex.Lock()
+	defer op.cacheMutex.Unlock()
 	op.podServices[pod] = newServices
-	op.cacheMutex.Unlock()
 }
 
 func (op *OwnerCache) genericEndpointOp(obj interface{}, endpointFunc func(pod string, endpoint string)) {
@@ -235,6 +274,15 @@ func (op *OwnerCache) deleteEndpoint(obj interface{}) {
 
 func (op *OwnerCache) cacheEndpoint(kind string, obj interface{}) {
 	op.genericEndpointOp(obj, op.addEndpointToPod)
+}
+
+// GetNamespaces returns a cached namespace object (if one is found) or nil otherwise
+func (op *OwnerCache) GetNamespace(pod *api_v1.Pod) *api_v1.Namespace {
+	namespace, found := op.namespaces[pod.Namespace]
+	if found {
+		return namespace
+	}
+	return nil
 }
 
 // GetServices returns a slice with matched services - in case no services are found, it returns an empty slice

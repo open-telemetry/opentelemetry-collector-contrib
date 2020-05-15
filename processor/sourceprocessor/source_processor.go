@@ -17,20 +17,45 @@ package sourceprocessor
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector/component"
 	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor/observability"
 )
 
-type sourceTraceProcessor struct {
-	collector            string
-	sourceCategoryFiller attributeFiller
-	sourceNameFiller     attributeFiller
-	sourceHostFiller     attributeFiller
-	nextConsumer         consumer.TraceConsumer
+type sourceTraceKeys struct {
+	annotationPrefix   string
+	containerKey       string
+	namespaceKey       string
+	podKey             string
+	podIdKey           string
+	podNameKey         string
+	podTemplateHashKey string
+	sourceHostKey      string
+}
+
+func (stk sourceTraceKeys) convertKey(key string) string {
+	switch key {
+	case "container":
+		return stk.containerKey
+	case "namespace":
+		return stk.namespaceKey
+	case "pod":
+		return stk.podKey
+	case "pod_id":
+		return stk.podIdKey
+	case "pod_name":
+		return stk.podNameKey
+	case "source_host":
+		return stk.sourceHostKey
+	default:
+		return key
+	}
 }
 
 type attributeFiller struct {
@@ -41,30 +66,138 @@ type attributeFiller struct {
 	labels          []string
 }
 
+type sourceTraceProcessor struct {
+	collector             string
+	source                string
+	sourceCategoryFiller  attributeFiller
+	sourceNameFiller      attributeFiller
+	sourceHostFiller      attributeFiller
+	excludeNamespaceRegex *regexp.Regexp
+	excludePodRegex       *regexp.Regexp
+	excludeContainerRegex *regexp.Regexp
+	excludeHostRegex      *regexp.Regexp
+	nextConsumer          consumer.TraceConsumer
+	keys                  sourceTraceKeys
+}
+
 const (
 	alphanums = "bcdfghjklmnpqrstvwxz2456789"
 
-	annotationPrefix                = "pod_annotation_"
-	podTemplateHashKey              = "pod_labels_pod-template-hash"
-	podNameKey                      = "pod_name"
-	sourceHostSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceHost"
-	sourceNameSpecialAnnotation     = annotationPrefix + "sumologic.com/sourceName"
-	sourceCategorySpecialAnnotation = annotationPrefix + "sumologic.com/sourceCategory"
+	sourceHostSpecialAnnotation     = "sumologic.com/sourceHost"
+	sourceNameSpecialAnnotation     = "sumologic.com/sourceName"
+	sourceCategorySpecialAnnotation = "sumologic.com/sourceCategory"
+
+	includeAnnotation = "sumologic.com/include"
+	excludeAnnotation = "sumologic.com/exclude"
 )
 
+func compileRegex(regex string) *regexp.Regexp {
+	if regex == "" {
+		return nil
+	}
+
+	re, err := regexp.Compile(regex)
+	if err != nil {
+		log.Fatalf("Cannot compile regular expression: %s Error: %v\n", regex, err)
+	}
+
+	return re
+}
+
+func matchRegexMaybe(re *regexp.Regexp, atts pdata.AttributeMap, attributeName string) bool {
+	if re == nil {
+		return false
+	}
+
+	if attrValue, found := atts.Get(attributeName); found {
+		if attrValue.Type() == pdata.AttributeValueSTRING {
+			return re.MatchString(attrValue.StringVal())
+		}
+	}
+
+	return false
+}
+
 func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceTraceProcessor, error) {
+	keys := sourceTraceKeys{
+		annotationPrefix:   cfg.AnnotationPrefix,
+		containerKey:       cfg.ContainerKey,
+		namespaceKey:       cfg.NamespaceKey,
+		podIdKey:           cfg.PodIdKey,
+		podKey:             cfg.PodKey,
+		podNameKey:         cfg.PodNameKey,
+		podTemplateHashKey: cfg.PodTemplateHashKey,
+		sourceHostKey:      cfg.SourceHostKey,
+	}
+
 	return &sourceTraceProcessor{
-		nextConsumer:         next,
-		collector:            cfg.Collector,
-		sourceHostFiller:     createSourceHostFiller(),
-		sourceCategoryFiller: createSourceCategoryFiller(cfg),
-		sourceNameFiller:     createSourceNameFiller(cfg),
+		nextConsumer:          next,
+		collector:             cfg.Collector,
+		keys:                  keys,
+		source:                cfg.Source,
+		sourceHostFiller:      createSourceHostFiller(keys),
+		sourceCategoryFiller:  createSourceCategoryFiller(cfg, keys),
+		sourceNameFiller:      createSourceNameFiller(cfg, keys),
+		excludeNamespaceRegex: compileRegex(cfg.ExcludeNamespaceRegex),
+		excludeHostRegex:      compileRegex(cfg.ExcludeHostRegex),
+		excludeContainerRegex: compileRegex(cfg.ExcludeContainerRegex),
+		excludePodRegex:       compileRegex(cfg.ExcludePodRegex),
 	}, nil
+}
+
+func (stp *sourceTraceProcessor) fillOtherMeta(atts pdata.AttributeMap) {
+	atts.UpsertString("_source", stp.source)
+	if stp.collector != "" {
+		atts.UpsertString("_collector", stp.collector)
+	}
+}
+
+func (stp *sourceTraceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
+	// TODO: This is quite inefficient when done for each package (ore even more so, span) separately.
+	// It should be moved to K8S Meta Processor and done once per new pod/changed pod
+
+	if value, found := atts.Get(stp.annotationAttribute(excludeAnnotation)); found {
+		if value.Type() == pdata.AttributeValueSTRING && value.StringVal() == "true" {
+			return true
+		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() == true {
+			return true
+		}
+	}
+
+	if value, found := atts.Get(stp.annotationAttribute(includeAnnotation)); found {
+		if value.Type() == pdata.AttributeValueSTRING && value.StringVal() == "true" {
+			return false
+		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() == true {
+			return false
+		}
+	}
+
+	if matchRegexMaybe(stp.excludeNamespaceRegex, atts, stp.keys.namespaceKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludePodRegex, atts, stp.keys.podKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludeContainerRegex, atts, stp.keys.containerKey) {
+		return true
+	}
+	if matchRegexMaybe(stp.excludeHostRegex, atts, stp.keys.sourceHostKey) {
+		return true
+	}
+
+	return false
+}
+
+func (stp *sourceTraceProcessor) annotationAttribute(annotationKey string) string {
+	return stp.keys.annotationPrefix + annotationKey
 }
 
 func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
+
 	for i := 0; i < rss.Len(); i++ {
+		observability.RecordResourceSpansProcessed()
+
 		rs := rss.At(i)
 		if rs.IsNil() {
 			continue
@@ -77,50 +210,70 @@ func (stp *sourceTraceProcessor) ConsumeTraces(ctx context.Context, td pdata.Tra
 			atts := res.Attributes()
 
 			// TODO: move this to k8sprocessor
-			enrichPodName(&atts)
-			atts.UpsertString("_source", "traces")
-			if stp.collector != "" {
-				atts.UpsertString("_collector", stp.collector)
-			}
+			stp.enrichPodName(&atts)
+			stp.fillOtherMeta(atts)
 			filledOtherMeta = true
 
-			filledAnySource = stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation) || filledAnySource
-			filledAnySource = stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation) || filledAnySource
-			filledAnySource = stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation) || filledAnySource
+			filledAnySource = stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceHostSpecialAnnotation), stp.keys) || filledAnySource
+			filledAnySource = stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceCategorySpecialAnnotation), stp.keys) || filledAnySource
+			filledAnySource = stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceNameSpecialAnnotation), stp.keys) || filledAnySource
+
+			ilss := rs.InstrumentationLibrarySpans()
+			totalSpans := 0
+			for j := 0; j < ilss.Len(); j++ {
+				ils := ilss.At(j)
+				totalSpans = ils.Spans().Len()
+			}
+
+			if stp.isFilteredOut(atts) {
+				rs.InstrumentationLibrarySpans().Resize(0)
+				observability.RecordFilteredOutN(totalSpans)
+			} else {
+				observability.RecordFilteredInN(totalSpans)
+			}
 		}
 
+		// Perhaps this is coming through Zipkin and in such case the attributes are stored in each span attributes, doh!
 		if !filledAnySource {
-			// Perhaps this is coming through Zipkin and in such case the attributes are stored in each span attributes, doh!
 			ilss := rs.InstrumentationLibrarySpans()
 			for j := 0; j < ilss.Len(); j++ {
 				ils := ilss.At(j)
 				if ils.IsNil() {
 					continue
 				}
-				spans := ils.Spans()
-				for k := 0; k < spans.Len(); k++ {
-					s := spans.At(k)
+				inputSpans := ils.Spans()
+				outputSpans := pdata.NewSpanSlice()
+
+				for k := 0; k < inputSpans.Len(); k++ {
+					s := inputSpans.At(k)
 					if s.IsNil() {
 						continue
 					}
 					atts := s.Attributes()
 
 					// TODO: move this to k8sprocessor
-					enrichPodName(&atts)
+					stp.enrichPodName(&atts)
 					if !filledOtherMeta {
-						atts.UpsertString("_source", "traces")
-						if stp.collector != "" {
-							atts.UpsertString("_collector", stp.collector)
-						}
+						stp.fillOtherMeta(atts)
 					}
 
-					stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, sourceHostSpecialAnnotation)
-					stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, sourceCategorySpecialAnnotation)
-					stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, sourceNameSpecialAnnotation)
+					stp.sourceHostFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceHostSpecialAnnotation), stp.keys)
+					stp.sourceCategoryFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceCategorySpecialAnnotation), stp.keys)
+					stp.sourceNameFiller.fillResourceOrUseAnnotation(&atts, stp.annotationAttribute(sourceNameSpecialAnnotation), stp.keys)
+
+					if !stp.isFilteredOut(atts) {
+						outputSpans.Resize(outputSpans.Len() + 1)
+						s.CopyTo(outputSpans.At(outputSpans.Len() - 1))
+						observability.RecordFilteredIn()
+					} else {
+						observability.RecordFilteredOut()
+					}
 				}
+
+				ils.Spans().Resize(0)
+				outputSpans.MoveAndAppendTo(ils.Spans())
 			}
 		}
-
 	}
 	return stp.nextConsumer.ConsumeTraces(ctx, td)
 }
@@ -150,7 +303,7 @@ func SafeEncodeString(s string) string {
 	return string(r)
 }
 
-func enrichPodName(atts *pdata.AttributeMap) bool {
+func (stp *sourceTraceProcessor) enrichPodName(atts *pdata.AttributeMap) bool {
 	// This replicates sanitize_pod_name function
 	// Strip out dynamic bits from pod name.
 	// NOTE: Kubernetes deployments append a template hash.
@@ -162,7 +315,7 @@ func enrichPodName(atts *pdata.AttributeMap) bool {
 	if atts == nil {
 		return false
 	}
-	pod, found := atts.Get("pod")
+	pod, found := atts.Get(stp.keys.podKey)
 	if !found {
 		return false
 	}
@@ -173,26 +326,26 @@ func enrichPodName(atts *pdata.AttributeMap) bool {
 		return false
 	}
 
-	podTemplateHashAttr, found := atts.Get(podTemplateHashKey)
+	podTemplateHashAttr, found := atts.Get(stp.keys.podTemplateHashKey)
 
 	if found && len(podParts) > 2 {
 		podTemplateHash := podTemplateHashAttr.StringVal()
 		if podTemplateHash == podParts[len(podParts)-2] || SafeEncodeString(podTemplateHash) == podParts[len(podParts)-2] {
-			atts.UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
+			atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-2], "-"))
 			return true
 		}
 	}
-	atts.UpsertString(podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
+	atts.UpsertString(stp.keys.podNameKey, strings.Join(podParts[:len(podParts)-1], "-"))
 	return true
 }
 
-func extractFormat(format string, name string) attributeFiller {
+func extractFormat(format string, name string, keys sourceTraceKeys) attributeFiller {
 	r, _ := regexp.Compile(`\%\{(\w+)\}`)
 
 	labels := make([]string, 0)
 	matches := r.FindAllStringSubmatch(format, -1)
 	for _, matchset := range matches {
-		labels = append(labels, matchset[1])
+		labels = append(labels, keys.convertKey(matchset[1]))
 	}
 	template := r.ReplaceAllString(format, "%s")
 
@@ -205,7 +358,7 @@ func extractFormat(format string, name string) attributeFiller {
 	}
 }
 
-func createSourceHostFiller() attributeFiller {
+func createSourceHostFiller(keys sourceTraceKeys) attributeFiller {
 	return attributeFiller{
 		name:            "_sourceHost",
 		compiledFormat:  "",
@@ -215,23 +368,23 @@ func createSourceHostFiller() attributeFiller {
 	}
 }
 
-func createSourceNameFiller(cfg *Config) attributeFiller {
-	filler := extractFormat(cfg.SourceName, "_sourceName")
+func createSourceNameFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
+	filler := extractFormat(cfg.SourceName, "_sourceName", keys)
 	return filler
 }
 
-func createSourceCategoryFiller(cfg *Config) attributeFiller {
-	filler := extractFormat(cfg.SourceCategory, "_sourceCategory")
+func createSourceCategoryFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
+	filler := extractFormat(cfg.SourceCategory, "_sourceCategory", keys)
 	filler.compiledFormat = cfg.SourceCategoryPrefix + filler.compiledFormat
 	filler.dashReplacement = cfg.SourceCategoryReplaceDash
 	filler.prefix = cfg.SourceCategoryPrefix
 	return filler
 }
 
-func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string) bool {
+func (f *attributeFiller) fillResourceOrUseAnnotation(atts *pdata.AttributeMap, annotationKey string, keys sourceTraceKeys) bool {
 	val, found := atts.Get(annotationKey)
 	if found {
-		annotationFiller := extractFormat(val.StringVal(), f.name)
+		annotationFiller := extractFormat(val.StringVal(), f.name, keys)
 		annotationFiller.dashReplacement = f.dashReplacement
 		annotationFiller.compiledFormat = f.prefix + annotationFiller.compiledFormat
 		return annotationFiller.fillAttributes(atts)

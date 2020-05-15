@@ -78,6 +78,9 @@ func TestLoadConfig(t *testing.T) {
 					{TagName: "l1", Key: "label1"},
 					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
 				},
+				NamespaceLabels: []FieldExtractConfig{
+					{TagName: "namespace_labels_%s", Key: "*"},
+				},
 			},
 			Filter: FilterConfig{
 				Namespace:      "ns2",

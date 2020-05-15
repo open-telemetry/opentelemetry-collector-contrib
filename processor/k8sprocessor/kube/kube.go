@@ -91,10 +91,11 @@ type deleteRequest struct {
 // for performance reasons. We can support adding additional custom filters
 // in future if there is a real need.
 type Filters struct {
-	Node      string
-	Namespace string
-	Fields    []FieldFilter
-	Labels    []FieldFilter
+	Node            string
+	Namespace       string
+	Fields          []FieldFilter
+	Labels          []FieldFilter
+	NamespaceLabels []FieldFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.
@@ -131,9 +132,10 @@ type ExtractionRules struct {
 
 	OwnerLookupEnabled bool
 
-	Tags        ExtractionFieldTags
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	Tags            ExtractionFieldTags
+	Annotations     []FieldExtractionRule
+	Labels          []FieldExtractionRule
+	NamespaceLabels []FieldExtractionRule
 }
 
 // ExtractionFieldTags is used to describe selected exported key names for the extracted data
