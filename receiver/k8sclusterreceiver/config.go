@@ -17,7 +17,7 @@ package k8sclusterreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )

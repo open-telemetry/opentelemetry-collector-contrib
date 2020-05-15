@@ -18,12 +18,12 @@ package sapmexporter
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	sapmclient "github.com/signalfx/sapm-proto/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 

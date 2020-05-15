@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
 )
 

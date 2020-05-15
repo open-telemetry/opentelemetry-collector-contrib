@@ -14,7 +14,7 @@
 
 package honeycombexporter
 
-import "github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+import "go.opentelemetry.io/collector/config/configmodels"
 
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.

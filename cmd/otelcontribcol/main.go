@@ -19,7 +19,7 @@ package main
 import (
 	"log"
 
-	"github.com/open-telemetry/opentelemetry-collector/service"
+	"go.opentelemetry.io/collector/service"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/version"
 )

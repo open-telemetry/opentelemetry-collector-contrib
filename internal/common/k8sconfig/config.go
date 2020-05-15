@@ -29,7 +29,7 @@ import (
 type AuthType string
 
 // TODO: Add option for TLS once
-// https://github.com/open-telemetry/opentelemetry-collector/issues/933
+// https://go.opentelemetry.io/collector/issues/933
 // is addressed.
 const (
 	// AuthTypeNone means no auth is required

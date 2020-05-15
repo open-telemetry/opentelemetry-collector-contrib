@@ -15,9 +15,6 @@
 package stackdriverexporter
 
 import (
-	"bytes"
-	"encoding/json"
-	"reflect"
 	"testing"
 	"time"
 
@@ -25,6 +22,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/stretchr/testify/assert"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 )
@@ -33,9 +31,9 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 	// The goal of this test is to ensure that each
 	// tracepb.Span is transformed to its *trace.SpanData correctly!
 
-	endTime := time.Now().Round(time.Second)
+	endTime := time.Now().Round(time.Second).UTC()
 	endTimeProto, _ := ptypes.TimestampProto(endTime)
-	startTime := endTime.Add(-90 * time.Second)
+	startTime := endTime.Add(-90 * time.Second).UTC()
 	startTimeProto, _ := ptypes.TimestampProto(startTime)
 
 	protoSpan := &tracepb.Span{
@@ -158,17 +156,9 @@ func TestProtoSpanToOCSpanData_endToEnd(t *testing.T) {
 			"timeout_ns": int64(12e9),
 			"agent":      "ocagent",
 			"cache_hit":  true,
-			"ping_count": int(25), // Should be transformed into int64
+			"ping_count": int64(25), // Should be transformed into int64
 		},
 	}
 
-	if g, w := gotOCSpanData, wantOCSpanData; !reflect.DeepEqual(g, w) {
-		// As a last resort now compare by bytes here since reflect.DeepEqual might have been
-		// tripped out perhaps due to pointer differences(although this shouldn't hinder it).
-		gBlob, _ := json.MarshalIndent(g, "", "  ")
-		wBlob, _ := json.MarshalIndent(w, "", "  ")
-		if !bytes.Equal(wBlob, gBlob) {
-			t.Fatalf("End-to-end transformed span\n\tGot  %+v\n\tWant %+v", g, w)
-		}
-	}
+	assert.EqualValues(t, wantOCSpanData, gotOCSpanData)
 }

@@ -18,7 +18,7 @@ import (
 	"strconv"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 // AWS-specific OpenTelemetry attribute names

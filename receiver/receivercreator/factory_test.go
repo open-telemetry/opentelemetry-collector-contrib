@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configerror"
 	"go.uber.org/zap"
 )
 

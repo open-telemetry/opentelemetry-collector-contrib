@@ -17,11 +17,11 @@ package kinesisexporter
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumererror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 

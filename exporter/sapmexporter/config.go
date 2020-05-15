@@ -18,8 +18,8 @@ import (
 	"errors"
 	"net/url"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	sapmclient "github.com/signalfx/sapm-proto/client"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (

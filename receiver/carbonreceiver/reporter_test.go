@@ -19,8 +19,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/observability/observabilitytest"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/observability/observabilitytest"
 	"go.uber.org/zap"
 )
 

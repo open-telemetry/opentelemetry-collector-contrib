@@ -17,8 +17,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	scenarios "go.opentelemetry.io/collector/testbed/tests"
 )
 
 func TestMetric10kDPS(t *testing.T) {
