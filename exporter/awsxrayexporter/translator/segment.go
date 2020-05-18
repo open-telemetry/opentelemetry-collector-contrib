@@ -266,7 +266,7 @@ func convertToAmazonTraceID(traceID []byte) string {
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
 // for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
 func convertToAmazonSpanID(v []byte) string {
-	if v == nil || bytes.Compare(v, zeroSpanID) == 0 {
+	if v == nil || bytes.Equal(v, zeroSpanID) {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])
