@@ -28,8 +28,8 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 

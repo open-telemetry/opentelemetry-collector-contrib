@@ -25,9 +25,9 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	"google.golang.org/grpc"
 )

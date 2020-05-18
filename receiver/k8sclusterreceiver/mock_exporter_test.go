@@ -17,8 +17,8 @@ package k8sclusterreceiver
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )

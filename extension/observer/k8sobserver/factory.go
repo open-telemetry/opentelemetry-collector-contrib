@@ -16,16 +16,16 @@ package k8sobserver
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 const (
@@ -35,10 +35,12 @@ const (
 
 // Factory is the factory for the extension.
 type Factory struct {
-	createK8sConfig func() (*rest.Config, error)
+	// createK8sClientset being a field in the struct provides an easy way
+	// to mock k8s config in tests.
+	createK8sClientset func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error)
 }
 
-var _ (component.Factory) = (*Factory)(nil)
+var _ component.Factory = (*Factory)(nil)
 
 // Type gets the type of the config created by this factory.
 func (f *Factory) Type() configmodels.Type {
@@ -52,6 +54,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	}
 }
 
@@ -63,12 +66,7 @@ func (f *Factory) CreateExtension(
 ) (component.ServiceExtension, error) {
 	config := cfg.(*Config)
 
-	restConfig, err := f.createK8sConfig()
-	if err != nil {
-		return nil, fmt.Errorf("failed creating Kubernetes in-cluster REST config: %v", err)
-	}
-
-	clientset, err := kubernetes.NewForConfig(restConfig)
+	clientset, err := f.createK8sClientset(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -82,18 +80,14 @@ func (f *Factory) CreateExtension(
 
 // NewFactory should be called to create a factory with default values.
 func NewFactory() component.ExtensionFactory {
-	return &Factory{createK8sConfig: func() (*rest.Config, error) {
-		// TODO: will be made configurable when shared k8s config library lands shortly in separate PR.
-		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		configOverrides := &clientcmd.ConfigOverrides{}
-		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-			loadingRules, configOverrides).ClientConfig()
+	return &Factory{createK8sClientset: func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
+		return k8sconfig.MakeClient(config)
 	}}
 }
 
 // NewFactoryWithConfig creates a k8s observer factory with the given k8s API config.
 func NewFactoryWithConfig(config *rest.Config) *Factory {
-	return &Factory{createK8sConfig: func() (*rest.Config, error) {
-		return config, nil
+	return &Factory{createK8sClientset: func(k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
+		return kubernetes.NewForConfig(config)
 	}}
 }

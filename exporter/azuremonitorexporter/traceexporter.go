@@ -24,10 +24,10 @@ import (
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 )
@@ -642,6 +642,50 @@ func sanitizeWithCallback(sanitizeFunc func() []string, warningCallback func(str
 	}
 }
 
+// populateResourceAttributes populates resource attributes to telemetry envelope.
+func (exporter *traceExporter) populateResourceAttributes(
+	traceData consumerdata.TraceData,
+	envelope *contracts.Envelope,
+) {
+	// Old trace exporter populates trace resource attributes to Node and Resource Labels.
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/master/translator/internaldata/resource_to_oc.go#L54
+	var properties map[string]string
+	if data, ok := envelope.Data.(*contracts.Data); ok {
+		switch d := data.BaseData.(type) {
+		case *contracts.RemoteDependencyData:
+			properties = d.Properties
+		case *contracts.RequestData:
+			properties = d.Properties
+		}
+	}
+
+	// Extract service.namespace and populate the other resource attributes to properties
+	cloudRolePrefix := ""
+	if traceData.Resource != nil && traceData.Resource.Labels != nil && len(traceData.Resource.Labels) > 0 {
+		for k, v := range traceData.Resource.Labels {
+			switch k {
+			case conventions.AttributeServiceNamespace:
+				cloudRolePrefix = v + "."
+			default:
+				if properties != nil {
+					properties[k] = v
+				}
+			}
+		}
+	}
+
+	if traceData.Node != nil {
+		// ai.cloud.role is the name of role which represents current service name
+		if traceData.Node.GetServiceInfo() != nil {
+			envelope.Tags[contracts.CloudRole] = cloudRolePrefix + traceData.Node.ServiceInfo.GetName()
+		}
+		// ai.cloud.roleinstance is the name of the instance where service is running
+		if traceData.Node.GetIdentifier() != nil {
+			envelope.Tags[contracts.CloudRoleInstance] = traceData.Node.Identifier.GetHostName()
+		}
+	}
+}
+
 func (exporter *traceExporter) pushTraceData(
 	context context.Context,
 	traceData consumerdata.TraceData,
@@ -654,42 +698,28 @@ func (exporter *traceExporter) pushTraceData(
 
 	for _, wireFormatSpan := range traceData.Spans {
 		if envelope, err := exporter.spanToEnvelope(exporter.config.InstrumentationKey, wireFormatSpan); err == nil && exporter.transportChannel != nil {
-
-			// Attach node level attributes to envelope and data as appropriate
-			if traceData.Node != nil && traceData.Node.Attributes != nil {
-				// Augment the envelope and envelope data with node level attributes
-				// Configure the ai.cloud.role and ai.cloud.roleinstance on the envelope tags itself, then copy the node attributes to the envelope data as well.
-				// Assumes the node level attribute key/values correspond to:
-				// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-resource-semantic-conventions.md
-				if serviceName, ok := traceData.Node.Attributes[conventions.AttributeServiceName]; ok {
-					if serviceNamespace, success := traceData.Node.Attributes[conventions.AttributeServiceNamespace]; success {
-						envelope.Tags[contracts.CloudRole] = serviceNamespace + "." + serviceName
-					} else {
-						envelope.Tags[contracts.CloudRole] = serviceName
-					}
-				}
-
-				if serviceInstanceID, ok := traceData.Node.Attributes[conventions.AttributeServiceInstance]; ok {
-					envelope.Tags[contracts.CloudRoleInstance] = serviceInstanceID
-				}
-
-				// Locate the correct properties map for the envelope
-				var properties map[string]string
-				if data, ok := envelope.Data.(*contracts.Data); ok {
-					if d, success := data.BaseData.(*contracts.RemoteDependencyData); success {
-						properties = d.Properties
-					} else if d, success := data.BaseData.(*contracts.RequestData); success {
-						properties = d.Properties
-					}
-
-					// Copy the node properties
-					if properties != nil {
-						for key, value := range traceData.Node.Attributes {
-							properties[key] = value
-						}
-					}
-				}
-			}
+			// The resource attributes needs to be given to populate ai.cloud.role and ai.cloud.roleinstance
+			// when you create new exporter.
+			//
+			// - service.name
+			// - service.namespace
+			// - host.hostname
+			//
+			// OTLP Exporter example:
+			//   ...
+			//   exp, _ := otlp.NewExporter(otlp.WithInsecure(), otlp.WithAddress("localhost:9090"))
+			//   tp, _ := sdktrace.NewProvider(
+			//   	sdktrace.WithSyncer(exp),
+			//   	sdktrace.WithConfig(sdktrace.Config{DefaultSampler: sdktrace.AlwaysSample()}),
+			//   	sdktrace.WithResourceAttributes(
+			//   		key.String(resourcekeys.ServiceKeyName, "your_service"),
+			//   		key.String(resourcekeys.ServiceKeyNamespace, "namespace"),
+			//   		key.String(resourcekeys.HostKeyHostName, "hostname"),
+			//   	),
+			//   )
+			//   global.SetTraceProvider(tp)
+			//
+			exporter.populateResourceAttributes(traceData, envelope)
 
 			// This is a fire and forget operation
 			exporter.transportChannel.Send(envelope)

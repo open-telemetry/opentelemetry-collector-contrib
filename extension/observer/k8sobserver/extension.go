@@ -17,7 +17,7 @@ package k8sobserver
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"

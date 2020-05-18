@@ -19,7 +19,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 

@@ -17,7 +17,7 @@ package collection
 import (
 	"reflect"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -30,7 +30,7 @@ import (
 )
 
 // TODO: Consider moving some of these constants to
-// https://github.com/open-telemetry/opentelemetry-collector/blob/master/translator/conventions/opentelemetry.go.
+// https://go.opentelemetry.io/collector/blob/master/translator/conventions/opentelemetry.go.
 
 // Resource label keys.
 const (
