@@ -17,12 +17,15 @@ package k8sclusterreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config defines configuration for kubernetes cluster receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	k8sconfig.APIConfig           `mapstructure:",squash"`
 
 	// Collection interval for metrics.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
@@ -30,4 +33,6 @@ type Config struct {
 	// Node condition types to report. See all condition types, see
 	// here: https://kubernetes.io/docs/concepts/architecture/nodes/#condition.
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
+	// List of exporters to which metadata from this receiver should be forwarded to.
+	MetadataExporters []string `mapstructure:"metadata_exporters"`
 }

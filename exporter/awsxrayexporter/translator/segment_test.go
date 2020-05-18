@@ -24,9 +24,9 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
 	"github.com/stretchr/testify/assert"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 var (

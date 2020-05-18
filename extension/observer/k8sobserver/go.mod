@@ -3,9 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200508195808-80ee56387e34
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0
 	github.com/stretchr/testify v1.5.1
+	go.opentelemetry.io/collector v0.3.1-0.20200515190405-a637b41c22e3
 	go.uber.org/zap v1.10.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
@@ -14,3 +15,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common

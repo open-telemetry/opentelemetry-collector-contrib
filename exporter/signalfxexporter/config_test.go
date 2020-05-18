@@ -15,14 +15,15 @@
 package signalfxexporter
 
 import (
+	"net/url"
 	"path"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -65,4 +66,77 @@ func TestLoadConfig(t *testing.T) {
 	te, err := factory.CreateMetricsExporter(zap.NewNop(), e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
+}
+
+func TestConfig_getOptionsFromConfig(t *testing.T) {
+	type fields struct {
+		ExporterSettings configmodels.ExporterSettings
+		AccessToken      string
+		Realm            string
+		IngestURL        string
+		Timeout          time.Duration
+		Headers          map[string]string
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *exporterOptions
+		wantErr bool
+	}{
+		{
+			name: "Test URL overrides",
+			fields: fields{
+				Realm:     "us0",
+				IngestURL: "https://ingest.us1.signalfx.com/",
+			},
+			want: &exporterOptions{
+				ingestURL: &url.URL{
+					Scheme: "https",
+					Host:   "ingest.us1.signalfx.com",
+					Path:   "/v2/datapoint",
+				},
+				httpTimeout: 5 * time.Second,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test URL from Realm",
+			fields: fields{
+				Realm:   "us0",
+				Timeout: 10 * time.Second,
+			},
+			want: &exporterOptions{
+				ingestURL: &url.URL{
+					Scheme: "https",
+					Host:   "ingest.us0.signalfx.com",
+					Path:   "/v2/datapoint",
+				},
+				httpTimeout: 10 * time.Second,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "Test empty config",
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				ExporterSettings: tt.fields.ExporterSettings,
+				AccessToken:      tt.fields.AccessToken,
+				Realm:            tt.fields.Realm,
+				IngestURL:        tt.fields.IngestURL,
+				Timeout:          tt.fields.Timeout,
+				Headers:          tt.fields.Headers,
+			}
+			got, err := cfg.getOptionsFromConfig()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			require.Equal(t, tt.want, got)
+		})
+	}
 }

@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"

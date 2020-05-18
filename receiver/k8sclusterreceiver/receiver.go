@@ -18,13 +18,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 const (
@@ -46,6 +47,12 @@ type kubernetesReceiver struct {
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
 	c, kr.cancel = context.WithCancel(ctx)
+
+	exporters := host.GetExporters()
+	if err := kr.resourceWatcher.setupMetadataExporters(
+		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
+		return err
+	}
 
 	go func() {
 		kr.resourceWatcher.startWatchingResources(c.Done())
@@ -95,18 +102,12 @@ func newReceiver(
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 
-	k8sConfig, err := rest.InClusterConfig()
-
+	client, err := k8sconfig.MakeClient(config.APIConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	client, err := kubernetes.NewForConfig(k8sConfig)
-	if err != nil {
-		return nil, err
-	}
-	resourceWatcher, err := newResourceWatcher(logger, config, client, false)
-
+	resourceWatcher, err := newResourceWatcher(logger, config, client)
 	if err != nil {
 		return nil, err
 	}

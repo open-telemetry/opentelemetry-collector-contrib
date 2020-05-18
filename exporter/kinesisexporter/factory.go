@@ -15,11 +15,12 @@
 package kinesisexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"context"
+
 	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (
@@ -59,9 +60,13 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter initializes and returns a new trace exporter
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
-	c := cfg.(*Config)
+// CreateTraceExporter creates a trace exporter based on this config.
+func (f *Factory) CreateTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.TraceExporter, error) {
+	c := config.(*Config)
 	k, err := kinesis.NewExporter(kinesis.Options{
 		Name:               c.Name(),
 		StreamName:         c.AWS.StreamName,
@@ -85,14 +90,18 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Expor
 		MaxListSize:           c.MaxBytesPerBatch,
 		ListFlushInterval:     c.FlushIntervalSeconds,
 		Encoding:              exportFormat,
-	}, logger)
+	}, params.Logger)
 	if err != nil {
 		return nil, err
 	}
-	return Exporter{k, logger}, nil
+	return Exporter{k, params.Logger}, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+func (f *Factory) CreateMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	_ configmodels.Exporter,
+) (component.MetricsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

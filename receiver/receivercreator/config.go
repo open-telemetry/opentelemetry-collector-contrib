@@ -17,10 +17,10 @@ package receivercreator
 import (
 	"reflect"
 
-	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+	otelconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (

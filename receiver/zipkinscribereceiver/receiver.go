@@ -24,10 +24,10 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/observability"
-	zipkintranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/zipkin"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/observability"
+	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
 var (

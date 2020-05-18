@@ -15,7 +15,7 @@
 package translator
 
 import (
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 // SQLData provides the shape for unmarshalling sql data.

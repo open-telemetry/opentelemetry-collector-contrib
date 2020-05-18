@@ -17,8 +17,8 @@ package receivercreator
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestReceiverMap(t *testing.T) {

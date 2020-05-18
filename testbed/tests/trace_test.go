@@ -20,8 +20,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	scenarios "go.opentelemetry.io/collector/testbed/tests"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -41,8 +41,8 @@ func TestTrace10kSPS(t *testing.T) {
 			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 50,
-				ExpectedMaxRAM: 80,
+				ExpectedMaxCPU: 26,
+				ExpectedMaxRAM: 90,
 			},
 		},
 		{
@@ -50,8 +50,8 @@ func TestTrace10kSPS(t *testing.T) {
 			NewSapmDataSender(testbed.GetAvailablePort(t)),
 			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 90,
-				ExpectedMaxRAM: 120,
+				ExpectedMaxCPU: 24,
+				ExpectedMaxRAM: 100,
 			},
 		},
 	}

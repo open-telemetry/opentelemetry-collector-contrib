@@ -17,8 +17,8 @@ package k8sprocessor
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"

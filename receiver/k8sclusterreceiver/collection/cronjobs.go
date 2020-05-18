@@ -17,14 +17,14 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 const (
-	// Keys for cronjob properties.
+	// Keys for cronjob metadata.
 	cronJobKeySchedule          = "schedule"
 	cronJobKeyConcurrencyPolicy = "concurrency_policy"
 )
@@ -66,9 +66,9 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForCronJob(cj *batchv1beta1.CronJob) []*KubernetesMetadata {
+func getMetadataForCronJob(cj *batchv1beta1.CronJob) map[ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&cj.ObjectMeta, k8sKindCronJob)
-	rm.properties[cronJobKeySchedule] = cj.Spec.Schedule
-	rm.properties[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
-	return []*KubernetesMetadata{rm}
+	rm.metadata[cronJobKeySchedule] = cj.Spec.Schedule
+	rm.metadata[cronJobKeyConcurrencyPolicy] = string(cj.Spec.ConcurrencyPolicy)
+	return map[ResourceID]*KubernetesMetadata{ResourceID(cj.UID): rm}
 }

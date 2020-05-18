@@ -21,14 +21,14 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 const (
-	// Keys for node properties.
+	// Keys for node metadata.
 	nodeCreationTime = "node.creation_timestamp"
 )
 
@@ -92,17 +92,18 @@ func nodeConditionValue(node *corev1.Node, condType corev1.NodeConditionType) in
 	return nodeConditionValues[status]
 }
 
-func getMetadataForNode(node *corev1.Node) []*KubernetesMetadata {
-	properties := utils.MergeStringMaps(map[string]string{}, node.Labels)
+func getMetadataForNode(node *corev1.Node) map[ResourceID]*KubernetesMetadata {
+	metadata := utils.MergeStringMaps(map[string]string{}, node.Labels)
 
-	properties[k8sKeyNodeName] = node.Name
-	properties[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
+	metadata[k8sKeyNodeName] = node.Name
+	metadata[nodeCreationTime] = node.GetCreationTimestamp().Format(time.RFC3339)
 
-	return []*KubernetesMetadata{
-		{
+	nodeID := ResourceID(node.UID)
+	return map[ResourceID]*KubernetesMetadata{
+		nodeID: {
 			resourceIDKey: k8sKeyNodeUID,
-			resourceID:    string(node.UID),
-			properties:    properties,
+			resourceID:    nodeID,
+			metadata:      metadata,
 		},
 	}
 }

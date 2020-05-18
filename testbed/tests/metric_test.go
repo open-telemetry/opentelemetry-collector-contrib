@@ -17,8 +17,8 @@ package tests
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
-	scenarios "github.com/open-telemetry/opentelemetry-collector/testbed/tests"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	scenarios "go.opentelemetry.io/collector/testbed/tests"
 )
 
 func TestMetric10kDPS(t *testing.T) {
@@ -34,7 +34,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
-				ExpectedMaxRAM: 70,
+				ExpectedMaxRAM: 86,
 			},
 		},
 		{
@@ -42,8 +42,8 @@ func TestMetric10kDPS(t *testing.T) {
 			NewCarbonDataSender(testbed.GetAvailablePort(t)),
 			NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 200,
-				ExpectedMaxRAM: 65,
+				ExpectedMaxCPU: 237,
+				ExpectedMaxRAM: 90,
 			},
 		},
 		{
@@ -51,8 +51,8 @@ func TestMetric10kDPS(t *testing.T) {
 			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
 			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
-				ExpectedMaxCPU: 80,
-				ExpectedMaxRAM: 80,
+				ExpectedMaxCPU: 83,
+				ExpectedMaxRAM: 91,
 			},
 		},
 	}
