@@ -32,6 +32,7 @@ const (
 	AWSRequestIDAttribute2 = "aws.requestId"
 	AWSQueueURLAttribute   = "aws.queue_url"
 	AWSQueueURLAttribute2  = "aws.queue.url"
+	AWSServiceAttribute    = "aws.service"
 	AWSTableNameAttribute  = "aws.table_name"
 	AWSTableNameAttribute2 = "aws.table.name"
 )
@@ -123,12 +124,15 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		case AWSRegionAttribute:
 			remoteRegion = value
 		case AWSRequestIDAttribute:
+			fallthrough
 		case AWSRequestIDAttribute2:
 			requestID = value
 		case AWSQueueURLAttribute:
+			fallthrough
 		case AWSQueueURLAttribute2:
 			queueURL = value
 		case AWSTableNameAttribute:
+			fallthrough
 		case AWSTableNameAttribute2:
 			tableName = value
 		default:

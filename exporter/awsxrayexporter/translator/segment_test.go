@@ -33,27 +33,6 @@ var (
 	testWriters = newWriterPool(2048)
 )
 
-func TestClientSpanWithGrpcComponent(t *testing.T) {
-	spanName := "platformapi.widgets.searchWidgets"
-	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeGRPC
-	attributes[semconventions.AttributeHTTPMethod] = "GET"
-	attributes[semconventions.AttributeHTTPScheme] = "ipv6"
-	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[semconventions.AttributeNetPeerPort] = "9443"
-	attributes[semconventions.AttributeHTTPTarget] = spanName
-	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
-	span.TimeEvents = &timeEvents
-
-	jsonStr, err := MakeSegmentDocumentString(spanName, span)
-
-	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
-	assert.True(t, strings.Contains(jsonStr, spanName))
-}
-
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
@@ -64,17 +43,23 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[AWSServiceAttribute] = "DynamoDB"
 	attributes[AWSOperationAttribute] = "GetItem"
 	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
 	labels := constructDefaultResourceLabels()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
 
+	segment := MakeSegment(spanName, span)
+	assert.Equal(t, "DynamoDB", segment.Name)
+	assert.Equal(t, "aws", segment.Namespace)
+	assert.Equal(t, "subsegment", segment.Type)
+
 	jsonStr, err := MakeSegmentDocumentString(spanName, span)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
-	assert.True(t, strings.Contains(jsonStr, spanName))
+	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, semconventions.AttributeComponent))
 }
@@ -117,11 +102,22 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, enduser))
 }
 
+func TestServerSpanNoParentId(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	labels := constructDefaultResourceLabels()
+	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil, labels)
+
+	segment := MakeSegment(spanName, span)
+
+	assert.Empty(t, segment.ParentID)
+}
+
 func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
+	parentSpanId := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = "db"
 	attributes[semconventions.AttributeDBType] = "sql"
 	attributes[semconventions.AttributeDBInstance] = "customers"
 	attributes[semconventions.AttributeDBStatement] = spanName
@@ -131,7 +127,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
+	span := constructClientSpan(parentSpanId, spanName, 0, "OK", attributes, labels)
 
 	segment := MakeSegment(spanName, span)
 
@@ -145,6 +141,8 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.Equal(t, spanName, segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
+	assert.Equal(t, "remote", segment.Namespace)
+
 	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
 		assert.Fail(t, "invalid json")

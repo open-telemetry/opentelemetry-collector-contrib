@@ -45,20 +45,3 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "mysql://db.example.com:3306/customers"))
 }
-
-func TestClientSpanWithHttpComponent(t *testing.T) {
-	attributes := make(map[string]string)
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
-	attributes[semconventions.AttributeDBType] = "sql"
-	attributes[semconventions.AttributeDBInstance] = "customers"
-	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
-	attributes[semconventions.AttributeDBUser] = "readonly_user"
-	attributes[semconventions.AttributeDBURL] = "mysql://db.example.com:3306"
-	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
-	attributes[semconventions.AttributeNetPeerPort] = "3306"
-
-	filtered, sqlData := makeSQL(attributes)
-
-	assert.NotNil(t, filtered)
-	assert.Nil(t, sqlData)
-}

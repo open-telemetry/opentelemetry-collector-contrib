@@ -166,6 +166,18 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, queueURL))
 }
 
+func TestAwsWithSqsAlternateAttribute(t *testing.T) {
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	attributes := make(map[string]string)
+	attributes[AWSQueueURLAttribute2] = queueURL
+
+	filtered, awsData := makeAws(attributes, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, queueURL, awsData.QueueURL)
+}
+
 func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
@@ -207,4 +219,28 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, containerID))
 	assert.True(t, strings.Contains(jsonStr, tableName))
+}
+
+func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
+	tableName := "MyTable"
+	attributes := make(map[string]string)
+	attributes[AWSTableNameAttribute2] = tableName
+
+	filtered, awsData := makeAws(attributes, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, tableName, awsData.TableName)
+}
+
+func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
+	requestid := "12345-request"
+	attributes := make(map[string]string)
+	attributes[AWSRequestIDAttribute2] = requestid
+
+	filtered, awsData := makeAws(attributes, nil)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, requestid, awsData.RequestID)
 }

@@ -135,7 +135,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 
 	if span.Attributes != nil {
 		attributes := span.Attributes.AttributeMap
-		if awsService, ok := attributes["aws.service"]; ok {
+		if awsService, ok := attributes[AWSServiceAttribute]; ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
 			name = awsService.GetStringValue().GetValue()

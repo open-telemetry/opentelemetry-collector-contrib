@@ -55,34 +55,46 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		return filtered, nil
 	}
 
+	hasHttp := false
+
 	for key, value := range span.Attributes.AttributeMap {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
 			info.Request.Method = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPClientIP:
 			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
+			hasHttp = true
 		case semconventions.AttributeHTTPUserAgent:
 			info.Request.UserAgent = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPStatusCode:
 			info.Response.Status = value.GetIntValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPURL:
 			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPScheme:
 			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPHost:
 			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPTarget:
 			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPServerName:
 			urlParts[key] = value.GetStringValue().GetValue()
-		case semconventions.AttributeHostName:
-			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 		case semconventions.AttributeHTTPHostPort:
 			urlParts[key] = value.GetStringValue().GetValue()
+			hasHttp = true
 			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
+		case semconventions.AttributeHostName:
+			urlParts[key] = value.GetStringValue().GetValue()
 		case semconventions.AttributeNetPeerName:
 			urlParts[key] = value.GetStringValue().GetValue()
 		case semconventions.AttributeNetPeerPort:
@@ -99,6 +111,11 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
 		}
+	}
+
+	if !hasHttp {
+		// Didn't have any HTTP-specific information so don't need to fill it in segment
+		return filtered, nil
 	}
 
 	if tracepb.Span_SERVER == span.Kind {

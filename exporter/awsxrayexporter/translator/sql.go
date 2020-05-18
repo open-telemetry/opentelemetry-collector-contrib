@@ -41,30 +41,25 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbUser      string
 	)
 
-	hasSql := false
 	for key, value := range attributes {
 		switch key {
 		case semconventions.AttributeDBURL:
 			dbURL = value
-			hasSql = true
 		case semconventions.AttributeDBType:
 			dbType = value
-			hasSql = true
 		case semconventions.AttributeDBInstance:
 			dbInstance = value
-			hasSql = true
 		case semconventions.AttributeDBStatement:
 			dbStatement = value
-			hasSql = true
 		case semconventions.AttributeDBUser:
 			dbUser = value
-			hasSql = true
 		default:
 			filtered[key] = value
 		}
 	}
 
-	if !hasSql {
+	if len(filtered) == len(attributes) {
+		// Didn't filter any attributes meaning didn't have any SQL information.
 		return attributes, nil
 	}
 
