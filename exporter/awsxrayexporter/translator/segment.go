@@ -15,10 +15,10 @@
 package translator
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"math/rand"
-	"reflect"
 	"regexp"
 	"time"
 
@@ -38,7 +38,7 @@ const (
 )
 
 var (
-	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 var (
@@ -130,13 +130,30 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
 		user, annotations                      = makeAnnotations(sqlfiltered)
 		namespace                              string
+		segmentType                            string
 	)
+
+	if span.Attributes != nil {
+		attributes := span.Attributes.AttributeMap
+		if awsService, ok := attributes["aws.service"]; ok {
+			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
+			// to be named "Service"
+			name = awsService.GetStringValue().GetValue()
+
+			namespace = "aws"
+		}
+	}
 
 	if name == "" {
 		name = fixSegmentName(span.Name.String())
 	}
-	if span.ParentSpanId != nil {
+
+	if namespace == "" && span.ParentSpanId != nil && span.GetKind() == tracepb.Span_CLIENT {
 		namespace = "remote"
+	}
+
+	if span.GetKind() != tracepb.Span_SERVER {
+		segmentType = "subsegment"
 	}
 
 	return Segment{
@@ -159,6 +176,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		SQL:         sql,
 		Annotations: annotations,
 		Metadata:    nil,
+		Type:        segmentType,
 	}
 }
 
@@ -248,7 +266,7 @@ func convertToAmazonTraceID(traceID []byte) string {
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
 // for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
 func convertToAmazonSpanID(v []byte) string {
-	if v == nil || reflect.DeepEqual(v, zeroSpanID) {
+	if v == nil || bytes.Compare(v, zeroSpanID) == 0 {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])

@@ -40,27 +40,34 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbStatement string
 		dbUser      string
 	)
-	componentType := attributes[semconventions.AttributeComponent]
-	if componentType == semconventions.ComponentTypeHTTP ||
-		componentType == semconventions.ComponentTypeGRPC {
-		return attributes, nil
-	}
+
+	hasSql := false
 	for key, value := range attributes {
 		switch key {
 		case semconventions.AttributeDBURL:
 			dbURL = value
+			hasSql = true
 		case semconventions.AttributeDBType:
 			dbType = value
+			hasSql = true
 		case semconventions.AttributeDBInstance:
 			dbInstance = value
+			hasSql = true
 		case semconventions.AttributeDBStatement:
 			dbStatement = value
+			hasSql = true
 		case semconventions.AttributeDBUser:
 			dbUser = value
+			hasSql = true
 		default:
 			filtered[key] = value
 		}
 	}
+
+	if !hasSql {
+		return attributes, nil
+	}
+
 	if dbURL == "" {
 		dbURL = "localhost"
 	}

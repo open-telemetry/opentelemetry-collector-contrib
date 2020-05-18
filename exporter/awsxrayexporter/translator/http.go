@@ -46,10 +46,9 @@ type ResponseData struct {
 
 func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 	var (
-		info           HTTPData
-		filtered       = make(map[string]string)
-		urlParts       = make(map[string]string)
-		componentValue string
+		info     HTTPData
+		filtered = make(map[string]string)
+		urlParts = make(map[string]string)
 	)
 
 	if span.Attributes == nil {
@@ -58,9 +57,6 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 
 	for key, value := range span.Attributes.AttributeMap {
 		switch key {
-		case semconventions.AttributeComponent:
-			componentValue = value.GetStringValue().GetValue()
-			filtered[key] = componentValue
 		case semconventions.AttributeHTTPMethod:
 			info.Request.Method = value.GetStringValue().GetValue()
 		case semconventions.AttributeHTTPClientIP:
@@ -95,21 +91,20 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
 		case semconventions.AttributeNetPeerIP:
+			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
+			if info.Request.ClientIP == "" {
+				info.Request.ClientIP = value.GetStringValue().GetValue()
+			}
 			urlParts[key] = value.GetStringValue().GetValue()
 		default:
 			filtered[key] = value.GetStringValue().GetValue()
 		}
 	}
 
-	if (componentValue != semconventions.ComponentTypeHTTP && componentValue != semconventions.ComponentTypeGRPC) ||
-		info.Request.Method == "" {
-		return filtered, nil
-	}
-
 	if tracepb.Span_SERVER == span.Kind {
-		info.Request.URL = constructServerURL(componentValue, urlParts)
+		info.Request.URL = constructServerURL(urlParts)
 	} else {
-		info.Request.URL = constructClientURL(componentValue, urlParts)
+		info.Request.URL = constructClientURL(urlParts)
 	}
 
 	if info.Response.Status == 0 {
@@ -143,7 +138,7 @@ func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
 	return size
 }
 
-func constructClientURL(component string, urlParts map[string]string) string {
+func constructClientURL(urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for client spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[semconventions.AttributeHTTPURL]
@@ -154,11 +149,7 @@ func constructClientURL(component string, urlParts map[string]string) string {
 
 	scheme, ok := urlParts[semconventions.AttributeHTTPScheme]
 	if !ok {
-		if component == semconventions.ComponentTypeGRPC {
-			scheme = "dns"
-		} else {
-			scheme = "http"
-		}
+		scheme = "http"
 	}
 	port := ""
 	host, ok := urlParts[semconventions.AttributeHTTPHost]
@@ -185,7 +176,7 @@ func constructClientURL(component string, urlParts map[string]string) string {
 	return url
 }
 
-func constructServerURL(component string, urlParts map[string]string) string {
+func constructServerURL(urlParts map[string]string) string {
 	// follows OpenTelemetry specification-defined combinations for server spans described in
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/data-http.md
 	url, ok := urlParts[semconventions.AttributeHTTPURL]
@@ -196,11 +187,7 @@ func constructServerURL(component string, urlParts map[string]string) string {
 
 	scheme, ok := urlParts[semconventions.AttributeHTTPScheme]
 	if !ok {
-		if component == semconventions.ComponentTypeGRPC {
-			scheme = "dns"
-		} else {
-			scheme = "http"
-		}
+		scheme = "http"
 	}
 	port := ""
 	host, ok := urlParts[semconventions.AttributeHTTPHost]
