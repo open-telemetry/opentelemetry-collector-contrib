@@ -115,7 +115,7 @@ func TestServerSpanNoParentId(t *testing.T) {
 
 func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
-	parentSpanId := newSegmentID()
+	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeDBType] = "sql"
@@ -127,7 +127,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
 	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(parentSpanId, spanName, 0, "OK", attributes, labels)
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
 
 	segment := MakeSegment(spanName, span)
 

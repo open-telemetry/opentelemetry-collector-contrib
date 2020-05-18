@@ -55,41 +55,41 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		return filtered, nil
 	}
 
-	hasHttp := false
+	hasHTTP := false
 
 	for key, value := range span.Attributes.AttributeMap {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
 			info.Request.Method = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPClientIP:
 			info.Request.ClientIP = value.GetStringValue().GetValue()
 			info.Request.XForwardedFor = true
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPUserAgent:
 			info.Request.UserAgent = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPStatusCode:
 			info.Response.Status = value.GetIntValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPURL:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPScheme:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPHost:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPTarget:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPServerName:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 		case semconventions.AttributeHTTPHostPort:
 			urlParts[key] = value.GetStringValue().GetValue()
-			hasHttp = true
+			hasHTTP = true
 			if len(urlParts[key]) == 0 {
 				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
 			}
@@ -113,7 +113,7 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		}
 	}
 
-	if !hasHttp {
+	if !hasHTTP {
 		// Didn't have any HTTP-specific information so don't need to fill it in segment
 		return filtered, nil
 	}
