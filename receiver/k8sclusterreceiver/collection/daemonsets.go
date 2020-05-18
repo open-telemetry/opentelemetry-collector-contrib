@@ -17,7 +17,7 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
@@ -99,6 +99,8 @@ func getResourceForDaemonSet(ds *appsv1.DaemonSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForDaemonSet(ds *appsv1.DaemonSet) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet)}
+func getMetadataForDaemonSet(ds *appsv1.DaemonSet) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{
+		ResourceID(ds.UID): getGenericMetadata(&ds.ObjectMeta, k8sKindDaemonSet),
+	}
 }

@@ -17,7 +17,7 @@ package carbonexporter
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 // Defaults for not specified configuration settings.

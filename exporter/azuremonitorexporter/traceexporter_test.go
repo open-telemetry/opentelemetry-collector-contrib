@@ -19,11 +19,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 )
@@ -363,6 +366,66 @@ func TestSpanToRemoteDependencyDataDatabaseAttributeSet(t *testing.T) {
 	assert.True(t, data.Success)
 	assert.Equal(t, "0", data.ResultCode)
 	validateArbitraryAttributeValuesAsPropertiesOrMeasurements(t, data.Properties, data.Measurements)
+}
+
+func TestPopulateResourceAttributes(t *testing.T) {
+	// create exporter
+	exporter := &traceExporter{}
+
+	// construct fake application insights envelope
+	envelope := contracts.NewEnvelope()
+	envelope.Tags = map[string]string{}
+	data := contracts.NewData()
+	reqData := contracts.NewRequestData()
+	reqData.Properties = map[string]string{}
+	data.BaseData = reqData
+	envelope.Data = data
+
+	// construct test tracedata
+	traceData := consumerdata.TraceData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{
+				Name: "service",
+			},
+			Identifier: &commonpb.ProcessIdentifier{
+				HostName: "hostname",
+			},
+		},
+		Resource: &resourcepb.Resource{},
+		Spans:    []*tracepb.Span{},
+	}
+
+	t.Run("no attributes", func(t *testing.T) {
+		traceData.Node.ServiceInfo.Name = ""
+		traceData.Node.Identifier.HostName = ""
+		traceData.Resource.Labels = map[string]string{}
+		exporter.populateResourceAttributes(traceData, envelope)
+
+		assert.Equal(t, "", envelope.Tags[contracts.CloudRole])
+		assert.Equal(t, "", envelope.Tags[contracts.CloudRoleInstance])
+	})
+
+	t.Run("populate ai.cloud.role and ai.cloud.roleinstance", func(t *testing.T) {
+		traceData.Node.ServiceInfo.Name = "ServiceName"
+		traceData.Node.Identifier.HostName = "hostname"
+		exporter.populateResourceAttributes(traceData, envelope)
+
+		assert.Equal(t, "ServiceName", envelope.Tags[contracts.CloudRole])
+		assert.Equal(t, "hostname", envelope.Tags[contracts.CloudRoleInstance])
+	})
+
+	t.Run("populate namespace and custom properties", func(t *testing.T) {
+		traceData.Node.ServiceInfo.Name = "ServiceName"
+		traceData.Resource.Labels = map[string]string{
+			"service.namespace":   "namespace",
+			"service.instance.id": "instanceid",
+		}
+		exporter.populateResourceAttributes(traceData, envelope)
+
+		assert.Equal(t, "namespace.ServiceName", envelope.Tags[contracts.CloudRole])
+		props := envelope.Data.(*contracts.Data).BaseData.(*contracts.RequestData).Properties
+		assert.Equal(t, "instanceid", props["service.instance.id"])
+	})
 }
 
 // Tests the exporter's pushTraceData callback method
