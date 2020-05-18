@@ -10,7 +10,7 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/stretchr/testify v1.5.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.3.1-0.20200515190405-a637b41c22e3
+	go.opentelemetry.io/collector v0.3.1-0.20200518164231-3729dac06f74
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0
 	google.golang.org/appengine v1.6.2 // indirect
