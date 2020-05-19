@@ -10,10 +10,18 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+)
+
+const (
+	idleConnTimeout     = 30 * time.Second
+	tlsHandshakeTimeout = 10 * time.Second
+	dialerTimeout       = 30 * time.Second
+	dialerKeepAlive     = 30 * time.Second
 )
 
 type splunkExporter struct {
@@ -49,12 +57,23 @@ func New(
 		config.SetName(typeStr)
 	}
 
-	dpClient := &client{
+
+	client := &client{
 		url: options.url,
 		client: &http.Client{
-			// TODO: What other settings of http.Client to expose via config?
-			//  Or what others change from default values?
-			Timeout: 5 * time.Second,
+			Timeout: config.Timeout,
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   dialerTimeout,
+					KeepAlive: dialerKeepAlive,
+				}).DialContext,
+				MaxIdleConns:        int(config.MaxConnections),
+				MaxIdleConnsPerHost: int(config.MaxConnections),
+				IdleConnTimeout:     idleConnTimeout,
+				TLSHandshakeTimeout: tlsHandshakeTimeout,
+			},
+
 		},
 		logger: logger,
 		zippers: sync.Pool{New: func() interface{} {
@@ -63,7 +82,7 @@ func New(
 	}
 
 	return splunkExporter{
-		pushMetricsData: dpClient.pushMetricsData,
+		pushMetricsData: client.pushMetricsData,
 	}, nil
 }
 

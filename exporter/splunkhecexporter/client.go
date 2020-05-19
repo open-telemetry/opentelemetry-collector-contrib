@@ -37,7 +37,6 @@ import (
 type client struct {
 	config *Config
 	url *url.URL
-	headers   map[string]string
 	client    *http.Client
 	logger    *zap.Logger
 	zippers   sync.Pool
@@ -62,10 +61,9 @@ func (c *client) pushMetricsData(
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
-	buildHeaders(c.config)
+	headers := buildHeaders(c.config)
 
-
-	for k, v := range c.headers {
+	for k, v := range headers {
 		req.Header.Set(k, v)
 	}
 
@@ -81,7 +79,7 @@ func (c *client) pushMetricsData(
 	io.Copy(ioutil.Discard, resp.Body)
 	resp.Body.Close()
 
-	// SignalFx accepts all 2XX codes.
+	// Splunk accepts all 2XX codes.
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		err = fmt.Errorf(
 			"HTTP %d %q",
@@ -93,7 +91,7 @@ func (c *client) pushMetricsData(
 	return numDroppedTimeseries, nil
 }
 
-func buildHeaders(config *Config) (map[string]string, error) {
+func buildHeaders(config *Config) (map[string]string) {
 	headers := map[string]string{
 		"Connection":   "keep-alive",
 		"Content-Type": "application/json",
@@ -104,7 +102,7 @@ func buildHeaders(config *Config) (map[string]string, error) {
 		headers["Authorization"] = "Splunk "+config.Token
 	}
 
-	return headers, nil
+	return headers
 }
 
 func (c *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {

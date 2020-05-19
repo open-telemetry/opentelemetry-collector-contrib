@@ -20,11 +20,16 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+	"time"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "splunk_hec"
+	// default values
+	defaultNumWorkers  uint = 8
+	defaultMaxIdleCons      = 100
+	defaultHTTPTimeout      = 10 * time.Second
 )
 
 // Factory is the factory for SignalFx exporter.
@@ -43,6 +48,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		Timeout: defaultHTTPTimeout,
+		DisableCompression: false,
+		NumWorkers: defaultNumWorkers,
+		MaxConnections: defaultMaxIdleCons,
 	}
 }
 

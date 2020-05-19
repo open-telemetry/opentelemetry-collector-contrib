@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -42,6 +43,16 @@ type Config struct {
 
 	// Splunk index, optional name of the Splunk index.
 	Index string `mapstructure:"index"`
+
+	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open. Defaults to 100.
+	MaxConnections uint `mapstructure:"max_connections"`
+
+	// Disable GZip compression. Defaults to false.
+	DisableCompression bool `mapstructure:"disable_compression"`
+
+	// Timeout is the maximum timeout for HTTP request sending trace data. The
+	// default value is 10 seconds.
+	Timeout time.Duration `mapstructure:"timeout"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
