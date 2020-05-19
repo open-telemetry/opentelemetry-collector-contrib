@@ -47,7 +47,7 @@ type Stack struct {
 
 func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool,
 	filtered map[string]string, cause *CauseData) {
-	if status.Code == 0 {
+	if status == nil || status.Code == 0 {
 		return false, false, attributes, nil
 	}
 	var (
