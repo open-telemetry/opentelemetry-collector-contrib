@@ -15,16 +15,14 @@
 package splunkhecexporter
 
 import (
-	"net/url"
-	"path"
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+	"net/url"
+	"path"
+	"testing"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,13 +36,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["splunk"]
+	e0 := cfg.Exporters["splunk_hec"]
 
 	// Realm doesn't have a default value so set it directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, e0)
 
-	expectedName := "splunk/allsettings"
+	expectedName := "splunk_hec/allsettings"
 
 	e1 := cfg.Exporters[expectedName]
 	expectedCfg := Config{
@@ -53,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: expectedName,
 		},
 		Token: "00000000-0000-0000-0000-0000000000000",
-		Url: "https://splunk:8088/services/collector",
+		Endpoint: "https://splunk:8088/services/collector",
 		Source: "otel",
 		SourceType: "otel",
         Index: "metrics",
@@ -68,7 +66,7 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
 		ExporterSettings configmodels.ExporterSettings
-		Url      string
+		Endpoint      string
 		Token            string
 		Source        string
 		SourceType          string
@@ -91,7 +89,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test missing token",
 			fields: fields{
-				Url:     "https://example.com:8000",
+				Endpoint:     "https://example.com:8000",
 			},
 			want:    nil,
 			wantErr: true,
@@ -100,16 +98,15 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			name: "Test incomplete URL",
 			fields: fields{
 				Token:   "1234",
-				Url:  "https://example.com:8000",
+				Endpoint:  "https://example.com:8000",
 			},
 			want: &exporterOptions{
 
-				ingestURL: &url.URL{
+				url: &url.URL{
 					Scheme: "https",
-					Host:   "ingest.us0.signalfx.com",
-					Path:   "/v2/datapoint",
+					Host:   "example.com:8000",
+					Path:   "/services/collector",
 				},
-				httpTimeout: 10 * time.Second,
 			},
 			wantErr: false,
 		},
@@ -123,11 +120,11 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ExporterSettings: tt.fields.ExporterSettings,
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				Timeout:          tt.fields.Timeout,
-				Headers:          tt.fields.Headers,
+				Token:      tt.fields.Token,
+				Endpoint:   tt.fields.Endpoint,
+				Source:            tt.fields.Source,
+				SourceType:        tt.fields.SourceType,
+				Index: tt.fields.Index,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

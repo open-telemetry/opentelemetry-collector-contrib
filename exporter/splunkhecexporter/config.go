@@ -31,7 +31,7 @@ type Config struct {
 	Token string `mapstructure:"token"`
 
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
-	Url string `mapstructure:"url"`
+	Endpoint string `mapstructure:"endpoint"`
 
 	// Optional Splunk source: https://docs.splunk.com/Splexicon:Source.
 	// Sources identify the incoming data.
@@ -51,19 +51,19 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	url, err := cfg.getUrl()
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"url\": %v", err)
+		return nil, fmt.Errorf("invalid \"endpoint\": %v", err)
 	}
 
 
 	return &exporterOptions{
-		Url:   url,
-		Token: cfg.Token,
+		url:   url,
+		token: cfg.Token,
 	}, nil
 }
 
 func (cfg *Config) validateConfig() error {
-	if cfg.Url == "" {
-		return errors.New("requires a non-empty \"url\"")
+	if cfg.Endpoint == "" {
+		return errors.New("requires a non-empty \"endpoint\"")
 	}
 
 	if cfg.Token == "" {
@@ -75,7 +75,7 @@ func (cfg *Config) validateConfig() error {
 
 func (cfg *Config) getUrl() (out *url.URL, err error) {
 
-		out, err = url.Parse(cfg.Url)
+		out, err = url.Parse(cfg.Endpoint)
 		if err != nil {
 			return out, err
 		}

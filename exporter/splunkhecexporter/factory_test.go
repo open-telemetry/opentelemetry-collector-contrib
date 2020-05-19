@@ -61,7 +61,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// Set values that don't have a valid default.
 	expCfg := cfg.(*Config)
 	expCfg.Token = "testToken"
-	expCfg.Url = "https://example.com"
+	expCfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		zap.NewNop(),
 		cfg)
@@ -79,7 +79,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 			NameVal: typeStr,
 		},
 		Token: "testToken",
-		Url:       "https://example.com:8000",
+		Endpoint:       "https://example.com:8000",
 	}
 
 	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
@@ -110,7 +110,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
-				Url: "https://example.com:8000",
+				Endpoint: "https://example.com:8000",
 			},
 			errorMessage: "failed to process \"splunk\" config: requires a non-empty \"token\"",
 		},

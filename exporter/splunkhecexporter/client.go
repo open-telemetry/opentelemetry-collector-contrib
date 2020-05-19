@@ -35,6 +35,7 @@ import (
 
 // client sends the data to the splunk backend.
 type client struct {
+	config *Config
 	url *url.URL
 	headers   map[string]string
 	client    *http.Client
@@ -42,27 +43,29 @@ type client struct {
 	zippers   sync.Pool
 }
 
-func (s *client) pushMetricsData(
+func (c *client) pushMetricsData(
 	ctx context.Context,
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
 
-	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(s.logger, md)
+	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(c.logger, md, c.config)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
 
-	body, compressed, err := s.encodeBody(splunkDataPoints)
+	body, compressed, err := c.encodeBody(splunkDataPoints)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", s.url.String(), body)
+	req, err := http.NewRequest("POST", c.url.String(), body)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
+	buildHeaders(c.config)
 
-	for k, v := range s.headers {
+
+	for k, v := range c.headers {
 		req.Header.Set(k, v)
 	}
 
@@ -70,7 +73,7 @@ func (s *client) pushMetricsData(
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 
-	resp, err := s.client.Do(req)
+	resp, err := c.client.Do(req)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), err
 	}
@@ -104,7 +107,7 @@ func buildHeaders(config *Config) (map[string]string, error) {
 	return headers, nil
 }
 
-func (s *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {
+func (c *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
@@ -114,16 +117,16 @@ func (s *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compress
 		}
 		buf.WriteString("\r\n\r\n")
 	}
-	return s.getReader(buf)
+	return c.getReader(buf)
 }
 
 // avoid attempting to compress things that fit into a single ethernet frame
-func (s *client) getReader(b *bytes.Buffer) (io.Reader, bool, error) {
+func (c *client) getReader(b *bytes.Buffer) (io.Reader, bool, error) {
 	var err error
 	if b.Len() > 1500 {
 		buf := new(bytes.Buffer)
-		w := s.zippers.Get().(*gzip.Writer)
-		defer s.zippers.Put(w)
+		w := c.zippers.Get().(*gzip.Writer)
+		defer c.zippers.Put(w)
 		w.Reset(buf)
 		_, err = w.Write(b.Bytes())
 		if err == nil {

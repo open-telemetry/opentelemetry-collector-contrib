@@ -16,7 +16,7 @@ type splunkMetric struct {
 	Fields     map[string]interface{} `json:"fields"`               // metric data
 }
 
-func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config Config) ([]*splunkMetric, int, error) {
+func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config *Config) ([]*splunkMetric, int, error) {
 	host := data.Resource.Labels["host.hostname"]
 	if host == "" {
 		host = "unknown"

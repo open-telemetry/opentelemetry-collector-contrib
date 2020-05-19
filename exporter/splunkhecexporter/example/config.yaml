@@ -14,7 +14,7 @@ exporters:
     # Splunk HTTP Event Collector token
     token: "00000000-0000-0000-0000-0000000000000"
     # URL to a Splunk instance to send data to.
-    url: "https://splunk:8088/services/collector"
+    endpoint: "https://splunk:8088/services/collector"
     # Optional Splunk source: https://docs.splunk.com/Splexicon:Source
     source: "otel"
     # Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
