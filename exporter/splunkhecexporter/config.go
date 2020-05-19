@@ -60,7 +60,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		return nil, err
 	}
 
-	url, err := cfg.getUrl()
+	url, err := cfg.getURL()
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"endpoint\": %v", err)
 	}
@@ -83,7 +83,7 @@ func (cfg *Config) validateConfig() error {
 	return nil
 }
 
-func (cfg *Config) getUrl() (out *url.URL, err error) {
+func (cfg *Config) getURL() (out *url.URL, err error) {
 
 	out, err = url.Parse(cfg.Endpoint)
 	if err != nil {
