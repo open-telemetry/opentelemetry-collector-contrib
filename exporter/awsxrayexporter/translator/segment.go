@@ -123,7 +123,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		endTime                                = timestampToFloatSeconds(span.EndTime)
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
-		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
+		isThrottled                            = span.Status != nil && span.Status.Code == tracetranslator.OCResourceExhausted
 		origin                                 = determineAwsOrigin(span.Resource)
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
