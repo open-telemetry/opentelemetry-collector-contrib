@@ -27,8 +27,14 @@ const (
 	AWSAccountAttribute   = "aws.account_id"
 	AWSRegionAttribute    = "aws.region"
 	AWSRequestIDAttribute = "aws.request_id"
-	AWSQueueURLAttribute  = "aws.queue_url"
-	AWSTableNameAttribute = "aws.table_name"
+	// Currently different instrumentation uses different tag formats.
+	// TODO(anuraaga): Find current instrumentation and consolidate.
+	AWSRequestIDAttribute2 = "aws.requestId"
+	AWSQueueURLAttribute   = "aws.queue_url"
+	AWSQueueURLAttribute2  = "aws.queue.url"
+	AWSServiceAttribute    = "aws.service"
+	AWSTableNameAttribute  = "aws.table_name"
+	AWSTableNameAttribute2 = "aws.table.name"
 )
 
 // AWSData provides the shape for unmarshalling AWS resource data.
@@ -72,7 +78,6 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		namespace    string
 		deployID     string
 		ver          string
-		origin       string
 		operation    string
 		remoteRegion string
 		requestID    string
@@ -82,30 +87,30 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		ecs          *ECSMetadata
 		ebs          *BeanstalkMetadata
 	)
-	if resource == nil {
-		return attributes, nil
-	}
+
 	filtered := make(map[string]string)
-	for key, value := range resource.Labels {
-		switch key {
-		case semconventions.AttributeCloudProvider:
-			cloud = value
-		case semconventions.AttributeCloudAccount:
-			account = value
-		case semconventions.AttributeCloudZone:
-			zone = value
-		case semconventions.AttributeHostID:
-			hostID = value
-		case semconventions.AttributeContainerName:
-			if container == "" {
+	if resource != nil {
+		for key, value := range resource.Labels {
+			switch key {
+			case semconventions.AttributeCloudProvider:
+				cloud = value
+			case semconventions.AttributeCloudAccount:
+				account = value
+			case semconventions.AttributeCloudZone:
+				zone = value
+			case semconventions.AttributeHostID:
+				hostID = value
+			case semconventions.AttributeContainerName:
+				if container == "" {
+					container = value
+				}
+			case semconventions.AttributeK8sPod:
 				container = value
+			case semconventions.AttributeServiceNamespace:
+				namespace = value
+			case semconventions.AttributeServiceInstance:
+				deployID = value
 			}
-		case semconventions.AttributeK8sPod:
-			container = value
-		case semconventions.AttributeServiceNamespace:
-			namespace = value
-		case semconventions.AttributeServiceInstance:
-			deployID = value
 		}
 	}
 	for key, value := range attributes {
@@ -119,10 +124,16 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		case AWSRegionAttribute:
 			remoteRegion = value
 		case AWSRequestIDAttribute:
+			fallthrough
+		case AWSRequestIDAttribute2:
 			requestID = value
 		case AWSQueueURLAttribute:
+			fallthrough
+		case AWSQueueURLAttribute2:
 			queueURL = value
 		case AWSTableNameAttribute:
+			fallthrough
+		case AWSTableNameAttribute2:
 			tableName = value
 		default:
 			filtered[key] = value
@@ -134,20 +145,17 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 	// progress from least specific to most specific origin so most specific ends up as origin
 	// as per X-Ray docs
 	if hostID != "" {
-		origin = OriginEC2
 		ec2 = &EC2Metadata{
 			InstanceID:       hostID,
 			AvailabilityZone: zone,
 		}
 	}
 	if container != "" {
-		origin = OriginECS
 		ecs = &ECSMetadata{
 			ContainerName: container,
 		}
 	}
 	if deployID != "" {
-		origin = OriginEB
 		deployNum, err := strconv.ParseInt(deployID, 10, 64)
 		if err != nil {
 			deployNum = 0
@@ -157,9 +165,6 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 			VersionLabel: ver,
 			DeploymentID: deployNum,
 		}
-	}
-	if origin == "" {
-		return filtered, nil
 	}
 	awsData := &AWSData{
 		AccountID:         account,
