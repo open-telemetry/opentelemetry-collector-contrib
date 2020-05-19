@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkexporter
+package splunkhecexporter
 
 import (
 	"errors"
@@ -33,14 +33,14 @@ type Config struct {
 	// URL is the Splunk HEC endpoint where data is going to be sent to.
 	Url string `mapstructure:"url"`
 
-	// Optional Splunk source: https://docs.splunk.com/Splexicon:Source
+	// Optional Splunk source: https://docs.splunk.com/Splexicon:Source.
 	// Sources identify the incoming data.
 	Source string `mapstructure:"source"`
 
-	// Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
+	// Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype.
 	SourceType string `mapstructure:"sourceType"`
 
-	// Splunk index, optional name of the Splunk index
+	// Splunk index, optional name of the Splunk index.
 	Index string `mapstructure:"index"`
 }
 

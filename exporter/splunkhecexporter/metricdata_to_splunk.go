@@ -1,4 +1,4 @@
-package splunkexporter
+package splunkhecexporter
 
 import (
 	"fmt"
@@ -17,8 +17,7 @@ type splunkMetric struct {
 }
 
 func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config Config) ([]*splunkMetric, int, error) {
-	// this is wrong
-	host := data.Node.ServiceInfo.Name
+	host := data.Resource.Labels["host.hostname"]
 	if host == "" {
 		host = "unknown"
 	}

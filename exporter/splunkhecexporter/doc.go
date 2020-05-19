@@ -13,4 +13,4 @@
 // limitations under the License.
 
 // Package splunkexporter implements an exporter that sends data to Splunk.
-package splunkexporter
+package splunkhecexporter

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
 
 go 1.14
 

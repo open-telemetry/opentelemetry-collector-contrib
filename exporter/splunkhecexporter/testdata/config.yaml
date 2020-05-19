@@ -5,10 +5,10 @@ processors:
   exampleprocessor:
 
 exporters:
-  splunk:
+  splunk_hec:
     token: "00000000-0000-0000-0000-0000000000000"
     url: "https://splunk:8088/services/collector"
-  splunk/allsettings:
+  splunk_hec/allsettings:
     token: "00000000-0000-0000-0000-0000000000000"
     url: "https://splunk:8088/services/collector"
     source: "otel"
@@ -20,4 +20,4 @@ service:
     metrics:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [splunk, splunk/allsettings]
+      exporters: [splunk_hec, splunk_hec/allsettings]

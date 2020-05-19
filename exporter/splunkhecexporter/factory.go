@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package splunkexporter
+package splunkhecexporter
 
 import (
 
@@ -24,7 +24,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "splunk"
+	typeStr = "splunk_hec"
 )
 
 // Factory is the factory for SignalFx exporter.

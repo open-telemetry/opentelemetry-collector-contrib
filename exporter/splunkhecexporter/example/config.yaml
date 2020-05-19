@@ -10,7 +10,7 @@ receivers:
             - targets: ['localhost:8888']
 
 exporters:
-  splunk:
+  splunk_hec:
     # Splunk HTTP Event Collector token
     token: "00000000-0000-0000-0000-0000000000000"
     # URL to a Splunk instance to send data to.
@@ -26,4 +26,4 @@ service:
   pipelines:
     metrics:
       receivers: [prometheus]
-      exporters: [splunk]
+      exporters: [splunk_hec]
