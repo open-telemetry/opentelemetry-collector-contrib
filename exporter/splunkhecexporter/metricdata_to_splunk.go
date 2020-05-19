@@ -6,6 +6,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	hecEventMetricType = "metric"
+	unknownHostName = "unknown"
+)
 type splunkMetric struct {
 	Time       int64             `json:"time"`                 // epoch time
 	Host       string            `json:"host"`                 // hostname
@@ -19,7 +23,7 @@ type splunkMetric struct {
 func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config *Config) ([]*splunkMetric, int, error) {
 	host := data.Resource.Labels["host.hostname"]
 	if host == "" {
-		host = "unknown"
+		host = unknownHostName
 	}
 	splunkMetrics := make([]*splunkMetric, 0)
 	for _, metric := range data.Metrics {
@@ -31,7 +35,7 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 					Source: config.Source,
 					SourceType: config.SourceType,
 					Index: config.Index,
-					Event: "metric",
+					Event: hecEventMetricType,
 					Fields: map[string]interface{}{}, // TODO fill fields
 				}
 				// TODO change metric_name computation.
