@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/otel/api/core"
+	"go.opentelemetry.io/otel/api/kv"
 )
 
 const oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
@@ -60,14 +60,14 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 		sd, err := honeycomb.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
 			if td.Node != nil && td.Node.ServiceInfo != nil {
-				serviceName := core.Key("service_name")
+				serviceName := kv.Key("service_name")
 				sd.Attributes = append(sd.Attributes,
 					serviceName.String(td.Node.ServiceInfo.Name))
 			}
 			if td.Resource != nil {
 				resourceType := td.Resource.GetType()
 				if resourceType != "" {
-					resourceTypeAttr := core.Key("opencensus.resourcetype")
+					resourceTypeAttr := kv.Key("opencensus.resourcetype")
 					sd.Attributes = append(sd.Attributes,
 						resourceTypeAttr.String(resourceType))
 				}
@@ -90,11 +90,11 @@ func (e *HoneycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
 }
 
-func createAttributes(attributes map[string]string) []core.KeyValue {
-	result := make([]core.KeyValue, len(attributes))
+func createAttributes(attributes map[string]string) []kv.KeyValue {
+	result := make([]kv.KeyValue, len(attributes))
 	index := 0
 	for key, val := range attributes {
-		result[index] = core.Key(key).String(val)
+		result[index] = kv.String(key, val)
 		index++
 	}
 	return result
