@@ -27,14 +27,16 @@ func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
 	}, s.Time.Time)
 }
 
+const directionLabel = "direction"
+
 func rxBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network/received", "By", s.RxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name})
+	metric := cumulativeInt(prefix+"network", "By", s.RxBytes)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "received"})
 	return metric
 }
 
 func txBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network/transmitted", "By", s.TxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name})
+	metric := cumulativeInt(prefix+"network", "By", s.TxBytes)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmitted"})
 	return metric
 }
