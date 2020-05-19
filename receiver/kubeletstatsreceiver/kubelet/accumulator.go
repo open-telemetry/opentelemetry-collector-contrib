@@ -27,7 +27,7 @@ type metricDataAccumulator struct {
 }
 
 const (
-	k8sPrefix       = "kubernetes/"
+	k8sPrefix       = "k8s/"
 	nodePrefix      = k8sPrefix + "node/"
 	podPrefix       = k8sPrefix + "pod/"
 	containerPrefix = k8sPrefix + "container/"
