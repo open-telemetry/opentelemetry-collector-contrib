@@ -124,7 +124,7 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 		info.Request.URL = constructClientURL(urlParts)
 	}
 
-	if info.Response.Status == 0 {
+	if span.Status != nil && info.Response.Status == 0 {
 		info.Response.Status = int64(tracetranslator.HTTPStatusCodeFromOCStatus(span.Status.Code))
 	}
 
@@ -138,7 +138,7 @@ func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
 	if span.TimeEvents != nil {
 		for _, te := range span.TimeEvents.TimeEvent {
 			anno := te.GetAnnotation()
-			if anno != nil {
+			if anno != nil && anno.Attributes != nil {
 				attrMap := anno.Attributes.AttributeMap
 				typeVal := attrMap[semconventions.AttributeMessageType]
 				if typeVal != nil {
