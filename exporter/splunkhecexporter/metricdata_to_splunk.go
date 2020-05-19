@@ -2,6 +2,7 @@ package splunkhecexporter
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
@@ -30,7 +31,7 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 		for _, timeSeries := range metric.Timeseries {
 			for _, tsPoint := range timeSeries.Points {
 				sm := &splunkMetric{
-					Time: tsPoint.Timestamp.GetSeconds(),
+					Time: timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
 					Host: host,
 					Source: config.Source,
 					SourceType: config.SourceType,
@@ -46,4 +47,11 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 	}
 
 	return splunkMetrics, 0, nil
+}
+
+func timestampToEpochMilliseconds(ts *timestamp.Timestamp) int64 {
+	if ts == nil {
+		return 0
+	}
+	return ts.GetSeconds()*1e3 + int64(ts.GetNanos()/1e6)
 }
