@@ -19,22 +19,22 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func cpuMetrics(s *stats.CPUStats) []*metricspb.Metric {
+func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		cpuUsageMetric(s),
-		cpuCumulativeUsageMetric(s),
+		cpuUsageMetric(prefix, s),
+		cpuCumulativeUsageMetric(prefix, s),
 	}, s.Time.Time)
 }
 
-func cpuUsageMetric(s *stats.CPUStats) *metricspb.Metric {
+func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 	nanoCores := s.UsageNanoCores
 	if nanoCores == nil {
 		return nil
 	}
 	value := float64(*nanoCores) / 1_000_000
-	return doubleGauge("cpu/usage", "%", &value)
+	return doubleGauge(prefix+"cpu/usage", "%", &value)
 }
 
-func cpuCumulativeUsageMetric(s *stats.CPUStats) *metricspb.Metric {
-	return cumulativeInt("cpu/cumulative", "ns", s.UsageCoreNanoSeconds)
+func cpuCumulativeUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
+	return cumulativeInt(prefix+"cpu/cumulative", "ns", s.UsageCoreNanoSeconds)
 }

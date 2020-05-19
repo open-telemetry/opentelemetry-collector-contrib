@@ -19,22 +19,22 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func networkMetrics(s *stats.NetworkStats) []*metricspb.Metric {
+func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
 	// todo s.RxErrors s.TxErrors?
 	return applyCurrentTime([]*metricspb.Metric{
-		rxBytesMetric(s),
-		txBytesMetric(s),
+		rxBytesMetric(prefix, s),
+		txBytesMetric(prefix, s),
 	}, s.Time.Time)
 }
 
-func rxBytesMetric(s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt("network/received", "By", s.RxBytes)
+func rxBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
+	metric := cumulativeInt(prefix+"network/received", "By", s.RxBytes)
 	applyLabels(metric, map[string]string{"interface": s.Name})
 	return metric
 }
 
-func txBytesMetric(s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt("network/transmitted", "By", s.TxBytes)
+func txBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
+	metric := cumulativeInt(prefix+"network/transmitted", "By", s.TxBytes)
 	applyLabels(metric, map[string]string{"interface": s.Name})
 	return metric
 }

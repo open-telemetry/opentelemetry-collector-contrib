@@ -19,17 +19,17 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func fsMetrics(s *stats.FsStats) []*metricspb.Metric {
+func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		fsAvailableMetric(s),
-		fsCapacityMetric(s),
+		fsAvailableMetric(prefix, s),
+		fsCapacityMetric(prefix, s),
 	}, s.Time.Time)
 }
 
-func fsAvailableMetric(s *stats.FsStats) *metricspb.Metric {
-	return intGauge("fs/available", "By", s.AvailableBytes)
+func fsAvailableMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
+	return intGauge(prefix+"fs/available", "By", s.AvailableBytes)
 }
 
-func fsCapacityMetric(s *stats.FsStats) *metricspb.Metric {
-	return intGauge("fs/capacity", "By", s.CapacityBytes)
+func fsCapacityMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
+	return intGauge(prefix+"fs/capacity", "By", s.CapacityBytes)
 }

@@ -31,7 +31,7 @@ receivers:
     ca_cert_path: "/path/to/ca.crt"
     client_key_path: "/path/to/apiserver.key"
     client_cert_path: "/path/to/apiserver.crt"
-    base_url: "https://192.168.64.1:10250"
+    endpoint: "192.168.64.1:10250"
     insecure_skip_verify: true
 exporters:
   file:

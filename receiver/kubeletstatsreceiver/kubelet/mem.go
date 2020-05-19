@@ -19,22 +19,22 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func memMetrics(s *stats.MemoryStats) []*metricspb.Metric {
+func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		memAvailableMetric(s),
-		memUsageMetric(s),
-		memRssMetric(s),
+		memAvailableMetric(prefix, s),
+		memUsageMetric(prefix, s),
+		memRssMetric(prefix, s),
 	}, s.Time.Time)
 }
 
-func memAvailableMetric(s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge("mem/available", "By", s.AvailableBytes)
+func memAvailableMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"mem/available", "By", s.AvailableBytes)
 }
 
-func memUsageMetric(s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge("mem/usage", "By", s.UsageBytes)
+func memUsageMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"mem/usage", "By", s.UsageBytes)
 }
 
-func memRssMetric(s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge("mem/rss", "By", s.RSSBytes)
+func memRssMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"mem/rss", "By", s.RSSBytes)
 }

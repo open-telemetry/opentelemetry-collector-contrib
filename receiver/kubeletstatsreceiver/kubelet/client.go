@@ -23,25 +23,15 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"go.uber.org/zap"
-)
 
-type AuthType string
-
-const (
-	// AuthTypeTLS indicates that client TLS auth is desired
-	AuthTypeTLS AuthType = "tls"
-	// AuthTypeServiceAccount indicates that the default service account token should be used
-	AuthTypeServiceAccount AuthType = "serviceAccount"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config for a kubelet Client. Mostly for talking to the kubelet HTTP endpoint.
 type ClientConfig struct {
-	// AuthType should be "tls" or "serviceAccount". TLS requires that the cert/key
-	// paths below also be set.
-	AuthType AuthType `mapstructure:"auth_type"`
+	k8sconfig.APIConfig `mapstructure:",squash"`
 	// CacertPath should be the path to the root CAs. Used to verify the kubelet
 	// server's certificates.
 	CacertPath string `mapstructure:"ca_cert_path"`
@@ -50,6 +40,7 @@ type ClientConfig struct {
 	ClientCertPath string `mapstructure:"client_cert_path"`
 	// ClientKeyPath should be the path to the TLS client key. Must correspond to
 	// the ClientCertPath, making a key pair to present to the kubelet.
+	// TODO replace with open-telemetry/opentelemetry-collector#933 when done
 	ClientKeyPath string `mapstructure:"client_key_path"`
 	// InsecureSkipVerify controls whether the client verifies the server's
 	// certificate chain and host name.
@@ -59,41 +50,31 @@ type ClientConfig struct {
 // A kubelet client, which mostly handles auth when talking to a kubelet server.
 // Marshaling/unmarshaling should be performed by the caller.
 type Client struct {
-	c       *http.Client
-	baseURL string
-	token   string
-	logger  *zap.Logger
+	c        *http.Client
+	endpoint string
+	token    string
+	logger   *zap.Logger
 }
 
-func NewClient(baseURL string, cfg *ClientConfig, logger *zap.Logger) (*Client, error) {
+func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (*Client, error) {
 	var client *Client
 	var err error
 	switch cfg.AuthType {
-	case AuthTypeTLS:
-		client, err = tlsClient(baseURL, cfg)
-	case AuthTypeServiceAccount:
-		client, err = serviceAccountClient(baseURL)
+	case k8sconfig.AuthTypeTLS:
+		client, err = tlsClient(endpoint, cfg)
+	case k8sconfig.AuthTypeServiceAccount:
+		client, err = serviceAccountClient(endpoint)
 	default:
 		return nil, errors.New("cfg.AuthType not found")
 	}
 	if err != nil {
 		return nil, err
 	}
-	if baseURL == "" {
-		// this requires HostNetwork to be turned on
-		hostname, err := os.Hostname()
-		if err != nil {
-			return nil, err
-		}
-		client.baseURL = fmt.Sprintf("http://%s:10250", hostname)
-	} else {
-		client.baseURL = baseURL
-	}
 	client.logger = logger
 	return client, nil
 }
 
-func tlsClient(baseURL string, cfg *ClientConfig) (*Client, error) {
+func tlsClient(endpoint string, cfg *ClientConfig) (*Client, error) {
 	rootCAs, err := systemCertPoolPlusPath(cfg.CacertPath)
 	if err != nil {
 		return nil, err
@@ -104,20 +85,19 @@ func tlsClient(baseURL string, cfg *ClientConfig) (*Client, error) {
 		return nil, err
 	}
 
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
 		Certificates:       []tls.Certificate{clientCert},
 		InsecureSkipVerify: cfg.InsecureSkipVerify,
 	}
-
 	return &Client{
-		c:       &http.Client{Transport: tr},
-		baseURL: baseURL,
+		c:        &http.Client{Transport: tr},
+		endpoint: endpoint,
 	}, nil
 }
 
-func serviceAccountClient(baseURL string) (*Client, error) {
+func serviceAccountClient(endpoint string) (*Client, error) {
 	const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	token, err := ioutil.ReadFile(svcAcctTokenPath)
 	if err != nil {
@@ -128,17 +108,20 @@ func serviceAccountClient(baseURL string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	tr := defaultTransport()
+	tr.TLSClientConfig = &tls.Config{
+		RootCAs: rootCAs,
+	}
 	return &Client{
-		c: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: rootCAs,
-				},
-			},
-		},
-		baseURL: baseURL,
-		token:   string(token),
+		c:        &http.Client{Transport: tr},
+		endpoint: endpoint,
+		token:    string(token),
 	}, nil
+}
+
+func defaultTransport() *http.Transport {
+	return http.DefaultTransport.(*http.Transport).Clone()
 }
 
 func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
@@ -162,7 +145,6 @@ func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool,
 }
 
 func systemCertPool() (*x509.CertPool, error) {
-	// todo windows
 	return x509.SystemCertPool()
 }
 
@@ -185,7 +167,9 @@ func (c *Client) request(method string, path string, reader io.Reader) ([]byte, 
 		zap.String("path", path),
 		zap.Int("token length", len(c.token)),
 	)
-	req, err := http.NewRequest(method, c.baseURL+path, reader)
+
+	url := "https://" + c.endpoint + path
+	req, err := http.NewRequest(method, url, reader)
 	if err != nil {
 		return nil, err
 	}

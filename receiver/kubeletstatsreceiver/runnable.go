@@ -17,8 +17,8 @@ package kubeletstatsreceiver
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
@@ -52,12 +52,7 @@ func newRunnable(
 
 // Sets up the kubelet connection at startup time.
 func (r *runnable) Setup() error {
-	baseURL := ""
-	if r.cfg.Endpoint != "" {
-		baseURL = "https://" + r.cfg.Endpoint
-	}
-	// kubelet client will use the hostname if you pass in an empty url
-	client, err := kubelet.NewClient(baseURL, &r.cfg.ClientConfig, r.logger)
+	client, err := kubelet.NewClient(r.cfg.Endpoint, &r.cfg.ClientConfig, r.logger)
 	if err != nil {
 		return err
 	}

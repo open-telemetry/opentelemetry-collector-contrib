@@ -15,7 +15,7 @@
 package kubelet
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 

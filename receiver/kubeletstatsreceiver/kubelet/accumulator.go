@@ -18,7 +18,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -26,16 +26,23 @@ type metricDataAccumulator struct {
 	m []*consumerdata.MetricsData
 }
 
+const (
+	k8sPrefix       = "kubernetes/"
+	nodePrefix      = k8sPrefix + "node/"
+	podPrefix       = k8sPrefix + "pod/"
+	containerPrefix = k8sPrefix + "container/"
+)
+
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	// todo s.Runtime.ImageFs
 	a.accumulate(
 		timestampProto(s.StartTime.Time),
 		nodeResource(s),
 
-		cpuMetrics(s.CPU),
-		fsMetrics(s.Fs),
-		memMetrics(s.Memory),
-		networkMetrics(s.Network),
+		cpuMetrics(nodePrefix, s.CPU),
+		fsMetrics(nodePrefix, s.Fs),
+		memMetrics(nodePrefix, s.Memory),
+		networkMetrics(nodePrefix, s.Network),
 	)
 }
 
@@ -44,10 +51,10 @@ func (a *metricDataAccumulator) podStats(podResource *resourcepb.Resource, s sta
 		timestampProto(s.StartTime.Time),
 		podResource,
 
-		cpuMetrics(s.CPU),
-		fsMetrics(s.EphemeralStorage),
-		memMetrics(s.Memory),
-		networkMetrics(s.Network),
+		cpuMetrics(podPrefix, s.CPU),
+		fsMetrics(podPrefix, s.EphemeralStorage),
+		memMetrics(podPrefix, s.Memory),
+		networkMetrics(podPrefix, s.Network),
 	)
 }
 
@@ -57,9 +64,9 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 		timestampProto(s.StartTime.Time),
 		containerResource(podResource, s),
 
-		cpuMetrics(s.CPU),
-		memMetrics(s.Memory),
-		fsMetrics(s.Rootfs),
+		cpuMetrics(containerPrefix, s.CPU),
+		memMetrics(containerPrefix, s.Memory),
+		fsMetrics(containerPrefix, s.Rootfs),
 	)
 }
 
