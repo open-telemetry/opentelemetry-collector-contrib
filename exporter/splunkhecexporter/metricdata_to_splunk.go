@@ -24,6 +24,12 @@ import (
 const (
 	hecEventMetricType = "metric"
 	unknownHostName    = "unknown"
+
+	// Some standard dimension keys.
+	// upper bound dimension key for histogram buckets.
+	upperBoundDimensionKey = "upper_bound"
+	// quantile dimension key for summary quantiles.
+	quantileDimensionKey = "quantile"
 )
 
 type splunkMetric struct {

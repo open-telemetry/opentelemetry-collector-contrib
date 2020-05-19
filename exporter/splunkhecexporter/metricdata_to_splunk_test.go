@@ -15,15 +15,12 @@
 package splunkhecexporter
 
 import (
-	"math"
-	"sort"
 	"testing"
 	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutils/metricstestutils"
@@ -180,25 +177,13 @@ func Test_metricDataToSplunk(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
-			// Sort SFx dimensions since they are built from maps and the order
+			// Sort fields since they are built from maps and the order
 			// of those is not deterministic.
-			sortDimensions(tt.wantSplunkMetrics)
-			sortDimensions(gotMetrics)
 			assert.Equal(t, tt.wantSplunkMetrics, gotMetrics)
 		})
 	}
 }
 
-func sortDimensions(points []*splunkMetric) {
-	for _, point := range points {
-		if point.Dimensions == nil {
-			continue
-		}
-		sort.Slice(point.Dimensions, func(i, j int) bool {
-			return *point.Dimensions[i].Key < *point.Dimensions[j].Key
-		})
-	}
-}
 
 func commonSplunkMetric(
 	metricName string,
@@ -224,7 +209,7 @@ func expectedFromDistribution(
 
 	// Two additional data points: one for count and one for sum.
 	const extraDataPoints = 2
-	dps := make([]*sfxpb.DataPoint, 0, len(distributionValue.Buckets)+extraDataPoints)
+	dps := make([]*splunkMetric, 0, len(distributionValue.Buckets)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName+"_count", ts, keys, values,
@@ -237,13 +222,13 @@ func expectedFromDistribution(
 		dps = append(dps,
 			commonSplunkMetric(metricName+"_bucket", ts,
 				append(keys, upperBoundDimensionKey),
-				append(values, *float64ToDimValue(explicitBuckets.Bounds[i])),
+				values,
 				distributionValue.Buckets[i].Count))
 	}
 	dps = append(dps,
 		commonSplunkMetric(metricName+"_bucket", ts,
 			append(keys, upperBoundDimensionKey),
-			append(values, *float64ToDimValue(math.Inf(1))),
+			values,
 			distributionValue.Buckets[len(distributionValue.Buckets)-1].Count))
 	return dps
 }
@@ -259,7 +244,7 @@ func expectedFromSummary(
 
 	// Two additional data points: one for count and one for sum.
 	const extraDataPoints = 2
-	dps := make([]*sfxpb.DataPoint, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
+	dps := make([]*splunkMetric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName+"_count", ts, keys, values,
@@ -272,7 +257,7 @@ func expectedFromSummary(
 		dps = append(dps,
 			commonSplunkMetric(metricName+"_quantile", ts,
 				append(keys, quantileDimensionKey),
-				append(values, *float64ToDimValue(percentile.Percentile)),
+				values,
 				percentile.Value))
 	}
 

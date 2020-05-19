@@ -35,6 +35,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
+	cfg.(*Config).Token = "1234-1234"
 
 	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -44,6 +46,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 func TestCreateTraceExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
+	cfg.(*Config).Token = "1234-1234"
 	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 }
@@ -52,6 +56,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := Factory{}
 
 	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
+	cfg.(*Config).Token = "1234-1234"
 	exp, err := factory.CreateMetricsExporter(
 		zap.NewNop(),
 		cfg)
@@ -94,14 +100,15 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			name: "empty_url",
+			name: "empty_endpoint",
 			config: &Config{
 				ExporterSettings: configmodels.ExporterSettings{
 					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
+				Token: "token",
 			},
-			errorMessage: "failed to process \"splunk\" config: requires a non-empty \"url\"",
+			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"endpoint\"",
 		},
 		{
 			name: "empty_token",
@@ -112,7 +119,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				},
 				Endpoint: "https://example.com:8000",
 			},
-			errorMessage: "failed to process \"splunk\" config: requires a non-empty \"token\"",
+			errorMessage: "failed to process \"splunk_hec\" config: requires a non-empty \"token\"",
 		},
 	}
 	for _, tt := range tests {

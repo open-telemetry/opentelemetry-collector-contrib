@@ -18,7 +18,7 @@ exporters:
     # Optional Splunk source: https://docs.splunk.com/Splexicon:Source
     source: "otel"
     # Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
-    sourceType: "otel"
+    sourcetype: "otel"
     # Splunk index, optional name of the Splunk index targeted
     index: "metrics"
 

@@ -12,7 +12,7 @@ exporters:
     token: "00000000-0000-0000-0000-0000000000000"
     endpoint: "https://splunk:8088/services/collector"
     source: "otel"
-    sourceType: "otel"
+    sourcetype: "otel"
     index: "metrics"
 
 service:

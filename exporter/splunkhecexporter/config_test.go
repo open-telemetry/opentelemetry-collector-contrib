@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"path"
 	"testing"
+	"time"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,8 +39,10 @@ func TestLoadConfig(t *testing.T) {
 
 	e0 := cfg.Exporters["splunk_hec"]
 
-	// Realm doesn't have a default value so set it directly.
+	// Endpoint and Token do not have a default value so set them directly.
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg.Token = "00000000-0000-0000-0000-0000000000000"
+	defaultCfg.Endpoint = "https://splunk:8088/services/collector"
 	assert.Equal(t, defaultCfg, e0)
 
 	expectedName := "splunk_hec/allsettings"
@@ -55,6 +58,8 @@ func TestLoadConfig(t *testing.T) {
 		Source:     "otel",
 		SourceType: "otel",
 		Index:      "metrics",
+		MaxConnections: 100,
+		Timeout: 10 * time.Second,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -101,11 +106,11 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Endpoint: "https://example.com:8000",
 			},
 			want: &exporterOptions{
-
+                token: "1234",
 				url: &url.URL{
 					Scheme: "https",
 					Host:   "example.com:8000",
-					Path:   "/services/collector",
+					Path:   "services/collector",
 				},
 			},
 			wantErr: false,
@@ -131,7 +136,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			require.Equal(t, tt.want, got)
+			require.EqualValues(t, tt.want, got)
 		})
 	}
 }

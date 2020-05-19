@@ -135,3 +135,8 @@ func (c *client) getReader(b *bytes.Buffer) (io.Reader, bool, error) {
 	}
 	return b, false, err
 }
+
+func (c *client) stop(context context.Context) error {
+	c.client.CloseIdleConnections()
+	return nil
+}

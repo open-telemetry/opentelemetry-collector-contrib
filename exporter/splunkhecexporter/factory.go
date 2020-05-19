@@ -49,7 +49,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 		},
 		Timeout:            defaultHTTPTimeout,
 		DisableCompression: false,
-		NumWorkers:         defaultNumWorkers,
 		MaxConnections:     defaultMaxIdleCons,
 	}
 }

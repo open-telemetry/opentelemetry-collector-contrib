@@ -40,6 +40,7 @@ const (
 
 type splunkExporter struct {
 	pushMetricsData func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	stop            func(ctx context.Context) (err error)
 }
 
 type exporterOptions struct {
@@ -94,6 +95,7 @@ func New(
 
 	return splunkExporter{
 		pushMetricsData: client.pushMetricsData,
+		stop:            client.stop,
 	}, nil
 }
 
@@ -101,8 +103,8 @@ func (se splunkExporter) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (se splunkExporter) Shutdown(context.Context) error {
-	return nil
+func (se splunkExporter) Shutdown(ctxt context.Context) error {
+	return se.stop(ctxt)
 }
 
 func (se splunkExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {

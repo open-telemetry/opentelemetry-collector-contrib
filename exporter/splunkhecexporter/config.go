@@ -39,7 +39,7 @@ type Config struct {
 	Source string `mapstructure:"source"`
 
 	// Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype.
-	SourceType string `mapstructure:"sourceType"`
+	SourceType string `mapstructure:"sourcetype"`
 
 	// Splunk index, optional name of the Splunk index.
 	Index string `mapstructure:"index"`
