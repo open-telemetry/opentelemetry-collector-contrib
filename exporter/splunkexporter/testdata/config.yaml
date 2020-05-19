@@ -1,0 +1,23 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  splunk:
+    token: "00000000-0000-0000-0000-0000000000000"
+    url: "https://splunk:8088/services/collector"
+  splunk/allsettings:
+    token: "00000000-0000-0000-0000-0000000000000"
+    url: "https://splunk:8088/services/collector"
+    source: "otel"
+    sourceType: "otel"
+    index: "metrics"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [splunk, splunk/allsettings]
