@@ -34,7 +34,7 @@ type Config struct {
 	Url string `mapstructure:"url"`
 
 	// Optional Splunk source: https://docs.splunk.com/Splexicon:Source
-	// Sources identify the incomign data.
+	// Sources identify the incoming data.
 	Source string `mapstructure:"source"`
 
 	// Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
