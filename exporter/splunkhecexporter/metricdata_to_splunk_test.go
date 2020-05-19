@@ -1,6 +1,5 @@
 package splunkhecexporter
 
-
 import (
 	"math"
 	"sort"
@@ -73,7 +72,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 			wantSplunkMetrics: []*splunkMetric{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs,[]string{}, []string{}, int64Val),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{}, []string{}, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
 				commonSplunkMetric("cumulative_int_with_dims", tsMSecs, []string{}, []string{}, int64Val),
 			},
@@ -91,10 +90,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkMetrics: []*splunkMetric{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs,  keys, values, doubleVal),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs,  keys,values, int64Val),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, keys, values, doubleVal),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, keys, values, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, keys, values, doubleVal),
-				commonSplunkMetric("cumulative_int_with_dims", tsMSecs,keys, values, int64Val),
+				commonSplunkMetric("cumulative_int_with_dims", tsMSecs, keys, values, int64Val),
 			},
 		},
 		{
@@ -163,7 +162,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, tt.metricsDataFn(), &Config{
-				Source: "source", SourceType: "sourceType", Index : "myIndex",
+				Source: "source", SourceType: "sourceType", Index: "myIndex",
 			})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
@@ -206,7 +205,7 @@ func expectedFromDistribution(
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
-) []*splunkMetric{
+) []*splunkMetric {
 	distributionValue := distributionTimeSeries.Points[0].GetDistributionValue()
 
 	// Two additional data points: one for count and one for sum.

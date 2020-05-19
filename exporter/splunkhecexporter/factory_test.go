@@ -78,8 +78,8 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Token: "testToken",
-		Endpoint:       "https://example.com:8000",
+		Token:    "testToken",
+		Endpoint: "https://example.com:8000",
 	}
 
 	te, err := f.CreateMetricsExporter(zap.NewNop(), config)

@@ -65,7 +65,6 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		return nil, fmt.Errorf("invalid \"endpoint\": %v", err)
 	}
 
-
 	return &exporterOptions{
 		url:   url,
 		token: cfg.Token,
@@ -86,13 +85,13 @@ func (cfg *Config) validateConfig() error {
 
 func (cfg *Config) getUrl() (out *url.URL, err error) {
 
-		out, err = url.Parse(cfg.Endpoint)
-		if err != nil {
-			return out, err
-		}
-		if out.Path == "" || out.Path == "/" {
-			out.Path = path.Join(out.Path, "services/collector")
-		}
+	out, err = url.Parse(cfg.Endpoint)
+	if err != nil {
+		return out, err
+	}
+	if out.Path == "" || out.Path == "/" {
+		out.Path = path.Join(out.Path, "services/collector")
+	}
 
 	return out, err
 }

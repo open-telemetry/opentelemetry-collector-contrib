@@ -9,15 +9,16 @@ import (
 
 const (
 	hecEventMetricType = "metric"
-	unknownHostName = "unknown"
+	unknownHostName    = "unknown"
 )
+
 type splunkMetric struct {
-	Time       int64             `json:"time"`                 // epoch time
-	Host       string            `json:"host"`                 // hostname
-	Source     string            `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string            `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string            `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      string            `json:"event"`                // type of event: this is a metric.
+	Time       int64                  `json:"time"`                 // epoch time
+	Host       string                 `json:"host"`                 // hostname
+	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      string                 `json:"event"`                // type of event: this is a metric.
 	Fields     map[string]interface{} `json:"fields"`               // metric data
 }
 
@@ -31,13 +32,13 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 		for _, timeSeries := range metric.Timeseries {
 			for _, tsPoint := range timeSeries.Points {
 				sm := &splunkMetric{
-					Time: timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
-					Host: host,
-					Source: config.Source,
+					Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
+					Host:       host,
+					Source:     config.Source,
 					SourceType: config.SourceType,
-					Index: config.Index,
-					Event: hecEventMetricType,
-					Fields: map[string]interface{}{}, // TODO fill fields
+					Index:      config.Index,
+					Event:      hecEventMetricType,
+					Fields:     map[string]interface{}{}, // TODO fill fields
 				}
 				// TODO change metric_name computation.
 				sm.Fields[fmt.Sprintf("metric_name:%s", data.Resource.Type)] = tsPoint.GetValue()

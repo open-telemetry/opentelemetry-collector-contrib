@@ -29,10 +29,9 @@ type splunkExporter struct {
 }
 
 type exporterOptions struct {
-  url   *url.URL
-  token string
+	url   *url.URL
+	token string
 }
-
 
 // New returns a new Splunk exporter.
 func New(
@@ -57,7 +56,6 @@ func New(
 		config.SetName(typeStr)
 	}
 
-
 	client := &client{
 		url: options.url,
 		client: &http.Client{
@@ -73,7 +71,6 @@ func New(
 				IdleConnTimeout:     idleConnTimeout,
 				TLSHandshakeTimeout: tlsHandshakeTimeout,
 			},
-
 		},
 		logger: logger,
 		zippers: sync.Pool{New: func() interface{} {

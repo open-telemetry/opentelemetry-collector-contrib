@@ -50,11 +50,11 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: expectedName,
 		},
-		Token: "00000000-0000-0000-0000-0000000000000",
-		Endpoint: "https://splunk:8088/services/collector",
-		Source: "otel",
+		Token:      "00000000-0000-0000-0000-0000000000000",
+		Endpoint:   "https://splunk:8088/services/collector",
+		Source:     "otel",
 		SourceType: "otel",
-        Index: "metrics",
+		Index:      "metrics",
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -66,11 +66,11 @@ func TestLoadConfig(t *testing.T) {
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
 		ExporterSettings configmodels.ExporterSettings
-		Endpoint      string
+		Endpoint         string
 		Token            string
-		Source        string
-		SourceType          string
-		Index          string
+		Source           string
+		SourceType       string
+		Index            string
 	}
 	tests := []struct {
 		name    string
@@ -81,7 +81,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test missing url",
 			fields: fields{
-				Token:     "1234",
+				Token: "1234",
 			},
 			want:    nil,
 			wantErr: true,
@@ -89,7 +89,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test missing token",
 			fields: fields{
-				Endpoint:     "https://example.com:8000",
+				Endpoint: "https://example.com:8000",
 			},
 			want:    nil,
 			wantErr: true,
@@ -97,8 +97,8 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test incomplete URL",
 			fields: fields{
-				Token:   "1234",
-				Endpoint:  "https://example.com:8000",
+				Token:    "1234",
+				Endpoint: "https://example.com:8000",
 			},
 			want: &exporterOptions{
 
@@ -120,11 +120,11 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				ExporterSettings: tt.fields.ExporterSettings,
-				Token:      tt.fields.Token,
-				Endpoint:   tt.fields.Endpoint,
-				Source:            tt.fields.Source,
-				SourceType:        tt.fields.SourceType,
-				Index: tt.fields.Index,
+				Token:            tt.fields.Token,
+				Endpoint:         tt.fields.Endpoint,
+				Source:           tt.fields.Source,
+				SourceType:       tt.fields.SourceType,
+				Index:            tt.fields.Index,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

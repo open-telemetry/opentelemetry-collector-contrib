@@ -15,7 +15,6 @@
 package splunkhecexporter
 
 import (
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -48,10 +47,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Timeout: defaultHTTPTimeout,
+		Timeout:            defaultHTTPTimeout,
 		DisableCompression: false,
-		NumWorkers: defaultNumWorkers,
-		MaxConnections: defaultMaxIdleCons,
+		NumWorkers:         defaultNumWorkers,
+		MaxConnections:     defaultMaxIdleCons,
 	}
 }
 

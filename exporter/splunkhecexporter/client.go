@@ -32,14 +32,13 @@ import (
 	"go.uber.org/zap"
 )
 
-
 // client sends the data to the splunk backend.
 type client struct {
-	config *Config
-	url *url.URL
-	client    *http.Client
-	logger    *zap.Logger
-	zippers   sync.Pool
+	config  *Config
+	url     *url.URL
+	client  *http.Client
+	logger  *zap.Logger
+	zippers sync.Pool
 }
 
 func (c *client) pushMetricsData(
@@ -91,7 +90,7 @@ func (c *client) pushMetricsData(
 	return numDroppedTimeseries, nil
 }
 
-func buildHeaders(config *Config) (map[string]string) {
+func buildHeaders(config *Config) map[string]string {
 	headers := map[string]string{
 		"Connection":   "keep-alive",
 		"Content-Type": "application/json",
@@ -99,7 +98,7 @@ func buildHeaders(config *Config) (map[string]string) {
 	}
 
 	if config.Token != "" {
-		headers["Authorization"] = "Splunk "+config.Token
+		headers["Authorization"] = "Splunk " + config.Token
 	}
 
 	return headers
