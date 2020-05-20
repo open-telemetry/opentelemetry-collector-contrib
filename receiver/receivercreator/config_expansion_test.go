@@ -51,6 +51,7 @@ func Test_expandConfigValue(t *testing.T) {
 		{"expression at beginning", args{localhostEnv, "`endpoint`:1234"}, "localhost:1234", false},
 		{"expression in middle", args{localhostEnv, "https://`endpoint`:1234"}, "https://localhost:1234", false},
 		{"expression at end", args{localhostEnv, "https://`endpoint`"}, "https://localhost", false},
+		{"extra whitespace should not impact returned type", args{nil, "`       true ==           true`"}, true, false},
 
 		// Error cases.
 		{"only backticks", args{endpointEnv{}, "``"}, nil, true},
@@ -62,7 +63,7 @@ func Test_expandConfigValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := expandConfigValue(tt.args.env, tt.args.configValue)
+			got, err := evalBackticksInConfigValue(tt.args.configValue, tt.args.env)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eval() error = %v, wantErr %v", err, tt.wantErr)
 				return

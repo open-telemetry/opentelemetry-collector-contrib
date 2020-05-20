@@ -22,7 +22,19 @@ import (
 	"github.com/antonmedv/expr"
 )
 
-func expandConfigValue(env endpointEnv, configValue string) (interface{}, error) {
+// evalBackticksInConfigValue expands any expressions within backticks inside configValue
+// using variables from env.
+//
+// Note that when evaluating multiple expressions that the expanded result is always
+// a string. For instance:
+//
+//   `true``false` -> "truefalse"
+//
+// However if there is only one expansion then the expanded result will keep the type
+// of the expression. For instance:
+//
+//   `"secure" in pod.labels` -> true (boolean)
+func evalBackticksInConfigValue(configValue string, env endpointEnv) (interface{}, error) {
 	// Tracks index into configValue where an expression (backtick) begins. -1 is unset.
 	exprStartIndex := -1
 	// Accumulate expanded string.
@@ -85,8 +97,8 @@ func expandConfigValue(env endpointEnv, configValue string) (interface{}, error)
 	return output.String(), nil
 }
 
-// expandMap recursively expands any expressions in backticks and returns a copy
-// of the resolved config.
+// expandMap recursively expands any expressions in backticks inside values of cfg using
+// env as variables available within the expression, returning a copy of the map.
 func expandMap(cfg map[string]interface{}, env endpointEnv) (map[string]interface{}, error) {
 	resolved := map[string]interface{}{}
 	for k, v := range cfg {
@@ -102,7 +114,7 @@ func expandMap(cfg map[string]interface{}, env endpointEnv) (map[string]interfac
 			}
 			resolved[k] = res
 		case string:
-			res, err := expandConfigValue(env, val)
+			res, err := evalBackticksInConfigValue(val, env)
 			if err != nil {
 				return nil, fmt.Errorf("failed evaluating config expression for key %q: %v", k, err)
 			}
