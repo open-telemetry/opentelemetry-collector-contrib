@@ -55,7 +55,7 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout"`
 
 	// SkipTLSVerify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-	SkipTLSVerify bool `mapstructure:"skipTLSVerify"`
+	SkipTLSVerify bool `mapstructure:"skiptlsverify"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
