@@ -30,7 +30,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_metricDataToSingalFxV2(t *testing.T) {
+func Test_metricDataToSignalFxV2(t *testing.T) {
 	logger := zap.NewNop()
 
 	keys := []string{"k0", "k1"}
@@ -177,7 +177,7 @@ func Test_metricDataToSingalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries, err := metricDataToSingalFxV2(logger, tt.metricsDataFn())
+			gotSfxDataPoints, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, tt.metricsDataFn())
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort SFx dimensions since they are built from maps and the order
