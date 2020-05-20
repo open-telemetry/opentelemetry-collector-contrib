@@ -15,6 +15,7 @@
 package splunkhecexporter
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -133,13 +134,13 @@ func Test_metricDataToSplunk(t *testing.T) {
 				commonSplunkMetric(
 					"gauge_double_with_dims",
 					tsMSecs,
-					append([]string{"k_n0", "k_n1", "k_r0", "k_r1"}, keys...),
+					append([]string{"k/n0", "k/n1", "k/r0", "k/r1"}, keys...),
 					append([]string{"vn0", "vn1", "vr0", "vr1"}, values...),
 					doubleVal),
 				commonSplunkMetric(
 					"gauge_int_with_dims",
 					tsMSecs,
-					append([]string{"k_n0", "k_n1", "k_r0", "k_r1"}, keys...),
+					append([]string{"k/n0", "k/n1", "k/r0", "k/r1"}, keys...),
 					append([]string{"vn0", "vn1", "vr0", "vr1"}, values...),
 					int64Val),
 			},
@@ -172,9 +173,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, tt.metricsDataFn(), &Config{
-				Source: "source", SourceType: "sourceType", Index: "myIndex",
-			})
+			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, tt.metricsDataFn(), &Config{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort fields since they are built from maps and the order
@@ -184,7 +183,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 }
 
-
 func commonSplunkMetric(
 	metricName string,
 	ts int64,
@@ -192,9 +190,17 @@ func commonSplunkMetric(
 	values []string,
 	val interface{},
 ) *splunkMetric {
+	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
+
+	for i, k := range keys {
+		fields[k] = values[i]
+	}
+
 	return &splunkMetric{
-		Time: ts,
-		// TODO map over rest
+		Time:   ts,
+		Host:   "unknown",
+		Event:  "metric",
+		Fields: fields,
 	}
 }
 
@@ -222,13 +228,13 @@ func expectedFromDistribution(
 		dps = append(dps,
 			commonSplunkMetric(metricName+"_bucket", ts,
 				append(keys, upperBoundDimensionKey),
-				values,
+				append(values, "foo"), // TODO
 				distributionValue.Buckets[i].Count))
 	}
 	dps = append(dps,
 		commonSplunkMetric(metricName+"_bucket", ts,
 			append(keys, upperBoundDimensionKey),
-			values,
+			append(values, "foo"), // TODO
 			distributionValue.Buckets[len(distributionValue.Buckets)-1].Count))
 	return dps
 }
@@ -257,7 +263,7 @@ func expectedFromSummary(
 		dps = append(dps,
 			commonSplunkMetric(metricName+"_quantile", ts,
 				append(keys, quantileDimensionKey),
-				values,
+				append(values, "foo"), // TODO
 				percentile.Value))
 	}
 

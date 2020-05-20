@@ -16,6 +16,7 @@ package splunkhecexporter
 
 import (
 	"fmt"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
@@ -43,14 +44,36 @@ type splunkMetric struct {
 }
 
 func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config *Config) ([]*splunkMetric, int, error) {
-	host := data.Resource.Labels["host.hostname"]
+	var host string
+	if data.Resource != nil {
+		host = data.Resource.Labels["host.hostname"]
+	}
 	if host == "" {
 		host = unknownHostName
 	}
+	numDroppedTimeSeries := 0
 	splunkMetrics := make([]*splunkMetric, 0)
 	for _, metric := range data.Metrics {
 		for _, timeSeries := range metric.Timeseries {
 			for _, tsPoint := range timeSeries.Points {
+				value := mapValue(logger, tsPoint.GetValue())
+				if value == nil {
+					logger.Warn(
+						"Timeseries dropped to unexpected metric type",
+						zap.Any("Metric", value))
+					numDroppedTimeSeries++
+					continue
+				}
+				fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metric.GetMetricDescriptor().Name): value}
+				for k, v := range data.Node.GetAttributes() {
+					fields[k] = v
+				}
+				for k, v := range data.Resource.GetLabels() {
+					fields[k] = v
+				}
+				for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
+					fields[desc.Key] = timeSeries.LabelValues[i].Value
+				}
 				sm := &splunkMetric{
 					Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
 					Host:       host,
@@ -58,16 +81,14 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 					SourceType: config.SourceType,
 					Index:      config.Index,
 					Event:      hecEventMetricType,
-					Fields:     map[string]interface{}{}, // TODO fill fields
+					Fields:     fields, // TODO fill fields
 				}
-				// TODO change metric_name computation.
-				sm.Fields[fmt.Sprintf("metric_name:%s", data.Resource.Type)] = tsPoint.GetValue()
 				splunkMetrics = append(splunkMetrics, sm)
 			}
 		}
 	}
 
-	return splunkMetrics, 0, nil
+	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
 func timestampToEpochMilliseconds(ts *timestamp.Timestamp) int64 {
@@ -75,4 +96,20 @@ func timestampToEpochMilliseconds(ts *timestamp.Timestamp) int64 {
 		return 0
 	}
 	return ts.GetSeconds()*1e3 + int64(ts.GetNanos()/1e6)
+}
+
+func mapValue(logger *zap.Logger, value interface{}) interface{} {
+	switch pv := value.(type) {
+	case *metricspb.Point_Int64Value:
+		return pv.Int64Value
+	case *metricspb.Point_DoubleValue:
+		return pv.DoubleValue
+	case *metricspb.Point_DistributionValue:
+		return pv.DistributionValue
+	case *metricspb.Point_SummaryValue:
+		return pv.SummaryValue
+	default:
+
+		return nil
+	}
 }

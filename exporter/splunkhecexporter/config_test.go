@@ -53,13 +53,13 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: expectedName,
 		},
-		Token:      "00000000-0000-0000-0000-0000000000000",
-		Endpoint:   "https://splunk:8088/services/collector",
-		Source:     "otel",
-		SourceType: "otel",
-		Index:      "metrics",
+		Token:          "00000000-0000-0000-0000-0000000000000",
+		Endpoint:       "https://splunk:8088/services/collector",
+		Source:         "otel",
+		SourceType:     "otel",
+		Index:          "metrics",
 		MaxConnections: 100,
-		Timeout: 10 * time.Second,
+		Timeout:        10 * time.Second,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -106,7 +106,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Endpoint: "https://example.com:8000",
 			},
 			want: &exporterOptions{
-                token: "1234",
+				token: "1234",
 				url: &url.URL{
 					Scheme: "https",
 					Host:   "example.com:8000",
