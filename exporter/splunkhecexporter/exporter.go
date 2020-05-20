@@ -17,6 +17,7 @@ package splunkhecexporter
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -86,6 +87,9 @@ func New(
 				MaxIdleConnsPerHost: int(config.MaxConnections),
 				IdleConnTimeout:     idleConnTimeout,
 				TLSHandshakeTimeout: tlsHandshakeTimeout,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: config.SkipTLSVerify,
+				},
 			},
 		},
 		logger: logger,

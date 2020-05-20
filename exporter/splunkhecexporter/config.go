@@ -53,6 +53,9 @@ type Config struct {
 	// Timeout is the maximum timeout for HTTP request sending trace data. The
 	// default value is 10 seconds.
 	Timeout time.Duration `mapstructure:"timeout"`
+
+	// SkipTLSVerify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
+	SkipTLSVerify bool `mapstructure:"skipTLSVerify"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
