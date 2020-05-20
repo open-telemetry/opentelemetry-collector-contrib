@@ -160,7 +160,7 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 			deployNum = 0
 		}
 		ebs = &BeanstalkMetadata{
-			Environment:  namespace,
+			Environment: namespace,
 			// TODO(anuraaga): Implement VersionLabel
 			// VersionLabel: ver,
 			DeploymentID: deployNum,
