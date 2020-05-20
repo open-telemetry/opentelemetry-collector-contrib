@@ -15,11 +15,12 @@
 package splunkhecexporter
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
-	"time"
 )
 
 const (

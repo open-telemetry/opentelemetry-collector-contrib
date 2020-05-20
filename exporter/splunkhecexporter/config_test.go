@@ -15,15 +15,16 @@
 package splunkhecexporter
 
 import (
+	"net/url"
+	"path"
+	"testing"
+	"time"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
-	"net/url"
-	"path"
-	"testing"
-	"time"
 )
 
 func TestLoadConfig(t *testing.T) {

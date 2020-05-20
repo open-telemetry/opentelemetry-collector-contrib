@@ -19,16 +19,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
 )
 
 const (
