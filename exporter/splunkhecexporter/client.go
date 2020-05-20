@@ -39,12 +39,15 @@ type client struct {
 	client  *http.Client
 	logger  *zap.Logger
 	zippers sync.Pool
+	wg sync.WaitGroup
 }
 
 func (c *client) pushMetricsData(
 	ctx context.Context,
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
+	c.wg.Add(1)
+	defer c.wg.Done()
 
 	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(c.logger, md, c.config)
 	if err != nil {
@@ -137,6 +140,6 @@ func (c *client) getReader(b *bytes.Buffer) (io.Reader, bool, error) {
 }
 
 func (c *client) stop(context context.Context) error {
-	c.client.CloseIdleConnections()
+	c.wg.Wait()
 	return nil
 }
