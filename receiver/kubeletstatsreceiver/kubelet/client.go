@@ -32,16 +32,15 @@ import (
 // Config for a kubelet Client. Mostly for talking to the kubelet HTTP endpoint.
 type ClientConfig struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
-	// CacertPath should be the path to the root CAs. Used to verify the kubelet
-	// server's certificates.
-	CacertPath string `mapstructure:"ca_cert_path"`
-	// ClientKeyPath should be the path to the TLS client cert. Presented to the
-	// other side of the kubelet connection.
-	ClientCertPath string `mapstructure:"client_cert_path"`
-	// ClientKeyPath should be the path to the TLS client key. Must correspond to
-	// the ClientCertPath, making a key pair to present to the kubelet.
+	// Path to the CA cert. For a client this verifies the server certificate.
+	// For a server this verifies client certificates. If empty uses system root CA.
+	// (optional)
+	CAFile string `mapstructure:"ca_file"`
+	// Path to the TLS cert to use for TLS required connections. (optional)
+	CertFile string `mapstructure:"cert_file"`
+	// Path to the TLS key to use for TLS required connections. (optional)
 	// TODO replace with open-telemetry/opentelemetry-collector#933 when done
-	ClientKeyPath string `mapstructure:"client_key_path"`
+	KeyFile string `mapstructure:"key_file"`
 	// InsecureSkipVerify controls whether the client verifies the server's
 	// certificate chain and host name.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
@@ -75,12 +74,12 @@ func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (*Client,
 }
 
 func tlsClient(endpoint string, cfg *ClientConfig) (*Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(cfg.CacertPath)
+	rootCAs, err := systemCertPoolPlusPath(cfg.CAFile)
 	if err != nil {
 		return nil, err
 	}
 
-	clientCert, err := tls.LoadX509KeyPair(cfg.ClientCertPath, cfg.ClientKeyPath)
+	clientCert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return nil, err
 	}

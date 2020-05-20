@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -52,7 +53,7 @@ func (f Factory) CreateTraceReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
-	return nil, nil
+	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 func (f Factory) CreateMetricsReceiver(

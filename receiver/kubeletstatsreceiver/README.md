@@ -18,7 +18,7 @@ There are two ways to authenticate, driven by the `auth_type` field: "tls" and
 "serviceAccount".
 
 TLS tells this receiver to use TLS for auth and requires that the fields
-`ca_cert_path`, `client_key_path`, and `client_cert_path` also be set.
+`ca_file`, `key_file`, and `cert_file` also be set.
 
 ServiceAccount tells this receiver to use the default service account token
 to authenticate to the kubelet API.
@@ -28,9 +28,9 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "tls"
-    ca_cert_path: "/path/to/ca.crt"
-    client_key_path: "/path/to/apiserver.key"
-    client_cert_path: "/path/to/apiserver.crt"
+    ca_file: "/path/to/ca.crt"
+    key_file: "/path/to/apiserver.key"
+    cert_file: "/path/to/apiserver.crt"
     endpoint: "192.168.64.1:10250"
     insecure_skip_verify: true
 exporters:
@@ -42,24 +42,3 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
-
-### Metrics
-
-**pod/ephemeral_storage/capacity**
-Represents the storage space available (bytes) for the filesystem. This value is
-a combination of total filesystem usage for the containers and emptyDir-backed
-volumes in the measured Pod.
-
-See more about emptyDir-backed volumes:
-https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-
-Type: gauge
-
-**pod/ephemeral_storage/used**
-Represents the bytes used on the filesystem. This value is a total filesystem
-usage for the containers and emptyDir-backed volumes in the measured Pod.
-
-See more about emptyDir-backed volumes:
-https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
-
-Type: counter
