@@ -113,6 +113,20 @@ func TestServerSpanNoParentId(t *testing.T) {
 	assert.Empty(t, segment.ParentID)
 }
 
+func TestSpanWithNoStatus(t *testing.T) {
+	span := &tracepb.Span{
+		TraceId:      newTraceID(),
+		SpanId:       newSegmentID(),
+		ParentSpanId: newSegmentID(),
+		Name:         &tracepb.TruncatableString{Value: "nostatus"},
+		Kind:         tracepb.Span_SERVER,
+		StartTime:    convertTimeToTimestamp(time.Now()),
+		EndTime:      convertTimeToTimestamp(time.Now().Add(10)),
+	}
+	segment := MakeSegment("nostatus", span)
+	assert.NotNil(t, segment)
+}
+
 func TestClientSpanWithDbComponent(t *testing.T) {
 	spanName := "call update_user_preference( ?, ?, ? )"
 	parentSpanID := newSegmentID()
