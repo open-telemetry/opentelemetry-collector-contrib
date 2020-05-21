@@ -39,7 +39,8 @@ type client struct {
 	client  *http.Client
 	logger  *zap.Logger
 	zippers sync.Pool
-	wg sync.WaitGroup
+	wg      sync.WaitGroup
+	headers map[string]string
 }
 
 func (c *client) pushMetricsData(
@@ -63,9 +64,8 @@ func (c *client) pushMetricsData(
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
-	headers := buildHeaders(c.config)
 
-	for k, v := range headers {
+	for k, v := range c.headers {
 		req.Header.Set(k, v)
 	}
 
@@ -91,20 +91,6 @@ func (c *client) pushMetricsData(
 	}
 
 	return numDroppedTimeseries, nil
-}
-
-func buildHeaders(config *Config) map[string]string {
-	headers := map[string]string{
-		"Connection":   "keep-alive",
-		"Content-Type": "application/json",
-		"User-Agent":   "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-	}
-
-	if config.Token != "" {
-		headers["Authorization"] = "Splunk " + config.Token
-	}
-
-	return headers
 }
 
 func encodeBody(zippers *sync.Pool, dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {

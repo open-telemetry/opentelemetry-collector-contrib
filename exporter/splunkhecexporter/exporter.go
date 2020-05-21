@@ -89,6 +89,15 @@ func New(
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		headers: map[string]string{
+			"Connection":   "keep-alive",
+			"Content-Type": "application/json",
+			"User-Agent":   "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
+		},
+	}
+
+	if config.Token != "" {
+		client.headers["Authorization"] = "Splunk " + config.Token
 	}
 
 	return splunkExporter{
