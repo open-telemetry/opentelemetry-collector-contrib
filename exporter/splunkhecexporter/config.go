@@ -76,7 +76,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 func (cfg *Config) validateConfig() error {
 	if cfg.Endpoint == "" {
-		return errors.New("requires a non-empty \"endpoint\"")
+		return errors.New(`requires a non-empty "endpoint"`)
 	}
 
 	if cfg.Token == "" {
