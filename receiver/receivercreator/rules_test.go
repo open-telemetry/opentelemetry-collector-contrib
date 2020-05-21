@@ -53,7 +53,10 @@ func Test_ruleEval(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
-			match, err := got.eval(tt.args.endpoint)
+			env, err := endpointToEnv(tt.args.endpoint)
+			require.NoError(t, err)
+
+			match, err := got.eval(env)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("eval() error = %v, wantErr %v", err, tt.wantErr)

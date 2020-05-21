@@ -8,7 +8,7 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200518164231-3729dac06f74
+	go.opentelemetry.io/collector v0.3.1-0.20200521001251-a02ed5c5a4a4
 	go.uber.org/zap v1.10.0
 	google.golang.org/api v0.10.0
 	google.golang.org/genproto v0.0.0-20200408120641-fbb3ad325eb7

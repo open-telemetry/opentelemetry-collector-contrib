@@ -43,6 +43,32 @@ func TestTraceExport(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestTraceRequestResourceInSpan(t *testing.T) {
+	logger := zap.NewExample()
+	resource := constructResource()
+	spans := make([]*tracepb.Span, 2)
+	spans[0] = constructHTTPClientSpan()
+	spans[0].Resource = resource
+	spans[1] = constructHTTPServerSpan()
+	spans[1].Resource = resource
+	_, request := assembleRequest(spans, nil, logger)
+	for _, segment := range request.TraceSegmentDocuments {
+		assert.Contains(t, *segment, resource.Labels[semconventions.AttributeContainerName])
+	}
+}
+
+func TestTraceRequestResourceNotInSpan(t *testing.T) {
+	logger := zap.NewExample()
+	resource := constructResource()
+	spans := make([]*tracepb.Span, 2)
+	spans[0] = constructHTTPClientSpan()
+	spans[1] = constructHTTPServerSpan()
+	_, request := assembleRequest(spans, resource, logger)
+	for _, segment := range request.TraceSegmentDocuments {
+		assert.Contains(t, *segment, resource.Labels[semconventions.AttributeContainerName])
+	}
+}
+
 func initializeTraceExporter() component.TraceExporterOld {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
