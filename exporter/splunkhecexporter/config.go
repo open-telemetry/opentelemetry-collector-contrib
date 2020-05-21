@@ -96,5 +96,5 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 		out.Path = path.Join(out.Path, "services/collector")
 	}
 
-	return out, err
+	return
 }
