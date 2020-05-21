@@ -80,7 +80,7 @@ func (cfg *Config) validateConfig() error {
 	}
 
 	if cfg.Token == "" {
-		return errors.New("requires a non-empty \"token\"")
+		return errors.New(`requires a non-empty "token"`)
 	}
 
 	return nil
