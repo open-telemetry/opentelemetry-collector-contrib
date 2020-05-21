@@ -66,8 +66,6 @@ func New(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	logger.Info("Splunk Config", zap.String("url", options.url.String()))
-
 	client := &client{
 		url: options.url,
 		client: &http.Client{
