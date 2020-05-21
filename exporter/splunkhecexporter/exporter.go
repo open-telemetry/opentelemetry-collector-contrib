@@ -68,11 +68,6 @@ func New(
 
 	logger.Info("Splunk Config", zap.String("url", options.url.String()))
 
-	if config.Name() == "" {
-		config.SetType(typeStr)
-		config.SetName(typeStr)
-	}
-
 	client := &client{
 		url: options.url,
 		client: &http.Client{
