@@ -61,7 +61,7 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 				if value == nil {
 					logger.Warn(
 						"Timeseries dropped to unexpected metric type",
-						zap.Any("Metric", value))
+						zap.Any("metric", value))
 					numDroppedTimeSeries++
 					continue
 				}
