@@ -77,9 +77,16 @@ type queuedDimension struct {
 	TimeToSend time.Time
 }
 
+type DimensionClientOptions struct {
+	Token      string
+	APIURL     *url.URL
+	LogUpdates bool
+	Logger     *zap.Logger
+	SendDelay  int
+}
+
 // NewDimensionClient returns a new client
-func NewDimensionClient(ctx context.Context, token string, apiURL *url.URL,
-	logUpdates bool, logger *zap.Logger, sendDelay int) *DimensionClient {
+func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *DimensionClient {
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -100,16 +107,16 @@ func NewDimensionClient(ctx context.Context, token string, apiURL *url.URL,
 
 	return &DimensionClient{
 		ctx:           ctx,
-		Token:         token,
-		APIURL:        apiURL,
-		sendDelay:     time.Duration(sendDelay) * time.Second,
+		Token:         options.Token,
+		APIURL:        options.APIURL,
+		sendDelay:     time.Duration(options.SendDelay) * time.Second,
 		delayedSet:    make(map[DimensionKey]*DimensionUpdate),
 		delayedQueue:  make(chan *queuedDimension, 10000),
 		requestSender: sender,
 		client:        client,
 		now:           time.Now,
-		logger:        logger,
-		logUpdates:    logUpdates,
+		logger:        options.Logger,
+		logUpdates:    options.LogUpdates,
 	}
 }
 

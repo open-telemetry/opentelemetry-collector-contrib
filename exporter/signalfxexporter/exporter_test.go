@@ -345,9 +345,13 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 
 			dimClient := dimensions.NewDimensionClient(
 				context.Background(),
-				"", serverURL,
-				true, logger, 1,
-			)
+				dimensions.DimensionClientOptions{
+					Token:      "",
+					APIURL:     serverURL,
+					LogUpdates: true,
+					Logger:     logger,
+					SendDelay:  1,
+				})
 			dimClient.Start()
 
 			se := signalfxExporter{

@@ -90,15 +90,11 @@ func getPropertiesAndTags(kmu collection.KubernetesMetadataUpdate) (map[string]*
 func (dc *DimensionClient) PushKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
 	var errs []error
 	for _, m := range metadata {
-		if err := dc.pushKubernetesMetadataHelper(*m); err != nil {
+		dimensionUpdate := getDimensionUpdateFromMetadata(*m)
+		if err := dc.acceptDimension(dimensionUpdate); err != nil {
 			errs = append(errs, err)
 		}
 	}
 
 	return componenterror.CombineErrors(errs)
-}
-
-func (dc *DimensionClient) pushKubernetesMetadataHelper(metadata collection.KubernetesMetadataUpdate) error {
-	dimensionUpdate := getDimensionUpdateFromMetadata(metadata)
-	return dc.acceptDimension(dimensionUpdate)
 }

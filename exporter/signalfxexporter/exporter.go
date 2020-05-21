@@ -92,12 +92,15 @@ func New(
 
 	// Duration to wait between property updates. This might be worth
 	// being made configurable.
-	dimSendDelay := 10
 	dimClient := dimensions.NewDimensionClient(
 		context.Background(),
-		options.token, options.apiURL,
-		options.logDimUpdate, logger, dimSendDelay,
-	)
+		dimensions.DimensionClientOptions{
+			Token:      options.token,
+			APIURL:     options.apiURL,
+			LogUpdates: options.logDimUpdate,
+			Logger:     logger,
+			SendDelay:  10,
+		})
 	dimClient.Start()
 
 	return signalfxExporter{
