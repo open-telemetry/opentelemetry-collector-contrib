@@ -15,12 +15,10 @@
 package kubelet
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -46,82 +44,83 @@ type ClientConfig struct {
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
-// A kubelet client, which mostly handles auth when talking to a kubelet server.
-// Marshaling/unmarshaling should be performed by the caller.
-type Client struct {
-	c        *http.Client
-	endpoint string
-	token    string
-	logger   *zap.Logger
+type Client interface {
+	Get(path string) ([]byte, error)
 }
 
-func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (*Client, error) {
-	var client *Client
-	var err error
-	switch cfg.AuthType {
-	case k8sconfig.AuthTypeTLS:
-		client, err = tlsClient(endpoint, cfg)
-	case k8sconfig.AuthTypeServiceAccount:
-		client, err = serviceAccountClient(endpoint)
-	default:
-		return nil, errors.New("cfg.AuthType not found")
+func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
+	if cfg.APIConfig.AuthType != "tls" {
+		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
-	if err != nil {
-		return nil, err
-	}
-	client.logger = logger
-	return client, nil
+	return newTLSClient(endpoint, cfg, logger)
 }
 
-func tlsClient(endpoint string, cfg *ClientConfig) (*Client, error) {
+// not unit tested
+func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
 	rootCAs, err := systemCertPoolPlusPath(cfg.CAFile)
 	if err != nil {
 		return nil, err
 	}
-
 	clientCert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return nil, err
 	}
+	return defaultTLSClient(endpoint, cfg.InsecureSkipVerify, rootCAs, clientCert, logger), nil
+}
 
+func defaultTLSClient(endpoint string, insecureSkipVerify bool, rootCAs *x509.CertPool, clientCert tls.Certificate, logger *zap.Logger) *tlsClient {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
 		Certificates:       []tls.Certificate{clientCert},
-		InsecureSkipVerify: cfg.InsecureSkipVerify,
+		InsecureSkipVerify: insecureSkipVerify,
 	}
-	return &Client{
-		c:        &http.Client{Transport: tr},
-		endpoint: endpoint,
-	}, nil
-}
-
-func serviceAccountClient(endpoint string) (*Client, error) {
-	const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-	token, err := ioutil.ReadFile(svcAcctTokenPath)
-	if err != nil {
-		return nil, err
+	return &tlsClient{
+		baseURL:    "https://" + endpoint,
+		httpClient: http.Client{Transport: tr},
+		logger:     logger,
 	}
-	const caCertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
-	rootCAs, err := systemCertPoolPlusPath(caCertPath)
-	if err != nil {
-		return nil, err
-	}
-
-	tr := defaultTransport()
-	tr.TLSClientConfig = &tls.Config{
-		RootCAs: rootCAs,
-	}
-	return &Client{
-		c:        &http.Client{Transport: tr},
-		endpoint: endpoint,
-		token:    string(token),
-	}, nil
 }
 
 func defaultTransport() *http.Transport {
 	return http.DefaultTransport.(*http.Transport).Clone()
 }
+
+// tlsClient
+
+var _ Client = (*tlsClient)(nil)
+
+type tlsClient struct {
+	baseURL    string
+	httpClient http.Client
+	logger     *zap.Logger
+}
+
+func (c *tlsClient) Get(path string) ([]byte, error) {
+	url := c.baseURL + path
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			c.logger.Warn("failed to close response body", zap.Error(closeErr))
+		}
+	}()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+// cert things
 
 func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
 	sysCerts, err := systemCertPool()
@@ -145,44 +144,4 @@ func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool,
 
 func systemCertPool() (*x509.CertPool, error) {
 	return x509.SystemCertPool()
-}
-
-func (c *Client) Get(path string) ([]byte, error) {
-	return c.request("GET", path, nil)
-}
-
-func (c *Client) Post(path string, marshaled []byte) ([]byte, error) {
-	var reader *bytes.Buffer
-	if marshaled != nil {
-		reader = bytes.NewBuffer(marshaled)
-	}
-	return c.request("POST", path, reader)
-}
-
-func (c *Client) request(method string, path string, reader io.Reader) ([]byte, error) {
-	c.logger.Debug(
-		"kubelet request",
-		zap.String("method", method),
-		zap.String("path", path),
-		zap.Int("token length", len(c.token)),
-	)
-
-	url := "https://" + c.endpoint + path
-	req, err := http.NewRequest(method, url, reader)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if c.token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.token))
-	}
-	resp, err := c.c.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return body, nil
 }

@@ -25,10 +25,10 @@ type RestClientInterface interface {
 // are excluded because they require cadvisor. The /metrics endpoint is excluded
 // because it returns Prometheus data.
 type RestClient struct {
-	client *Client
+	client Client
 }
 
-func NewRestClient(client *Client) *RestClient {
+func NewRestClient(client Client) *RestClient {
 	return &RestClient{client: client}
 }
 
