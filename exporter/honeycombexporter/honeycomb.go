@@ -30,7 +30,6 @@ import (
 // User agent string to use when sending events to Honeycomb.
 const (
 	oTelCollectorUserAgentStr = "Honeycomb-OpenTelemetry-Collector"
-	oTelCollectorVersionStr   = "0.3.0"
 )
 
 // honeycombExporter is the object that sends events to honeycomb.
@@ -85,7 +84,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 		APIHost:    cfg.APIURL,
 		SampleRate: cfg.SampleRate,
 	}
-	userAgent := oTelCollectorUserAgentStr + "/" + oTelCollectorVersionStr
+	userAgent := oTelCollectorUserAgentStr
 	libhoney.UserAgentAddition = userAgent
 
 	if cfg.Debug {
