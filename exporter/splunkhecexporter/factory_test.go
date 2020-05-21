@@ -35,9 +35,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
-	cfg.(*Config).Token = "1234-1234"
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Token = "1234-1234"
 
 	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -46,9 +46,9 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTraceExporter(t *testing.T) {
 	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
-	cfg.(*Config).Token = "1234-1234"
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Token = "1234-1234"
 	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 }
@@ -56,9 +56,9 @@ func TestCreateTraceExporter(t *testing.T) {
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := Factory{}
 
-	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "https://example.com:8088/services/collector"
-	cfg.(*Config).Token = "1234-1234"
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Token = "1234-1234"
 	exp, err := factory.CreateMetricsExporter(
 		zap.NewNop(),
 		cfg)
@@ -66,9 +66,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NotNil(t, exp)
 
 	// Set values that don't have a valid default.
-	expCfg := cfg.(*Config)
-	expCfg.Token = "testToken"
-	expCfg.Endpoint = "https://example.com"
+	cfg.Token = "testToken"
+	cfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		zap.NewNop(),
 		cfg)
