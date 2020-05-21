@@ -320,6 +320,11 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		// Use WaitGroup to ensure the mocked server has encountered
+		// a request from the exporter.
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				b, err := ioutil.ReadAll(r.Body)
@@ -335,6 +340,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				require.NoError(t, err)
 
 				require.Equal(t, tt.fields.payLoad, p)
+				wg.Done()
 			}))
 			defer server.Close()
 
@@ -360,7 +366,10 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 			}
 
 			err = se.ConsumeKubernetesMetadata(tt.args.metadata)
-			time.Sleep(2 * time.Second)
+
+			// Wait for requests to be handled by the mocked server before assertion.
+			wg.Wait()
+
 			require.NoError(t, err)
 		})
 	}
