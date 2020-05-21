@@ -54,7 +54,7 @@ func (c *client) pushMetricsData(
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
 
-	body, compressed, err := c.encodeBody(splunkDataPoints)
+	body, compressed, err := encodeBody(c.zippers, splunkDataPoints)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
@@ -107,7 +107,7 @@ func buildHeaders(config *Config) map[string]string {
 	return headers
 }
 
-func (c *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers sync.Pool, dps []*splunkMetric) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
@@ -117,16 +117,16 @@ func (c *client) encodeBody(dps []*splunkMetric) (bodyReader io.Reader, compress
 		}
 		buf.WriteString("\r\n\r\n")
 	}
-	return c.getReader(buf)
+	return getReader(zippers, buf)
 }
 
 // avoid attempting to compress things that fit into a single ethernet frame
-func (c *client) getReader(b *bytes.Buffer) (io.Reader, bool, error) {
+func getReader(zippers sync.Pool, b *bytes.Buffer) (io.Reader, bool, error) {
 	var err error
 	if b.Len() > 1500 {
 		buf := new(bytes.Buffer)
-		w := c.zippers.Get().(*gzip.Writer)
-		defer c.zippers.Put(w)
+		w := zippers.Get().(*gzip.Writer)
+		defer zippers.Put(w)
 		w.Reset(buf)
 		_, err = w.Write(b.Bytes())
 		if err == nil {
