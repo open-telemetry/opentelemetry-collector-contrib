@@ -358,11 +358,11 @@ func TestFlappyUpdates(t *testing.T) {
 	// request is completed.
 	time.Sleep(1 * time.Second)
 
-	require.Equal(t, int64(8), client.TotalFlappyUpdates)
-	require.Equal(t, int64(0), client.DimensionsCurrentlyDelayed)
-	require.Equal(t, int64(2), client.requestSender.TotalRequestsStarted)
-	require.Equal(t, int64(2), client.requestSender.TotalRequestsCompleted)
-	require.Equal(t, int64(0), client.requestSender.TotalRequestsFailed)
+	require.Equal(t, int64(8), atomic.LoadInt64(&client.TotalFlappyUpdates))
+	require.Equal(t, int64(0), atomic.LoadInt64(&client.DimensionsCurrentlyDelayed))
+	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsStarted))
+	require.Equal(t, int64(2), atomic.LoadInt64(&client.requestSender.TotalRequestsCompleted))
+	require.Equal(t, int64(0), atomic.LoadInt64(&client.requestSender.TotalRequestsFailed))
 }
 
 func TestInvalidUpdatesNotSent(t *testing.T) {
