@@ -47,7 +47,7 @@ func (s *sfxDPClient) pushMetricsData(
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
 
-	sfxDataPoints, numDroppedTimeseries, err := metricDataToSingalFxV2(s.logger, md)
+	sfxDataPoints, numDroppedTimeseries, err := metricDataToSignalFxV2(s.logger, md)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}

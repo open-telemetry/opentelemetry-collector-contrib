@@ -76,7 +76,7 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func metricDataToSingalFxV2(
+func metricDataToSignalFxV2(
 	logger *zap.Logger,
 	md consumerdata.MetricsData,
 ) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int, err error) {
