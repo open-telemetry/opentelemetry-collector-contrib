@@ -17,7 +17,6 @@ package kubelet
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -49,7 +48,7 @@ type Client interface {
 }
 
 func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
-	if cfg.APIConfig.AuthType != "tls" {
+	if cfg.APIConfig.AuthType != k8sconfig.AuthTypeTLS {
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
 	return newTLSClient(endpoint, cfg, logger)
@@ -118,30 +117,4 @@ func (c *tlsClient) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
-}
-
-// cert things
-
-func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
-	sysCerts, err := systemCertPool()
-	if err != nil {
-		return nil, err
-	}
-	return certPoolPlusPath(sysCerts, certPath)
-}
-
-func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool, error) {
-	certBytes, err := ioutil.ReadFile(certPath)
-	if err != nil {
-		return nil, err
-	}
-	ok := certPool.AppendCertsFromPEM(certBytes)
-	if !ok {
-		return nil, errors.New("AppendCertsFromPEM failed")
-	}
-	return certPool, nil
-}
-
-func systemCertPool() (*x509.CertPool, error) {
-	return x509.SystemCertPool()
 }

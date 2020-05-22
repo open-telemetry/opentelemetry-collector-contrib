@@ -20,13 +20,13 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-// StatsProvider wraps a RestClientInterface, returning an unmarshalled
+// StatsProvider wraps a RestClient, returning an unmarshaled
 // stats.Summary struct from the kubelet API.
 type StatsProvider struct {
-	rc RestClientInterface
+	rc RestClient
 }
 
-func NewStatsProvider(rc RestClientInterface) *StatsProvider {
+func NewStatsProvider(rc RestClient) *StatsProvider {
 	return &StatsProvider{rc: rc}
 }
 

@@ -29,35 +29,30 @@ import (
 var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
-	ctx      context.Context
-	cfg      *Config
-	provider *kubelet.StatsProvider
-	consumer consumer.MetricsConsumerOld
-	logger   *zap.Logger
+	ctx        context.Context
+	provider   *kubelet.StatsProvider
+	consumer   consumer.MetricsConsumerOld
+	logger     *zap.Logger
+	restClient kubelet.RestClient
 }
 
 func newRunnable(
 	ctx context.Context,
 	consumer consumer.MetricsConsumerOld,
-	cfg *Config,
+	restClient kubelet.RestClient,
 	logger *zap.Logger,
 ) *runnable {
 	return &runnable{
-		ctx:      ctx,
-		cfg:      cfg,
-		consumer: consumer,
-		logger:   logger,
+		ctx:        ctx,
+		consumer:   consumer,
+		restClient: restClient,
+		logger:     logger,
 	}
 }
 
 // Sets up the kubelet connection at startup time.
 func (r *runnable) Setup() error {
-	client, err := kubelet.NewClient(r.cfg.Endpoint, &r.cfg.ClientConfig, r.logger)
-	if err != nil {
-		return err
-	}
-	rest := kubelet.NewRestClient(client)
-	r.provider = kubelet.NewStatsProvider(rest)
+	r.provider = kubelet.NewStatsProvider(r.restClient)
 	return nil
 }
 

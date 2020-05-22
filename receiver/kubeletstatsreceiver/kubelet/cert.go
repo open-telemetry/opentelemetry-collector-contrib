@@ -12,17 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubeletstatsreceiver
+package kubelet
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configcheck"
+	"crypto/x509"
+	"errors"
+	"io/ioutil"
 )
 
-func TestValidConfig(t *testing.T) {
-	factory := Factory{}
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
-	require.NoError(t, err)
+func systemCertPoolPlusPath(certPath string) (*x509.CertPool, error) {
+	sysCerts, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
+	}
+	return certPoolPlusPath(sysCerts, certPath)
+}
+
+func certPoolPlusPath(certPool *x509.CertPool, certPath string) (*x509.CertPool, error) {
+	certBytes, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return nil, err
+	}
+	ok := certPool.AppendCertsFromPEM(certBytes)
+	if !ok {
+		return nil, errors.New("AppendCertsFromPEM failed")
+	}
+	return certPool, nil
 }

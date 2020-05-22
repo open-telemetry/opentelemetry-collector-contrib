@@ -14,8 +14,8 @@
 
 package kubelet
 
-// RestClientInterface is swappable for testing.
-type RestClientInterface interface {
+// RestClient is swappable for testing.
+type RestClient interface {
 	StatsSummary() ([]byte, error)
 	Pods() ([]byte, error)
 }
@@ -24,18 +24,18 @@ type RestClientInterface interface {
 // and their corresponding http methods. The endpoints /stats/container /spec/
 // are excluded because they require cadvisor. The /metrics endpoint is excluded
 // because it returns Prometheus data.
-type RestClient struct {
+type HTTPRestClient struct {
 	client Client
 }
 
-func NewRestClient(client Client) *RestClient {
-	return &RestClient{client: client}
+func NewRestClient(client Client) *HTTPRestClient {
+	return &HTTPRestClient{client: client}
 }
 
-func (c *RestClient) StatsSummary() ([]byte, error) {
+func (c *HTTPRestClient) StatsSummary() ([]byte, error) {
 	return c.client.Get("/stats/summary")
 }
 
-func (c *RestClient) Pods() ([]byte, error) {
+func (c *HTTPRestClient) Pods() ([]byte, error) {
 	return c.client.Get("/pods")
 }

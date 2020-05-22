@@ -16,12 +16,16 @@ package kubeletstatsreceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
 const typeStr = "kubeletstats"
@@ -29,25 +33,42 @@ const typeStr = "kubeletstats"
 var _ component.ReceiverFactoryBase = (*Factory)(nil)
 
 type Factory struct {
+	restClient restClient
 }
 
-func (f Factory) Type() configmodels.Type {
+func NewFactory() *Factory {
+	return &Factory{
+		restClient: httpRestClient,
+	}
+}
+
+func (f *Factory) Type() configmodels.Type {
 	return typeStr
 }
 
-func (f Factory) CreateDefaultConfig() configmodels.Receiver {
+func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+	return defaultConfig()
+}
+
+func defaultConfig() *Config {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
 		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: k8sconfig.AuthTypeTLS,
+			},
+		},
+		CollectionInterval: 10 * time.Second,
 	}
 }
 
-func (f Factory) CustomUnmarshaler() component.CustomUnmarshaler {
+func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
-func (f Factory) CreateTraceReceiver(
+func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
@@ -56,14 +77,37 @@ func (f Factory) CreateTraceReceiver(
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-func (f Factory) CreateMetricsReceiver(
+type restClient func(
+	logger *zap.Logger,
+	cfg configmodels.Receiver,
+) (kubelet.RestClient, error)
+
+func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
+	rest, err := f.restClient(logger, cfg)
+	if err != nil {
+		return nil, err
+	}
 	return &receiver{
 		logger:   logger,
 		cfg:      cfg,
 		consumer: consumer,
+		rest:     rest,
 	}, nil
+}
+
+func httpRestClient(
+	logger *zap.Logger,
+	baseCfg configmodels.Receiver,
+) (kubelet.RestClient, error) {
+	cfg := baseCfg.(*Config)
+	client, err := kubelet.NewClient(cfg.Endpoint, &cfg.ClientConfig, logger)
+	if err != nil {
+		return nil, err
+	}
+	rest := kubelet.NewRestClient(client)
+	return rest, nil
 }
