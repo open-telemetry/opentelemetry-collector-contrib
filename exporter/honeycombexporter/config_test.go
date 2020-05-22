@@ -48,5 +48,6 @@ func TestLoadConfig(t *testing.T) {
 		APIKey:           "test-apikey",
 		Dataset:          "test-dataset",
 		APIURL:           "https://api.testhost.io",
+		SampleRate:       1,
 	})
 }
