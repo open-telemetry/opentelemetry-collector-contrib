@@ -114,10 +114,11 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Value, context.Can
 	}()
 
 	client := NewDimensionClient(ctx, DimensionClientOptions{
-		APIURL:     serverURL,
-		LogUpdates: true,
-		Logger:     zap.NewNop(),
-		SendDelay:  1,
+		APIURL:                serverURL,
+		LogUpdates:            true,
+		Logger:                zap.NewNop(),
+		SendDelay:             1,
+		PropertiesMaxBuffered: 10,
 	})
 	client.Start()
 
@@ -393,6 +394,7 @@ func TestInvalidUpdatesNotSent(t *testing.T) {
 
 	dims := waitForDims(dimCh, 2, 3)
 	require.Len(t, dims, 0)
+	require.Equal(t, int64(0), atomic.LoadInt64(&client.TotalInvalidDimensions))
 }
 
 func newString(s string) *string {

@@ -15,7 +15,9 @@
 package dimensions
 
 import (
+	"fmt"
 	"strings"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component/componenterror"
 
@@ -91,6 +93,12 @@ func (dc *DimensionClient) PushKubernetesMetadata(metadata []*collection.Kuberne
 	var errs []error
 	for _, m := range metadata {
 		dimensionUpdate := getDimensionUpdateFromMetadata(*m)
+
+		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
+			atomic.AddInt64(&dc.TotalInvalidDimensions, int64(1))
+			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
+		}
+
 		if err := dc.acceptDimension(dimensionUpdate); err != nil {
 			errs = append(errs, err)
 		}

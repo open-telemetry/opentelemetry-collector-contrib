@@ -90,8 +90,6 @@ func New(
 		}},
 	}
 
-	// Duration to wait between property updates. This might be worth
-	// being made configurable.
 	dimClient := dimensions.NewDimensionClient(
 		context.Background(),
 		dimensions.DimensionClientOptions{
@@ -99,7 +97,13 @@ func New(
 			APIURL:     options.apiURL,
 			LogUpdates: options.logDimUpdate,
 			Logger:     logger,
-			SendDelay:  10,
+			// Duration to wait between property updates. This might be worth
+			// being made configurable.
+			SendDelay: 10,
+			// In case of having issues sending dimension updates to SignalFx,
+			// buffer a fixed number of updates. Might also be a good candidate
+			// to make configurable.
+			PropertiesMaxBuffered: 10000,
 		})
 	dimClient.Start()
 

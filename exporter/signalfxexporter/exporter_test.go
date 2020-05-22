@@ -352,11 +352,12 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				context.Background(),
 				dimensions.DimensionClientOptions{
-					Token:      "",
-					APIURL:     serverURL,
-					LogUpdates: true,
-					Logger:     logger,
-					SendDelay:  1,
+					Token:                 "",
+					APIURL:                serverURL,
+					LogUpdates:            true,
+					Logger:                logger,
+					SendDelay:             1,
+					PropertiesMaxBuffered: 10,
 				})
 			dimClient.Start()
 

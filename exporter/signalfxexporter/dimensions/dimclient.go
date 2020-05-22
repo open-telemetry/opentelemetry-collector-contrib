@@ -78,11 +78,12 @@ type queuedDimension struct {
 }
 
 type DimensionClientOptions struct {
-	Token      string
-	APIURL     *url.URL
-	LogUpdates bool
-	Logger     *zap.Logger
-	SendDelay  int
+	Token                 string
+	APIURL                *url.URL
+	LogUpdates            bool
+	Logger                *zap.Logger
+	SendDelay             int
+	PropertiesMaxBuffered int
 }
 
 // NewDimensionClient returns a new client
@@ -111,7 +112,7 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 		APIURL:        options.APIURL,
 		sendDelay:     time.Duration(options.SendDelay) * time.Second,
 		delayedSet:    make(map[DimensionKey]*DimensionUpdate),
-		delayedQueue:  make(chan *queuedDimension, 10000),
+		delayedQueue:  make(chan *queuedDimension, options.PropertiesMaxBuffered),
 		requestSender: sender,
 		client:        client,
 		now:           time.Now,
@@ -134,11 +135,11 @@ func (dc *DimensionClient) acceptDimension(dimUpdate *DimensionUpdate) error {
 	if delayedDimUpdate := dc.delayedSet[dimUpdate.Key()]; delayedDimUpdate != nil {
 		if !reflect.DeepEqual(delayedDimUpdate, dimUpdate) {
 			dc.TotalFlappyUpdates++
-		}
 
-		// Merge the latest updates into existing one.
-		delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
-		delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
+			// Merge the latest updates into existing one.
+			delayedDimUpdate.Properties = mergeProperties(delayedDimUpdate.Properties, dimUpdate.Properties)
+			delayedDimUpdate.Tags = mergeTags(delayedDimUpdate.Tags, dimUpdate.Tags)
+		}
 	} else {
 		atomic.AddInt64(&dc.DimensionsCurrentlyDelayed, int64(1))
 
@@ -204,7 +205,7 @@ func (dc *DimensionClient) processQueue() {
 			delete(dc.delayedSet, delayedDimUpdate.Key())
 			dc.Unlock()
 
-			if err := dc.setPropertiesOnDimension(delayedDimUpdate.DimensionUpdate); err != nil {
+			if err := dc.handleDimensionUpdate(delayedDimUpdate.DimensionUpdate); err != nil {
 				dc.logger.Error(
 					"Could not send dimension update",
 					zap.Error(err),
@@ -215,17 +216,12 @@ func (dc *DimensionClient) processQueue() {
 	}
 }
 
-// setPropertiesOnDimension will set custom properties on a specific dimension value.
-func (dc *DimensionClient) setPropertiesOnDimension(dimUpdate *DimensionUpdate) error {
+// handleDimensionUpdate will set custom properties on a specific dimension value.
+func (dc *DimensionClient) handleDimensionUpdate(dimUpdate *DimensionUpdate) error {
 	var (
 		req *http.Request
 		err error
 	)
-
-	if dimUpdate.Name == "" || dimUpdate.Value == "" {
-		atomic.AddInt64(&dc.TotalInvalidDimensions, int64(1))
-		return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimUpdate)
-	}
 
 	req, err = dc.makePatchRequest(dimUpdate)
 
@@ -262,7 +258,7 @@ func (dc *DimensionClient) setPropertiesOnDimension(dimUpdate *DimensionUpdate) 
 			// The retry is meant to provide some measure of robustness against
 			// temporary API failures.  If the API is down for significant
 			// periods of time, dimension updates will probably eventually back
-			// up beyond conf.PropertiesMaxBuffered and start dropping.
+			// up beyond PropertiesMaxBuffered and start dropping.
 			if err := dc.acceptDimension(dimUpdate); err != nil {
 				dc.logger.Error(
 					"Failed to retry dimension update",
