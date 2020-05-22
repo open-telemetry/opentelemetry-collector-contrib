@@ -15,7 +15,6 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -44,13 +43,11 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, instanceID))
+	assert.Equal(t, "123456789", awsData.AccountID)
+	assert.Equal(t, &EC2Metadata{
+		InstanceID:       instanceID,
+		AvailabilityZone: "us-east-1c",
+	}, awsData.EC2Metadata)
 }
 
 func TestAwsFromEcsResource(t *testing.T) {
@@ -82,13 +79,9 @@ func TestAwsFromEcsResource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.NotNil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
+	assert.Equal(t, &ECSMetadata{
+		ContainerName: containerID,
+	}, awsData.ECSMetadata)
 }
 
 func TestAwsFromBeanstalkResource(t *testing.T) {
@@ -112,13 +105,11 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	assert.Nil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.NotNil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, deployID))
+	assert.Equal(t, &BeanstalkMetadata{
+		Environment:  "production",
+		VersionLabel: "",
+		DeploymentID: 232,
+	}, awsData.BeanstalkMetadata)
 }
 
 func TestAwsWithAwsSqsResources(t *testing.T) {
@@ -153,17 +144,8 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2Metadata)
-	assert.NotNil(t, awsData.ECSMetadata)
-	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
-	assert.True(t, strings.Contains(jsonStr, queueURL))
+	assert.Equal(t, queueURL, awsData.QueueURL)
+	assert.Equal(t, "us-east-2", awsData.RemoteRegion)
 }
 
 func TestAwsWithSqsAlternateAttribute(t *testing.T) {
@@ -208,17 +190,9 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2Metadata)
-	assert.NotNil(t, awsData.ECSMetadata)
-	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
-	assert.True(t, strings.Contains(jsonStr, tableName))
+	assert.Equal(t, "PutItem", awsData.Operation)
+	assert.Equal(t, "75107C82-EC8A-4F75-883F-4440B491B0AB", awsData.RequestID)
+	assert.Equal(t, tableName, awsData.TableName)
 }
 
 func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
