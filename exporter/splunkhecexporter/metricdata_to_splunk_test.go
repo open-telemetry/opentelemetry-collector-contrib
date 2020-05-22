@@ -16,6 +16,8 @@ package splunkhecexporter
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -176,11 +178,32 @@ func Test_metricDataToSplunk(t *testing.T) {
 			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, tt.metricsDataFn(), &Config{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
-			// Sort fields since they are built from maps and the order
-			// of those is not deterministic.
+			assert.Equal(t, len(tt.wantSplunkMetrics), len(gotMetrics))
+			sortMetrics(tt.wantSplunkMetrics)
+			sortMetrics(gotMetrics)
+			for i, want := range tt.wantSplunkMetrics {
+				assert.Equal(t, want, gotMetrics[i])
+			}
 			assert.Equal(t, tt.wantSplunkMetrics, gotMetrics)
 		})
 	}
+}
+
+func sortMetrics(metrics []*splunkMetric) {
+	sort.Slice(metrics, func(p, q int) bool {
+		firstField := getFieldValue(metrics[p])
+		secondField := getFieldValue(metrics[q])
+		return strings.Compare(firstField, secondField) > 0
+	})
+}
+
+func getFieldValue(metric *splunkMetric) string {
+	for k := range metric.Fields {
+		if strings.HasPrefix(k, "metric_name:") {
+			return k
+		}
+	}
+	return ""
 }
 
 func commonSplunkMetric(
@@ -213,29 +236,31 @@ func expectedFromDistribution(
 ) []*splunkMetric {
 	distributionValue := distributionTimeSeries.Points[0].GetDistributionValue()
 
-	// Two additional data points: one for count and one for sum.
-	const extraDataPoints = 2
+	// Three additional data points: one for count, one for sum and one for sum of squared deviation.
+	const extraDataPoints = 3
 	dps := make([]*splunkMetric, 0, len(distributionValue.Buckets)+extraDataPoints)
 
 	dps = append(dps,
+		commonSplunkMetric(metricName, ts, keys, values,
+			distributionValue.Sum),
 		commonSplunkMetric(metricName+"_count", ts, keys, values,
 			distributionValue.Count),
-		commonSplunkMetric(metricName, ts, keys, values,
-			distributionValue.Sum))
+		commonSplunkMetric(metricName+"_sum_of_squared_deviation", ts, keys, values,
+			distributionValue.SumOfSquaredDeviation))
 
 	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
+	splunkBounds := make([]string, len(explicitBuckets.Bounds)+1)
 	for i := 0; i < len(explicitBuckets.Bounds); i++ {
+		splunkBounds[i] = float64ToDimValue(explicitBuckets.Bounds[i])
+	}
+	splunkBounds[len(splunkBounds)-1] = infinityBoundSFxDimValue
+	for i := 0; i < len(splunkBounds); i++ {
 		dps = append(dps,
-			commonSplunkMetric(metricName+"_bucket", ts,
-				append(keys, upperBoundDimensionKey),
-				append(values, "foo"), // TODO
+			commonSplunkMetric(fmt.Sprintf("%s_bucket_%s", metricName, splunkBounds[i]), ts,
+				keys,
+				values,
 				distributionValue.Buckets[i].Count))
 	}
-	dps = append(dps,
-		commonSplunkMetric(metricName+"_bucket", ts,
-			append(keys, upperBoundDimensionKey),
-			append(values, "foo"), // TODO
-			distributionValue.Buckets[len(distributionValue.Buckets)-1].Count))
 	return dps
 }
 
@@ -261,9 +286,9 @@ func expectedFromSummary(
 	percentiles := summaryValue.Snapshot.GetPercentileValues()
 	for _, percentile := range percentiles {
 		dps = append(dps,
-			commonSplunkMetric(metricName+"_quantile", ts,
-				append(keys, quantileDimensionKey),
-				append(values, "foo"), // TODO
+			commonSplunkMetric(fmt.Sprintf("%s_quantile_%s", metricName, float64ToDimValue(percentile.Percentile)), ts,
+				keys,
+				values,
 				percentile.Value))
 	}
 
