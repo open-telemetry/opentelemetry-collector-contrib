@@ -24,6 +24,11 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+const (
+	// hecPath is the default HEC path on the Splunk instance.
+	hecPath = "services/collector"
+)
+
 // Config defines configuration for Splunk exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
@@ -93,7 +98,7 @@ func (cfg *Config) getURL() (out *url.URL, err error) {
 		return out, err
 	}
 	if out.Path == "" || out.Path == "/" {
-		out.Path = path.Join(out.Path, "services/collector")
+		out.Path = path.Join(out.Path, hecPath)
 	}
 
 	return
