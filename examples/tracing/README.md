@@ -2,7 +2,7 @@
 
 This demo is a sample app to build the collector and exercise its tracing functionality.
 
-To run the demo, switch to this directory and run
+To build and run the demo, switch to this directory and run
 
 `docker-compose up`
 
