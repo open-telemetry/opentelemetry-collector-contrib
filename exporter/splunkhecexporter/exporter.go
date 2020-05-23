@@ -66,7 +66,16 @@ func New(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	client := &client{
+	client := buildClient(options, config, logger)
+
+	return splunkExporter{
+		pushMetricsData: client.pushMetricsData,
+		stop:            client.stop,
+	}, nil
+}
+
+func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *client {
+	return &client{
 		url: options.url,
 		client: &http.Client{
 			Timeout: config.Timeout,
@@ -90,20 +99,13 @@ func New(
 			return gzip.NewWriter(nil)
 		}},
 		headers: map[string]string{
-			"Connection":   "keep-alive",
-			"Content-Type": "application/json",
-			"User-Agent":   "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
+			"Connection":    "keep-alive",
+			"Content-Type":  "application/json",
+			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
+			"Authorization": "Splunk " + config.Token,
 		},
+		config: config,
 	}
-
-	if config.Token != "" {
-		client.headers["Authorization"] = "Splunk " + config.Token
-	}
-
-	return splunkExporter{
-		pushMetricsData: client.pushMetricsData,
-		stop:            client.stop,
-	}, nil
 }
 
 func (se splunkExporter) Start(context.Context, component.Host) error {
