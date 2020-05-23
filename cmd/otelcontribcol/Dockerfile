@@ -1,4 +1,3 @@
-# When updating, check if similar changes need to be made to the top-level Dockerfile
 FROM alpine:latest as certs
 RUN apk --update add ca-certificates
 

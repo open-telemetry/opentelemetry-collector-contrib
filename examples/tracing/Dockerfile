@@ -1,4 +1,3 @@
-# When updating check if similar changes need to be made to cmd/otelcontribcol/Dockerfile
 FROM golang:1.14 AS build
 
 WORKDIR /src
