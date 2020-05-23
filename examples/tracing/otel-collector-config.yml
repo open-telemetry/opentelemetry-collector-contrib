@@ -1,4 +1,6 @@
 receivers:
+  otlp:
+    endpoint: 0.0.0.0:55680
   zipkin:
     endpoint: 0.0.0.0:9411
 
@@ -27,6 +29,6 @@ service:
   extensions: [pprof, zpages, health_check]
   pipelines:
     traces:
-      receivers: [zipkin]
+      receivers: [otlp, zipkin]
       exporters: [zipkin, jaeger_thrift, logging]
       processors: [batch, queued_retry]
