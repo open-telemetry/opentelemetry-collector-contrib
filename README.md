@@ -8,7 +8,7 @@ useful to a relatively small number of users.
 ## Docker Images
 Docker images for all releases are published at https://hub.docker.com/r/otel/opentelemetry-collector-contrib
 
-You can build a docker image from source using the [Dockerfile](./Dockerfile).
+You can build a docker image from source using the [Dockerfile](examples/tracing/Dockerfile).
 
 `$ docker build -t otel/opentelemetry-collector-contrib:master .`
 
