@@ -243,9 +243,9 @@ func expectedFromDistribution(
 	dps = append(dps,
 		commonSplunkMetric(metricName, ts, keys, values,
 			distributionValue.Sum),
-		commonSplunkMetric(metricName+"_count", ts, keys, values,
+		commonSplunkMetric(metricName+".count", ts, keys, values,
 			distributionValue.Count),
-		commonSplunkMetric(metricName+"_sum_of_squared_deviation", ts, keys, values,
+		commonSplunkMetric(metricName+".sum_of_squared_deviation", ts, keys, values,
 			distributionValue.SumOfSquaredDeviation))
 
 	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
@@ -256,7 +256,7 @@ func expectedFromDistribution(
 	splunkBounds[len(splunkBounds)-1] = infinityBoundSFxDimValue
 	for i := 0; i < len(splunkBounds); i++ {
 		dps = append(dps,
-			commonSplunkMetric(fmt.Sprintf("%s_bucket_%s", metricName, splunkBounds[i]), ts,
+			commonSplunkMetric(fmt.Sprintf("%s.bucket.%s", metricName, splunkBounds[i]), ts,
 				keys,
 				values,
 				distributionValue.Buckets[i].Count))
@@ -278,7 +278,7 @@ func expectedFromSummary(
 	dps := make([]*splunkMetric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
 
 	dps = append(dps,
-		commonSplunkMetric(metricName+"_count", ts, keys, values,
+		commonSplunkMetric(metricName+".count", ts, keys, values,
 			summaryValue.Count.Value),
 		commonSplunkMetric(metricName, ts, keys, values,
 			summaryValue.Sum.Value))
@@ -286,7 +286,7 @@ func expectedFromSummary(
 	percentiles := summaryValue.Snapshot.GetPercentileValues()
 	for _, percentile := range percentiles {
 		dps = append(dps,
-			commonSplunkMetric(fmt.Sprintf("%s_quantile_%s", metricName, float64ToDimValue(percentile.Percentile)), ts,
+			commonSplunkMetric(fmt.Sprintf("%s.quantile.%s", metricName, float64ToDimValue(percentile.Percentile)), ts,
 				keys,
 				values,
 				percentile.Value))
