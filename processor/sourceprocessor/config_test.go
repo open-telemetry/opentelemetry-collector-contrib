@@ -60,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 		ContainerKey:       "container",
 		NamespaceKey:       "namespace",
 		PodKey:             "pod",
-		PodIdKey:           "pod_id",
+		PodIDKey:           "pod_id",
 		PodNameKey:         "pod_name",
 		PodTemplateHashKey: "pod_labels_pod-template-hash",
 		SourceHostKey:      "source_host",
