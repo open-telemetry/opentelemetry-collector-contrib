@@ -114,14 +114,14 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 			_ = kp.consumeZipkinSpan(ctx, span)
 		}
 	} else {
-		_ = kp.consumeTraceBatch(podIP, ctx, &td)
+		_ = kp.consumeTraceBatch(ctx, podIP, &td)
 	}
 
 	// TODO: should add to spans that have a resource not the same as the batch?
 	return kp.nextConsumer.ConsumeTraceData(ctx, td)
 }
 
-func (kp *kubernetesprocessor) consumeTraceBatch(podIP string, ctx context.Context, td *consumerdata.TraceData) error {
+func (kp *kubernetesprocessor) consumeTraceBatch(ctx context.Context, podIP string, td *consumerdata.TraceData) error {
 	// Check if the receiver detected client IP.
 	if podIP == "" {
 		if c, ok := client.FromContext(ctx); ok {
