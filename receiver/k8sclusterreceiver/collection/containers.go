@@ -17,25 +17,25 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 const (
-	// Keys for container properties.
+	// Keys for container metadata.
 	containerKeyStatus       = "container.status"
 	containerKeyStatusReason = "container.status.reason"
 
-	// Values for container properties
+	// Values for container metadata
 	containerStatusRunning    = "running"
 	containerStatusWaiting    = "waiting"
 	containerStatusTerminated = "terminated"
 )
 
 var containerRestartMetric = &metricspb.MetricDescriptor{
-	Name: "kubernetes/container/restarts",
+	Name: "k8s/container/restarts",
 	Description: "How many times the container has restarted in the recent past. " +
 		"This value is pulled directly from the K8s API and the value can go indefinitely high" +
 		" and be reset to 0 at any time depending on how your kubelet is configured to prune" +
@@ -48,7 +48,7 @@ var containerRestartMetric = &metricspb.MetricDescriptor{
 }
 
 var containerReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/ready",
+	Name:        "k8s/container/ready",
 	Description: "Whether a container has passed its readiness probe (0 for no, 1 for yes)",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
@@ -81,14 +81,14 @@ func boolToInt64(b bool) int64 {
 }
 
 var containerRequestMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/request",
+	Name:        "k8s/container/request",
 	Description: "Resource requested for the container",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},
 }
 
 var containerLimitMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/limit",
+	Name:        "k8s/container/limit",
 	Description: "Maximum resource limit set for the container",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},
@@ -155,25 +155,25 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 }
 
 func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
-	properties := map[string]string{}
+	metadata := map[string]string{}
 
 	if cs.State.Running != nil {
-		properties[containerKeyStatus] = containerStatusRunning
+		metadata[containerKeyStatus] = containerStatusRunning
 	}
 
 	if cs.State.Terminated != nil {
-		properties[containerKeyStatus] = containerStatusTerminated
-		properties[containerKeyStatusReason] = cs.State.Terminated.Reason
+		metadata[containerKeyStatus] = containerStatusTerminated
+		metadata[containerKeyStatusReason] = cs.State.Terminated.Reason
 	}
 
 	if cs.State.Waiting != nil {
-		properties[containerKeyStatus] = containerStatusWaiting
-		properties[containerKeyStatusReason] = cs.State.Waiting.Reason
+		metadata[containerKeyStatus] = containerStatusWaiting
+		metadata[containerKeyStatusReason] = cs.State.Waiting.Reason
 	}
 
 	return &KubernetesMetadata{
 		resourceIDKey: containerKeyID,
-		resourceID:    utils.StripContainerID(cs.ContainerID),
-		properties:    properties,
+		resourceID:    ResourceID(utils.StripContainerID(cs.ContainerID)),
+		metadata:      metadata,
 	}
 }

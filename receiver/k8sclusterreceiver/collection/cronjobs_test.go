@@ -44,7 +44,7 @@ func TestCronJobMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "kubernetes/cronjob/active_jobs",
+	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "k8s/cronjob/active_jobs",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
@@ -60,7 +60,7 @@ func TestCronJobMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "k8s.cronjob.uid",
 			resourceID:    "test-cronjob-1-uid",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"cronjob.creation_timestamp": "0001-01-01T00:00:00Z",
 				"foo":                        "bar",
 				"foo1":                       "",
@@ -70,7 +70,7 @@ func TestCronJobMetadata(t *testing.T) {
 				"k8s.workload.name":          "test-cronjob-1",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-cronjob-1-uid"],
 	)
 }
 

@@ -19,16 +19,16 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
 // Helper functions that produce protobuf
 
-func newMetricsData(protoMetrics []*metricspb.Metric) *consumerdata.MetricsData {
+func newMetricsData(protoMetrics []*metricspb.Metric, serviceName string) *consumerdata.MetricsData {
 	return &consumerdata.MetricsData{
 		Resource: &resourcepb.Resource{
 			Type:   typeStr,
-			Labels: map[string]string{"type": typeStr},
+			Labels: map[string]string{"service.name": serviceName},
 		},
 		Metrics: protoMetrics,
 	}
@@ -46,7 +46,7 @@ func buildKeyspaceKeysMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
 	m := &redisMetric{
 		name:   "redis/db/keys",
 		labels: map[string]string{"db": k.db},
-		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+		mdType: metricspb.MetricDescriptor_GAUGE_INT64,
 	}
 	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.keys)}}
 	return newProtoMetric(m, pt, t)
@@ -56,7 +56,7 @@ func buildKeyspaceExpiresMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
 	m := &redisMetric{
 		name:   "redis/db/expires",
 		labels: map[string]string{"db": k.db},
-		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+		mdType: metricspb.MetricDescriptor_GAUGE_INT64,
 	}
 	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.expires)}}
 	return newProtoMetric(m, pt, t)
@@ -67,7 +67,7 @@ func buildKeyspaceTTLMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
 		name:   "redis/db/avg_ttl",
 		units:  "ms",
 		labels: map[string]string{"db": k.db},
-		mdType: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+		mdType: metricspb.MetricDescriptor_GAUGE_INT64,
 	}
 	pt := &metricspb.Point{Value: &metricspb.Point_Int64Value{Int64Value: int64(k.avgTTL)}}
 	return newProtoMetric(m, pt, t)

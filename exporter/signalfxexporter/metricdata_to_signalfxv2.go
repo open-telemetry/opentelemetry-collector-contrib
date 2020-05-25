@@ -22,8 +22,8 @@ import (
 	"unicode"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 
@@ -76,7 +76,7 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func metricDataToSingalFxV2(
+func metricDataToSignalFxV2(
 	logger *zap.Logger,
 	md consumerdata.MetricsData,
 ) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int, err error) {

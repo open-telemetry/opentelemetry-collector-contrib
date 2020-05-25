@@ -25,9 +25,9 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
@@ -177,7 +177,8 @@ func (t *tcpServer) handleConnection(
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
 			numReceivedTimeSeries++
-			metric, err := p.Parse(line)
+			var metric *metricspb.Metric
+			metric, err = p.Parse(line)
 			if err != nil {
 				numInvalidTimeSeries++
 				t.reporter.OnTranslationError(ctx, err)

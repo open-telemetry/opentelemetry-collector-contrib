@@ -18,11 +18,11 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {

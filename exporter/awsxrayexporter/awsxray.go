@@ -17,14 +17,22 @@ package awsxrayexporter
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
+)
+
+const (
+	maxSegmentsPerPut = int(50) // limit imposed by PutTraceSegments API
 )
 
 // NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
@@ -39,19 +47,33 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	xrayClient := NewXRay(logger, awsConfig, session)
 	return exporterhelper.NewTraceExporterOld(
 		config,
-		func(ctx context.Context, td consumerdata.TraceData) (int, error) {
+		func(ctx context.Context, td consumerdata.TraceData) (totalDroppedSpans int, err error) {
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
-			droppedSpans, input := assembleRequest(td, logger)
-			logger.Debug("request: " + input.String())
-			output, err := xrayClient.PutTraceSegments(input)
-			if config.(*Config).LocalMode {
-				err = nil // test mode, ignore errors
+			totalDroppedSpans = 0
+			totalSpans := len(td.Spans)
+			for offset := 0; offset < totalSpans; offset += maxSegmentsPerPut {
+				nextOffset := offset + maxSegmentsPerPut
+				if nextOffset > totalSpans {
+					nextOffset = totalSpans
+				}
+				droppedSpans, input := assembleRequest(td.Spans[offset:nextOffset], td.Resource, logger)
+				totalDroppedSpans += droppedSpans
+				logger.Debug("request: " + input.String())
+				output, localErr := xrayClient.PutTraceSegments(input)
+				if localErr != nil && !config.(*Config).LocalMode {
+					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
+				}
+				if output != nil {
+					logger.Debug("response: " + output.String())
+					if output.UnprocessedTraceSegments != nil {
+						totalDroppedSpans += len(output.UnprocessedTraceSegments)
+					}
+				}
+				if err != nil {
+					break
+				}
 			}
-			logger.Debug("response: " + output.String())
-			if output != nil && output.UnprocessedTraceSegments != nil {
-				droppedSpans += len(output.UnprocessedTraceSegments)
-			}
-			return droppedSpans, err
+			return totalDroppedSpans, err
 		},
 		exporterhelper.WithShutdown(func(context.Context) error {
 			return logger.Sync()
@@ -59,15 +81,18 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	)
 }
 
-func assembleRequest(td consumerdata.TraceData, logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
-	documents := make([]*string, len(td.Spans))
+func assembleRequest(spans []*tracepb.Span, resource *resourcepb.Resource, logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
+	documents := make([]*string, len(spans))
 	droppedSpans := int(0)
-	for i, span := range td.Spans {
+	for i, span := range spans {
 		if span == nil || span.Name == nil {
 			droppedSpans++
 			continue
 		}
 		spanName := span.Name.Value
+		if span.Resource == nil {
+			span.Resource = resource
+		}
 		jsonStr, err := translator.MakeSegmentDocumentString(spanName, span)
 		if err != nil {
 			droppedSpans++
@@ -77,4 +102,12 @@ func assembleRequest(td consumerdata.TraceData, logger *zap.Logger) (int, *xray.
 		documents[i] = &jsonStr
 	}
 	return droppedSpans, &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
+}
+
+func wrapErrorIfBadRequest(err *error) error {
+	_, ok := (*err).(awserr.RequestFailure)
+	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
+		return consumererror.Permanent(*err)
+	}
+	return *err
 }

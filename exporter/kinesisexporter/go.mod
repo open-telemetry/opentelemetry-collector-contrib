@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesi
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector v0.3.1-0.20200427150635-ca4b8231de7c
 	github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2
 	github.com/stretchr/testify v1.5.1
+	go.opentelemetry.io/collector v0.3.1-0.20200522130256-daf2fc71ac65
 	go.uber.org/zap v1.10.0
 )
 

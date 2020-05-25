@@ -17,42 +17,42 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 var podsActiveMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/job/active_pods",
+	Name:        "k8s/job/active_pods",
 	Description: "The number of actively running pods for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsDesiredCompletedMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/job/desired_successful_pods",
+	Name:        "k8s/job/desired_successful_pods",
 	Description: "The desired number of successfully finished pods the job should be run with",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsFailedMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/job/failed_pods",
+	Name:        "k8s/job/failed_pods",
 	Description: "The number of pods which reached phase Failed for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsMaxParallelMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/job/max_parallel_pods",
+	Name:        "k8s/job/max_parallel_pods",
 	Description: "The max desired number of pods the job should run at any given time",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsSuccessfulMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/job/successful_pods",
+	Name:        "k8s/job/successful_pods",
 	Description: "The number of pods which reached phase Succeeded for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
@@ -112,6 +112,6 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	}
 }
 
-func getPropertiesForJob(cj *batchv1.Job) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&cj.ObjectMeta, k8sKindJob)}
+func getMetadataForJob(j *batchv1.Job) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{ResourceID(j.UID): getGenericMetadata(&j.ObjectMeta, k8sKindJob)}
 }

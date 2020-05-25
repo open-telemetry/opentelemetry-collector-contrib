@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +36,7 @@ var (
 )
 
 // Factory for Azure Monitor exporter.
-// Implements the interface from github.com/open-telemetry/opentelemetry-collector/exporter/factory.go
+// Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
 type Factory struct {
 	TransportChannel transportChannel
 }
@@ -68,8 +68,8 @@ func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Ex
 		return nil, errUnexpectedConfigurationType
 	}
 
-	transportChannel := f.getTransportChannel(exporterConfig, logger)
-	return newTraceExporter(exporterConfig, transportChannel, logger)
+	tc := f.getTransportChannel(exporterConfig, logger)
+	return newTraceExporter(exporterConfig, tc, logger)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

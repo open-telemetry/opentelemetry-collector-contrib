@@ -22,13 +22,12 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -49,7 +48,6 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "api.example.com"
@@ -73,7 +71,6 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeNetPeerName] = "kb234.example.com"
@@ -87,6 +84,9 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "10.8.17.36", httpData.Request.ClientIP)
+
 	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
@@ -96,9 +96,22 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
+func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPClientIP] = "1.2.3.4"
+	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "1.2.3.4", httpData.Request.ClientIP)
+}
+
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
@@ -120,7 +133,6 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeNetPeerIP] = "2001:db8:85a3::8a2e:370:7334"
@@ -142,7 +154,6 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -165,7 +176,6 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "api.example.com"
@@ -189,7 +199,6 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPServerName] = "api.example.com"
@@ -214,7 +223,6 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeHostName] = "kb234.example.com"
@@ -241,7 +249,6 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 
 func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	span := constructHTTPClientSpan(attributes)

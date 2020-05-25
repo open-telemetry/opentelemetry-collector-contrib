@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
-	"github.com/open-telemetry/opentelemetry-collector/testbed/testbed"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -109,7 +109,7 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 // Start the sender.
 func (sf *SFxMetricsDataSender) Start() error {
 	cfg := &signalfxexporter.Config{
-		URL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
+		IngestURL: fmt.Sprintf("http://localhost:%d/v2/datapoint", sf.port),
 	}
 
 	factory := signalfxexporter.Factory{}

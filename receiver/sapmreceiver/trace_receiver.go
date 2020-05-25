@@ -26,18 +26,14 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
+	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
-)
-
-const (
-	traceSource string = "sapm"
 )
 
 var gzipWriterPool = &sync.Pool{
@@ -106,7 +102,7 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// build the response message
 	// NOTE currently the response is an empty struct.  As an optimization this receiver will pass a
 	// byte array that was generated in the receiver's constructor.  If this receiver needs to return
-	// more than an empty struct, then the sapm.PostSpansResponse{} struct will need to be marshalled
+	// more than an empty struct, then the sapm.PostSpansResponse{} struct will need to be marshaled
 	// and on error a http.StatusInternalServerError should be written to the http.ResponseWriter and
 	// this function should immediately return.
 	var respBytes = sr.defaultResponse

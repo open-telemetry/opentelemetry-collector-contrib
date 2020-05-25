@@ -18,10 +18,10 @@ import (
 	"context"
 
 	"github.com/lightstep/opentelemetry-exporter-go/lightstep"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/otel/api/core"
 )
 
@@ -60,8 +60,10 @@ func (e *LightStepExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	for _, span := range td.Spans {
 		sd, err := lightstep.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
-			lightStepServiceName := core.Key("lightstep.component_name")
-			sd.Attributes = append(sd.Attributes, lightStepServiceName.String(td.Node.ServiceInfo.Name))
+			if td.Node != nil && td.Node.ServiceInfo != nil {
+				lightStepServiceName := core.Key("lightstep.component_name")
+				sd.Attributes = append(sd.Attributes, lightStepServiceName.String(td.Node.ServiceInfo.Name))
+			}
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
 		} else {

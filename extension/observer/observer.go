@@ -26,79 +26,39 @@ const (
 	ProtocolTCP Protocol = "TCP"
 	// ProtocolUDP is the UDP protocol.
 	ProtocolUDP Protocol = "UDP"
+	// ProtocolUnknown is some other protocol or it is unknown.
+	ProtocolUnknown Protocol = "Unknown"
 )
 
 // Endpoint is a service that can be contacted remotely.
-type Endpoint interface {
+type Endpoint struct {
 	// ID uniquely identifies this endpoint.
-	ID() string
+	ID string
 	// Target is an IP address or hostname of the endpoint.
-	Target() string
-	// String pretty formats the endpoint.
-	String() string
-	// Labels is a map of arbitrary metadata.
-	Labels() map[string]string
+	Target string
+	// Details contains additional context about the endpoint such as a Pod or Port.
+	Details interface{}
 }
 
-// endpointBase is common endpoint data used across all endpoint types.
-type endpointBase struct {
-	id     string
-	target string
-	labels map[string]string
+func (e *Endpoint) String() string {
+	return fmt.Sprintf("Endpoint{ID: %v, Target: %v, Details: %T%+v}", e.ID, e.Target, e.Details, e.Details)
 }
 
-func (e *endpointBase) ID() string {
-	return e.id
+// Pod is a discovered k8s pod.
+type Pod struct {
+	// Name of the pod.
+	Name string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
 }
 
-func (e *endpointBase) Target() string {
-	return e.target
+// Port is an endpoint that has a target as well as a port.
+type Port struct {
+	Name     string
+	Pod      Pod
+	Port     uint16
+	Protocol Protocol
 }
-
-func (e *endpointBase) Labels() map[string]string {
-	return e.labels
-}
-
-// HostEndpoint is an endpoint that just has a target but no identifying port information.
-type HostEndpoint struct {
-	endpointBase
-}
-
-func (h *HostEndpoint) String() string {
-	return fmt.Sprintf("HostEndpoint{id: %v, Target: %v, Labels: %v}", h.ID(), h.target, h.labels)
-}
-
-// NewHostEndpoint creates a HostEndpoint
-func NewHostEndpoint(id string, target string, labels map[string]string) *HostEndpoint {
-	return &HostEndpoint{endpointBase{
-		id:     id,
-		target: target,
-		labels: labels,
-	}}
-}
-
-var _ Endpoint = (*HostEndpoint)(nil)
-
-// PortEndpoint is an endpoint that has a target as well as a port.
-type PortEndpoint struct {
-	endpointBase
-	Port uint16
-}
-
-func (p *PortEndpoint) String() string {
-	return fmt.Sprintf("PortEndpoint{ID: %v, Target: %v, Port: %d, Labels: %v}", p.ID(), p.target, p.Port, p.labels)
-}
-
-// NewPortEndpoint creates a PortEndpoint.
-func NewPortEndpoint(id string, target string, port uint16, labels map[string]string) *PortEndpoint {
-	return &PortEndpoint{endpointBase: endpointBase{
-		id:     id,
-		target: target,
-		labels: labels,
-	}, Port: port}
-}
-
-var _ Endpoint = (*PortEndpoint)(nil)
 
 // Observable is an interface that provides notification of endpoint changes.
 type Observable interface {

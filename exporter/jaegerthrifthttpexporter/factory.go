@@ -18,9 +18,9 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -73,16 +73,7 @@ func (f *Factory) CreateTraceExporter(
 		return nil, err
 	}
 
-	exp, err := New(
-		config,
-		expCfg.URL,
-		expCfg.Headers,
-		expCfg.Timeout)
-	if err != nil {
-		return nil, err
-	}
-
-	return exp, nil
+	return New(config, expCfg.URL, expCfg.Headers, expCfg.Timeout)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

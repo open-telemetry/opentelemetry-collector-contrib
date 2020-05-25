@@ -13,6 +13,23 @@ for more information.
 
 ### Config
 
+An example config,
+
+```yaml
+  k8s_cluster:
+    auth_type: kubeConfig
+    node_conditions_to_report: [Ready, MemoryPressure]
+```
+
+#### auth_type
+
+Determines how to authenticate to the K8s API server.  This can be one of
+`none` (for no auth), `serviceAccount` (to use the standard service account
+token provided to the agent pod), or `kubeConfig` to use credentials
+from `~/.kube/config`.
+
+default: `serviceAccount`
+
 #### collection_interval
 
 This receiver continuously watches for events using K8s API. However, the metrics
@@ -44,6 +61,33 @@ corresponding `Condition` is `True`, `0` if it is `False` and -1 if it is `Unkno
 
 default: `[Ready]`
 
+#### metadata_exporters
+
+A list of metadata exporters to which metadata being collected by this receiver
+should be synced. Exporters specified in this list are expected to implement the
+following interface. If an exporter that does not implement the interface is listed,
+startup will fail.
+
+```yaml
+type KubernetesMetadataExporter interface {
+  ConsumeKubernetesMetadata(metadata []*KubernetesMetadataUpdate) error
+}
+
+type KubernetesMetadataUpdate struct {
+  ResourceIDKey string
+  ResourceID    ResourceID
+  MetadataDelta
+}
+
+type MetadataDelta struct {
+  MetadataToAdd    map[string]string
+  MetadataToRemove map[string]string
+  MetadataToUpdate map[string]string
+}
+```
+
+See [here](collection/metadata.go) for details about the above types.
+
 ### Example
 
 Here is an example deployment of the collector that sets up this receiver along with 
@@ -69,11 +113,10 @@ data:
     receivers:
       k8s_cluster:
         collection_interval: 10s
-        #k8s_config: k8s-config
     exporters:
       signalfx:
         access_token: <SIGNALFX_TOKEN>
-        url: <SIGNALFX_INGEST_URL>
+        ingest_url: <SIGNALFX_INGEST_URL>
 
     service:
       pipelines:

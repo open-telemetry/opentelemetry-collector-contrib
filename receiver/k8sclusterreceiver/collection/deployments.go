@@ -16,7 +16,7 @@ package collection
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -49,8 +49,8 @@ func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForDeployment(dep *appsv1.Deployment) []*KubernetesMetadata {
+func getMetadataForDeployment(dep *appsv1.Deployment) map[ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&dep.ObjectMeta, k8sKindDeployment)
-	rm.properties[k8sKeyDeploymentName] = dep.Name
-	return []*KubernetesMetadata{rm}
+	rm.metadata[k8sKeyDeploymentName] = dep.Name
+	return map[ResourceID]*KubernetesMetadata{ResourceID(dep.UID): rm}
 }

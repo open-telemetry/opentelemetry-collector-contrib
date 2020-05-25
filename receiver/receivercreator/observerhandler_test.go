@@ -17,11 +17,11 @@ package receivercreator
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -49,16 +49,16 @@ func TestOnAdd(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "enabled"},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(&config.ExampleReceiverProducer{}, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(&config.ExampleReceiverProducer{}, nil)
 
 	handler.OnAdd([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
+		portEndpoint,
 	})
 
 	runner.AssertExpectations(t)
@@ -74,13 +74,11 @@ func TestOnRemove(t *testing.T) {
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("id-1", rcvr)
+	handler.receiversByEndpointID.Put("port-1", rcvr)
 
 	runner.On("shutdown", rcvr).Return(nil)
 
-	handler.OnRemove([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
-	})
+	handler.OnRemove([]observer.Endpoint{portEndpoint})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 0, handler.receiversByEndpointID.Size())
@@ -94,22 +92,46 @@ func TestOnChange(t *testing.T) {
 	handler := &observerHandler{
 		logger: zap.NewNop(),
 		receiverTemplates: map[string]receiverTemplate{
-			"name/1": {rcvrCfg, "enabled"},
+			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
 		receiversByEndpointID: receiverMap{},
 		runner:                runner,
 	}
 
-	handler.receiversByEndpointID.Put("id-1", oldRcvr)
+	handler.receiversByEndpointID.Put("port-1", oldRcvr)
 
 	runner.On("shutdown", oldRcvr).Return(nil)
-	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost"}).Return(newRcvr, nil)
+	runner.On("start", rcvrCfg, userConfigMap{endpointConfigKey: "localhost:1234"}).Return(newRcvr, nil)
 
-	handler.OnChange([]observer.Endpoint{
-		observer.NewHostEndpoint("id-1", "localhost", nil),
-	})
+	handler.OnChange([]observer.Endpoint{portEndpoint})
 
 	runner.AssertExpectations(t)
 	assert.Equal(t, 1, handler.receiversByEndpointID.Size())
-	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("id-1")[0])
+	assert.Same(t, newRcvr, handler.receiversByEndpointID.Get("port-1")[0])
+}
+
+func TestDynamicConfig(t *testing.T) {
+	runner := &mockRunner{}
+	handler := &observerHandler{
+		logger:                zap.NewNop(),
+		receiversByEndpointID: receiverMap{},
+		runner:                runner,
+		receiverTemplates: map[string]receiverTemplate{
+			"name/1": {
+				receiverConfig: receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"endpoint": "`endpoint`:6379"}, fullName: "name/1"},
+				Rule:           "type.pod",
+				rule:           newRuleOrPanic("type.pod"),
+			},
+		},
+	}
+	runner.On("start", receiverConfig{
+		fullName: "name/1",
+		typeStr:  "name",
+		config:   userConfigMap{endpointConfigKey: "localhost:6379"},
+	}, userConfigMap{}).Return(&config.ExampleReceiverProducer{}, nil)
+	handler.OnAdd([]observer.Endpoint{
+		podEndpoint,
+	})
+
+	runner.AssertExpectations(t)
 }

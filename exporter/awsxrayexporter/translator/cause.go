@@ -18,8 +18,8 @@ import (
 	"encoding/hex"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // CauseData provides the shape for unmarshalling data that records exception.
@@ -47,7 +47,7 @@ type Stack struct {
 
 func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool,
 	filtered map[string]string, cause *CauseData) {
-	if status.Code == 0 {
+	if status == nil || status.Code == 0 {
 		return false, false, attributes, nil
 	}
 	var (

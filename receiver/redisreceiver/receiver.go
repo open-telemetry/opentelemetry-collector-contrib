@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"github.com/go-redis/redis/v7"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -45,12 +45,12 @@ func newRedisReceiver(
 }
 
 // Set up and kick off the interval runner.
-func (r redisReceiver) Start(ctx context.Context, host component.Host) error {
-	client := newRedisClient(&redis.Options{
+func (r *redisReceiver) Start(ctx context.Context, host component.Host) error {
+	c := newRedisClient(&redis.Options{
 		Addr:     r.config.Endpoint,
 		Password: r.config.Password,
 	})
-	redisRunnable := newRedisRunnable(ctx, client, r.consumer, r.logger)
+	redisRunnable := newRedisRunnable(ctx, c, r.config.ServiceName, r.consumer, r.logger)
 	r.intervalRunner = interval.NewRunner(r.config.CollectionInterval, redisRunnable)
 
 	go func() {
@@ -62,7 +62,7 @@ func (r redisReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (r redisReceiver) Shutdown(ctx context.Context) error {
+func (r *redisReceiver) Shutdown(ctx context.Context) error {
 	r.intervalRunner.Stop()
 	return nil
 }

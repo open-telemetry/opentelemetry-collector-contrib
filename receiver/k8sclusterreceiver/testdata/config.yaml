@@ -3,6 +3,7 @@ receivers:
   k8s_cluster/all_settings:
     collection_interval: 30s
     node_conditions_to_report: ["Ready", "MemoryPressure"]
+    metadata_exporters: [exampleexporter]
   k8s_cluster/partial_settings:
     collection_interval: 30s
 

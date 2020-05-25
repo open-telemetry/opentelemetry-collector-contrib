@@ -48,7 +48,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/pod/phase",
+	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/pod/phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
 	rm = actualResourceMetrics[1]
@@ -67,16 +67,16 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/container/restarts",
+	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/container/restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/container/ready",
+	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/container/ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[2], "kubernetes/container/request",
+	testutils.AssertMetricsWithLabels(t, *rm.metrics[2], "k8s/container/request",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 10000)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[3], "kubernetes/container/limit",
+	testutils.AssertMetricsWithLabels(t, *rm.metrics[3], "k8s/container/limit",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 20000)
 }
 
@@ -94,13 +94,13 @@ func TestPodAndContainerMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "k8s.pod.uid",
 			resourceID:    "test-pod-1-uid",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"pod.creation_timestamp": "0001-01-01T00:00:00Z",
 				"foo":                    "bar",
 				"foo1":                   "",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-pod-1-uid"],
 	)
 
 	// Assert metadata from Container.
@@ -108,11 +108,11 @@ func TestPodAndContainerMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "container.id",
 			resourceID:    "container-id",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"container.status": "running",
 			},
 		},
-		*actualMetadata[1],
+		*actualMetadata["container-id"],
 	)
 }
 

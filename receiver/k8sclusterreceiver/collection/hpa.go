@@ -17,35 +17,35 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"k8s.io/api/autoscaling/v2beta1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 var hpaMaxReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/hpa/max_replicas",
+	Name:        "k8s/hpa/max_replicas",
 	Description: "Maximum number of replicas to which the autoscaler can scale up",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var hpaMinReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/hpa/min_replicas",
+	Name:        "k8s/hpa/min_replicas",
 	Description: "Minimum number of replicas to which the autoscaler can scale down",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var hpaCurrentReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/hpa/current_replicas",
+	Name:        "k8s/hpa/current_replicas",
 	Description: "Current number of pod replicas managed by this autoscaler",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var hpaDesiredReplicasMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/hpa/desired_replicas",
+	Name:        "k8s/hpa/desired_replicas",
 	Description: "Desired number of pod replicas managed by this autoscaler",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
@@ -99,6 +99,8 @@ func getResourceForHPA(hpa *v2beta1.HorizontalPodAutoscaler) *resourcepb.Resourc
 	}
 }
 
-func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) []*KubernetesMetadata {
-	return []*KubernetesMetadata{getGenericMetadata(&hpa.ObjectMeta, "hpa")}
+func getMetadataForHPA(hpa *v2beta1.HorizontalPodAutoscaler) map[ResourceID]*KubernetesMetadata {
+	return map[ResourceID]*KubernetesMetadata{
+		ResourceID(hpa.UID): getGenericMetadata(&hpa.ObjectMeta, "hpa"),
+	}
 }

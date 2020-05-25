@@ -18,11 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
 
@@ -66,9 +66,13 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 			}
 
 			// Unmarshals receiver_creator configuration like rule.
-			// TODO: validate discovery rule
-			if err := receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
+			if err = receiversCfg.UnmarshalKey(subreceiverKey, &subreceiver); err != nil {
 				return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
+			}
+
+			subreceiver.rule, err = newRule(subreceiver.Rule)
+			if err != nil {
+				return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
 			}
 
 			c.receiverTemplates[subreceiverKey] = subreceiver

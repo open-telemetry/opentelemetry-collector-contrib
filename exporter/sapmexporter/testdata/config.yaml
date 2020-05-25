@@ -21,8 +21,6 @@ exporters:
     
     # MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
     max_connections: 45
-  sapm/disabled: # will be ignored
-    disabled: true
 
 service:
   pipelines:

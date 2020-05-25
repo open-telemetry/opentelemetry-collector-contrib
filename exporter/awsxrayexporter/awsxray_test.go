@@ -28,10 +28,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
 
@@ -41,6 +41,32 @@ func TestTraceExport(t *testing.T) {
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraceData(ctx, td)
 	assert.Nil(t, err)
+}
+
+func TestTraceRequestResourceInSpan(t *testing.T) {
+	logger := zap.NewExample()
+	resource := constructResource()
+	spans := make([]*tracepb.Span, 2)
+	spans[0] = constructHTTPClientSpan()
+	spans[0].Resource = resource
+	spans[1] = constructHTTPServerSpan()
+	spans[1].Resource = resource
+	_, request := assembleRequest(spans, nil, logger)
+	for _, segment := range request.TraceSegmentDocuments {
+		assert.Contains(t, *segment, resource.Labels[semconventions.AttributeContainerName])
+	}
+}
+
+func TestTraceRequestResourceNotInSpan(t *testing.T) {
+	logger := zap.NewExample()
+	resource := constructResource()
+	spans := make([]*tracepb.Span, 2)
+	spans[0] = constructHTTPClientSpan()
+	spans[1] = constructHTTPServerSpan()
+	_, request := assembleRequest(spans, resource, logger)
+	for _, segment := range request.TraceSegmentDocuments {
+		assert.Contains(t, *segment, resource.Labels[semconventions.AttributeContainerName])
+	}
 }
 
 func initializeTraceExporter() component.TraceExporterOld {

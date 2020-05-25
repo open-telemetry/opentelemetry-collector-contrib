@@ -15,21 +15,19 @@
 package jaegerlegacyreceiver
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"sync"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/obsreport"
-	jaegertranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace/jaeger"
 	"github.com/uber/tchannel-go"
 	"github.com/uber/tchannel-go/thrift"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
+	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 
@@ -139,22 +137,11 @@ func (jr *jReceiver) Shutdown(context.Context) error {
 func (jr *jReceiver) stopTraceReceptionLocked() error {
 	var err = componenterror.ErrAlreadyStopped
 	jr.stopOnce.Do(func() {
-		var errs []error
-
+		err = nil
 		if jr.tchanServer.tchannel != nil {
 			jr.tchanServer.tchannel.Close()
 			jr.tchanServer.tchannel = nil
 		}
-		if len(errs) == 0 {
-			err = nil
-			return
-		}
-		// Otherwise combine all these errors
-		buf := new(bytes.Buffer)
-		for _, err := range errs {
-			fmt.Fprintf(buf, "%s\n", err.Error())
-		}
-		err = errors.New(buf.String())
 	})
 
 	return err

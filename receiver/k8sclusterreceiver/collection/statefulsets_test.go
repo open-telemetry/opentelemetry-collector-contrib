@@ -44,16 +44,16 @@ func TestStatefulsettMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "kubernetes/stateful_set/desired_pods",
+	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/stateful_set/desired_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "kubernetes/stateful_set/ready_pods",
+	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/stateful_set/ready_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 
-	testutils.AssertMetrics(t, *rm.metrics[2], "kubernetes/stateful_set/current_pods",
+	testutils.AssertMetrics(t, *rm.metrics[2], "k8s/stateful_set/current_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, *rm.metrics[3], "kubernetes/stateful_set/updated_pods",
+	testutils.AssertMetrics(t, *rm.metrics[3], "k8s/stateful_set/updated_pods",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 }
 
@@ -68,7 +68,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 		KubernetesMetadata{
 			resourceIDKey: "k8s.statefulset.uid",
 			resourceID:    "test-statefulset-1-uid",
-			properties: map[string]string{
+			metadata: map[string]string{
 				"k8s.workload.name":              "test-statefulset-1",
 				"k8s.workload.kind":              "statefulset",
 				"statefulset.creation_timestamp": "0001-01-01T00:00:00Z",
@@ -78,7 +78,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 				"update_revision":                "update_revision",
 			},
 		},
-		*actualMetadata[0],
+		*actualMetadata["test-statefulset-1-uid"],
 	)
 }
 

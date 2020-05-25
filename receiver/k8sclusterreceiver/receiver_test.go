@@ -20,10 +20,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/exporter/exportertest"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,7 +102,7 @@ func setupReceiver(client *fake.Clientset,
 		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw, err := newResourceWatcher(logger, config, client, true)
+	rw, err := newResourceWatcher(logger, config, client)
 
 	if err != nil {
 		return nil, err

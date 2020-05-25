@@ -19,11 +19,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -111,7 +111,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 				Realm:       "lab",
 				Timeout:     -2 * time.Second,
 			},
-			errorMessage: "\"signalfx\" config cannot have a negative \"timeout\"",
+			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
 		{
 			name: "empty_realm_and_url",
@@ -121,7 +121,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 					NameVal: typeStr,
 				},
 			},
-			errorMessage: "\"signalfx\" config requires a non-empty \"realm\" or \"url\"",
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\" or \"ingest_url\"",
 		},
 	}
 	for _, tt := range tests {

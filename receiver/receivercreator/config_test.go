@@ -18,12 +18,12 @@ import (
 	"path"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 type mockHostFactories struct {
@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.NotNil(t, r1)
 	assert.Len(t, r1.receiverTemplates, 1)
 	assert.Contains(t, r1.receiverTemplates, "examplereceiver/1")
-	assert.Equal(t, "enabled", r1.receiverTemplates["examplereceiver/1"].Rule)
+	assert.Equal(t, `type.port`, r1.receiverTemplates["examplereceiver/1"].Rule)
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["examplereceiver/1"].config)

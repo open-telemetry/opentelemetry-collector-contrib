@@ -19,10 +19,10 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/open-telemetry/opentelemetry-collector/client"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
@@ -181,7 +181,7 @@ func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *trac
 	}
 
 	if span.Attributes.AttributeMap == nil {
-		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue, 0)
+		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue)
 	}
 
 	// Check if the receiver detected client IP.

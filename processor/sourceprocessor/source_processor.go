@@ -21,9 +21,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor/observability"
 )

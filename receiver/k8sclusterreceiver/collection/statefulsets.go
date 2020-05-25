@@ -17,41 +17,41 @@ package collection
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/conventions"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 const (
-	// Keys for stateful set properties.
+	// Keys for stateful set metadata.
 	statefulSetCurrentVersion = "current_revision"
 	statefulSetUpdateVersion  = "update_revision"
 )
 
 var statefulSetReplicasDesiredMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/stateful_set/desired_pods",
+	Name:        "k8s/stateful_set/desired_pods",
 	Description: "Number of desired pods in the stateful set (the `spec.replicas` field)",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/stateful_set/ready_pods",
+	Name:        "k8s/stateful_set/ready_pods",
 	Description: "Number of pods created by the stateful set that have the `Ready` condition",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasCurrentMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/stateful_set/current_pods",
+	Name:        "k8s/stateful_set/current_pods",
 	Description: "The number of pods created by the StatefulSet controller from the StatefulSet version",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasUpdatedMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/stateful_set/updated_pods",
+	Name:        "k8s/stateful_set/updated_pods",
 	Description: "Number of pods created by the StatefulSet controller from the StatefulSet version",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
@@ -109,10 +109,10 @@ func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	}
 }
 
-func getMetadataForStatefulSet(ss *appsv1.StatefulSet) []*KubernetesMetadata {
-	rp := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
-	rp.properties[statefulSetCurrentVersion] = ss.Status.CurrentRevision
-	rp.properties[statefulSetUpdateVersion] = ss.Status.UpdateRevision
+func getMetadataForStatefulSet(ss *appsv1.StatefulSet) map[ResourceID]*KubernetesMetadata {
+	km := getGenericMetadata(&ss.ObjectMeta, k8sStatefulSet)
+	km.metadata[statefulSetCurrentVersion] = ss.Status.CurrentRevision
+	km.metadata[statefulSetUpdateVersion] = ss.Status.UpdateRevision
 
-	return []*KubernetesMetadata{rp}
+	return map[ResourceID]*KubernetesMetadata{ResourceID(ss.UID): km}
 }

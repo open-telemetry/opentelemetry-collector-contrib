@@ -23,12 +23,14 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 
@@ -68,9 +70,11 @@ func testTraceExporter(td consumerdata.TraceData, t *testing.T) []honeycombData 
 	})
 	defer server.Close()
 	cfg := Config{
-		APIKey:  "test",
-		Dataset: "test",
-		APIURL:  server.URL,
+		APIKey:     "test",
+		Dataset:    "test",
+		APIURL:     server.URL,
+		Debug:      false,
+		SampleRate: 1,
 	}
 
 	logger := zap.NewNop()
@@ -94,6 +98,12 @@ func TestExporter(t *testing.T) {
 				"A": "B",
 			},
 		},
+		Resource: &resourcepb.Resource{
+			Type: "foobar",
+			Labels: map[string]string{
+				"B": "C",
+			},
+		},
 		Spans: []*tracepb.Span{
 			{
 				TraceId:                 []byte{0x01},
@@ -101,6 +111,36 @@ func TestExporter(t *testing.T) {
 				Name:                    &tracepb.TruncatableString{Value: "root"},
 				Kind:                    tracepb.Span_SERVER,
 				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				Resource: &resourcepb.Resource{
+					Type: "override",
+					Labels: map[string]string{
+						"B": "D",
+					},
+				},
+				TimeEvents: &tracepb.Span_TimeEvents{
+					TimeEvent: []*tracepb.Span_TimeEvent{
+						{
+							Time: &timestamp.Timestamp{
+								Seconds: 0,
+								Nanos:   0,
+							},
+							Value: &tracepb.Span_TimeEvent_Annotation_{
+								Annotation: &tracepb.Span_TimeEvent_Annotation{
+									Description: &tracepb.TruncatableString{Value: "Some Description"},
+									Attributes: &tracepb.Span_Attributes{
+										AttributeMap: map[string]*tracepb.AttributeValue{
+											"attribute_name": {
+												Value: &tracepb.AttributeValue_StringValue{
+													StringValue: &tracepb.TruncatableString{Value: "Hello MessageEvent"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 			{
 				TraceId:                 []byte{0x01},
@@ -109,6 +149,25 @@ func TestExporter(t *testing.T) {
 				Name:                    &tracepb.TruncatableString{Value: "client"},
 				Kind:                    tracepb.Span_CLIENT,
 				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				Links: &tracepb.Span_Links{
+					Link: []*tracepb.Span_Link{
+						{
+							TraceId: []byte{0x04},
+							SpanId:  []byte{0x05},
+							Type:    tracepb.Span_Link_CHILD_LINKED_SPAN,
+							Attributes: &tracepb.Span_Attributes{
+								AttributeMap: map[string]*tracepb.AttributeValue{
+									"span_link_attr": {
+										Value: &tracepb.AttributeValue_IntValue{
+											IntValue: 12345,
+										},
+									},
+								},
+							},
+						},
+					},
+					DroppedLinksCount: 0,
+				},
 			},
 			{
 				TraceId:                 []byte{0x01},
@@ -124,42 +183,75 @@ func TestExporter(t *testing.T) {
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": false,
-				"name":              "root",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.span_id":     "0200000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
-				"A":                 "B",
+				"A":                       "B",
+				"B":                       "D",
+				"attribute_name":          "Hello MessageEvent",
+				"meta.span_type":          "span_event",
+				"name":                    "Some Description",
+				"opencensus.resourcetype": "foobar",
+				"resource_type":           "override",
+				"service_name":            "test_service",
+				"trace.parent_id":         "02",
+				"trace.parent_name":       "root",
+				"trace.trace_id":          "01",
 			},
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": false,
-				"name":              "client",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.parent_id":   "0200000000000000",
-				"trace.span_id":     "0300000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
+				"duration_ms":             float64(0),
+				"has_remote_parent":       false,
+				"name":                    "root",
+				"resource_type":           "override",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.span_id":           "02",
+				"trace.trace_id":          "01",
+				"A":                       "B",
+				"B":                       "D",
+				"opencensus.resourcetype": "foobar",
 			},
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": true,
-				"name":              "server",
-				"service_name":      "test_service",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.parent_id":   "0300000000000000",
-				"trace.span_id":     "0400000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
-				"A":                 "B",
+				"meta.span_type":      "link",
+				"ref_type":            float64(1),
+				"span_link_attr":      float64(12345),
+				"trace.trace_id":      "01",
+				"trace.parent_id":     "03",
+				"trace.link.span_id":  "05",
+				"trace.link.trace_id": "04",
+			},
+		},
+		{
+			Data: map[string]interface{}{
+				"duration_ms":             float64(0),
+				"has_remote_parent":       false,
+				"name":                    "client",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.parent_id":         "02",
+				"trace.span_id":           "03",
+				"trace.trace_id":          "01",
+				"opencensus.resourcetype": "foobar",
+				"B":                       "C",
+			},
+		},
+		{
+			Data: map[string]interface{}{
+				"duration_ms":             float64(0),
+				"has_remote_parent":       true,
+				"name":                    "server",
+				"service_name":            "test_service",
+				"status.code":             float64(0),
+				"status.message":          "OK",
+				"trace.parent_id":         "03",
+				"trace.span_id":           "04",
+				"trace.trace_id":          "01",
+				"A":                       "B",
+				"B":                       "C",
+				"opencensus.resourcetype": "foobar",
 			},
 		},
 	}
@@ -193,8 +285,8 @@ func TestEmptyNode(t *testing.T) {
 				"name":              "root",
 				"status.code":       float64(0),
 				"status.message":    "OK",
-				"trace.span_id":     "0200000000000000",
-				"trace.trace_id":    "01000000-0000-0000-0000-000000000000",
+				"trace.span_id":     "02",
+				"trace.trace_id":    "01",
 			},
 		},
 	}

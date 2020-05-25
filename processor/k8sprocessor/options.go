@@ -70,6 +70,7 @@ func WithOwnerLookupEnabled() Option {
 }
 
 // WithExtractMetadata allows specifying options to control extraction of pod metadata.
+// If no fields explicitly provided, all metadata extracted by default.
 func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {

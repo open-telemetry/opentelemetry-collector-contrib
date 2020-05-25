@@ -21,9 +21,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -122,7 +122,8 @@ func (r *carbonReceiver) Start(_ context.Context, host component.Host) error {
 	r.startOnce.Do(func() {
 		err = nil
 		go func() {
-			if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
+			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter)
+			if err != nil {
 				host.ReportFatalError(err)
 			}
 		}()

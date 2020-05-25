@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector/consumer/pdata"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func createConfig() *Config {

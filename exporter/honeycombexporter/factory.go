@@ -15,9 +15,9 @@
 package honeycombexporter
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/config/configerror"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
@@ -41,16 +41,18 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		APIKey:  "",
-		Dataset: "",
-		APIURL:  "https://api.honeycomb.io",
+		APIKey:     "",
+		Dataset:    "",
+		APIURL:     "https://api.honeycomb.io",
+		SampleRate: 1,
+		Debug:      false,
 	}
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg)
+	return newHoneycombTraceExporter(eCfg, logger)
 }
 
 // CreateMetricsExporter always returns nil.

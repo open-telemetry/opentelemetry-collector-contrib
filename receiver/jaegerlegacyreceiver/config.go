@@ -15,8 +15,8 @@
 package jaegerlegacyreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/receiver"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/receiver"
 )
 
 // The config field name to load the protocol map from
@@ -47,16 +47,4 @@ func (rs *Config) Type() configmodels.Type {
 // SetType sets the receiver type.
 func (rs *Config) SetType(typeStr configmodels.Type) {
 	rs.TypeVal = configmodels.Type(typeStr)
-}
-
-// IsEnabled returns true if the entity is enabled.
-func (rs *Config) IsEnabled() bool {
-	for _, p := range rs.Protocols {
-		if p.IsEnabled() {
-			// If any protocol is enabled then the receiver as a whole should be enabled.
-			return true
-		}
-	}
-	// All protocols are disabled so the entire receiver can be disabled.
-	return false
 }

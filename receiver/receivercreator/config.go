@@ -17,10 +17,10 @@ package receivercreator
 import (
 	"reflect"
 
-	otelconfig "github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
+	otelconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 const (
@@ -53,6 +53,7 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
+	rule rule
 }
 
 // newReceiverTemplate creates a receiverTemplate instance from the full name of a subreceiver
@@ -65,7 +66,7 @@ func newReceiverTemplate(name string, config userConfigMap) (receiverTemplate, e
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			typeStr:  configmodels.Type(typeStr),
+			typeStr:  typeStr,
 			fullName: fullName,
 			config:   config,
 		},

@@ -15,18 +15,19 @@
 package translator
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"math/rand"
-	"reflect"
 	"regexp"
 	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
-	tracetranslator "github.com/open-telemetry/opentelemetry-collector/translator/trace"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -37,7 +38,7 @@ const (
 )
 
 var (
-	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 var (
@@ -118,24 +119,41 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) 
 func MakeSegment(name string, span *tracepb.Span) Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceId)
-		startTime                              = timestampToFloatSeconds(span.StartTime, span.StartTime)
-		endTime                                = timestampToFloatSeconds(span.EndTime, span.StartTime)
+		startTime                              = timestampToFloatSeconds(span.StartTime)
+		endTime                                = timestampToFloatSeconds(span.EndTime)
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
-		isThrottled                            = span.Status.Code == tracetranslator.OCResourceExhausted
+		isThrottled                            = span.Status != nil && span.Status.Code == tracetranslator.OCResourceExhausted
 		origin                                 = determineAwsOrigin(span.Resource)
 		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
 		service                                = makeService(span.Resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
 		user, annotations                      = makeAnnotations(sqlfiltered)
 		namespace                              string
+		segmentType                            string
 	)
+
+	if span.Attributes != nil {
+		attributes := span.Attributes.AttributeMap
+		if awsService, ok := attributes[AWSServiceAttribute]; ok {
+			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
+			// to be named "Service"
+			name = awsService.GetStringValue().GetValue()
+
+			namespace = "aws"
+		}
+	}
 
 	if name == "" {
 		name = fixSegmentName(span.Name.String())
 	}
-	if span.ParentSpanId != nil {
+
+	if namespace == "" && span.ParentSpanId != nil && span.GetKind() == tracepb.Span_CLIENT {
 		namespace = "remote"
+	}
+
+	if span.GetKind() != tracepb.Span_SERVER {
+		segmentType = "subsegment"
 	}
 
 	return Segment{
@@ -158,6 +176,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 		SQL:         sql,
 		Annotations: annotations,
 		Metadata:    nil,
+		Type:        segmentType,
 	}
 }
 
@@ -247,22 +266,16 @@ func convertToAmazonTraceID(traceID []byte) string {
 // convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
 // for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
 func convertToAmazonSpanID(v []byte) string {
-	if v == nil || reflect.DeepEqual(v, zeroSpanID) {
+	if v == nil || bytes.Equal(v, zeroSpanID) {
 		return ""
 	}
 	return hex.EncodeToString(v[0:8])
 }
 
-func timestampToFloatSeconds(ts *timestamp.Timestamp, startTs *timestamp.Timestamp) float64 {
-	var (
-		t time.Time
-	)
-	if ts == nil {
+func timestampToFloatSeconds(ts *timestamp.Timestamp) float64 {
+	t, err := ptypes.Timestamp(ts)
+	if err != nil {
 		t = time.Now()
-	} else if startTs == nil {
-		t = time.Unix(ts.Seconds, int64(ts.Nanos))
-	} else {
-		t = time.Unix(startTs.Seconds, int64(ts.Nanos))
 	}
 	return float64(t.UnixNano()) / 1e9
 }

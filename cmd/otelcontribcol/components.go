@@ -15,10 +15,10 @@
 package main
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenterror"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/service/defaultcomponents"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
@@ -30,12 +30,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
@@ -51,6 +53,19 @@ func components() (config.Factories, error) {
 		return config.Factories{}, err
 	}
 
+	extensions := []component.ExtensionFactory{
+		k8sobserver.NewFactory(),
+	}
+
+	for _, ext := range factories.Extensions {
+		extensions = append(extensions, ext)
+	}
+
+	factories.Extensions, err = component.MakeExtensionFactoryMap(extensions...)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
 	receivers := []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
 		&sapmreceiver.Factory{},
@@ -62,6 +77,7 @@ func components() (config.Factories, error) {
 		&redisreceiver.Factory{},
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
+		&receivercreator.Factory{},
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

@@ -1,10 +1,8 @@
 receivers:
   examplereceiver:
-    disabled: false
 
 exporters:
   kinesis:
-    disabled: false
     queue_size: 1
     num_workers: 2
     flush_interval_seconds: 3
@@ -30,7 +28,6 @@ exporters:
 
 processors:
   exampleprocessor:
-    disabled: false
 
 service:
   pipelines:

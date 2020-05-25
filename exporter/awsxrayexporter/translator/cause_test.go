@@ -21,8 +21,8 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
 	"github.com/stretchr/testify/assert"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestCauseWithStatusMessage(t *testing.T) {

@@ -19,6 +19,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"sync"
 	"testing"
@@ -27,10 +28,10 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
-	"github.com/open-telemetry/opentelemetry-collector/testutils/metricstestutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
 )
 
@@ -110,9 +111,12 @@ func TestConsumeMetricsData(t *testing.T) {
 			}))
 			defer server.Close()
 
-			sender := &httpSender{
-				url:     server.URL,
-				headers: map[string]string{"test_header_": "test"},
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			sender := &sfxDPClient{
+				ingestURL: serverURL,
+				headers:   map[string]string{"test_header_": "test"},
 				client: &http.Client{
 					Timeout: 1 * time.Second,
 				},

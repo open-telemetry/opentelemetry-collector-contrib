@@ -24,15 +24,15 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/open-telemetry/opentelemetry-collector/component"
-	"github.com/open-telemetry/opentelemetry-collector/component/componenttest"
-	"github.com/open-telemetry/opentelemetry-collector/config"
-	"github.com/open-telemetry/opentelemetry-collector/config/configcheck"
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
-	"github.com/open-telemetry/opentelemetry-collector/consumer"
-	"github.com/open-telemetry/opentelemetry-collector/consumer/consumerdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
@@ -73,7 +73,7 @@ func (m *mockObserver) Shutdown(ctx context.Context) error {
 var _ component.ServiceExtension = (*mockObserver)(nil)
 
 func (m *mockObserver) ListAndWatch(notify observer.Notify) {
-	notify.OnAdd([]observer.Endpoint{observer.NewHostEndpoint("foobar", "169.168.1.100", nil)})
+	notify.OnAdd([]observer.Endpoint{portEndpoint})
 }
 
 var _ observer.Observable = (*mockObserver)(nil)
@@ -146,7 +146,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
 }
 
-func TestSafeHost(t *testing.T) {
+func TestLoggingHost(t *testing.T) {
 	core, obs := zapObserver.New(zap.ErrorLevel)
 	host := &loggingHost{
 		Host:   componenttest.NewNopHost(),

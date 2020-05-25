@@ -17,13 +17,19 @@ package redisreceiver
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// The duration between Redis metric fetches.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	// The logical name of the Redis server. This value will be added as a
+	// "service.name" Resource label.
+	ServiceName string `mapstructure:"service_name"`
+
+	// TODO allow users to add additional resource key value pairs?
+
 	// Optional password. Must match the password specified in the
 	// requirepass server configuration option.
 	Password string `mapstructure:"password"`

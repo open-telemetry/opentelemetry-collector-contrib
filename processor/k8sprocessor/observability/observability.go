@@ -16,8 +16,6 @@ package observability
 
 import (
 	"context"
-	"time"
-
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 )
@@ -131,8 +129,4 @@ func RecordOtherDeleted() {
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
 func RecordIPLookupMiss() {
 	stats.Record(context.Background(), mIPLookupMiss.M(int64(1)))
-}
-
-func sinceInMilliseconds(startTime *time.Time) float64 {
-	return float64(time.Since(*startTime).Nanoseconds()) / 1e6
 }

@@ -15,7 +15,7 @@
 package translator
 
 import (
-	semconventions "github.com/open-telemetry/opentelemetry-collector/translator/conventions"
+	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 // SQLData provides the shape for unmarshalling sql data.
@@ -40,11 +40,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbStatement string
 		dbUser      string
 	)
-	componentType := attributes[semconventions.AttributeComponent]
-	if componentType == semconventions.ComponentTypeHTTP ||
-		componentType == semconventions.ComponentTypeGRPC {
-		return attributes, nil
-	}
+
 	for key, value := range attributes {
 		switch key {
 		case semconventions.AttributeDBURL:
@@ -61,6 +57,12 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 			filtered[key] = value
 		}
 	}
+
+	if len(filtered) == len(attributes) {
+		// Didn't filter any attributes meaning didn't have any SQL information.
+		return attributes, nil
+	}
+
 	if dbURL == "" {
 		dbURL = "localhost"
 	}
