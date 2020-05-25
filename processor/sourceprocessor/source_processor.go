@@ -159,7 +159,7 @@ func (stp *sourceTraceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
 	if value, found := atts.Get(stp.annotationAttribute(excludeAnnotation)); found {
 		if value.Type() == pdata.AttributeValueSTRING && value.StringVal() == "true" {
 			return true
-		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() == true {
+		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() {
 			return true
 		}
 	}
@@ -167,7 +167,7 @@ func (stp *sourceTraceProcessor) isFilteredOut(atts pdata.AttributeMap) bool {
 	if value, found := atts.Get(stp.annotationAttribute(includeAnnotation)); found {
 		if value.Type() == pdata.AttributeValueSTRING && value.StringVal() == "true" {
 			return false
-		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() == true {
+		} else if value.Type() == pdata.AttributeValueBOOL && value.BoolVal() {
 			return false
 		}
 	}
