@@ -83,7 +83,7 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 				if nextOffset > td.SpanCount() {
 					nextOffset = td.SpanCount()
 				}
-				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
+				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
 				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil && !config.(*Config).LocalMode {

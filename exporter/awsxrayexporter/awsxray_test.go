@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"math/rand"
 	"os"
 	"testing"
@@ -27,6 +26,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
@@ -148,17 +148,6 @@ func constructHTTPServerSpan() pdata.Span {
 
 	spanAttributes.CopyTo(span.Attributes())
 	return span
-}
-
-func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
 }
 
 func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
