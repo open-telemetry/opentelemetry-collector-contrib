@@ -134,7 +134,7 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 			if r.config.TLSCredentials != nil {
 				host.ReportFatalError(r.server.ListenAndServeTLS(r.config.TLSCredentials.CertFile, r.config.TLSCredentials.KeyFile))
 			} else {
-				if err := r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				if err = r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					host.ReportFatalError(err)
 				}
 			}

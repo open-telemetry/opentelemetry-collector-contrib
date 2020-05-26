@@ -186,9 +186,9 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	client := &http.Client{}
 
 	if tlsEnabled {
-		caCert, err := ioutil.ReadFile("./testdata/testcert.crt")
-		if err != nil {
-			return nil, fmt.Errorf("failed to load certificate: %s", err.Error())
+		caCert, errCert := ioutil.ReadFile("./testdata/testcert.crt")
+		if errCert != nil {
+			return nil, fmt.Errorf("failed to load certificate: %s", errCert.Error())
 		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)

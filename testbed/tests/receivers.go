@@ -45,7 +45,7 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	sapmCfg := sapmreceiver.Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-				Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
 		},
 	}
 	var err error
@@ -100,7 +100,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 func (sr *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", sr.Port)
 	config := signalfxreceiver.Config{
-			ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
+		ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
 	}
 	var err error
 	sr.receiver, err = signalfxreceiver.New(zap.L(), config, mc)

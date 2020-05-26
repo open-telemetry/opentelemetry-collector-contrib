@@ -14,11 +14,10 @@
 
 package signalfxreceiver
 
-import(
+import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 )
-
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
