@@ -178,9 +178,9 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
-	traceId := []byte(span.TraceID())
-	traceId[0] = 0x11
-	span.SetTraceID(traceId)
+	traceID := []byte(span.TraceID())
+	traceID[0] = 0x11
+	span.SetTraceID(traceID)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource)
 
