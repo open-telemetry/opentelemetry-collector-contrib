@@ -1,6 +1,10 @@
 # SignalFx Metrics Exporter
 
-How to send metrics to SignalFx.
+This exporter can be used to send metrics to SignalFx.
+
+Apart from metrics, the exporter is also capable of sending metric metadata (properties and tags)
+to SignalFx. Currently, only metric metadata updates from the [k8s_cluster receiver](../../receiver/k8sclusterreceiver/README.md)
+are supported.
 
 The following configuration options are required:
 
@@ -15,6 +19,9 @@ The following configuration options can also be configured:
 - `ingest_url` (default = https://ingest.`realm`.signalfx.com/v2/datapoint): Destination
 where SignalFx metrics are sent. If this option is specified, `realm` is ignored.
 If path is not specified, `/v2/datapoint` is used.
+- `api_url` (default = https://api.`realm`.signalfx.com/): Destination to which SignalFx
+[properties and tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata) are sent.
+- `log_dimension_updates` (default = `false`): Whether or not to log dimension updates.
 
 Example:
 
