@@ -107,10 +107,9 @@ func newProtoMetric(m *redisMetric, pt *metricspb.Point, t *timeBundle) *metrics
 	return pbMetric
 }
 
-func buildLabels(
-	labels map[string]string,
-	descriptions map[string]string,
-) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
+func buildLabels(labels map[string]string, descriptions map[string]string) (
+	[]*metricspb.LabelKey, []*metricspb.LabelValue,
+) {
 	var keys []*metricspb.LabelKey
 	var values []*metricspb.LabelValue
 	for key, val := range labels {
