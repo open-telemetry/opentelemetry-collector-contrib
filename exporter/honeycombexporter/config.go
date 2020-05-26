@@ -24,4 +24,10 @@ type Config struct {
 	Dataset string `mapstructure:"dataset"`
 	// API URL to use (defaults to https://api.honeycomb.io)
 	APIURL string `mapstructure:"api_url"`
+	// SampleRate is the rate at which to sample this event. Default is 1,
+	// meaning no sampling. If you want to send one event out of every 250
+	// times Send() is called, you would specify 250 here.
+	SampleRate uint `mapstructure:"sample_rate"`
+	// Debug enables more verbose logging from the Honeycomb SDK. It defaults to false.
+	Debug bool `mapstructure:"debug"`
 }
