@@ -16,6 +16,7 @@ package lightstepexporter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/lightstep/opentelemetry-exporter-go/lightstep"
 	"go.opentelemetry.io/collector/component"
@@ -31,6 +32,7 @@ type LightStepExporter struct {
 }
 
 func newLightStepTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
+	fmt.Println("LS CONFIG", cfg)
 	exporter, err := lightstep.NewExporter(
 		lightstep.WithAccessToken(cfg.AccessToken),
 		lightstep.WithHost(cfg.SatelliteHost),
