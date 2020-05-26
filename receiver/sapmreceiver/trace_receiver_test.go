@@ -38,9 +38,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -229,9 +229,7 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					SecureReceiverSettings: receiver.SecureReceiverSettings{
-						ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
-					},
+					ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: false,
@@ -243,9 +241,7 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					SecureReceiverSettings: receiver.SecureReceiverSettings{
-						ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
-					},
+					ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: true,
@@ -257,13 +253,11 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS compressed sapm",
 			args: args{
 				config: &Config{
-					SecureReceiverSettings: receiver.SecureReceiverSettings{
-						ReceiverSettings: configmodels.ReceiverSettings{
-							Endpoint: tlsAddress},
-						TLSCredentials: &receiver.TLSCredentials{
-							CertFile: ("./testdata/testcert.crt"),
-							KeyFile:  ("./testdata/testkey.key"),
-						},
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: tlsAddress},
+					TLSCredentials: &configtls.TLSSetting{
+						CertFile: ("./testdata/testcert.crt"),
+						KeyFile:  ("./testdata/testkey.key"),
 					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},

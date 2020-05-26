@@ -5,7 +5,7 @@ receivers:
     # SignalFx metrics.
     endpoint: localhost:8080
   signalfx/tls:
-    tls_credentials:
+    tls:
       cert_file: /test.crt
       key_file: /test.key
 

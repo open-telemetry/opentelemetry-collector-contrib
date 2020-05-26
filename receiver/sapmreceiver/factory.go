@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -54,12 +53,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 // CreateDefaultConfig creates the default configuration for SAPM receiver.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
-		SecureReceiverSettings: receiver.SecureReceiverSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  typeStr,
 				Endpoint: defaultEndpoint,
-			},
 		},
 	}
 }

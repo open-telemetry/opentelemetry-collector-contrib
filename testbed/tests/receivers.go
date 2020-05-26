@@ -21,7 +21,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -45,10 +44,8 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 // Start the receiver.
 func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	sapmCfg := sapmreceiver.Config{
-		SecureReceiverSettings: receiver.SecureReceiverSettings{
-			ReceiverSettings: configmodels.ReceiverSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
 				Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
-			},
 		},
 	}
 	var err error
@@ -103,9 +100,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 func (sr *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", sr.Port)
 	config := signalfxreceiver.Config{
-		SecureReceiverSettings: receiver.SecureReceiverSettings{
 			ReceiverSettings: configmodels.ReceiverSettings{Endpoint: addr},
-		},
 	}
 	var err error
 	sr.receiver, err = signalfxreceiver.New(zap.L(), config, mc)

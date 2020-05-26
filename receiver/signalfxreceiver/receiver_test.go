@@ -40,10 +40,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-    "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/testutils"
 	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
@@ -81,10 +81,8 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					SecureReceiverSettings: receiver.SecureReceiverSettings{
-						ReceiverSettings: configmodels.ReceiverSettings{
-							Endpoint: "localhost:1234",
-						},
+					ReceiverSettings: configmodels.ReceiverSettings{
+						Endpoint: "localhost:1234",
 					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
@@ -325,7 +323,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutils.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSCredentials = &receiver.TLSCredentials{
+	cfg.TLSCredentials = &configtls.TLSSetting{
 		CertFile: "./testdata/testcert.crt",
 		KeyFile:  "./testdata/testkey.key",
 	}

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -46,29 +46,24 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["sapm/customname"].(*Config)
 	assert.Equal(t, r1,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "sapm/customname",
-					Endpoint: "0.0.0.0:7276",
-				},
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "sapm/customname",
+				Endpoint: "0.0.0.0:7276",
 			},
 		})
 
 	r2 := cfg.Receivers["sapm/tls"].(*Config)
 	assert.Equal(t, r2,
 		&Config{
-			SecureReceiverSettings: receiver.SecureReceiverSettings{
-				ReceiverSettings: configmodels.ReceiverSettings{
-					TypeVal:  typeStr,
-					NameVal:  "sapm/tls",
-					Endpoint: ":7276",
-				},
-				TLSCredentials: &receiver.TLSCredentials{
-					CertFile: "/test.crt",
-					KeyFile:  "/test.key",
-				},
-
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "sapm/tls",
+				Endpoint: ":7276",
+			},
+			TLSCredentials: &configtls.TLSSetting{
+				CertFile: "/test.crt",
+				KeyFile:  "/test.key",
 			},
 		})
 }

@@ -14,9 +14,17 @@
 
 package signalfxreceiver
 
-import "go.opentelemetry.io/collector/receiver"
+import(
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
+)
+
 
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
-	receiver.SecureReceiverSettings `mapstructure:",squash"`
+	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
+	// Configures the receiver to use TLS.
+	// The default value is nil, which will cause the receiver to not use TLS.
+	TLSCredentials *configtls.TLSSetting `mapstructure:"tls, omitempty"`
 }
