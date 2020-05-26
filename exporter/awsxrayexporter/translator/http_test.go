@@ -270,6 +270,7 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -279,6 +280,7 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -293,6 +295,7 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -302,6 +305,7 @@ func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

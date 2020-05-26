@@ -75,14 +75,17 @@ func constructSpanData() pdata.Traces {
 
 func constructResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().InsertString(semconventions.AttributeServiceName, "signup_aggregator")
-	resource.Attributes().InsertString(semconventions.AttributeContainerName, "signup_aggregator")
-	resource.Attributes().InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
-	resource.Attributes().InsertString(semconventions.AttributeContainerTag, "v1")
-	resource.Attributes().InsertString(semconventions.AttributeCloudProvider, "aws")
-	resource.Attributes().InsertString(semconventions.AttributeCloudAccount, "999999998")
-	resource.Attributes().InsertString(semconventions.AttributeCloudRegion, "us-west-2")
-	resource.Attributes().InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
+	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.CopyTo(resource.Attributes())
 	return resource
 }
 
@@ -97,6 +100,7 @@ func constructHTTPClientSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -106,6 +110,7 @@ func constructHTTPClientSpan() pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -126,6 +131,7 @@ func constructHTTPServerSpan() pdata.Span {
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -135,6 +141,7 @@ func constructHTTPServerSpan() pdata.Span {
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

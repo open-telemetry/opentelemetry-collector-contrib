@@ -51,7 +51,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
 		urlParts = make(map[string]string)
 	)
 
-	if span.Attributes == nil {
+	if span.Attributes().Len() == 0 {
 		return filtered, nil
 	}
 

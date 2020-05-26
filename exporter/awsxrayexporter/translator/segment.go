@@ -200,6 +200,9 @@ func newSegmentID() pdata.SpanID {
 
 func determineAwsOrigin(resource pdata.Resource) string {
 	origin := OriginEC2
+	if resource.IsNil() {
+		return origin
+	}
 	_, ok := resource.Attributes().Get(semconventions.AttributeContainerName)
 	if ok {
 		origin = OriginECS

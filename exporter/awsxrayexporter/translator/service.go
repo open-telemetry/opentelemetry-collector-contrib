@@ -30,6 +30,9 @@ func makeService(resource pdata.Resource) *ServiceData {
 	var (
 		service *ServiceData
 	)
+	if resource.IsNil() {
+		return service
+	}
 	verStr, ok := resource.Attributes().Get(semconventions.AttributeServiceVersion)
 	if !ok {
 		verStr, ok = resource.Attributes().Get(semconventions.AttributeContainerTag)

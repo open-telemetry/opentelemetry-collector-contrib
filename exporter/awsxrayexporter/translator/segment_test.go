@@ -113,6 +113,7 @@ func TestServerSpanNoParentId(t *testing.T) {
 
 func TestSpanWithNoStatus(t *testing.T) {
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -149,7 +150,8 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Annotations)
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
-	assert.Equal(t, spanName, segment.Name)
+	// Restricted characters removed from span name.
+	assert.Equal(t, "call update_user_preference , ,  ", segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
 	assert.Equal(t, "remote", segment.Namespace)
@@ -245,6 +247,7 @@ func constructClientSpan(parentSpanID []byte, name string, code int32, message s
 	)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
@@ -254,6 +257,7 @@ func constructClientSpan(parentSpanID []byte, name string, code int32, message s
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(pdata.StatusCode(code))
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -272,6 +276,7 @@ func constructServerSpan(parentSpanID []byte, name string, code int32, message s
 	)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
@@ -281,6 +286,7 @@ func constructServerSpan(parentSpanID []byte, name string, code int32, message s
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(pdata.StatusCode(code))
 	status.SetMessage(message)
 	status.CopyTo(span.Status())
@@ -305,19 +311,22 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeM
 
 func constructDefaultResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().InsertString(semconventions.AttributeServiceName, "signup_aggregator")
-	resource.Attributes().InsertString(semconventions.AttributeServiceVersion, "semver:1.1.4")
-	resource.Attributes().InsertString(semconventions.AttributeContainerName, "signup_aggregator")
-	resource.Attributes().InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
-	resource.Attributes().InsertString(semconventions.AttributeContainerTag, "v1")
-	resource.Attributes().InsertString(semconventions.AttributeK8sCluster, "production")
-	resource.Attributes().InsertString(semconventions.AttributeK8sNamespace, "default")
-	resource.Attributes().InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	resource.Attributes().InsertString(semconventions.AttributeK8sPod, "signup_aggregator-x82ufje83")
-	resource.Attributes().InsertString(semconventions.AttributeCloudProvider, "aws")
-	resource.Attributes().InsertString(semconventions.AttributeCloudAccount, "123456789")
-	resource.Attributes().InsertString(semconventions.AttributeCloudRegion, "us-east-1")
-	resource.Attributes().InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeServiceVersion, "semver:1.1.4")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, "signup_aggregator-x82ufje83")
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudRegion, "us-east-1")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.CopyTo(resource.Attributes())
 	return resource
 }
 
@@ -340,6 +349,7 @@ func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pd
 	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 12452)
 
 	event := pdata.NewSpanEvent()
+	event.InitEmpty()
 	event.SetTimestamp(tm)
 	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)
@@ -357,6 +367,7 @@ func constructTimedEventsWithSentMessageEvent(tm pdata.TimestampUnixNano) pdata.
 	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 7480)
 
 	event := pdata.NewSpanEvent()
+	event.InitEmpty()
 	event.SetTimestamp(tm)
 	eventAttr.CopyTo(event.Attributes())
 	event.SetDroppedAttributesCount(0)

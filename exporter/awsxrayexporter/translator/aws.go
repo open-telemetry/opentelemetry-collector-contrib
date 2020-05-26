@@ -88,28 +88,30 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	)
 
 	filtered := make(map[string]string)
-	resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
-		switch key {
-		case semconventions.AttributeCloudProvider:
-			cloud = value.StringVal()
-		case semconventions.AttributeCloudAccount:
-			account = value.StringVal()
-		case semconventions.AttributeCloudZone:
-			zone = value.StringVal()
-		case semconventions.AttributeHostID:
-			hostID = value.StringVal()
-		case semconventions.AttributeContainerName:
-			if container == "" {
+	if !resource.IsNil() {
+		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+			switch key {
+			case semconventions.AttributeCloudProvider:
+				cloud = value.StringVal()
+			case semconventions.AttributeCloudAccount:
+				account = value.StringVal()
+			case semconventions.AttributeCloudZone:
+				zone = value.StringVal()
+			case semconventions.AttributeHostID:
+				hostID = value.StringVal()
+			case semconventions.AttributeContainerName:
+				if container == "" {
+					container = value.StringVal()
+				}
+			case semconventions.AttributeK8sPod:
 				container = value.StringVal()
+			case semconventions.AttributeServiceNamespace:
+				namespace = value.StringVal()
+			case semconventions.AttributeServiceInstance:
+				deployID = value.StringVal()
 			}
-		case semconventions.AttributeK8sPod:
-			container = value.StringVal()
-		case semconventions.AttributeServiceNamespace:
-			namespace = value.StringVal()
-		case semconventions.AttributeServiceInstance:
-			deployID = value.StringVal()
-		}
-	})
+		})
+	}
 
 	for key, value := range attributes {
 		switch key {

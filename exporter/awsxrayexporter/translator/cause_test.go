@@ -80,6 +80,7 @@ func constructExceptionServerSpan(attributes map[string]interface{}) pdata.Span 
 	spanAttributes := constructSpanAttributes(attributes)
 
 	span := pdata.NewSpan()
+	span.InitEmpty()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
@@ -89,6 +90,7 @@ func constructExceptionServerSpan(attributes map[string]interface{}) pdata.Span 
 	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 
 	status := pdata.NewSpanStatus()
+	status.InitEmpty()
 	status.SetCode(pdata.StatusCode(13))
 	status.CopyTo(span.Status())
 
