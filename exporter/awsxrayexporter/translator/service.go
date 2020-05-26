@@ -15,7 +15,7 @@
 package translator
 
 import (
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -26,20 +26,17 @@ type ServiceData struct {
 	Compiler        string `json:"compiler,omitempty"`
 }
 
-func makeService(resource *resourcepb.Resource) *ServiceData {
+func makeService(resource pdata.Resource) *ServiceData {
 	var (
 		service *ServiceData
 	)
-	if resource == nil {
-		return service
-	}
-	verStr, ok := resource.Labels[semconventions.AttributeServiceVersion]
+	verStr, ok := resource.Attributes().Get(semconventions.AttributeServiceVersion)
 	if !ok {
-		verStr = resource.Labels[semconventions.AttributeContainerTag]
+		verStr, ok = resource.Attributes().Get(semconventions.AttributeContainerTag)
 	}
-	if verStr != "" {
+	if ok {
 		service = &ServiceData{
-			Version: verStr,
+			Version: verStr.StringVal(),
 		}
 	}
 	return service

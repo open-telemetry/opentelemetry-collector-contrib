@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
@@ -69,7 +69,7 @@ func BenchmarkWithPool(b *testing.B) {
 	}
 }
 
-func constructWriterPoolSpan() *tracepb.Span {
+func constructWriterPoolSpan() pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"

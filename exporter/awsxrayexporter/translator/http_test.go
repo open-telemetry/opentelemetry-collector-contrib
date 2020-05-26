@@ -19,10 +19,8 @@ import (
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -231,8 +229,8 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
-	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime)
-	span.TimeEvents = &timeEvents
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
 
@@ -266,70 +264,48 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
-func constructHTTPClientSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_CLIENT,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: constructDefaultResourceLabels(),
-		},
-	}
+	span := pdata.NewSpan()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func constructHTTPServerSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: constructDefaultResourceLabels(),
-		},
-	}
+	span := pdata.NewSpan()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }

@@ -22,12 +22,9 @@ import (
 	"regexp"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -104,8 +101,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenCensus Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) {
-	segment := MakeSegment(name, span)
+func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource) (string, error) {
+	segment := MakeSegment(span, resource)
 	w := writers.borrow()
 	if err := w.Encode(segment); err != nil {
 		return "", err
@@ -116,53 +113,52 @@ func MakeSegmentDocumentString(name string, span *tracepb.Span) (string, error) 
 }
 
 // MakeSegment converts an OpenCensus Span to an X-Ray Segment
-func MakeSegment(name string, span *tracepb.Span) Segment {
+func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	var (
-		traceID                                = convertToAmazonTraceID(span.TraceId)
-		startTime                              = timestampToFloatSeconds(span.StartTime)
-		endTime                                = timestampToFloatSeconds(span.EndTime)
+		traceID                                = convertToAmazonTraceID(span.TraceID())
+		startTime                              = timestampToFloatSeconds(span.StartTime())
+		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
-		isError, isFault, causefiltered, cause = makeCause(span.Status, httpfiltered)
-		isThrottled                            = span.Status != nil && span.Status.Code == tracetranslator.OCResourceExhausted
-		origin                                 = determineAwsOrigin(span.Resource)
-		awsfiltered, aws                       = makeAws(causefiltered, span.Resource)
-		service                                = makeService(span.Resource)
+		isError, isFault, causefiltered, cause = makeCause(span.Status(), httpfiltered)
+		isThrottled                            = !span.Status().IsNil() && otlptrace.Status_StatusCode(span.Status().Code()) == otlptrace.Status_ResourceExhausted
+		origin                                 = determineAwsOrigin(resource)
+		awsfiltered, aws                       = makeAws(causefiltered, resource)
+		service                                = makeService(resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
 		user, annotations                      = makeAnnotations(sqlfiltered)
+		name                                   string
 		namespace                              string
 		segmentType                            string
 	)
 
-	if span.Attributes != nil {
-		attributes := span.Attributes.AttributeMap
-		if awsService, ok := attributes[AWSServiceAttribute]; ok {
-			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
-			// to be named "Service"
-			name = awsService.GetStringValue().GetValue()
+	attributes := span.Attributes()
+	if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
+		// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
+		// to be named "Service"
+		name = awsService.StringVal()
 
-			namespace = "aws"
-		}
+		namespace = "aws"
 	}
 
 	if name == "" {
-		name = fixSegmentName(span.Name.String())
+		name = fixSegmentName(span.Name())
 	}
 
-	if namespace == "" && span.ParentSpanId != nil && span.GetKind() == tracepb.Span_CLIENT {
+	if namespace == "" && span.Kind() == pdata.SpanKindCLIENT {
 		namespace = "remote"
 	}
 
-	if span.GetKind() != tracepb.Span_SERVER {
+	if span.Kind() != pdata.SpanKindSERVER {
 		segmentType = "subsegment"
 	}
 
 	return Segment{
-		ID:          convertToAmazonSpanID(span.SpanId),
+		ID:          convertToAmazonSpanID(span.SpanID()),
 		TraceID:     traceID,
 		Name:        name,
 		StartTime:   startTime,
 		EndTime:     endTime,
-		ParentID:    convertToAmazonSpanID(span.ParentSpanId),
+		ParentID:    convertToAmazonSpanID(span.ParentSpanID()),
 		Fault:       isFault,
 		Error:       isError,
 		Throttle:    isThrottled,
@@ -181,7 +177,7 @@ func MakeSegment(name string, span *tracepb.Span) Segment {
 }
 
 // newTraceID generates a new valid X-Ray TraceID
-func newTraceID() []byte {
+func newTraceID() pdata.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -193,7 +189,7 @@ func newTraceID() []byte {
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
-func newSegmentID() []byte {
+func newSegmentID() pdata.SpanID {
 	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {
@@ -202,12 +198,9 @@ func newSegmentID() []byte {
 	return r[:]
 }
 
-func determineAwsOrigin(resource *resourcepb.Resource) string {
+func determineAwsOrigin(resource pdata.Resource) string {
 	origin := OriginEC2
-	if resource == nil {
-		return origin
-	}
-	_, ok := resource.Labels[semconventions.AttributeContainerName]
+	_, ok := resource.Attributes().Get(semconventions.AttributeContainerName)
 	if ok {
 		origin = OriginECS
 	}
@@ -225,7 +218,7 @@ func determineAwsOrigin(resource *resourcepb.Resource) string {
 //  * For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //    or 58406520 in hexadecimal.
 //  * A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID []byte) string {
+func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
 		// hit the limit
@@ -272,12 +265,8 @@ func convertToAmazonSpanID(v []byte) string {
 	return hex.EncodeToString(v[0:8])
 }
 
-func timestampToFloatSeconds(ts *timestamp.Timestamp) float64 {
-	t, err := ptypes.Timestamp(ts)
-	if err != nil {
-		t = time.Now()
-	}
-	return float64(t.UnixNano()) / 1e9
+func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {
+	return float64(ts) / float64(time.Second)
 }
 
 func sanitizeAndTransferAnnotations(dest map[string]interface{}, src map[string]string) {
