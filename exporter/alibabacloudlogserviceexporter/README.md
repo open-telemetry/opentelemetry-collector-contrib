@@ -4,7 +4,7 @@ This exporter supports sending OpenTelemetry data to [LogService](https://www.al
 
 Configuration options:
 
-- `endpoint` (required): Elastic APM Server URL.
+- `endpoint` (required): LogService's [Endpoint](https://www.alibabacloud.com/help/doc-detail/29008.htm).
 - `project` (required): LogService's Project Name.
 - `logstore` (required): LogService's Logstore Name.
 - `access_key_id` (optional): AlibabaCloud access key id.

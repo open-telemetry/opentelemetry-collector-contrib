@@ -107,7 +107,6 @@ func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
 			sb.WriteByte('|')
 		}
 	}
-	return
 }
 
 func newMetricLog(nsec int64,

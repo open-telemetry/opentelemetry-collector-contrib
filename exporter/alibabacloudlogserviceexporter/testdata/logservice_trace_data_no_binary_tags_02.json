@@ -56,7 +56,7 @@
         },
         {
             "Key": "reference",
-            "Value": "[{\"TraceId\":\"000000000000000052969a8955571a3f\",\"SpanId\":\"0000000000647d98\",\"RefType\":\"PARENT_LINKED_SPAN\"},{\"TraceId\":\"000000000000000052969a8955571a3f\",\"SpanId\":\"000000000068c4e3\",\"RefType\":\"TYPE_UNSPECIFIED\"},{\"TraceId\":\"00000000000000000000000000000000\",\"SpanId\":\"0000000000000000\",\"RefType\":\"TYPE_UNSPECIFIED\"}]"
+            "Value": "[{\"TraceID\":\"000000000000000052969a8955571a3f\",\"SpanID\":\"0000000000647d98\",\"RefType\":\"PARENT_LINKED_SPAN\"},{\"TraceID\":\"000000000000000052969a8955571a3f\",\"SpanID\":\"000000000068c4e3\",\"RefType\":\"TYPE_UNSPECIFIED\"},{\"TraceID\":\"00000000000000000000000000000000\",\"SpanID\":\"0000000000000000\",\"RefType\":\"TYPE_UNSPECIFIED\"}]"
         },
         {
             "Key": "parentSpanID",

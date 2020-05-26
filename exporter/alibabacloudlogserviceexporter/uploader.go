@@ -29,20 +29,14 @@ type callback struct {
 }
 
 func (callback *callback) Success(result *producer.Result) {
-	// For better performance, disable all logs when send success
-	//callback.logger.Debug("send to log service success", zap.String("requestId", result.GetRequestId()))
 }
 
 func (callback *callback) Fail(result *producer.Result) {
-	callback.logger.Warn("send to log service failed",
-		zap.String("requestId", result.GetRequestId()),
-		zap.String("errorCode", result.GetErrorCode()),
-		zap.String("errorMessage", result.GetErrorMessage()))
+	callback.logger.Warn("send to log service failed", zap.String("requestId", result.GetRequestId()), zap.String("errorCode", result.GetErrorCode()), zap.String("errorMessage", result.GetErrorMessage()))
 }
 
 // Producer log Service's producer wrapper
 type Producer interface {
-	CloseProducer() error
 	SendLogs(logs []*sls.Log) error
 }
 
@@ -100,7 +94,7 @@ func NewProducer(config *Config, logger *zap.Logger) (Producer, error) {
 	// Retrieve Log Service Configuration Details
 	producerConfig := producer.GetDefaultProducerConfig()
 	producerConfig.Endpoint = config.Endpoint
-	producerConfig.AccessKeyID = config.AccessKeyId
+	producerConfig.AccessKeyID = config.AccessKeyID
 	producerConfig.AccessKeySecret = config.AccessKeySecret
 
 	if config.MaxRetry > 0 {
@@ -121,20 +115,15 @@ func NewProducer(config *Config, logger *zap.Logger) (Producer, error) {
 	// do not return error if get hostname or ip address fail
 	var err error
 	if p.topic, err = os.Hostname(); err != nil {
-		// log error
+		logger.Warn("Get hostname error when create LogService producer", zap.Error(err))
 	}
 	if p.source, err = getIPAddress(); err != nil {
-		// log error
+		logger.Warn("Get IP address error when create LogService producer", zap.Error(err))
 	}
 	p.logger = logger
 	logger.Info("Create LogService producer success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
 
 	return p, nil
-}
-
-// CloseProducer Close Producer Instance
-func (producerInstance *producerImpl) CloseProducer() error {
-	return producerInstance.producerInstance.Close(6000)
 }
 
 // SendMessage Send message to LogService

@@ -28,7 +28,7 @@ type Config struct {
 	// LogService's Logstore Name
 	Logstore string `mapstructure:"logstore"`
 	// AlibabaCloud access key id
-	AccessKeyId string `mapstructure:"access_key_id"`
+	AccessKeyID string `mapstructure:"access_key_id"`
 	// AlibabaCloud access key secret
 	AccessKeySecret string `mapstructure:"access_key_secret"`
 	// Set AlibabaCLoud ECS ram role if you are using ACK

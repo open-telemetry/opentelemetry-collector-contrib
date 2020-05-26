@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 		Endpoint:        "cn-hangzhou.log.aliyuncs.com",
 		Project:         "demo-project",
 		Logstore:        "demo-logstore",
-		AccessKeyId:     "test-id",
+		AccessKeyID:     "test-id",
 		AccessKeySecret: "test-secret",
 		ECSRamRole:      "test-role",
 		MaxRetry:        10,

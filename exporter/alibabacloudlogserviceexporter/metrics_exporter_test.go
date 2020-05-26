@@ -17,10 +17,13 @@ package alibabacloudlogserviceexporter
 import (
 	"context"
 	"testing"
+	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
 )
 
@@ -34,8 +37,18 @@ func TestNewMetricsExporter(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+
+	doubleVal := 1234.5678
+	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{})
+	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
+		}})
 	assert.Nil(t, err)
 }
 

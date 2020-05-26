@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	unknownProcessName = "unknown-service-name"
 	traceIDField       = "traceID"
 	spanIDField        = "spanID"
 	parentSpanIDField  = "parentSpanID"
@@ -71,11 +70,7 @@ func traceDataToLogServiceData(td consumerdata.TraceData) ([]*sls.Log, error) {
 
 func nodeAndResourceToLogContent(node *commonpb.Node, resource *resourcepb.Resource) []*sls.LogContent {
 	if node == nil {
-		// Jaeger requires a non-nil Process
-		return []*sls.LogContent{&sls.LogContent{
-			Key:   proto.String(serviceNameField),
-			Value: proto.String(unknownProcessName),
-		}}
+		return []*sls.LogContent{}
 	}
 
 	var contents []*sls.LogContent
@@ -279,16 +274,16 @@ func linksToLogContents(ocSpanLinks *tracepb.Span_Links) (*sls.LogContent, error
 	ocLinks := ocSpanLinks.Link
 
 	type linkSpanRef struct {
-		TraceId string
-		SpanId  string
+		TraceID string
+		SpanID  string
 		RefType string
 	}
 	spanRefs := make([]linkSpanRef, 0, len(ocLinks))
 
 	for _, ocLink := range ocLinks {
 		spanRefs = append(spanRefs, linkSpanRef{
-			TraceId: hex.EncodeToString(ocLink.TraceId[:]),
-			SpanId:  hex.EncodeToString(ocLink.SpanId[:]),
+			TraceID: hex.EncodeToString(ocLink.TraceId[:]),
+			SpanID:  hex.EncodeToString(ocLink.SpanId[:]),
 			RefType: ocLink.GetType().String(),
 		})
 	}
