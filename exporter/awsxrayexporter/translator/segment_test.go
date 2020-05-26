@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
@@ -328,17 +327,6 @@ func constructDefaultResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
 	attrs.CopyTo(resource.Attributes())
 	return resource
-}
-
-func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
 }
 
 func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pdata.SpanEventSlice {
