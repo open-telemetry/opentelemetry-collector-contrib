@@ -77,7 +77,6 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		container    string
 		namespace    string
 		deployID     string
-		ver          string
 		operation    string
 		remoteRegion string
 		requestID    string
@@ -162,7 +161,6 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 		}
 		ebs = &BeanstalkMetadata{
 			Environment:  namespace,
-			VersionLabel: ver,
 			DeploymentID: deployNum,
 		}
 	}
