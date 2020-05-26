@@ -41,16 +41,18 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		APIKey:  "",
-		Dataset: "",
-		APIURL:  "https://api.honeycomb.io",
+		APIKey:     "",
+		Dataset:    "",
+		APIURL:     "https://api.honeycomb.io",
+		SampleRate: 1,
+		Debug:      false,
 	}
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
 func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg)
+	return newHoneycombTraceExporter(eCfg, logger)
 }
 
 // CreateMetricsExporter always returns nil.
