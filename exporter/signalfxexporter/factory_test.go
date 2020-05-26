@@ -37,6 +37,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetricsExporter(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
+	c := cfg.(*Config)
+	c.AccessToken = "access_token"
 
 	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
@@ -54,6 +56,9 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := Factory{}
 
 	cfg := factory.CreateDefaultConfig()
+	c := cfg.(*Config)
+	c.AccessToken = "access_token"
+
 	exp, err := factory.CreateMetricsExporter(
 		zap.NewNop(),
 		cfg)
@@ -120,8 +125,10 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
+				AccessToken: "testToken",
 			},
-			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\" or \"ingest_url\"",
+			errorMessage: "failed to process \"signalfx\" config: requires a non-empty \"realm\"," +
+				" or \"ingest_url\" and \"api_url\" should be explicitly set",
 		},
 	}
 	for _, tt := range tests {
