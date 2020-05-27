@@ -141,6 +141,7 @@ jobs:
           paths: project/bin
 
   build-examples-tracing:
+    executor: docker
     steps:
       - attach_workspace:
           at: ~/examples/tracing
