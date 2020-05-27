@@ -145,7 +145,7 @@ jobs:
           paths: project/bin
 
   build-examples-tracing:
-    executor: docker
+    executor: golang
     steps:
       - attach_workspace:
           at: ~/examples/tracing
