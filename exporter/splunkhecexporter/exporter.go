@@ -90,7 +90,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 				IdleConnTimeout:     idleConnTimeout,
 				TLSHandshakeTimeout: tlsHandshakeTimeout,
 				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: config.SkipTLSVerify,
+					InsecureSkipVerify: config.InsecureSkipVerify,
 				},
 			},
 		},

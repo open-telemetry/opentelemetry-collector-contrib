@@ -28,7 +28,7 @@ exporters:
     # HTTP timeout when sending data. Defaults to 10s.
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-    skiptlsverify: false
+    insecure_skip_verify: false
 
 service:
   pipelines:

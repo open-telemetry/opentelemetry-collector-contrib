@@ -59,8 +59,8 @@ type Config struct {
 	// default value is 10 seconds.
 	Timeout time.Duration `mapstructure:"timeout"`
 
-	// SkipTLSVerify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-	SkipTLSVerify bool `mapstructure:"skiptlsverify"`
+	// insecure_skip_verify skips checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

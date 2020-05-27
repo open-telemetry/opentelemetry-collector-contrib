@@ -15,7 +15,7 @@ The following configuration options can also be configured:
 - `max_connections` (default: 100): Maximum HTTP connections to use simultaneously when sending data.
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
-- `skiptlsverify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
+- `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
 Example:
 
 ```yaml
@@ -38,7 +38,7 @@ exporters:
     # HTTP timeout when sending data. Defaults to 10s.
     timeout: 10s
     # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
-    skiptlsverify: false
+    insecure_skip_verify: false
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,
