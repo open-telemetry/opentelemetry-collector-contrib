@@ -147,7 +147,8 @@ jobs:
           paths: project/bin
 
   build-examples-tracing:
-    executor: golang
+    docker:
+      - image: alpine
     steps:
       - attach_to_workspace
       - setup_remote_docker
