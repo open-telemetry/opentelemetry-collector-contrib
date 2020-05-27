@@ -66,6 +66,10 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-examples-tracing:
+          filters:
+            tags:
+              only: /.*/
       - cross-compile:
           requires:
             - build
