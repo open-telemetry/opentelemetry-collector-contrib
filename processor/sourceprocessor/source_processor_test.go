@@ -176,7 +176,7 @@ func TestTraceSourceProcessorNewTaxonomy(t *testing.T) {
 	ttn := &testTraceConsumer{}
 	config := createConfig()
 	config.NamespaceKey = "k8s.namespace.name"
-	config.PodIdKey = "k8s.pod.id"
+	config.PodIDKey = "k8s.pod.id"
 	config.PodNameKey = "k8s.pod.pod_name"
 	config.PodKey = "k8s.pod.name"
 	config.PodTemplateHashKey = "k8s.pod.labels.pod-template-hash"

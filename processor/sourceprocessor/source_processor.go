@@ -33,7 +33,7 @@ type sourceTraceKeys struct {
 	containerKey       string
 	namespaceKey       string
 	podKey             string
-	podIdKey           string
+	podIDKey           string
 	podNameKey         string
 	podTemplateHashKey string
 	sourceHostKey      string
@@ -48,7 +48,7 @@ func (stk sourceTraceKeys) convertKey(key string) string {
 	case "pod":
 		return stk.podKey
 	case "pod_id":
-		return stk.podIdKey
+		return stk.podIDKey
 	case "pod_name":
 		return stk.podNameKey
 	case "source_host":
@@ -123,7 +123,7 @@ func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceT
 		annotationPrefix:   cfg.AnnotationPrefix,
 		containerKey:       cfg.ContainerKey,
 		namespaceKey:       cfg.NamespaceKey,
-		podIdKey:           cfg.PodIdKey,
+		podIDKey:           cfg.PodIDKey,
 		podKey:             cfg.PodKey,
 		podNameKey:         cfg.PodNameKey,
 		podTemplateHashKey: cfg.PodTemplateHashKey,

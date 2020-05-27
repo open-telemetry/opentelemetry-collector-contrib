@@ -38,7 +38,7 @@ const (
 	defaultAnnotationPrefix   = "pod_annotation_"
 	defaultContainerKey       = "container"
 	defaultNamespaceKey       = "namespace"
-	defaultPodIdKey           = "pod_id"
+	defaultPodIDKey           = "pod_id"
 	defaultPodKey             = "pod"
 	defaultPodNameKey         = "pod_name"
 	defaultPodTemplateHashKey = "pod_labels_pod-template-hash"
@@ -74,7 +74,7 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 		ContainerKey:       defaultContainerKey,
 		NamespaceKey:       defaultNamespaceKey,
 		PodKey:             defaultPodKey,
-		PodIdKey:           defaultPodIdKey,
+		PodIDKey:           defaultPodIDKey,
 		PodNameKey:         defaultPodNameKey,
 		PodTemplateHashKey: defaultPodTemplateHashKey,
 		SourceHostKey:      defaultSourceHostKey,
