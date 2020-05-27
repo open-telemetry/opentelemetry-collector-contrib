@@ -63,6 +63,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapme
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ./exporter/splunkhecexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
