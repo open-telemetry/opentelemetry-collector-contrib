@@ -67,6 +67,8 @@ workflows:
             tags:
               only: /.*/
       - build-examples-tracing:
+          requires:
+            - setup-and-lint
           filters:
             tags:
               only: /.*/
@@ -147,12 +149,11 @@ jobs:
   build-examples-tracing:
     executor: golang
     steps:
-      - attach_workspace:
-          at: ~/examples/tracing
+      - attach_to_workspace
       - setup_remote_docker
       - run:
           name: Build trace example
-          command: docker-compose build
+          command: docker-compose -f examples/tracing/docker-compose.yml build
 
   cross-compile:
     executor: golang
