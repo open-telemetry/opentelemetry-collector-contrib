@@ -31,6 +31,9 @@ cov docs/examples/opentelemetry-example-app
 # aiohttp is only supported on Python 3.5+.
 if [ ${PYTHON_VERSION_INFO[1]} -gt 4 ]; then
     cov ext/opentelemetry-ext-aiohttp-client
+# ext-asgi is only supported on Python 3.5+.
+if [ ${PYTHON_VERSION_INFO[1]} -gt 4 ]; then
+    cov ext/opentelemetry-ext-asgi
 fi
 
 coverage report --show-missing
