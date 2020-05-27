@@ -140,6 +140,15 @@ jobs:
           root: ~/
           paths: project/bin
 
+  build-examples-tracing:
+    steps:
+      - attach_workspace:
+          at: ~/examples/tracing
+      - setup_remote_docker
+      - run:
+          name: Build trace example
+          command: docker-compose build
+
   cross-compile:
     executor: golang
     parallelism: 4
