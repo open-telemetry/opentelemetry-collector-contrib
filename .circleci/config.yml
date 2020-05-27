@@ -148,7 +148,7 @@ jobs:
 
   build-examples-tracing:
     docker:
-      - image: alpine
+      - image: cimg/go:1.14
     steps:
       - attach_to_workspace
       - setup_remote_docker
