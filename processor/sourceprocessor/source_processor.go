@@ -89,6 +89,11 @@ const (
 
 	includeAnnotation = "sumologic.com/include"
 	excludeAnnotation = "sumologic.com/exclude"
+
+	collectorKey      = "_collector"
+	sourceCategoryKey = "_sourceCategory"
+	sourceHostKey     = "_sourceHost"
+	sourceNameKey     = "_sourceName"
 )
 
 func compileRegex(regex string) *regexp.Regexp {
@@ -146,9 +151,8 @@ func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceT
 }
 
 func (stp *sourceTraceProcessor) fillOtherMeta(atts pdata.AttributeMap) {
-	atts.UpsertString("_source", stp.source)
 	if stp.collector != "" {
-		atts.UpsertString("_collector", stp.collector)
+		atts.UpsertString(collectorKey, stp.collector)
 	}
 }
 
@@ -360,7 +364,7 @@ func extractFormat(format string, name string, keys sourceTraceKeys) attributeFi
 
 func createSourceHostFiller(keys sourceTraceKeys) attributeFiller {
 	return attributeFiller{
-		name:            "_sourceHost",
+		name:            sourceHostKey,
 		compiledFormat:  "",
 		dashReplacement: "",
 		labels:          make([]string, 0),
@@ -369,12 +373,12 @@ func createSourceHostFiller(keys sourceTraceKeys) attributeFiller {
 }
 
 func createSourceNameFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
-	filler := extractFormat(cfg.SourceName, "_sourceName", keys)
+	filler := extractFormat(cfg.SourceName, sourceNameKey, keys)
 	return filler
 }
 
 func createSourceCategoryFiller(cfg *Config, keys sourceTraceKeys) attributeFiller {
-	filler := extractFormat(cfg.SourceCategory, "_sourceCategory", keys)
+	filler := extractFormat(cfg.SourceCategory, sourceCategoryKey, keys)
 	filler.compiledFormat = cfg.SourceCategoryPrefix + filler.compiledFormat
 	filler.dashReplacement = cfg.SourceCategoryReplaceDash
 	filler.prefix = cfg.SourceCategoryPrefix

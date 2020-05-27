@@ -60,7 +60,6 @@ var (
 		"pod":                          "pod-5db86d8867-sdqlj",
 		"pod_name":                     "pod",
 		"pod_labels_pod-template-hash": "5db86d8867",
-		"_source":                      "traces",
 		"_collector":                   "foocollector",
 		"_sourceName":                  "namespace-1.pod-5db86d8867-sdqlj.container-1",
 		"_sourceCategory":              "prefix/namespace#1/pod",
@@ -83,7 +82,6 @@ var (
 		"k8s.pod.pod_name":                 "pod",
 		"_sourceName":                      "namespace-1.pod-5db86d8867-sdqlj.container-1",
 		"_sourceCategory":                  "prefix/namespace#1/pod",
-		"_source":                          "traces",
 		"_collector":                       "foocollector",
 	}
 
@@ -93,7 +91,6 @@ var (
 
 	limitedLabelsWithMeta = map[string]string{
 		"pod_id":     "pod-1234",
-		"_source":    "traces",
 		"_collector": "foocollector",
 	}
 )
