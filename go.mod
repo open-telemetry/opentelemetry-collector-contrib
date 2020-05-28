@@ -34,6 +34,7 @@ require (
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/collector v0.3.1-0.20200522130256-daf2fc71ac65
 	honnef.co/go/tools v0.0.1-2020.1.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.0.0
 )
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
@@ -93,4 +94,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ./exporter/awsemfexporter
+
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+
+replace go.opentelemetry.io/collector => ../opentelemetry-collector

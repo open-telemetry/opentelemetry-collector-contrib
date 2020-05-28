@@ -1,0 +1,31 @@
+   extensions:
+     health_check:
+     pprof:
+       endpoint: 0.0.0.0:1777
+     zpages:
+       endpoint: 0.0.0.0:55679
+
+   receivers:
+     otlp:
+       endpoint: 0.0.0.0:55680
+
+   processors:
+     batch:
+     queued_retry:
+
+   exporters:
+     logging:
+      loglevel: debug
+     awsemf:
+      log_group_name: 'app-test' 
+      local_mode: true
+      region: 'us-west-2'
+      
+   service:
+     pipelines:
+
+       metrics:
+         receivers: [otlp]
+         exporters: [logging, awsemf]
+
+     extensions: [health_check, pprof, zpages]
