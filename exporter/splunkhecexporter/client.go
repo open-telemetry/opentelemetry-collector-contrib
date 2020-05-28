@@ -60,6 +60,7 @@ func (c *client) pushMetricsData(
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
 	}
 
+	// TODO the client sends synchronously data as of now. It would make more sense to buffer data coming in, and send batches as supported by Splunk. To batch effectively, a ring buffer approach would work well - based on time and number of messages queued.
 	req, err := http.NewRequest("POST", c.url.String(), body)
 	if err != nil {
 		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
