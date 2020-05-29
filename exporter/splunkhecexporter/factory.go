@@ -32,7 +32,7 @@ const (
 	defaultHTTPTimeout      = 10 * time.Second
 )
 
-// Factory is the factory for SignalFx exporter.
+// Factory is the factory for Splunk HEC exporter.
 type Factory struct {
 }
 
