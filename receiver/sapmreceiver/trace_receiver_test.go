@@ -292,7 +292,7 @@ func TestReception(t *testing.T) {
 			t.Log("Sending Sapm Request")
 			var resp *http.Response
 			resp, err = sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.zipped, tt.args.useTLS)
-			require.NoError(t, err, fmt.Sprintf("should not have failed when sending sapm %v", err))
+			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
 			t.Log("SAPM Request Received")
 

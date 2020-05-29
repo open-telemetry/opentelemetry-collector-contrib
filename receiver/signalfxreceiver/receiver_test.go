@@ -391,11 +391,11 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 
 	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
-	require.NoError(t, err, fmt.Sprintf("should have no errors with new request: %v", err))
+	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
 	caCert, err := ioutil.ReadFile("./testdata/testcert.crt")
-	require.NoError(t, err, fmt.Sprintf("failed to load certificate: %v", err))
+	require.NoErrorf(t, err, "failed to load certificate: %v", err)
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
@@ -408,7 +408,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	}
 
 	resp, err := client.Do(req)
-	require.NoError(t, err, fmt.Sprintf("should not have failed when sending to signalFx receiver %v", err))
+	require.NoErrorf(t, err, "should not have failed when sending to signalFx receiver %v", err)
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
 	t.Log("SignalFx Request Received")
 
