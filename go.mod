@@ -23,6 +23,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0
@@ -32,7 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.3.1-0.20200522130256-daf2fc71ac65
+	go.opentelemetry.io/collector v0.3.1-0.20200526215338-87af38a24676
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
 
@@ -63,6 +64,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapme
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter => ./exporter/splunkhecexporter
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ./extension/observer
@@ -74,6 +77,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ./receiver/collectdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver => ./receiver/jaegerlegacyreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver => ./receiver/kubeletstatsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./receiver/redisreceiver
 

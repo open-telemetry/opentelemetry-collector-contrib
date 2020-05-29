@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 
 	// The receiver `sapm/disabled` doesn't count because disabled receivers
 	// are excluded from the final list.
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r0 := cfg.Receivers["sapm"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -46,9 +47,23 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
+				TypeVal:  typeStr,
 				NameVal:  "sapm/customname",
 				Endpoint: "0.0.0.0:7276",
+			},
+		})
+
+	r2 := cfg.Receivers["sapm/tls"].(*Config)
+	assert.Equal(t, r2,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal:  typeStr,
+				NameVal:  "sapm/tls",
+				Endpoint: ":7276",
+			},
+			TLSCredentials: &configtls.TLSSetting{
+				CertFile: "/test.crt",
+				KeyFile:  "/test.key",
 			},
 		})
 }
