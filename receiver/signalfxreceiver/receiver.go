@@ -131,8 +131,12 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 		err = nil
 
 		go func() {
-			if err = r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				host.ReportFatalError(err)
+			if r.config.TLSCredentials != nil {
+				host.ReportFatalError(r.server.ListenAndServeTLS(r.config.TLSCredentials.CertFile, r.config.TLSCredentials.KeyFile))
+			} else {
+				if err = r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					host.ReportFatalError(err)
+				}
 			}
 		}()
 	})
@@ -154,8 +158,12 @@ func (r *sfxReceiver) Shutdown(context.Context) error {
 }
 
 func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), "http", r.config.Name())
-	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), "http")
+	transport := "http"
+	if r.config.TLSCredentials != nil {
+		transport = "https"
+	}
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
+	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)

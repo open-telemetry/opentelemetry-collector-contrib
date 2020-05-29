@@ -69,8 +69,12 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 		return err
 	}
 
-	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), "http", "")
-	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), "http")
+	transport := "http"
+	if sr.config.TLSCredentials != nil {
+		transport = "https"
+	}
+	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), transport, "")
+	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), transport)
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
 
@@ -170,7 +174,11 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 
 		// run the server on a routine
 		go func() {
-			host.ReportFatalError(sr.server.Serve(ln))
+			if sr.config.TLSCredentials != nil {
+				host.ReportFatalError(sr.server.ServeTLS(ln, sr.config.TLSCredentials.CertFile, sr.config.TLSCredentials.KeyFile))
+			} else {
+				host.ReportFatalError(sr.server.Serve(ln))
+			}
 		}()
 	})
 	return err
