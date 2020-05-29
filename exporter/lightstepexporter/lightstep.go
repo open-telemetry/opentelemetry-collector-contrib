@@ -62,9 +62,15 @@ func (e *LightStepExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	for _, span := range td.Spans {
 		sd, err := lightstep.OCProtoSpanToOTelSpanData(span)
 		if err == nil {
-			if td.Node != nil && td.Node.ServiceInfo != nil {
-				lightStepServiceName := kv.Key("lightstep.component_name")
-				sd.Attributes = append(sd.Attributes, lightStepServiceName.String(td.Node.ServiceInfo.Name))
+			if td.Node != nil {
+				if td.Node.ServiceInfo != nil {
+					lightstepServiceName := kv.Key("lightstep.component_name")
+					sd.Attributes = append(sd.Attributes, lightstepServiceName.String(td.Node.ServiceInfo.Name))
+				}
+				if td.Node.Identifier != nil {
+					lightstepHostName := kv.Key("lightstep.hostname")
+					sd.Attributes = append(sd.Attributes, lightstepHostName.String(td.Node.Identifier.HostName))
+				}
 			}
 			e.exporter.ExportSpan(ctx, sd)
 			goodSpans++
