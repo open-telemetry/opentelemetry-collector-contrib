@@ -50,6 +50,9 @@ var (
 	podNameIgnorePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`jaeger-agent`),
 		regexp.MustCompile(`jaeger-collector`),
+		regexp.MustCompile(`otel-collector`),
+		regexp.MustCompile(`otel-agent`),
+		regexp.MustCompile(`collection-sumologic-otelcol`),
 	}
 	podDeleteGracePeriod = time.Second * 120
 	watchSyncPeriod      = time.Minute * 5
