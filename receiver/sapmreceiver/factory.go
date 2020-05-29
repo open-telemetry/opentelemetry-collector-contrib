@@ -54,7 +54,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
+			TypeVal:  typeStr,
 			NameVal:  typeStr,
 			Endpoint: defaultEndpoint,
 		},
