@@ -15,11 +15,13 @@
 package awsxrayexporter
 
 import (
+	"context"
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -45,7 +47,8 @@ func TestCreateTraceExporter(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	exporter, err := factory.CreateTraceExporter(logger, cfg.Exporters["awsxray/customname"])
+	ctx := context.Background()
+	exporter, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
@@ -62,7 +65,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	exporter, err := factory.CreateMetricsExporter(logger, cfg.Exporters["awsxray/customname"])
+	ctx := context.Background()
+	exporter, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 }

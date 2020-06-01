@@ -16,15 +16,12 @@ package translator
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -47,15 +44,15 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[AWSOperationAttribute] = "GetItem"
 	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
 	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
-	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
-	segment := MakeSegment(spanName, span)
+	segment := MakeSegment(span, resource)
 	assert.Equal(t, "DynamoDB", segment.Name)
 	assert.Equal(t, "aws", segment.Namespace)
 	assert.Equal(t, "subsegment", segment.Type)
 
-	jsonStr, err := MakeSegmentDocumentString(spanName, span)
+	jsonStr, err := MakeSegmentDocumentString(span, resource)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -79,12 +76,12 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusText] = "java.lang.NullPointerException"
 	attributes[semconventions.AttributeHTTPUserAgent] = userAgent
 	attributes[semconventions.AttributeEnduserID] = enduser
-	labels := constructDefaultResourceLabels()
-	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes, labels)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
-	span.TimeEvents = &timeEvents
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, errorMessage, attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents.CopyTo(span.Events())
 
-	segment := MakeSegment(spanName, span)
+	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -105,25 +102,25 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := []byte{0, 0, 0, 0, 0, 0, 0, 0}
-	labels := constructDefaultResourceLabels()
-	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil, labels)
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil)
 
-	segment := MakeSegment(spanName, span)
+	segment := MakeSegment(span, resource)
 
 	assert.Empty(t, segment.ParentID)
 }
 
 func TestSpanWithNoStatus(t *testing.T) {
-	span := &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "nostatus"},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(time.Now()),
-		EndTime:      convertTimeToTimestamp(time.Now().Add(10)),
-	}
-	segment := MakeSegment("nostatus", span)
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(time.Now().UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
+
+	segment := MakeSegment(span, pdata.NewResource())
 	assert.NotNil(t, segment)
 }
 
@@ -140,10 +137,10 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerName] = "db.dev.example.com"
 	attributes[semconventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID
-	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes, labels)
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
-	segment := MakeSegment(spanName, span)
+	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.SQL)
@@ -152,7 +149,8 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Annotations)
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
-	assert.Equal(t, spanName, segment.Name)
+	// Restricted characters removed from span name.
+	assert.Equal(t, "call update_user_preference , ,  ", segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
 	assert.Equal(t, "remote", segment.Namespace)
@@ -176,13 +174,15 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
 	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
-	labels := constructDefaultResourceLabels()
-	span := constructClientSpan(nil, spanName, 0, "OK", attributes, labels)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
-	span.TimeEvents = &timeEvents
-	span.TraceId[0] = 0x11
+	resource := constructDefaultResource()
+	span := constructClientSpan(nil, spanName, 0, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents.CopyTo(span.Events())
+	traceID := []byte(span.TraceID())
+	traceID[0] = 0x11
+	span.SetTraceID(traceID)
 
-	jsonStr, err := MakeSegmentDocumentString(spanName, span)
+	jsonStr, err := MakeSegmentDocumentString(span, resource)
 
 	assert.NotNil(t, jsonStr)
 	assert.Nil(t, err)
@@ -215,13 +215,13 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
-	labels := constructDefaultResourceLabels()
-	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes, labels)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime)
-	span.TimeEvents = &timeEvents
-	span.Attributes = nil
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
+	timeEvents.CopyTo(span.Events())
+	pdata.NewAttributeMap().CopyTo(span.Attributes())
 
-	segment := MakeSegment(spanName, span)
+	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
@@ -236,8 +236,7 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, spanName))
 }
 
-func constructClientSpan(parentSpanID []byte, name string, code int32, message string,
-	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
+func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -246,30 +245,27 @@ func constructClientSpan(parentSpanID []byte, name string, code int32, message s
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
-	return &tracepb.Span{
-		TraceId:      traceID,
-		SpanId:       spanID,
-		ParentSpanId: parentSpanID,
-		Name:         &tracepb.TruncatableString{Value: name},
-		Kind:         tracepb.Span_CLIENT,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    code,
-			Message: message,
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: rscLabels,
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName(name)
+	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(pdata.StatusCode(code))
+	status.SetMessage(message)
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func constructServerSpan(parentSpanID []byte, name string, code int32, message string,
-	attributes map[string]interface{}, rscLabels map[string]string) *tracepb.Span {
+func constructServerSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -278,152 +274,94 @@ func constructServerSpan(parentSpanID []byte, name string, code int32, message s
 		spanAttributes = constructSpanAttributes(attributes)
 	)
 
-	return &tracepb.Span{
-		TraceId:      traceID,
-		SpanId:       spanID,
-		ParentSpanId: parentSpanID,
-		Name:         &tracepb.TruncatableString{Value: name},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    code,
-			Message: message,
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: rscLabels,
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName(name)
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(pdata.StatusCode(code))
+	status.SetMessage(message)
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func constructSpanAttributes(attributes map[string]interface{}) map[string]*tracepb.AttributeValue {
-	attrs := make(map[string]*tracepb.AttributeValue)
+func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
+	attrs := pdata.NewAttributeMap()
 	for key, value := range attributes {
-		valType := reflect.TypeOf(value)
-		var attrVal tracepb.AttributeValue
-		if valType.Kind() == reflect.Int {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: int64(value.(int)),
-			}}
-		} else if valType.Kind() == reflect.Int64 {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: value.(int64),
-			}}
+		if cast, ok := value.(int); ok {
+			attrs.InsertInt(key, int64(cast))
+		} else if cast, ok := value.(int64); ok {
+			attrs.InsertInt(key, cast)
 		} else {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{Value: fmt.Sprintf("%v", value)},
-			}}
+			attrs.InsertString(key, fmt.Sprintf("%v", value))
 		}
-		attrs[key] = &attrVal
 	}
 	return attrs
 }
 
-func constructDefaultResourceLabels() map[string]string {
-	labels := make(map[string]string)
-	labels[semconventions.AttributeServiceName] = "signup_aggregator"
-	labels[semconventions.AttributeServiceVersion] = "semver:1.1.4"
-	labels[semconventions.AttributeContainerName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
-	labels[semconventions.AttributeContainerTag] = "v1"
-	labels[semconventions.AttributeK8sCluster] = "production"
-	labels[semconventions.AttributeK8sNamespace] = "default"
-	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
-	labels[semconventions.AttributeK8sPod] = "signup_aggregator-x82ufje83"
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudRegion] = "us-east-1"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	return labels
+func constructDefaultResource() pdata.Resource {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeServiceVersion, "semver:1.1.4")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, "signup_aggregator-x82ufje83")
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudRegion, "us-east-1")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.CopyTo(resource.Attributes())
+	return resource
 }
 
-func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
+func constructTimedEventsWithReceivedMessageEvent(tm pdata.TimestampUnixNano) pdata.SpanEventSlice {
+	eventAttr := pdata.NewAttributeMap()
+	eventAttr.InsertString(semconventions.AttributeMessageType, "RECEIVED")
+	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)
+	eventAttr.InsertInt(semconventions.AttributeMessageCompressedSize, 6478)
+	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 12452)
+
+	event := pdata.NewSpanEvent()
+	event.InitEmpty()
+	event.SetTimestamp(tm)
+	eventAttr.CopyTo(event.Attributes())
+	event.SetDroppedAttributesCount(0)
+
+	events := pdata.NewSpanEventSlice()
+	events.Resize(1)
+	event.CopyTo(events.At(0))
+	return events
 }
 
-func constructTimedEventsWithReceivedMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
-	eventAttrMap := make(map[string]*tracepb.AttributeValue)
-	eventAttrMap[semconventions.AttributeMessageType] =
-		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: "RECEIVED"},
-		}}
-	eventAttrMap[semconventions.AttributeMessageID] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 1,
-	}}
-	eventAttrMap[semconventions.AttributeMessageCompressedSize] =
-		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-			IntValue: 6478,
-		}}
-	eventAttrMap[semconventions.AttributeMessageUncompressedSize] =
-		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-			IntValue: 12452,
-		}}
-	eventAttrbutes := tracepb.Span_Attributes{
-		AttributeMap:           eventAttrMap,
-		DroppedAttributesCount: 0,
-	}
-	annotation := tracepb.Span_TimeEvent_Annotation{
-		Attributes: &eventAttrbutes,
-	}
-	event := tracepb.Span_TimeEvent{
-		Time: tm,
-		Value: &tracepb.Span_TimeEvent_Annotation_{
-			Annotation: &annotation,
-		},
-	}
-	events := make([]*tracepb.Span_TimeEvent, 1)
-	events[0] = &event
-	timeEvents := tracepb.Span_TimeEvents{
-		TimeEvent:                 events,
-		DroppedAnnotationsCount:   0,
-		DroppedMessageEventsCount: 0,
-	}
-	return timeEvents
-}
+func constructTimedEventsWithSentMessageEvent(tm pdata.TimestampUnixNano) pdata.SpanEventSlice {
+	eventAttr := pdata.NewAttributeMap()
+	eventAttr.InsertString(semconventions.AttributeMessageType, "SENT")
+	eventAttr.InsertInt(semconventions.AttributeMessageID, 1)
+	eventAttr.InsertInt(semconventions.AttributeMessageUncompressedSize, 7480)
 
-func constructTimedEventsWithSentMessageEvent(tm *timestamp.Timestamp) tracepb.Span_TimeEvents {
-	eventAttrMap := make(map[string]*tracepb.AttributeValue)
-	eventAttrMap[semconventions.AttributeMessageType] =
-		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-			StringValue: &tracepb.TruncatableString{Value: "SENT"},
-		}}
-	eventAttrMap[semconventions.AttributeMessageID] = &tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-		IntValue: 1,
-	}}
-	eventAttrMap[semconventions.AttributeMessageUncompressedSize] =
-		&tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-			IntValue: 7480,
-		}}
-	eventAttrbutes := tracepb.Span_Attributes{
-		AttributeMap:           eventAttrMap,
-		DroppedAttributesCount: 0,
-	}
-	annotation := tracepb.Span_TimeEvent_Annotation{
-		Attributes: &eventAttrbutes,
-	}
-	event := tracepb.Span_TimeEvent{
-		Time: tm,
-		Value: &tracepb.Span_TimeEvent_Annotation_{
-			Annotation: &annotation,
-		},
-	}
-	events := make([]*tracepb.Span_TimeEvent, 1)
-	events[0] = &event
-	timeEvents := tracepb.Span_TimeEvents{
-		TimeEvent:                 events,
-		DroppedAnnotationsCount:   0,
-		DroppedMessageEventsCount: 0,
-	}
-	return timeEvents
+	event := pdata.NewSpanEvent()
+	event.InitEmpty()
+	event.SetTimestamp(tm)
+	eventAttr.CopyTo(event.Attributes())
+	event.SetDroppedAttributesCount(0)
+
+	events := pdata.NewSpanEventSlice()
+	events.Resize(1)
+	event.CopyTo(events.At(0))
+	return events
 }
