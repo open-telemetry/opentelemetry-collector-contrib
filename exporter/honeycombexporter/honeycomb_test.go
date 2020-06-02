@@ -111,6 +111,15 @@ func TestExporter(t *testing.T) {
 				Name:                    &tracepb.TruncatableString{Value: "root"},
 				Kind:                    tracepb.Span_SERVER,
 				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"span_attr_name": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "Span Attribute"},
+							},
+						},
+					},
+				},
 				Resource: &resourcepb.Resource{
 					Type: "override",
 					Labels: map[string]string{
@@ -203,6 +212,7 @@ func TestExporter(t *testing.T) {
 				"name":                    "root",
 				"resource_type":           "override",
 				"service_name":            "test_service",
+				"span_attr_name":          "Span Attribute",
 				"status.code":             float64(0),
 				"status.message":          "OK",
 				"trace.span_id":           "02",
