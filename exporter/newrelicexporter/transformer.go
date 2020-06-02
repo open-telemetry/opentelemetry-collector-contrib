@@ -25,8 +25,8 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/component/componenterror"
 )
 
 const (
