@@ -20,7 +20,23 @@ Each rule must start with `type.(pod|port) &&` such that the rule matches only o
 
 **receivers.&lt;receiver_type/id&gt;.config**
 
-This is static configuration that will be used when creating the receiver at runtime. This config is merged with the config discovered at runtime.
+This is configuration that will be used when creating the receiver at runtime. This config is merged with the config discovered at runtime.
+
+This option can use static and dynamic configuration values. Static values are normal YAML values. However the value can also be dynamically constructed from the discovered endpoint object. Dynamic values are surrounded by backticks (\`). If a literal backtick is needed use \\` to escape it. Dynamic values can be used with static values in which case they are concatenated. For example:
+
+```yaml
+config:
+   secure_url: https://`pod.labels["secure_host"]`
+```
+
+The value of `secure_url` will be `https://` concatenated with the value of the `secure_host` label.
+
+This can also be used when the discovered endpoint needs to be changed dynamically. For instance, suppose the IP `1.2.3.4` is discovered without a port but the port needs to be set inside endpoint. You could do:
+
+```yaml
+config:
+   endpoint: `endpoint`:8080
+```
 
 ## Endpoints
 
@@ -63,6 +79,8 @@ receivers:
           config:
             # Static receiver-specific config.
             password: secret
+            # Dynamic configuration value.
+            service_name: `pod.labels["service_name"]`
 
 processors:
   exampleprocessor:
