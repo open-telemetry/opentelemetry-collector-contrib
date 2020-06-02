@@ -19,11 +19,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
@@ -36,7 +35,7 @@ const (
 
 // NewTraceExporter creates an component.TraceExporterOld that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TraceExporterOld, error) {
+func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connAttr) (component.TraceExporter, error) {
 	typeLog := zap.String("type", string(config.Type()))
 	nameLog := zap.String("name", config.Name())
 	awsConfig, session, err := GetAWSConfigSession(logger, cn, config.(*Config))
@@ -44,21 +43,49 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 		return nil, err
 	}
 	xrayClient := NewXRay(logger, awsConfig, session)
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		config,
-		func(ctx context.Context, td consumerdata.TraceData) (totalDroppedSpans int, err error) {
-			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", len(td.Spans)))
+		func(ctx context.Context, td pdata.Traces) (totalDroppedSpans int, err error) {
+			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 			totalDroppedSpans = 0
-			totalSpans := len(td.Spans)
-			for offset := 0; offset < totalSpans; offset += maxSegmentsPerPut {
-				nextOffset := offset + maxSegmentsPerPut
-				if nextOffset > totalSpans {
-					nextOffset = totalSpans
+			documents := make([]*string, 0, td.SpanCount())
+			for i := 0; i < td.ResourceSpans().Len(); i++ {
+				rspans := td.ResourceSpans().At(i)
+				if rspans.IsNil() {
+					continue
 				}
-				droppedSpans, input := assembleRequest(td.Spans[offset:nextOffset], logger)
-				totalDroppedSpans += droppedSpans
+
+				resource := rspans.Resource()
+				for j := 0; j < rspans.InstrumentationLibrarySpans().Len(); j++ {
+					ispans := rspans.InstrumentationLibrarySpans().At(j)
+					if ispans.IsNil() {
+						continue
+					}
+
+					spans := ispans.Spans()
+					for k := 0; k < spans.Len(); k++ {
+						span := spans.At(k)
+						if span.IsNil() {
+							continue
+						}
+
+						document, localErr := translator.MakeSegmentDocumentString(span, resource)
+						if localErr != nil {
+							totalDroppedSpans++
+							continue
+						}
+						documents = append(documents, &document)
+					}
+				}
+			}
+			for offset := 0; offset < len(documents); offset += maxSegmentsPerPut {
+				nextOffset := offset + maxSegmentsPerPut
+				if nextOffset > td.SpanCount() {
+					nextOffset = td.SpanCount()
+				}
+				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
-				output, localErr := xrayClient.PutTraceSegments(input)
+				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil && !config.(*Config).LocalMode {
 					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
 				}
@@ -78,26 +105,6 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 			return logger.Sync()
 		}),
 	)
-}
-
-func assembleRequest(spans []*tracepb.Span, logger *zap.Logger) (int, *xray.PutTraceSegmentsInput) {
-	documents := make([]*string, len(spans))
-	droppedSpans := int(0)
-	for i, span := range spans {
-		if span == nil || span.Name == nil {
-			droppedSpans++
-			continue
-		}
-		spanName := span.Name.Value
-		jsonStr, err := translator.MakeSegmentDocumentString(spanName, span)
-		if err != nil {
-			droppedSpans++
-			logger.Warn("Unable to convert span", zap.Error(err))
-		}
-		logger.Debug(jsonStr)
-		documents[i] = &jsonStr
-	}
-	return droppedSpans, &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents}
 }
 
 func wrapErrorIfBadRequest(err *error) error {

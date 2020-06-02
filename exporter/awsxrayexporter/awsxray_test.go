@@ -20,17 +20,12 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
@@ -39,11 +34,11 @@ func TestTraceExport(t *testing.T) {
 	traceExporter := initializeTraceExporter()
 	ctx := context.Background()
 	td := constructSpanData()
-	err := traceExporter.ConsumeTraceData(ctx, td)
+	err := traceExporter.ConsumeTraces(ctx, td)
 	assert.Nil(t, err)
 }
 
-func initializeTraceExporter() component.TraceExporterOld {
+func initializeTraceExporter() component.TraceExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -62,38 +57,38 @@ func initializeTraceExporter() component.TraceExporterOld {
 	return traceExporter
 }
 
-func constructSpanData() consumerdata.TraceData {
+func constructSpanData() pdata.Traces {
 	resource := constructResource()
-	spans := make([]*tracepb.Span, 2)
-	spans[0] = constructHTTPClientSpan()
-	spans[0].Resource = resource
-	spans[1] = constructHTTPServerSpan()
-	spans[1].Resource = resource
-	return consumerdata.TraceData{
-		Node:         nil,
-		Resource:     resource,
-		Spans:        spans,
-		SourceFormat: "oc",
-	}
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rspans := traces.ResourceSpans().At(0)
+	resource.CopyTo(rspans.Resource())
+	rspans.InstrumentationLibrarySpans().Resize(1)
+	ispans := rspans.InstrumentationLibrarySpans().At(0)
+	ispans.Spans().Resize(2)
+	constructHTTPClientSpan().CopyTo(ispans.Spans().At(0))
+	constructHTTPServerSpan().CopyTo(ispans.Spans().At(1))
+	return traces
 }
 
-func constructResource() *resourcepb.Resource {
-	labels := make(map[string]string)
-	labels[semconventions.AttributeServiceName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
-	labels[semconventions.AttributeContainerTag] = "v1"
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "999999998"
-	labels[semconventions.AttributeCloudRegion] = "us-west-2"
-	labels[semconventions.AttributeCloudZone] = "us-west-1b"
-	return &resourcepb.Resource{
-		Type:   "container",
-		Labels: labels,
-	}
+func constructResource() pdata.Resource {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
+	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")
+	attrs.CopyTo(resource.Attributes())
+	return resource
 }
 
-func constructHTTPClientSpan() *tracepb.Span {
+func constructHTTPClientSpan() pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
@@ -103,32 +98,27 @@ func constructHTTPClientSpan() *tracepb.Span {
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_CLIENT,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func constructHTTPServerSpan() *tracepb.Span {
+func constructHTTPServerSpan() pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
@@ -139,61 +129,36 @@ func constructHTTPServerSpan() *tracepb.Span {
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func convertTimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
-	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
-	}
-}
-
-func constructSpanAttributes(attributes map[string]interface{}) map[string]*tracepb.AttributeValue {
-	attrs := make(map[string]*tracepb.AttributeValue)
+func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeMap {
+	attrs := pdata.NewAttributeMap()
 	for key, value := range attributes {
-		valType := reflect.TypeOf(value)
-		var attrVal tracepb.AttributeValue
-		if valType.Kind() == reflect.Int {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: int64(value.(int)),
-			}}
-		} else if valType.Kind() == reflect.Int64 {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_IntValue{
-				IntValue: value.(int64),
-			}}
+		if cast, ok := value.(int); ok {
+			attrs.InsertInt(key, int64(cast))
+		} else if cast, ok := value.(int64); ok {
+			attrs.InsertInt(key, cast)
 		} else {
-			attrVal = tracepb.AttributeValue{Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{Value: fmt.Sprintf("%v", value)},
-			}}
+			attrs.InsertString(key, fmt.Sprintf("%v", value))
 		}
-		attrs[key] = &attrVal
 	}
 	return attrs
 }

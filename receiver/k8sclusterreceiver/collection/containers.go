@@ -35,7 +35,7 @@ const (
 )
 
 var containerRestartMetric = &metricspb.MetricDescriptor{
-	Name: "kubernetes/container/restarts",
+	Name: "k8s/container/restarts",
 	Description: "How many times the container has restarted in the recent past. " +
 		"This value is pulled directly from the K8s API and the value can go indefinitely high" +
 		" and be reset to 0 at any time depending on how your kubelet is configured to prune" +
@@ -48,7 +48,7 @@ var containerRestartMetric = &metricspb.MetricDescriptor{
 }
 
 var containerReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/ready",
+	Name:        "k8s/container/ready",
 	Description: "Whether a container has passed its readiness probe (0 for no, 1 for yes)",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
@@ -81,14 +81,14 @@ func boolToInt64(b bool) int64 {
 }
 
 var containerRequestMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/request",
+	Name:        "k8s/container/request",
 	Description: "Resource requested for the container",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},
 }
 
 var containerLimitMetric = &metricspb.MetricDescriptor{
-	Name:        "kubernetes/container/limit",
+	Name:        "k8s/container/limit",
 	Description: "Maximum resource limit set for the container",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},

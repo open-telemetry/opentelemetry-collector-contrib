@@ -15,26 +15,25 @@
 package translator
 
 import (
-	"strings"
 	"testing"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestAwsFromEc2Resource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
-	labels := make(map[string]string)
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	labels[semconventions.AttributeHostID] = instanceID
-	labels[semconventions.AttributeHostType] = "m5.xlarge"
-	resource := &resourcepb.Resource{
-		Type:   "vm",
-		Labels: labels,
-	}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.CopyTo(resource.Attributes())
+
 	attributes := make(map[string]string)
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -44,35 +43,33 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, instanceID))
+	assert.Equal(t, "123456789", awsData.AccountID)
+	assert.Equal(t, &EC2Metadata{
+		InstanceID:       instanceID,
+		AvailabilityZone: "us-east-1c",
+	}, awsData.EC2Metadata)
 }
 
 func TestAwsFromEcsResource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
-	labels := make(map[string]string)
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	labels[semconventions.AttributeContainerName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
-	labels[semconventions.AttributeContainerTag] = "v1"
-	labels[semconventions.AttributeK8sCluster] = "production"
-	labels[semconventions.AttributeK8sNamespace] = "default"
-	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
-	labels[semconventions.AttributeK8sPod] = containerID
-	labels[semconventions.AttributeHostID] = instanceID
-	labels[semconventions.AttributeHostType] = "m5.xlarge"
-	resource := &resourcepb.Resource{
-		Type:   "container",
-		Labels: labels,
-	}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.CopyTo(resource.Attributes())
+
 	attributes := make(map[string]string)
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -82,27 +79,23 @@ func TestAwsFromEcsResource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2Metadata)
 	assert.NotNil(t, awsData.ECSMetadata)
 	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
+	assert.Equal(t, &ECSMetadata{
+		ContainerName: containerID,
+	}, awsData.ECSMetadata)
 }
 
 func TestAwsFromBeanstalkResource(t *testing.T) {
 	deployID := "232"
-	labels := make(map[string]string)
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	labels[semconventions.AttributeServiceNamespace] = "production"
-	labels[semconventions.AttributeServiceInstance] = deployID
-	resource := &resourcepb.Resource{
-		Type:   "vm",
-		Labels: labels,
-	}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeServiceNamespace, "production")
+	attrs.InsertString(semconventions.AttributeServiceInstance, deployID)
+	attrs.CopyTo(resource.Attributes())
+
 	attributes := make(map[string]string)
 
 	filtered, awsData := makeAws(attributes, resource)
@@ -112,35 +105,32 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	assert.Nil(t, awsData.EC2Metadata)
 	assert.Nil(t, awsData.ECSMetadata)
 	assert.NotNil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, deployID))
+	assert.Equal(t, &BeanstalkMetadata{
+		Environment:  "production",
+		VersionLabel: "",
+		DeploymentID: 232,
+	}, awsData.BeanstalkMetadata)
 }
 
 func TestAwsWithAwsSqsResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
-	labels := make(map[string]string)
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	labels[semconventions.AttributeContainerName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
-	labels[semconventions.AttributeContainerTag] = "v1"
-	labels[semconventions.AttributeK8sCluster] = "production"
-	labels[semconventions.AttributeK8sNamespace] = "default"
-	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
-	labels[semconventions.AttributeK8sPod] = containerID
-	labels[semconventions.AttributeHostID] = instanceID
-	labels[semconventions.AttributeHostType] = "m5.xlarge"
-	resource := &resourcepb.Resource{
-		Type:   "container",
-		Labels: labels,
-	}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+
 	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
 	attributes := make(map[string]string)
 	attributes[AWSOperationAttribute] = "SendMessage"
@@ -153,39 +143,41 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2Metadata)
-	assert.NotNil(t, awsData.ECSMetadata)
-	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
-	assert.True(t, strings.Contains(jsonStr, queueURL))
+	assert.Equal(t, queueURL, awsData.QueueURL)
+	assert.Equal(t, "us-east-2", awsData.RemoteRegion)
+}
+
+func TestAwsWithSqsAlternateAttribute(t *testing.T) {
+	queueURL := "https://sqs.use1.amazonaws.com/Meltdown-Alerts"
+	attributes := make(map[string]string)
+	attributes[AWSQueueURLAttribute2] = queueURL
+
+	filtered, awsData := makeAws(attributes, pdata.NewResource())
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, queueURL, awsData.QueueURL)
 }
 
 func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	containerID := "signup_aggregator-x82ufje83"
-	labels := make(map[string]string)
-	labels[semconventions.AttributeCloudProvider] = "aws"
-	labels[semconventions.AttributeCloudAccount] = "123456789"
-	labels[semconventions.AttributeCloudZone] = "us-east-1c"
-	labels[semconventions.AttributeContainerName] = "signup_aggregator"
-	labels[semconventions.AttributeContainerImage] = "otel/signupaggregator"
-	labels[semconventions.AttributeContainerTag] = "v1"
-	labels[semconventions.AttributeK8sCluster] = "production"
-	labels[semconventions.AttributeK8sNamespace] = "default"
-	labels[semconventions.AttributeK8sDeployment] = "signup_aggregator"
-	labels[semconventions.AttributeK8sPod] = containerID
-	labels[semconventions.AttributeHostID] = instanceID
-	labels[semconventions.AttributeHostType] = "m5.xlarge"
-	resource := &resourcepb.Resource{
-		Type:   "container",
-		Labels: labels,
-	}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+
 	tableName := "WIDGET_TYPES"
 	attributes := make(map[string]string)
 	attributes[AWSOperationAttribute] = "PutItem"
@@ -196,15 +188,31 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, awsData)
-	assert.NotNil(t, awsData.EC2Metadata)
-	assert.NotNil(t, awsData.ECSMetadata)
-	assert.Nil(t, awsData.BeanstalkMetadata)
-	w := testWriters.borrow()
-	if err := w.Encode(awsData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, containerID))
-	assert.True(t, strings.Contains(jsonStr, tableName))
+	assert.Equal(t, "PutItem", awsData.Operation)
+	assert.Equal(t, "75107C82-EC8A-4F75-883F-4440B491B0AB", awsData.RequestID)
+	assert.Equal(t, tableName, awsData.TableName)
+}
+
+func TestAwsWithDynamoDbAlternateAttribute(t *testing.T) {
+	tableName := "MyTable"
+	attributes := make(map[string]string)
+	attributes[AWSTableNameAttribute2] = tableName
+
+	filtered, awsData := makeAws(attributes, pdata.NewResource())
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, tableName, awsData.TableName)
+}
+
+func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
+	requestid := "12345-request"
+	attributes := make(map[string]string)
+	attributes[AWSRequestIDAttribute2] = requestid
+
+	filtered, awsData := makeAws(attributes, pdata.NewResource())
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, requestid, awsData.RequestID)
 }

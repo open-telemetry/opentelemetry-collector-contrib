@@ -19,16 +19,13 @@ import (
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
@@ -49,7 +46,6 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 
 func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "api.example.com"
@@ -73,7 +69,6 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestClientSpanWithPeerAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeNetPeerName] = "kb234.example.com"
@@ -87,6 +82,9 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "10.8.17.36", httpData.Request.ClientIP)
+
 	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
 		assert.Fail(t, "invalid json")
@@ -96,9 +94,22 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
 }
 
+func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPClientIP] = "1.2.3.4"
+	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
+	span := constructHTTPClientSpan(attributes)
+
+	filtered, httpData := makeHTTP(span)
+
+	assert.NotNil(t, httpData)
+	assert.NotNil(t, filtered)
+
+	assert.Equal(t, "1.2.3.4", httpData.Request.ClientIP)
+}
+
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeNetPeerIP] = "10.8.17.36"
@@ -120,7 +131,6 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 
 func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeNetPeerIP] = "2001:db8:85a3::8a2e:370:7334"
@@ -142,7 +152,6 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 
 func TestServerSpanWithURLAttribute(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
@@ -165,7 +174,6 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 
 func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "api.example.com"
@@ -189,7 +197,6 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPServerName] = "api.example.com"
@@ -214,7 +221,6 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 
 func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPScheme] = "http"
 	attributes[semconventions.AttributeHostName] = "kb234.example.com"
@@ -223,8 +229,8 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	attributes[semconventions.AttributeHTTPClientIP] = "192.168.15.32"
 	attributes[semconventions.AttributeHTTPStatusCode] = 200
 	span := constructHTTPServerSpan(attributes)
-	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime)
-	span.TimeEvents = &timeEvents
+	timeEvents := constructTimedEventsWithReceivedMessageEvent(span.EndTime())
+	timeEvents.CopyTo(span.Events())
 
 	filtered, httpData := makeHTTP(span)
 
@@ -241,7 +247,6 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 
 func TestHttpStatusFromSpanStatus(t *testing.T) {
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
 	span := constructHTTPClientSpan(attributes)
@@ -259,70 +264,52 @@ func TestHttpStatusFromSpanStatus(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "200"))
 }
 
-func constructHTTPClientSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_CLIENT,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: constructDefaultResourceLabels(),
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindCLIENT)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
 
-func constructHTTPServerSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/users/junit"},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code:    0,
-			Message: "OK",
-		},
-		SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
-		Tracestate: &tracepb.Span_Tracestate{
-			Entries: []*tracepb.Span_Tracestate_Entry{
-				{Key: "foo", Value: "bar"},
-				{Key: "a", Value: "b"},
-			},
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: constructDefaultResourceLabels(),
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/users/junit")
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(0)
+	status.SetMessage("OK")
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }
