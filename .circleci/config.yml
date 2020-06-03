@@ -1,4 +1,14 @@
 version: 2.1
+parameters:
+  stability-tests:
+    type: boolean 
+    default: false
+  collector-repo:
+    type: string
+    default: ""
+  collector-sha:
+    type: string
+    default: ""
 
 executors:
   golang:
@@ -54,6 +64,11 @@ commands:
 
 workflows:
   version: 2
+  stability-tests:
+    when: << pipeline.parameters.stability-tests >>
+    jobs:
+      - checkout-commit
+      - run-stability-tests
   build-publish:
     jobs:
       - setup-and-lint:
@@ -104,6 +119,14 @@ workflows:
           filters:
             branches:
               only: master
+            tags:
+              ignore: /.*/
+      - spawn-stability-tests-job:
+          requires:
+            - build
+          filters:
+            branches:
+              only: /master|release/
             tags:
               ignore: /.*/
 
@@ -217,3 +240,30 @@ jobs:
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
           tag: ${CIRCLE_SHA1}
+
+  checkout-commit:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - run:
+          name: Checkout pipeline parameter commit
+          command: echo "NO-OP"
+
+  spawn-stability-tests-job:
+    executor: golang
+    steps:
+      - run:
+          name: Trigger stability tests job
+          command: |
+            curl -X POST "https://circleci.com/api/v2/project/github/open-telemetry/${CIRCLE_REPO}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                -d '{"parameters": {"stability-tests": true, "collector-sha": '"${CIRCLE_SHA}"', "collector-repo": '"${CIRCLE_REPO_NAME}"'}}'
+
+  run-stability-tests:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - run:
+          name: Run stability tests
+          command: echo "stability tests"
