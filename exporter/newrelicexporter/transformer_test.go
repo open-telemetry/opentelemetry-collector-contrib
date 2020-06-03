@@ -27,7 +27,6 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func TestTransformEmptySpan(t *testing.T) {
@@ -336,6 +335,7 @@ func TestTransformDeltaSummary(t *testing.T) {
 		testTransformMetric(t, gd, expected)
 	})
 
+	/* Remove only dependency on wrapperspb.
 	s := &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name: "summary",
@@ -363,6 +363,7 @@ func TestTransformDeltaSummary(t *testing.T) {
 		// Should be a delta, running twice should not change state.
 		testTransformMetric(t, s, expected)
 	})
+	*/
 }
 
 func TestTransformCumulativeCount(t *testing.T) {
