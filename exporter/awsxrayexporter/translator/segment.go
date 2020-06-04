@@ -165,6 +165,12 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	}
 
 	if name == "" {
+		if rpcservice, ok := attributes.Get(semconventions.AttributeRPCService); ok {
+			name = rpcservice.StringVal()
+		}
+	}
+
+	if name == "" {
 		if host, ok := attributes.Get(semconventions.AttributeHTTPHost); ok {
 			name = host.StringVal()
 		}
