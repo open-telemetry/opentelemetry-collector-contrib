@@ -19,6 +19,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"math/rand"
+	"net/url"
 	"regexp"
 	"time"
 
@@ -131,6 +132,8 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 		segmentType                            string
 	)
 
+	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
+
 	attributes := span.Attributes()
 	if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
 		// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
@@ -138,6 +141,39 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 		name = awsService.StringVal()
 
 		namespace = "aws"
+	}
+
+	if name == "" {
+		if dbInstance, ok := attributes.Get(semconventions.AttributeDBInstance); ok {
+			// For database queries, the segment name convention is <db name>@<db host>
+			name = dbInstance.StringVal()
+			if dbUrl, ok := attributes.Get(semconventions.AttributeDBURL); ok {
+				if parsed, _ := url.Parse(dbUrl.StringVal()); parsed != nil {
+					if parsed.Hostname() != "" {
+						name += "@" + parsed.Hostname()
+					}
+				}
+			}
+		}
+	}
+
+	if name == "" && span.Kind() == pdata.SpanKindSERVER && !resource.IsNil() {
+		// Only for a server span, we can use the resource.
+		if service, ok := resource.Attributes().Get(semconventions.AttributeServiceName); ok {
+			name = service.StringVal()
+		}
+	}
+
+	if name == "" {
+		if host, ok := attributes.Get(semconventions.AttributeHTTPHost); ok {
+			name = host.StringVal()
+		}
+	}
+
+	if name == "" {
+		if peer, ok := attributes.Get(semconventions.AttributeNetPeerName); ok {
+			name = peer.StringVal()
+		}
 	}
 
 	if name == "" {
