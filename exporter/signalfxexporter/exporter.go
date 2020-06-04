@@ -65,6 +65,7 @@ func New(
 	}
 
 	logger.Info("SignalFx Config", zap.String("ingest_url", options.ingestURL.String()))
+	logger.Info("SignalFx Config", zap.String("api_url", options.apiURL.String()))
 
 	if config.Name() == "" {
 		config.SetType(typeStr)

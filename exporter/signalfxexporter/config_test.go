@@ -131,6 +131,26 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Test empty realm and API URL",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				IngestURL:   "https://ingest.us1.signalfx.com/",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Test empty realm and Ingest URL",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				APIURL:      "https://api.us1.signalfx.com/",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name:    "Test empty config",
 			want:    nil,
 			wantErr: true,
