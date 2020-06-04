@@ -151,6 +151,17 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "Test invalid URLs",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				APIURL:      "https://api us1 signalfx com/",
+				IngestURL:   "https://api us1 signalfx com/",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name:    "Test empty config",
 			want:    nil,
 			wantErr: true,
