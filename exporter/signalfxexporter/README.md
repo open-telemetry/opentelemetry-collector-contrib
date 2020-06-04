@@ -17,8 +17,10 @@ The following configuration options can also be configured:
 - `headers` (no default): Headers to pass in the payload.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to complete.
 - `ingest_url` (no default): Destination
-where SignalFx metrics are sent. If this option is specified, `realm` is ignored.
-If path is not specified, `/v2/datapoint` is used.
+where SignalFx metrics are sent. If `realm` is set, this option is derived and will be
+`https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is explicitly set, the
+value of `realm` will not be used in determining `ingest_url`. The explicit value will
+be used instead. If path is not specified, `/v2/datapoint` is used.
 - `api_url` (no default): Destination to which SignalFx
 [properties and tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata) are sent.
 If `realm` is set, this option is derived and will be `https://api.{realm}.signalfx.com/`. If a value is explicitly
