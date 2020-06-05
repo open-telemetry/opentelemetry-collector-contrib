@@ -95,14 +95,11 @@ func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumer
 	if td.Resource != nil {
 		podIP = kp.k8sIPFromAttributes(td.Resource.Labels)
 	}
-
 	// Jaeger client libs tag the process with the process/resource IP and
 	// jaeger to OC translator maps jaeger process to OC node.
 	// TODO: Should jaeger translator map jaeger process to OC resource instead?
-	if podIP == "" && td.SourceFormat == sourceFormatJaeger {
-		if td.Node != nil {
-			podIP = kp.k8sIPFromAttributes(td.Node.Attributes)
-		}
+	if podIP == "" && td.Node != nil {
+		podIP = kp.k8sIPFromAttributes(td.Node.Attributes)
 	}
 
 	// Check if the receiver detected client IP.

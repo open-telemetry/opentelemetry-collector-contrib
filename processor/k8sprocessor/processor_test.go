@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
@@ -58,6 +59,62 @@ func TestIPDetection(t *testing.T) {
 	assert.Equal(t, next.data[0].Resource.Labels["k8s.pod.ip"], "1.1.1.1")
 }
 
+func TestIPSource(t *testing.T) {
+	next := &testConsumer{}
+	kp, err := NewTraceProcessor(
+		zap.NewNop(),
+		next,
+		kube.NewFakeClient,
+	)
+	require.NoError(t, err)
+
+	type testCase struct {
+		resourceIn, nodeIn, contextIn, out string
+	}
+
+	testCases := []testCase{
+		{
+			resourceIn: "1.1.1.1",
+			nodeIn:     "2.2.2.2",
+			contextIn:  "3.3.3.3",
+			out:        "1.1.1.1",
+		},
+		{
+			nodeIn:    "2.2.2.2",
+			contextIn: "3.3.3.3",
+			out:       "2.2.2.2",
+		},
+		{
+			contextIn: "3.3.3.3",
+			out:       "3.3.3.3",
+		},
+	}
+
+	for i, tc := range testCases {
+		ctx := context.Background()
+		if tc.contextIn != "" {
+			ctx = client.NewContext(context.Background(), &client.Client{IP: tc.contextIn})
+		}
+		err = kp.ConsumeTraceData(ctx, consumerdata.TraceData{
+			Resource: &resourcepb.Resource{
+				Labels: map[string]string{
+					"ip": tc.resourceIn,
+				},
+			},
+			Node: &commonpb.Node{
+				Attributes: map[string]string{
+					"ip": tc.nodeIn,
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		require.Len(t, next.data, i+1)
+		require.NotNil(t, next.data[i].Resource)
+		assert.Equal(t, next.data[i].Resource.Labels["k8s.pod.ip"], tc.out)
+	}
+}
+
 func TestNoIP(t *testing.T) {
 	next := &testConsumer{}
 	kp, err := NewTraceProcessor(
@@ -72,48 +129,6 @@ func TestNoIP(t *testing.T) {
 
 	require.Len(t, next.data, 1)
 	assert.Nil(t, next.data[0].Resource)
-}
-
-func TestJaegerIP(t *testing.T) {
-	next := &testConsumer{}
-	kp, err := NewTraceProcessor(
-		zap.NewNop(),
-		next,
-		kube.NewFakeClient,
-	)
-	require.NoError(t, err)
-
-	// should not detect IP
-	err = kp.ConsumeTraceData(
-		context.Background(),
-		consumerdata.TraceData{
-			Node: &commonpb.Node{
-				Attributes: map[string]string{
-					"ip": "1.1.1.1",
-				},
-			},
-		},
-	)
-	require.NoError(t, err)
-	require.Len(t, next.data, 1)
-	assert.Nil(t, next.data[0].Resource)
-
-	// should detect IP from Node when source format is "jaeger"
-	err = kp.ConsumeTraceData(
-		context.Background(),
-		consumerdata.TraceData{
-			SourceFormat: "jaeger",
-			Node: &commonpb.Node{
-				Attributes: map[string]string{
-					"ip": "1.1.1.1",
-				},
-			},
-		},
-	)
-	require.NoError(t, err)
-	require.Len(t, next.data, 2)
-	assert.NotNil(t, next.data[1].Resource)
-	assert.Equal(t, next.data[1].Resource.Labels["k8s.pod.ip"], "1.1.1.1")
 }
 
 func TestAddLabels(t *testing.T) {
