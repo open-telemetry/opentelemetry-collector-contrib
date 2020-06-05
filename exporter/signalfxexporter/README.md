@@ -10,18 +10,24 @@ The following configuration options are required:
 
 - `access_token` (no default): AccessToken is the authentication token provided
 by SignalFx.
-- `realm` (default = us0): SignalFx realm where the data will be received.
+- `realm` (no default): SignalFx realm where the data will be received.
 
 The following configuration options can also be configured:
 
 - `headers` (no default): Headers to pass in the payload.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to complete.
-- `ingest_url` (default = https://ingest.`realm`.signalfx.com/v2/datapoint): Destination
-where SignalFx metrics are sent. If this option is specified, `realm` is ignored.
-If path is not specified, `/v2/datapoint` is used.
-- `api_url` (default = https://api.`realm`.signalfx.com/): Destination to which SignalFx
+- `ingest_url` (no default): Destination
+where SignalFx metrics are sent. If `realm` is set, this option is derived and will be
+`https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is explicitly set, the
+value of `realm` will not be used in determining `ingest_url`. The explicit value will
+be used instead. If path is not specified, `/v2/datapoint` is used.
+- `api_url` (no default): Destination to which SignalFx
 [properties and tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata) are sent.
+If `realm` is set, this option is derived and will be `https://api.{realm}.signalfx.com/`. If a value is explicitly
+set, the value of `realm` will not be used in determining `api_url`. The explicit value will be used instead.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension updates.
+
+Note: Either `realm` or both `ingest_url` and `api_url` should be explicitly set.
 
 Example:
 
