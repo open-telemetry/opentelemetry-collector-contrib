@@ -27,7 +27,6 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
 
-	defaultSFxRealm    = "us0"
 	defaultHTTPTimeout = time.Second * 5
 )
 
@@ -47,7 +46,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Realm:   defaultSFxRealm,
 		Timeout: defaultHTTPTimeout,
 	}
 }
