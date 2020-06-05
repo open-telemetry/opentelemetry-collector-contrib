@@ -22,7 +22,7 @@ Example:
 exporters:
   sapm:
     access_token: YOUR_ACCESS_TOKEN
-    endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com
+    endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace
     max_connections: 100
     num_workers: 8
 ```
