@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
@@ -34,7 +35,7 @@ func TestFactory_Type(t *testing.T) {
 	require.Equal(t, typeStr, factory.Type())
 }
 
-var nilClient = func(k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
+var nilClient = func(k8sconfig.APIConfig) (kubernetes.Interface, error) {
 	return &kubernetes.Clientset{}, nil
 }
 
@@ -63,4 +64,23 @@ func TestFactory_CreateExtension(t *testing.T) {
 	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
+}
+
+func TestNewFactory(t *testing.T) {
+	f := NewFactory()
+	require.IsType(t, f, &Factory{})
+	ff := f.(*Factory)
+	cs, err := ff.createK8sClientset(k8sconfig.APIConfig{AuthType: "none"})
+	assert.Error(t, err)
+	assert.Nil(t, cs)
+
+	rc := &rest.Config{Host: "fake-host"}
+	f = NewFactoryWithConfig(rc)
+	require.IsType(t, f, &Factory{})
+	ff = f.(*Factory)
+	cs, err = ff.createK8sClientset(k8sconfig.APIConfig{})
+	assert.NoError(t, err)
+	require.NotNil(t, cs)
+	rq := cs.AuthenticationV1().RESTClient().Get()
+	assert.Equal(t, "http://fake-host/apis/authentication.k8s.io/v1", rq.URL().String())
 }

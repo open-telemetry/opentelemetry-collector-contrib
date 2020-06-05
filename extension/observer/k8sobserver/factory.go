@@ -37,7 +37,7 @@ const (
 type Factory struct {
 	// createK8sClientset being a field in the struct provides an easy way
 	// to mock k8s config in tests.
-	createK8sClientset func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error)
+	createK8sClientset func(config k8sconfig.APIConfig) (kubernetes.Interface, error)
 }
 
 var _ component.Factory = (*Factory)(nil)
@@ -80,14 +80,14 @@ func (f *Factory) CreateExtension(
 
 // NewFactory should be called to create a factory with default values.
 func NewFactory() component.ExtensionFactory {
-	return &Factory{createK8sClientset: func(config k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
+	return &Factory{createK8sClientset: func(config k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return k8sconfig.MakeClient(config)
 	}}
 }
 
 // NewFactoryWithConfig creates a k8s observer factory with the given k8s API config.
 func NewFactoryWithConfig(config *rest.Config) *Factory {
-	return &Factory{createK8sClientset: func(k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
+	return &Factory{createK8sClientset: func(k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return kubernetes.NewForConfig(config)
 	}}
 }
