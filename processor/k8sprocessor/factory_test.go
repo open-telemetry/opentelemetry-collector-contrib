@@ -15,9 +15,11 @@
 package k8sprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
 
@@ -34,12 +36,20 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := Factory{KubeClient: kube.NewFakeClient}
 	cfg := factory.CreateDefaultConfig()
+	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	oCfg := cfg.(*Config)
+	oCfg.Passthrough = true
+	tp, err = factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
+	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create trace processor")
+
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "should not be able to create metric processor")
 }
+

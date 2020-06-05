@@ -16,11 +16,15 @@ package k8sprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Passthrough mode only annotates resources with the pod IP and
 	// does not try to extract any other metadata. It does not need

@@ -17,18 +17,38 @@ package kube
 import (
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // FakeClient is used as a replacement for WatchClient in test cases.
 type FakeClient struct {
-	Pods    map[string]*Pod
-	Rules   ExtractionRules
-	Filters Filters
+	Pods     map[string]*Pod
+	Rules    ExtractionRules
+	Filters  Filters
+	Informer cache.SharedInformer
+	StopCh   chan struct{}
 }
 
 // NewFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func NewFakeClient(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
-	return &FakeClient{map[string]*Pod{}, rules, filters}, nil
+func NewFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, _ APIClientsetProvider, _ InformerProvider) (Client, error) {
+	cs, err := newFakeAPIClientset(apiCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	labelSelector, fieldSelector, err := selectorsFromFilters(filters)
+	if err != nil {
+		return nil, err
+	}
+	return &FakeClient{
+		Pods:     map[string]*Pod{},
+		Rules:    rules,
+		Filters:  filters,
+		Informer: newFakeInformer(cs, "", labelSelector, fieldSelector),
+		StopCh:   make(chan struct{}),
+	}, nil
 }
 
 // GetPodByIP looks up FakeClient.Pods map by the provided string.
@@ -38,11 +58,17 @@ func (f *FakeClient) GetPodByIP(ip string) (*Pod, bool) {
 }
 
 // Start is a noop for FakeClient.
-func (f *FakeClient) Start() {}
+func (f *FakeClient) Start() {
+	if f.Informer != nil {
+		f.Informer.Run(f.StopCh)
+	}
+}
 
 // Stop is a noop for FakeClient.
-func (f *FakeClient) Stop() {}
+func (f *FakeClient) Stop() {
+	close(f.StopCh)
+}
 
-func newFakeAPIClientset() (*kubernetes.Clientset, error) {
+func newFakeAPIClientset(_ k8sconfig.APIConfig) (*kubernetes.Clientset, error) {
 	return &kubernetes.Clientset{}, nil
 }

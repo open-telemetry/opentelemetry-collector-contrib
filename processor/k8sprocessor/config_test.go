@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -50,6 +52,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger",
 			},
+			APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		})
 
 	p1 := config.Processors["k8s_tagger/2"]
@@ -59,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger/2",
 			},
+			APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 			Passthrough: false,
 			Extract: ExtractConfig{
 				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
