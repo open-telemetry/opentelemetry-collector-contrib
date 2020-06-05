@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	dataformat = "k8s_cluster"
-	transport  = "http"
+	transport = "http"
 )
 
 var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
@@ -46,7 +45,7 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(ctx)
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, transport, kr.config.Name()))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -63,12 +62,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				c2 := obsreport.StartMetricsReceiveOp(ctx, dataformat, transport)
+				c2 := obsreport.StartMetricsReceiveOp(c, typeStr, transport)
 
 				numTimeseries, numPoints, errs := kr.dispatchMetricData(c2)
 				err := componenterror.CombineErrors(errs)
 
-				obsreport.EndMetricsReceiveOp(c2, dataformat, numPoints, numTimeseries, err)
+				obsreport.EndMetricsReceiveOp(c2, typeStr, numPoints, numTimeseries, err)
 			case <-c.Done():
 				return
 			}
@@ -85,11 +84,12 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 
 func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) (numTimeseries int, numPoints int, errs []error) {
 	for _, m := range kr.resourceWatcher.dataCollector.CollectMetricData() {
+		numTs, numPts := obsreport.CountMetricPoints(m)
+		numTimeseries += numTs
+		numPoints += numPts
+
 		if err := kr.consumer.ConsumeMetricsData(ctx, m); err != nil {
 			errs = append(errs, err)
-			numTs, numPts := obsreport.CountMetricPoints(m)
-			numTimeseries += numTs
-			numPoints += numPts
 		}
 	}
 	return numTimeseries, numPoints, errs
