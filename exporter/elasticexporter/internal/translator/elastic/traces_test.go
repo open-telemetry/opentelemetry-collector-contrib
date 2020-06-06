@@ -208,6 +208,17 @@ func TestTransactionHTTPRequestURL(t *testing.T) {
 	})
 }
 
+func TestTransactionHTTPRequestURLInvalid(t *testing.T) {
+	transaction := transactionWithAttributes(t, map[string]pdata.AttributeValue{
+		"http.url": pdata.NewAttributeValueString("0.0.0.0:8081"),
+	})
+	require.NotNil(t, transaction.Context)
+	assert.Nil(t, transaction.Context.Request)
+	assert.Equal(t, model.IfaceMap{
+		{Key: "http_url", Value: "0.0.0.0:8081"},
+	}, transaction.Context.Tags)
+}
+
 func TestTransactionHTTPRequestSocketRemoteAddr(t *testing.T) {
 	test := func(t *testing.T, expected string, attrs map[string]pdata.AttributeValue) {
 		transaction := transactionWithAttributes(t, attrs)
@@ -323,6 +334,17 @@ func TestSpanHTTPURL(t *testing.T) {
 			"http.target": pdata.NewAttributeValueString("/foo?bar"),
 		})
 	})
+}
+
+func TestSpanHTTPURLInvalid(t *testing.T) {
+	span := spanWithAttributes(t, map[string]pdata.AttributeValue{
+		"http.url": pdata.NewAttributeValueString("0.0.0.0:8081"),
+	})
+	require.NotNil(t, span.Context)
+	assert.Nil(t, span.Context.HTTP)
+	assert.Equal(t, model.IfaceMap{
+		{Key: "http_url", Value: "0.0.0.0:8081"},
+	}, span.Context.Tags)
 }
 
 func TestSpanHTTPStatusCode(t *testing.T) {
