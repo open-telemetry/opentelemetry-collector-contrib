@@ -17,7 +17,7 @@ package translator
 import (
 	"strconv"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -44,88 +44,89 @@ type ResponseData struct {
 	ContentLength int64 `json:"content_length,omitempty"`
 }
 
-func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
+func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
 	var (
 		info     HTTPData
 		filtered = make(map[string]string)
 		urlParts = make(map[string]string)
 	)
 
-	if span.Attributes == nil {
+	if span.Attributes().Len() == 0 {
 		return filtered, nil
 	}
 
 	hasHTTP := false
 
-	for key, value := range span.Attributes.AttributeMap {
+	span.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
-			info.Request.Method = value.GetStringValue().GetValue()
+			info.Request.Method = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPClientIP:
-			info.Request.ClientIP = value.GetStringValue().GetValue()
+			info.Request.ClientIP = value.StringVal()
 			info.Request.XForwardedFor = true
 			hasHTTP = true
 		case semconventions.AttributeHTTPUserAgent:
-			info.Request.UserAgent = value.GetStringValue().GetValue()
+			info.Request.UserAgent = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPStatusCode:
-			info.Response.Status = value.GetIntValue()
+			info.Response.Status = value.IntVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPURL:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPScheme:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPHost:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPTarget:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPServerName:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 		case semconventions.AttributeHTTPHostPort:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			hasHTTP = true
 			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
+				urlParts[key] = strconv.FormatInt(value.IntVal(), 10)
 			}
 		case semconventions.AttributeHostName:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 		case semconventions.AttributeNetPeerName:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 		case semconventions.AttributeNetPeerPort:
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 			if len(urlParts[key]) == 0 {
-				urlParts[key] = strconv.FormatInt(value.GetIntValue(), 10)
+				urlParts[key] = strconv.FormatInt(value.IntVal(), 10)
 			}
 		case semconventions.AttributeNetPeerIP:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
 			if info.Request.ClientIP == "" {
-				info.Request.ClientIP = value.GetStringValue().GetValue()
+				info.Request.ClientIP = value.StringVal()
 			}
-			urlParts[key] = value.GetStringValue().GetValue()
+			urlParts[key] = value.StringVal()
 		default:
-			filtered[key] = value.GetStringValue().GetValue()
+			filtered[key] = value.StringVal()
 		}
-	}
+	})
 
 	if !hasHTTP {
 		// Didn't have any HTTP-specific information so don't need to fill it in segment
 		return filtered, nil
 	}
 
-	if tracepb.Span_SERVER == span.Kind {
+	if span.Kind() == pdata.SpanKindSERVER {
 		info.Request.URL = constructServerURL(urlParts)
 	} else {
 		info.Request.URL = constructClientURL(urlParts)
 	}
 
-	if span.Status != nil && info.Response.Status == 0 {
-		info.Response.Status = int64(tracetranslator.HTTPStatusCodeFromOCStatus(span.Status.Code))
+	if !span.Status().IsNil() && info.Response.Status == 0 {
+		// TODO(anuraaga): Replace with direct translator of StatusCode without casting to int
+		info.Response.Status = int64(tracetranslator.HTTPStatusCodeFromOCStatus(int32(span.Status().Code())))
 	}
 
 	info.Response.ContentLength = extractResponseSizeFromEvents(span)
@@ -133,26 +134,30 @@ func makeHTTP(span *tracepb.Span) (map[string]string, *HTTPData) {
 	return filtered, &info
 }
 
-func extractResponseSizeFromEvents(span *tracepb.Span) int64 {
-	var size int64
-	if span.TimeEvents != nil {
-		for _, te := range span.TimeEvents.TimeEvent {
-			anno := te.GetAnnotation()
-			if anno != nil && anno.Attributes != nil {
-				attrMap := anno.Attributes.AttributeMap
-				typeVal := attrMap[semconventions.AttributeMessageType]
-				if typeVal != nil {
-					if typeVal.GetStringValue().GetValue() == "RECEIVED" {
-						sizeVal := attrMap[semconventions.AttributeMessageUncompressedSize]
-						if sizeVal != nil {
-							size = sizeVal.GetIntValue()
-						}
-					}
-				}
-			}
+func extractResponseSizeFromEvents(span pdata.Span) int64 {
+	// Support insrumentation that sets response size in span or as an event.
+	size := extractResponseSizeFromAttributes(span.Attributes())
+	if size != 0 {
+		return size
+	}
+	for i := 0; i < span.Events().Len(); i++ {
+		event := span.Events().At(i)
+		size = extractResponseSizeFromAttributes(event.Attributes())
+		if size != 0 {
+			return size
 		}
 	}
 	return size
+}
+
+func extractResponseSizeFromAttributes(attributes pdata.AttributeMap) int64 {
+	typeVal, ok := attributes.Get(semconventions.AttributeMessageType)
+	if ok && typeVal.StringVal() == "RECEIVED" {
+		if sizeVal, ok := attributes.Get(semconventions.AttributeMessageUncompressedSize); ok {
+			return sizeVal.IntVal()
+		}
+	}
+	return 0
 }
 
 func constructClientURL(urlParts map[string]string) string {

@@ -17,6 +17,8 @@ package signalfxexporter
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -33,6 +35,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 func TestNew(t *testing.T) {
@@ -114,7 +119,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			serverURL, err := url.Parse(server.URL)
 			assert.NoError(t, err)
 
-			sender := &sfxDPClient{
+			dpClient := &sfxDPClient{
 				ingestURL: serverURL,
 				headers:   map[string]string{"test_header_": "test"},
 				client: &http.Client{
@@ -126,7 +131,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				}},
 			}
 
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), *tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
@@ -166,4 +171,207 @@ func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 	}
 
 	return md
+}
+
+func TestConsumeKubernetesMetadata(t *testing.T) {
+	type args struct {
+		metadata []*collection.KubernetesMetadataUpdate
+	}
+	type fields struct {
+		payLoad map[string]interface{}
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+	}{
+		{
+			"Test property updates",
+			fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{
+						"prop_erty1": "val1",
+						"property2":  nil,
+						"prop_erty3": "val33",
+						"property4":  nil,
+					},
+					"tags":         nil,
+					"tagsToRemove": nil,
+				},
+			},
+			args{
+				[]*collection.KubernetesMetadataUpdate{
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"prop.erty1": "val1",
+							},
+							MetadataToRemove: map[string]string{
+								"property2": "val2",
+							},
+							MetadataToUpdate: map[string]string{
+								"prop.erty3": "val33",
+								"property4":  "",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			"Test tag updates",
+			fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{},
+					"tags": []interface{}{
+						"tag_1",
+					},
+					"tagsToRemove": []interface{}{
+						"tag_2",
+					},
+				},
+			},
+			args{
+				[]*collection.KubernetesMetadataUpdate{
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"tag.1": "",
+							},
+							MetadataToRemove: map[string]string{
+								"tag/2": "",
+							},
+							MetadataToUpdate: map[string]string{},
+						},
+					},
+				},
+			},
+		},
+		{
+			"Test quick successive updates",
+			fields{
+				map[string]interface{}{
+					"customProperties": map[string]interface{}{
+						"property1": nil,
+						"property2": "val2",
+						"property3": nil,
+					},
+					"tags": []interface{}{
+						"tag_2",
+					},
+					"tagsToRemove": []interface{}{
+						"tag_1",
+					},
+				},
+			},
+			args{
+				[]*collection.KubernetesMetadataUpdate{
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"tag.1":     "",
+								"property1": "val1",
+								"property3": "val3",
+							},
+							MetadataToRemove: map[string]string{
+								"tag/2": "",
+							},
+							MetadataToUpdate: map[string]string{
+								"property2": "val22",
+							},
+						},
+					},
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{
+								"tag/2": "",
+							},
+							MetadataToRemove: map[string]string{
+								"tag.1":     "",
+								"property1": "val1",
+							},
+							MetadataToUpdate: map[string]string{
+								"property2": "val2",
+								"property3": "val33",
+							},
+						},
+					},
+					{
+						ResourceIDKey: "key",
+						ResourceID:    "id",
+						MetadataDelta: collection.MetadataDelta{
+							MetadataToAdd: map[string]string{},
+							MetadataToRemove: map[string]string{
+								"property3": "val33",
+							},
+							MetadataToUpdate: map[string]string{},
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		// Use WaitGroup to ensure the mocked server has encountered
+		// a request from the exporter.
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				b, err := ioutil.ReadAll(r.Body)
+				require.NoError(t, err)
+
+				p := map[string]interface{}{
+					"customProperties": map[string]*string{},
+					"tags":             []string{},
+					"tagsToRemove":     []string{},
+				}
+
+				err = json.Unmarshal(b, &p)
+				require.NoError(t, err)
+
+				require.Equal(t, tt.fields.payLoad, p)
+				wg.Done()
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			logger := zap.NewNop()
+
+			dimClient := dimensions.NewDimensionClient(
+				context.Background(),
+				dimensions.DimensionClientOptions{
+					Token:                 "",
+					APIURL:                serverURL,
+					LogUpdates:            true,
+					Logger:                logger,
+					SendDelay:             1,
+					PropertiesMaxBuffered: 10,
+				})
+			dimClient.Start()
+
+			se := signalfxExporter{
+				logger:                 logger,
+				pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
+			}
+
+			err = se.ConsumeKubernetesMetadata(tt.args.metadata)
+
+			// Wait for requests to be handled by the mocked server before assertion.
+			wg.Wait()
+
+			require.NoError(t, err)
+		})
+	}
 }

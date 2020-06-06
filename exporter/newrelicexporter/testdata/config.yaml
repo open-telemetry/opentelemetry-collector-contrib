@@ -1,0 +1,25 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  newrelic:
+  newrelic/alt:
+    apikey: a1b2c3d4
+    timeout: 30s
+    common_attributes:
+      server: test-server
+      prod: true
+      weight: 3
+    metrics_url_override: http://alt.metrics.newrelic.com
+    spans_url_override: http://alt.spans.newrelic.com
+
+service:
+  pipelines:
+    traces:
+        receivers: [examplereceiver]
+        processors: [exampleprocessor]
+        exporters: [newrelic]
+

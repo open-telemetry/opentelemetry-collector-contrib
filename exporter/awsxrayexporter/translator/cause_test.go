@@ -19,9 +19,8 @@ import (
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -32,10 +31,10 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	span := constructExceptionServerSpan(attributes)
-	span.Status.Message = errorMsg
+	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
-	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
+	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
@@ -60,7 +59,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	span := constructExceptionServerSpan(attributes)
 	filtered, _ := makeHTTP(span)
 
-	isError, isFault, filtered, cause := makeCause(span.Status, filtered)
+	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
@@ -75,28 +74,26 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMsg))
 }
 
-func constructExceptionServerSpan(attributes map[string]interface{}) *tracepb.Span {
+func constructExceptionServerSpan(attributes map[string]interface{}) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	return &tracepb.Span{
-		TraceId:      newTraceID(),
-		SpanId:       newSegmentID(),
-		ParentSpanId: newSegmentID(),
-		Name:         &tracepb.TruncatableString{Value: "/widgets"},
-		Kind:         tracepb.Span_SERVER,
-		StartTime:    convertTimeToTimestamp(startTime),
-		EndTime:      convertTimeToTimestamp(endTime),
-		Status: &tracepb.Status{
-			Code: 13,
-		},
-		Attributes: &tracepb.Span_Attributes{
-			AttributeMap: spanAttributes,
-		},
-		Resource: &resourcepb.Resource{
-			Type:   "container",
-			Labels: constructDefaultResourceLabels(),
-		},
-	}
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(newTraceID())
+	span.SetSpanID(newSegmentID())
+	span.SetParentSpanID(newSegmentID())
+	span.SetName("/widgets")
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
+	span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
+
+	status := pdata.NewSpanStatus()
+	status.InitEmpty()
+	status.SetCode(pdata.StatusCode(13))
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
 }

@@ -19,8 +19,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
@@ -35,7 +35,7 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.NotNil(t, w.encoder)
 	assert.Equal(t, size, w.buffer.Cap())
 	assert.Equal(t, 0, w.buffer.Len())
-	if err := w.Encode(span); err != nil {
+	if err := w.Encode(MakeSegment(span, pdata.NewResource())); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -51,7 +51,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 		b.StartTimer()
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
-		encoder.Encode(span)
+		encoder.Encode(MakeSegment(span, pdata.NewResource()))
 		logger.Info(buffer.String())
 	}
 }
@@ -64,12 +64,12 @@ func BenchmarkWithPool(b *testing.B) {
 		span := constructWriterPoolSpan()
 		b.StartTimer()
 		w := wp.borrow()
-		w.Encode(span)
+		w.Encode(MakeSegment(span, pdata.NewResource()))
 		logger.Info(w.String())
 	}
 }
 
-func constructWriterPoolSpan() *tracepb.Span {
+func constructWriterPoolSpan() pdata.Span {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
 	attributes[semconventions.AttributeHTTPMethod] = "GET"

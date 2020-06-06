@@ -1,0 +1,37 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8890']
+            - targets: ['localhost:8889']
+            - targets: ['localhost:8888']
+
+exporters:
+  splunk_hec:
+    # Splunk HTTP Event Collector token.
+    token: "00000000-0000-0000-0000-0000000000000"
+    # URL to a Splunk instance to send data to.
+    endpoint: "https://splunk:8088/services/collector"
+    # Optional Splunk source: https://docs.splunk.com/Splexicon:Source
+    source: "otel"
+    # Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
+    sourcetype: "otel"
+    # Splunk index, optional name of the Splunk index targeted.
+    index: "metrics"
+    # Maximum HTTP connections to use simultaneously when sending data. Defaults to 100.
+    max_connections: 20
+    # Whether to disable gzip compression over HTTP. Defaults to false.
+    disable_compression: false
+    # HTTP timeout when sending data. Defaults to 10s.
+    timeout: 10s
+    # Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS. Defaults to false.
+    insecure_skip_verify: false
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [splunk_hec]

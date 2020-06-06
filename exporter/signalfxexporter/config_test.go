@@ -74,6 +74,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		AccessToken      string
 		Realm            string
 		IngestURL        string
+		APIURL           string
 		Timeout          time.Duration
 		Headers          map[string]string
 	}
@@ -86,8 +87,10 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		{
 			name: "Test URL overrides",
 			fields: fields{
-				Realm:     "us0",
-				IngestURL: "https://ingest.us1.signalfx.com/",
+				Realm:       "us0",
+				AccessToken: "access_token",
+				IngestURL:   "https://ingest.us1.signalfx.com/",
+				APIURL:      "https://api.us1.signalfx.com/",
 			},
 			want: &exporterOptions{
 				ingestURL: &url.URL{
@@ -95,15 +98,22 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 					Host:   "ingest.us1.signalfx.com",
 					Path:   "/v2/datapoint",
 				},
+				apiURL: &url.URL{
+					Scheme: "https",
+					Host:   "api.us1.signalfx.com",
+					Path:   "/",
+				},
 				httpTimeout: 5 * time.Second,
+				token:       "access_token",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Test URL from Realm",
 			fields: fields{
-				Realm:   "us0",
-				Timeout: 10 * time.Second,
+				Realm:       "us0",
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
 			},
 			want: &exporterOptions{
 				ingestURL: &url.URL{
@@ -111,9 +121,45 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 					Host:   "ingest.us0.signalfx.com",
 					Path:   "/v2/datapoint",
 				},
+				apiURL: &url.URL{
+					Scheme: "https",
+					Host:   "api.us0.signalfx.com",
+				},
 				httpTimeout: 10 * time.Second,
+				token:       "access_token",
 			},
 			wantErr: false,
+		},
+		{
+			name: "Test empty realm and API URL",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				IngestURL:   "https://ingest.us1.signalfx.com/",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Test empty realm and Ingest URL",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				APIURL:      "https://api.us1.signalfx.com/",
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Test invalid URLs",
+			fields: fields{
+				AccessToken: "access_token",
+				Timeout:     10 * time.Second,
+				APIURL:      "https://api us1 signalfx com/",
+				IngestURL:   "https://api us1 signalfx com/",
+			},
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name:    "Test empty config",
@@ -128,6 +174,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				AccessToken:      tt.fields.AccessToken,
 				Realm:            tt.fields.Realm,
 				IngestURL:        tt.fields.IngestURL,
+				APIURL:           tt.fields.APIURL,
 				Timeout:          tt.fields.Timeout,
 				Headers:          tt.fields.Headers,
 			}

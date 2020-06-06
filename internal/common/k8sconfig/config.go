@@ -39,6 +39,8 @@ const (
 	AuthTypeServiceAccount AuthType = "serviceAccount"
 	// AuthTypeKubeConfig uses local credentials like those used by kubectl.
 	AuthTypeKubeConfig AuthType = "kubeConfig"
+	// AuthTypeTLS indicates that client TLS auth is desired
+	AuthTypeTLS AuthType = "tls"
 )
 
 var authTypes = map[AuthType]bool{

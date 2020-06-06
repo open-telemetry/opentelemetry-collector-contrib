@@ -154,6 +154,12 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 			}
 		}
 
+		if attrs := spanAttributesToMap(span.GetAttributes()); attrs != nil {
+			for k, v := range attrs {
+				ev.AddField(k, v)
+			}
+		}
+
 		ev.Timestamp = timestampToTime(span.GetStartTime())
 		startTime := timestampToTime(span.GetStartTime())
 		endTime := timestampToTime(span.GetEndTime())

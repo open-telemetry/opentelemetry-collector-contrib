@@ -18,16 +18,13 @@ import (
 	"strings"
 	"testing"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestServiceFromResource(t *testing.T) {
-	resource := &resourcepb.Resource{
-		Type:   "container",
-		Labels: constructDefaultResourceLabels(),
-	}
+	resource := constructDefaultResource()
 
 	service := makeService(resource)
 
@@ -42,11 +39,8 @@ func TestServiceFromResource(t *testing.T) {
 }
 
 func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
-	resource := &resourcepb.Resource{
-		Type:   "container",
-		Labels: constructDefaultResourceLabels(),
-	}
-	delete(resource.Labels, semconventions.AttributeServiceVersion)
+	resource := constructDefaultResource()
+	resource.Attributes().Delete(semconventions.AttributeServiceVersion)
 	service := makeService(resource)
 
 	assert.NotNil(t, service)
@@ -60,9 +54,7 @@ func TestServiceFromResourceWithNoServiceVersion(t *testing.T) {
 }
 
 func TestServiceFromNullResource(t *testing.T) {
-	var resource *resourcepb.Resource
-
-	service := makeService(resource)
+	service := makeService(pdata.NewResource())
 
 	assert.Nil(t, service)
 }

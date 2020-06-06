@@ -29,15 +29,23 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 type signalfxExporter struct {
-	pushMetricsData func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	logger                 *zap.Logger
+	pushMetricsData        func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	pushKubernetesMetadata func(metadata []*collection.KubernetesMetadataUpdate) error
 }
 
 type exporterOptions struct {
-	ingestURL   *url.URL
-	httpTimeout time.Duration
+	ingestURL    *url.URL
+	apiURL       *url.URL
+	httpTimeout  time.Duration
+	token        string
+	logDimUpdate bool
 }
 
 // New returns a new SignalFx exporter.
@@ -55,8 +63,6 @@ func New(
 		return nil,
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
-
-	logger.Info("SignalFx Config", zap.String("ingest_url", options.ingestURL.String()))
 
 	if config.Name() == "" {
 		config.SetType(typeStr)
@@ -82,8 +88,27 @@ func New(
 		}},
 	}
 
+	dimClient := dimensions.NewDimensionClient(
+		context.Background(),
+		dimensions.DimensionClientOptions{
+			Token:      options.token,
+			APIURL:     options.apiURL,
+			LogUpdates: options.logDimUpdate,
+			Logger:     logger,
+			// Duration to wait between property updates. This might be worth
+			// being made configurable.
+			SendDelay: 10,
+			// In case of having issues sending dimension updates to SignalFx,
+			// buffer a fixed number of updates. Might also be a good candidate
+			// to make configurable.
+			PropertiesMaxBuffered: 10000,
+		})
+	dimClient.Start()
+
 	return signalfxExporter{
-		pushMetricsData: dpClient.pushMetricsData,
+		logger:                 logger,
+		pushMetricsData:        dpClient.pushMetricsData,
+		pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
 	}, nil
 }
 
@@ -103,4 +128,8 @@ func (se signalfxExporter) ConsumeMetricsData(ctx context.Context, md consumerda
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 	return err
+}
+
+func (se signalfxExporter) ConsumeKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
+	return se.pushKubernetesMetadata(metadata)
 }
