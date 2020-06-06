@@ -214,7 +214,7 @@ func (e *honeycombExporter) sendSpanLinks(span *tracepb.Span) {
 		for k, v := range attrs {
 			ev.AddField(k, v)
 		}
-		if err := ev.Send(); err != nil {
+		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
 		}
 	}
@@ -270,7 +270,7 @@ func (e *honeycombExporter) sendMessageEvents(td consumerdata.TraceData, span *t
 			ParentName: truncatableStringAsString(span.GetName()),
 			SpanType:   "span_event",
 		})
-		if err := ev.Send(); err != nil {
+		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
 		}
 	}
