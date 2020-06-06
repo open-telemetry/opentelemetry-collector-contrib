@@ -37,4 +37,6 @@ type Config struct {
 	MaxRetry int `mapstructure:"max_retry"`
 	// Max buffer used in memory
 	MaxBufferSize int `mapstructure:"max_buffer_size"`
+	// Shutdown timeout milliseconds
+	ShutdownTimeoutMs int `mapstructure:"shutdown_timeout_ms"`
 }

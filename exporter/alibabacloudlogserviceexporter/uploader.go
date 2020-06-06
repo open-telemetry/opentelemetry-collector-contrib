@@ -37,16 +37,20 @@ func (callback *callback) Fail(result *producer.Result) {
 
 // Producer log Service's producer wrapper
 type Producer interface {
+	// SendLogs send message to LogService
 	SendLogs(logs []*sls.Log) error
+	// Shutdown try shutdown this producer gracefully, and return error if shutdown fail
+	Shutdown() error
 }
 
 type producerImpl struct {
-	producerInstance *producer.Producer
-	project          string
-	logstore         string
-	topic            string
-	source           string
-	logger           *zap.Logger
+	producerInstance  *producer.Producer
+	project           string
+	logstore          string
+	topic             string
+	source            string
+	shutdownTimeoutMs int64
+	logger            *zap.Logger
 }
 
 func getIPAddress() (string, error) {
@@ -103,12 +107,14 @@ func NewProducer(config *Config, logger *zap.Logger) (Producer, error) {
 	if config.MaxBufferSize > 0 {
 		producerConfig.TotalSizeLnBytes = int64(config.MaxBufferSize)
 	}
+	producerConfig.AllowLogLevel = "warn"
 
 	//Create Producer Instance
 	producerInstance := producer.InitProducer(producerConfig)
 	producerInstance.Start()
 	p := &producerImpl{
-		producerInstance: producerInstance,
+		producerInstance:  producerInstance,
+		shutdownTimeoutMs: int64(config.ShutdownTimeoutMs),
 	}
 	p.project = config.Project
 	p.logstore = config.Logstore
@@ -126,7 +132,7 @@ func NewProducer(config *Config, logger *zap.Logger) (Producer, error) {
 	return p, nil
 }
 
-// SendMessage Send message to LogService
+// SendLogs send message to LogService
 func (producerInstance *producerImpl) SendLogs(logs []*sls.Log) error {
 	return producerInstance.producerInstance.SendLogListWithCallBack(
 		producerInstance.project,
@@ -137,4 +143,9 @@ func (producerInstance *producerImpl) SendLogs(logs []*sls.Log) error {
 		&callback{
 			logger: producerInstance.logger,
 		})
+}
+
+// Shutdown try shutdown this producer gracefully, and return error if timeout
+func (producerInstance *producerImpl) Shutdown() error {
+	return producerInstance.producerInstance.Close(producerInstance.shutdownTimeoutMs)
 }

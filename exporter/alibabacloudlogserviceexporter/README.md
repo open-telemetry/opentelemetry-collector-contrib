@@ -12,6 +12,7 @@ Configuration options:
 - `ecs_ram_role` (optional): set AlibabaCLoud ECS ram role if you are using ACK.
 - `max_retry` (optional): max retry count when send fail.
 - `max_buffer_size` (optional): max buffer used in memory.
+- `shutdown_timeout_ms` (optional): timeout milliseconds when shutdown this exporter.
 
 Example:
 

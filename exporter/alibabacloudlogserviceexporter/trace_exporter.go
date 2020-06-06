@@ -35,11 +35,13 @@ func NewTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.
 	if l.producer, err = NewProducer(cfg.(*Config), logger); err != nil {
 		return nil, err
 	}
-	logger.Info("Create LogService trace exporter success")
 
 	return exporterhelper.NewTraceExporterOld(
 		cfg,
-		l.pushTraceData)
+		l.pushTraceData,
+		exporterhelper.WithShutdown(func(ctx context.Context) error {
+			return l.producer.Shutdown()
+		}))
 }
 
 type logServiceTraceSender struct {

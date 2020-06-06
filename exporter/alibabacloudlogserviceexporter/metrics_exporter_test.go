@@ -30,9 +30,12 @@ import (
 func TestNewMetricsExporter(t *testing.T) {
 
 	got, err := NewMetricsExporter(zap.NewNop(), &Config{
-		Endpoint: "cn-hangzhou.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		Endpoint:          "cn-hangzhou.log.aliyuncs.com",
+		Project:           "demo-project",
+		Logstore:          "demo-logstore",
+		MaxBufferSize:     1024 * 1024,
+		MaxRetry:          5,
+		ShutdownTimeoutMs: 3000,
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

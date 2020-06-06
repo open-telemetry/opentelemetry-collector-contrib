@@ -35,11 +35,13 @@ func NewMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (componen
 	if l.producer, err = NewProducer(cfg.(*Config), logger); err != nil {
 		return nil, err
 	}
-	logger.Info("Create LogService metrics exporter success")
 
 	return exporterhelper.NewMetricsExporterOld(
 		cfg,
-		l.pushMetricsData)
+		l.pushMetricsData,
+		exporterhelper.WithShutdown(func(ctx context.Context) error {
+			return l.producer.Shutdown()
+		}))
 }
 
 type logServiceMetricsSender struct {

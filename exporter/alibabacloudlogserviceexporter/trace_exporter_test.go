@@ -27,9 +27,12 @@ import (
 func TestNewTraceExporter(t *testing.T) {
 
 	got, err := NewTraceExporter(zap.NewNop(), &Config{
-		Endpoint: "cn-hangzhou.log.aliyuncs.com",
-		Project:  "demo-project",
-		Logstore: "demo-logstore",
+		Endpoint:          "cn-hangzhou.log.aliyuncs.com",
+		Project:           "demo-project",
+		Logstore:          "demo-logstore",
+		MaxBufferSize:     1024 * 1024,
+		MaxRetry:          5,
+		ShutdownTimeoutMs: 3000,
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -37,6 +40,7 @@ func TestNewTraceExporter(t *testing.T) {
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
 	assert.Nil(t, err)
+	assert.Nil(t, got.Shutdown(context.Background()))
 }
 
 func TestNewFailsWithEmptyTraceExporterName(t *testing.T) {
