@@ -163,7 +163,7 @@ func metricDataToSignalFxV2(
 						logger.Warn(
 							"Timeseries for distribution metric dropped",
 							zap.Error(err),
-							zap.String("Metric", *sfxDataPoint.Metric))
+							zap.String("metric", *sfxDataPoint.Metric))
 					}
 				case *metricspb.Point_SummaryValue:
 					sfxDataPoints, err = appendSummaryValues(
@@ -175,13 +175,13 @@ func metricDataToSignalFxV2(
 						logger.Warn(
 							"Timeseries for summary metric dropped",
 							zap.Error(err),
-							zap.String("Metric", *sfxDataPoint.Metric))
+							zap.String("metric", *sfxDataPoint.Metric))
 					}
 				default:
 					numDroppedTimeSeries++
 					logger.Warn(
 						"Timeseries dropped to unexpected metric type",
-						zap.String("Metric", *sfxDataPoint.Metric))
+						zap.String("metric", *sfxDataPoint.Metric))
 				}
 
 			}
