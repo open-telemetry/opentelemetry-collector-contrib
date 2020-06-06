@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibab
 go 1.13
 
 require (
-	github.com/aliyun/aliyun-log-go-sdk v0.1.9
+	github.com/aliyun/aliyun-log-go-sdk v0.1.10
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.5
@@ -11,3 +11,4 @@ require (
 	go.opentelemetry.io/collector v0.3.1-0.20200521001251-a02ed5c5a4a4
 	go.uber.org/zap v1.10.0
 )
+
