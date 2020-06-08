@@ -1,4 +1,14 @@
 version: 2.1
+parameters:
+  run-build-publish:
+    type: boolean
+    default: true
+  run-stability-tests:
+    type: boolean
+    default: false
+  collector-sha:
+    type: string
+    default: ""
 
 executors:
   golang:
@@ -54,15 +64,45 @@ commands:
 
 workflows:
   version: 2
-  build-publish:
+  stability-tests:
+    when: << pipeline.parameters.run-stability-tests >>
     jobs:
-      - setup-and-lint:
+      - checkout-commit
+      - setup:
+          requires:
+            - checkout-commit
+      - build:
+          requires:
+            - setup
+      - run-stability-tests:
+          requires:
+            - build
+      - publish-dev:
+          requires:
+            - run-stability-tests
+
+  build-publish:
+    when: << pipeline.parameters.run-build-publish >>
+    jobs:
+      - setup:
+          filters:
+            tags:
+              only: /.*/
+      - lint:
+          requires:
+            - setup
           filters:
             tags:
               only: /.*/
       - build:
           requires:
-            - setup-and-lint
+            - setup
+          filters:
+            tags:
+              only: /.*/
+      - build-examples-tracing:
+          requires:
+            - setup
           filters:
             tags:
               only: /.*/
@@ -78,9 +118,9 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - coverage:
+      - test:
           requires:
-            - setup-and-lint
+            - setup
           filters:
             tags:
               only: /.*/
@@ -91,18 +131,20 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: /^v[0-9].[0-9]+.[0-9]+.*/
-      - publish-dev:
+              only: /^v[0-9].[0-9].[0-9]+.*/
+      - spawn-stability-tests-job:
           requires:
+            - lint
+            - test
             - build
           filters:
             branches:
-              only: master
+              only: /master/
             tags:
               ignore: /.*/
 
 jobs:
-  setup-and-lint:
+  setup:
     executor: golang
     steps:
       - checkout
@@ -110,9 +152,6 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project
-      - run:
-          name: Install bazzar
-          command: sudo apt update && sudo apt-get install bzr -y
       - run:
           name: Install tools
           command: make install-tools
@@ -122,6 +161,10 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: go/bin
+  lint:
+    executor: golang
+    steps:
+      - attach_to_workspace
       - run:
           name: Lint
           command: CMD="make lint" make -j4 for-all
@@ -140,6 +183,16 @@ jobs:
           root: ~/
           paths: project/bin
 
+  build-examples-tracing:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - run:
+          name: Build trace example
+          command: docker-compose -f examples/tracing/docker-compose.yml build
+
   cross-compile:
     executor: golang
     parallelism: 4
@@ -152,7 +205,7 @@ jobs:
           root: ~/
           paths: project/bin
 
-  coverage:
+  test:
     executor: golang
     steps:
       - attach_to_workspace
@@ -193,11 +246,50 @@ jobs:
           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
 
   publish-dev:
-    docker:
-      - image: cimg/go:1.14
+    executor: golang
     steps:
       - attach_to_workspace
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
+
+  spawn-stability-tests-job:
+    executor: golang
+    steps:
+      - run:
+          name: Trigger stability tests job
+          command: |
+            curl -f -X POST "https://circleci.com/api/v2/project/github/SumoLogic/${CIRCLE_PROJECT_REPONAME}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+                -H 'Content-Type: application/json' \
+                -H 'Accept: application/json' \
+                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, "branch": "'"${CIRCLE_BRANCH}"'"}'
+
+  checkout-commit:
+    executor: golang
+    steps:
+      - checkout
+      - run:
+          name: Checkout pipeline parameter commit
+          command: |
+            git checkout << pipeline.parameters.collector-sha >>
+            git status
+
+  run-stability-tests:
+    executor: golang
+    steps:
+      - run:
+          name: Run stability tests
+          command: make stability-tests
+      - run:
+          name: Run on fail status
+          command: |
+              curl --request POST \
+              --url https://api.github.com/repos/SumoLogic/opentelemetry-collector-contrib/issues \
+              --header "authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "content-type: application/json" \
+              --data '{
+                "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
+                "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
+                }'
+          when: on_fail

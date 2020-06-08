@@ -17,7 +17,7 @@ package translator
 import (
 	"encoding/hex"
 
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -45,13 +45,13 @@ type Stack struct {
 	Label string `json:"label,omitempty"`
 }
 
-func makeCause(status *tracepb.Status, attributes map[string]string) (isError, isFault bool,
+func makeCause(status pdata.SpanStatus, attributes map[string]string) (isError, isFault bool,
 	filtered map[string]string, cause *CauseData) {
-	if status == nil || status.Code == 0 {
+	if status.IsNil() || status.Code() == 0 {
 		return false, false, attributes, nil
 	}
 	var (
-		message     = status.GetMessage()
+		message     = status.Message()
 		errorKind   string
 		errorObject string
 	)
@@ -86,7 +86,7 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 		}
 	}
 
-	if isClientError(status.Code) {
+	if isClientError(status.Code()) {
 		isError = true
 		isFault = false
 	} else {
@@ -96,7 +96,7 @@ func makeCause(status *tracepb.Status, attributes map[string]string) (isError, i
 	return isError, isFault, filtered, cause
 }
 
-func isClientError(code int32) bool {
-	httpStatus := tracetranslator.HTTPStatusCodeFromOCStatus(code)
+func isClientError(code pdata.StatusCode) bool {
+	httpStatus := tracetranslator.HTTPStatusCodeFromOCStatus(int32(code))
 	return httpStatus >= 400 && httpStatus < 500
 }

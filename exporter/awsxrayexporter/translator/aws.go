@@ -17,7 +17,7 @@ package translator
 import (
 	"strconv"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -68,7 +68,7 @@ type BeanstalkMetadata struct {
 	DeploymentID int64  `json:"deployment_id"`
 }
 
-func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[string]string, *AWSData) {
+func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *AWSData) {
 	var (
 		cloud        string
 		account      string
@@ -88,30 +88,31 @@ func makeAws(attributes map[string]string, resource *resourcepb.Resource) (map[s
 	)
 
 	filtered := make(map[string]string)
-	if resource != nil {
-		for key, value := range resource.Labels {
+	if !resource.IsNil() {
+		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
 			switch key {
 			case semconventions.AttributeCloudProvider:
-				cloud = value
+				cloud = value.StringVal()
 			case semconventions.AttributeCloudAccount:
-				account = value
+				account = value.StringVal()
 			case semconventions.AttributeCloudZone:
-				zone = value
+				zone = value.StringVal()
 			case semconventions.AttributeHostID:
-				hostID = value
+				hostID = value.StringVal()
 			case semconventions.AttributeContainerName:
 				if container == "" {
-					container = value
+					container = value.StringVal()
 				}
 			case semconventions.AttributeK8sPod:
-				container = value
+				container = value.StringVal()
 			case semconventions.AttributeServiceNamespace:
-				namespace = value
+				namespace = value.StringVal()
 			case semconventions.AttributeServiceInstance:
-				deployID = value
+				deployID = value.StringVal()
 			}
-		}
+		})
 	}
+
 	for key, value := range attributes {
 		switch key {
 		case AWSOperationAttribute:

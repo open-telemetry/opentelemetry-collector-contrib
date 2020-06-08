@@ -9,6 +9,6 @@ require (
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/omnition/scribe-go v1.0.0
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.3.1-0.20200522130256-daf2fc71ac65
+	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
 	go.uber.org/zap v1.10.0
 )

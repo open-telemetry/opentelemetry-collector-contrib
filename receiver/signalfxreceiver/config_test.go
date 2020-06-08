@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 2)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	r0 := cfg.Receivers["signalfx"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -46,9 +47,22 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
+				TypeVal:  typeStr,
 				NameVal:  "signalfx/allsettings",
 				Endpoint: "localhost:8080",
+			},
+		})
+
+	r2 := cfg.Receivers["signalfx/tls"].(*Config)
+	assert.Equal(t, r2,
+		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: "signalfx/tls",
+			},
+			TLSCredentials: &configtls.TLSSetting{
+				CertFile: "/test.crt",
+				KeyFile:  "/test.key",
 			},
 		})
 }
