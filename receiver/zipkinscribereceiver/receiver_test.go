@@ -18,7 +18,6 @@ import (
 	"context"
 	"net"
 	"reflect"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -142,7 +141,7 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestScribeReceiverServer(t *testing.T) {
-	const endpoint = "localhost:9410"
+	const endpoint = "localhost:0"
 
 	messages := []*scribe.LogEntry{
 		{
@@ -164,7 +163,7 @@ func TestScribeReceiverServer(t *testing.T) {
 	}()
 
 	var trans thrift.TTransport
-	trans, err = thrift.NewTSocket(net.JoinHostPort("localhost", strconv.Itoa(9410)))
+	trans, err = thrift.NewTSocket(traceReceiver.(*scribeReceiver).server.ServerTransport().(*thrift.TServerSocket).Addr().String())
 	if err != nil {
 		t.Fatalf("error creating thrift socket: %v", err)
 	}
