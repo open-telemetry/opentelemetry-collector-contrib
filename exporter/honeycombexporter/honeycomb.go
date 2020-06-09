@@ -20,6 +20,7 @@ import (
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	libhoney "github.com/honeycombio/libhoney-go"
+	"github.com/honeycombio/libhoney-go/transmission"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -118,7 +119,7 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	// Run the error logger. This just listens for messages in the error
 	// response queue and writes them out using the logger.
 	ctx, cancel := context.WithCancel(ctx)
-	go e.RunErrorLogger(ctx)
+	go e.RunErrorLogger(ctx, libhoney.TxResponses())
 	defer cancel()
 
 	// Extract Node and Resource attributes, labels and other information.
@@ -289,8 +290,7 @@ func (e *honeycombExporter) Shutdown(context.Context) error {
 //
 // This method will block until the passed context.Context is canceled, or until
 // exporter.Close is called.
-func (e *honeycombExporter) RunErrorLogger(ctx context.Context) {
-	responses := libhoney.TxResponses()
+func (e *honeycombExporter) RunErrorLogger(ctx context.Context, responses chan transmission.Response) {
 	for {
 		select {
 		case r, ok := <-responses:
