@@ -3,8 +3,8 @@ services:
 
   otel-collector:
     build:
-      context: ../..
-      dockerfile: examples/splunk/Dockerfile
+      context: ../../..
+      dockerfile: exporter/splunkhecexporter/example/Dockerfile
     container_name: otel
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:

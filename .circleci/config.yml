@@ -108,6 +108,12 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-examples-splunkhecexporter:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
       - cross-compile:
           requires:
             - setup
@@ -200,6 +206,16 @@ jobs:
       - run:
           name: Build trace example
           command: docker-compose -f examples/tracing/docker-compose.yml build
+
+  build-examples-splunkhecexporter:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - run:
+          name: Build Splunk HEC example
+          command: docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
   cross-compile:
     executor: golang
