@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -29,8 +28,7 @@ import (
 )
 
 const (
-	dataformat = "k8s_cluster"
-	transport  = "http"
+	transport = "http"
 )
 
 var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
@@ -46,7 +44,7 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(ctx)
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, transport, kr.config.Name()))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
@@ -63,12 +61,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		for {
 			select {
 			case <-ticker.C:
-				c2 := obsreport.StartMetricsReceiveOp(ctx, dataformat, transport)
-
-				numTimeseries, numPoints, errs := kr.dispatchMetricData(c2)
-				err := componenterror.CombineErrors(errs)
-
-				obsreport.EndMetricsReceiveOp(c2, dataformat, numPoints, numTimeseries, err)
+				kr.dispatchMetricData(c)
 			case <-c.Done():
 				return
 			}
@@ -83,16 +76,15 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) (numTimeseries int, numPoints int, errs []error) {
+func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) {
 	for _, m := range kr.resourceWatcher.dataCollector.CollectMetricData() {
-		if err := kr.consumer.ConsumeMetricsData(ctx, m); err != nil {
-			errs = append(errs, err)
-			numTs, numPts := obsreport.CountMetricPoints(m)
-			numTimeseries += numTs
-			numPoints += numPts
-		}
+		c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
+
+		numTimeseries, numPoints := obsreport.CountMetricPoints(m)
+
+		err := kr.consumer.ConsumeMetricsData(c, m)
+		obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, numTimeseries, err)
 	}
-	return numTimeseries, numPoints, errs
 }
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.

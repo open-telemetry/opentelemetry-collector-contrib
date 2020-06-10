@@ -85,7 +85,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
-	assert.Equal(t, spanName, segment.Name)
+	assert.Equal(t, "signup_aggregator", segment.Name)
 	assert.True(t, segment.Fault)
 	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
@@ -149,8 +149,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Annotations)
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
-	// Restricted characters removed from span name.
-	assert.Equal(t, "call update_user_preference , ,  ", segment.Name)
+	assert.Equal(t, "customers@db.dev.example.com", segment.Name)
 	assert.False(t, segment.Fault)
 	assert.False(t, segment.Error)
 	assert.Equal(t, "remote", segment.Namespace)
@@ -163,6 +162,65 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
+}
+
+func TestClientSpanWithHttpHost(t *testing.T) {
+	spanName := "GET /"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributeNetPeerPort] = "9443"
+	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[semconventions.AttributeHTTPHost] = "foo.com"
+	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment := MakeSegment(span, resource)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "foo.com", segment.Name)
+}
+
+func TestClientSpanWithoutHttpHost(t *testing.T) {
+	spanName := "GET /"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributeNetPeerPort] = "9443"
+	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment := MakeSegment(span, resource)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "bar.com", segment.Name)
+}
+
+func TestClientSpanWithRpcHost(t *testing.T) {
+	spanName := "GET /com.foo.AnimalService/GetCats"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeHTTPMethod] = "GET"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[semconventions.AttributeNetPeerPort] = "9443"
+	attributes[semconventions.AttributeHTTPTarget] = "/com.foo.AnimalService/GetCats"
+	attributes[semconventions.AttributeRPCService] = "com.foo.AnimalService"
+	attributes[semconventions.AttributeNetPeerName] = "bar.com"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment := MakeSegment(span, resource)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "com.foo.AnimalService", segment.Name)
 }
 
 func TestSpanWithInvalidTraceId(t *testing.T) {
@@ -225,15 +283,8 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
-	assert.Equal(t, spanName, segment.Name)
+	assert.Equal(t, "signup_aggregator", segment.Name)
 	assert.True(t, segment.Fault)
-	w := testWriters.borrow()
-	if err := w.Encode(segment); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, spanName))
 }
 
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {

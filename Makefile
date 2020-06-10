@@ -39,6 +39,10 @@ test-with-cover:
 	 	go tool cover -html=coverage.txt -o coverage.html ); \
 	done
 
+.PHONY: stability-tests
+stability-tests:
+	@echo Stability tests have not been implemented yet 
+
 .PHONY: gotidy
 gotidy:
 	$(MAKE) for-all CMD="go mod tidy"
