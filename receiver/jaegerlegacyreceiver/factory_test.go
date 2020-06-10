@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver"
+	jaegercore "go.opentelemetry.io/collector/receiver/jaegerreceiver"
 	"go.uber.org/zap"
 )
 
@@ -72,7 +72,7 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:",
 		},
@@ -86,7 +86,7 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "localhost:65536",
 		},
@@ -100,7 +100,7 @@ func TestCreateInvalidHost(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &receiver.SecureReceiverSettings{
+	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: "1234",
 		},
@@ -114,7 +114,7 @@ func TestCreateNoProtocols(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols = make(map[string]*receiver.SecureReceiverSettings)
+	rCfg.Protocols = make(map[string]*jaegercore.SecureSetting)
 
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")
