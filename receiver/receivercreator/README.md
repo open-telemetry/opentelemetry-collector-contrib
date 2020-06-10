@@ -1,6 +1,6 @@
 # receiver_creator
 
-This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule. These rules are evaluated for each endpoint discovered. If the rule evaluates to true then the receiver for that rule will be started against the matched endpoint.
+This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule. To use the receiver creator, you must first configure one or more [observers](../../extension/observer/README.md) that will discover networked endpoints that you may be interested in. The configured rules will be evaluated for each endpoint discovered. If the rule evaluates to true then the receiver for that rule will be started against the matched endpoint.
 
 ## Config
 
@@ -14,13 +14,11 @@ A map of receiver names (e.g. `redis/1`) to a template for when and how to insta
 
 **receivers.&lt;receiver_type/id&gt;.rule**
 
-Rule string using [expvar syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md). Variables available are detailed below in [Endpoints](#endpoints).
-
-Each rule must start with `type.(pod|port) &&` such that the rule matches only one endpoint type.
+Rule expression using [expvar syntax](https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md). Variables available are detailed below in [Rule Expressions](#rule-expressions).
 
 **receivers.&lt;receiver_type/id&gt;.config**
 
-This is configuration that will be used when creating the receiver at runtime. This config is merged with the config discovered at runtime.
+This is configuration that will be used when creating the receiver at runtime.
 
 This option can use static and dynamic configuration values. Static values are normal YAML values. However the value can also be dynamically constructed from the discovered endpoint object. Dynamic values are surrounded by backticks (\`). If a literal backtick is needed use \\` to escape it. Dynamic values can be used with static values in which case they are concatenated. For example:
 
@@ -38,9 +36,9 @@ config:
    endpoint: `endpoint`:8080
 ```
 
-## Endpoints
+## Rule Expressions
 
-Depending on the type of endpoint it will have different variables available.
+Each rule must start with `type.(pod|port) &&` such that the rule matches only one endpoint type. Depending on the type of endpoint the rule is targeting it will have different variables available. 
 
 ### Pod
 

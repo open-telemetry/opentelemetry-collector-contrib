@@ -21,3 +21,7 @@ env:
 ```
 
 Then set this value to `${K8S_NODE_NAME}` in the configuration.
+
+The full list of settings exposed for this exporter are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
+
