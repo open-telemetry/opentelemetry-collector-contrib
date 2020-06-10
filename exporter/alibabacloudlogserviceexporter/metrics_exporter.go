@@ -32,21 +32,18 @@ func NewMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (componen
 	}
 
 	var err error
-	if l.producer, err = NewProducer(cfg.(*Config), logger); err != nil {
+	if l.client, err = NewLogServiceClient(cfg.(*Config), logger); err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewMetricsExporterOld(
 		cfg,
-		l.pushMetricsData,
-		exporterhelper.WithShutdown(func(ctx context.Context) error {
-			return l.producer.Shutdown()
-		}))
+		l.pushMetricsData)
 }
 
 type logServiceMetricsSender struct {
-	logger   *zap.Logger
-	producer Producer
+	logger *zap.Logger
+	client LogServiceClient
 }
 
 func (s *logServiceMetricsSender) pushMetricsData(
@@ -55,7 +52,7 @@ func (s *logServiceMetricsSender) pushMetricsData(
 ) (droppedTimeSeries int, err error) {
 	logs, droppedTimeSeries, err := metricsDataToLogServiceData(s.logger, td)
 	if len(logs) > 0 {
-		err = s.producer.SendLogs(logs)
+		err = s.client.SendLogs(logs)
 	}
 	return droppedTimeSeries, err
 }

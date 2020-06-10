@@ -30,12 +30,9 @@ import (
 func TestNewMetricsExporter(t *testing.T) {
 
 	got, err := NewMetricsExporter(zap.NewNop(), &Config{
-		Endpoint:          "cn-hangzhou.log.aliyuncs.com",
-		Project:           "demo-project",
-		Logstore:          "demo-logstore",
-		MaxBufferSize:     1024 * 1024,
-		MaxRetry:          5,
-		ShutdownTimeoutMs: 3000,
+		Endpoint: "us-west-1.log.aliyuncs.com",
+		Project:  "demo-project",
+		Logstore: "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)
@@ -52,7 +49,8 @@ func TestNewMetricsExporter(t *testing.T) {
 		Metrics: []*metricspb.Metric{
 			metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
 		}})
-	assert.Nil(t, err)
+	// a
+	assert.Error(t, err)
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {

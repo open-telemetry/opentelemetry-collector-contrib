@@ -20,37 +20,22 @@ import (
 	"os"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-log-go-sdk/producer"
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
 )
 
-type callback struct {
-	logger *zap.Logger
-}
-
-func (callback *callback) Success(result *producer.Result) {
-}
-
-func (callback *callback) Fail(result *producer.Result) {
-	callback.logger.Warn("send to log service failed", zap.String("requestId", result.GetRequestId()), zap.String("errorCode", result.GetErrorCode()), zap.String("errorMessage", result.GetErrorMessage()))
-}
-
-// Producer log Service's producer wrapper
-type Producer interface {
+// LogServiceClient log Service's client wrapper
+type LogServiceClient interface {
 	// SendLogs send message to LogService
 	SendLogs(logs []*sls.Log) error
-	// Shutdown try shutdown this producer gracefully, and return error if shutdown fail
-	Shutdown() error
 }
 
-type producerImpl struct {
-	producerInstance  *producer.Producer
-	project           string
-	logstore          string
-	topic             string
-	source            string
-	shutdownTimeoutMs int64
-	logger            *zap.Logger
+type logServiceClientImpl struct {
+	clientInstance sls.ClientInterface
+	project        string
+	logstore       string
+	topic          string
+	source         string
 }
 
 func getIPAddress() (string, error) {
@@ -90,62 +75,37 @@ func getIPAddress() (string, error) {
 	return "", errors.New("connected to the network?")
 }
 
-// NewProducer Create Log Service Producer
-func NewProducer(config *Config, logger *zap.Logger) (Producer, error) {
+// NewLogServiceClient Create Log Service client
+func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, error) {
 	if config == nil || config.Endpoint == "" || config.Project == "" || config.Logstore == "" {
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
-	// Retrieve Log Service Configuration Details
-	producerConfig := producer.GetDefaultProducerConfig()
-	producerConfig.Endpoint = config.Endpoint
-	producerConfig.AccessKeyID = config.AccessKeyID
-	producerConfig.AccessKeySecret = config.AccessKeySecret
 
-	if config.MaxRetry > 0 {
-		producerConfig.Retries = config.MaxRetry
+	//Create client instance
+	clientInterface := sls.CreateNormalInterface(config.Endpoint, config.AccessKeyID, config.AccessKeySecret, "")
+	c := &logServiceClientImpl{
+		project:        config.Project,
+		logstore:       config.Logstore,
+		clientInstance: clientInterface,
 	}
-	if config.MaxBufferSize > 0 {
-		producerConfig.TotalSizeLnBytes = int64(config.MaxBufferSize)
-	}
-	producerConfig.AllowLogLevel = "warn"
-
-	//Create Producer Instance
-	producerInstance := producer.InitProducer(producerConfig)
-	producerInstance.Start()
-	p := &producerImpl{
-		producerInstance:  producerInstance,
-		shutdownTimeoutMs: int64(config.ShutdownTimeoutMs),
-	}
-	p.project = config.Project
-	p.logstore = config.Logstore
 	// do not return error if get hostname or ip address fail
 	var err error
-	if p.topic, err = os.Hostname(); err != nil {
-		logger.Warn("Get hostname error when create LogService producer", zap.Error(err))
+	if c.topic, err = os.Hostname(); err != nil {
+		logger.Warn("Get hostname error when create LogService client", zap.Error(err))
 	}
-	if p.source, err = getIPAddress(); err != nil {
-		logger.Warn("Get IP address error when create LogService producer", zap.Error(err))
+	if c.source, err = getIPAddress(); err != nil {
+		logger.Warn("Get IP address error when create LogService client", zap.Error(err))
 	}
-	p.logger = logger
-	logger.Info("Create LogService producer success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
-
-	return p, nil
+	logger.Info("Create LogService client success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
+	return c, nil
 }
 
 // SendLogs send message to LogService
-func (producerInstance *producerImpl) SendLogs(logs []*sls.Log) error {
-	return producerInstance.producerInstance.SendLogListWithCallBack(
-		producerInstance.project,
-		producerInstance.logstore,
-		producerInstance.topic,
-		producerInstance.source,
-		logs,
-		&callback{
-			logger: producerInstance.logger,
-		})
-}
-
-// Shutdown try shutdown this producer gracefully, and return error if timeout
-func (producerInstance *producerImpl) Shutdown() error {
-	return producerInstance.producerInstance.Close(producerInstance.shutdownTimeoutMs)
+func (c *logServiceClientImpl) SendLogs(logs []*sls.Log) error {
+	logGroup := &sls.LogGroup{
+		Source: proto.String(c.source),
+		Topic:  proto.String(c.topic),
+		Logs:   logs,
+	}
+	return c.clientInstance.PutLogs(c.project, c.logstore, logGroup)
 }

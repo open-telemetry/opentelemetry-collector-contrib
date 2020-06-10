@@ -27,12 +27,9 @@ import (
 func TestNewTraceExporter(t *testing.T) {
 
 	got, err := NewTraceExporter(zap.NewNop(), &Config{
-		Endpoint:          "cn-hangzhou.log.aliyuncs.com",
-		Project:           "demo-project",
-		Logstore:          "demo-logstore",
-		MaxBufferSize:     1024 * 1024,
-		MaxRetry:          5,
-		ShutdownTimeoutMs: 3000,
+		Endpoint: "cn-hangzhou.log.aliyuncs.com",
+		Project:  "demo-project",
+		Logstore: "demo-logstore",
 	})
 	assert.NoError(t, err)
 	require.NotNil(t, got)

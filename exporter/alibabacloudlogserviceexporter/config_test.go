@@ -59,8 +59,6 @@ func TestLoadConfig(t *testing.T) {
 		AccessKeyID:     "test-id",
 		AccessKeySecret: "test-secret",
 		ECSRamRole:      "test-role",
-		MaxRetry:        10,
-		MaxBufferSize:   104857600,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

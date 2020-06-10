@@ -32,26 +32,27 @@ func NewTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.
 	}
 
 	var err error
-	if l.producer, err = NewProducer(cfg.(*Config), logger); err != nil {
+	if l.client, err = NewLogServiceClient(cfg.(*Config), logger); err != nil {
 		return nil, err
 	}
 
 	return exporterhelper.NewTraceExporterOld(
 		cfg,
-		l.pushTraceData,
-		exporterhelper.WithShutdown(func(ctx context.Context) error {
-			return l.producer.Shutdown()
-		}))
+		l.pushTraceData)
 }
 
 type logServiceTraceSender struct {
-	logger   *zap.Logger
-	producer Producer
+	logger *zap.Logger
+	client LogServiceClient
 }
 
 func (s *logServiceTraceSender) pushTraceData(
 	ctx context.Context,
 	td consumerdata.TraceData,
 ) (droppedSpans int, err error) {
-	return 0, nil
+	logs, err := traceDataToLogServiceData(td)
+	if err != nil {
+		return 0, err
+	}
+	return 0, s.client.SendLogs(logs)
 }

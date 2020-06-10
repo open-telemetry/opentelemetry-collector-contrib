@@ -33,10 +33,4 @@ type Config struct {
 	AccessKeySecret string `mapstructure:"access_key_secret"`
 	// Set AlibabaCLoud ECS ram role if you are using ACK
 	ECSRamRole string `mapstructure:"ecs_ram_role"`
-	// Max retry count when send fail
-	MaxRetry int `mapstructure:"max_retry"`
-	// Max buffer used in memory
-	MaxBufferSize int `mapstructure:"max_buffer_size"`
-	// Shutdown timeout milliseconds
-	ShutdownTimeoutMs int `mapstructure:"shutdown_timeout_ms"`
 }
