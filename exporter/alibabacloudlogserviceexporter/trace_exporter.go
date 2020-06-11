@@ -50,9 +50,6 @@ func (s *logServiceTraceSender) pushTraceData(
 	ctx context.Context,
 	td consumerdata.TraceData,
 ) (droppedSpans int, err error) {
-	logs, err := traceDataToLogServiceData(td)
-	if err != nil {
-		return 0, err
-	}
+	logs := traceDataToLogServiceData(td)
 	return 0, s.client.SendLogs(logs)
 }

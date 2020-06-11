@@ -50,7 +50,7 @@ func (s *logServiceMetricsSender) pushMetricsData(
 	ctx context.Context,
 	td consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
-	logs, droppedTimeSeries, err := metricsDataToLogServiceData(s.logger, td)
+	logs, droppedTimeSeries := metricsDataToLogServiceData(s.logger, td)
 	if len(logs) > 0 {
 		err = s.client.SendLogs(logs)
 	}

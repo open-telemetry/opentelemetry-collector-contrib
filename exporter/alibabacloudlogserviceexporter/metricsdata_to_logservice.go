@@ -96,9 +96,6 @@ func (kv *KeyValues) String() string {
 }
 
 func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
-	if sb.Len() != 0 {
-		sb.WriteByte('|')
-	}
 	for index, label := range kv.keyValues {
 		sb.WriteString(string(label.Key))
 		sb.WriteString("#$#")
@@ -164,9 +161,7 @@ func appendDistributionValues(
 	}
 	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
 	if explicitBuckets == nil {
-		return logs, fmt.Errorf(
-			"unknown bucket options type for metric %s",
-			nameContent.GetValue())
+		return logs, fmt.Errorf("unknown bucket options type for metric %s", nameContent.GetValue())
 	}
 	bounds := explicitBuckets.Bounds
 	boundsStr := make([]string, len(bounds)+1)
@@ -307,9 +302,10 @@ func appendTotalAndSum(
 func metricsDataToLogServiceData(
 	logger *zap.Logger,
 	md consumerdata.MetricsData,
-) (logs []*sls.Log, numDroppedTimeSeries int, err error) {
+) (logs []*sls.Log, numDroppedTimeSeries int) {
 
 	var defaultLabels KeyValues
+	var err error
 	// Labels from Node and Resource.
 	// TODO: Options to add lib, service name, etc as dimensions?
 	//  Q.: what about resource type?
@@ -426,5 +422,5 @@ func metricsDataToLogServiceData(
 		}
 	}
 
-	return logs, numDroppedTimeSeries, nil
+	return logs, numDroppedTimeSeries
 }

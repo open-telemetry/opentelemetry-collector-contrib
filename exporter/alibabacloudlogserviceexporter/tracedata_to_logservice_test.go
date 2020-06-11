@@ -27,6 +27,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
@@ -51,10 +52,7 @@ func TestNilOCProtoNodeToLogServiceData(t *testing.T) {
 			},
 		},
 	}
-	got, err := traceDataToLogServiceData(nilNodeBatch)
-	if err != nil {
-		t.Fatalf("Failed to translate OC batch to LogService data: %v", err)
-	}
+	got := traceDataToLogServiceData(nilNodeBatch)
 	if len(got) == 0 {
 		t.Fatalf("Logs count must > 0")
 	}
@@ -70,11 +68,7 @@ func TestOCProtoToLogServiceData(t *testing.T) {
 	for i := 0; i < numOfFiles; i++ {
 		td := tds[i]
 
-		gotLogs, err := traceDataToLogServiceData(td)
-		if err != nil {
-			t.Errorf("Failed to translate OC batch to LogService data: %v", err)
-			continue
-		}
+		gotLogs := traceDataToLogServiceData(td)
 
 		gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))
 
@@ -303,7 +297,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 	for i, c := range cases {
-		gotLogs, err := traceDataToLogServiceData(consumerdata.TraceData{
+		gotLogs := traceDataToLogServiceData(consumerdata.TraceData{
 			Spans: []*tracepb.Span{{
 				TraceId:    fakeTraceID,
 				SpanId:     fakeSpanID,
@@ -311,10 +305,6 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 				Attributes: c.haveAttributes,
 			}},
 		})
-		if err != nil {
-			t.Errorf("#%d: Unexpected error: %v", i, err)
-			continue
-		}
 		gotLog := gotLogs[0]
 
 		var gotPairs []logKeyValuePair
@@ -502,4 +492,80 @@ func loadFromJSON(file string, obj interface{}) error {
 	}
 
 	return err
+}
+
+func TestTraceCornerCases(t *testing.T) {
+	assert.Equal(t, truncableStringToStr(nil), "")
+	assert.Equal(t, timestampToEpochMicroseconds(nil), int64(0))
+	assert.Nil(t, ocMessageEventToMap(nil))
+	msgEvent := &tracepb.Span_TimeEvent_MessageEvent{}
+	assert.NotNil(t, ocMessageEventToMap(msgEvent))
+	msgEvent.UncompressedSize = 1
+	msgEvent.CompressedSize = 1
+	assert.NotNil(t, ocMessageEventToMap(msgEvent))
+	annotation := &tracepb.Span_TimeEvent_Annotation{}
+	assert.Nil(t, ocAnnotationToMap(nil))
+	assert.NotNil(t, ocAnnotationToMap(annotation))
+	annotation.Description = &tracepb.TruncatableString{
+		Value: "testDesc",
+	}
+	assert.NotNil(t, ocAnnotationToMap(annotation))
+
+	assert.Nil(t, timeEventToLogContent(nil))
+
+	assert.NotNil(t, timeEventToLogContent(&tracepb.Span_TimeEvents{
+		TimeEvent: []*tracepb.Span_TimeEvent{
+			{
+				Value: nil,
+			},
+		},
+	}))
+
+	assert.Equal(t, spanKindToStr(tracepb.Span_SpanKind(99)), "")
+	assert.Equal(t, spanKindToStr(tracepb.Span_CLIENT), string(tracetranslator.OpenTracingSpanKindClient))
+	assert.Equal(t, spanKindToStr(tracepb.Span_SERVER), string(tracetranslator.OpenTracingSpanKindServer))
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{}), "<Unknown OpenCensus Attribute>")
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{
+		Value: &tracepb.AttributeValue_StringValue{
+			StringValue: annotation.Description,
+		},
+	}), "testDesc")
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{
+		Value: &tracepb.AttributeValue_BoolValue{
+			BoolValue: true,
+		},
+	}), "true")
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{
+		Value: &tracepb.AttributeValue_BoolValue{
+			BoolValue: false,
+		},
+	}), "false")
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{
+		Value: &tracepb.AttributeValue_IntValue{
+			IntValue: 1,
+		},
+	}), "1")
+	assert.Equal(t, attributeValueToString(&tracepb.AttributeValue{
+		Value: &tracepb.AttributeValue_DoubleValue{
+			DoubleValue: 1,
+		},
+	}), "1")
+	rst := linksToLogContents(nil)
+	assert.Nil(t, rst)
+	rstLogs := spansToLogServiceData(nil)
+	assert.Nil(t, rstLogs)
+	rstLogContents := nodeAndResourceToLogContent(nil, nil)
+	assert.Equal(t, len(rstLogContents), 0)
+
+	rstLogContents = nodeAndResourceToLogContent(&commonpb.Node{}, &resourcepb.Resource{})
+	assert.Equal(t, len(rstLogContents), 0)
+
+	rstLogContents = nodeAndResourceToLogContent(&commonpb.Node{
+		LibraryInfo: &commonpb.LibraryInfo{
+			Language:           commonpb.LibraryInfo_GO_LANG,
+			ExporterVersion:    "v_1.0",
+			CoreLibraryVersion: "v0.1",
+		},
+	}, &resourcepb.Resource{})
+	assert.Equal(t, len(rstLogContents), 4)
 }

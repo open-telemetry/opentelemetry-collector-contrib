@@ -38,41 +38,16 @@ type logServiceClientImpl struct {
 	source         string
 }
 
-func getIPAddress() (string, error) {
-	ifaces, err := net.Interfaces()
-	if err != nil {
-		return "", err
-	}
-	for _, iface := range ifaces {
-		if iface.Flags&net.FlagUp == 0 {
-			continue // interface down
-		}
-		if iface.Flags&net.FlagLoopback != 0 {
-			continue // loopback interface
-		}
-		addrs, err := iface.Addrs()
-		if err != nil {
-			return "", err
-		}
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
+func getIPAddress() (ipAddress string, err error) {
+	as, err := net.InterfaceAddrs()
+	for _, a := range as {
+		if in, ok := a.(*net.IPNet); ok && !in.IP.IsLoopback() {
+			if in.IP.To4() != nil {
+				ipAddress = in.IP.String()
 			}
-			if ip == nil || ip.IsLoopback() {
-				continue
-			}
-			ip = ip.To4()
-			if ip == nil {
-				continue // not an ipv4 address
-			}
-			return ip.String(), nil
 		}
 	}
-	return "", errors.New("connected to the network?")
+	return ipAddress, err
 }
 
 // NewLogServiceClient Create Log Service client
@@ -89,13 +64,8 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 		clientInstance: clientInterface,
 	}
 	// do not return error if get hostname or ip address fail
-	var err error
-	if c.topic, err = os.Hostname(); err != nil {
-		logger.Warn("Get hostname error when create LogService client", zap.Error(err))
-	}
-	if c.source, err = getIPAddress(); err != nil {
-		logger.Warn("Get IP address error when create LogService client", zap.Error(err))
-	}
+	c.topic, _ = os.Hostname()
+	c.source, _ = getIPAddress()
 	logger.Info("Create LogService client success", zap.String("project", config.Project), zap.String("logstore", config.Logstore))
 	return c, nil
 }

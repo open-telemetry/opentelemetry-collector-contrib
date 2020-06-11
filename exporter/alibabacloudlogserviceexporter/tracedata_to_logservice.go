@@ -17,7 +17,6 @@ package alibabacloudlogserviceexporter
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -54,18 +53,14 @@ const (
 )
 
 // traceDataToLogService translates trace data into the LogService format.
-func traceDataToLogServiceData(td consumerdata.TraceData) ([]*sls.Log, error) {
-	logs, err := spansToLogServiceData(td.Spans)
-	if err != nil {
-		return nil, err
-	}
+func traceDataToLogServiceData(td consumerdata.TraceData) []*sls.Log {
+	logs := spansToLogServiceData(td.Spans)
 	tagContents := nodeAndResourceToLogContent(td.Node, td.Resource)
 
 	for _, log := range logs {
 		log.Contents = append(log.Contents, tagContents...)
 	}
-
-	return logs, nil
+	return logs
 }
 
 func nodeAndResourceToLogContent(node *commonpb.Node, resource *resourcepb.Resource) []*sls.LogContent {
@@ -161,9 +156,9 @@ func nodeAndResourceToLogContent(node *commonpb.Node, resource *resourcepb.Resou
 	return contents
 }
 
-func spansToLogServiceData(spans []*tracepb.Span) ([]*sls.Log, error) {
+func spansToLogServiceData(spans []*tracepb.Span) []*sls.Log {
 	if spans == nil {
-		return nil, nil
+		return nil
 	}
 
 	// Pre-allocate assuming that few, if any spans, are nil.
@@ -182,10 +177,7 @@ func spansToLogServiceData(spans []*tracepb.Span) ([]*sls.Log, error) {
 				Key:   proto.String(spanIDField),
 				Value: proto.String(spanID),
 			})
-		linksContent, err := linksToLogContents(span.Links)
-		if err != nil {
-			return nil, fmt.Errorf("error converting OC links to Jaeger references: %v", err)
-		}
+		linksContent := linksToLogContents(span.Links)
 		if linksContent != nil {
 			contents = append(contents, linksContent)
 		}
@@ -263,12 +255,12 @@ func spansToLogServiceData(spans []*tracepb.Span) ([]*sls.Log, error) {
 		})
 	}
 
-	return logs, nil
+	return logs
 }
 
-func linksToLogContents(ocSpanLinks *tracepb.Span_Links) (*sls.LogContent, error) {
+func linksToLogContents(ocSpanLinks *tracepb.Span_Links) *sls.LogContent {
 	if ocSpanLinks == nil || ocSpanLinks.Link == nil {
-		return nil, nil
+		return nil
 	}
 
 	ocLinks := ocSpanLinks.Link
@@ -288,11 +280,11 @@ func linksToLogContents(ocSpanLinks *tracepb.Span_Links) (*sls.LogContent, error
 		})
 	}
 
-	spanRefsStr, err := json.Marshal(spanRefs)
+	spanRefsStr, _ := json.Marshal(spanRefs)
 	return &sls.LogContent{
 		Key:   proto.String(referenceField),
 		Value: proto.String(string(spanRefsStr)),
-	}, err
+	}
 }
 
 func attributeValueToString(v *tracepb.AttributeValue) string {

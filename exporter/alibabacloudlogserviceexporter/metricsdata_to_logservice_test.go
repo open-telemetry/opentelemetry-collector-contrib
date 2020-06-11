@@ -21,9 +21,12 @@ import (
 	"testing"
 	"time"
 
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/gogo/protobuf/proto"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutils/metricstestutils"
 	"go.uber.org/zap"
@@ -70,6 +73,16 @@ func TestMetricDataToLogService(t *testing.T) {
 		wantNumDroppedTimeseries int
 	}{
 		{
+			name: "nil_node_nil_resources_nil_metric",
+			metricsDataFn: func() consumerdata.MetricsData {
+				return consumerdata.MetricsData{
+					Metrics: []*metricspb.Metric{
+						nil,
+					},
+				}
+			},
+		},
+		{
 			name: "nil_node_nil_resources_no_dims",
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
@@ -104,12 +117,17 @@ func TestMetricDataToLogService(t *testing.T) {
 							"k/n0": "vn0",
 							"k/n1": "vn1",
 						},
+						Identifier: &commonpb.ProcessIdentifier{
+							HostName: "host",
+							Pid:      123,
+						},
 					},
 					Resource: &resourcepb.Resource{
 						Labels: map[string]string{
 							"k/r0": "vr0",
 							"k/r1": "vr1",
 						},
+						Type: "service",
 					},
 					Metrics: []*metricspb.Metric{
 						metricstestutils.Gauge("gauge_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
@@ -142,9 +160,9 @@ func TestMetricDataToLogService(t *testing.T) {
 	}
 	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotLogs, gotNumDroppedTimeSeries, err := metricsDataToLogServiceData(logger, tt.metricsDataFn())
-			if err != nil {
-				t.Errorf("Converting metrics data to LogSerive data failed, err %v\n", err)
+			gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, tt.metricsDataFn())
+			if i == 0 {
+				assert.Equal(t, len(gotLogs), 0)
 				return
 			}
 			if gotNumDroppedTimeSeries != tt.wantNumDroppedTimeseries {
@@ -170,7 +188,7 @@ func TestMetricDataToLogService(t *testing.T) {
 			//str, _ := json.Marshal(gotLogPairs)
 			//fmt.Println(string(str))
 
-			resultLogFile := fmt.Sprintf("./testdata/logservice_metric_data_%02d.json", i+1)
+			resultLogFile := fmt.Sprintf("./testdata/logservice_metric_data_%02d.json", i)
 
 			wantLogs := make([][]logKeyValuePair, 0, gotNumDroppedTimeSeries)
 
@@ -187,4 +205,84 @@ func TestMetricDataToLogService(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInvalidMetric(t *testing.T) {
+	logger := zap.NewNop()
+
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+
+	doubleVal := 1234.5678
+	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+	metricData := &consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
+		},
+	}
+	// invalid timestamp
+	rawTS := metricData.Metrics[0].Timeseries[0].Points[0].Timestamp
+	metricData.Metrics[0].Timeseries[0].Points[0].Timestamp = nil
+	gotLogs, gotNumDroppedTimeSeries := metricsDataToLogServiceData(logger, *metricData)
+	metricData.Metrics[0].Timeseries[0].Points[0].Timestamp = rawTS
+	assert.Equal(t, gotNumDroppedTimeSeries, 1)
+	assert.Equal(t, len(gotLogs), 0)
+
+	// invalid distribution
+	rawValue := metricData.Metrics[0].Timeseries[0].Points[0].Value
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DistributionValue{
+		DistributionValue: &metricspb.DistributionValue{},
+	}
+	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
+	assert.Equal(t, gotNumDroppedTimeSeries, 1)
+	assert.Equal(t, len(gotLogs), 2)
+
+	// invalid summary
+	rawValue = metricData.Metrics[0].Timeseries[0].Points[0].Value
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_SummaryValue{
+		SummaryValue: &metricspb.SummaryValue{},
+	}
+	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
+	assert.Equal(t, gotNumDroppedTimeSeries, 1)
+	assert.Equal(t, len(gotLogs), 2)
+
+	// invalid value type
+	rawValue = metricData.Metrics[0].Timeseries[0].Points[0].Value
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = nil
+	gotLogs, gotNumDroppedTimeSeries = metricsDataToLogServiceData(logger, *metricData)
+	metricData.Metrics[0].Timeseries[0].Points[0].Value = rawValue
+	assert.Equal(t, gotNumDroppedTimeSeries, 1)
+	assert.Equal(t, len(gotLogs), 0)
+}
+
+func TestMetricCornerCases(t *testing.T) {
+	assert.Equal(t, min(1, 2), 1)
+	assert.Equal(t, min(2, 1), 1)
+	assert.Equal(t, min(1, 1), 1)
+
+	nameContent := &sls.LogContent{
+		Key:   proto.String(metricNameKey),
+		Value: proto.String("test_name"),
+	}
+	labelsContent := &sls.LogContent{
+		Key:   proto.String(labelsKey),
+		Value: proto.String("test_labels"),
+	}
+	timeNanoContent := &sls.LogContent{
+		Key:   proto.String(timeNanoKey),
+		Value: proto.String("123"),
+	}
+	distributionValue := &metricspb.DistributionValue{}
+	logs, err := appendDistributionValues(nil, KeyValues{}, 1, nameContent, labelsContent, timeNanoContent, distributionValue)
+	assert.Error(t, err)
+	assert.Equal(t, len(logs), 2)
+
+	summaryValue := &metricspb.SummaryValue{}
+	logs, err = appendSummaryValues(nil, KeyValues{}, 1, nameContent, labelsContent, timeNanoContent, summaryValue)
+	assert.Error(t, err)
+	assert.Equal(t, len(logs), 2)
+
 }
