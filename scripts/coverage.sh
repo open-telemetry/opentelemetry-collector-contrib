@@ -37,6 +37,7 @@ cov ext/opentelemetry-ext-requests
 cov ext/opentelemetry-ext-jaeger
 cov ext/opentelemetry-ext-opentracing-shim
 cov ext/opentelemetry-exporter-cloud-trace
+cov ext/opentelemetry-exporter-cloud-monitoring
 cov ext/opentelemetry-ext-wsgi
 cov ext/opentelemetry-ext-zipkin
 cov docs/examples/opentelemetry-example-app
