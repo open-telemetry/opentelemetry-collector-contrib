@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,20 @@
 package k8sprocessor
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
+
+func TestFactoryType(t *testing.T) {
+	f := &Factory{}
+	assert.Equal(t, f.Type(), configmodels.Type("k8s_tagger"))
+}
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
@@ -32,14 +38,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := Factory{KubeClient: kube.NewFakeClient}
+	factory := Factory{KubeClient: newFakeClient}
 	cfg := factory.CreateDefaultConfig()
+	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(zap.NewNop(), nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(zap.NewNop(), nil, cfg)
+	oCfg := cfg.(*Config)
+	oCfg.Passthrough = true
+	tp, err = factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
+	assert.NotNil(t, tp)
+	assert.NoError(t, err, "cannot create trace processor")
+
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
 	assert.Nil(t, mp)
 	assert.Error(t, err, "should not be able to create metric processor")
 }

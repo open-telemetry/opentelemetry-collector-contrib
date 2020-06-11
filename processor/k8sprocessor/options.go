@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/selection"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
@@ -42,6 +43,15 @@ const (
 // Option represents a configuration option that can be passes.
 // to the k8s-tagger
 type Option func(*kubernetesprocessor) error
+
+// WithAPIConfig provides k8s API related configuration to the processor.
+// It defaults the authentication method to in-cluster auth using service accounts.
+func WithAPIConfig(cfg k8sconfig.APIConfig) Option {
+	return func(p *kubernetesprocessor) error {
+		p.apiConfig = cfg
+		return p.apiConfig.Validate()
+	}
+}
 
 // WithPassthrough enables passthrough mode. In passthrough mode, the processor
 // only detects and tags the pod IP and does not invoke any k8s APIs.
@@ -84,7 +94,7 @@ func WithExtractMetadata(fields ...string) Option {
 			case metadataNode:
 				p.rules.Node = true
 			default:
-				fmt.Printf("\"%s\" is not a supported metadata field", field)
+				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
 		}
 		return nil
