@@ -18,7 +18,6 @@ import (
 	"context"
 	"net"
 	"reflect"
-	"strconv"
 	"sync"
 	"testing"
 
@@ -142,7 +141,7 @@ func TestScribeReceiverPortAlreadyInUse(t *testing.T) {
 }
 
 func TestScribeReceiverServer(t *testing.T) {
-	const endpoint = "localhost:9410"
+	const endpoint = "localhost:0"
 
 	messages := []*scribe.LogEntry{
 		{
@@ -164,7 +163,7 @@ func TestScribeReceiverServer(t *testing.T) {
 	}()
 
 	var trans thrift.TTransport
-	trans, err = thrift.NewTSocket(net.JoinHostPort("localhost", strconv.Itoa(9410)))
+	trans, err = thrift.NewTSocket(traceReceiver.(*scribeReceiver).server.ServerTransport().(*thrift.TServerSocket).Addr().String())
 	if err != nil {
 		t.Fatalf("error creating thrift socket: %v", err)
 	}
@@ -184,6 +183,7 @@ func TestScribeReceiverServer(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(sink.receivedData[0], wantTraceData) {
+
 		t.Errorf("got:\n%+v\nwant:\n%+v\n", sink.receivedData[0], wantTraceData)
 	}
 }
@@ -254,20 +254,6 @@ var wantTraceData = consumerdata.TraceData{
 			TimeEvents: &tracepb.Span_TimeEvents{
 				TimeEvent: []*tracepb.Span_TimeEvent{
 					{
-						Time: &timestamp.Timestamp{Seconds: 1442493420, Nanos: 635000000},
-						Value: &tracepb.Span_TimeEvent_Annotation_{
-							Annotation: &tracepb.Span_TimeEvent_Annotation{
-								Attributes: &tracepb.Span_Attributes{
-									AttributeMap: map[string]*tracepb.AttributeValue{
-										"sr": {
-											Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "zipkin-query"}},
-										},
-									},
-								},
-							},
-						},
-					},
-					{
 						Time: &timestamp.Timestamp{Seconds: 1442493420, Nanos: 747000000},
 						Value: &tracepb.Span_TimeEvent_Annotation_{
 							Annotation: &tracepb.Span_TimeEvent_Annotation{
@@ -288,20 +274,6 @@ var wantTraceData = consumerdata.TraceData{
 								Attributes: &tracepb.Span_Attributes{
 									AttributeMap: map[string]*tracepb.AttributeValue{
 										"Gc(9,0.PSScavenge,2015-09-17 12:37:02 +0000,304.milliseconds+762.microseconds)": {
-											Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "zipkin-query"}},
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						Time: &timestamp.Timestamp{Seconds: 1442493422, Nanos: 680000000},
-						Value: &tracepb.Span_TimeEvent_Annotation_{
-							Annotation: &tracepb.Span_TimeEvent_Annotation{
-								Attributes: &tracepb.Span_Attributes{
-									AttributeMap: map[string]*tracepb.AttributeValue{
-										"ss": {
 											Value: &tracepb.AttributeValue_StringValue{StringValue: &tracepb.TruncatableString{Value: "zipkin-query"}},
 										},
 									},

@@ -336,3 +336,37 @@ func expectedFromSummary(
 
 	return dps
 }
+
+func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
+	logger := zap.NewNop()
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+	keys := []string{"k0", "k1"}
+	values := []string{"v0", "v1"}
+	buckets := make([]*metricspb.DistributionValue_Bucket, 2)
+
+	distrValue := &metricspb.DistributionValue{
+		BucketOptions: &metricspb.DistributionValue_BucketOptions{
+			Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+				Explicit: nil,
+			},
+		},
+		Count:   42,
+		Sum:     42,
+		Buckets: buckets,
+	}
+	point := &metricspb.Point{Timestamp: metricstestutils.Timestamp(tsUnix), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
+	point.GetDistributionValue().BucketOptions.GetExplicit()
+	metricData := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutils.GaugeDist("gauge_distrib", keys, metricstestutils.Timeseries(
+				tsUnix,
+				values,
+				point)),
+		},
+	}
+	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	assert.Equal(t, 1, gotNumDroppedTimeSeries)
+	assert.NoError(t, err)
+}

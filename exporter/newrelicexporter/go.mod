@@ -8,6 +8,6 @@ require (
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.2.0
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
+	go.opentelemetry.io/collector v0.3.1-0.20200609132241-685777fc1985
 	go.uber.org/zap v1.10.0
 )

@@ -104,19 +104,25 @@ func setTransactionProperties(
 		netPeerPort int
 	)
 
-	var attrErrs []error
 	otlpSpan.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		var storeTag bool
 		switch k {
 		// http.*
 		case conventions.AttributeHTTPMethod:
 			context.setHTTPMethod(v.StringVal())
 		case conventions.AttributeHTTPURL:
 			if err := context.setHTTPURL(v.StringVal()); err != nil {
-				attrErrs = append(attrErrs, err)
+				// Invalid http.url recorded by instrumentation,
+				// record it as a label instead of in well-defined
+				// url fields.
+				storeTag = true
 			}
 		case conventions.AttributeHTTPTarget:
 			if err := context.setHTTPURL(v.StringVal()); err != nil {
-				attrErrs = append(attrErrs, err)
+				// Invalid http.target recorded by instrumentation,
+				// record it as a label instead of in well-defined
+				// url fields.
+				storeTag = true
 			}
 		case conventions.AttributeHTTPHost:
 			context.setHTTPHost(v.StringVal())
@@ -162,15 +168,15 @@ func setTransactionProperties(
 
 		// other: record as a tag
 		default:
+			storeTag = true
+		}
+		if storeTag {
 			context.model.Tags = append(context.model.Tags, model.IfaceMapItem{
 				Key:   cleanLabelKey(k),
 				Value: ifaceAttributeValue(v),
 			})
 		}
 	})
-	if attrErrs != nil {
-		return combineErrors(attrErrs)
-	}
 
 	if !otlpLibrary.IsNil() {
 		context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
@@ -216,17 +222,23 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		netPeerPort int
 	)
 
-	var attrErrs []error
 	otlpSpan.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		var storeTag bool
 		switch k {
 		// http.*
 		case conventions.AttributeHTTPURL:
 			if err := context.setHTTPURL(v.StringVal()); err != nil {
-				attrErrs = append(attrErrs, err)
+				// Invalid http.url recorded by instrumentation,
+				// record it as a label instead of in well-defined
+				// url fields.
+				storeTag = true
 			}
 		case conventions.AttributeHTTPTarget:
 			if err := context.setHTTPURL(v.StringVal()); err != nil {
-				attrErrs = append(attrErrs, err)
+				// Invalid http.target recorded by instrumentation,
+				// record it as a label instead of in well-defined
+				// url fields.
+				storeTag = true
 			}
 		case conventions.AttributeHTTPHost:
 			context.setHTTPHost(v.StringVal())
@@ -255,15 +267,15 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 
 		// other: record as a tag
 		default:
+			storeTag = true
+		}
+		if storeTag {
 			context.model.Tags = append(context.model.Tags, model.IfaceMapItem{
 				Key:   cleanLabelKey(k),
 				Value: ifaceAttributeValue(v),
 			})
 		}
 	})
-	if attrErrs != nil {
-		return combineErrors(attrErrs)
-	}
 
 	span.Type = "app"
 	if context.model.HTTP != nil {

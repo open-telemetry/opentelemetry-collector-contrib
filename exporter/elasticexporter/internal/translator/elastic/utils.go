@@ -17,7 +17,6 @@
 package elastic
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -28,15 +27,6 @@ var (
 	serviceNameInvalidRegexp = regexp.MustCompile("[^a-zA-Z0-9 _-]")
 	labelKeyReplacer         = strings.NewReplacer(`.`, `_`, `*`, `_`, `"`, `_`)
 )
-
-func combineErrors(errs []error) error {
-	if n := len(errs); n == 0 {
-		return nil
-	} else if n == 1 {
-		return errs[0]
-	}
-	return fmt.Errorf("%q", errs)
-}
 
 func ifaceAttributeValue(v pdata.AttributeValue) interface{} {
 	switch v.Type() {
