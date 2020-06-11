@@ -79,7 +79,7 @@ workflows:
             - build
       - publish-dev:
           requires:
-            - run-stability-tests 
+            - run-stability-tests
 
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
