@@ -16,6 +16,11 @@ executors:
       - image: cimg/go:1.14
 
 commands:
+  restore_workspace:
+    steps:
+      - attach_to_workspace
+      - restore_module_cache
+
   attach_to_workspace:
     steps:
       - attach_workspace:
@@ -24,7 +29,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
+          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -35,10 +40,7 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v2
-      - persist_to_workspace:
-          root: ~/
-          paths: go/pkg/mod
+            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
 
   publish_docker_images:
     parameters:
@@ -90,7 +92,7 @@ workflows:
               only: /.*/
       - lint:
           requires:
-            - setup 
+            - setup
           filters:
             tags:
               only: /.*/
@@ -108,7 +110,7 @@ workflows:
               only: /.*/
       - cross-compile:
           requires:
-            - build
+            - setup
           filters:
             tags:
               only: /.*/
@@ -149,25 +151,28 @@ jobs:
     steps:
       - checkout
       - restore_module_cache
-      - persist_to_workspace:
-          root: ~/
-          paths: project
+      - run:
+          name: Install deps
+          command: make -j8 for-all-target TARGET='dep'
       - run:
           name: Install tools
           command: make install-tools
       - run:
           name: Install testbed tools
           command: make -C testbed install-tools
+      - save_module_cache
       - persist_to_workspace:
           root: ~/
-          paths: go/bin
+          paths:
+            - project
+            - go/bin
   lint:
     executor: golang
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - run:
           name: Lint
-          command: CMD="make lint" make -j4 for-all
+          command: make -j8 for-all-target TARGET="lint"
       - run:
           name: Checks
           command: make -j4 checklicense impi misspell
@@ -175,7 +180,7 @@ jobs:
   build:
     executor: golang
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - run:
           name: Build collector for linux_amd64
           command: make otelcontribcol
@@ -187,7 +192,7 @@ jobs:
     docker:
       - image: cimg/go:1.14
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - setup_remote_docker
       - run:
           name: Build trace example
@@ -197,7 +202,7 @@ jobs:
     executor: golang
     parallelism: 4
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
@@ -208,7 +213,7 @@ jobs:
   test:
     executor: golang
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - run:
           name: Coverage tests
           command: make test-with-cover
@@ -220,7 +225,7 @@ jobs:
     executor: golang
     resource_class: medium+
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - run:
           name: Loadtest
           command: make -C testbed runtests
@@ -233,7 +238,7 @@ jobs:
     docker:
       - image: cimg/go:1.14
     steps:
-      - attach_to_workspace
+      - restore_workspace
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib
@@ -248,7 +253,7 @@ jobs:
   publish-dev:
     executor: golang
     steps:
-      - attach_to_workspace
+      - restore_workspace 
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
@@ -278,7 +283,7 @@ jobs:
   run-stability-tests:
     executor: golang
     steps:
-      - attach_to_workspace
+      - restore_workspace 
       - run:
           name: Run stability tests
           command: make stability-tests
