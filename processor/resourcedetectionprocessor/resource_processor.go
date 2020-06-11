@@ -16,33 +16,46 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
+type detectResourceResult struct {
+	resource pdata.Resource
+	err      error
+}
+
 type resourceTraceProcessor struct {
+	detectors    []internal.Detector
 	resource     pdata.Resource
 	override     bool
+	timeout      time.Duration
 	capabilities component.ProcessorCapabilities
+	logger       *zap.Logger
 	next         consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer, cfg *Config, allDetectors map[string]internal.Detector) (*resourceTraceProcessor, error) {
-	res, err := getResourceUsingDetectors(ctx, allDetectors, cfg.Detectors)
+func newResourceTraceProcessor(ctx context.Context, logger *zap.Logger, next consumer.TraceConsumer, cfg *Config, allDetectors map[string]internal.Detector) (*resourceTraceProcessor, error) {
+	detectors, err := getDetectors(ctx, allDetectors, cfg.Detectors)
 	if err != nil {
 		return nil, err
 	}
 
 	processor := &resourceTraceProcessor{
-		resource:     res,
+		detectors:    detectors,
 		override:     cfg.Override,
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !internal.IsEmptyResource(res)},
+		timeout:      cfg.Timeout,
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: true},
+		logger:       logger,
 		next:         next,
 	}
 
@@ -51,12 +64,14 @@ func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer,
 
 // GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
 func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return rtp.capabilities
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
-func (*resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
+func (rtp *resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
+	var err error
+	rtp.resource, err = detectResource(ctx, rtp.logger, rtp.timeout, rtp.detectors)
+	return err
 }
 
 // Shutdown is invoked during service shutdown.
@@ -74,22 +89,27 @@ func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, traces pda
 }
 
 type resourceMetricProcessor struct {
+	detectors    []internal.Detector
 	resource     pdata.Resource
 	override     bool
+	timeout      time.Duration
 	capabilities component.ProcessorCapabilities
+	logger       *zap.Logger
 	next         consumer.MetricsConsumer
 }
 
-func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsumer, cfg *Config, allDetectors map[string]internal.Detector) (*resourceMetricProcessor, error) {
-	res, err := getResourceUsingDetectors(ctx, allDetectors, cfg.Detectors)
+func newResourceMetricProcessor(ctx context.Context, logger *zap.Logger, next consumer.MetricsConsumer, cfg *Config, allDetectors map[string]internal.Detector) (*resourceMetricProcessor, error) {
+	detectors, err := getDetectors(ctx, allDetectors, cfg.Detectors)
 	if err != nil {
 		return nil, err
 	}
 
 	processor := &resourceMetricProcessor{
-		resource:     res,
+		detectors:    detectors,
 		override:     cfg.Override,
-		capabilities: component.ProcessorCapabilities{MutatesConsumedData: !internal.IsEmptyResource(res)},
+		timeout:      cfg.Timeout,
+		capabilities: component.ProcessorCapabilities{MutatesConsumedData: true},
+		logger:       logger,
 		next:         next,
 	}
 
@@ -98,12 +118,14 @@ func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsum
 
 // GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
 func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return rmp.capabilities
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
-func (*resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
+func (rmp *resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
+	var err error
+	rmp.resource, err = detectResource(ctx, rmp.logger, rmp.timeout, rmp.detectors)
+	return err
 }
 
 // Shutdown is invoked during service shutdown.
@@ -121,20 +143,6 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, metrics 
 	return rmp.next.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
 }
 
-func getResourceUsingDetectors(ctx context.Context, detectorsMap map[string]internal.Detector, detectorNames []string) (pdata.Resource, error) {
-	detectors, err := getDetectors(ctx, detectorsMap, detectorNames)
-	if err != nil {
-		return pdata.NewResource(), err
-	}
-
-	res, err := getResource(ctx, detectors...)
-	if err != nil {
-		return pdata.NewResource(), err
-	}
-
-	return res, nil
-}
-
 func getDetectors(ctx context.Context, allDetectors map[string]internal.Detector, detectorNames []string) ([]internal.Detector, error) {
 	detectors := make([]internal.Detector, 0, len(detectorNames))
 	for _, key := range detectorNames {
@@ -149,11 +157,48 @@ func getDetectors(ctx context.Context, allDetectors map[string]internal.Detector
 	return detectors, nil
 }
 
-func getResource(ctx context.Context, detectors ...internal.Detector) (pdata.Resource, error) {
-	res, err := internal.Detect(ctx, detectors...)
-	if err != nil {
-		return res, err
+func detectResource(ctx context.Context, logger *zap.Logger, timeout time.Duration, detectors []internal.Detector) (pdata.Resource, error) {
+	var resource pdata.Resource
+	ch := make(chan detectResourceResult, 1)
+
+	logger.Info("started detecting resource information")
+
+	go func() {
+		res, err := internal.Detect(ctx, detectors...)
+		ch <- detectResourceResult{resource: res, err: err}
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return resource, errors.New("timeout attempting to detect resource information")
+	case rst := <-ch:
+		if rst.err != nil {
+			return resource, rst.err
+		}
+
+		resource = rst.resource
 	}
 
-	return res, nil
+	logger.Info("completed detecting resource information", zap.Any("resource", resourceToMap(resource)))
+
+	return resource, nil
+}
+
+func resourceToMap(resource pdata.Resource) map[string]interface{} {
+	mp := make(map[string]interface{}, resource.Attributes().Len())
+
+	resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		switch v.Type() {
+		case pdata.AttributeValueBOOL:
+			mp[k] = v.BoolVal()
+		case pdata.AttributeValueINT:
+			mp[k] = v.IntVal()
+		case pdata.AttributeValueDOUBLE:
+			mp[k] = v.DoubleVal()
+		case pdata.AttributeValueSTRING:
+			mp[k] = v.StringVal()
+		}
+	})
+
+	return mp
 }

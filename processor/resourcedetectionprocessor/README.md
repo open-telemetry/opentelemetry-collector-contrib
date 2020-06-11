@@ -9,8 +9,8 @@ override the resource value in traces and metrics with this information.
 Currently supported detectors include:
 
 * Environment Variable: Reads resource information from the `OTEL_RESOURCE` environment
-variable. This is expected to be in the format `<key1>=<value1>,<key2>=<value2>,...` as
-defined in the OpenTelemetry resource specification.
+variable. This is expected to be in the format `<key1>=<value1>,<key2>=<value2>,...`, the
+details of which are currently pending confirmation in the OpenTelemetry specification.
 
 * GCE Metadata: Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
 to read resource information from the GCE metadata server as documented by
@@ -23,14 +23,6 @@ https://cloud.google.com/compute/docs/storing-retrieving-metadata
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
-```
-
-### Example:
-
-```yaml
-processors:
-  resourcedetection:
-    detectors: [ "aws.ec2", "gcp.gce" ]
 ```
 
 The full list of settings exposed for this extension are documented [here](./config.go)

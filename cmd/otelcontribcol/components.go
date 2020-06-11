@@ -119,7 +119,7 @@ func components() (config.Factories, error) {
 
 	processors := []component.ProcessorFactoryBase{
 		&k8sprocessor.Factory{},
-		&resourcedetectionprocessor.Factory{},
+		resourcedetectionprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

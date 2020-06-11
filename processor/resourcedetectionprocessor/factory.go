@@ -16,6 +16,7 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -59,6 +60,7 @@ func (*Factory) CreateDefaultConfig() configmodels.Processor {
 			NameVal: typeStr,
 		},
 		Detectors: []string{env.TypeStr},
+		Timeout:   5 * time.Second,
 		Override:  true,
 	}
 }
@@ -71,7 +73,7 @@ func (f *Factory) CreateTraceProcessor(
 	cfg configmodels.Processor,
 ) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
-	return newResourceTraceProcessor(ctx, nextConsumer, oCfg, f.detectors)
+	return newResourceTraceProcessor(ctx, params.Logger, nextConsumer, oCfg, f.detectors)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -82,5 +84,5 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
-	return newResourceMetricProcessor(ctx, nextConsumer, oCfg, f.detectors)
+	return newResourceMetricProcessor(ctx, params.Logger, nextConsumer, oCfg, f.detectors)
 }

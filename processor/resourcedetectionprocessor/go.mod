@@ -8,4 +8,5 @@ require (
 	github.com/opentracing/opentracing-go v1.1.1-0.20190913142402-a7454ce5950e // indirect
 	github.com/stretchr/testify v1.5.1
 	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
+	go.uber.org/zap v1.10.0
 )

@@ -35,20 +35,48 @@ func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
 }
 
 func TestDetect(t *testing.T) {
-	md1 := &MockDetector{}
-	md1.On("Detect").Return(NewResource(map[string]string{"a": "1", "b": "2"}), nil)
+	tests := []struct {
+		name              string
+		detectedResources []pdata.Resource
+		expectedResource  pdata.Resource
+	}{
+		{
+			name: "Detect three resources",
+			detectedResources: []pdata.Resource{
+				NewResource(map[string]string{"a": "1", "b": "2"}),
+				NewResource(map[string]string{"a": "11", "c": "3"}),
+				NewResource(map[string]string{"a": "11", "c": "3"}),
+			},
+			expectedResource: NewResource(map[string]string{"a": "1", "b": "2", "c": "3"}),
+		}, {
+			name: "Detect empty resources",
+			detectedResources: []pdata.Resource{
+				NewResource(map[string]string{"a": "1", "b": "2"}),
+				NewResource(map[string]string{}),
+				NewResource(map[string]string{"a": "11"}),
+			},
+			expectedResource: NewResource(map[string]string{"a": "1", "b": "2"}),
+		},
+	}
 
-	md2 := &MockDetector{}
-	md2.On("Detect").Return(NewResource(map[string]string{"a": "11", "c": "3"}), nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mds := make([]Detector, 0, len(tt.detectedResources))
 
-	got, err := Detect(context.Background(), md1, md2)
-	require.NoError(t, err)
+			for _, res := range tt.detectedResources {
+				md := &MockDetector{}
+				md.On("Detect").Return(res, nil)
+				mds = append(mds, md)
+			}
 
-	want := NewResource(map[string]string{"a": "1", "b": "2", "c": "3"})
+			got, err := Detect(context.Background(), mds...)
+			require.NoError(t, err)
 
-	got.Attributes().Sort()
-	want.Attributes().Sort()
-	assert.Equal(t, want, got)
+			tt.expectedResource.Attributes().Sort()
+			got.Attributes().Sort()
+			assert.Equal(t, tt.expectedResource, got)
+		})
+	}
 }
 
 func TestDetectResource_Error(t *testing.T) {

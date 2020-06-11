@@ -17,6 +17,7 @@ package resourcedetectionprocessor
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
@@ -44,6 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "resourcedetection/2",
 		},
 		Detectors: []string{"env", "gce"},
+		Timeout:   2 * time.Second,
 		Override:  false,
 	})
 }

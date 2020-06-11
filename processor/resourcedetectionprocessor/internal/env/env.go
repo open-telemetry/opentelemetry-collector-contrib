@@ -54,26 +54,39 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	return res, nil
 }
 
-var labelRegex = regexp.MustCompile(`^\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]{0,256}?)\s*(?:,|$)`)
+// labelRegex matches any key=value pair including a trailing comma or the end of the
+// string. Captures the trimmed key & value parts, and ignores any superfluous spaces.
+var labelRegex = regexp.MustCompile(`\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]{0,256}?)\s*(?:,|$)`)
 
 func initializeAttributeMap(am pdata.AttributeMap, s string) error {
-	for len(s) > 0 {
-		match := labelRegex.FindStringSubmatch(s)
-		if len(match) == 0 {
-			return fmt.Errorf("invalid resource format, remainder: %s", s)
-		}
-		v := match[2]
-		if v == "" {
-			v = match[3]
-		} else {
-			var err error
-			if v, err = url.QueryUnescape(v); err != nil {
-				return fmt.Errorf("invalid resource format, remainder: %s, err: %s", s, err)
-			}
-		}
-		am.InsertString(match[1], v)
+	matches := labelRegex.FindAllStringSubmatchIndex(s, -1)
 
-		s = s[len(match[0]):]
+	for len(matches) == 0 {
+		return fmt.Errorf("invalid resource format: %q", s)
+	}
+
+	prevIndex := 0
+	for _, match := range matches {
+		// if there is any text between matches, raise an error
+		if prevIndex != match[0] {
+			return fmt.Errorf("invalid resource format, invalid text: %q", s[prevIndex:match[0]])
+		}
+
+		key := s[match[2]:match[3]]
+		value := s[match[4]:match[5]]
+
+		var err error
+		if value, err = url.QueryUnescape(value); err != nil {
+			return fmt.Errorf("invalid resource format in attribute: %q, err: %s", s[match[0]:match[1]], err)
+		}
+		am.InsertString(key, value)
+
+		prevIndex = match[1]
+	}
+
+	// if there is any text after the last match, raise an error
+	if matches[len(matches)-1][1] != len(s) {
+		return fmt.Errorf("invalid resource format, invalid text: %q", s[matches[len(matches)-1][1]:])
 	}
 
 	return nil

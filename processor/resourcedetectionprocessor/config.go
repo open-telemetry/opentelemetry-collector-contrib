@@ -15,6 +15,8 @@
 package resourcedetectionprocessor
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -24,6 +26,9 @@ type Config struct {
 	// Detectors is an ordered list of named detectors that should be
 	// run to attempt to detect resource information.
 	Detectors []string `mapstructure:"detectors"`
+	// Timeout specifies the maximum amount of time that we will wait
+	// before assuming a detector has failed. Defaults to 5s.
+	Timeout time.Duration `mapstructure:"timeout"`
 	// Override indicates whether any existing resource attributes
 	// should be overridden or preserved. Defaults to true.
 	Override bool `mapstructure:"override"`

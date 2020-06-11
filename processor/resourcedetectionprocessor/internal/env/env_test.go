@@ -16,7 +16,6 @@ package env
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 
@@ -54,37 +53,54 @@ func TestDetectError(t *testing.T) {
 	assert.True(t, internal.IsEmptyResource(res))
 }
 
-func TestDecodeLabels(t *testing.T) {
+func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
-		encoded    string
-		wantLabels pdata.AttributeMap
-		wantFail   bool
+		name               string
+		encoded            string
+		expectedAttributes pdata.AttributeMap
+		expectedError      string
 	}{
 		{
-			encoded:    ` example.org/test-1 =  test $ %3A \" ,  Abc=Def  `,
-			wantLabels: internal.NewAttributeMap(map[string]string{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
+			name:               "multiple valid attributes",
+			encoded:            ` example.org/test-1 =  test $ %3A \" ,  Abc=Def  `,
+			expectedAttributes: internal.NewAttributeMap(map[string]string{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
 		}, {
-			encoded:    `single=key`,
-			wantLabels: internal.NewAttributeMap(map[string]string{"single": "key"}),
+			name:               "single valid attribute",
+			encoded:            `single=key`,
+			expectedAttributes: internal.NewAttributeMap(map[string]string{"single": "key"}),
+		}, {
+			name:          "invalid url escape sequence in value",
+			encoded:       `invalid=url-%3-encoding`,
+			expectedError: `invalid resource format in attribute: "invalid=url-%3-encoding", err: invalid URL escape "%3-"`,
+		}, {
+			name:          "invalid char in key",
+			encoded:       `invalid-char-ü=test`,
+			expectedError: `invalid resource format: "invalid-char-ü=test"`,
+		}, {
+			name:          "invalid char in value",
+			encoded:       `invalid-char=ü-test`,
+			expectedError: `invalid resource format: "invalid-char=ü-test"`,
+		}, {
+			name:          "invalid attribute",
+			encoded:       `extra=chars, a`,
+			expectedError: `invalid resource format, invalid text: " a"`,
+		}, {
+			name:          "invalid char between attributes",
+			encoded:       `invalid=char,übetween=attributes`,
+			expectedError: `invalid resource format, invalid text: "ü"`,
 		},
-		{encoded: `invalid-char-ü="test"`, wantFail: true},
-		{encoded: `invalid-char="ü-test"`, wantFail: true},
-		{encoded: `extra=chars, a`, wantFail: true},
 	}
 
-	for i, c := range cases {
-		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
 			am := pdata.NewAttributeMap()
 			err := initializeAttributeMap(am, c.encoded)
 
-			if c.wantFail {
-				assert.Error(t, err)
+			if c.expectedError != "" {
+				assert.EqualError(t, err, c.expectedError)
 			} else {
 				assert.NoError(t, err)
-
-				c.wantLabels.Sort()
-				am.Sort()
-				assert.Equal(t, c.wantLabels, am)
+				assert.Equal(t, c.expectedAttributes.Sort(), am.Sort())
 			}
 		})
 	}

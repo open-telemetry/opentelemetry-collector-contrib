@@ -16,16 +16,20 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
@@ -43,17 +47,19 @@ func (p *MockDetector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 func TestResourceProcessor(t *testing.T) {
 	tests := []struct {
-		name                string
-		mutatesConsumedData bool
-		override            bool
-		sourceResource      pdata.Resource
-		detectedResource    pdata.Resource
-		wantResource        pdata.Resource
+		name               string
+		detectorKeys       []string
+		override           bool
+		sourceResource     pdata.Resource
+		detectedResource   pdata.Resource
+		detectedError      error
+		expectedResource   pdata.Resource
+		expectedNewError   string
+		expectedStartError string
 	}{
 		{
-			name:                "Resource is not overridden",
-			mutatesConsumedData: true,
-			override:            false,
+			name:     "Resource is not overridden",
+			override: false,
 			sourceResource: internal.NewResource(map[string]string{
 				"type":           "original-type",
 				"original-label": "original-value",
@@ -64,7 +70,7 @@ func TestResourceProcessor(t *testing.T) {
 				"k8s.cluster.name": "k8s-cluster",
 				"host.name":        "k8s-node",
 			}),
-			wantResource: internal.NewResource(map[string]string{
+			expectedResource: internal.NewResource(map[string]string{
 				"type":             "original-type",
 				"original-label":   "original-value",
 				"cloud.zone":       "original-zone",
@@ -73,9 +79,8 @@ func TestResourceProcessor(t *testing.T) {
 			}),
 		},
 		{
-			name:                "Resource is overridden",
-			mutatesConsumedData: true,
-			override:            true,
+			name:     "Resource is overridden",
+			override: true,
 			sourceResource: internal.NewResource(map[string]string{
 				"type":           "original-type",
 				"original-label": "original-value",
@@ -86,7 +91,7 @@ func TestResourceProcessor(t *testing.T) {
 				"k8s.cluster.name": "k8s-cluster",
 				"host.name":        "k8s-node",
 			}),
-			wantResource: internal.NewResource(map[string]string{
+			expectedResource: internal.NewResource(map[string]string{
 				"type":             "original-type",
 				"original-label":   "original-value",
 				"cloud.zone":       "zone-1",
@@ -95,37 +100,69 @@ func TestResourceProcessor(t *testing.T) {
 			}),
 		},
 		{
-			name:                "Empty detected resource",
-			mutatesConsumedData: false,
+			name: "Empty detected resource",
 			sourceResource: internal.NewResource(map[string]string{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
 			}),
 			detectedResource: internal.NewResource(map[string]string{}),
-			wantResource: internal.NewResource(map[string]string{
+			expectedResource: internal.NewResource(map[string]string{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
 			}),
 		},
+		{
+			name: "Detection error",
+			sourceResource: internal.NewResource(map[string]string{
+				"type":           "original-type",
+				"original-label": "original-value",
+				"cloud.zone":     "original-zone",
+			}),
+			detectedError:      errors.New("err1"),
+			expectedStartError: "err1",
+		},
+		{
+			name:             "Invalid detector key",
+			detectorKeys:     []string{"invalid-key"},
+			expectedNewError: "invalid detector key: invalid-key",
+		},
 	}
 
 	for _, tt := range tests {
+		md1 := &MockDetector{}
+		md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
+		detectors := map[string]internal.Detector{"mock": md1}
+
+		if tt.detectorKeys == nil {
+			tt.detectorKeys = []string{"mock"}
+		}
+
+		cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
+
 		t.Run(tt.name, func(t *testing.T) {
-			tt.wantResource.Attributes().Sort()
-
-			md1 := &MockDetector{}
-			md1.On("Detect").Return(tt.detectedResource, nil)
-			detectors := map[string]internal.Detector{"mock": md1}
-
-			cfg := &Config{Override: tt.override, Detectors: []string{"mock"}}
-
 			// Test trace consuner
 			ttn := &exportertest.SinkTraceExporter{}
-			rtp, err := newResourceTraceProcessor(context.Background(), ttn, cfg, detectors)
+			rtp, err := newResourceTraceProcessor(context.Background(), zap.NewNop(), ttn, cfg, detectors)
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
 			require.NoError(t, err)
-			assert.Equal(t, tt.mutatesConsumedData, rtp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rtp.GetCapabilities().MutatesConsumedData)
+
+			err = rtp.Start(context.Background(), componenttest.NewNopHost())
+
+			if tt.expectedStartError != "" {
+				assert.EqualError(t, err, tt.expectedStartError)
+				return
+			}
+
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, rtp.Shutdown(context.Background())) }()
 
 			td := pdata.NewTraces()
 			td.ResourceSpans().Resize(1)
@@ -134,14 +171,32 @@ func TestResourceProcessor(t *testing.T) {
 			err = rtp.ConsumeTraces(context.Background(), td)
 			require.NoError(t, err)
 			got := ttn.AllTraces()[0].ResourceSpans().At(0).Resource()
+
+			tt.expectedResource.Attributes().Sort()
 			got.Attributes().Sort()
-			assert.Equal(t, tt.wantResource, got)
+			assert.Equal(t, tt.expectedResource, got)
 
 			// Test metrics consumer
 			tmn := &exportertest.SinkMetricsExporter{}
-			rmp, err := newResourceMetricProcessor(context.Background(), tmn, cfg, detectors)
+			rmp, err := newResourceMetricProcessor(context.Background(), zap.NewNop(), tmn, cfg, detectors)
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
 			require.NoError(t, err)
-			assert.Equal(t, tt.mutatesConsumedData, rmp.GetCapabilities().MutatesConsumedData)
+			assert.True(t, rmp.GetCapabilities().MutatesConsumedData)
+
+			err = rmp.Start(context.Background(), componenttest.NewNopHost())
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
 			// TODO create pdata.Metrics directly when this is no longer internal
 			md := []consumerdata.MetricsData{{Resource: oCensusResource(tt.sourceResource)}}
@@ -149,8 +204,10 @@ func TestResourceProcessor(t *testing.T) {
 			err = rmp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(md))
 			require.NoError(t, err)
 			got = pdatautil.MetricsToInternalMetrics(tmn.AllMetrics()[0]).ResourceMetrics().At(0).Resource()
+
+			tt.expectedResource.Attributes().Sort()
 			got.Attributes().Sort()
-			assert.Equal(t, tt.wantResource, got)
+			assert.Equal(t, tt.expectedResource, got)
 		})
 	}
 }
@@ -168,7 +225,7 @@ func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	detectors := NewFactory().detectors
 	sink := &exportertest.SinkTraceExporter{}
 
-	processor, _ := newResourceTraceProcessor(context.Background(), sink, cfg, detectors)
+	processor, _ := newResourceTraceProcessor(context.Background(), zap.NewNop(), sink, cfg, detectors)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -191,7 +248,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	detectors := NewFactory().detectors
 	sink := &exportertest.SinkMetricsExporter{}
 
-	processor, _ := newResourceMetricProcessor(context.Background(), sink, cfg, detectors)
+	processor, _ := newResourceMetricProcessor(context.Background(), zap.NewNop(), sink, cfg, detectors)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

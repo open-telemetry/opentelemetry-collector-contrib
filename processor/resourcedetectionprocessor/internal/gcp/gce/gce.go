@@ -24,11 +24,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-const TypeStr = "gce"
-
 const (
-	typeKey          = "type"
-	hostType         = "host"
+	TypeStr          = "gce"
 	cloudProviderGCP = "gcp"
 )
 
@@ -49,9 +46,6 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	}
 
 	attr := res.Attributes()
-
-	// TODO confirm how to best handle this as we have both "cloud" & "host" resource info
-	attr.InsertString(typeKey, hostType)
 
 	var errors []error
 	errors = append(errors, d.initializeCloudAttributes(attr)...)
