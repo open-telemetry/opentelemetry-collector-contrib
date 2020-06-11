@@ -1,4 +1,4 @@
-# k8sobserver
+# Kubernetes Observer
 
 The k8sobserver uses the Kubernetes API to discover pods running on the local node. This assumes the collector is deployed in the "agent" model where it is running on each individual node/host instance.
 

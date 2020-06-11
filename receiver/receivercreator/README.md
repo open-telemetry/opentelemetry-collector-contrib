@@ -1,4 +1,4 @@
-# receiver_creator
+# Receiver Creator
 
 This receiver can instantiate other receivers at runtime based on whether observed endpoints match a configured rule. To use the receiver creator, you must first configure one or more [observers](../../extension/observer/README.md) that will discover networked endpoints that you may be interested in. The configured rules will be evaluated for each endpoint discovered. If the rule evaluates to true then the receiver for that rule will be started against the matched endpoint.
 
