@@ -1,0 +1,136 @@
+[
+    [
+        {
+            "Key": "traceID",
+            "Value": "000000000000000052969a8955571a3f"
+        },
+        {
+            "Key": "spanID",
+            "Value": "0000000000647d98"
+        },
+        {
+            "Key": "parentSpanID",
+            "Value": "0"
+        },
+        {
+            "Key": "startTime",
+            "Value": "1485467191639875"
+        },
+        {
+            "Key": "operationName",
+            "Value": "get"
+        },
+        {
+            "Key": "duration",
+            "Value": "22938"
+        },
+        {
+            "Key": "tags.peer.service",
+            "Value": "AAAAAAAAMDk="
+        },
+        {
+            "Key": "tags.span.kind",
+            "Value": "server"
+        },
+        {
+            "Key": "tags.status.code",
+            "Value": "0"
+        },
+        {
+            "Key": "tags.status.message",
+            "Value": ""
+        },
+        {
+            "Key": "process.serviceName",
+            "Value": "api"
+        }
+    ],
+    [
+        {
+            "Key": "traceID",
+            "Value": "000000000000000052969a8955571a3f"
+        },
+        {
+            "Key": "spanID",
+            "Value": "0000000000647d99"
+        },
+        {
+            "Key": "reference",
+            "Value": "[{\"TraceID\":\"000000000000000052969a8955571a3f\",\"SpanID\":\"0000000000647d98\",\"RefType\":\"PARENT_LINKED_SPAN\"},{\"TraceID\":\"000000000000000052969a8955571a3f\",\"SpanID\":\"000000000068c4e3\",\"RefType\":\"TYPE_UNSPECIFIED\"},{\"TraceID\":\"00000000000000000000000000000000\",\"SpanID\":\"0000000000000000\",\"RefType\":\"TYPE_UNSPECIFIED\"}]"
+        },
+        {
+            "Key": "parentSpanID",
+            "Value": "0"
+        },
+        {
+            "Key": "startTime",
+            "Value": "1485467191639875"
+        },
+        {
+            "Key": "operationName",
+            "Value": "get"
+        },
+        {
+            "Key": "duration",
+            "Value": "22938"
+        },
+        {
+            "Key": "tags.span.kind",
+            "Value": "server"
+        },
+        {
+            "Key": "tags.status.code",
+            "Value": "0"
+        },
+        {
+            "Key": "tags.status.message",
+            "Value": ""
+        },
+        {
+            "Key": "process.serviceName",
+            "Value": "api"
+        }
+    ],
+    [
+        {
+            "Key": "traceID",
+            "Value": "000000000000000052969a8955571a3f"
+        },
+        {
+            "Key": "spanID",
+            "Value": "0000000000647d98"
+        },
+        {
+            "Key": "parentSpanID",
+            "Value": "0000000000000000"
+        },
+        {
+            "Key": "startTime",
+            "Value": "1485467192639875"
+        },
+        {
+            "Key": "operationName",
+            "Value": "get2"
+        },
+        {
+            "Key": "duration",
+            "Value": "22938"
+        },
+        {
+            "Key": "tags.span.kind",
+            "Value": ""
+        },
+        {
+            "Key": "tags.status.code",
+            "Value": "0"
+        },
+        {
+            "Key": "tags.status.message",
+            "Value": ""
+        },
+        {
+            "Key": "process.serviceName",
+            "Value": "api"
+        }
+    ]
+]

@@ -7,6 +7,7 @@ require (
 	github.com/golangci/golangci-lint v1.24.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
 	github.com/jstemmer/go-junit-report v0.9.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0
@@ -48,6 +49,8 @@ replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-201612212036
 // so that we always build with current (latest) version of the source code.
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter => ./exporter/awsxrayexporter
 
