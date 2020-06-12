@@ -1,0 +1,116 @@
+[
+    [
+        {
+            "Key": "traceID",
+            "Value": "000000000000000052969a8955571a3f"
+        },
+        {
+            "Key": "spanID",
+            "Value": "0000000000647d98"
+        },
+        {
+            "Key": "parentSpanID",
+            "Value": "000000000068c4e3"
+        },
+        {
+            "Key": "startTime",
+            "Value": "1485467191639875"
+        },
+        {
+            "Key": "operationName",
+            "Value": "get"
+        },
+        {
+            "Key": "duration",
+            "Value": "22938"
+        },
+        {
+            "Key": "tags.http.url",
+            "Value": "http://localhost:15598/client_transactions"
+        },
+        {
+            "Key": "tags.peer.ipv4",
+            "Value": "3224716605"
+        },
+        {
+            "Key": "tags.peer.port",
+            "Value": "53931"
+        },
+        {
+            "Key": "tags.peer.service",
+            "Value": "rtapi"
+        },
+        {
+            "Key": "tags.someBool",
+            "Value": "true"
+        },
+        {
+            "Key": "tags.someDouble",
+            "Value": "129.8"
+        },
+        {
+            "Key": "tags.span.kind",
+            "Value": "client"
+        },
+        {
+            "Key": "logs",
+            "Value": "[{\"TimeUs\":1485467191639874,\"Fields\":{\"message.compressed_size\":\"512\",\"message.id\":\"0\",\"message.type\":\"SENT\",\"message.uncompressed_size\":\"1024\"}},{\"TimeUs\":1485467191639875,\"Fields\":{\"key1\":\"value1\"}},{\"TimeUs\":1485467191639875,\"Fields\":{\"description\":\"annotation description\",\"event\":\"nothing\"}}]"
+        },
+        {
+            "Key": "tags.status.code",
+            "Value": "0"
+        },
+        {
+            "Key": "tags.status.message",
+            "Value": ""
+        },
+        {
+            "Key": "process.tags.a.double",
+            "Value": "1234.56789"
+        },
+        {
+            "Key": "process.tags.a.long",
+            "Value": "123456789"
+        },
+        {
+            "Key": "process.tags.ip",
+            "Value": "10.53.69.61"
+        },
+        {
+            "Key": "process.tags.a.binary",
+            "Value": "AQIDBAMCAQ=="
+        },
+        {
+            "Key": "process.tags.a.bool",
+            "Value": "true"
+        },
+        {
+            "Key": "process.tags.hostname",
+            "Value": "api246-sjc1"
+        },
+        {
+            "Key": "process.tags.pid",
+            "Value": "13"
+        },
+        {
+            "Key": "process.tags.start.time",
+            "Value": "2017-01-26T21:46:30.639875Z"
+        },
+        {
+            "Key": "process.tags.exporter_version",
+            "Value": "someVersion"
+        },
+        {
+            "Key": "process.tags.resource_type",
+            "Value": "k8s.io/container"
+        },
+        {
+            "Key": "process.tags.resource_key1",
+            "Value": "resource_val1"
+        },
+        {
+            "Key": "process.serviceName",
+            "Value": "api"
+        }
+    ]
+]
