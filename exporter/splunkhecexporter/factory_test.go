@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
@@ -49,8 +48,10 @@ func TestCreateTraceExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
+
+	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
 	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
+	assert.NoError(t, err)
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {

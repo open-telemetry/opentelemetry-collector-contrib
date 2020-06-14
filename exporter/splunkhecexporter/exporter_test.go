@@ -37,16 +37,15 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	got, err := New(nil, zap.NewNop())
+	_, err := New(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, got)
 
 	config := &Config{
 		Token:    "someToken",
 		Endpoint: "https://example.com:8088",
 		Timeout:  1 * time.Second,
 	}
-	got, err = New(config, zap.NewNop())
+	got, err := New(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 

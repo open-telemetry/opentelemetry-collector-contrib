@@ -94,6 +94,70 @@ func (c *client) pushMetricsData(
 	return numDroppedTimeseries, nil
 }
 
+func (c *client) pushTraceData(
+	ctx context.Context,
+	td consumerdata.TraceData,
+) (droppedSpans int, err error) {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	splunkEvents, numDroppedSpans, err := traceDataToSplunk(c.logger, td, c.config)
+	if err != nil {
+		return len(td.Spans), consumererror.Permanent(err)
+	}
+
+	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
+	if err != nil {
+		return len(td.Spans), consumererror.Permanent(err)
+	}
+
+	// TODO the client sends synchronously data as of now. It would make more sense to buffer data coming in, and send batches as supported by Splunk. To batch effectively, a ring buffer approach would work well - based on time and number of messages queued.
+	req, err := http.NewRequest("POST", c.url.String(), body)
+	if err != nil {
+		return len(td.Spans), consumererror.Permanent(err)
+	}
+
+	for k, v := range c.headers {
+		req.Header.Set(k, v)
+	}
+
+	if compressed {
+		req.Header.Set("Content-Encoding", "gzip")
+	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return len(td.Spans), err
+	}
+
+	io.Copy(ioutil.Discard, resp.Body)
+	resp.Body.Close()
+
+	// Splunk accepts all 2XX codes.
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		err = fmt.Errorf(
+			"HTTP %d %q",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode))
+		return len(td.Spans), err
+	}
+
+	return numDroppedSpans, nil
+}
+
+func encodeBodyEvents(zippers *sync.Pool, dps []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+	buf := new(bytes.Buffer)
+	encoder := json.NewEncoder(buf)
+	for _, e := range dps {
+		err := encoder.Encode(e)
+		if err != nil {
+			return nil, false, err
+		}
+		buf.WriteString("\r\n\r\n")
+	}
+	return getReader(zippers, buf, disableCompression)
+}
+
 func encodeBody(zippers *sync.Pool, dps []*splunkMetric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
