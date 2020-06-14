@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
@@ -59,7 +58,15 @@ func (f *Factory) CreateTraceExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
 ) (component.TraceExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	expCfg := config.(*Config)
+
+	exp, err := New(expCfg, logger)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return exp, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.

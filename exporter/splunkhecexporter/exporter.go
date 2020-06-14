@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
@@ -40,8 +41,15 @@ const (
 	dialerKeepAlive     = 30 * time.Second
 )
 
+type TraceAndMetricExporter interface {
+	component.Component
+	consumer.MetricsConsumerOld
+	consumer.TraceConsumerOld
+}
+
 type splunkExporter struct {
 	pushMetricsData func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	pushTraceData   func(ctx context.Context, td consumerdata.TraceData) (numDroppedSpans int, err error)
 	stop            func(ctx context.Context) (err error)
 }
 
@@ -54,15 +62,15 @@ type exporterOptions struct {
 func New(
 	config *Config,
 	logger *zap.Logger,
-) (component.MetricsExporterOld, error) {
+) (TraceAndMetricExporter, error) {
 
 	if config == nil {
-		return nil, errors.New("nil config")
+		return splunkExporter{}, errors.New("nil config")
 	}
 
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return nil,
+		return splunkExporter{},
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
@@ -70,6 +78,7 @@ func New(
 
 	return splunkExporter{
 		pushMetricsData: client.pushMetricsData,
+		pushTraceData:   client.pushTraceData,
 		stop:            client.stop,
 	}, nil
 }
@@ -123,5 +132,14 @@ func (se splunkExporter) ConsumeMetricsData(ctx context.Context, md consumerdata
 	numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
+	return err
+}
+
+func (se splunkExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+	ctx = obsreport.StartTraceDataExportOp(ctx, typeStr)
+
+	numDroppedSpans, err := se.pushTraceData(ctx, td)
+
+	obsreport.EndTraceDataExportOp(ctx, len(td.Spans), numDroppedSpans, err)
 	return err
 }
