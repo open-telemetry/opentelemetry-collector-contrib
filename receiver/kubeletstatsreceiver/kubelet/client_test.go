@@ -80,6 +80,11 @@ func TestSvcAcctClient(t *testing.T) {
 	require.Equal(t, "s3cr3t", string(cl.tok))
 }
 
+func TestDefaultEndpoint(t *testing.T) {
+	endpt := defaultEndpoint(zap.NewNop())
+	require.True(t, strings.HasSuffix(endpt, ":10250"))
+}
+
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
 
 type fakeRoundTripper struct {
