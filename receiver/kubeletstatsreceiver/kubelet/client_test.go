@@ -118,7 +118,7 @@ func TestSABadCertPath(t *testing.T) {
 }
 
 func TestSABadTokenPath(t *testing.T) {
-	_, err := newServiceAccountClient("foo", certPath, "baz", zap.NewNop())
+	_, err := newServiceAccountClient("foo", certPath, "bar", zap.NewNop())
 	require.Error(t, err)
 }
 
