@@ -15,7 +15,6 @@
 package kubelet
 
 import (
-	"crypto/tls"
 	"crypto/x509"
 	"io"
 	"net/http"
@@ -23,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestClient(t *testing.T) {
@@ -45,9 +45,17 @@ func TestClient(t *testing.T) {
 
 func TestDefaultTLSClient(t *testing.T) {
 	endpoint := "localhost:9876"
-	client := defaultTLSClient(endpoint, true, &x509.CertPool{}, tls.Certificate{}, nil)
+	client := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "https://"+endpoint, client.baseURL)
+}
+
+func TestSvcAcctClient(t *testing.T) {
+	cl, err := newServiceAccountClient(
+		"localhost:9876", "../testdata/testcert.crt", "../testdata/token", zap.NewNop(),
+	)
+	require.NoError(t, err)
+	require.Equal(t, "s3cr3t", string(cl.tok))
 }
 
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)

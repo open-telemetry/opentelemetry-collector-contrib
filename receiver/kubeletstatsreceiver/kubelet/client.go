@@ -20,41 +20,34 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
-// Config for a kubelet Client. Mostly for talking to the kubelet HTTP endpoint.
-type ClientConfig struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
-	// Path to the CA cert. For a client this verifies the server certificate.
-	// For a server this verifies client certificates. If empty uses system root CA.
-	// (optional)
-	CAFile string `mapstructure:"ca_file"`
-	// Path to the TLS cert to use for TLS required connections. (optional)
-	CertFile string `mapstructure:"cert_file"`
-	// Path to the TLS key to use for TLS required connections. (optional)
-	// TODO replace with open-telemetry/opentelemetry-collector#933 when done
-	KeyFile string `mapstructure:"key_file"`
-	// InsecureSkipVerify controls whether the client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
+const svcAcctCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 type Client interface {
 	Get(path string) ([]byte, error)
 }
 
+// NewClient creates a new kubelet client. Pass in a fake readFile
+// implementation for testing, or pass in a nil readFile for the default
+// implementation.
 func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
-	if cfg.APIConfig.AuthType != k8sconfig.AuthTypeTLS {
+	switch cfg.APIConfig.AuthType {
+	case k8sconfig.AuthTypeTLS:
+		return newTLSClient(endpoint, cfg, logger)
+	case k8sconfig.AuthTypeServiceAccount:
+		return newServiceAccountClient(endpoint, svcAcctCACertPath, svcAcctTokenPath, logger)
+	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
-	return newTLSClient(endpoint, cfg, logger)
 }
 
-// not unit tested
 func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
 	rootCAs, err := systemCertPoolPlusPath(cfg.CAFile)
 	if err != nil {
@@ -64,21 +57,68 @@ func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Clien
 	if err != nil {
 		return nil, err
 	}
-	return defaultTLSClient(endpoint, cfg.InsecureSkipVerify, rootCAs, clientCert, logger), nil
+	return defaultTLSClient(
+		endpoint,
+		cfg.InsecureSkipVerify,
+		rootCAs,
+		[]tls.Certificate{clientCert},
+		nil,
+		logger,
+	), nil
 }
 
-func defaultTLSClient(endpoint string, insecureSkipVerify bool, rootCAs *x509.CertPool, clientCert tls.Certificate, logger *zap.Logger) *tlsClient {
+func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*tlsClient, error) {
+	rootCAs, err := systemCertPoolPlusPath(caCertPath)
+	if err != nil {
+		return nil, err
+	}
+	tok, err := ioutil.ReadFile(tokenPath)
+	if err != nil {
+		return nil, err
+	}
+	tr := defaultTransport()
+	tr.TLSClientConfig = &tls.Config{
+		RootCAs: rootCAs,
+	}
+	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger), nil
+}
+
+func defaultTLSClient(
+	endpoint string,
+	insecureSkipVerify bool,
+	rootCAs *x509.CertPool,
+	certificates []tls.Certificate,
+	tok []byte,
+	logger *zap.Logger,
+) *tlsClient {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
-		Certificates:       []tls.Certificate{clientCert},
+		Certificates:       certificates,
 		InsecureSkipVerify: insecureSkipVerify,
+	}
+	if endpoint == "" {
+		endpoint = defaultEndpoint(logger)
 	}
 	return &tlsClient{
 		baseURL:    "https://" + endpoint,
 		httpClient: http.Client{Transport: tr},
+		tok:        tok,
 		logger:     logger,
 	}
+}
+
+func defaultEndpoint(logger *zap.Logger) (endpoint string) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		logger.Error("unable to get hostname", zap.Error(err))
+		endpoint = "localhost"
+	} else {
+		endpoint = hostname
+	}
+	const kubeletPort = "10250"
+	endpoint += ":" + kubeletPort
+	return endpoint
 }
 
 func defaultTransport() *http.Transport {
@@ -93,6 +133,7 @@ type tlsClient struct {
 	baseURL    string
 	httpClient http.Client
 	logger     *zap.Logger
+	tok        []byte
 }
 
 func (c *tlsClient) Get(path string) ([]byte, error) {
@@ -102,6 +143,9 @@ func (c *tlsClient) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if c.tok != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
