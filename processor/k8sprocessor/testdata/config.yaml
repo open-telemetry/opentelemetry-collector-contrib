@@ -6,6 +6,7 @@ processors:
   k8s_tagger/2:
     passthrough: false
     owner_lookup_enabled: true
+    auth_type: "kubeConfig"
     extract:
       metadata:
         # extract the following well-known metadata fields

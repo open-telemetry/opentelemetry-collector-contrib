@@ -278,6 +278,7 @@ jobs:
   run-stability-tests:
     executor: golang
     steps:
+      - attach_to_workspace
       - run:
           name: Run stability tests
           command: make stability-tests

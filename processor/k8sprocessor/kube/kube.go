@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 const (
@@ -54,8 +56,8 @@ var (
 		regexp.MustCompile(`otel-agent`),
 		regexp.MustCompile(`collection-sumologic-otelcol`),
 	}
-	podDeleteGracePeriod = time.Second * 120
-	watchSyncPeriod      = time.Minute * 5
+	defaultPodDeleteGracePeriod = time.Second * 120
+	watchSyncPeriod             = time.Minute * 5
 )
 
 // Client defines the main interface that allows querying pods by metadata.
@@ -66,11 +68,11 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, ExtractionRules, Filters, APIClientsetProvider, InformerProvider, OwnerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, APIClientsetProvider, InformerProvider, OwnerProvider) (Client, error)
 
-// APIClientsetProvider APIClientsetProvider defines a func type that initializes and return a new kubernetes
+// APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
-type APIClientsetProvider func() (*kubernetes.Clientset, error)
+type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface, error)
 
 // Pod represents a kubernetes pod.
 type Pod struct {

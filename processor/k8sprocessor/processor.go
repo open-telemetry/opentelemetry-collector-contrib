@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,41 +17,41 @@ package k8sprocessor
 import (
 	"context"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
 const (
-	sourceFormatJaeger string = "jaeger"
-	sourceFormatZipkin string = "zipkin"
-	k8sIPLabelName     string = "k8s.pod.ip"
-	clientIPLabelName  string = "ip"
+	k8sIPLabelName    string = "k8s.pod.ip"
+	clientIPLabelName string = "ip"
 )
 
 type kubernetesprocessor struct {
 	logger          *zap.Logger
-	nextConsumer    consumer.TraceConsumerOld
+	apiConfig       k8sconfig.APIConfig
+	nextConsumer    consumer.TraceConsumer
 	kc              kube.Client
 	passthroughMode bool
 	rules           kube.ExtractionRules
 	filters         kube.Filters
 }
 
+var _ (component.TraceProcessor) = (*kubernetesprocessor)(nil)
+
 // NewTraceProcessor returns a component.TraceProcessorOld that adds the WithAttributeMap(attributes) to all spans
 // passed to it.
 func NewTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 	kubeClient kube.ClientProvider,
 	options ...Option,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	kp := &kubernetesprocessor{logger: logger, nextConsumer: nextConsumer}
 	for _, opt := range options {
 		if err := opt(kp); err != nil {
@@ -63,7 +63,7 @@ func NewTraceProcessor(
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.rules, kp.filters, nil, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, nil, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -90,131 +90,114 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kp *kubernetesprocessor) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
-	var podIP string
-	// check if the application, a collector/agent or a prior processor has already
-	// annotated the batch with IP.
-	if td.Resource != nil {
-		podIP = kp.k8sIPFromAttributes(td.Resource.Labels)
-	}
+func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	rss := td.ResourceSpans()
+	kp.logger.Info("received rss len: ", zap.Int("size", rss.Len()))
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
+			continue
+		}
 
-	// Jaeger client libs tag the process with the process/resource IP and
-	// jaeger to OC translator maps jaeger process to OC node.
-	// TODO: Should jaeger translator map jaeger process to OC resource instead?
-	if podIP == "" && td.SourceFormat == sourceFormatJaeger {
-		if td.Node != nil {
-			podIP = kp.k8sIPFromAttributes(td.Node.Attributes)
+		var podIP string
+		resource := rs.Resource()
+
+		// check if the application, a collector/agent or a prior processor has already
+		// annotated the batch with IP.
+		if !resource.IsNil() {
+			podIP = kp.k8sIPFromAttributes(resource.Attributes())
+		}
+
+		// Check if the receiver detected client IP.
+		if podIP == "" {
+			if c, ok := client.FromContext(ctx); ok {
+				podIP = c.IP
+			}
+		}
+
+		if podIP != "" {
+			if resource.IsNil() {
+				resource.InitEmpty()
+			}
+			resource.Attributes().InsertString(k8sIPLabelName, podIP)
+		}
+
+		// Don't invoke any k8s client functionality in passthrough mode.
+		// Just tag the IP and forward the batch.
+		if kp.passthroughMode {
+			continue
+		}
+
+		// add k8s tags to resource
+		attrsToAdd := kp.getAttributesForPodIP(podIP)
+		if len(attrsToAdd) == 0 {
+			continue
+		}
+
+		if resource.IsNil() {
+			resource.InitEmpty()
+		}
+
+		attrs := resource.Attributes()
+		for k, v := range attrsToAdd {
+			attrs.InsertString(k, v)
 		}
 	}
 
-	// If this was passed using Zipkin format, the information used for tagging might be present
-	// in each span attribute and should be tagged not on a resource, but rather span level
-	if podIP == "" && td.SourceFormat == sourceFormatZipkin {
-		for _, span := range td.Spans {
-			_ = kp.consumeZipkinSpan(ctx, span)
-		}
-	} else {
-		_ = kp.consumeTraceBatch(ctx, podIP, &td)
-	}
-
-	// TODO: should add to spans that have a resource not the same as the batch?
-	return kp.nextConsumer.ConsumeTraceData(ctx, td)
+	return kp.nextConsumer.ConsumeTraces(ctx, td)
 }
 
-func (kp *kubernetesprocessor) consumeTraceBatch(ctx context.Context, podIP string, td *consumerdata.TraceData) error {
-	// Check if the receiver detected client IP.
-	if podIP == "" {
-		if c, ok := client.FromContext(ctx); ok {
-			podIP = c.IP
-		}
-	}
-
-	if podIP != "" {
-		if td.Resource == nil {
-			td.Resource = &resourcepb.Resource{}
-		}
-		if td.Resource.Labels == nil {
-			td.Resource.Labels = map[string]string{}
-		}
-		td.Resource.Labels[k8sIPLabelName] = podIP
-	}
-
-	// Don't invoke any k8s client functionality in passthrough mode.
-	// Just tag the IP and forward the batch.
-	if kp.passthroughMode {
-		return nil
-	}
-
-	attrs := kp.getAttributesForPodIP(podIP)
-	if len(attrs) == 0 {
-		return nil
-	}
-
-	if td.Resource == nil {
-		td.Resource = &resourcepb.Resource{}
-	}
-	if td.Resource.Labels == nil {
-		td.Resource.Labels = map[string]string{}
-	}
-
-	for k, v := range attrs {
-		td.Resource.Labels[k] = v
-	}
-
-	return nil
-}
-
-func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *tracepb.Span) error {
-	podIP := ""
-	if span.Attributes != nil && span.Attributes.AttributeMap != nil {
-		value := span.Attributes.AttributeMap[k8sIPLabelName]
-		if value == nil {
-			value = span.Attributes.AttributeMap[clientIPLabelName]
-		}
-		if value != nil {
-			podIP = value.GetStringValue().Value
-		}
-	}
-
-	if span.Attributes == nil {
-		span.Attributes = &tracepb.Span_Attributes{}
-	}
-
-	if span.Attributes.AttributeMap == nil {
-		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue)
-	}
-
-	// Check if the receiver detected client IP.
-	if podIP == "" {
-		if c, ok := client.FromContext(ctx); ok {
-			podIP = c.IP
-			span.Attributes.AttributeMap[k8sIPLabelName] = &tracepb.AttributeValue{
-				Value: &tracepb.AttributeValue_StringValue{
-					StringValue: &tracepb.TruncatableString{
-						Value: podIP}}}
-		}
-	}
-
-	// Don't invoke any k8s client functionality in passthrough mode.
-	// Just tag the IP and forward the batch.
-	if kp.passthroughMode {
-		return nil
-	}
-
-	attrs := kp.getAttributesForPodIP(podIP)
-	if len(attrs) == 0 {
-		return nil
-	}
-
-	for k, v := range attrs {
-		span.Attributes.AttributeMap[k] = &tracepb.AttributeValue{
-			Value: &tracepb.AttributeValue_StringValue{
-				StringValue: &tracepb.TruncatableString{
-					Value: v}}}
-	}
-
-	return nil
-}
+//func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *tracepb.Span) error {
+//	podIP := ""
+//	if span.Attributes != nil && span.Attributes.AttributeMap != nil {
+//		value := span.Attributes.AttributeMap[k8sIPLabelName]
+//		if value == nil {
+//			value = span.Attributes.AttributeMap[clientIPLabelName]
+//		}
+//		if value != nil {
+//			podIP = value.GetStringValue().Value
+//		}
+//	}
+//
+//	if span.Attributes == nil {
+//		span.Attributes = &tracepb.Span_Attributes{}
+//	}
+//
+//	if span.Attributes.AttributeMap == nil {
+//		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue)
+//	}
+//
+//	// Check if the receiver detected client IP.
+//	if podIP == "" {
+//		if c, ok := client.FromContext(ctx); ok {
+//			podIP = c.IP
+//			span.Attributes.AttributeMap[k8sIPLabelName] = &tracepb.AttributeValue{
+//				Value: &tracepb.AttributeValue_StringValue{
+//					StringValue: &tracepb.TruncatableString{
+//						Value: podIP}}}
+//		}
+//	}
+//
+//	// Don't invoke any k8s client functionality in passthrough mode.
+//	// Just tag the IP and forward the batch.
+//	if kp.passthroughMode {
+//		return nil
+//	}
+//
+//	attrs := kp.getAttributesForPodIP(podIP)
+//	if len(attrs) == 0 {
+//		return nil
+//	}
+//
+//	for k, v := range attrs {
+//		span.Attributes.AttributeMap[k] = &tracepb.AttributeValue{
+//			Value: &tracepb.AttributeValue_StringValue{
+//				StringValue: &tracepb.TruncatableString{
+//					Value: v}}}
+//	}
+//
+//	return nil
+//}
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
 	pod, ok := kp.kc.GetPodByIP(ip)
@@ -224,10 +207,19 @@ func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]strin
 	return pod.Attributes
 }
 
-func (kp *kubernetesprocessor) k8sIPFromAttributes(attrs map[string]string) string {
-	ip := attrs[k8sIPLabelName]
+func (kp *kubernetesprocessor) k8sIPFromAttributes(attrs pdata.AttributeMap) string {
+	ip := stringAttributeFromMap(attrs, k8sIPLabelName)
 	if ip == "" {
-		ip = attrs[clientIPLabelName]
+		ip = stringAttributeFromMap(attrs, clientIPLabelName)
 	}
 	return ip
+}
+
+func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {
+	if val, ok := attrs.Get(key); ok {
+		if val.Type() == pdata.AttributeValueSTRING {
+			return val.StringVal()
+		}
+	}
+	return ""
 }

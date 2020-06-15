@@ -34,7 +34,7 @@ import (
 // OwnerProvider allows to dynamically assign constructor
 type OwnerProvider func(
 	logger *zap.Logger,
-	client *kubernetes.Clientset,
+	client kubernetes.Interface,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 	namespace string,
@@ -65,8 +65,8 @@ type OwnerCache struct {
 	namespaces   map[string]*api_v1.Namespace
 	cacheMutex   sync.RWMutex
 
-	clientset *kubernetes.Clientset
-	logger    *zap.Logger
+	client kubernetes.Interface
+	logger *zap.Logger
 
 	stopCh    chan struct{}
 	informers []cache.SharedIndexInformer
@@ -87,7 +87,7 @@ func (op *OwnerCache) Stop() {
 
 func newOwnerProvider(
 	logger *zap.Logger,
-	clientset *kubernetes.Clientset,
+	client kubernetes.Interface,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 	namespace string) (OwnerAPI, error) {
@@ -97,10 +97,10 @@ func newOwnerProvider(
 	ownerCache.namespaces = map[string]*api_v1.Namespace{}
 	ownerCache.cacheMutex = sync.RWMutex{}
 
-	ownerCache.clientset = clientset
+	ownerCache.client = client
 	ownerCache.logger = logger
 
-	factory := informers.NewSharedInformerFactoryWithOptions(clientset, watchSyncPeriod,
+	factory := informers.NewSharedInformerFactoryWithOptions(client, watchSyncPeriod,
 		informers.WithNamespace(namespace),
 		informers.WithTweakListOptions(func(opts *meta_v1.ListOptions) {
 			opts.LabelSelector = labelSelector.String()

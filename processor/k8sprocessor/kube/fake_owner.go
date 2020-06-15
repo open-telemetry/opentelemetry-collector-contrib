@@ -32,7 +32,7 @@ type fakeOwnerCache struct {
 
 // NewOwnerProvider creates new instance of the owners api
 func newFakeOwnerProvider(logger *zap.Logger,
-	clientset *kubernetes.Clientset,
+	client kubernetes.Interface,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 	namespace string) (OwnerAPI, error) {

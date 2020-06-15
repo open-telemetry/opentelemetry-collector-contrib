@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
 package k8sprocessor
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
@@ -47,15 +49,17 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 	}
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
 func (f *Factory) CreateTraceProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessorOld, error) {
+) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
 	opts := []Option{}
 	if oCfg.Passthrough {
@@ -77,14 +81,16 @@ func (f *Factory) CreateTraceProcessor(
 	opts = append(opts, WithFilterNamespace(oCfg.Filter.Namespace))
 	opts = append(opts, WithFilterLabels(oCfg.Filter.Labels...))
 	opts = append(opts, WithFilterFields(oCfg.Filter.Fields...))
-	return NewTraceProcessor(logger, nextConsumer, f.KubeClient, opts...)
+	opts = append(opts, WithAPIConfig(oCfg.APIConfig))
+	return NewTraceProcessor(params.Logger, nextConsumer, f.KubeClient, opts...)
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
 func (f *Factory) CreateMetricsProcessor(
-	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
-) (component.MetricsProcessorOld, error) {
+) (component.MetricsProcessor, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
