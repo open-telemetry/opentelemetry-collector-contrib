@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.3.0-20200605184202-f640b7103f96
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200609132241-685777fc1985
+	go.opentelemetry.io/collector v0.3.1-0.20200612184320-01ce74db9c44
 	go.uber.org/zap v1.13.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
