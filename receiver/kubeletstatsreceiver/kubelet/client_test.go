@@ -22,7 +22,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 func TestClient(t *testing.T) {
@@ -41,6 +44,25 @@ func TestClient(t *testing.T) {
 	require.Equal(t, 1, len(tr.header))
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
 	require.Equal(t, "GET", tr.method)
+}
+
+func TestNewClient(t *testing.T) {
+	client, err := NewClient("localhost:9876", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeTLS,
+		},
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "../testdata/testcert.crt",
+			CertFile: "../testdata/testcert.crt",
+			KeyFile:  "../testdata/testkey.key",
+		},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, client)
+	c := client.(*tlsClient)
+	tcc := c.httpClient.Transport.(*http.Transport).TLSClientConfig
+	require.Equal(t, 1, len(tcc.Certificates))
+	require.NotNil(t, tcc.RootCAs)
 }
 
 func TestDefaultTLSClient(t *testing.T) {
