@@ -34,9 +34,6 @@ type Client interface {
 	Get(path string) ([]byte, error)
 }
 
-// NewClient creates a new kubelet client. Pass in a fake readFile
-// implementation for testing, or pass in a nil readFile for the default
-// implementation.
 func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
 	switch cfg.APIConfig.AuthType {
 	case k8sconfig.AuthTypeTLS:
