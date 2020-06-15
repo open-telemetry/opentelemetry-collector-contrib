@@ -14,3 +14,4 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector  v0.2.7-0.20200615151012-78b0f93ca349

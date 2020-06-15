@@ -46,7 +46,7 @@ replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200608175953-9d9482201a69
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200615151012-78b0f93ca349
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
