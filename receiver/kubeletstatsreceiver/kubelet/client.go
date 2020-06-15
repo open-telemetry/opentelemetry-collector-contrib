@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -35,6 +34,9 @@ type Client interface {
 	Get(path string) ([]byte, error)
 }
 
+// NewClient creates a new kubelet client. Pass in a fake readFile
+// implementation for testing, or pass in a nil readFile for the default
+// implementation.
 func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
 	switch cfg.APIConfig.AuthType {
 	case k8sconfig.AuthTypeTLS:
@@ -62,15 +64,10 @@ func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Clien
 		[]tls.Certificate{clientCert},
 		nil,
 		logger,
-	)
+	), nil
 }
 
-func newServiceAccountClient(
-	endpoint string,
-	caCertPath string,
-	tokenPath string,
-	logger *zap.Logger,
-) (*clientImpl, error) {
+func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*tlsClient, error) {
 	rootCAs, err := systemCertPoolPlusPath(caCertPath)
 	if err != nil {
 		return nil, err
@@ -83,7 +80,7 @@ func newServiceAccountClient(
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs: rootCAs,
 	}
-	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger)
+	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger), nil
 }
 
 func defaultTLSClient(
@@ -93,7 +90,7 @@ func defaultTLSClient(
 	certificates []tls.Certificate,
 	tok []byte,
 	logger *zap.Logger,
-) (*clientImpl, error) {
+) *tlsClient {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
@@ -101,52 +98,53 @@ func defaultTLSClient(
 		InsecureSkipVerify: insecureSkipVerify,
 	}
 	if endpoint == "" {
-		var err error
-		endpoint, err = defaultEndpoint()
-		if err != nil {
-			return nil, err
-		}
-		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+		endpoint = defaultEndpoint(logger)
 	}
-	return &clientImpl{
+	return &tlsClient{
 		baseURL:    "https://" + endpoint,
 		httpClient: http.Client{Transport: tr},
 		tok:        tok,
 		logger:     logger,
-	}, nil
+	}
 }
 
-// This will work if hostNetwork is turned on, in which case the pod has access
-// to the node's loopback device.
-// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
-func defaultEndpoint() (string, error) {
+func defaultEndpoint(logger *zap.Logger) (endpoint string) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		return "", errors.WithMessage(err, "Unable to get hostname for default endpoint")
+		logger.Error("unable to get hostname", zap.Error(err))
+		endpoint = "localhost"
+	} else {
+		endpoint = hostname
 	}
 	const kubeletPort = "10250"
-	return hostname + ":" + kubeletPort, nil
+	endpoint += ":" + kubeletPort
+	return endpoint
 }
 
 func defaultTransport() *http.Transport {
 	return http.DefaultTransport.(*http.Transport).Clone()
 }
 
-// clientImpl
+// tlsClient
 
-var _ Client = (*clientImpl)(nil)
+var _ Client = (*tlsClient)(nil)
 
-type clientImpl struct {
+type tlsClient struct {
 	baseURL    string
 	httpClient http.Client
 	logger     *zap.Logger
 	tok        []byte
 }
 
-func (c *clientImpl) Get(path string) ([]byte, error) {
-	req, err := c.buildReq(path)
+func (c *tlsClient) Get(path string) ([]byte, error) {
+	url := c.baseURL + path
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.tok != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -163,17 +161,4 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
-}
-
-func (c *clientImpl) buildReq(path string) (*http.Request, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if c.tok != nil {
-		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
-	}
-	return req, nil
 }
