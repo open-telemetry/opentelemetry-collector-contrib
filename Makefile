@@ -60,6 +60,14 @@ for-all:
 	 	$${CMD} ); \
 	done
 
+GOMODULES = $(ALL_MODULES) $(PWD)
+.PHONY: $(GOMODULES)
+MODULEDIRS = $(GOMODULES:%=for-all-target-%)
+for-all-target: $(MODULEDIRS)
+$(MODULEDIRS): 
+	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET) 
+.PHONY: for-all-target
+
 .PHONY: install-tools
 install-tools:
 	go install github.com/client9/misspell/cmd/misspell
