@@ -128,6 +128,17 @@ func TestTLSDefaultEndpoint(t *testing.T) {
 	require.True(t, strings.HasSuffix(client.baseURL, ":10250"))
 }
 
+func TestBuildReq(t *testing.T) {
+	cl, err := newServiceAccountClient(
+		"localhost:9876", certPath, tokenPath, zap.NewNop(),
+	)
+	require.NoError(t, err)
+	req, err := cl.buildReq("/foo")
+	require.NoError(t, err)
+	require.NotNil(t, req)
+	require.Equal(t, req.Header["Authorization"][0], "bearer s3cr3t")
+}
+
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
 
 type fakeRoundTripper struct {
