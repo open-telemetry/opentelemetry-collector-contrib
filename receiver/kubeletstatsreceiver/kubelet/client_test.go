@@ -16,6 +16,7 @@ package kubelet
 
 import (
 	"crypto/x509"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -139,16 +140,40 @@ func TestBuildReq(t *testing.T) {
 	require.Equal(t, req.Header["Authorization"][0], "bearer s3cr3t")
 }
 
+func TestBuildBadReq(t *testing.T) {
+	cl, err := newServiceAccountClient(
+		"localhost:9876", certPath, tokenPath, zap.NewNop(),
+	)
+	require.NoError(t, err)
+	_, err = cl.buildReq(" ")
+	require.Error(t, err)
+}
+
+func TestFailedRT(t *testing.T) {
+	tr := &fakeRoundTripper{failOnRT: true}
+	baseURL := "http://localhost:9876"
+	client := &clientImpl{
+		baseURL:    baseURL,
+		httpClient: http.Client{Transport: tr},
+	}
+	_, err := client.Get("/foo")
+	require.Error(t, err)
+}
+
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
 
 type fakeRoundTripper struct {
-	closed bool
-	header http.Header
-	method string
-	url    string
+	closed   bool
+	header   http.Header
+	method   string
+	url      string
+	failOnRT bool
 }
 
 func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if f.failOnRT {
+		return nil, errors.New("failOnRT == true")
+	}
 	f.header = req.Header
 	f.method = req.Method
 	f.url = req.URL.String()
