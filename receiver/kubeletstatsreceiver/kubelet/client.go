@@ -64,7 +64,7 @@ func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Clien
 	), nil
 }
 
-func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*tlsClient, error) {
+func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*clientImpl, error) {
 	rootCAs, err := systemCertPoolPlusPath(caCertPath)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func defaultTLSClient(
 	certificates []tls.Certificate,
 	tok []byte,
 	logger *zap.Logger,
-) *tlsClient {
+) *clientImpl {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
@@ -97,7 +97,7 @@ func defaultTLSClient(
 	if endpoint == "" {
 		endpoint = defaultEndpoint(logger)
 	}
-	return &tlsClient{
+	return &clientImpl{
 		baseURL:    "https://" + endpoint,
 		httpClient: http.Client{Transport: tr},
 		tok:        tok,
@@ -122,18 +122,18 @@ func defaultTransport() *http.Transport {
 	return http.DefaultTransport.(*http.Transport).Clone()
 }
 
-// tlsClient
+// clientImpl
 
-var _ Client = (*tlsClient)(nil)
+var _ Client = (*clientImpl)(nil)
 
-type tlsClient struct {
+type clientImpl struct {
 	baseURL    string
 	httpClient http.Client
 	logger     *zap.Logger
 	tok        []byte
 }
 
-func (c *tlsClient) Get(path string) ([]byte, error) {
+func (c *clientImpl) Get(path string) ([]byte, error) {
 	url := c.baseURL + path
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
