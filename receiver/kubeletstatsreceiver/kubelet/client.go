@@ -134,14 +134,9 @@ type clientImpl struct {
 }
 
 func (c *clientImpl) Get(path string) ([]byte, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := c.buildReq(path)
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if c.tok != nil {
-		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -158,4 +153,17 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func (c *clientImpl) buildReq(path string) (*http.Request, error) {
+	url := c.baseURL + path
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.tok != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
+	}
+	return req, nil
 }
