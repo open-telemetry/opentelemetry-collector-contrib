@@ -28,10 +28,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
+const certPath = "../testdata/testcert.crt"
+const keyFile = "../testdata/testkey.key"
+const tokenPath = "../testdata/token"
+
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
 	baseURL := "http://localhost:9876"
-	client := &tlsClient{
+	client := &clientImpl{
 		baseURL:    baseURL,
 		httpClient: http.Client{Transport: tr},
 	}
@@ -52,14 +56,14 @@ func TestNewClient(t *testing.T) {
 			AuthType: k8sconfig.AuthTypeTLS,
 		},
 		TLSSetting: configtls.TLSSetting{
-			CAFile:   "../testdata/testcert.crt",
-			CertFile: "../testdata/testcert.crt",
-			KeyFile:  "../testdata/testkey.key",
+			CAFile:   certPath,
+			CertFile: certPath,
+			KeyFile:  keyFile,
 		},
 	}, zap.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, client)
-	c := client.(*tlsClient)
+	c := client.(*clientImpl)
 	tcc := c.httpClient.Transport.(*http.Transport).TLSClientConfig
 	require.Equal(t, 1, len(tcc.Certificates))
 	require.NotNil(t, tcc.RootCAs)
@@ -74,7 +78,7 @@ func TestDefaultTLSClient(t *testing.T) {
 
 func TestSvcAcctClient(t *testing.T) {
 	cl, err := newServiceAccountClient(
-		"localhost:9876", "../testdata/testcert.crt", "../testdata/token", zap.NewNop(),
+		"localhost:9876", certPath, tokenPath, zap.NewNop(),
 	)
 	require.NoError(t, err)
 	require.Equal(t, "s3cr3t", string(cl.tok))
@@ -83,6 +87,45 @@ func TestSvcAcctClient(t *testing.T) {
 func TestDefaultEndpoint(t *testing.T) {
 	endpt := defaultEndpoint(zap.NewNop())
 	require.True(t, strings.HasSuffix(endpt, ":10250"))
+}
+
+func TestBadAuthType(t *testing.T) {
+	_, err := NewClient("foo", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: "bar",
+		},
+	}, zap.NewNop())
+	require.Error(t, err)
+}
+
+func TestTLSMissingCAFile(t *testing.T) {
+	_, err := newTLSClient("", &ClientConfig{}, zap.NewNop())
+	require.Error(t, err)
+}
+
+func TestTLSMissingCertFile(t *testing.T) {
+	_, err := newTLSClient("", &ClientConfig{
+		TLSSetting: configtls.TLSSetting{
+			CAFile: certPath,
+		},
+	}, zap.NewNop())
+	require.Error(t, err)
+}
+
+func TestSABadCertPath(t *testing.T) {
+	_, err := newServiceAccountClient("foo", "bar", "baz", zap.NewNop())
+	require.Error(t, err)
+}
+
+func TestSABadTokenPath(t *testing.T) {
+	_, err := newServiceAccountClient("foo", certPath, "baz", zap.NewNop())
+	require.Error(t, err)
+}
+
+func TestTLSDefaultEndpoint(t *testing.T) {
+	client := defaultTLSClient("", true, nil, nil, nil, zap.NewNop())
+	require.True(t, strings.HasPrefix(client.baseURL, "https://"))
+	require.True(t, strings.HasSuffix(client.baseURL, ":10250"))
 }
 
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
