@@ -70,7 +70,7 @@ func New(
 
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
-		return splunkExporter{},
+		return nil,
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
