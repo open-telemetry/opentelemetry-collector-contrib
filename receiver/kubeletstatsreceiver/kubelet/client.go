@@ -65,7 +65,12 @@ func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Clien
 	)
 }
 
-func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*clientImpl, error) {
+func newServiceAccountClient(
+	endpoint string,
+	caCertPath string,
+	tokenPath string,
+	logger *zap.Logger,
+) (*clientImpl, error) {
 	rootCAs, err := systemCertPoolPlusPath(caCertPath)
 	if err != nil {
 		return nil, err
