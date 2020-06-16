@@ -163,14 +163,53 @@ func TestFailedRT(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestBadReq(t *testing.T) {
+	tr := &fakeRoundTripper{}
+	baseURL := "http://localhost:9876"
+	client := &clientImpl{
+		baseURL:    baseURL,
+		httpClient: http.Client{Transport: tr},
+	}
+	_, err := client.Get(" ")
+	require.Error(t, err)
+}
+
+func TestErrOnClose(t *testing.T) {
+	tr := &fakeRoundTripper{errOnClose: true}
+	baseURL := "http://localhost:9876"
+	client := &clientImpl{
+		baseURL:    baseURL,
+		httpClient: http.Client{Transport: tr},
+		logger:     zap.NewNop(),
+	}
+	resp, err := client.Get("/foo")
+	require.NoError(t, err)
+	require.NotNil(t, resp)
+}
+
+func TestErrOnRead(t *testing.T) {
+	tr := &fakeRoundTripper{errOnRead: true}
+	baseURL := "http://localhost:9876"
+	client := &clientImpl{
+		baseURL:    baseURL,
+		httpClient: http.Client{Transport: tr},
+		logger:     zap.NewNop(),
+	}
+	resp, err := client.Get("/foo")
+	require.Error(t, err)
+	require.Nil(t, resp)
+}
+
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
 
 type fakeRoundTripper struct {
-	closed   bool
-	header   http.Header
-	method   string
-	url      string
-	failOnRT bool
+	closed     bool
+	header     http.Header
+	method     string
+	url        string
+	failOnRT   bool
+	errOnClose bool
+	errOnRead  bool
 }
 
 func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -180,24 +219,39 @@ func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	f.header = req.Header
 	f.method = req.Method
 	f.url = req.URL.String()
+	var reader io.Reader
+	if f.errOnRead {
+		reader = &failingReader{}
+	} else {
+		reader = strings.NewReader("hello")
+	}
 	return &http.Response{
 		Body: &fakeReadCloser{
-			Reader: strings.NewReader("hello"),
-			onClose: func() {
+			Reader: reader,
+			onClose: func() error {
 				f.closed = true
+				if f.errOnClose {
+					return errors.New("")
+				}
+				return nil
 			},
 		},
 	}, nil
+}
+
+type failingReader struct {}
+
+func (f *failingReader) Read([]byte) (n int, err error) {
+	return 0, errors.New("")
 }
 
 var _ io.ReadCloser = (*fakeReadCloser)(nil)
 
 type fakeReadCloser struct {
 	io.Reader
-	onClose func()
+	onClose func() error
 }
 
 func (f *fakeReadCloser) Close() error {
-	f.onClose()
-	return nil
+	return f.onClose()
 }
