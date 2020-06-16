@@ -38,8 +38,8 @@ import (
 
 func TestNew(t *testing.T) {
 	got, err := New(nil, zap.NewNop())
-	assert.Nil(t, got)
 	assert.EqualError(t, err, "nil config")
+	assert.Nil(t, got)
 
 	config := &Config{
 		Token:    "someToken",
