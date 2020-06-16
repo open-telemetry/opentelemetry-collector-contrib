@@ -102,13 +102,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - build-examples-tracing:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-      - build-examples-splunkhecexporter:
+      - build-examples:
           requires:
             - setup
           filters:
