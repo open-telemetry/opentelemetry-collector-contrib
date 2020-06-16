@@ -20,7 +20,7 @@ all: common otelcontribcol
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol
-	$(MAKE) -C testbed runtests
+	$(MAKE) -C testbed run-tests
 
 .PHONY: precommit
 precommit:
@@ -39,9 +39,10 @@ test-with-cover:
 	 	go tool cover -html=coverage.txt -o coverage.html ); \
 	done
 
+# Long-running e2e tests
 .PHONY: stability-tests
-stability-tests:
-	@echo Stability tests have not been implemented yet 
+stability-tests: otelcontribcol
+	$(MAKE) -C testbed run-stability-tests
 
 .PHONY: gotidy
 gotidy:
