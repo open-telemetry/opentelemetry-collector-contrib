@@ -37,7 +37,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	_, err := New(nil, zap.NewNop())
+	got, err := New(nil, zap.NewNop())
+	assert.Nil(t, got)
 	assert.EqualError(t, err, "nil config")
 
 	config := &Config{
@@ -45,7 +46,7 @@ func TestNew(t *testing.T) {
 		Endpoint: "https://example.com:8088",
 		Timeout:  1 * time.Second,
 	}
-	got, err := New(config, zap.NewNop())
+	got, err = New(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 

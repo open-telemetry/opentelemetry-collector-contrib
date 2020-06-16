@@ -65,7 +65,7 @@ func New(
 ) (TraceAndMetricExporter, error) {
 
 	if config == nil {
-		return splunkExporter{}, errors.New("nil config")
+		return nil, errors.New("nil config")
 	}
 
 	options, err := config.getOptionsFromConfig()
