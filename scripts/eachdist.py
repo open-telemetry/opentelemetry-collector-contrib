@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
+import os
+import re
 import shlex
 import shutil
 import subprocess
 import sys
 from collections import namedtuple
 from configparser import ConfigParser
+from datetime import datetime
 from inspect import cleandoc
 from itertools import chain
 from pathlib import Path, PurePath
@@ -234,6 +237,15 @@ def parse_args(args=None):
     testparser.set_defaults(func=test_args)
     testparser.add_argument(
         "pytestargs", nargs=argparse.REMAINDER, help=extraargs_help("pytest")
+    )
+
+    releaseparser = subparsers.add_parser(
+        "release", help="Prepares release, used by maintainers and CI",
+    )
+    releaseparser.set_defaults(func=release_args)
+    releaseparser.add_argument("--version", required=True)
+    releaseparser.add_argument(
+        "releaseargs", nargs=argparse.REMAINDER, help=extraargs_help("pytest")
     )
 
     return parser.parse_args(args)
@@ -501,6 +513,118 @@ def lint_args(args):
             ("exec", "python scripts/check_for_valid_readme.py {}", "--all",),
         )
     )
+
+
+def update_changelog(path, version, new_entry):
+    unreleased_changes = False
+    try:
+        with open(path) as changelog:
+            text = changelog.read()
+            if "## Version {}".format(version) in text:
+                raise AttributeError(
+                    "{} already contans version {}".format(path, version)
+                )
+        with open(path) as changelog:
+            for line in changelog:
+                if line.startswith("## Unreleased"):
+                    unreleased_changes = False
+                elif line.startswith("## "):
+                    break
+                elif len(line.strip()) > 0:
+                    unreleased_changes = True
+
+    except FileNotFoundError:
+        print("file missing: {}".format(path))
+        return
+
+    if unreleased_changes:
+        print("updating: {}".format(path))
+        text = re.sub("## Unreleased", new_entry, text)
+        with open(path, "w") as changelog:
+            changelog.write(text)
+
+
+def update_changelogs(targets, version):
+    print("updating CHANGELOG")
+    today = datetime.now().strftime("%Y-%m-%d")
+    new_entry = "## Unreleased\n\n## Version {}\n\nReleased {}".format(
+        version, today
+    )
+    errors = False
+    for target in targets:
+        try:
+            update_changelog(
+                "{}/CHANGELOG.md".format(target), version, new_entry
+            )
+        except Exception as err:  # pylint: disable=broad-except
+            print(str(err))
+            errors = True
+
+    if errors:
+        sys.exit(1)
+
+
+def find(name, path):
+    for root, _, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
+    return None
+
+
+def update_version_files(targets, version):
+    print("updating version.py files")
+    update_files(
+        targets,
+        version,
+        "version.py",
+        "__version__ .*",
+        '__version__ = "{}"'.format(version),
+    )
+
+
+def update_dependencies(targets, version):
+    print("updating dependencies")
+    update_files(
+        targets,
+        version,
+        "setup.cfg",
+        r"(opentelemetry-.*)= (.*)",
+        r"\1= " + version,
+    )
+
+
+def update_files(targets, version, filename, search, replace):
+    errors = False
+    for target in targets:
+        curr_file = find(filename, target)
+        if curr_file is None:
+            print("file missing: {}/{}".format(target, filename))
+            continue
+
+        with open(curr_file) as _file:
+            text = _file.read()
+
+        if version in text:
+            print("{} already contans version {}".format(curr_file, version))
+            errors = True
+            continue
+
+        with open(curr_file, "w") as _file:
+            _file.write(re.sub(search, replace, text))
+
+    if errors:
+        sys.exit(1)
+
+
+def release_args(args):
+    print("preparing release")
+
+    rootpath = find_projectroot()
+    targets = list(find_targets_unordered(rootpath))
+    version = args.version
+    update_dependencies(targets, version)
+    update_version_files(targets, version)
+    update_changelogs(targets, version)
 
 
 def test_args(args):
