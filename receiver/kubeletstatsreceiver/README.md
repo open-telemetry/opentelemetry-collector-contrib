@@ -28,6 +28,8 @@ is running to be used as the endpoint. If the hostNetwork flag is set, and the
 collector is running in a pod, this hostname will resolve to the node's network
 namespace.
 
+### TLS Example
+
 ```yaml
 receivers:
   kubeletstats:
@@ -47,3 +49,37 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
+
+### ServiceAccount Example
+
+Although it's possible to use kubernetes' hostNetwork feature to talk to the
+kubelet api from a pod, the preferred approach is to use the downard API.
+ 
+Make sure the pod spec sets the node name as follows:
+
+```yaml
+env:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+```
+
+Then the otel config can reference the `K8S_NODE_NAME` environment variable:
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 20s
+    auth_type: "serviceAccount"
+    endpoint: "${K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+exporters:
+  file:
+    path: "fileexporter.txt"
+service:
+  pipelines:
+    metrics:
+      receivers: [kubeletstats]
+      exporters: [file]
+```    
