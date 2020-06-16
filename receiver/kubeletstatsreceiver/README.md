@@ -23,6 +23,11 @@ TLS tells this receiver to use TLS for auth and requires that the fields
 ServiceAccount tells this receiver to use the default service account token
 to authenticate to the kubelet API.
 
+Note: a missing or empty `endpoint` will cause the hostname on which the collector
+is running to be used as the endpoint. If the hostNetwork flag is set, and the
+collector is running in a pod, this hostname will resolve to the node's network
+namespace.
+
 ```yaml
 receivers:
   kubeletstats:

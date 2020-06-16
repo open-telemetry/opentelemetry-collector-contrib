@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -61,7 +62,7 @@ func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Clien
 		[]tls.Certificate{clientCert},
 		nil,
 		logger,
-	), nil
+	)
 }
 
 func newServiceAccountClient(endpoint string, caCertPath string, tokenPath string, logger *zap.Logger) (*clientImpl, error) {
@@ -77,7 +78,7 @@ func newServiceAccountClient(endpoint string, caCertPath string, tokenPath strin
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs: rootCAs,
 	}
-	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger), nil
+	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger)
 }
 
 func defaultTLSClient(
@@ -87,7 +88,7 @@ func defaultTLSClient(
 	certificates []tls.Certificate,
 	tok []byte,
 	logger *zap.Logger,
-) *clientImpl {
+) (*clientImpl, error) {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
@@ -95,27 +96,31 @@ func defaultTLSClient(
 		InsecureSkipVerify: insecureSkipVerify,
 	}
 	if endpoint == "" {
-		endpoint = defaultEndpoint(logger)
+		var err error
+		endpoint, err = defaultEndpoint()
+		if err != nil {
+			return nil, err
+		}
+		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
 	}
 	return &clientImpl{
 		baseURL:    "https://" + endpoint,
 		httpClient: http.Client{Transport: tr},
 		tok:        tok,
 		logger:     logger,
-	}
+	}, nil
 }
 
-func defaultEndpoint(logger *zap.Logger) (endpoint string) {
+// This will work if hostNetwork is turned on, in which case the pod has access
+// to the node's loopback device.
+// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
+func defaultEndpoint() (string, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		logger.Error("unable to get hostname", zap.Error(err))
-		endpoint = "localhost"
-	} else {
-		endpoint = hostname
+		return "", errors.WithMessage(err, "Unable to get hostname for default endpoint")
 	}
 	const kubeletPort = "10250"
-	endpoint += ":" + kubeletPort
-	return endpoint
+	return hostname + ":" + kubeletPort, nil
 }
 
 func defaultTransport() *http.Transport {

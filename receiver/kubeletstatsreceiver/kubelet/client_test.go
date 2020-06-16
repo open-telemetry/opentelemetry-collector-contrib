@@ -72,7 +72,8 @@ func TestNewClient(t *testing.T) {
 
 func TestDefaultTLSClient(t *testing.T) {
 	endpoint := "localhost:9876"
-	client := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
+	client, err := defaultTLSClient(endpoint, true, &x509.CertPool{}, nil, nil, zap.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "https://"+endpoint, client.baseURL)
 }
@@ -86,7 +87,8 @@ func TestSvcAcctClient(t *testing.T) {
 }
 
 func TestDefaultEndpoint(t *testing.T) {
-	endpt := defaultEndpoint(zap.NewNop())
+	endpt, err := defaultEndpoint()
+	require.NoError(t, err)
 	require.True(t, strings.HasSuffix(endpt, ":10250"))
 }
 
@@ -124,7 +126,8 @@ func TestSABadTokenPath(t *testing.T) {
 }
 
 func TestTLSDefaultEndpoint(t *testing.T) {
-	client := defaultTLSClient("", true, nil, nil, nil, zap.NewNop())
+	client, err := defaultTLSClient("", true, nil, nil, nil, zap.NewNop())
+	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(client.baseURL, "https://"))
 	require.True(t, strings.HasSuffix(client.baseURL, ":10250"))
 }
