@@ -128,7 +128,10 @@ workflows:
               only: /.*/
       - publish-stable:
           requires:
+            - lint
+            - test
             - build
+            - cross-compile
           filters:
             branches:
               ignore: /.*/
