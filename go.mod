@@ -37,7 +37,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.3.1-0.20200612184320-01ce74db9c44
+	go.opentelemetry.io/collector v0.3.1-0.20200615181810-b28cbd9c8e2e
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
 
