@@ -51,8 +51,8 @@ func TestClient(t *testing.T) {
 	require.Equal(t, "GET", tr.method)
 }
 
-func TestNewClient(t *testing.T) {
-	client, err := NewClient("localhost:9876", &ClientConfig{
+func TestNewTLSClientProvider(t *testing.T) {
+	p, err := NewClientProvider("localhost:9876", &ClientConfig{
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeTLS,
 		},
@@ -63,11 +63,24 @@ func TestNewClient(t *testing.T) {
 		},
 	}, zap.NewNop())
 	require.NoError(t, err)
-	require.NotNil(t, client)
+	client, err := p.BuildClient()
+	require.NoError(t, err)
 	c := client.(*clientImpl)
 	tcc := c.httpClient.Transport.(*http.Transport).TLSClientConfig
 	require.Equal(t, 1, len(tcc.Certificates))
 	require.NotNil(t, tcc.RootCAs)
+}
+
+func TestNewSAClientProvider(t *testing.T) {
+	p, err := NewClientProvider("localhost:9876", &ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeServiceAccount,
+		},
+	}, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, p)
+	_, ok := p.(*saClientProvider)
+	require.True(t, ok)
 }
 
 func TestDefaultTLSClient(t *testing.T) {
@@ -79,11 +92,15 @@ func TestDefaultTLSClient(t *testing.T) {
 }
 
 func TestSvcAcctClient(t *testing.T) {
-	cl, err := newServiceAccountClient(
-		"localhost:9876", certPath, tokenPath, zap.NewNop(),
-	)
+	p := &saClientProvider{
+		endpoint:   "localhost:9876",
+		caCertPath: certPath,
+		tokenPath:  tokenPath,
+		logger:     zap.NewNop(),
+	}
+	cl, err := p.BuildClient()
 	require.NoError(t, err)
-	require.Equal(t, "s3cr3t", string(cl.tok))
+	require.Equal(t, "s3cr3t", string(cl.(*clientImpl).tok))
 }
 
 func TestDefaultEndpoint(t *testing.T) {
@@ -93,7 +110,7 @@ func TestDefaultEndpoint(t *testing.T) {
 }
 
 func TestBadAuthType(t *testing.T) {
-	_, err := NewClient("foo", &ClientConfig{
+	_, err := NewClientProvider("foo", &ClientConfig{
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: "bar",
 		},
@@ -102,26 +119,48 @@ func TestBadAuthType(t *testing.T) {
 }
 
 func TestTLSMissingCAFile(t *testing.T) {
-	_, err := newTLSClient("", &ClientConfig{}, zap.NewNop())
+	p := &tlsClientProvider{
+		endpoint: "",
+		cfg:      &ClientConfig{},
+		logger:   zap.NewNop(),
+	}
+	_, err := p.BuildClient()
 	require.Error(t, err)
 }
 
 func TestTLSMissingCertFile(t *testing.T) {
-	_, err := newTLSClient("", &ClientConfig{
-		TLSSetting: configtls.TLSSetting{
-			CAFile: certPath,
+	p := tlsClientProvider{
+		endpoint: "",
+		cfg: &ClientConfig{
+			TLSSetting: configtls.TLSSetting{
+				CAFile: certPath,
+			},
 		},
-	}, zap.NewNop())
+		logger: zap.NewNop(),
+	}
+	_, err := p.BuildClient()
 	require.Error(t, err)
 }
 
 func TestSABadCertPath(t *testing.T) {
-	_, err := newServiceAccountClient("foo", "bar", "baz", zap.NewNop())
+	p := &saClientProvider{
+		endpoint:   "foo",
+		caCertPath: "bar",
+		tokenPath:  "baz",
+		logger:     zap.NewNop(),
+	}
+	_, err := p.BuildClient()
 	require.Error(t, err)
 }
 
 func TestSABadTokenPath(t *testing.T) {
-	_, err := newServiceAccountClient("foo", certPath, "bar", zap.NewNop())
+	p := &saClientProvider{
+		endpoint:   "foo",
+		caCertPath: certPath,
+		tokenPath:  "bar",
+		logger:     zap.NewNop(),
+	}
+	_, err := p.BuildClient()
 	require.Error(t, err)
 }
 
@@ -133,22 +172,31 @@ func TestTLSDefaultEndpoint(t *testing.T) {
 }
 
 func TestBuildReq(t *testing.T) {
-	cl, err := newServiceAccountClient(
-		"localhost:9876", certPath, tokenPath, zap.NewNop(),
-	)
+	p := &saClientProvider{
+		endpoint:   "localhost:9876",
+		caCertPath: certPath,
+		tokenPath:  tokenPath,
+		logger:     zap.NewNop(),
+	}
+	cl, err := p.BuildClient()
 	require.NoError(t, err)
-	req, err := cl.buildReq("/foo")
+	req, err := cl.(*clientImpl).buildReq("/foo")
 	require.NoError(t, err)
 	require.NotNil(t, req)
 	require.Equal(t, req.Header["Authorization"][0], "bearer s3cr3t")
 }
 
 func TestBuildBadReq(t *testing.T) {
-	cl, err := newServiceAccountClient(
-		"localhost:9876", certPath, tokenPath, zap.NewNop(),
-	)
+	p := &saClientProvider{
+		endpoint:   "localhost:9876",
+		caCertPath: certPath,
+		tokenPath:  tokenPath,
+		logger:     zap.NewNop(),
+	}
+	cl, err := p.BuildClient()
 	require.NoError(t, err)
-	_, err = cl.buildReq(" ")
+	require.NoError(t, err)
+	_, err = cl.(*clientImpl).buildReq(" ")
 	require.Error(t, err)
 }
 

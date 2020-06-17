@@ -21,12 +21,19 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
+
+func TestType(t *testing.T) {
+	factory := &Factory{}
+	ft := factory.Type()
+	require.EqualValues(t, "kubeletstats", ft)
+}
 
 func TestValidConfig(t *testing.T) {
 	factory := &Factory{}
@@ -47,16 +54,53 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{
-		restClient: func(*zap.Logger, configmodels.Receiver) (kubelet.RestClient, error) {
-			return &fakeRestClient{}, nil
-		},
-	}
+	factory := &Factory{}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		zap.NewNop(),
-		factory.CreateDefaultConfig(),
+		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestFactoryBadAuthType(t *testing.T) {
+	factory := &Factory{}
+	cfg := &Config{
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "foo",
+			},
+		},
+	}
+	_, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &testbed.MockMetricConsumer{})
+	require.Error(t, err)
+}
+
+func TestRestClientErr(t *testing.T) {
+	f := &Factory{}
+	cfg := &Config{
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "tls",
+			},
+		},
+	}
+	_, err := f.restClient(zap.NewNop(), cfg)
+	require.Error(t, err)
+}
+
+func tlsConfig() *Config {
+	return &Config{
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "tls",
+			},
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   "testdata/testcert.crt",
+				CertFile: "testdata/testcert.crt",
+				KeyFile:  "testdata/testkey.key",
+			},
+		},
+	}
 }
