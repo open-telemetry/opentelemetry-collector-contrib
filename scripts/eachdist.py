@@ -450,6 +450,7 @@ def install_args(args):
         allfmt += "[{}]".format(",".join(extras))
     # note the trailing single quote, to close the quote opened above.
     allfmt += "'"
+
     execute_args(
         parse_subargs(
             args,
