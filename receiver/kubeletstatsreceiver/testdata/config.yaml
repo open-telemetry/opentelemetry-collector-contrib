@@ -1,0 +1,20 @@
+receivers:
+  kubeletstats/tls:
+    collection_interval: 10s
+    auth_type: "tls"
+    ca_file: "/path/to/ca.crt"
+    key_file: "/path/to/apiserver.key"
+    cert_file: "/path/to/apiserver.crt"
+    endpoint: "1.2.3.4:5555"
+    insecure_skip_verify: true
+  kubeletstats/sa:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    insecure_skip_verify: true
+exporters:
+  exampleexporter:
+service:
+  pipelines:
+    metrics:
+      receivers: [kubeletstats/sa]
+      exporters: [exampleexporter]
