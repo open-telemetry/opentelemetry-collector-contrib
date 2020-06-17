@@ -1,5 +1,5 @@
 # Metrics Transform Processor <span style="color:red">**(UNDER DEVELOPMENT - NOT READY FOR USE)**</span>
-- <span style="color:red">ONLY support **single-batch processing** on metrics to avoid conflicts of different batches with the same time-series</span>
+- <span style="color:red">This ONLY supports renames/aggregations **within individual metric batches**.</span> It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
 - <span style="color:red">Rename Collisions will result in a no operation on the metrics data</span>
   - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
