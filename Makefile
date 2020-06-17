@@ -14,6 +14,12 @@ BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 STATIC_CHECK=staticcheck
 OTEL_VERSION=master
 
+# Modules to run integration tests on.
+# XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
+INTEGRATION_TEST_MODULES := \
+	receiver/redisreceiver \
+	internal/common
+
 .DEFAULT_GOAL := all
 
 .PHONY: all
@@ -23,26 +29,20 @@ all: common otelcontribcol
 e2e-test: otelcontribcol
 	$(MAKE) -C testbed runtests
 
-.PHONY: precommit
-precommit:
-	$(MAKE) gotidy
-	$(MAKE) ci
-
 .PHONY: test-with-cover
-test-with-cover:
+unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@echo pre-compiling tests
-	set -e; for dir in $(ALL_MODULES); do \
-	  echo "go test ./... + coverage in $${dir}"; \
-	  (cd "$${dir}" && \
-	    $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... && \
-	 	go tool cover -html=coverage.txt -o coverage.html ); \
-	done
+	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
+
+.PHONY: integration-tests-with-cover
+integration-tests-with-cover:
+	@echo $(INTEGRATION_TEST_MODULES)
+	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
 
 .PHONY: stability-tests
 stability-tests:
-	@echo Stability tests have not been implemented yet 
+	@echo Stability tests have not been implemented yet
 
 .PHONY: gotidy
 gotidy:
@@ -93,9 +93,10 @@ install-tools:
 	go install github.com/client9/misspell/cmd/misspell
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	go install github.com/google/addlicense
-	go install honnef.co/go/tools/cmd/staticcheck
+	go install github.com/jstemmer/go-junit-report
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/tcnksm/ghr
+	go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: run
 run:
