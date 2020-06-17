@@ -102,7 +102,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - build-examples-tracing:
+      - build-examples:
           requires:
             - setup
           filters:
@@ -191,15 +191,15 @@ jobs:
           root: ~/
           paths: project/bin
 
-  build-examples-tracing:
+  build-examples:
     docker:
       - image: cimg/go:1.14
     steps:
       - restore_workspace
       - setup_remote_docker
       - run:
-          name: Build trace example
-          command: docker-compose -f examples/tracing/docker-compose.yml build
+          name: Build examples
+          command: make build-examples
 
   cross-compile:
     executor: golang
