@@ -26,6 +26,7 @@ be used instead. If path is not specified, `/v2/datapoint` is used.
 If `realm` is set, this option is derived and will be `https://api.{realm}.signalfx.com/`. If a value is explicitly
 set, the value of `realm` will not be used in determining `api_url`. The explicit value will be used instead.
 - `log_dimension_updates` (default = `false`): Whether or not to log dimension updates.
+- `access_token_passthrough`: (default = `true`) Whether to use `"com.splunk.signalfx.access_token"` metric resource label, if any, as SFx access token.  In either case this label will be dropped during final translation.  Intended to be used in tandem with identical configuration option for [SignalFx receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint origin.
 
 Note: Either `realm` or both `ingest_url` and `api_url` should be explicitly set.
 
@@ -35,6 +36,7 @@ Example:
 exporters:
   signalfx:
     access_token: <replace_with_actual_access_token>
+    access_token_passthrough: true
     headers:
       added-entry: "added value"
       dot.test: test
