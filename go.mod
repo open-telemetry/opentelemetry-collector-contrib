@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.14
 
 require (
+	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.27.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
