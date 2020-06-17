@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -51,6 +53,9 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  "signalfx/allsettings",
 				Endpoint: "localhost:8080",
 			},
+			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				AccessTokenPassthrough: true,
+			},
 		})
 
 	r2 := cfg.Receivers["signalfx/tls"].(*Config)
@@ -63,6 +68,9 @@ func TestLoadConfig(t *testing.T) {
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "/test.crt",
 				KeyFile:  "/test.key",
+			},
+			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				AccessTokenPassthrough: false,
 			},
 		})
 }

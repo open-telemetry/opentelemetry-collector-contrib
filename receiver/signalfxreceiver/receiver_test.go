@@ -417,6 +417,84 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	assert.Equal(t, want, got[0])
 }
 
+func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
+	tests := []struct {
+		name        string
+		passthrough bool
+		token       string
+	}{
+		{
+			name:        "No token provided and passthrough false",
+			passthrough: false,
+			token:       "",
+		},
+		{
+			name:        "No token provided and passthrough true",
+			passthrough: true,
+			token:       "",
+		},
+		{
+			name:        "token provided and passthrough false",
+			passthrough: false,
+			token:       "myToken",
+		},
+		{
+			name:        "token provided and passthrough true",
+			passthrough: true,
+			token:       "myToken",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := (&Factory{}).CreateDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+			config.AccessTokenPassthrough = tt.passthrough
+
+			sink := new(exportertest.SinkMetricsExporterOld)
+			rcv, err := New(zap.NewNop(), *config, sink)
+			assert.NoError(t, err)
+
+			currentTime := time.Now().Unix() * 1e3
+			sFxMsg := buildSFxMsg(&currentTime, 13, 3)
+			msgBytes, _ := proto.Marshal(sFxMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			if tt.token != "" {
+				req.Header.Set("x-sf-token", tt.token)
+			}
+
+			r := rcv.(*sfxReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+
+			got := sink.AllMetrics()
+			require.Equal(t, 1, len(got))
+
+			tokenLabel := ""
+			if got[0].Resource != nil && got[0].Resource.Labels != nil {
+				tokenLabel = got[0].Resource.Labels["com.splunk.signalfx.access_token"]
+			}
+
+			if tt.passthrough {
+				assert.Equal(t, tt.token, tokenLabel)
+			} else {
+				assert.Empty(t, tokenLabel)
+			}
+		})
+	}
+}
+
 func buildSFxMsg(time *int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{

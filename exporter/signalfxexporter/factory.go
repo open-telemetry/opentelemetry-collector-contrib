@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -47,6 +49,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		Timeout: defaultHTTPTimeout,
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: true,
+		},
 	}
 }
 
