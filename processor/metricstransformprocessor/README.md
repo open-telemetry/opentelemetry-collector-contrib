@@ -1,6 +1,7 @@
-# Metrics Transform Processor (Currently Under Development, Use with Caution)
-- Only support single-batch processing on metrics to avoid conflicts of different batches with the same time-series
-- Rename Collisions will result in a no operation on the metrics data
+# Metrics Transform Processor <span style="color:red">**(UNDER DEVELOPMENT - NOT READY FOR USE)**</span>
+- <span style="color:red">ONLY support **single-batch processing** on metrics to avoid conflicts of different batches with the same time-series</span>
+- <span style="color:red">Rename Collisions will result in a no operation on the metrics data</span>
+  - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
 ## Description
 The objective of this metrics transform processor is to give OpenTelemetry Collector users the flexibility to rename and aggregate metrics in desired ways so that the metrics are more relevant and cheaper to the users. This processor can be used to simply rename metrics names, labels and label values to conform with any requirements of an existing backend. This processor can also perform aggreagtions on metrics across labels or label values, so that the data can cost less and provide more insights for specific use cases.
@@ -113,6 +114,3 @@ operations:
 - Support aggregations of non-simple metric types (distributions, etc)
 - Support aggregation over time
 - Utilizing regex to select metrics
-
-## Thanks to
-[@draffensperger](https://github.com/draffensperger) [@james-bebbington](https://github.com/james-bebbington) [@quentinmit](https://github.com/quentinmit)
