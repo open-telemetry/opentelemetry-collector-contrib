@@ -1,6 +1,8 @@
 codecov:
   notify:
     require_ci_to_pass: yes
+    # wait for unit and integration test builds.
+    after_n_builds: 2
   strict_yaml_branch: master  # only use the latest copy on master branch
 
 coverage:
