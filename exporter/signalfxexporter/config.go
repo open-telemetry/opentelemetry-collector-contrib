@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // Config defines configuration for SignalFx exporter.
@@ -58,6 +60,8 @@ type Config struct {
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
+
+	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

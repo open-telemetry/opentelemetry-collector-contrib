@@ -25,6 +25,7 @@ import (
 	"time"
 	"unsafe"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
@@ -35,6 +36,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -210,6 +213,18 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	md, _ := SignalFxV2ToMetricsData(r.logger, msg.Datapoints)
+
+	if r.config.AccessTokenPassthrough {
+		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
+			if md.Resource == nil {
+				md.Resource = &resourcepb.Resource{}
+			}
+			if md.Resource.Labels == nil {
+				md.Resource.Labels = make(map[string]string, 1)
+			}
+			md.Resource.Labels[splunk.SFxAccessTokenLabel] = accessToken
+		}
+	}
 
 	err = r.nextConsumer.ConsumeMetricsData(ctx, *md)
 	obsreport.EndMetricsReceiveOp(

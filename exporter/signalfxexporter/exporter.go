@@ -81,6 +81,7 @@ func New(
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		accessTokenPassthrough: config.AccessTokenPassthrough,
 	}
 
 	dimClient := dimensions.NewDimensionClient(
