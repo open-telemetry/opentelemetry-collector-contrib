@@ -22,6 +22,9 @@ import (
 
 	"go.opentelemetry.io/collector/testbed/testbed"
 	scenarios "go.opentelemetry.io/collector/testbed/tests"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
@@ -47,8 +50,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"SAPM",
-			NewSapmDataSender(testbed.GetAvailablePort(t)),
-			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
+			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 24,
 				ExpectedMaxRAM: 100,
