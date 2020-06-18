@@ -30,9 +30,9 @@ service:
     pipelines:
         traces:
             receivers: [examplereceiver]
-            processors: [transform]
+            processors: [metrics_transform]
             exporters: [exampleexporter]
         metrics:
             receivers: [examplereceiver]
-            processors: [transform]
+            processors: [metrics_transform]
             exporters: [exampleexporter]

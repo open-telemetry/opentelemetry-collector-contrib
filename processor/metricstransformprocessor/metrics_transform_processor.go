@@ -16,7 +16,7 @@ package metricstransformprocessor
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -73,20 +73,20 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	mds := pdatautil.MetricsToMetricsData(md)
 
 	for i, data := range mds {
+		// if the new name is not valid, discard this operation for this list of metrics
 		if mtp.validNewName(data.Metrics) {
 			for _, metric := range data.Metrics {
 				if metric.MetricDescriptor.Name == mtp.metricname {
+					// mtp.action is already validated to only contain either update or insert
 					if mtp.action == Update {
 						mtp.update(metric)
 					} else if mtp.action == Insert {
 						mds[i].Metrics = mtp.insert(metric, data.Metrics)
-					} else {
-						fmt.Println("error running \"metrics_transform\" processor due to unrecognized required field \"action\" at the config level: %v, Only accept values \"update\" and \"insert\"", mtp.action)
 					}
 				}
 			}
 		} else {
-			fmt.Println("error running \"metrics_transform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
+			log.Printf("error running \"metrics_transform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
 		}
 	}
 

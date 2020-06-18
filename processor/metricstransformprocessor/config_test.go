@@ -15,56 +15,83 @@
 package metricstransformprocessor
 
 import (
+	"path"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// TestLoadingConfigStrict tests loading testdata/config.yaml
+// TestLoadingFullConfig tests loading testdata/config_full.yaml
 func TestLoadingFullConfig(t *testing.T) {
-	// testDataOperations := []Operation{
-	// 	{
-	// 		Action:   "update_label",
-	// 		Label:    "label",
-	// 		NewLabel: "new_label",
-	// 	},
-	// }
 
-	// factories, err := config.ExampleComponents()
-	// assert.Nil(t, err)
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
 
-	// factory := &Factory{}
-	// factories.Processors[configmodels.Type(typeStr)] = factory
-	// config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	factory := &Factory{}
+	factories.Processors[configmodels.Type(typeStr)] = factory
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
 
-	// assert.Nil(t, err)
-	// require.NotNil(t, config)
+	assert.Nil(t, err)
+	require.NotNil(t, config)
 
-	// tests := []struct {
-	// 	filterName string
-	// 	expCfg     *Config
-	// }{
-	// 	{
-	// 		filterName: "transform",
-	// 		expCfg: &Config{
-	// 			ProcessorSettings: configmodels.ProcessorSettings{
-	// 				NameVal: "transform",
-	// 				TypeVal: typeStr,
-	// 			},
-	// 			MetricName: "old_name",
-	// 			Action:     "update",
-	// 			NewName:    "new_name",
-	// 			Operations: testDataOperations,
-	// 		},
-	// 	},
-	// }
+	testDataOperations := []Operation{
+		{
+			Action:   UpdateLabel,
+			Label:    "label",
+			NewLabel: "new_label",
+			ValueActions: []ValueAction{
+				{
+					Value:    "current_label_value",
+					NewValue: "new_label_value",
+				},
+			},
+		},
+		{
+			Action: AggregateLabels,
+			LabelSet: []string{
+				"label1",
+				"label2",
+			},
+			AggregationType: Sum,
+		},
+		{
+			Action: AggregateLabelValues,
+			Label:  "label",
+			AggregatedValues: []string{
+				"value1",
+				"value2",
+			},
+			NewValue:        "new_value",
+			AggregationType: Sum,
+		},
+	}
 
-	// for _, test := range tests {
-	// 	t.Run(test.filterName, func(t *testing.T) {
-	// 		cfg := config.Processors[test.filterName]
-	// 		assert.Equal(t, test.expCfg, cfg)
-	// 	})
-	// }
-}
+	tests := []struct {
+		filterName string
+		expCfg     *Config
+	}{
+		{
+			filterName: "metrics_transform",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "metrics_transform",
+					TypeVal: typeStr,
+				},
+				MetricName: "old_name",
+				Action:     Update,
+				NewName:    "new_name",
+				Operations: testDataOperations,
+			},
+		},
+	}
 
-func TestLoadingInvalidConfig(t *testing.T) {
-
+	for _, test := range tests {
+		t.Run(test.filterName, func(t *testing.T) {
+			cfg := config.Processors[test.filterName]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
 }

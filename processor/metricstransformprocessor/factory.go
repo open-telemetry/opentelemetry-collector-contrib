@@ -16,6 +16,7 @@ package metricstransformprocessor
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -64,5 +65,28 @@ func (f *Factory) CreateMetricsProcessor(
 	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
 	oCfg := c.(*Config)
-	return newMetricsTransformProcessor(nextConsumer, oCfg)
+	err := validateConfiguration(*oCfg)
+	if err == nil {
+		return newMetricsTransformProcessor(nextConsumer, oCfg)
+	}
+	return nil, err
+}
+
+// buildConfiguration validates the input configuration has all of the required fields for the processor
+// and returns a list of valid actions to configure the processor.
+// An error is returned if there are any invalid inputs.
+func validateConfiguration(config Config) error {
+	if config.MetricName == "" {
+		return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"metric_name\"")
+	}
+
+	if config.Action != Update && config.Action != Insert {
+		return fmt.Errorf("error creating \"metrics_transform\" processor due to unsupported \"action\": %v, the supported actions are \"insert\" and \"update\"", config.Action)
+	}
+
+	if config.Action == Insert && config.NewName == "" {
+		return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"new_name\" while \"action\" is insert")
+	}
+
+	return nil
 }
