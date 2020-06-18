@@ -18,6 +18,7 @@ import (
 	"context"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,15 +27,32 @@ import (
 )
 
 type exporter struct {
-	pipe chan []*metricdata.Metric
+	pipe chan *metricdata.Metric
 }
 
 func newExporter() *exporter {
-	return &exporter{make(chan []*metricdata.Metric)}
+	return &exporter{make(chan *metricdata.Metric)}
+}
+
+func (e *exporter) ReturnAfter(after int) chan []*metricdata.Metric {
+	ch := make(chan []*metricdata.Metric)
+	go func() {
+		received := []*metricdata.Metric{}
+		for m := range e.pipe {
+			received = append(received, m)
+			if len(received) >= after {
+				break
+			}
+		}
+		ch <- received
+	}()
+	return ch
 }
 
 func (e *exporter) ExportMetrics(ctx context.Context, data []*metricdata.Metric) error {
-	e.pipe <- data
+	for _, m := range data {
+		e.pipe <- m
+	}
 	return nil
 }
 
@@ -68,7 +86,13 @@ func TestMetrics(t *testing.T) {
 		tt.recordFunc()
 	}
 	go metricReader.ReadAndExport(e)
-	data := <-e.pipe
+
+	var data []*metricdata.Metric
+	select {
+	case <-time.After(time.Second * 2):
+		t.Fatalf("timedout waiting for metrics to arrive")
+	case data = <-e.ReturnAfter(len(tests)):
+	}
 
 	sort.Slice(tests, func(i, j int) bool {
 		return tests[i].name < tests[j].name
