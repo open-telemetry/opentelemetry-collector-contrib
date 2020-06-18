@@ -1,19 +1,20 @@
-# Metrics Transform Processor <span style="color:red">**(UNDER DEVELOPMENT - NOT READY FOR USE)**</span>
-- <span style="color:red">This ONLY supports renames/aggregations **within individual metric batches**.</span> It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
-- <span style="color:red">Rename Collisions will result in a no operation on the metrics data</span>
+# Metrics Transform Processor **(UNDER DEVELOPMENT - NOT READY FOR USE)**
+Supported pipeline types: metrics
+- This ONLY supports renames/aggregations **within individual metrics**. It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
+- Rename Collisions will result in a no operation on the metrics data
   - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
 ## Description
-The objective of this metrics transform processor is to give OpenTelemetry Collector users the flexibility to rename and aggregate metrics in desired ways so that the metrics are more relevant and cheaper to the users. This processor can be used to simply rename metrics names, labels and label values to conform with any requirements of an existing backend. This processor can also perform aggreagtions on metrics across labels or label values, so that the data can cost less and provide more insights for specific use cases.
+The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values.
 
 ## Capabilities
-- rename metrics (e.g. rename `cpu/usage` to `cpu/usage_time`)
-- rename labels (e.g. rename `cpu` to `core`)
-- rename label values (e.g. rename `done` to `complete`)
-- aggregate across label sets (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
-  - aggregation_type: sum, average, max
-- aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
-  - aggregation_type: sum, average, max
+- Rename metrics (e.g. rename `cpu/usage` to `cpu/usage_time`)
+- Rename labels (e.g. rename `cpu` to `core`)
+- Rename label values (e.g. rename `done` to `complete`)
+- Aggregate across label sets (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
+  - Aggregation_type: sum, average, max
+- Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
+  - Aggregation_type: sum, average, max
 
 ## Configuration
 ```yaml
@@ -108,9 +109,3 @@ operations:
    new_value: slab 
    aggregation_type: sum
 ```
-
-## Possible Extensions
-- Supporting custom types of aggregation (e.g. defined by a formula)
-- Support aggregations of non-simple metric types (distributions, etc)
-- Support aggregation over time
-- Utilizing regex to select metrics
