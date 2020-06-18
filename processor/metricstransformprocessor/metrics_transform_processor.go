@@ -16,6 +16,7 @@ package metricstransformprocessor
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -67,23 +68,62 @@ func (mtp *metricsTransformProcessor) ConsumeMetrics(ctx context.Context, md pda
 	return mtp.next.ConsumeMetrics(ctx, mtp.transform(md))
 }
 
-// transform renames the metrics based off the current and new names specified in the config
+// transform transforms the metrics based on the information specified in the config
 func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics {
 	mds := pdatautil.MetricsToMetricsData(md)
 
-	for _, data := range mds {
-		for _, metric := range data.Metrics {
-			if mtp.action == Update {
-				mtp.update(metric)
-
+	for i, data := range mds {
+		if mtp.validNewName(data.Metrics) {
+			for _, metric := range data.Metrics {
+				if metric.MetricDescriptor.Name == mtp.metricname {
+					if mtp.action == Update {
+						mtp.update(metric)
+					} else if mtp.action == Insert {
+						mds[i].Metrics = mtp.insert(metric, data.Metrics)
+					} else {
+						fmt.Println("error running \"metrics_transform\" processor due to unrecognized required field \"action\" at the config level: %v, Only accept values \"update\" and \"insert\"", mtp.action)
+					}
+				}
 			}
+		} else {
+			fmt.Println("error running \"metrics_transform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
 		}
 	}
+
 	return pdatautil.MetricsFromMetricsData(mds)
 }
 
-func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric) {
+// update updates the original metric content in the metricPtr pointer
+func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 	if mtp.newname != "" {
-		metric.MetricDescriptor.Name = mtp.newname
+		metricPtr.MetricDescriptor.Name = mtp.newname
 	}
+}
+
+// insert inserts a new copy of the metricPtr content into the metricPtrs slice
+func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metricPtrs []*metricspb.Metric) []*metricspb.Metric {
+	metricCopy := mtp.createCopy(metricPtr)
+	mtp.update(metricCopy)
+	return append(metricPtrs, metricCopy)
+}
+
+// createCopy creates a new copy of the input metric
+func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *metricspb.Metric {
+	copyMetricDescriptor := *metricPtr.GetMetricDescriptor()
+	copy := &metricspb.Metric{
+		MetricDescriptor: &copyMetricDescriptor,
+		Timeseries:       metricPtr.GetTimeseries(),
+		Resource:         metricPtr.GetResource(),
+	}
+	return copy
+}
+
+// validNewName determines if the new name is a valid one. An invalid one is one that already exists
+func (mtp *metricsTransformProcessor) validNewName(metricPtrs []*metricspb.Metric) bool {
+	for _, metric := range metricPtrs {
+		if metric.MetricDescriptor.Name == mtp.newname {
+			return false
+		}
+	}
+	return true
 }

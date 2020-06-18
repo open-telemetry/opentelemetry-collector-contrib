@@ -20,8 +20,20 @@ exporters:
   #   url: "http://jaeger:14268/api/traces"
 
 processors:
-  batch:
-  queued_retry:
+    metrics_transform:
+        metric_name: opdemo/process_counts
+        action: update
+        new_name: new/process_counts
+        operations:
+            - action: update_label
+              label: client
+              new_label: new/client
+              value_actions:
+                - value: cli
+                  new_value: new/cli
+                - value: repl
+                  new_value: new/repl
+  
 
 # extensions:
 #   health_check:
@@ -36,8 +48,8 @@ service:
     traces:
         receivers: [opencensus]
         exporters: [logging]
-        processors: [batch, queued_retry]
+        processors: []
     metrics:
         receivers: [opencensus]
         exporters: [file]
-        processors: []
+        processors: [metrics_transform]

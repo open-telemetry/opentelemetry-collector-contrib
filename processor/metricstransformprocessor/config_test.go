@@ -19,8 +19,7 @@ import (
 )
 
 // TestLoadingConfigStrict tests loading testdata/config.yaml
-func TestLoadingConfigStrict(t *testing.T) {
-
+func TestLoadingFullConfig(t *testing.T) {
 	// testDataOperations := []Operation{
 	// 	{
 	// 		Action:   "update_label",
@@ -64,4 +63,8 @@ func TestLoadingConfigStrict(t *testing.T) {
 	// 		assert.Equal(t, test.expCfg, cfg)
 	// 	})
 	// }
+}
+
+func TestLoadingInvalidConfig(t *testing.T) {
+
 }

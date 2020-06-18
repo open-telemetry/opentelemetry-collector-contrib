@@ -28,9 +28,8 @@ const (
 	typeStr = "metrics_transform"
 )
 
-// Factory is the factory for rename processor.
-type Factory struct {
-}
+// Factory is the factory for metrics transform processor.
+type Factory struct{}
 
 // Type gets the type of the Option config created by this factory.
 func (f *Factory) Type() configmodels.Type {

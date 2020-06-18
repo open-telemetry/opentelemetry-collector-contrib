@@ -66,7 +66,10 @@ type Operation struct {
 
 // ValueAction renames label values
 type ValueAction struct {
-	Value    string `mapstructure:"value"`
+	// Value specifies the current label value
+	Value string `mapstructure:"value"`
+
+	// NewValue specifies the label value to rename to
 	NewValue string `mapstructure:"new_value"`
 }
 
