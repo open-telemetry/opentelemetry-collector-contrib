@@ -114,12 +114,6 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - loadtest:
-          requires:
-            - build
-          filters:
-            tags:
-              only: /.*/
       - test:
           requires:
             - setup
@@ -134,16 +128,7 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9].[0-9].[0-9]+.*/
-      - spawn-stability-tests-job:
-          requires:
-            - lint
-            - test
-            - build
-          filters:
-            branches:
-              only: /master|release\/.+/
-            tags:
-              ignore: /.*/
+
 
 jobs:
   setup:
