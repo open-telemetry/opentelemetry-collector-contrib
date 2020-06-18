@@ -25,7 +25,7 @@ import (
 func TestAwsFromEc2Resource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
 	hostType := "m5.xlarge"
-	imageId := "ami-0123456789"
+	imageID := "ami-0123456789"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
@@ -34,7 +34,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
 	attrs.InsertString(semconventions.AttributeHostType, hostType)
-	attrs.InsertString(semconventions.AttributeHostImageID, imageId)
+	attrs.InsertString(semconventions.AttributeHostImageID, imageID)
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]string)
@@ -51,7 +51,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 		InstanceID:       instanceID,
 		AvailabilityZone: "us-east-1c",
 		InstanceSize:     hostType,
-		AmiId:            imageId,
+		AmiID:            imageID,
 	}, awsData.EC2Metadata)
 }
 

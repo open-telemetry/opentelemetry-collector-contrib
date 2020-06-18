@@ -55,7 +55,7 @@ type EC2Metadata struct {
 	InstanceID       string `json:"instance_id"`
 	AvailabilityZone string `json:"availability_zone"`
 	InstanceSize     string `json:"instance_size"`
-	AmiId            string `json:"ami_id"`
+	AmiID            string `json:"ami_id"`
 }
 
 // ECSMetadata provides the shape for unmarshalling ECS metadata.
@@ -77,7 +77,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		zone         string
 		hostID       string
 		hostType     string
-		amiId        string
+		amiID        string
 		container    string
 		namespace    string
 		deployID     string
@@ -107,7 +107,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			case semconventions.AttributeHostType:
 				hostType = value.StringVal()
 			case semconventions.AttributeHostImageID:
-				amiId = value.StringVal()
+				amiID = value.StringVal()
 			case semconventions.AttributeContainerName:
 				if container == "" {
 					container = value.StringVal()
@@ -160,7 +160,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			InstanceID:       hostID,
 			AvailabilityZone: zone,
 			InstanceSize:     hostType,
-			AmiId:            amiId,
+			AmiID:            amiID,
 		}
 	}
 	if container != "" {
