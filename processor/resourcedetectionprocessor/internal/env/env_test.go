@@ -32,7 +32,7 @@ func TestDetectTrue(t *testing.T) {
 	detector := &Detector{}
 	res, err := detector.Detect(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, internal.NewResource(map[string]string{"key": "value"}), res)
+	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
 }
 
 func TestDetectFalse(t *testing.T) {
@@ -63,11 +63,11 @@ func TestInitializeAttributeMap(t *testing.T) {
 		{
 			name:               "multiple valid attributes",
 			encoded:            ` example.org/test-1 =  test $ %3A \" ,  Abc=Def  `,
-			expectedAttributes: internal.NewAttributeMap(map[string]string{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
+			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
 		}, {
 			name:               "single valid attribute",
 			encoded:            `single=key`,
-			expectedAttributes: internal.NewAttributeMap(map[string]string{"single": "key"}),
+			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"single": "key"}),
 		}, {
 			name:          "invalid url escape sequence in value",
 			encoded:       `invalid=url-%3-encoding`,

@@ -16,19 +16,28 @@ package internal
 
 import "go.opentelemetry.io/collector/consumer/pdata"
 
-func NewResource(mp map[string]string) pdata.Resource {
+func NewResource(mp map[string]interface{}) pdata.Resource {
 	res := pdata.NewResource()
 	res.InitEmpty()
 	NewAttributeMap(mp).CopyTo(res.Attributes())
 	return res
 }
 
-func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
+func NewAttributeMap(mp map[string]interface{}) pdata.AttributeMap {
 	attr := pdata.NewAttributeMap()
 	attr.InitEmptyWithCapacity(len(mp))
 
 	for k, v := range mp {
-		attr.Insert(k, pdata.NewAttributeValueString(v))
+		switch t := v.(type) {
+		case bool:
+			attr.Insert(k, pdata.NewAttributeValueBool(t))
+		case int64:
+			attr.Insert(k, pdata.NewAttributeValueInt(t))
+		case float64:
+			attr.Insert(k, pdata.NewAttributeValueDouble(t))
+		case string:
+			attr.Insert(k, pdata.NewAttributeValueString(t))
+		}
 	}
 
 	return attr

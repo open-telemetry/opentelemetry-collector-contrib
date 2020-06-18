@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -60,38 +61,44 @@ func TestResourceProcessor(t *testing.T) {
 		{
 			name:     "Resource is not overridden",
 			override: false,
-			sourceResource: internal.NewResource(map[string]string{
+			sourceResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
 			}),
-			detectedResource: internal.NewResource(map[string]string{
+			detectedResource: internal.NewResource(map[string]interface{}{
 				"cloud.zone":       "will-be-ignored",
 				"k8s.cluster.name": "k8s-cluster",
 				"host.name":        "k8s-node",
+				"bool":             true,
+				"int":              int64(100),
+				"double":           0.1,
 			}),
-			expectedResource: internal.NewResource(map[string]string{
+			expectedResource: internal.NewResource(map[string]interface{}{
 				"type":             "original-type",
 				"original-label":   "original-value",
 				"cloud.zone":       "original-zone",
 				"k8s.cluster.name": "k8s-cluster",
 				"host.name":        "k8s-node",
+				"bool":             true,
+				"int":              int64(100),
+				"double":           0.1,
 			}),
 		},
 		{
 			name:     "Resource is overridden",
 			override: true,
-			sourceResource: internal.NewResource(map[string]string{
+			sourceResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "will-be-overridden",
 			}),
-			detectedResource: internal.NewResource(map[string]string{
+			detectedResource: internal.NewResource(map[string]interface{}{
 				"cloud.zone":       "zone-1",
 				"k8s.cluster.name": "k8s-cluster",
 				"host.name":        "k8s-node",
 			}),
-			expectedResource: internal.NewResource(map[string]string{
+			expectedResource: internal.NewResource(map[string]interface{}{
 				"type":             "original-type",
 				"original-label":   "original-value",
 				"cloud.zone":       "zone-1",
@@ -101,13 +108,13 @@ func TestResourceProcessor(t *testing.T) {
 		},
 		{
 			name: "Empty detected resource",
-			sourceResource: internal.NewResource(map[string]string{
+			sourceResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
 			}),
-			detectedResource: internal.NewResource(map[string]string{}),
-			expectedResource: internal.NewResource(map[string]string{
+			detectedResource: internal.NewResource(map[string]interface{}{}),
+			expectedResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
@@ -115,7 +122,7 @@ func TestResourceProcessor(t *testing.T) {
 		},
 		{
 			name: "Detection error",
-			sourceResource: internal.NewResource(map[string]string{
+			sourceResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
 				"original-label": "original-value",
 				"cloud.zone":     "original-zone",
@@ -131,20 +138,22 @@ func TestResourceProcessor(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		md1 := &MockDetector{}
-		md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
-		detectors := map[string]internal.Detector{"mock": md1}
-
-		if tt.detectorKeys == nil {
-			tt.detectorKeys = []string{"mock"}
-		}
-
-		cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
-
 		t.Run(tt.name, func(t *testing.T) {
+			factory := &Factory{resources: map[string]lazyResource{}}
+
+			md1 := &MockDetector{}
+			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
+			factory.detectors = map[string]internal.Detector{"mock": md1}
+
+			if tt.detectorKeys == nil {
+				tt.detectorKeys = []string{"mock"}
+			}
+
+			cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
+
 			// Test trace consuner
 			ttn := &exportertest.SinkTraceExporter{}
-			rtp, err := newResourceTraceProcessor(context.Background(), zap.NewNop(), ttn, cfg, detectors)
+			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, ttn, cfg)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -178,7 +187,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &exportertest.SinkMetricsExporter{}
-			rmp, err := newResourceMetricProcessor(context.Background(), zap.NewNop(), tmn, cfg, detectors)
+			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, tmn, cfg)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -222,10 +231,9 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 }
 
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
-	detectors := NewFactory().detectors
+	factory := NewFactory()
 	sink := &exportertest.SinkTraceExporter{}
-
-	processor, _ := newResourceTraceProcessor(context.Background(), zap.NewNop(), sink, cfg, detectors)
+	processor, _ := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, sink, cfg)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -245,10 +253,9 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 }
 
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
-	detectors := NewFactory().detectors
+	factory := NewFactory()
 	sink := &exportertest.SinkMetricsExporter{}
-
-	processor, _ := newResourceMetricProcessor(context.Background(), zap.NewNop(), sink, cfg, detectors)
+	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, sink, cfg)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

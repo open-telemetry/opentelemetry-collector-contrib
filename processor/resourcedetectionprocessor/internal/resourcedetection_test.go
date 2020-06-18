@@ -43,19 +43,19 @@ func TestDetect(t *testing.T) {
 		{
 			name: "Detect three resources",
 			detectedResources: []pdata.Resource{
-				NewResource(map[string]string{"a": "1", "b": "2"}),
-				NewResource(map[string]string{"a": "11", "c": "3"}),
-				NewResource(map[string]string{"a": "11", "c": "3"}),
+				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
+				NewResource(map[string]interface{}{"a": "11", "c": "3"}),
 			},
-			expectedResource: NewResource(map[string]string{"a": "1", "b": "2", "c": "3"}),
+			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
 		}, {
 			name: "Detect empty resources",
 			detectedResources: []pdata.Resource{
-				NewResource(map[string]string{"a": "1", "b": "2"}),
-				NewResource(map[string]string{}),
-				NewResource(map[string]string{"a": "11"}),
+				NewResource(map[string]interface{}{"a": "1", "b": "2"}),
+				NewResource(map[string]interface{}{}),
+				NewResource(map[string]interface{}{"a": "11"}),
 			},
-			expectedResource: NewResource(map[string]string{"a": "1", "b": "2"}),
+			expectedResource: NewResource(map[string]interface{}{"a": "1", "b": "2"}),
 		},
 	}
 
@@ -81,7 +81,7 @@ func TestDetect(t *testing.T) {
 
 func TestDetectResource_Error(t *testing.T) {
 	md1 := &MockDetector{}
-	md1.On("Detect").Return(NewResource(map[string]string{"a": "1", "b": "2"}), nil)
+	md1.On("Detect").Return(NewResource(map[string]interface{}{"a": "1", "b": "2"}), nil)
 
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pdata.NewResource(), errors.New("err1"))

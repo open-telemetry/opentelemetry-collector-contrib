@@ -16,11 +16,13 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
@@ -35,6 +37,8 @@ const (
 // Factory is the factory for resourcedetection processor.
 type Factory struct {
 	detectors map[string]internal.Detector
+	resources map[string]lazyResource
+	lock      sync.Mutex
 }
 
 // NewFactory creates a new factory for resourcedetection processor.
@@ -44,6 +48,7 @@ func NewFactory() *Factory {
 			env.TypeStr: &env.Detector{},
 			gce.TypeStr: gce.NewDetector(),
 		},
+		resources: map[string]lazyResource{},
 	}
 }
 
@@ -73,7 +78,13 @@ func (f *Factory) CreateTraceProcessor(
 	cfg configmodels.Processor,
 ) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
-	return newResourceTraceProcessor(ctx, params.Logger, nextConsumer, oCfg, f.detectors)
+
+	lResource, err := f.getLazyResourceForProcessor(ctx, params.Logger, cfg.Name(), oCfg.Detectors, oCfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return newResourceTraceProcessor(ctx, nextConsumer, lResource, oCfg.Override), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -84,5 +95,35 @@ func (f *Factory) CreateMetricsProcessor(
 	cfg configmodels.Processor,
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
-	return newResourceMetricProcessor(ctx, params.Logger, nextConsumer, oCfg, f.detectors)
+
+	lResource, err := f.getLazyResourceForProcessor(ctx, params.Logger, cfg.Name(), oCfg.Detectors, oCfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
+
+	return newResourceMetricProcessor(ctx, nextConsumer, lResource, oCfg.Override), nil
+}
+
+// getLazyResourceForProcessor returns a function that will lazily detect the
+// resource.
+//
+// The resulting lazy function is cached against the processor name so that
+// the resource information will only be detected once even if multiple
+// instances of the same processor are created.
+func (f *Factory) getLazyResourceForProcessor(ctx context.Context, logger *zap.Logger, processorName string, detectorNames []string, timeout time.Duration) (lazyResource, error) {
+	processorDetectors, err := getDetectors(ctx, f.detectors, detectorNames)
+	if err != nil {
+		return nil, err
+	}
+
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	if lResource, ok := f.resources[processorName]; ok {
+		return lResource, nil
+	}
+
+	lResource := getLazyResource(ctx, logger, timeout, processorDetectors)
+	f.resources[processorName] = lResource
+	return lResource, nil
 }
