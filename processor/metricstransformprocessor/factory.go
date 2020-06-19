@@ -72,7 +72,7 @@ func (f *Factory) CreateMetricsProcessor(
 	return nil, err
 }
 
-// buildConfiguration validates the input configuration has all of the required fields for the processor
+// validateConfiguration validates the input configuration has all of the required fields for the processor
 // and returns a list of valid actions to configure the processor.
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config Config) error {
