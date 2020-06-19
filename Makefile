@@ -1,6 +1,6 @@
 include ./Makefile.Common
 
-RUN_CONFIG=./examples/otel-collector-config.yml
+RUN_CONFIG=local/config.yaml
 
 CMD?=
 GIT_SHA=$(shell git rev-parse --short HEAD)
