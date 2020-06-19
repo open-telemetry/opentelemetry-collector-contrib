@@ -29,8 +29,8 @@ import (
 
 // Factory for prometheusexec
 const (
-	// Key to invoke this receiver (prometheusexec)
-	typeStr = "prometheusexec"
+	// Key to invoke this receiver (prometheus_exec)
+	typeStr = "prometheus_exec"
 
 	defaultEndpoint           = "localhost:10000"
 	defaultMetricsPath        = "/metrics"
@@ -50,7 +50,7 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 	return nil
 }
 
-// CreateDefaultConfig returns a default config that the user's config later gets unmarshaled onto
+// CreateDefaultConfig returns a default config
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -63,7 +63,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 				ScrapeInterval: defaultCollectionInterval,
 				SubprocessConfig: config.SubprocessConfig{
 					CommandString: "",
-					Port:          10000,
+					Port:          0,
+					CustomName:    "",
 				},
 			},
 		},

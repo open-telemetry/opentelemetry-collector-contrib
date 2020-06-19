@@ -16,8 +16,11 @@ package prometheusexec
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
@@ -44,7 +47,7 @@ func new(logger *zap.Logger, config *Config, consumer consumer.MetricsConsumerOl
 func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	factory := &prometheusreceiver.Factory{}
 
-	config, ok := getPrometheusConfig(wrapper.config)
+	config, ok := getPrometheusConfig(wrapper.config, wrapper.logger)
 	if ok != nil {
 		return fmt.Errorf("unable to generate the prometheusexec receiver config: %v", ok)
 	}
@@ -58,28 +61,65 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 	return wrapper.prometheusReceiver.Start(ctx, host)
 }
 
-//getPrometheusConfig returns the config after the correct logic is made
-// TODO: update with ACTUAL logic
-func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
-	return &prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
-			ScrapeConfigs: []*config.ScrapeConfig{
-				&config.ScrapeConfig{
-					ScrapeInterval:  model.Duration(cfg.ScrapeConfigs[0].ScrapeInterval),
-					ScrapeTimeout:   model.Duration(cfg.ScrapeConfigs[0].ScrapeInterval),
-					JobName:         cfg.ScrapeConfigs[0].SubprocessConfig.CommandString,
-					HonorTimestamps: true,
-					ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-						StaticConfigs: []*targetgroup.Group{
-							{
-								Targets: []model.LabelSet{
-									{model.AddressLabel: model.LabelValue(cfg.Endpoint)},
-								},
-							},
-						},
+// getPrometheusConfig returns the config after the correct logic is made
+// All the scrape/subprocess configs are looped over and the proper attributes are assigned into the struct
+func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
+	scrapeConfigs := []*config.ScrapeConfig{}
+	subprocessConfigs := []*subprocessmanager.Process{}
+
+	// Loop over the configurations and create the appropriate entries in the above slices
+	for i, configuration := range cfg.ScrapeConfigs {
+		// If there is no command to execute, throw error since this is a required field
+		if configuration.SubprocessConfig.CommandString == "" {
+			return nil, errors.New("no command to execute entered in config file")
+		}
+
+		scrapeConfig := &config.ScrapeConfig{}
+		subprocessConfig := &subprocessmanager.Process{}
+
+		scrapeConfig.ScrapeInterval = model.Duration(configuration.ScrapeInterval)
+		scrapeConfig.ScrapeTimeout = model.Duration(configuration.ScrapeInterval)
+		scrapeConfig.HonorTimestamps = true
+		scrapeConfig.Scheme = "http"
+		scrapeConfig.MetricsPath = defaultMetricsPath
+
+		if configuration.SubprocessConfig.CustomName == "" {
+			// If there is no customName, try to simply generate one by using the first word in the exec string, assuming it's the binary (i.e. ./mysqld_exporter ...)
+			defaultName := strings.Split(configuration.SubprocessConfig.CommandString, " ")[0]
+			scrapeConfig.JobName = defaultName
+			subprocessConfig.CustomName = defaultName
+		} else {
+			scrapeConfig.JobName = configuration.SubprocessConfig.CustomName
+			subprocessConfig.CustomName = configuration.SubprocessConfig.CustomName
+		}
+
+		// Set the proper target
+		scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
+			StaticConfigs: []*targetgroup.Group{
+				{
+					Targets: []model.LabelSet{
+						{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", configuration.SubprocessConfig.Port))},
 					},
 				},
 			},
+		}
+
+		// Append the resulting scrapeConfig into the aforedeclared slice of scrapeConfigs
+		scrapeConfigs = append(scrapeConfigs, scrapeConfig)
+
+		subprocessConfig.Command = configuration.SubprocessConfig.CommandString
+		subprocessConfig.Port = configuration.SubprocessConfig.Port
+		subprocessConfig.Index = i
+
+		// Append the resulting subprocessConfig to the aforedeclared slice of subprocessConfigs
+		subprocessConfigs = append(subprocessConfigs, subprocessConfig)
+	}
+
+	subprocessmanager.DistributeProcesses(subprocessConfigs)
+
+	return &prometheusreceiver.Config{
+		PrometheusConfig: &config.Config{
+			ScrapeConfigs: scrapeConfigs,
 		},
 	}, nil
 }
