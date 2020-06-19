@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -29,12 +28,15 @@ import (
 )
 
 type metricsTransformTest struct {
-	name       string
+	name       string // test name
+	metricName string
 	action     ConfigAction
 	newName    string
 	operations []Operation
 	inMN       []string // input Metric names
 	outMN      []string // output Metric names
+	inLabels   []string
+	outLabels  []string
 }
 
 var (
@@ -42,6 +44,7 @@ var (
 		"metric1",
 		"metric5",
 	}
+
 	outMetricNamesUpdate = []string{
 		"metric1/new",
 		"metric5",
@@ -53,32 +56,90 @@ var (
 		"metric1/new",
 	}
 
+	inLabels = []string{
+		"label1",
+		"label2",
+	}
+
+	outLabels = []string{
+		"label1/new",
+		"label2",
+	}
+
+	validUpateLabelOperation = Operation{
+		Action:   UpdateLabel,
+		Label:    "label1",
+		NewLabel: "label1/new",
+	}
+
+	invalidUpdateLabelOperation = Operation{
+		Action:   UpdateLabel,
+		Label:    "label1",
+		NewLabel: "label2",
+	}
+
 	standardTests = []metricsTransformTest{
+		// UPDATE
 		{
-			name:    "metric1",
-			action:  "update",
-			newName: "metric1/new",
-			inMN:    inMetricNames,
-			outMN:   outMetricNamesUpdate,
+			name:       "metric_name_update",
+			metricName: "metric1",
+			action:     "update",
+			newName:    "metric1/new",
+			inMN:       inMetricNames,
+			outMN:      outMetricNamesUpdate,
 		},
 		{
-			name:    "metric1",
-			action:  "insert",
-			newName: "metric1/new",
-			inMN:    inMetricNames,
-			outMN:   outMetricNamesInsert,
+			name:       "metric_name_invalid_update",
+			metricName: "metric1",
+			action:     "update",
+			newName:    "metric5",
+			inMN:       inMetricNames,
+			outMN:      inMetricNames,
 		},
 		{
-			name:    "metric1",
-			action:  "update",
-			newName: "metric5",
-			inMN:    inMetricNames,
-			outMN:   inMetricNames,
+			name:       "metric_label_update",
+			metricName: "metric1",
+			action:     "update",
+			operations: []Operation{validUpateLabelOperation},
+			inMN:       inMetricNames,
+			outMN:      inMetricNames,
+			inLabels:   inLabels,
+			outLabels:  outLabels,
+		},
+		{
+			name:       "metric_label_invalid_update",
+			metricName: "metric1",
+			action:     "update",
+			operations: []Operation{invalidUpdateLabelOperation},
+			inMN:       inMetricNames,
+			outMN:      inMetricNames,
+			inLabels:   inLabels,
+			outLabels:  inLabels,
+		},
+		// INSERT
+		{
+			name:       "metric_name_insert",
+			metricName: "metric1",
+			action:     "insert",
+			newName:    "metric1/new",
+			inMN:       inMetricNames,
+			outMN:      outMetricNamesInsert,
+		},
+		{
+			name:       "metric_label_update_with_metric_insert",
+			metricName: "metric1",
+			action:     "insert",
+			newName:    "metric1/new",
+			operations: []Operation{validUpateLabelOperation},
+			inMN:       inMetricNames,
+			outMN:      outMetricNamesInsert,
+			inLabels:   inLabels,
+			outLabels:  outLabels,
 		},
 	}
 )
 
-func TestMetricsTransformProcessorRenameMetrics(t *testing.T) {
+func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			// next stores the results of the aggregation metric processor
@@ -88,9 +149,10 @@ func TestMetricsTransformProcessorRenameMetrics(t *testing.T) {
 					TypeVal: typeStr,
 					NameVal: typeStr,
 				},
-				MetricName: test.name,
+				MetricName: test.metricName,
 				Action:     test.action,
 				NewName:    test.newName,
+				Operations: test.operations,
 			}
 			amp, err := newMetricsTransformProcessor(next, cfg)
 			assert.NotNil(t, amp)
@@ -105,14 +167,28 @@ func TestMetricsTransformProcessorRenameMetrics(t *testing.T) {
 				Metrics: make([]*metricspb.Metric, len(test.inMN)),
 			}
 
+			// contruct metrics data to feed into the processor
 			for idx, in := range test.inMN {
+				labels := make([]*metricspb.LabelKey, 0)
+				if in == test.metricName {
+					for _, l := range test.inLabels {
+						labels = append(
+							labels,
+							&metricspb.LabelKey{
+								Key: l,
+							},
+						)
+					}
+				}
 				md.Metrics[idx] = &metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
-						Name: in,
+						Name:      in,
+						LabelKeys: labels,
 					},
 				}
 			}
 
+			// process
 			cErr := amp.ConsumeMetrics(
 				context.Background(),
 				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
@@ -125,15 +201,43 @@ func TestMetricsTransformProcessorRenameMetrics(t *testing.T) {
 			)
 			assert.Nil(t, cErr)
 
+			// get and check results
 			got := next.AllMetrics()
-			fmt.Println(got)
 			require.Equal(t, 1, len(got))
 			gotMD := pdatautil.MetricsToMetricsData(got[0])
 			require.Equal(t, 3, len(gotMD))
 			assert.EqualValues(t, consumerdata.MetricsData{}, gotMD[0])
 			require.Equal(t, len(test.outMN), len(gotMD[1].Metrics))
 			for idx, out := range gotMD[1].Metrics {
+				// check name
 				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
+
+				//check labels
+				if test.action == Insert {
+					// check the inserted is correctly updated
+					if out.MetricDescriptor.Name == test.newName {
+						for lidx, l := range out.MetricDescriptor.LabelKeys {
+							assert.Equal(t, test.outLabels[lidx], l.Key)
+						}
+					}
+					// check the original is untouched
+					if out.MetricDescriptor.Name == test.metricName {
+						for lidx, l := range out.MetricDescriptor.LabelKeys {
+							assert.Equal(t, test.inLabels[lidx], l.Key)
+						}
+					}
+				} else {
+					targetName := test.metricName
+					if test.newName != "" {
+						targetName = test.newName
+					}
+
+					if out.MetricDescriptor.Name == targetName {
+						for lidx, l := range out.MetricDescriptor.LabelKeys {
+							assert.Equal(t, test.outLabels[lidx], l.Key)
+						}
+					}
+				}
 			}
 
 			assert.EqualValues(t, consumerdata.MetricsData{Metrics: []*metricspb.Metric{}}, gotMD[2])
@@ -145,9 +249,10 @@ func TestMetricsTransformProcessorRenameMetrics(t *testing.T) {
 func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
 	stressTest := metricsTransformTest{
-		name:    "rename1000Metrics",
-		action:  "insert",
-		newName: "newname",
+		name:       "1000Metrics",
+		metricName: "metric1",
+		action:     "insert",
+		newName:    "newname",
 	}
 
 	for len(stressTest.inMN) < 1000 {
@@ -164,7 +269,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 				TypeVal: typeStr,
 				NameVal: typeStr,
 			},
-			MetricName: test.name,
+			MetricName: test.metricName,
 			Action:     test.action,
 			NewName:    test.newName,
 		}
@@ -185,7 +290,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			}
 		}
 
-		b.Run(test.name, func(b *testing.B) {
+		b.Run(test.metricName, func(b *testing.B) {
 			assert.NoError(b, amp.ConsumeMetrics(
 				context.Background(),
 				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
