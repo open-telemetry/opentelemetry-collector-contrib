@@ -4,8 +4,9 @@ receivers:
 processors:
     metrics_transform:
         metric_name: old_name
-        action: invalid # invalid action type
-            
+        action: update
+        operations:
+            - action: update_label # missing label key
 
 exporters:
     exampleexporter:

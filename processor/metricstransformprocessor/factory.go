@@ -88,5 +88,11 @@ func validateConfiguration(config Config) error {
 		return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"new_name\" while \"action\" is insert")
 	}
 
+	for i, op := range config.Operations {
+		if op.Action == UpdateLabel && op.Label == "" {
+			return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"label\" while \"action\" is update_label in the %vth operation", i)
+		}
+	}
+
 	return nil
 }

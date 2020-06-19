@@ -65,6 +65,9 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_invalid_metricname.yaml",
 			succeed:    false,
+		}, {
+			configName: "config_invalid_label.yaml",
+			succeed:    false,
 		},
 	}
 
