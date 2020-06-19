@@ -76,18 +76,19 @@ type ValueAction struct {
 // ConfigAction is the enum to capture the two types of actions to perform on a metric
 type ConfigAction string
 
+// OperationAction is the enum to capture the thress types of actions to perform for an operation
+type OperationAction string
+
+// AggregationType os the enum to capture the three types of aggregation for the aggregation operation
+type AggregationType string
+
 const (
 	// Insert adds a new metric to the batch with a new name
 	Insert ConfigAction = "insert"
 
 	// Update updates an existing metric
 	Update ConfigAction = "update"
-)
 
-// OperationAction is the enum to capture the thress types of actions to perform for an operation
-type OperationAction string
-
-const (
 	// UpdateLabel applies name changes to label or label values
 	UpdateLabel OperationAction = "update_label"
 
@@ -98,12 +99,7 @@ const (
 	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType
 	AggregateLabelValues OperationAction = "aggregate_label_values"
-)
 
-// AggregationType os the enum to capture the three types of aggregation for the aggregation operation
-type AggregationType string
-
-const (
 	// Average indicates taking the average of the aggregated data
 	Average AggregationType = "average"
 

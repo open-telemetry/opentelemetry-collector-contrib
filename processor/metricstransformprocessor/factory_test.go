@@ -95,8 +95,6 @@ func TestCreateProcessors(t *testing.T) {
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					nil,
 					cfg)
-				fmt.Println(mp)
-				fmt.Println((*metricsTransformProcessor)(nil))
 				assert.Equal(t, test.succeed, mp != nil)
 				assert.Equal(t, test.succeed, mErr == nil)
 			})
