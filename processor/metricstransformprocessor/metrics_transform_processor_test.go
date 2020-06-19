@@ -167,7 +167,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				Metrics: make([]*metricspb.Metric, len(test.inMN)),
 			}
 
-			// contruct metrics data to feed into the processor
+			// construct metrics data to feed into the processor
 			for idx, in := range test.inMN {
 				labels := make([]*metricspb.LabelKey, 0)
 				if in == test.metricName {

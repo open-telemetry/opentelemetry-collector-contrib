@@ -101,9 +101,10 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 	}
 
 	for _, op := range mtp.operations {
-		// label key update
-		if op.Action == UpdateLabel && op.NewLabel != "" {
-			if mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
+		// update label
+		if op.Action == UpdateLabel {
+			// label key update
+			if op.NewLabel != "" && mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
 				for _, label := range metricPtr.MetricDescriptor.LabelKeys {
 					if label.GetKey() == op.Label {
 						label.Key = op.NewLabel
@@ -112,6 +113,7 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 			} else {
 				log.Printf("error running \"metrics_transform\" processor due to invalid \"new_label\": %v, which might be caused by a collision with existing label on metric named: %v", op.NewLabel, metricPtr.MetricDescriptor.Name)
 			}
+			//label value update
 		}
 	}
 }
