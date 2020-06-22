@@ -26,7 +26,6 @@ import (
 
 // TestLoadingFullConfig tests loading testdata/config_full.yaml
 func TestLoadingFullConfig(t *testing.T) {
-
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 

@@ -66,10 +66,11 @@ func (f *Factory) CreateMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 	oCfg := c.(*Config)
 	err := validateConfiguration(*oCfg)
-	if err == nil {
-		return newMetricsTransformProcessor(nextConsumer, oCfg)
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+	return newMetricsTransformProcessor(nextConsumer, oCfg)
+
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
