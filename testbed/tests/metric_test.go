@@ -33,7 +33,7 @@ func TestMetric10kDPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
@@ -67,6 +67,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				contribPerfResultsSummary,
 				nil,
 			)
 		})
