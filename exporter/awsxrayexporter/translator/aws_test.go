@@ -24,6 +24,8 @@ import (
 
 func TestAwsFromEc2Resource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
+	hostType := "m5.xlarge"
+	imageID := "ami-0123456789"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
@@ -31,7 +33,8 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
-	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.InsertString(semconventions.AttributeHostType, hostType)
+	attrs.InsertString(semconventions.AttributeHostImageID, imageID)
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]string)
@@ -47,6 +50,8 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	assert.Equal(t, &EC2Metadata{
 		InstanceID:       instanceID,
 		AvailabilityZone: "us-east-1c",
+		InstanceSize:     hostType,
+		AmiID:            imageID,
 	}, awsData.EC2Metadata)
 }
 
@@ -86,6 +91,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 
 func TestAwsFromBeanstalkResource(t *testing.T) {
 	deployID := "232"
+	versionLabel := "4"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
@@ -94,6 +100,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeServiceNamespace, "production")
 	attrs.InsertString(semconventions.AttributeServiceInstance, deployID)
+	attrs.InsertString(semconventions.AttributeServiceVersion, versionLabel)
 	attrs.CopyTo(resource.Attributes())
 
 	attributes := make(map[string]string)
@@ -107,7 +114,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	assert.NotNil(t, awsData.BeanstalkMetadata)
 	assert.Equal(t, &BeanstalkMetadata{
 		Environment:  "production",
-		VersionLabel: "",
+		VersionLabel: versionLabel,
 		DeploymentID: 232,
 	}, awsData.BeanstalkMetadata)
 }
