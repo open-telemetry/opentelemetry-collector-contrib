@@ -15,6 +15,10 @@ idle HTTP connection the exporter can keep open.
 - `num_workers` (default = 8): NumWorkers is the number of workers that should be used to
 export traces. Exporter can make as many requests in parallel as the number of workers. Note
 that this will likely be removed in future in favour of processors handling parallel exporting.
+- `access_token_passthrough`: (default = `true`) Whether to use `"com.splunk.signalfx.access_token"`
+trace resource attribute, if any, as SFx access token.  In either case this attribute will be dropped
+during final translation.  Intended to be used in tandem with identical configuration option for
+[SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 
 Example:
 
@@ -22,6 +26,7 @@ Example:
 exporters:
   sapm:
     access_token: YOUR_ACCESS_TOKEN
+    access_token_passthrough: true
     endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace
     max_connections: 100
     num_workers: 8

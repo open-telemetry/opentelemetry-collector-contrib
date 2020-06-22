@@ -20,6 +20,8 @@ import (
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -47,6 +49,8 @@ type Config struct {
 
 	// Disable GZip compression.
 	DisableCompression bool `mapstructure:"disable_compression"`
+
+	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 }
 
 func (c *Config) validate() error {

@@ -15,6 +15,9 @@ receivers:
       cert_file: /test.crt
       key_file: /test.key
 
+  sapm/passthrough:
+    access_token_passthrough: true
+
 
 processors:
   exampleprocessor:

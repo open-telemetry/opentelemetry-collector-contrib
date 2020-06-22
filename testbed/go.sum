@@ -1118,6 +1118,8 @@ github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49/go.mod h1:muYA2clvwCdj7nzAJ5vJIXYpJsUumhAl4Uu1wUNpWzA=
 github.com/signalfx/sapm-proto v0.5.1 h1:Au3g2x4R1sW3i43RjKfd51VJsxXFkoQcwvErsqkGEw4=
 github.com/signalfx/sapm-proto v0.5.1/go.mod h1:irslr5i7XlHJTm1CpRy+llvf4COzF5K6Je05RkhetTE=
+github.com/signalfx/sapm-proto v0.5.3 h1:1+YNMTQBCS3XXuwfXARAyk2PbsbZdMwRVb6Y7WgfGio=
+github.com/signalfx/sapm-proto v0.5.3/go.mod h1:irslr5i7XlHJTm1CpRy+llvf4COzF5K6Je05RkhetTE=
 github.com/sirupsen/logrus v1.0.4-0.20170822132746-89742aefa4b2/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.0.6/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.1.0/go.mod h1:zrgwTnHtNr00buQ1vSptGe8m1f/BbgsPukg8qsT7A+A=

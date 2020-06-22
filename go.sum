@@ -1200,8 +1200,8 @@ github.com/signalfx/omnition-kinesis-producer v0.4.6 h1:rs18AQ+zz7+B0akJfzJtwdrz
 github.com/signalfx/omnition-kinesis-producer v0.4.6/go.mod h1:Qo5UjM14fq/eVKavLkovKbXWbNTTQwiyuADYnXoGx1I=
 github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2 h1:euMCOJ9wQhaWQ/xehHWPsWeEHGibGn1vihg/15okcts=
 github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2/go.mod h1:4YEoC8CxFYfcCj9c8QAlWgbNBeUMSyfUwe4wckBCAXQ=
-github.com/signalfx/sapm-proto v0.5.1 h1:Au3g2x4R1sW3i43RjKfd51VJsxXFkoQcwvErsqkGEw4=
-github.com/signalfx/sapm-proto v0.5.1/go.mod h1:irslr5i7XlHJTm1CpRy+llvf4COzF5K6Je05RkhetTE=
+github.com/signalfx/sapm-proto v0.5.3 h1:1+YNMTQBCS3XXuwfXARAyk2PbsbZdMwRVb6Y7WgfGio=
+github.com/signalfx/sapm-proto v0.5.3/go.mod h1:irslr5i7XlHJTm1CpRy+llvf4COzF5K6Je05RkhetTE=
 github.com/sirupsen/logrus v1.0.4-0.20170822132746-89742aefa4b2/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.0.6/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.1.0/go.mod h1:zrgwTnHtNr00buQ1vSptGe8m1f/BbgsPukg8qsT7A+A=
