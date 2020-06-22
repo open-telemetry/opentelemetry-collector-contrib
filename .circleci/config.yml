@@ -256,7 +256,7 @@ jobs:
       - restore_workspace
       - run:
           name: Loadtest
-          command: make -C testbed runtests
+          command: make e2e-test
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
@@ -309,12 +309,33 @@ jobs:
             git status
 
   run-stability-tests:
+    parameters:
+      # Number of runners must be always in sync with number of stability tests,
+      # so every node runs exactly one stability test.
+      runners-number:
+        type: integer 
+        default: 9
     executor: golang
+    resource_class: medium+
+    parallelism: << parameters.runners-number >>
     steps:
       - restore_workspace
       - run:
+          no_output_timeout: 70m
           name: Run stability tests
-          command: make stability-tests
+          command: |
+            export TESTS=$(make -C testbed -s list-stability-tests)
+            export TEST_NUM=$(echo ${TESTS} | wc -w | tr -d '[:space:]')
+            if [ "${TEST_NUM}" -ne "<< parameters.runners-number >>" ]; then \
+              echo "ERROR: Number of stability tests must match number of CircleCI runners. Update runners-number parameter"; exit 2; \
+            fi
+            export TEST_NAME=$(echo ${TESTS} | sed 's/ /\n/g' | circleci tests split --total=${TEST_NUM})
+            echo "Running ${TEST_NAME}..."
+            TEST_ARGS="-test.run=${TEST_NAME}" make stability-tests
+      - store_artifacts:
+          path: testbed/stabilitytests/results
+      - store_test_results:
+          path: testbed/stabilitytests/results/junit
       - run:
           name: Run on fail status
           command: |
