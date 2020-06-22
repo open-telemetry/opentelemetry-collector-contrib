@@ -241,15 +241,19 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	origin := OriginEC2
+	// EB > ECS > EC2
 	if resource.IsNil() {
-		return origin
+		return OriginEC2
 	}
-	_, ok := resource.Attributes().Get(semconventions.AttributeContainerName)
-	if ok {
-		origin = OriginECS
+	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
+	if eb {
+		return OriginEB
 	}
-	return origin
+	_, ecs := resource.Attributes().Get(semconventions.AttributeContainerName)
+	if ecs {
+		return OriginECS
+	}
+	return OriginEC2
 }
 
 // convertToAmazonTraceID converts a trace ID to the Amazon format.

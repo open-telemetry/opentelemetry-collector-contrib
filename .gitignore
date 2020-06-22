@@ -25,4 +25,6 @@ bin/
 
 # Coverage
 coverage.txt
+integration-coverage.txt
 coverage.html
+integration-coverage.html
