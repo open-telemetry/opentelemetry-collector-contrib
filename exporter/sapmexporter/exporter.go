@@ -71,7 +71,7 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 }
 
 // tracesByAccessToken takes a pdata.Traces struct and will iterate through its ResourceSpans' attributes,
-// regrouping by any SFx access token label value if Config.AccessTokenPassthrough is enabled.  It will drop any
+// regrouping by any SFx access token label value if Config.AccessTokenPassthrough is enabled.  It will delete any
 // set token label in any case to prevent serialization.
 // It returns a map of newly constructed pdata.Traces keyed by access token, defaulting to empty string.
 func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Traces {

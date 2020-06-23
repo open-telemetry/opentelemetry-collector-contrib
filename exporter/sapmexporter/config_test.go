@@ -57,3 +57,22 @@ func TestLoadConfig(t *testing.T) {
 			},
 		})
 }
+
+func TestInvalidConfig(t *testing.T) {
+	invalid := Config{
+		AccessToken:    "abcd1234",
+		NumWorkers:     3,
+		MaxConnections: 45,
+	}
+	noEndpointErr := invalid.validate()
+	require.Error(t, noEndpointErr)
+
+	invalid = Config{
+		Endpoint:       ":123:456",
+		AccessToken:    "abcd1234",
+		NumWorkers:     3,
+		MaxConnections: 45,
+	}
+	invalidURLErr := invalid.validate()
+	require.Error(t, invalidURLErr)
+}
