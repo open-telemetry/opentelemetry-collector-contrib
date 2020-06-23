@@ -62,8 +62,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: typeStr,
-				NameVal: "signalfx/tls",
+				TypeVal:  typeStr,
+				NameVal:  "signalfx/tls",
 				Endpoint: ":9943",
 			},
 			TLSCredentials: &configtls.TLSSetting{
