@@ -192,11 +192,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			cErr := amp.ConsumeMetrics(
 				context.Background(),
 				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-					{},
 					md,
-					{
-						Metrics: []*metricspb.Metric{},
-					},
 				}),
 			)
 			assert.Nil(t, cErr)
@@ -205,42 +201,33 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
 			gotMD := pdatautil.MetricsToMetricsData(got[0])
-			require.Equal(t, 3, len(gotMD))
-			assert.EqualValues(t, consumerdata.MetricsData{}, gotMD[0])
-			require.Equal(t, len(test.outMN), len(gotMD[1].Metrics))
-			for idx, out := range gotMD[1].Metrics {
+			require.Equal(t, 1, len(gotMD))
+			require.Equal(t, len(test.outMN), len(gotMD[0].Metrics))
+
+			targetName := test.metricName
+			if test.newName != "" {
+				targetName = test.newName
+			}
+			for idx, out := range gotMD[0].Metrics {
 				// check name
 				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
-
-				//check labels
-				if test.action == Insert {
-					// check the inserted is correctly updated
-					if out.MetricDescriptor.Name == test.newName {
-						for lidx, l := range out.MetricDescriptor.LabelKeys {
-							assert.Equal(t, test.outLabels[lidx], l.Key)
-						}
+				// check labels
+				// check the updated or inserted is correctly updated
+				if out.MetricDescriptor.Name == targetName {
+					for lidx, l := range out.MetricDescriptor.LabelKeys {
+						assert.Equal(t, test.outLabels[lidx], l.Key)
 					}
-					// check the original is untouched
+				}
+				// check the original is untouched if insert
+				if test.action == Insert {
 					if out.MetricDescriptor.Name == test.metricName {
 						for lidx, l := range out.MetricDescriptor.LabelKeys {
 							assert.Equal(t, test.inLabels[lidx], l.Key)
 						}
 					}
-				} else {
-					targetName := test.metricName
-					if test.newName != "" {
-						targetName = test.newName
-					}
-
-					if out.MetricDescriptor.Name == targetName {
-						for lidx, l := range out.MetricDescriptor.LabelKeys {
-							assert.Equal(t, test.outLabels[lidx], l.Key)
-						}
-					}
 				}
 			}
 
-			assert.EqualValues(t, consumerdata.MetricsData{Metrics: []*metricspb.Metric{}}, gotMD[2])
 			assert.NoError(t, amp.Shutdown(ctx))
 		})
 	}
@@ -294,11 +281,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			assert.NoError(b, amp.ConsumeMetrics(
 				context.Background(),
 				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-					{},
 					md,
-					{
-						Metrics: []*metricspb.Metric{},
-					},
 				}),
 			))
 		})
