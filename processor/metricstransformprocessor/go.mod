@@ -3,8 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/metri
 go 1.14
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.3.0-20200605184202-f640b7103f96
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/stretchr/testify v1.5.1
 	go.opentelemetry.io/collector v0.4.0
 	go.uber.org/zap v1.10.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
