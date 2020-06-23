@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "signalfx/allsettings",
-				Endpoint: "localhost:8080",
+				Endpoint: "localhost:9943",
 			},
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: true,

@@ -29,6 +29,9 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
+
+	// Default endpoints to bind to.
+	defaultEndpoint = ":9943"
 )
 
 // Factory is the factory for SignalFx receiver.
@@ -53,6 +56,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
+			Endpoint: defaultEndpoint,
 		},
 	}
 }
