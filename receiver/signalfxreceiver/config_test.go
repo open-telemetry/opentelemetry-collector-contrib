@@ -64,6 +64,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: "signalfx/tls",
+				Endpoint: ":9943",
 			},
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "/test.crt",

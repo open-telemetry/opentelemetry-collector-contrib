@@ -70,12 +70,11 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			wantErr: errNilNextConsumer,
 		},
 		{
-			name: "empty_endpoint",
+			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
-			wantErr: errEmptyEndpoint,
 		},
 		{
 			name: "happy_path",

@@ -14,7 +14,7 @@ for dir in $*; do
     fi
     if [ -e ${dir}/.nocover ]; then
       reason=$(cat ${dir}/.nocover)
-      if [ "${reason}" == "" ]; then 
+      if [ "${reason}" == "" ]; then
         echo "error: ${dir}/.nocover must specify reason" >&2
         exit 1
       fi
