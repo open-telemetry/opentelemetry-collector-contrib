@@ -33,8 +33,9 @@ import (
 )
 
 var (
-	resourceCheckPeriod, _ = time.ParseDuration("1m")
-	processorsConfig       = map[string]string{
+	contribPerfResultsSummary = &testbed.PerformanceResults{}
+	resourceCheckPeriod, _    = time.ParseDuration("1m")
+	processorsConfig          = map[string]string{
 		"batch": `
   batch:
 `,
@@ -43,19 +44,20 @@ var (
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
-	testbed.DoTestMain(m)
+	testbed.DoTestMain(m, contribPerfResultsSummary)
 }
 
 func TestStabilityTracesOpenCensus(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
+		testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      30,
 			ExpectedMaxRAM:      90,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
+		contribPerfResultsSummary,
 		processorsConfig,
 	)
 }
@@ -70,6 +72,7 @@ func TestStabilityTracesSAPM(t *testing.T) {
 			ExpectedMaxRAM:      100,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
+		contribPerfResultsSummary,
 		processorsConfig,
 	)
 }
@@ -77,13 +80,14 @@ func TestStabilityTracesSAPM(t *testing.T) {
 func TestStabilityTracesOTLP(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewOTLPTraceDataSender(testbed.GetAvailablePort(t)),
+		testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      20,
 			ExpectedMaxRAM:      80,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
+		contribPerfResultsSummary,
 		processorsConfig,
 	)
 }
@@ -91,13 +95,14 @@ func TestStabilityTracesOTLP(t *testing.T) {
 func TestStabilityTracesJaegerGRPC(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewJaegerGRPCDataSender(testbed.GetAvailablePort(t)),
+		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      40,
 			ExpectedMaxRAM:      90,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
+		contribPerfResultsSummary,
 		processorsConfig,
 	)
 }
@@ -105,13 +110,14 @@ func TestStabilityTracesJaegerGRPC(t *testing.T) {
 func TestStabilityTracesZipkin(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		testbed.NewZipkinDataSender(testbed.GetAvailablePort(t)),
+		testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      60,
 			ExpectedMaxRAM:      95,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
+		contribPerfResultsSummary,
 		processorsConfig,
 	)
 }
