@@ -27,7 +27,7 @@ all: common otelcontribcol
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol
-	$(MAKE) -C testbed runtests
+	$(MAKE) -C testbed run-tests
 
 .PHONY: test-with-cover
 unit-tests-with-cover:
@@ -40,9 +40,10 @@ integration-tests-with-cover:
 	@echo $(INTEGRATION_TEST_MODULES)
 	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
 
+# Long-running e2e tests
 .PHONY: stability-tests
-stability-tests:
-	@echo Stability tests have not been implemented yet
+stability-tests: otelcontribcol
+	$(MAKE) -C testbed run-stability-tests
 
 .PHONY: gotidy
 gotidy:
