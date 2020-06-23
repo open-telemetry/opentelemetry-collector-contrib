@@ -145,10 +145,10 @@ func (c *client) pushTraceData(
 	return numDroppedSpans, nil
 }
 
-func encodeBodyEvents(zippers *sync.Pool, dps []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
-	for _, e := range dps {
+	for _, e := range evs {
 		err := encoder.Encode(e)
 		if err != nil {
 			return nil, false, err
