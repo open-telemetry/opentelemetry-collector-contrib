@@ -20,7 +20,7 @@ import "go.opentelemetry.io/collector/config/configmodels"
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
-	// MetricName is used to match with the metrics to operate on
+	// MetricName is used to select the metric to operate on.
 	// REQUIRED
 	MetricName string `mapstructure:"metric_name"`
 
