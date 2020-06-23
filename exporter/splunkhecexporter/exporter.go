@@ -41,6 +41,7 @@ const (
 	dialerKeepAlive     = 30 * time.Second
 )
 
+// TraceAndMetricExporter sends traces and metrics.
 type TraceAndMetricExporter interface {
 	component.Component
 	consumer.MetricsConsumerOld
