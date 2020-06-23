@@ -62,12 +62,16 @@ func (r *runnable) Run() error {
 	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataformat, transport)
 	summary, err := r.provider.StatsSummary()
 	if err != nil {
+		r.logger.Error("StatsSummary failed", zap.Error(err))
 		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
 		return nil
 	}
 	mds := kubelet.MetricsData(summary, typeStr)
 	for _, md := range mds {
 		err = r.consumer.ConsumeMetricsData(r.ctx, *md)
+		if err != nil {
+			r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
+		}
 		numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
 		obsreport.EndMetricsReceiveOp(ctx, dataformat, numTimeSeries, numPoints, err)
 	}
