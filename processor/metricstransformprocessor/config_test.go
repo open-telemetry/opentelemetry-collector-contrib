@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// TestLoadingFullConfig tests loading testdata/config_full.yaml
+// TestLoadingFullConfig tests loading testdata/config_full.yaml.
 func TestLoadingFullConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
@@ -73,10 +73,10 @@ func TestLoadingFullConfig(t *testing.T) {
 		expCfg     *Config
 	}{
 		{
-			filterName: "metrics_transform",
+			filterName: "metricstransform",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
-					NameVal: "metrics_transform",
+					NameVal: "metricstransform",
 					TypeVal: typeStr,
 				},
 				MetricName: "old_name",

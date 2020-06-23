@@ -2,7 +2,7 @@ receivers:
     examplereceiver:
 
 processors:
-    metrics_transform:
+    metricstransform:
         metric_name: # missing metric name
         action: update
 
@@ -13,9 +13,9 @@ service:
     pipelines:
         traces:
             receivers: [examplereceiver]
-            processors: [metrics_transform]
+            processors: [metricstransform]
             exporters: [exampleexporter]
         metrics:
             receivers: [examplereceiver]
-            processors: [metrics_transform]
+            processors: [metricstransform]
             exporters: [exampleexporter]

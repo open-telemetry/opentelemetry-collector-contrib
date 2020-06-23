@@ -142,7 +142,7 @@ var (
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
-			// next stores the results of the aggregation metric processor
+			// next stores the results of the aggregation metric processor.
 			next := &etest.SinkMetricsExporter{}
 			cfg := &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
@@ -262,7 +262,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	benchmarkTests := append(standardTests, stressTest)
 
 	for _, test := range benchmarkTests {
-		// next stores the results of the filter metric processor
+		// next stores the results of the filter metric processor.
 		next := &etest.SinkMetricsExporter{}
 		cfg := &Config{
 			ProcessorSettings: configmodels.ProcessorSettings{

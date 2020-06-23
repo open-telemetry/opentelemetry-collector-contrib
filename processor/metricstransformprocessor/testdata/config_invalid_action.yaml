@@ -2,7 +2,7 @@ receivers:
     examplereceiver:
 
 processors:
-    metrics_transform:
+    metricstransform:
         metric_name: old_name
         action: invalid # invalid action type
             
@@ -14,9 +14,9 @@ service:
     pipelines:
         traces:
             receivers: [examplereceiver]
-            processors: [metrics_transform]
+            processors: [metricstransform]
             exporters: [exampleexporter]
         metrics:
             receivers: [examplereceiver]
-            processors: [metrics_transform]
+            processors: [metricstransform]
             exporters: [exampleexporter]

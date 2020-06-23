@@ -32,7 +32,7 @@ func TestType(t *testing.T) {
 	factory := Factory{}
 	pType := factory.Type()
 
-	assert.Equal(t, pType, configmodels.Type("metrics_transform"))
+	assert.Equal(t, pType, configmodels.Type("metricstransform"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

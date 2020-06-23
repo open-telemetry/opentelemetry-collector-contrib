@@ -26,7 +26,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "metrics_transform"
+	typeStr = "metricstransform"
 )
 
 // Factory is the factory for metrics transform processor.
@@ -65,7 +65,7 @@ func (f *Factory) CreateMetricsProcessor(
 	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
 	oCfg := c.(*Config)
-	err := validateConfiguration(*oCfg)
+	err := validateConfiguration(oCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -76,22 +76,22 @@ func (f *Factory) CreateMetricsProcessor(
 // validateConfiguration validates the input configuration has all of the required fields for the processor
 // and returns a list of valid actions to configure the processor.
 // An error is returned if there are any invalid inputs.
-func validateConfiguration(config Config) error {
+func validateConfiguration(config *Config) error {
 	if config.MetricName == "" {
-		return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"metric_name\"")
+		return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"metric_name\"")
 	}
 
 	if config.Action != Update && config.Action != Insert {
-		return fmt.Errorf("error creating \"metrics_transform\" processor due to unsupported \"action\": %v, the supported actions are \"insert\" and \"update\"", config.Action)
+		return fmt.Errorf("error creating \"metricstransform\" processor due to unsupported \"action\": %v, the supported actions are \"insert\" and \"update\"", config.Action)
 	}
 
 	if config.Action == Insert && config.NewName == "" {
-		return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"new_name\" while \"action\" is insert")
+		return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"new_name\" while \"action\" is insert")
 	}
 
 	for i, op := range config.Operations {
 		if op.Action == UpdateLabel && op.Label == "" {
-			return fmt.Errorf("error creating \"metrics_transform\" processor due to missing required field \"label\" while \"action\" is update_label in the %vth operation", i)
+			return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"label\" while \"action\" is update_label in the %vth operation", i)
 		}
 	}
 

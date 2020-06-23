@@ -62,12 +62,12 @@ func (*metricsTransformProcessor) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// ConsumeMetrics implements the MetricsProcessor interface
+// ConsumeMetrics implements the MetricsProcessor interface.
 func (mtp *metricsTransformProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	return mtp.next.ConsumeMetrics(ctx, mtp.transform(md))
 }
 
-// transform transforms the metrics based on the information specified in the config
+// transform transforms the metrics based on the information specified in the config.
 func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics {
 	mds := pdatautil.MetricsToMetricsData(md)
 
@@ -85,14 +85,14 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 				}
 			}
 		} else {
-			log.Printf("error running \"metrics_transform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
+			log.Printf("error running \"metricstransform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
 		}
 	}
 
 	return pdatautil.MetricsFromMetricsData(mds)
 }
 
-// update updates the original metric content in the metricPtr pointer
+// update updates the original metric content in the metricPtr pointer.
 func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 	// metric name update
 	if mtp.newname != "" {
@@ -110,21 +110,21 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 					}
 				}
 			} else {
-				log.Printf("error running \"metrics_transform\" processor due to invalid \"new_label\": %v, which might be caused by a collision with existing label on metric named: %v", op.NewLabel, metricPtr.MetricDescriptor.Name)
+				log.Printf("error running \"metricstransform\" processor due to invalid \"new_label\": %v, which might be caused by a collision with existing label on metric named: %v", op.NewLabel, metricPtr.MetricDescriptor.Name)
 			}
 			//label value update
 		}
 	}
 }
 
-// insert inserts a new copy of the metricPtr content into the metricPtrs slice
+// insert inserts a new copy of the metricPtr content into the metricPtrs slice.
 func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metricPtrs []*metricspb.Metric) []*metricspb.Metric {
 	metricCopy := mtp.createCopy(metricPtr)
 	mtp.update(metricCopy)
 	return append(metricPtrs, metricCopy)
 }
 
-// createCopy creates a new copy of the input metric
+// createCopy creates a new copy of the input metric.
 func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *metricspb.Metric {
 	copyMetricDescriptor := *metricPtr.MetricDescriptor
 	copyLabelKeys := make([]*metricspb.LabelKey, 0)
@@ -147,7 +147,7 @@ func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *m
 	return copy
 }
 
-// validNewName determines if the new name is a valid one. An invalid one is one that already exists
+// validNewName determines if the new name is a valid one. An invalid one is one that already exists.
 func (mtp *metricsTransformProcessor) validNewName(metricPtrs []*metricspb.Metric) bool {
 	for _, metric := range metricPtrs {
 		if metric.MetricDescriptor.Name == mtp.newname {
@@ -157,7 +157,7 @@ func (mtp *metricsTransformProcessor) validNewName(metricPtrs []*metricspb.Metri
 	return true
 }
 
-// validNewLabel determines if the new label is a valid one. An invalid one is one that already exists
+// validNewLabel determines if the new label is a valid one. An invalid one is one that already exists.
 func (mtp *metricsTransformProcessor) validNewLabel(labelKeys []*metricspb.LabelKey, newLabel string) bool {
 	for _, label := range labelKeys {
 		if label.Key == newLabel {
