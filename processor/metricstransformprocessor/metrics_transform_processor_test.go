@@ -40,7 +40,7 @@ type metricsTransformTest struct {
 }
 
 var (
-	inMetricNames = []string{
+	initialMetricNames = []string{
 		"metric1",
 		"metric5",
 	}
@@ -56,7 +56,7 @@ var (
 		"metric1/new",
 	}
 
-	inLabels = []string{
+	initialLabels = []string{
 		"label1",
 		"label2",
 	}
@@ -85,7 +85,7 @@ var (
 			metricName: "metric1",
 			action:     "update",
 			newName:    "metric1/new",
-			inMN:       inMetricNames,
+			inMN:       initialMetricNames,
 			outMN:      outMetricNamesUpdate,
 		},
 		{
@@ -93,17 +93,17 @@ var (
 			metricName: "metric1",
 			action:     "update",
 			newName:    "metric5",
-			inMN:       inMetricNames,
-			outMN:      inMetricNames,
+			inMN:       initialMetricNames,
+			outMN:      initialMetricNames,
 		},
 		{
 			name:       "metric_label_update",
 			metricName: "metric1",
 			action:     "update",
 			operations: []Operation{validUpateLabelOperation},
-			inMN:       inMetricNames,
-			outMN:      inMetricNames,
-			inLabels:   inLabels,
+			inMN:       initialMetricNames,
+			outMN:      initialMetricNames,
+			inLabels:   initialLabels,
 			outLabels:  outLabels,
 		},
 		{
@@ -111,10 +111,10 @@ var (
 			metricName: "metric1",
 			action:     "update",
 			operations: []Operation{invalidUpdateLabelOperation},
-			inMN:       inMetricNames,
-			outMN:      inMetricNames,
-			inLabels:   inLabels,
-			outLabels:  inLabels,
+			inMN:       initialMetricNames,
+			outMN:      initialMetricNames,
+			inLabels:   initialLabels,
+			outLabels:  initialLabels,
 		},
 		// INSERT
 		{
@@ -122,7 +122,7 @@ var (
 			metricName: "metric1",
 			action:     "insert",
 			newName:    "metric1/new",
-			inMN:       inMetricNames,
+			inMN:       initialMetricNames,
 			outMN:      outMetricNamesInsert,
 		},
 		{
@@ -131,9 +131,9 @@ var (
 			action:     "insert",
 			newName:    "metric1/new",
 			operations: []Operation{validUpateLabelOperation},
-			inMN:       inMetricNames,
+			inMN:       initialMetricNames,
 			outMN:      outMetricNamesInsert,
-			inLabels:   inLabels,
+			inLabels:   initialLabels,
 			outLabels:  outLabels,
 		},
 	}
@@ -256,7 +256,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	}
 
 	for len(stressTest.inMN) < 1000 {
-		stressTest.inMN = append(stressTest.inMN, inMetricNames...)
+		stressTest.inMN = append(stressTest.inMN, initialMetricNames...)
 	}
 
 	benchmarkTests := append(standardTests, stressTest)
@@ -290,7 +290,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			}
 		}
 
-		b.Run(test.metricName, func(b *testing.B) {
+		b.Run(test.name, func(b *testing.B) {
 			assert.NoError(b, amp.ConsumeMetrics(
 				context.Background(),
 				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{

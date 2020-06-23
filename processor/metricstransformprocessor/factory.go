@@ -78,20 +78,20 @@ func (f *Factory) CreateMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	if config.MetricName == "" {
-		return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"metric_name\"")
+		return fmt.Errorf("error creating %q processor due to missing required field %q", typeStr, "metric_name")
 	}
 
 	if config.Action != Update && config.Action != Insert {
-		return fmt.Errorf("error creating \"metricstransform\" processor due to unsupported \"action\": %v, the supported actions are \"insert\" and \"update\"", config.Action)
+		return fmt.Errorf("error creating %q processor due to unsupported %q: %v, the supported actions are %q and %q", typeStr, "action", config.Action, Insert, Update)
 	}
 
 	if config.Action == Insert && config.NewName == "" {
-		return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"new_name\" while \"action\" is insert")
+		return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v", typeStr, "new_name", "action", Insert)
 	}
 
 	for i, op := range config.Operations {
 		if op.Action == UpdateLabel && op.Label == "" {
-			return fmt.Errorf("error creating \"metricstransform\" processor due to missing required field \"label\" while \"action\" is update_label in the %vth operation", i)
+			return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v in the %vth operation", typeStr, "label", "action", UpdateLabel, i)
 		}
 	}
 

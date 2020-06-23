@@ -28,9 +28,9 @@ import (
 type metricsTransformProcessor struct {
 	cfg        *Config
 	next       consumer.MetricsConsumer
-	metricname string
+	metricName string
 	action     ConfigAction
-	newname    string
+	newName    string
 	operations []Operation
 }
 
@@ -40,14 +40,14 @@ func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) (*
 	return &metricsTransformProcessor{
 		cfg:        cfg,
 		next:       next,
-		metricname: cfg.MetricName,
+		metricName: cfg.MetricName,
 		action:     cfg.Action,
-		newname:    cfg.NewName,
+		newName:    cfg.NewName,
 		operations: cfg.Operations,
 	}, nil
 }
 
-// GetCapabilities returns the Capabilities assocciated with the resource processor.
+// GetCapabilities returns the Capabilities associated with the metrics transform processor.
 func (mtp *metricsTransformProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
@@ -73,19 +73,20 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 
 	for i, data := range mds {
 		// if the new name is not valid, discard this operation for this list of metrics
-		if mtp.validNewName(data.Metrics) {
-			for _, metric := range data.Metrics {
-				if metric.MetricDescriptor.Name == mtp.metricname {
-					// mtp.action is already validated to only contain either update or insert
-					if mtp.action == Update {
-						mtp.update(metric)
-					} else if mtp.action == Insert {
-						mds[i].Metrics = mtp.insert(metric, data.Metrics)
-					}
-				}
+		if !mtp.validNewName(data.Metrics) {
+			log.Printf("error running %q processor due to collided %q: %v with existing metric names", typeStr, "new_name", mtp.newName)
+			continue
+		}
+		for _, metric := range data.Metrics {
+			if metric.MetricDescriptor.Name != mtp.metricName {
+				continue
 			}
-		} else {
-			log.Printf("error running \"metricstransform\" processor due to invalid \"new_name\": %v, which might be caused by a collision with existing metric names", mtp.newname)
+			// mtp.action is already validated to only contain either update or insert
+			if mtp.action == Update {
+				mtp.update(metric)
+			} else if mtp.action == Insert {
+				mds[i].Metrics = mtp.insert(metric, data.Metrics)
+			}
 		}
 	}
 
@@ -95,22 +96,26 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 // update updates the original metric content in the metricPtr pointer.
 func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 	// metric name update
-	if mtp.newname != "" {
-		metricPtr.MetricDescriptor.Name = mtp.newname
+	if mtp.newName != "" {
+		metricPtr.MetricDescriptor.Name = mtp.newName
 	}
 
 	for _, op := range mtp.operations {
 		// update label
 		if op.Action == UpdateLabel {
 			// label key update
-			if op.NewLabel != "" && mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
+			// if new_label is invalid, skip this operation
+			if !mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
+				log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v", typeStr, "new_label", op.NewLabel, metricPtr.MetricDescriptor.Name)
+				continue
+			}
+
+			if op.NewLabel != "" {
 				for _, label := range metricPtr.MetricDescriptor.LabelKeys {
 					if label.GetKey() == op.Label {
 						label.Key = op.NewLabel
 					}
 				}
-			} else {
-				log.Printf("error running \"metricstransform\" processor due to invalid \"new_label\": %v, which might be caused by a collision with existing label on metric named: %v", op.NewLabel, metricPtr.MetricDescriptor.Name)
 			}
 			//label value update
 		}
@@ -150,7 +155,7 @@ func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *m
 // validNewName determines if the new name is a valid one. An invalid one is one that already exists.
 func (mtp *metricsTransformProcessor) validNewName(metricPtrs []*metricspb.Metric) bool {
 	for _, metric := range metricPtrs {
-		if metric.MetricDescriptor.Name == mtp.newname {
+		if metric.MetricDescriptor.Name == mtp.newName {
 			return false
 		}
 	}
