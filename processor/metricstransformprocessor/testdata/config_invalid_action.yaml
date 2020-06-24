@@ -3,8 +3,9 @@ receivers:
 
 processors:
     metricstransform:
-        metric_name: old_name
-        action: invalid # invalid action type
+        transforms:
+          - metric_name: old_name
+            action: invalid # invalid action type
             
 
 exporters:

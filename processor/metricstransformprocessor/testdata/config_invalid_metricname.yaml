@@ -3,8 +3,9 @@ receivers:
 
 processors:
     metricstransform:
-        metric_name: # missing metric name
-        action: update
+        transforms:
+            - metric_name: # missing metric name
+              action: update
 
 exporters:
     exampleexporter:

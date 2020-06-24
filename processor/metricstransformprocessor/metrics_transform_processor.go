@@ -33,10 +33,7 @@ const (
 type metricsTransformProcessor struct {
 	cfg        *Config
 	next       consumer.MetricsConsumer
-	metricName string
-	action     ConfigAction
-	newName    string
-	operations []Operation
+	transforms []Transform
 }
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
@@ -45,10 +42,7 @@ func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) (*
 	return &metricsTransformProcessor{
 		cfg:        cfg,
 		next:       next,
-		metricName: cfg.MetricName,
-		action:     cfg.Action,
-		newName:    cfg.NewName,
-		operations: cfg.Operations,
+		transforms: cfg.Transforms,
 	}, nil
 }
 
@@ -77,20 +71,37 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	mds := pdatautil.MetricsToMetricsData(md)
 
 	for i, data := range mds {
-		// if the new name is not valid, discard this operation for this list of metrics
-		if !mtp.validNewName(data.Metrics) {
-			log.Printf("error running %q processor due to collision %q: %v with existing metric names detected by the function %q", typeStr, NewNameFieldName, mtp.newName, validNewNameFuncName)
-			continue
-		}
+		nameToMetricMapping := make(map[string]*metricspb.Metric)
+		// O(len(data.Metrics))
 		for _, metric := range data.Metrics {
-			if metric.MetricDescriptor.Name != mtp.metricName {
+			nameToMetricMapping[metric.MetricDescriptor.Name] = metric
+		}
+
+		for _, transform := range mtp.transforms {
+			if !mtp.validNewName(transform, nameToMetricMapping) {
+				log.Printf("error running %q processor due to collision %q: %v with existing metric names detected by the function %q", typeStr, NewNameFieldName, transform.NewName, validNewNameFuncName)
 				continue
 			}
+
+			metric, ok := nameToMetricMapping[transform.MetricName]
+			if !ok {
+				continue
+			}
+
 			// mtp.action is already validated to only contain either update or insert
-			if mtp.action == Update {
-				mtp.update(metric)
-			} else if mtp.action == Insert {
-				mds[i].Metrics = mtp.insert(metric, data.Metrics)
+			if transform.Action == Update {
+				mtp.update(metric, transform)
+				if transform.NewName == "" {
+					continue
+				}
+				// if name is updated, the map has to be updated
+				nameToMetricMapping[transform.NewName] = nameToMetricMapping[transform.MetricName]
+				delete(nameToMetricMapping, transform.MetricName)
+			} else if transform.Action == Insert {
+				var newMetric *metricspb.Metric
+				mds[i].Metrics, newMetric = mtp.insert(metric, mds[i].Metrics, transform)
+				// mapping has to be updated with the name metric
+				nameToMetricMapping[newMetric.MetricDescriptor.Name] = newMetric
 			}
 		}
 	}
@@ -99,13 +110,13 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 }
 
 // update updates the original metric content in the metricPtr pointer.
-func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
+func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric, transform Transform) {
 	// metric name update
-	if mtp.newName != "" {
-		metricPtr.MetricDescriptor.Name = mtp.newName
+	if transform.NewName != "" {
+		metricPtr.MetricDescriptor.Name = transform.NewName
 	}
 
-	for _, op := range mtp.operations {
+	for _, op := range transform.Operations {
 		// update label
 		if op.Action == UpdateLabel {
 			// label key update
@@ -122,16 +133,16 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 					}
 				}
 			}
-			//label value update
 		}
 	}
 }
 
 // insert inserts a new copy of the metricPtr content into the metricPtrs slice.
-func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metricPtrs []*metricspb.Metric) []*metricspb.Metric {
+// returns the new metrics list and the new metric
+func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metricPtrs []*metricspb.Metric, transform Transform) ([]*metricspb.Metric, *metricspb.Metric) {
 	metricCopy := mtp.createCopy(metricPtr)
-	mtp.update(metricCopy)
-	return append(metricPtrs, metricCopy)
+	mtp.update(metricCopy, transform)
+	return append(metricPtrs, metricCopy), metricCopy
 }
 
 // createCopy creates a new copy of the input metric.
@@ -158,11 +169,10 @@ func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *m
 }
 
 // validNewName determines if the new name is a valid one. An invalid one is one that already exists.
-func (mtp *metricsTransformProcessor) validNewName(metricPtrs []*metricspb.Metric) bool {
-	for _, metric := range metricPtrs {
-		if metric.MetricDescriptor.Name == mtp.newName {
-			return false
-		}
+func (mtp *metricsTransformProcessor) validNewName(transform Transform, nameToMetricMapping map[string]*metricspb.Metric) bool {
+	_, ok := nameToMetricMapping[transform.NewName]
+	if ok {
+		return false
 	}
 	return true
 }

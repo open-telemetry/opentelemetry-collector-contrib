@@ -3,8 +3,9 @@ receivers:
 
 processors:
     metricstransform:
-        metric_name: old_name
-        action: insert # missing new_name
+        transforms:
+            - metric_name: old_name
+              action: insert # missing new_name
             
 
 exporters:

@@ -37,6 +37,12 @@ const (
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
 
+	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
+	Transforms []Transform `mapstructure:"transforms"`
+}
+
+// Transform defines the transformation applied to the specific metric
+type Transform struct {
 	// MetricName is used to select the metric to operate on.
 	// REQUIRED
 	MetricName string `mapstructure:"metric_name"`
@@ -49,7 +55,7 @@ type Config struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
-	// Operations contains a list of operations that will be performed on the selected metrics.
+	// Operations contains a list of operations that will be performed on the selected metric.
 	Operations []Operation `mapstructure:"operations"`
 }
 

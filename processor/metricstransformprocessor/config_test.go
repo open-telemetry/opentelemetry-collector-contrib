@@ -79,10 +79,14 @@ func TestLoadingFullConfig(t *testing.T) {
 					NameVal: "metricstransform",
 					TypeVal: typeStr,
 				},
-				MetricName: "old_name",
-				Action:     Update,
-				NewName:    "new_name",
-				Operations: testDataOperations,
+				Transforms: []Transform{
+					{
+						MetricName: "old_name",
+						Action:     Update,
+						NewName:    "new_name",
+						Operations: testDataOperations,
+					},
+				},
 			},
 		},
 	}

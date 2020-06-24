@@ -77,21 +77,23 @@ func (f *Factory) CreateMetricsProcessor(
 // and returns a list of valid actions to configure the processor.
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
-	if config.MetricName == "" {
-		return fmt.Errorf("error creating %q processor due to missing required field %q", typeStr, MetricNameFieldName)
-	}
+	for _, transform := range config.Transforms {
+		if transform.MetricName == "" {
+			return fmt.Errorf("error creating %q processor due to missing required field %q", typeStr, MetricNameFieldName)
+		}
 
-	if config.Action != Update && config.Action != Insert {
-		return fmt.Errorf("error creating %q processor due to unsupported %q: %v, the supported actions are %q and %q", typeStr, ActionFieldName, config.Action, Insert, Update)
-	}
+		if transform.Action != Update && transform.Action != Insert {
+			return fmt.Errorf("error creating %q processor due to unsupported %q: %v, the supported actions are %q and %q", typeStr, ActionFieldName, transform.Action, Insert, Update)
+		}
 
-	if config.Action == Insert && config.NewName == "" {
-		return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v", typeStr, NewNameFieldName, ActionFieldName, Insert)
-	}
+		if transform.Action == Insert && transform.NewName == "" {
+			return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v", typeStr, NewNameFieldName, ActionFieldName, Insert)
+		}
 
-	for i, op := range config.Operations {
-		if op.Action == UpdateLabel && op.Label == "" {
-			return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v in the %vth operation", typeStr, LabelFieldName, ActionFieldName, UpdateLabel, i)
+		for i, op := range transform.Operations {
+			if op.Action == UpdateLabel && op.Label == "" {
+				return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v in the %vth operation", typeStr, LabelFieldName, ActionFieldName, UpdateLabel, i)
+			}
 		}
 	}
 
