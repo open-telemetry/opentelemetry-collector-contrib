@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 )
 
@@ -44,6 +45,7 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 		ReceiverSettings: configmodels.ReceiverSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
 		},
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.L()}
@@ -70,7 +72,8 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   sapm:
     endpoint: "http://localhost:%d/v2/trace"
-    disable_compression: true`, sr.Port)
+    disable_compression: true
+    access_token_passthrough: true`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

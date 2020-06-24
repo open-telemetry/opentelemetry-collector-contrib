@@ -33,6 +33,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateExporter(t *testing.T) {
 	factory := Factory{}
+	assert.Equal(t, "sapm", string(factory.Type()))
+
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
