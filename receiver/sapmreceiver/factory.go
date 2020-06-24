@@ -85,13 +85,6 @@ func (rCfg *Config) validate() error {
 	if err != nil {
 		return err
 	}
-
-	if port == 0 {
-		err = fmt.Errorf("endpoint with non-zero port must be enabled for %s receiver",
-			rCfg.Name(),
-		)
-		return err
-	}
 	return nil
 }
 
