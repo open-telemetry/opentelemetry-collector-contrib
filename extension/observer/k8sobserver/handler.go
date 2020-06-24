@@ -47,18 +47,11 @@ func (h *handler) OnAdd(obj interface{}) {
 func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	podID := fmt.Sprintf("%s/%s", h.idNamespace, pod.UID)
 	podIP := pod.Status.PodIP
-	labels := map[string]string{}
-
-	for k, v := range pod.Labels {
-		labels[k] = v
-	}
-	for k, v := range pod.Annotations {
-		labels[k] = v
-	}
 
 	podDetails := observer.Pod{
-		Labels: labels,
-		Name:   pod.Name,
+		Annotations: pod.Annotations,
+		Labels:      pod.Labels,
+		Name:        pod.Name,
 	}
 
 	endpoints := []observer.Endpoint{{

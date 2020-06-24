@@ -46,10 +46,11 @@ func endpointToEnv(endpoint observer.Endpoint) (endpointEnv, error) {
 	case observer.Pod:
 		ruleTypes["pod"] = true
 		return map[string]interface{}{
-			"type":     ruleTypes,
-			"endpoint": endpoint.Target,
-			"name":     o.Name,
-			"labels":   o.Labels,
+			"type":        ruleTypes,
+			"endpoint":    endpoint.Target,
+			"name":        o.Name,
+			"labels":      o.Labels,
+			"annotations": o.Annotations,
 		}, nil
 	case observer.Port:
 		ruleTypes["port"] = true
