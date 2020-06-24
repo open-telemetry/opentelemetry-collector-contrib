@@ -20,12 +20,15 @@ import (
 	"testing"
 	"time"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
@@ -85,7 +88,7 @@ func generateTraces() pdata.Traces {
 }
 
 func TestIPDetection(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	kp, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -107,7 +110,7 @@ func TestIPDetection(t *testing.T) {
 }
 
 func TestNilBatch(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	kp, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -120,8 +123,8 @@ func TestNilBatch(t *testing.T) {
 	require.Len(t, next.data, 1)
 }
 
-func TestNoAttrs(t *testing.T) {
-	next := &testConsumer{}
+func TestTraceProcessorNoAttrs(t *testing.T) {
+	next := &testTraceConsumer{}
 	p, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -173,7 +176,7 @@ func TestNoAttrs(t *testing.T) {
 }
 
 func TestNoIP(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	kp, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -192,7 +195,7 @@ func TestNoIP(t *testing.T) {
 }
 
 func TestIPSource(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	kp, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -252,8 +255,8 @@ func TestIPSource(t *testing.T) {
 	}
 }
 
-func TestAddLabels(t *testing.T) {
-	next := &testConsumer{}
+func TestTraceProcessorAddLabels(t *testing.T) {
+	next := &testTraceConsumer{}
 	p, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -261,7 +264,10 @@ func TestAddLabels(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	kc := fakeClientFromProcessor(t, p)
+	kp, ok := p.(*kubernetesprocessor)
+	assert.True(t, ok)
+	kc, ok := kp.kc.(*fakeClient)
+	assert.True(t, ok)
 
 	tests := map[string]map[string]string{
 		"1": {
@@ -296,7 +302,7 @@ func TestAddLabels(t *testing.T) {
 }
 
 func TestPassthroughStart(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	opts := []Option{WithPassthrough()}
 
 	p, err := NewTraceProcessor(
@@ -315,7 +321,7 @@ func TestPassthroughStart(t *testing.T) {
 func TestRealClient(t *testing.T) {
 	p, err := NewTraceProcessor(
 		zap.NewNop(),
-		&testConsumer{},
+		&testTraceConsumer{},
 		nil,
 		WithAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
@@ -325,14 +331,14 @@ func TestRealClient(t *testing.T) {
 }
 
 func TestCapabilities(t *testing.T) {
-	p, err := NewTraceProcessor(zap.NewNop(), &testConsumer{}, newFakeClient)
+	p, err := NewTraceProcessor(zap.NewNop(), &testTraceConsumer{}, newFakeClient)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
 	assert.True(t, caps.MutatesConsumedData)
 }
 
 func TestStartStop(t *testing.T) {
-	next := &testConsumer{}
+	next := &testTraceConsumer{}
 	p, err := NewTraceProcessor(
 		zap.NewNop(),
 		next,
@@ -353,28 +359,204 @@ func TestStartStop(t *testing.T) {
 	assert.True(t, controller.HasStopped())
 }
 
-func fakeClientFromProcessor(t *testing.T, p component.TraceProcessor) *fakeClient {
-	kp, ok := p.(*kubernetesprocessor)
-	if !ok {
-		assert.FailNow(t, "could not assert processor %s to kubernetesprocessor", p)
-		return nil
-	}
-	kc, ok := kp.kc.(*fakeClient)
-	if !ok {
-		assert.FailNow(t, "could not assert kube client %s to kube.FakeClient", p)
-		return nil
-
-	}
-	return kc
+func TestNewMetricsProcessor(t *testing.T) {
+	_, err := NewMetricsProcessor(
+		zap.NewNop(),
+		exportertest.NewNopMetricsExporter(),
+		newFakeClient,
+	)
+	require.NoError(t, err)
 }
 
-type testConsumer struct {
+func TestMetricsProcessorNoAttrs(t *testing.T) {
+	next := &testMetricsConsumer{}
+	p, err := NewMetricsProcessor(
+		zap.NewNop(),
+		next,
+		newFakeClient,
+		WithExtractMetadata(metadataPodName),
+	)
+	require.NoError(t, err)
+	kp := p.(*kubernetesprocessor)
+	kc := kp.kc.(*fakeClient)
+
+	// pod doesn't have attrs to add
+	kc.Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
+	metrics := generateMetrics()
+
+	p.ConsumeMetrics(context.Background(), metrics)
+	require.Len(t, next.data, 1)
+	mds := pdatautil.MetricsToMetricsData(next.data[0])
+	require.Equal(t, len(mds), 1)
+	md := mds[0]
+	require.Equal(t, 1, len(md.Resource.Labels))
+	gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
+	assert.True(t, ok)
+	assert.Equal(t, "1.1.1.1", gotIP)
+
+	// attrs should be added now
+	kc.Pods["1.1.1.1"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"k":  "v",
+			"1":  "2",
+			"aa": "b",
+		},
+	}
+
+	p.ConsumeMetrics(context.Background(), metrics)
+	require.Len(t, next.data, 2)
+	mds = pdatautil.MetricsToMetricsData(next.data[1])
+	require.Equal(t, len(mds), 1)
+	md = mds[0]
+	require.Equal(t, 4, len(md.Resource.Labels))
+	gotIP, ok = md.Resource.Labels["k8s.pod.ip"]
+	assert.True(t, ok)
+	assert.Equal(t, "1.1.1.1", gotIP)
+	gotAttr, ok := md.Resource.Labels["aa"]
+	assert.True(t, ok)
+	assert.Equal(t, "b", gotAttr)
+
+	// passthrough doesn't add attrs
+	metrics = generateMetrics()
+	kp.passthroughMode = true
+	p.ConsumeMetrics(context.Background(), metrics)
+	require.Len(t, next.data, 3)
+	mds = pdatautil.MetricsToMetricsData(next.data[2])
+	require.Equal(t, len(mds), 1)
+	md = mds[0]
+	require.Equal(t, 1, len(md.Resource.Labels))
+}
+
+func TestMetricsProcessoInvalidIP(t *testing.T) {
+	next := &testMetricsConsumer{}
+	p, err := NewMetricsProcessor(
+		zap.NewNop(),
+		next,
+		newFakeClient,
+		WithExtractMetadata(metadataPodName),
+	)
+	require.NoError(t, err)
+	kp := p.(*kubernetesprocessor)
+	kc := kp.kc.(*fakeClient)
+
+	// invalid ip should not be used to lookup k8s pod
+	kc.Pods["invalid-ip"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"k":  "v",
+			"1":  "2",
+			"aa": "b",
+		},
+	}
+	metrics := generateMetrics()
+	md := pdatautil.MetricsToMetricsData(metrics)[0]
+	md.Node.Identifier.HostName = "invalid-ip"
+
+	p.ConsumeMetrics(context.Background(), metrics)
+	require.Len(t, next.data, 1)
+	mds := pdatautil.MetricsToMetricsData(next.data[0])
+	require.Equal(t, len(mds), 1)
+	md = mds[0]
+	require.Nil(t, md.Resource)
+}
+
+func TestMetricsProcessorAddLabels(t *testing.T) {
+	next := &testMetricsConsumer{}
+	p, err := NewMetricsProcessor(
+		zap.NewNop(),
+		next,
+		newFakeClient,
+	)
+	require.NoError(t, err)
+
+	kp, ok := p.(*kubernetesprocessor)
+	assert.True(t, ok)
+	kc, ok := kp.kc.(*fakeClient)
+	assert.True(t, ok)
+
+	tests := map[string]map[string]string{
+		"1.2.3.4": {
+			"pod":         "test-2323",
+			"ns":          "default",
+			"another tag": "value",
+		},
+		"2.3.4.5": {
+			"pod": "test-12",
+		},
+	}
+	for ip, attrs := range tests {
+		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
+	}
+
+	var i int
+	for ip, attrs := range tests {
+		metrics := generateMetrics()
+		md := pdatautil.MetricsToMetricsData(metrics)[0]
+		md.Node.Identifier.HostName = ip
+
+		err = p.ConsumeMetrics(context.Background(), metrics)
+		require.NoError(t, err)
+
+		require.Len(t, next.data, i+1)
+		mds := pdatautil.MetricsToMetricsData(next.data[i])
+		require.Equal(t, len(mds), 1)
+		md = mds[0]
+		require.Equal(t, len(attrs)+1, len(md.Resource.Labels))
+		gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
+		assert.True(t, ok)
+		assert.Equal(t, ip, gotIP)
+		for k, v := range attrs {
+			got, ok := attrs[k]
+			assert.True(t, ok)
+			assert.Equal(t, v, got)
+		}
+		i++
+	}
+}
+
+type testTraceConsumer struct {
 	data []pdata.Traces
 }
 
-func (ts *testConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	ts.data = append(ts.data, td)
+func (tc *testTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	tc.data = append(tc.data, td)
 	return nil
+}
+
+type testMetricsConsumer struct {
+	data []pdata.Metrics
+}
+
+func (mc *testMetricsConsumer) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
+	mc.data = append(mc.data, td)
+	return nil
+}
+
+func generateMetrics() pdata.Metrics {
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			Identifier: &commonpb.ProcessIdentifier{
+				HostName: "1.1.1.1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "my-metric",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						Points: []*metricspb.Point{
+							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+						},
+					},
+				},
+			},
+		},
+	}
+	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
 }
 
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {
