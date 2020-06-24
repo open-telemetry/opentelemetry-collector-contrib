@@ -16,6 +16,7 @@ package redisreceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -45,7 +46,7 @@ func (f *Factory) Type() configmodels.Type {
 
 // CreateDefaultConfig creates a default config.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
-	return &config{}
+	return &config{CollectionInterval: 10 * time.Second}
 }
 
 // CreateTraceReceiver creates a trace Receiver. Not supported for now.
