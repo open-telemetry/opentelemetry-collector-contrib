@@ -9,7 +9,7 @@ BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
-BUILD_X3=-X github.com/open-telemetry/opentelemetry-collector/internal/version.BuildType=$(BUILD_TYPE)
+BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 STATIC_CHECK=staticcheck
 OTEL_VERSION=master
@@ -85,8 +85,8 @@ GOMODULES = $(ALL_MODULES) $(PWD)
 .PHONY: $(GOMODULES)
 MODULEDIRS = $(GOMODULES:%=for-all-target-%)
 for-all-target: $(MODULEDIRS)
-$(MODULEDIRS): 
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET) 
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 .PHONY: for-all-target
 
 .PHONY: install-tools
