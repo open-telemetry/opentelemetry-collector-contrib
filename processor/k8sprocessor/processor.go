@@ -215,9 +215,14 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 			md.Resource.Labels[k8sIPLabelName] = podIP
 		}
 
+		// Ignore metrics if cannot infer IP address of the origin pod.
+		if podIP == "" {
+			continue
+		}
+
 		// Don't invoke any k8s client functionality in passthrough mode.
 		// Just tag the IP and forward the batch.
-		if kp.passthroughMode || podIP == "" {
+		if kp.passthroughMode {
 			continue
 		}
 
