@@ -29,24 +29,27 @@ import (
 var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
-	ctx        context.Context
-	provider   *kubelet.StatsProvider
-	consumer   consumer.MetricsConsumerOld
-	logger     *zap.Logger
-	restClient kubelet.RestClient
+	ctx          context.Context
+	receiverName string
+	provider     *kubelet.StatsProvider
+	consumer     consumer.MetricsConsumerOld
+	logger       *zap.Logger
+	restClient   kubelet.RestClient
 }
 
 func newRunnable(
 	ctx context.Context,
+	receiverName string,
 	consumer consumer.MetricsConsumerOld,
 	restClient kubelet.RestClient,
 	logger *zap.Logger,
 ) *runnable {
 	return &runnable{
-		ctx:        ctx,
-		consumer:   consumer,
-		restClient: restClient,
-		logger:     logger,
+		ctx:          ctx,
+		receiverName: receiverName,
+		consumer:     consumer,
+		restClient:   restClient,
+		logger:       logger,
 	}
 }
 
@@ -57,23 +60,23 @@ func (r *runnable) Setup() error {
 }
 
 func (r *runnable) Run() error {
-	const dataformat = "kubelet"
 	const transport = "http"
-	ctx := obsreport.StartMetricsReceiveOp(r.ctx, dataformat, transport)
+	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 	summary, err := r.provider.StatsSummary()
 	if err != nil {
 		r.logger.Error("StatsSummary failed", zap.Error(err))
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, 0, 0, err)
+		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, 0, err)
 		return nil
 	}
 	mds := kubelet.MetricsData(summary, typeStr)
 	for _, md := range mds {
-		err = r.consumer.ConsumeMetricsData(r.ctx, *md)
+		err = r.consumer.ConsumeMetricsData(ctx, *md)
 		if err != nil {
 			r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 		}
 		numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
-		obsreport.EndMetricsReceiveOp(ctx, dataformat, numTimeSeries, numPoints, err)
+		obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
 	}
 	return nil
 }

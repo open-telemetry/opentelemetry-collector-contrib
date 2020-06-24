@@ -34,6 +34,7 @@ func TestRunnable(t *testing.T) {
 	consumer := &fakeConsumer{}
 	r := newRunnable(
 		context.Background(),
+		"",
 		consumer,
 		&fakeRestClient{},
 		zap.NewNop(),
@@ -59,6 +60,7 @@ func TestClientErrors(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			r := newRunnable(
 				context.Background(),
+				"",
 				&fakeConsumer{},
 				&fakeRestClient{fail: test.fail},
 				zap.New(core),
@@ -86,6 +88,7 @@ func TestConsumerErrors(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			r := newRunnable(
 				context.Background(),
+				"",
 				&fakeConsumer{fail: test.fail},
 				&fakeRestClient{},
 				zap.New(core),
