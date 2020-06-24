@@ -16,6 +16,23 @@ package metricstransformprocessor
 
 import "go.opentelemetry.io/collector/config/configmodels"
 
+const (
+	// MetricNameFieldName is the mapstructure field name for MetricName field
+	MetricNameFieldName = "metric_name"
+
+	// ActionFieldName is the mapstructure field name for Action field
+	ActionFieldName = "action"
+
+	// NewNameFieldName is the mapstructure field name for NewName field
+	NewNameFieldName = "new_name"
+
+	// LabelFieldName is the mapstructure field name for Label field
+	LabelFieldName = "label"
+
+	// NewLabelFieldName is the mapstructure field name for NewLabel field
+	NewLabelFieldName = "new_label"
+)
+
 // Config defines configuration for Resource processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`

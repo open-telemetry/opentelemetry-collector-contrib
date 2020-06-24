@@ -159,7 +159,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.Nil(t, err)
 
 			caps := amp.GetCapabilities()
-			assert.Equal(t, false, caps.MutatesConsumedData)
+			assert.Equal(t, true, caps.MutatesConsumedData)
 			ctx := context.Background()
 			assert.NoError(t, amp.Start(ctx, nil))
 
@@ -246,7 +246,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		stressTest.inMN = append(stressTest.inMN, initialMetricNames...)
 	}
 
-	benchmarkTests := append(standardTests, stressTest)
+	benchmarkTests := []metricsTransformTest{stressTest}
 
 	for _, test := range benchmarkTests {
 		// next stores the results of the filter metric processor.
@@ -278,12 +278,14 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		}
 
 		b.Run(test.name, func(b *testing.B) {
-			assert.NoError(b, amp.ConsumeMetrics(
-				context.Background(),
-				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-					md,
-				}),
-			))
+			for i := 0; i < b.N; i++ {
+				assert.NoError(b, amp.ConsumeMetrics(
+					context.Background(),
+					pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+						md,
+					}),
+				))
+			}
 		})
 	}
 }

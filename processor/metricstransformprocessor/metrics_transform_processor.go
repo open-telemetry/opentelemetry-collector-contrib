@@ -25,6 +25,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
+const (
+	validNewNameFuncName  = "validNewName()"
+	validNewLabelFuncName = "validNewLabel()"
+)
+
 type metricsTransformProcessor struct {
 	cfg        *Config
 	next       consumer.MetricsConsumer
@@ -49,7 +54,7 @@ func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) (*
 
 // GetCapabilities returns the Capabilities associated with the metrics transform processor.
 func (mtp *metricsTransformProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: false}
+	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
@@ -74,7 +79,7 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	for i, data := range mds {
 		// if the new name is not valid, discard this operation for this list of metrics
 		if !mtp.validNewName(data.Metrics) {
-			log.Printf("error running %q processor due to collided %q: %v with existing metric names", typeStr, "new_name", mtp.newName)
+			log.Printf("error running %q processor due to collision %q: %v with existing metric names detected by the function %q", typeStr, NewNameFieldName, mtp.newName, validNewNameFuncName)
 			continue
 		}
 		for _, metric := range data.Metrics {
@@ -106,7 +111,7 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric) {
 			// label key update
 			// if new_label is invalid, skip this operation
 			if !mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
-				log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v", typeStr, "new_label", op.NewLabel, metricPtr.MetricDescriptor.Name)
+				log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metricPtr.MetricDescriptor.Name, validNewLabelFuncName)
 				continue
 			}
 
