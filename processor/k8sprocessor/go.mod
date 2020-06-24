@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8spr
 go 1.14
 
 require (
+	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
