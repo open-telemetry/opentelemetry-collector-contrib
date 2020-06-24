@@ -171,10 +171,7 @@ func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *m
 // validNewName determines if the new name is a valid one. An invalid one is one that already exists.
 func (mtp *metricsTransformProcessor) validNewName(transform Transform, nameToMetricMapping map[string]*metricspb.Metric) bool {
 	_, ok := nameToMetricMapping[transform.NewName]
-	if ok {
-		return false
-	}
-	return true
+	return !ok
 }
 
 // validNewLabel determines if the new label is a valid one. An invalid one is one that already exists.
