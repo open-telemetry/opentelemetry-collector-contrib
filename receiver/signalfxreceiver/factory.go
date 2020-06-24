@@ -83,7 +83,7 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 
 // verify that the configured port is not 0
 func (rCfg *Config) validate() error {
-	port, err := extractPortFromEndpoint(rCfg.Endpoint)
+	_, err := extractPortFromEndpoint(rCfg.Endpoint)
 	if err != nil {
 		return err
 	}
