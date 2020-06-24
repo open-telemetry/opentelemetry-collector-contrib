@@ -94,7 +94,7 @@ func (rCfg *Config) validate() error {
 		)
 		return err
 	}
-    return nil
+	return nil
 }
 
 // CreateTraceReceiver creates a trace receiver based on provided config.
