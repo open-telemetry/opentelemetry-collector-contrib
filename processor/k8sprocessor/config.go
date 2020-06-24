@@ -51,7 +51,7 @@ type ExtractConfig struct {
 	//   namespace, podName, podUID, deployment, cluster, node and startTime
 	//
 	// Specifying anything other than these values will result in an error.
-	// By default all of the fields are extracted and added to spans.
+	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it
@@ -99,7 +99,7 @@ type ExtractConfig struct {
 //	         key: kubernetes.io/change-cause
 //           regex: JENKINS=(?P<value>[\w]+)
 //
-//   this will add the `git.sha` and `ci.build` tags to the spans.
+//   this will add the `git.sha` and `ci.build` tags to the spans or metrics.
 type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`
