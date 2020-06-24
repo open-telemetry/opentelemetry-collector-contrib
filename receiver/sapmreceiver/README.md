@@ -27,6 +27,7 @@ Example:
 receivers:
   sapm:
     endpoint: localhost:7276
+    access_token_passthrough: true
     tls:
       cert_file: /test.crt
       key_file: /test.key

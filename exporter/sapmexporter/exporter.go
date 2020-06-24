@@ -25,12 +25,15 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // sapmExporter is a wrapper struct of SAPM exporter
 type sapmExporter struct {
 	client *sapmclient.Client
 	logger *zap.Logger
+	config *Config
 }
 
 func (se *sapmExporter) Shutdown(context.Context) error {
@@ -38,40 +41,99 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmExporter, error) {
 	err := cfg.validate()
 	if err != nil {
-		return nil, err
+		return sapmExporter{}, err
 	}
 
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
-		return nil, err
+		return sapmExporter{}, err
 	}
-	se := sapmExporter{
+	return sapmExporter{
 		client: client,
 		logger: params.Logger,
+		config: cfg,
+	}, err
+}
+
+func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+	se, err := newSAPMExporter(cfg, params)
+	if err != nil {
+		return nil, err
 	}
+
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown))
 }
 
-// pushTraceData exports traces in SAPM proto and returns number of dropped spans and error if export failed
-func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpansCount int, err error) {
-	batches, err := jaeger.InternalTracesToJaegerProto(td)
-	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
-	}
-	err = se.client.Export(ctx, batches)
-	if err != nil {
-		if sendErr, ok := err.(*sapmclient.ErrSend); ok {
-			if sendErr.Permanent {
-				return 0, consumererror.Permanent(sendErr)
+// tracesByAccessToken takes a pdata.Traces struct and will iterate through its ResourceSpans' attributes,
+// regrouping by any SFx access token label value if Config.AccessTokenPassthrough is enabled.  It will delete any
+// set token label in any case to prevent serialization.
+// It returns a map of newly constructed pdata.Traces keyed by access token, defaulting to empty string.
+func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Traces {
+	tracesByToken := make(map[string]pdata.Traces, 1)
+	resourceSpans := td.ResourceSpans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		resourceSpan := resourceSpans.At(i)
+		if resourceSpan.IsNil() {
+			// Invalid trace so nothing to export
+			continue
+		}
+
+		accessToken := ""
+		if !resourceSpan.Resource().IsNil() {
+			attrs := resourceSpan.Resource().Attributes()
+			attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
+			if ok {
+				attrs.Delete(splunk.SFxAccessTokenLabel)
+				if se.config.AccessTokenPassthrough {
+					accessToken = attributeValue.StringVal()
+				}
 			}
 		}
-		return td.SpanCount(), err
+
+		traceForToken, ok := tracesByToken[accessToken]
+		if !ok {
+			traceForToken = pdata.NewTraces()
+			tracesByToken[accessToken] = traceForToken
+		}
+
+		// Append ResourceSpan to trace for this access token
+		traceForTokenSize := traceForToken.ResourceSpans().Len()
+		traceForToken.ResourceSpans().Resize(traceForTokenSize + 1)
+		traceForToken.ResourceSpans().At(traceForTokenSize).InitEmpty()
+		resourceSpan.CopyTo(traceForToken.ResourceSpans().At(traceForTokenSize))
 	}
-	return 0, nil
+
+	return tracesByToken
+}
+
+// pushTraceData exports traces in SAPM proto by associated SFx access token and returns number of dropped spans
+// and the last experienced error if any translation or export failed
+func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpansCount int, err error) {
+	traces := se.tracesByAccessToken(td)
+	droppedSpansCount = 0
+	for accessToken, trace := range traces {
+		batches, translateErr := jaeger.InternalTracesToJaegerProto(trace)
+		if translateErr != nil {
+			droppedSpansCount += trace.SpanCount()
+			err = consumererror.Permanent(translateErr)
+			continue
+		}
+
+		exportErr := se.client.ExportWithAccessToken(ctx, batches, accessToken)
+		if exportErr != nil {
+			if sendErr, ok := exportErr.(*sapmclient.ErrSend); ok {
+				if sendErr.Permanent {
+					err = consumererror.Permanent(sendErr)
+				}
+			}
+			droppedSpansCount += trace.SpanCount()
+		}
+	}
+	return
 }

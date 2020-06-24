@@ -46,6 +46,7 @@ func (je *SapmDataSender) Start() error {
 	cfg := &sapmexporter.Config{
 		Endpoint:           fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
 		DisableCompression: true,
+		AccessToken:        "MyToken",
 	}
 
 	var err error
