@@ -69,17 +69,17 @@ extensions:
   k8s_observer:
 
 receivers:
-  prometheus_simple:
-    # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-    rule: type.pod && annotations["prometheus.io/scrape"] == "true"
-    config:
-      metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
-      endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
-
   receiver_creator/1:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [k8s_observer]
     receivers:
+      prometheus_simple:
+        # Configure prometheus scraping if standard prometheus annotations are set on the pod.
+        rule: type.pod && annotations["prometheus.io/scrape"] == "true"
+        config:
+          metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
+          endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+
       redis/1:
         # If this rule matches an instance of this receiver will be started.
         rule: type.port && port == 6379
