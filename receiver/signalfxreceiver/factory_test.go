@@ -59,3 +59,33 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 }
+
+func TestCreateInvalidHTTPEndpoint(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.Nil(t, tReceiver)
+}
+
+func TestCreateNoPort(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+    cfg.Endpoint = "localhost:"
+
+	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"\": invalid syntax")
+	assert.Nil(t, tReceiver)
+}
+
+func TestCreateLargePort(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+    cfg.Endpoint = "localhost:65536"
+
+	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "port number must be between 1 and 65535")
+	assert.Nil(t, tReceiver)
+}
