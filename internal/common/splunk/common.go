@@ -1,10 +1,10 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kube
+package splunk
 
-import (
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+const (
+	SFxAccessTokenHeader = "X-Sf-Token"
+	SFxAccessTokenLabel  = "com.splunk.signalfx.access_token"
 )
 
-func newAPIClientset() (*kubernetes.Clientset, error) {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
-	}
-	return kubernetes.NewForConfig(config)
+type AccessTokenPassthroughConfig struct {
+	// Whether to associate datapoints with an organization access token received in request.
+	AccessTokenPassthrough bool `mapstructure:"access_token_passthrough"`
 }

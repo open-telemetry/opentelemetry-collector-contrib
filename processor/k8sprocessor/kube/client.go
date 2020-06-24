@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/observability"
 )
 
@@ -37,7 +38,7 @@ type WatchClient struct {
 	m               sync.RWMutex
 	deleteMut       sync.Mutex
 	logger          *zap.Logger
-	kc              *kubernetes.Clientset
+	kc              kubernetes.Interface
 	informer        cache.SharedInformer
 	deploymentRegex *regexp.Regexp
 	deleteQueue     []deleteRequest
@@ -48,24 +49,21 @@ type WatchClient struct {
 	Filters Filters
 }
 
-// New initializes a new k8s Client.
-func New(logger *zap.Logger, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+// Extract deployment name from the pod name. Pod name is created using
+// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
+var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
-	// Extract deployment name from the pod name. Pod name is created using
-	// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
-	dRegex, err := regexp.Compile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
-	if err != nil {
-		return nil, err
-	}
-	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex}
-	go c.deleteLoop(time.Second * 30)
+// New initializes a new k8s Client.
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex, stopCh: make(chan struct{})}
+	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[string]*Pod{}
 	if newClientSet == nil {
-		newClientSet = newAPIClientset
+		newClientSet = k8sconfig.MakeClient
 	}
 
-	kc, err := newClientSet()
+	kc, err := newClientSet(apiCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -131,39 +129,41 @@ func (c *WatchClient) handlePodDelete(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) deleteLoop(interval time.Duration) {
-	// TODO: if the gorountine crashes can it leave a mutex in locked state?
-	// perhaps need to handle panics for this case?
-
+func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
 	// in the grace period anymore.
 	for {
-		<-time.After(interval)
-		var cutoff int
-		now := time.Now()
-		c.deleteMut.Lock()
-		for i, d := range c.deleteQueue {
-			if d.ts.Add(podDeleteGracePeriod).After(now) {
-				break
+		select {
+		case <-time.After(interval):
+			var cutoff int
+			now := time.Now()
+			c.deleteMut.Lock()
+			for i, d := range c.deleteQueue {
+				if d.ts.Add(gracePeriod).After(now) {
+					break
+				}
+				cutoff = i + 1
 			}
-			cutoff = i + 1
-		}
-		toDelete := c.deleteQueue[:cutoff]
-		c.deleteQueue = c.deleteQueue[cutoff:]
-		c.deleteMut.Unlock()
+			toDelete := c.deleteQueue[:cutoff]
+			c.deleteQueue = c.deleteQueue[cutoff:]
+			c.deleteMut.Unlock()
 
-		c.m.Lock()
-		for _, d := range toDelete {
-			if p, ok := c.Pods[d.ip]; ok {
-				// Sanity check: make sure we are deleting the same pod
-				// and the underlying state (ip<>pod mapping) has not changed.
-				if p.Name == d.name {
-					delete(c.Pods, d.ip)
+			c.m.Lock()
+			for _, d := range toDelete {
+				if p, ok := c.Pods[d.ip]; ok {
+					// Sanity check: make sure we are deleting the same pod
+					// and the underlying state (ip<>pod mapping) has not changed.
+					if p.Name == d.name {
+						delete(c.Pods, d.ip)
+					}
 				}
 			}
+			c.m.Unlock()
+
+		case <-c.stopCh:
+			return
 		}
-		c.m.Unlock()
 	}
 }
 

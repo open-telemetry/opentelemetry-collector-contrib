@@ -33,13 +33,6 @@ const typeStr = "kubeletstats"
 var _ component.ReceiverFactoryBase = (*Factory)(nil)
 
 type Factory struct {
-	restClient restClient
-}
-
-func NewFactory() *Factory {
-	return &Factory{
-		restClient: httpRestClient,
-	}
 }
 
 func (f *Factory) Type() configmodels.Type {
@@ -47,10 +40,6 @@ func (f *Factory) Type() configmodels.Type {
 }
 
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
-	return defaultConfig()
-}
-
-func defaultConfig() *Config {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -69,18 +58,13 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 }
 
 func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	context.Context,
+	*zap.Logger,
+	configmodels.Receiver,
+	consumer.TraceConsumerOld,
 ) (component.TraceReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
-
-type restClient func(
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-) (kubelet.RestClient, error)
 
 func (f *Factory) CreateMetricsReceiver(
 	logger *zap.Logger,
@@ -99,12 +83,13 @@ func (f *Factory) CreateMetricsReceiver(
 	}, nil
 }
 
-func httpRestClient(
-	logger *zap.Logger,
-	baseCfg configmodels.Receiver,
-) (kubelet.RestClient, error) {
+func (f *Factory) restClient(logger *zap.Logger, baseCfg configmodels.Receiver) (kubelet.RestClient, error) {
 	cfg := baseCfg.(*Config)
-	client, err := kubelet.NewClient(cfg.Endpoint, &cfg.ClientConfig, logger)
+	clientProvider, err := kubelet.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
+	if err != nil {
+		return nil, err
+	}
+	client, err := clientProvider.BuildClient()
 	if err != nil {
 		return nil, err
 	}

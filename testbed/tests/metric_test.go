@@ -19,6 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/testbed/testbed"
 	scenarios "go.opentelemetry.io/collector/testbed/tests"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
 
 func TestMetric10kDPS(t *testing.T) {
@@ -30,7 +33,7 @@ func TestMetric10kDPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOCMetricDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 40,
@@ -39,8 +42,8 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			"Carbon",
-			NewCarbonDataSender(testbed.GetAvailablePort(t)),
-			NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewCarbonDataSender(testbed.GetAvailablePort(t)),
+			datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 237,
 				ExpectedMaxRAM: 90,
@@ -48,8 +51,8 @@ func TestMetric10kDPS(t *testing.T) {
 		},
 		{
 			"SignalFx",
-			NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
-			NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
+			datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 83,
 				ExpectedMaxRAM: 91,
@@ -64,6 +67,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				contribPerfResultsSummary,
 				nil,
 			)
 		})

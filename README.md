@@ -1,3 +1,18 @@
+<p align="center">
+  <a href="https://goreportcard.com/report/github.com/open-telemetry/opentelemetry-collector-contrib">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
+  </a>
+  <a href="https://circleci.com/gh/open-telemetry/opentelemetry-collector-contrib">
+    <img alt="Build Status" src="https://img.shields.io/circleci/build/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
+  </a>
+  <a href="https://codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/branch/master/">
+    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/open-telemetry/opentelemetry-collector-contrib?style=for-the-badge">
+  </a>
+  <a href="releases">
+    <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector-contrib?include_prereleases&style=for-the-badge">
+  </a>
+</p>
+
 # OpenTelemetry Collector Contrib
 This is a repository for OpenTelemetry Collector contributions that are not part of the
 [core repository](https://github.com/open-telemetry/opentelemetry-collector) and
@@ -24,6 +39,12 @@ and use existing implementations as reference.
 breaking changes. Component creators must be available to update or review
 their components when such changes happen, otherwise the component will be excluded
 from the default builds.
+
+Generally, maintenance of components is the responsibility of contributors who
+authored them. If the original author or some other contributor does not maintain
+the component it may be excluded from the default build. The component **will** be
+excluded if it causes build problems, has failing tests or otherwise causes problems
+to the rest of the repository and the rest of contributors.
 
 - Create your component under the proper folder and use
 Go standard package naming recommendations.

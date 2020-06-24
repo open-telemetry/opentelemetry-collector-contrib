@@ -20,88 +20,155 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
-// Config for a kubelet Client. Mostly for talking to the kubelet HTTP endpoint.
-type ClientConfig struct {
-	k8sconfig.APIConfig `mapstructure:",squash"`
-	// Path to the CA cert. For a client this verifies the server certificate.
-	// For a server this verifies client certificates. If empty uses system root CA.
-	// (optional)
-	CAFile string `mapstructure:"ca_file"`
-	// Path to the TLS cert to use for TLS required connections. (optional)
-	CertFile string `mapstructure:"cert_file"`
-	// Path to the TLS key to use for TLS required connections. (optional)
-	// TODO replace with open-telemetry/opentelemetry-collector#933 when done
-	KeyFile string `mapstructure:"key_file"`
-	// InsecureSkipVerify controls whether the client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
+const svcAcctCACertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+const svcAcctTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 type Client interface {
 	Get(path string) ([]byte, error)
 }
 
-func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
-	if cfg.APIConfig.AuthType != k8sconfig.AuthTypeTLS {
+func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
+	switch cfg.APIConfig.AuthType {
+	case k8sconfig.AuthTypeTLS:
+		return &tlsClientProvider{
+			endpoint: endpoint,
+			cfg:      cfg,
+			logger:   logger,
+		}, nil
+	case k8sconfig.AuthTypeServiceAccount:
+		return &saClientProvider{
+			endpoint:   endpoint,
+			caCertPath: svcAcctCACertPath,
+			tokenPath:  svcAcctTokenPath,
+			logger:     logger,
+		}, nil
+	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
-	return newTLSClient(endpoint, cfg, logger)
 }
 
-// not unit tested
-func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(cfg.CAFile)
+type ClientProvider interface {
+	BuildClient() (Client, error)
+}
+
+type tlsClientProvider struct {
+	endpoint string
+	cfg      *ClientConfig
+	logger   *zap.Logger
+}
+
+func (p *tlsClientProvider) BuildClient() (Client, error) {
+	rootCAs, err := systemCertPoolPlusPath(p.cfg.CAFile)
 	if err != nil {
 		return nil, err
 	}
-	clientCert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	clientCert, err := tls.LoadX509KeyPair(p.cfg.CertFile, p.cfg.KeyFile)
 	if err != nil {
 		return nil, err
 	}
-	return defaultTLSClient(endpoint, cfg.InsecureSkipVerify, rootCAs, clientCert, logger), nil
+	return defaultTLSClient(
+		p.endpoint,
+		p.cfg.InsecureSkipVerify,
+		rootCAs,
+		[]tls.Certificate{clientCert},
+		nil,
+		p.logger,
+	)
 }
 
-func defaultTLSClient(endpoint string, insecureSkipVerify bool, rootCAs *x509.CertPool, clientCert tls.Certificate, logger *zap.Logger) *tlsClient {
+type saClientProvider struct {
+	endpoint   string
+	caCertPath string
+	tokenPath  string
+	logger     *zap.Logger
+}
+
+func (p *saClientProvider) BuildClient() (Client, error) {
+	rootCAs, err := systemCertPoolPlusPath(p.caCertPath)
+	if err != nil {
+		return nil, err
+	}
+	tok, err := ioutil.ReadFile(p.tokenPath)
+	if err != nil {
+		return nil, errors.WithMessagef(err, "Unable to read token file %s", p.tokenPath)
+	}
+	tr := defaultTransport()
+	tr.TLSClientConfig = &tls.Config{
+		RootCAs: rootCAs,
+	}
+	return defaultTLSClient(p.endpoint, true, rootCAs, nil, tok, p.logger)
+}
+
+func defaultTLSClient(
+	endpoint string,
+	insecureSkipVerify bool,
+	rootCAs *x509.CertPool,
+	certificates []tls.Certificate,
+	tok []byte,
+	logger *zap.Logger,
+) (*clientImpl, error) {
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs:            rootCAs,
-		Certificates:       []tls.Certificate{clientCert},
+		Certificates:       certificates,
 		InsecureSkipVerify: insecureSkipVerify,
 	}
-	return &tlsClient{
+	if endpoint == "" {
+		var err error
+		endpoint, err = defaultEndpoint()
+		if err != nil {
+			return nil, err
+		}
+		logger.Warn("Kubelet endpoint not defined, using default endpoint " + endpoint)
+	}
+	return &clientImpl{
 		baseURL:    "https://" + endpoint,
 		httpClient: http.Client{Transport: tr},
+		tok:        tok,
 		logger:     logger,
+	}, nil
+}
+
+// This will work if hostNetwork is turned on, in which case the pod has access
+// to the node's loopback device.
+// https://kubernetes.io/docs/concepts/policy/pod-security-policy/#host-namespaces
+func defaultEndpoint() (string, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return "", errors.WithMessage(err, "Unable to get hostname for default endpoint")
 	}
+	const kubeletPort = "10250"
+	return hostname + ":" + kubeletPort, nil
 }
 
 func defaultTransport() *http.Transport {
 	return http.DefaultTransport.(*http.Transport).Clone()
 }
 
-// tlsClient
+// clientImpl
 
-var _ Client = (*tlsClient)(nil)
+var _ Client = (*clientImpl)(nil)
 
-type tlsClient struct {
+type clientImpl struct {
 	baseURL    string
 	httpClient http.Client
 	logger     *zap.Logger
+	tok        []byte
 }
 
-func (c *tlsClient) Get(path string) ([]byte, error) {
-	url := c.baseURL + path
-	req, err := http.NewRequest("GET", url, nil)
+func (c *clientImpl) Get(path string) ([]byte, error) {
+	req, err := c.buildReq(path)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -117,4 +184,17 @@ func (c *tlsClient) Get(path string) ([]byte, error) {
 		return nil, err
 	}
 	return body, nil
+}
+
+func (c *clientImpl) buildReq(path string) (*http.Request, error) {
+	url := c.baseURL + path
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.tok != nil {
+		req.Header.Set("Authorization", fmt.Sprintf("bearer %s", c.tok))
+	}
+	return req, nil
 }

@@ -22,11 +22,16 @@ import (
 
 	"go.opentelemetry.io/collector/testbed/testbed"
 	scenarios "go.opentelemetry.io/collector/testbed/tests"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 )
+
+var contribPerfResultsSummary testbed.TestResultsSummary = &testbed.PerformanceResults{}
 
 // TestMain is used to initiate setup, execution and tear down of testbed.
 func TestMain(m *testing.M) {
-	testbed.DoTestMain(m)
+	testbed.DoTestMain(m, contribPerfResultsSummary)
 }
 
 func TestTrace10kSPS(t *testing.T) {
@@ -38,7 +43,7 @@ func TestTrace10kSPS(t *testing.T) {
 	}{
 		{
 			"OpenCensus",
-			testbed.NewOCTraceDataSender(testbed.GetAvailablePort(t)),
+			testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 26,
@@ -47,8 +52,8 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"SAPM",
-			NewSapmDataSender(testbed.GetAvailablePort(t)),
-			NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
+			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 24,
 				ExpectedMaxRAM: 100,
@@ -69,6 +74,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.sender,
 				test.receiver,
 				test.resourceSpec,
+				contribPerfResultsSummary,
 				processors,
 			)
 		})

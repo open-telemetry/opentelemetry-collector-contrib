@@ -11,7 +11,7 @@ require (
 	github.com/uber/jaeger-lib v2.2.0+incompatible
 	github.com/uber/tchannel-go v1.10.0
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
+	go.opentelemetry.io/collector v0.4.0
 	go.uber.org/zap v1.10.0
 )
 

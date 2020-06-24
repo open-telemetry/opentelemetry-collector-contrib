@@ -45,6 +45,8 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
@@ -140,7 +142,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
 }
 
 // sendSapm acts as a client for sending sapm to the receiver.  This could be replaced with a sapm exporter in the future.
-func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, tlsEnabled bool) (*http.Response, error) {
+func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, tlsEnabled bool, token string) (*http.Response, error) {
 	// marshal the sapm
 	reqBytes, err := proto.Marshal(sapm)
 	if err != nil {
@@ -182,6 +184,10 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 		req.Header.Set(sapmprotocol.AcceptEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
 	}
 
+	if token != "" {
+		req.Header.Set("x-sf-token", token)
+	}
+
 	// send the request
 	client := &http.Client{}
 
@@ -205,6 +211,25 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	}
 
 	return resp, nil
+}
+
+func setupReceiver(t *testing.T, config *Config, sink *exportertest.SinkTraceExporter) component.TraceReceiver {
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	sr, err := New(context.Background(), params, config, sink)
+	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
+	t.Log("Starting")
+
+	// NewNopHost swallows errors so using NewErrorWaitingHost to catch any potential errors starting the
+	// receiver.
+	mh := componenttest.NewErrorWaitingHost()
+	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
+
+	// If there are errors reported through host.ReportFatalError() this will retrieve it.
+	receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
+	require.NoError(t, receivedErr, "should not have failed to start trace reception")
+	require.False(t, receivedError)
+	t.Log("Trace Reception Started")
+	return sr
 }
 
 func TestReception(t *testing.T) {
@@ -271,27 +296,12 @@ func TestReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			sink := new(exportertest.SinkTraceExporter)
-
-			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-			sr, err := New(context.Background(), params, tt.args.config, sink)
-			assert.NoError(t, err, "should not have failed to create the SAPM receiver")
-			t.Log("Starting")
+			sr := setupReceiver(t, tt.args.config, sink)
 			defer sr.Shutdown(context.Background())
-
-			// NewNopHost swallows errors so using NewErrorWaitingHost to catch any potential errors starting the
-			// receiver.
-			mh := componenttest.NewErrorWaitingHost()
-			require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
-
-			// If there are errors reported through host.ReportFatalError() this will retrieve it.
-			receivedError, receivedErr := mh.WaitForFatalError(500 * time.Millisecond)
-			require.NoError(t, receivedErr, "should not have failed to start trace reception")
-			require.False(t, receivedError)
-			t.Log("Trace Reception Started")
 
 			t.Log("Sending Sapm Request")
 			var resp *http.Response
-			resp, err = sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.zipped, tt.args.useTLS)
+			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.zipped, tt.args.useTLS, "")
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
 			t.Log("SAPM Request Received")
@@ -303,6 +313,73 @@ func TestReception(t *testing.T) {
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
 			assert.EqualValues(t, tt.want, got[0])
+		})
+	}
+}
+
+func TestAccessTokenPassthrough(t *testing.T) {
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		token                  string
+	}{
+		{
+			name:                   "no passthrough and no token",
+			accessTokenPassthrough: false,
+			token:                  "",
+		},
+		{
+			name:                   "no passthrough and token",
+			accessTokenPassthrough: false,
+			token:                  "MyAccessToken",
+		},
+		{
+			name:                   "passthrough and no token",
+			accessTokenPassthrough: true,
+			token:                  "",
+		},
+		{
+			name:                   "passthrough and token",
+			accessTokenPassthrough: true,
+			token:                  "MyAccessToken",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: tt.accessTokenPassthrough,
+				},
+			}
+
+			sapm := &splunksapm.PostSpansRequest{
+				Batches: []*model.Batch{grpcFixture(time.Now().UTC(), time.Minute*10, time.Second*2)},
+			}
+
+			sink := new(exportertest.SinkTraceExporter)
+			sr := setupReceiver(t, config, sink)
+			defer sr.Shutdown(context.Background())
+
+			var resp *http.Response
+			resp, err := sendSapm(config.Endpoint, sapm, true, false, tt.token)
+			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
+			assert.Equal(t, 200, resp.StatusCode)
+
+			got := sink.AllTraces()
+			assert.Equal(t, 1, len(got))
+
+			received := got[0].ResourceSpans()
+			for i := 0; i < received.Len(); i++ {
+				rspan := received.At(i)
+				attrs := rspan.Resource().Attributes()
+				amap, contains := attrs.Get("com.splunk.signalfx.access_token")
+				if tt.accessTokenPassthrough && tt.token != "" {
+					assert.Equal(t, tt.token, amap.StringVal())
+				} else {
+					assert.False(t, contains)
+				}
+			}
 		})
 	}
 }
