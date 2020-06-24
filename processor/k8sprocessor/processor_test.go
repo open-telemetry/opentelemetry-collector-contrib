@@ -45,7 +45,7 @@ func TestNewTraceProcessor(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestBadOption(t *testing.T) {
+func TestTraceProcessorBadOption(t *testing.T) {
 	opt := func(p *kubernetesprocessor) error {
 		return fmt.Errorf("bad option")
 	}
@@ -60,7 +60,7 @@ func TestBadOption(t *testing.T) {
 	assert.Equal(t, err.Error(), "bad option")
 }
 
-func TestBadClientProvider(t *testing.T) {
+func TestTraceProcessorBadClientProvider(t *testing.T) {
 	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
@@ -366,6 +366,36 @@ func TestNewMetricsProcessor(t *testing.T) {
 		newFakeClient,
 	)
 	require.NoError(t, err)
+}
+
+func TestMetricsProcessorBadOption(t *testing.T) {
+	opt := func(p *kubernetesprocessor) error {
+		return fmt.Errorf("bad option")
+	}
+	p, err := NewMetricsProcessor(
+		zap.NewNop(),
+		exportertest.NewNopMetricsExporter(),
+		newFakeClient,
+		opt,
+	)
+	assert.Nil(t, p)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "bad option")
+}
+
+func TestMetricsProcessorBadClientProvider(t *testing.T) {
+	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
+		return nil, fmt.Errorf("bad client error")
+	}
+	p, err := NewMetricsProcessor(
+		zap.NewNop(),
+		exportertest.NewNopMetricsExporter(),
+		clientProvider,
+	)
+
+	assert.Nil(t, p)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "bad client error")
 }
 
 func TestMetricsProcessorNoAttrs(t *testing.T) {
