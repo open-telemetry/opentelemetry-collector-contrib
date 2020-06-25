@@ -139,11 +139,11 @@ func TestResourceProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{resources: map[string]lazyResource{}}
+			factory := &Factory{providers: map[string]*internal.ResourceProvider{}}
 
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
-			factory.detectors = map[string]internal.Detector{"mock": md1}
+			factory.resourceProviderFactory = internal.NewProviderFactory(map[internal.DetectorType]internal.Detector{"mock": md1})
 
 			if tt.detectorKeys == nil {
 				tt.detectorKeys = []string{"mock"}
@@ -237,7 +237,7 @@ func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// TODO generate real data using https://github.com/open-telemetry/opentelemetry-collector/pull/1062/files#diff-cf39274cfadf030e1797200cd5218d7bR116 when available
+		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		processor.ConsumeTraces(context.Background(), pdata.NewTraces())
 	}
 }
@@ -259,7 +259,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		// TODO generate real data using https://github.com/open-telemetry/opentelemetry-collector/pull/1062/files#diff-cf39274cfadf030e1797200cd5218d7bR221 when available
+		// TODO use testbed.PerfTestDataProvider here once that includes resources
 		processor.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(nil))
 	}
 }

@@ -16,6 +16,7 @@ package resourcedetectionprocessor
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,19 +37,24 @@ const (
 
 // Factory is the factory for resourcedetection processor.
 type Factory struct {
-	detectors map[string]internal.Detector
-	resources map[string]lazyResource
+	resourceProviderFactory *internal.ResourceProviderFactory
+
+	// providers stores a provider for each named processor that
+	// may a different set of detectors configured.
+	providers map[string]*internal.ResourceProvider
 	lock      sync.Mutex
 }
 
 // NewFactory creates a new factory for resourcedetection processor.
 func NewFactory() *Factory {
+	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.Detector{
+		env.TypeStr: &env.Detector{},
+		gce.TypeStr: gce.NewDetector(),
+	})
+
 	return &Factory{
-		detectors: map[string]internal.Detector{
-			env.TypeStr: &env.Detector{},
-			gce.TypeStr: gce.NewDetector(),
-		},
-		resources: map[string]lazyResource{},
+		resourceProviderFactory: resourceProviderFactory,
+		providers:               map[string]*internal.ResourceProvider{},
 	}
 }
 
@@ -79,12 +85,12 @@ func (f *Factory) CreateTraceProcessor(
 ) (component.TraceProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	lResource, err := f.getLazyResourceForProcessor(ctx, params.Logger, cfg.Name(), oCfg.Detectors, oCfg.Timeout)
+	provider, err := f.getResourceProvider(ctx, params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
 	if err != nil {
 		return nil, err
 	}
 
-	return newResourceTraceProcessor(ctx, nextConsumer, lResource, oCfg.Override), nil
+	return newResourceTraceProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
 }
 
 // CreateMetricsProcessor creates a metrics processor based on this config.
@@ -96,34 +102,38 @@ func (f *Factory) CreateMetricsProcessor(
 ) (component.MetricsProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	lResource, err := f.getLazyResourceForProcessor(ctx, params.Logger, cfg.Name(), oCfg.Detectors, oCfg.Timeout)
+	provider, err := f.getResourceProvider(ctx, params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
 	if err != nil {
 		return nil, err
 	}
 
-	return newResourceMetricProcessor(ctx, nextConsumer, lResource, oCfg.Override), nil
+	return newResourceMetricProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
 }
 
-// getLazyResourceForProcessor returns a function that will lazily detect the
-// resource.
-//
-// The resulting lazy function is cached against the processor name so that
-// the resource information will only be detected once even if multiple
-// instances of the same processor are created.
-func (f *Factory) getLazyResourceForProcessor(ctx context.Context, logger *zap.Logger, processorName string, detectorNames []string, timeout time.Duration) (lazyResource, error) {
-	processorDetectors, err := getDetectors(ctx, f.detectors, detectorNames)
-	if err != nil {
-		return nil, err
-	}
-
+func (f *Factory) getResourceProvider(
+	ctx context.Context,
+	logger *zap.Logger,
+	processorName string,
+	timeout time.Duration,
+	configuredDetectors []string,
+) (*internal.ResourceProvider, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
-	if lResource, ok := f.resources[processorName]; ok {
-		return lResource, nil
+	if provider, ok := f.providers[processorName]; ok {
+		return provider, nil
 	}
 
-	lResource := getLazyResource(ctx, logger, timeout, processorDetectors)
-	f.resources[processorName] = lResource
-	return lResource, nil
+	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
+	for _, key := range configuredDetectors {
+		detectorTypes = append(detectorTypes, internal.DetectorType(strings.TrimSpace(key)))
+	}
+
+	provider, err := f.resourceProviderFactory.CreateResourceProvider(logger, timeout, detectorTypes...)
+	if err != nil {
+		return nil, err
+	}
+
+	f.providers[processorName] = provider
+	return provider, nil
 }

@@ -26,17 +26,17 @@ import (
 )
 
 type resourceTraceProcessor struct {
-	lResource lazyResource
-	resource  pdata.Resource
-	override  bool
-	next      consumer.TraceConsumer
+	provider *internal.ResourceProvider
+	resource pdata.Resource
+	override bool
+	next     consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer, resource lazyResource, override bool) *resourceTraceProcessor {
+func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
 	return &resourceTraceProcessor{
-		lResource: resource,
-		override:  override,
-		next:      next,
+		provider: provider,
+		override: override,
+		next:     next,
 	}
 }
 
@@ -48,7 +48,7 @@ func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabili
 // Start is invoked during service startup.
 func (rtp *resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
 	var err error
-	rtp.resource, err = rtp.lResource()
+	rtp.resource, err = rtp.provider.Get(ctx)
 	return err
 }
 
@@ -67,17 +67,17 @@ func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, traces pda
 }
 
 type resourceMetricProcessor struct {
-	lResource lazyResource
-	resource  pdata.Resource
-	override  bool
-	next      consumer.MetricsConsumer
+	provider *internal.ResourceProvider
+	resource pdata.Resource
+	override bool
+	next     consumer.MetricsConsumer
 }
 
-func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsumer, resource lazyResource, override bool) *resourceMetricProcessor {
+func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
 	return &resourceMetricProcessor{
-		lResource: resource,
-		override:  override,
-		next:      next,
+		provider: provider,
+		override: override,
+		next:     next,
 	}
 }
 
@@ -89,7 +89,7 @@ func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabil
 // Start is invoked during service startup.
 func (rmp *resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
 	var err error
-	rmp.resource, err = rmp.lResource()
+	rmp.resource, err = rmp.provider.Get(ctx)
 	return err
 }
 
