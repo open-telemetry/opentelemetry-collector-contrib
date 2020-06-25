@@ -245,15 +245,13 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			}
 			for idx, in := range test.inMN {
 				labels := make([]*metricspb.LabelKey, 0)
-				if in == test.transforms[0].MetricName {
-					for _, l := range test.inLabels {
-						labels = append(
-							labels,
-							&metricspb.LabelKey{
-								Key: l,
-							},
-						)
-					}
+				for _, l := range test.inLabels {
+					labels = append(
+						labels,
+						&metricspb.LabelKey{
+							Key: l,
+						},
+					)
 				}
 				md.Metrics[idx] = &metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
@@ -295,8 +293,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 						}
 					}
 					// check the original is untouched if insert
-					if test.transforms[0].Action == Insert {
-						if out.MetricDescriptor.Name == test.transforms[0].MetricName {
+					if transform.Action == Insert {
+						if out.MetricDescriptor.Name == transform.MetricName {
 							for lidx, l := range out.MetricDescriptor.LabelKeys {
 								assert.Equal(t, test.inLabels[lidx], l.Key)
 							}
