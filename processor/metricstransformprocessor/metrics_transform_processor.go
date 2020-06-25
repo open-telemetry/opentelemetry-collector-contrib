@@ -119,20 +119,7 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric, transf
 	for _, op := range transform.Operations {
 		// update label
 		if op.Action == UpdateLabel {
-			// label key update
-			// if new_label is invalid, skip this operation
-			if !mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
-				log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metricPtr.MetricDescriptor.Name, validNewLabelFuncName)
-				continue
-			}
-
-			if op.NewLabel != "" {
-				for _, label := range metricPtr.MetricDescriptor.LabelKeys {
-					if label.GetKey() == op.Label {
-						label.Key = op.NewLabel
-					}
-				}
-			}
+			mtp.updateLabelOp(metricPtr, op)
 		}
 	}
 }
@@ -143,6 +130,25 @@ func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metric
 	metricCopy := mtp.createCopy(metricPtr)
 	mtp.update(metricCopy, transform)
 	return append(metricPtrs, metricCopy), metricCopy
+}
+
+func (mtp *metricsTransformProcessor) updateLabelOp(metricPtr *metricspb.Metric, op Operation) {
+	// if new_label is invalid, skip this operation
+	if !mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
+		log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metricPtr.MetricDescriptor.Name, validNewLabelFuncName)
+		return
+	}
+
+	for _, label := range metricPtr.MetricDescriptor.LabelKeys {
+		if label.Key != op.Label {
+			continue
+		}
+		// label key update
+		if op.NewLabel != "" {
+			label.Key = op.NewLabel
+		}
+		// label value update
+	}
 }
 
 // createCopy creates a new copy of the input metric.

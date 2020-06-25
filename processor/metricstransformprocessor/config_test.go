@@ -24,19 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
-// TestLoadingFullConfig tests loading testdata/config_full.yaml.
-func TestLoadingFullConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
-
-	factory := &Factory{}
-	factories.Processors[configmodels.Type(typeStr)] = factory
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, config)
-
-	testDataOperations := []Operation{
+var (
+	testDataOperations = []Operation{
 		{
 			Action:   UpdateLabel,
 			Label:    "label",
@@ -68,7 +57,7 @@ func TestLoadingFullConfig(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
+	tests = []struct {
 		filterName string
 		expCfg     *Config
 	}{
@@ -90,6 +79,19 @@ func TestLoadingFullConfig(t *testing.T) {
 			},
 		},
 	}
+)
+
+// TestLoadingFullConfig tests loading testdata/config_full.yaml.
+func TestLoadingFullConfig(t *testing.T) {
+	factories, err := config.ExampleComponents()
+	assert.Nil(t, err)
+
+	factory := &Factory{}
+	factories.Processors[configmodels.Type(typeStr)] = factory
+	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, config)
 
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {

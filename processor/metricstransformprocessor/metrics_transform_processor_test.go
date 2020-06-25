@@ -277,32 +277,32 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.Equal(t, 1, len(gotMD))
 			require.Equal(t, len(test.outMN), len(gotMD[0].Metrics))
 
+			targetNameToTransform := make(map[string]Transform)
 			for _, transform := range test.transforms {
 				targetName := transform.MetricName
 				if transform.NewName != "" {
 					targetName = transform.NewName
 				}
-				for idx, out := range gotMD[0].Metrics {
-					// check name
-					assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
-					// check labels
-					// check the updated or inserted is correctly updated
-					if out.MetricDescriptor.Name == targetName {
-						for lidx, l := range out.MetricDescriptor.LabelKeys {
-							assert.Equal(t, test.outLabels[lidx], l.Key)
-						}
+				targetNameToTransform[targetName] = transform
+			}
+			for idx, out := range gotMD[0].Metrics {
+				// check name
+				assert.Equal(t, test.outMN[idx], out.MetricDescriptor.Name)
+				// check labels
+				// check the updated or inserted is correctly updated
+				transform, ok := targetNameToTransform[out.MetricDescriptor.Name]
+				if ok {
+					for lidx, l := range out.MetricDescriptor.LabelKeys {
+						assert.Equal(t, test.outLabels[lidx], l.Key)
 					}
-					// check the original is untouched if insert
-					if transform.Action == Insert {
-						if out.MetricDescriptor.Name == transform.MetricName {
-							for lidx, l := range out.MetricDescriptor.LabelKeys {
-								assert.Equal(t, test.inLabels[lidx], l.Key)
-							}
-						}
+				}
+				// check the original is untouched if insert
+				if transform.Action == Insert && out.MetricDescriptor.Name == transform.MetricName {
+					for lidx, l := range out.MetricDescriptor.LabelKeys {
+						assert.Equal(t, test.inLabels[lidx], l.Key)
 					}
 				}
 			}
-
 			assert.NoError(t, mtp.Shutdown(ctx))
 		})
 	}

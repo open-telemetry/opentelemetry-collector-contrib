@@ -31,7 +31,6 @@ import (
 func TestType(t *testing.T) {
 	factory := Factory{}
 	pType := factory.Type()
-
 	assert.Equal(t, pType, configmodels.Type("metricstransform"))
 }
 
