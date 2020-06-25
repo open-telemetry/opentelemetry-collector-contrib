@@ -59,7 +59,7 @@ type exporterOptions struct {
 	token string
 }
 
-// new returns a new Splunk exporter.
+// createExporter returns a new Splunk exporter.
 func createExporter(
 	config *Config,
 	logger *zap.Logger,
