@@ -39,7 +39,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -80,9 +79,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:1234",
-					},
+					Endpoint: "localhost:1234",
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},

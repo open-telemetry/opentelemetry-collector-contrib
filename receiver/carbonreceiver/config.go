@@ -33,6 +33,10 @@ const (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
+
 	// Transport is either "tcp" or "udp".
 	Transport string `mapstructure:"transport"`
 

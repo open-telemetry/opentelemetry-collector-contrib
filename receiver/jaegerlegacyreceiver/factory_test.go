@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	jaegercore "go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/config/configprotocol"
 	"go.uber.org/zap"
 )
 
@@ -72,10 +72,8 @@ func TestCreateNoPort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "localhost:",
-		},
+	rCfg.Protocols[protoThriftTChannel] = &configprotocol.ProtocolServerSettings{
+		Endpoint: "localhost:",
 	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no port number must fail")
@@ -86,10 +84,8 @@ func TestCreateLargePort(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "localhost:65536",
-		},
+	rCfg.Protocols[protoThriftTChannel] = &configprotocol.ProtocolServerSettings{
+		Endpoint: "localhost:65536",
 	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with too large port number must fail")
@@ -100,10 +96,8 @@ func TestCreateInvalidHost(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols[protoThriftTChannel] = &jaegercore.SecureSetting{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: "1234",
-		},
+	rCfg.Protocols[protoThriftTChannel] = &configprotocol.ProtocolServerSettings{
+		Endpoint: "1234",
 	}
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with bad hostname must fail")
@@ -114,7 +108,7 @@ func TestCreateNoProtocols(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
-	rCfg.Protocols = make(map[string]*jaegercore.SecureSetting)
+	rCfg.Protocols = make(map[string]*configprotocol.ProtocolServerSettings)
 
 	_, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Error(t, err, "receiver creation with no protocols must fail")

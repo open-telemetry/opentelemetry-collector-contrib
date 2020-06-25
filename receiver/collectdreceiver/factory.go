@@ -56,10 +56,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  typeStr,
-			Endpoint: defaultBindEndpoint,
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
 		},
+		Endpoint: defaultBindEndpoint,
 		Timeout:  defaultTimeout,
 		Encoding: defaultEncodingFormat,
 	}

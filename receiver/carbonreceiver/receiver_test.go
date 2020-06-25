@@ -61,6 +61,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: defaultConfig.ReceiverSettings,
+					Endpoint:         defaultConfig.Endpoint,
 					Transport:        defaultConfig.Transport,
 					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
 				},
@@ -89,9 +90,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "invalid_transport_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "invalid_transport_rcv",
 					},
+					Endpoint:  "localhost:2003",
 					Transport: "unknown_transp",
 					Parser: &protocol.Config{
 						Type:   "plaintext",
@@ -107,9 +108,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "regex_parser_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "regex_parser_rcv",
 					},
+					Endpoint:  "localhost:2003",
 					Transport: "tcp",
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -130,9 +131,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "negative_tcp_idle_timeout",
-						Endpoint: "localhost:2003",
+						NameVal: "negative_tcp_idle_timeout",
 					},
+					Endpoint:       "localhost:2003",
 					Transport:      "tcp",
 					TCPIdleTimeout: -1 * time.Second,
 					Parser: &protocol.Config{
