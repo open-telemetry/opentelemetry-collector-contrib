@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr+"/version_field",
+				NameVal:  typeStr + "/version_field",
 				Endpoint: "localhost:2000",
 			},
 			Version: aws.String("1.3.0"),
@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr+"/udp_endpoint",
+				NameVal:  typeStr + "/udp_endpoint",
 				Endpoint: "localhost:5678",
 			},
 			Version: aws.String(version),
@@ -96,7 +96,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr+"/proxy_server",
+				NameVal:  typeStr + "/proxy_server",
 				Endpoint: "localhost:2000",
 			},
 			Version: aws.String(version),
