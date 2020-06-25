@@ -59,8 +59,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal:  typeStr,
 			NameVal:  typeStr,
-			Endpoint: defaultEndpoint,
 		},
+		Endpoint: defaultEndpoint,
 	}
 }
 

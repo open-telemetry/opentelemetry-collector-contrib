@@ -18,10 +18,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	// Configures the receiver server protocol.
+	confignet.NetAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+
 	// The duration between Redis metric fetches.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// The logical name of the Redis server. This value will be added as a

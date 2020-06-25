@@ -47,10 +47,7 @@ type tcpServer struct {
 var _ (Server) = (*tcpServer)(nil)
 
 // NewTCPServer creates a transport.Server using TCP as its transport.
-func NewTCPServer(
-	addr string,
-	idleTimeout time.Duration,
-) (Server, error) {
+func NewTCPServer(addr string, idleTimeout time.Duration) (Server, error) {
 	if idleTimeout < 0 {
 		return nil, fmt.Errorf("invalid idle timeout: %v", idleTimeout)
 	}

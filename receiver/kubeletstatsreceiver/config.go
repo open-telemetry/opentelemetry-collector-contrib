@@ -25,7 +25,10 @@ import (
 var _ configmodels.Receiver = (*Config)(nil)
 
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	kubelet.ClientConfig          `mapstructure:",squash"`
-	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
+	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// TODO: Use HTTPClientSettings
+	// The target from which the receiver is going to scrape metrics,
+	Endpoint             string `mapstructure:"endpoint"`
+	kubelet.ClientConfig `mapstructure:",squash"`
+	CollectionInterval   time.Duration `mapstructure:"collection_interval"`
 }

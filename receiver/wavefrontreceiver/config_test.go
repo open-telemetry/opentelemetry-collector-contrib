@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -47,9 +48,12 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  "wavefront/allsettings",
-				Endpoint: "localhost:8080",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: "wavefront/allsettings",
+			},
+			NetAddr: confignet.NetAddr{
+				Endpoint:  "localhost:8080",
+				Transport: "tcp",
 			},
 			TCPIdleTimeout:      5 * time.Second,
 			ExtractCollectdTags: true,

@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
@@ -46,7 +47,15 @@ func (f *Factory) Type() configmodels.Type {
 
 // CreateDefaultConfig creates a default config.
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
-	return &config{CollectionInterval: 10 * time.Second}
+	return &config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		NetAddr: confignet.NetAddr{
+			Transport: "tcp",
+		},
+		CollectionInterval: 10 * time.Second}
 }
 
 // CreateTraceReceiver creates a trace Receiver. Not supported for now.

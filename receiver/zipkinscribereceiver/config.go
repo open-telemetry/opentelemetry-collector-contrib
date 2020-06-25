@@ -14,11 +14,16 @@
 
 package zipkinscribereceiver
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"go.opentelemetry.io/collector/config/configmodels"
+)
 
 // Config defines configuration for Zipkin-Scribe receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+
+	// The target from which the receiver is going to scrape metrics,
+	Endpoint string `mapstructure:"endpoint"`
 
 	// Category is the string that will be used to identify the scribe log
 	// messages that contain Zipkin spans.

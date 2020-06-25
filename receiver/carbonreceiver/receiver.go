@@ -56,7 +56,7 @@ var _ component.MetricsReceiver = (*carbonReceiver)(nil)
 // New creates the Carbon receiver with the given configuration.
 func New(
 	logger *zap.Logger,
-	config Config,
+	config *Config,
 	nextConsumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 
@@ -90,7 +90,7 @@ func New(
 
 	r := carbonReceiver{
 		logger:       logger,
-		config:       &config,
+		config:       config,
 		nextConsumer: nextConsumer,
 		server:       server,
 		reporter:     newReporter(config.Name(), logger),
@@ -100,7 +100,7 @@ func New(
 	return &r, nil
 }
 
-func buildTransportServer(config Config, logger *zap.Logger) (transport.Server, error) {
+func buildTransportServer(config *Config, logger *zap.Logger) (transport.Server, error) {
 	switch strings.ToLower(config.Transport) {
 	case "", "tcp":
 		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)

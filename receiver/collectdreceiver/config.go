@@ -22,8 +22,10 @@ import (
 
 // Config defines configuration for Collectd receiver.
 type Config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-
+	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	// TODO: Use HTTPClientSettings
+	// The target from which the receiver is going to scrape metrics,
+	Endpoint         string        `mapstructure:"endpoint"`
 	Timeout          time.Duration `mapstructure:"timeout"`
 	AttributesPrefix string        `mapstructure:"attributes_prefix"`
 	Encoding         string        `mapstructure:"encoding"`

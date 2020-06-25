@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutils"
@@ -41,7 +42,7 @@ import (
 func Test_carbonreceiver_New(t *testing.T) {
 	defaultConfig := (&Factory{}).CreateDefaultConfig().(*Config)
 	type args struct {
-		config       Config
+		config       *Config
 		nextConsumer consumer.MetricsConsumerOld
 	}
 	tests := []struct {
@@ -52,16 +53,16 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "default_config",
 			args: args{
-				config:       *defaultConfig,
+				config:       defaultConfig,
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
 		},
 		{
 			name: "zero_value_parser",
 			args: args{
-				config: Config{
+				config: &Config{
 					ReceiverSettings: defaultConfig.ReceiverSettings,
-					Transport:        defaultConfig.Transport,
+					NetAddr:          defaultConfig.NetAddr,
 					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
@@ -70,14 +71,14 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "nil_nextConsumer",
 			args: args{
-				config: *defaultConfig,
+				config: defaultConfig,
 			},
 			wantErr: errNilNextConsumer,
 		},
 		{
 			name: "empty_endpoint",
 			args: args{
-				config: Config{
+				config: &Config{
 					ReceiverSettings: configmodels.ReceiverSettings{},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
@@ -87,12 +88,14 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "invalid_transport",
 			args: args{
-				config: Config{
+				config: &Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "invalid_transport_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "invalid_transport_rcv",
 					},
-					Transport: "unknown_transp",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:2003",
+						Transport: "unknown_transp",
+					},
 					Parser: &protocol.Config{
 						Type:   "plaintext",
 						Config: &protocol.PlaintextConfig{},
@@ -105,12 +108,14 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "regex_parser",
 			args: args{
-				config: Config{
+				config: &Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "regex_parser_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "regex_parser_rcv",
 					},
-					Transport: "tcp",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:2003",
+						Transport: "tcp",
+					},
 					Parser: &protocol.Config{
 						Type: "regex",
 						Config: &protocol.RegexParserConfig{
@@ -128,12 +133,14 @@ func Test_carbonreceiver_New(t *testing.T) {
 		{
 			name: "negative_tcp_idle_timeout",
 			args: args{
-				config: Config{
+				config: &Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "negative_tcp_idle_timeout",
-						Endpoint: "localhost:2003",
+						NameVal: "negative_tcp_idle_timeout",
 					},
-					Transport:      "tcp",
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:2003",
+						Transport: "tcp",
+					},
 					TCPIdleTimeout: -1 * time.Second,
 					Parser: &protocol.Config{
 						Type:   "plaintext",
@@ -201,7 +208,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
 			sink := new(exportertest.SinkMetricsExporterOld)
-			rcv, err := New(zap.NewNop(), *cfg, sink)
+			rcv, err := New(zap.NewNop(), cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
 

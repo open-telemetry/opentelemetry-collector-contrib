@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
@@ -33,8 +34,8 @@ const (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
-	// Transport is either "tcp" or "udp".
-	Transport string `mapstructure:"transport"`
+	// Configures the receiver server protocol.
+	confignet.NetAddr `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// TCPIdleTimeout is the timout for idle TCP connections, it is ignored
 	// if transport being used is UDP.

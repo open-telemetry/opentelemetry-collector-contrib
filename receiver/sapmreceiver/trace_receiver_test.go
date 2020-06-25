@@ -37,7 +37,6 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -254,7 +253,7 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
+					Endpoint: defaultEndpoint,
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: false,
@@ -266,7 +265,7 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
+					Endpoint: defaultEndpoint,
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: true,
@@ -278,8 +277,7 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS compressed sapm",
 			args: args{
 				config: &Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: tlsAddress},
+					Endpoint: tlsAddress,
 					TLSCredentials: &configtls.TLSSetting{
 						CertFile: ("./testdata/testcert.crt"),
 						KeyFile:  ("./testdata/testkey.key"),
@@ -347,7 +345,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{Endpoint: defaultEndpoint},
+				Endpoint: defaultEndpoint,
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},

@@ -23,7 +23,11 @@ import (
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	httpConfig                    `mapstructure:",squash"`
+	// TODO: Use HTTPClientSettings
+	// The target from which the receiver is going to scrape metrics,
+	Endpoint string `mapstructure:"endpoint"`
+
+	httpConfig `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.
@@ -32,8 +36,7 @@ type Config struct {
 	UseServiceAccount bool `mapstructure:"use_service_account"`
 }
 
-// TODO: Move to a common package for use by other receivers and also pull
-// in other utilities from
+// TODO: Move to a common package for use by other receivers and also pull in other utilities from
 // https://github.com/signalfx/signalfx-agent/blob/master/pkg/core/common/httpclient/http.go.
 type httpConfig struct {
 	// Whether not TLS is enabled

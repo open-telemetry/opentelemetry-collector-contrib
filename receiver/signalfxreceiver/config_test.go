@@ -51,8 +51,8 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "signalfx/allsettings",
-				Endpoint: "localhost:9943",
 			},
+			Endpoint: "localhost:9943",
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: true,
 			},
@@ -64,8 +64,8 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  typeStr,
 				NameVal:  "signalfx/tls",
-				Endpoint: ":9943",
 			},
+			Endpoint: ":9943",
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "/test.crt",
 				KeyFile:  "/test.key",
