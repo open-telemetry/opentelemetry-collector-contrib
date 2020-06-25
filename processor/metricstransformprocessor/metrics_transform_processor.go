@@ -121,6 +121,12 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric, transf
 		if op.Action == UpdateLabel {
 			mtp.updateLabelOp(metricPtr, op)
 		}
+		// aggregate across labels
+		if op.Action == AggregateLabels {
+		}
+		// aggregate across label values
+		if op.Action == AggregateLabelValues {
+		}
 	}
 }
 
