@@ -37,6 +37,15 @@ func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metri
 	return nil
 }
 
+type mockTraceConsumer struct {
+}
+
+var _ (consumer.TraceConsumer) = (*mockTraceConsumer)(nil)
+
+func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	return nil
+}
+
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
@@ -44,6 +53,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
 	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
+}
+
+func TestCreateTraceReceiver(t *testing.T) {
+	// TODO: Create proper tests after CreateTraceReceiver is implemented.
+	factory := &Factory{}
+	_, err := factory.CreateTraceReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{
+			Logger: zap.NewNop(),
+		},
+		factory.CreateDefaultConfig().(*Config),
+		&mockTraceConsumer{},
+	)
+	assert.NotNil(t, err, "not implemented yet")
+	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

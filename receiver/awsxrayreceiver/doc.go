@@ -16,5 +16,4 @@
 // Opentelemetry collector to receive traces in the AWS X-Ray segment format.
 // More details can be found on:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-
 package awsxrayreceiver
