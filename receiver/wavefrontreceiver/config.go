@@ -24,6 +24,10 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
+
 	// TCPIdleTimeout is the timout for idle TCP connections.
 	TCPIdleTimeout time.Duration `mapstructure:"tcp_idle_timeout"`
 

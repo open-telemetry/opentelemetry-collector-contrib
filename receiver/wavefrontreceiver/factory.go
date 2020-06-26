@@ -56,10 +56,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  typeStr,
-			Endpoint: "localhost:2003",
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
 		},
+		Endpoint:       "localhost:2003",
 		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
 	}
 }
@@ -92,6 +92,7 @@ func (f *Factory) CreateMetricsReceiver(
 	// a dedicated parser for its format.
 	carbonCfg := carbonreceiver.Config{
 		ReceiverSettings: rCfg.ReceiverSettings,
+		Endpoint:         rCfg.Endpoint,
 		Transport:        "tcp",
 		TCPIdleTimeout:   rCfg.TCPIdleTimeout,
 		Parser: &protocol.Config{

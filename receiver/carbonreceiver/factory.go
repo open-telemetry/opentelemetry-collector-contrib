@@ -89,10 +89,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  typeStr,
-			Endpoint: "localhost:2003",
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
 		},
+		Endpoint:       "localhost:2003",
 		Transport:      "tcp",
 		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
 		Parser: &protocol.Config{
