@@ -22,4 +22,14 @@ type SubprocessConfig struct {
 	Port int `mapstructure:"port"`
 	// CustomName is a custom user-specified name to keep track of a certain process in logs
 	CustomName string `mapstructure:"custom_name"`
+	// Env is a list of env variables to pass to a specific command
+	Env []EnvConfig `mapstructure:"env"`
+}
+
+// EnvConfig is the config definition of each key-value pair for env variables
+type EnvConfig struct {
+	// Name is the name of the environment variable
+	Name string `mapstructure:"name"`
+	// Value is the value of the variables
+	Value string `mapstructure:"value"`
 }

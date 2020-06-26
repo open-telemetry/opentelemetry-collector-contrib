@@ -16,11 +16,12 @@ package prometheusexec
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
+	subprocessconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
@@ -64,64 +65,72 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 // getPrometheusConfig returns the config after the correct logic is made
 // All the scrape/subprocess configs are looped over and the proper attributes are assigned into the struct
 func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
-	scrapeConfigs := []*config.ScrapeConfig{}
-	subprocessConfigs := []*subprocessmanager.Process{}
-
-	// Loop over the configurations and create the appropriate entries in the above slices
-	for i, configuration := range cfg.ScrapeConfigs {
-		// If there is no command to execute, throw error since this is a required field
-		if configuration.SubprocessConfig.CommandString == "" {
-			return nil, errors.New("no command to execute entered in config file")
-		}
-
-		scrapeConfig := &config.ScrapeConfig{}
-		subprocessConfig := &subprocessmanager.Process{}
-
-		scrapeConfig.ScrapeInterval = model.Duration(configuration.ScrapeInterval)
-		scrapeConfig.ScrapeTimeout = model.Duration(configuration.ScrapeInterval)
-		scrapeConfig.HonorTimestamps = true
-		scrapeConfig.Scheme = "http"
-		scrapeConfig.MetricsPath = defaultMetricsPath
-
-		if configuration.SubprocessConfig.CustomName == "" {
-			// If there is no customName, try to simply generate one by using the first word in the exec string, assuming it's the binary (i.e. ./mysqld_exporter ...)
-			defaultName := strings.Split(configuration.SubprocessConfig.CommandString, " ")[0]
-			scrapeConfig.JobName = defaultName
-			subprocessConfig.CustomName = defaultName
-		} else {
-			scrapeConfig.JobName = configuration.SubprocessConfig.CustomName
-			subprocessConfig.CustomName = configuration.SubprocessConfig.CustomName
-		}
-
-		// Set the proper target
-		scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
-			StaticConfigs: []*targetgroup.Group{
-				{
-					Targets: []model.LabelSet{
-						{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", configuration.SubprocessConfig.Port))},
-					},
-				},
-			},
-		}
-
-		// Append the resulting scrapeConfig into the aforedeclared slice of scrapeConfigs
-		scrapeConfigs = append(scrapeConfigs, scrapeConfig)
-
-		subprocessConfig.Command = configuration.SubprocessConfig.CommandString
-		subprocessConfig.Port = configuration.SubprocessConfig.Port
-		subprocessConfig.Index = i
-
-		// Append the resulting subprocessConfig to the aforedeclared slice of subprocessConfigs
-		subprocessConfigs = append(subprocessConfigs, subprocessConfig)
+	if cfg.SubprocessConfig.CommandString == "" {
+		return nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
 	}
 
-	subprocessmanager.DistributeProcesses(subprocessConfigs)
+	scrapeConfig := &config.ScrapeConfig{}
+	subprocessConfig := &subprocessmanager.Process{}
+
+	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeInterval)
+	scrapeConfig.Scheme = "http"
+	scrapeConfig.MetricsPath = defaultMetricsPath
+
+	// This is a default Prometheus scrape config value, which indicates that the scraped metrics can be modified
+	scrapeConfig.HonorLabels = false
+	// This is a default Prometheus scrape config value, which indicates that timestamps of the scrape should be respected
+	scrapeConfig.HonorTimestamps = true
+
+	// Try to get a custom name from the config (receivers should be named prometheus_exec/customName)
+	splitName := strings.Split(cfg.Name(), "/")
+	customName := strings.TrimSpace(splitName[len(splitName)-1])
+	if customName == "" || len(splitName) < 2 {
+		// If there is no customName, try to simply generate one by using the first word in the exec string, assuming it's the binary (i.e. ./mysqld_exporter ...)
+		defaultName := strings.Split(cfg.SubprocessConfig.CommandString, " ")[0]
+		scrapeConfig.JobName = defaultName
+		subprocessConfig.CustomName = defaultName
+	} else {
+		scrapeConfig.JobName = customName
+		subprocessConfig.CustomName = customName
+	}
+
+	// Set the proper target
+	scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
+		StaticConfigs: []*targetgroup.Group{
+			{
+				Targets: []model.LabelSet{
+					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.SubprocessConfig.Port))},
+				},
+			},
+		},
+	}
+
+	subprocessConfig.Command = cfg.SubprocessConfig.CommandString
+	subprocessConfig.Port = cfg.SubprocessConfig.Port
+	subprocessConfig.Env = formatEnvSlice(&cfg.SubprocessConfig.Env)
+
+	// Start the process with the built config
+	go subprocessmanager.StartProcess(subprocessConfig)
 
 	return &prometheusreceiver.Config{
 		PrometheusConfig: &config.Config{
-			ScrapeConfigs: scrapeConfigs,
+			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
 	}, nil
+}
+
+func formatEnvSlice(envs *[]subprocessconfig.EnvConfig) []string {
+	if len(*envs) == 0 {
+		return nil
+	}
+
+	envSlice := []string{}
+	for _, env := range *envs {
+		envSlice = append(envSlice, fmt.Sprintf("%v=%v", env.Name, env.Value))
+	}
+
+	return envSlice
 }
 
 // Shutdown stops the underlying Prometheus receiver.

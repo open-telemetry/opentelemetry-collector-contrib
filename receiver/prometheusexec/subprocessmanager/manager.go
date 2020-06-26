@@ -29,31 +29,28 @@ type Process struct {
 	Port       int
 	Env        []string
 	CustomName string
-	Index      int
 }
 
 const (
 	healthyProcessTime time.Duration = 30 * time.Minute // Default time for a process to stay alive and be considered healthy
+	healthyCrashCount  int           = 3                // Amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
+	delayMultiplier    float64       = 2.0              // The factor by which the delay scales (i.e. doubling every crash)
 	baseDelay          time.Duration = 1 * time.Second  // Base exponential backoff delay
 )
 
-// DistributeProcesses will call the necessary helper functions to start and handle the processes
-func DistributeProcesses(processes []*Process) {
-	for _, proc := range processes {
-		go start(proc)
-	}
-}
-
-// start will put a process in an infinite starting loop (if the process crashes there is a delay before it starts again computed by the exponentional backoff algorithm)
-func start(proc *Process) {
+// StartProcess will put a process in an infinite starting loop (if the process crashes there is a delay before it starts again computed by the exponentional backoff algorithm)
+func StartProcess(proc *Process) {
 	var (
 		start      time.Time
 		elapsed    time.Duration
-		crashCount float64
+		crashCount int
 	)
 
 	for true {
+		// Create the command object and attach current os environment + env variables configured by user
 		childProcess := exec.Command(proc.Command)
+		childProcess.Env = os.Environ()
+		childProcess.Env = append(childProcess.Env, proc.Env...)
 		attachChildOutputToParent(childProcess)
 
 		// Start and stop timer right before and after executing command
@@ -76,14 +73,14 @@ func start(proc *Process) {
 	}
 }
 
-func getDelay(elapsed time.Duration, crashCount float64) time.Duration {
+func getDelay(elapsed time.Duration, crashCount int) time.Duration {
 	// Return baseDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
-	if elapsed > healthyProcessTime || crashCount <= 3 {
+	if elapsed > healthyProcessTime || crashCount <= healthyCrashCount {
 		return baseDelay
 	}
 
 	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number, all in time.Duration
-	return baseDelay * time.Duration(math.Pow(2.0, (crashCount-3.0)+(0.3+rand.Float64())))
+	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
 }
 
 // Swap the child processes' Stdout and Stderr to parent processe's Stdout/Stderr for now

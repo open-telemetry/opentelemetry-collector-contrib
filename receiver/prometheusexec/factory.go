@@ -58,15 +58,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal:  typeStr,
 			Endpoint: defaultEndpoint,
 		},
-		ScrapeConfigs: []scrapeConfig{
-			{
-				ScrapeInterval: defaultCollectionInterval,
-				SubprocessConfig: config.SubprocessConfig{
-					CommandString: "",
-					Port:          0,
-					CustomName:    "",
-				},
-			},
+		ScrapeInterval: defaultCollectionInterval,
+		SubprocessConfig: config.SubprocessConfig{
+			CommandString: "",
+			CustomName:    "",
+			Env:           []config.EnvConfig{},
 		},
 	}
 }

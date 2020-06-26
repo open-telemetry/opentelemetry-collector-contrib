@@ -26,12 +26,6 @@ import (
 type Config struct {
 	// Generic receiver config
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	// ScrapeConfigs is the list of scrape configurations
-	ScrapeConfigs []scrapeConfig `mapstructure:"scrape_configs"`
-}
-
-// scrapeConfig holds all the information for the subprocess manager and Prometheus receiver
-type scrapeConfig struct {
 	// ScrapeInterval is the time between each scrape completed by the Receiver
 	ScrapeInterval time.Duration `mapstructure:"scrape_interval,omitempty"`
 	// SubprocessConfigs is the list of subprocess configurations
