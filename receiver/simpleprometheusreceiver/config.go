@@ -24,6 +24,9 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	httpConfig                    `mapstructure:",squash"`
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.

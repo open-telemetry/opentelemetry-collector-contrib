@@ -47,10 +47,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  "wavefront/allsettings",
-				Endpoint: "localhost:8080",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: "wavefront/allsettings",
 			},
+			Endpoint:            "localhost:8080",
 			TCPIdleTimeout:      5 * time.Second,
 			ExtractCollectdTags: true,
 		},

@@ -47,10 +47,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  "collectd/one",
-				Endpoint: "localhost:12345",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: "collectd/one",
 			},
+			Endpoint:         "localhost:12345",
 			Timeout:          time.Second * 50,
 			AttributesPrefix: "dap_",
 			Encoding:         "command",

@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.4.0
+	go.opentelemetry.io/collector v0.4.1-0.20200625162555-bd886e86b7ca
 	go.uber.org/zap v1.14.1
 )
 
