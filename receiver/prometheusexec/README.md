@@ -112,8 +112,8 @@ receivers:
 
 ```yaml
 receivers:
-    prometheus_exec/apache:
-        exec: ./apache_exporter --retry=false
+    prometheus_exec/mysql:
+        exec: ./mysql_exporter --retry=false
         port: 1234 
         scrape_interval: 60s
         env:
