@@ -16,6 +16,7 @@ package awsxrayreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 const (
@@ -32,9 +33,6 @@ type Config struct {
 	// squash ensures fields are correctly decoded in embedded struct
 	// https://godoc.org/github.com/mitchellh/mapstructure#hdr-Embedded_Structs_and_Squashing
 
-	// Version is the version of the configuration schema of this receiver.
-	Version *string `mapstructure:"version"`
-
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyServer *proxyServer `mapstructure:"proxy_server"`
 }
@@ -49,10 +47,9 @@ type proxyServer struct {
 	// forwards HTTP requests to AWS X-Ray backend through.
 	ProxyAddress string `mapstructure:"proxy_address"`
 
-	// NoVerifySsl enables or disables TLS certificate verification
-	// when the local TCP server forwards HTTP requests to the
-	// AWS X-Ray backend.
-	NoVerifySsl *bool `mapstructure:"no_verify_ssl"`
+	// TLSSetting struct exposes TLS client configuration when forwarding
+	// calls to the AWS X-Ray backend.
+	TLSSetting configtls.TLSClientSetting `mapstructure:",squash"`
 
 	// Region is the AWS region the local TCP server forwards requests to.
 	Region string `mapstructure:"region"`
@@ -65,7 +62,7 @@ type proxyServer struct {
 	// TCP server forwards requests to.
 	AWSEndpoint string `mapstructure:"aws_endpoint"`
 
-	// LocalMode determines whether the ECS instance metadata endpoint
+	// LocalMode determines whether the EC2 instance metadata endpoint
 	// will be called or not. Set to `true` to skip EC2 instance
 	// metadata check.
 	LocalMode *bool `mapstructure:"local_mode"`

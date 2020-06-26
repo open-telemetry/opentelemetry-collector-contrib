@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -54,17 +55,19 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			// we use localhost here so that IPv6 can work.
 			Endpoint: "localhost:2000",
 		},
-		Version: aws.String(version),
 		ProxyServer: &proxyServer{
 			// Similar reasoning here. Use localhost instead
 			// of 127.0.0.1
 			TCPEndpoint:  "localhost:2000",
 			ProxyAddress: "",
-			NoVerifySsl:  aws.Bool(false),
-			Region:       "",
-			RoleARN:      "",
-			AWSEndpoint:  "",
-			LocalMode:    aws.Bool(false),
+			TLSSetting: configtls.TLSClientSetting{
+				Insecure:   false,
+				ServerName: "",
+			},
+			Region:      "",
+			RoleARN:     "",
+			AWSEndpoint: "",
+			LocalMode:   aws.Bool(false),
 		},
 	}
 }

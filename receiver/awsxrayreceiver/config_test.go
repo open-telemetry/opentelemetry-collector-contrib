@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,38 +39,15 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 4)
+	assert.Equal(t, len(cfg.Receivers), 3)
 
 	// ensure default configurations are generated when users provide
 	// nothing.
 	r0 := cfg.Receivers[typeStr]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
-	// ensure the version field is overwritten when users provide a value.
-	// The rest of the default configurations remain.
-	r1 := cfg.Receivers[typeStr+"/version_field"].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr + "/version_field",
-				Endpoint: "localhost:2000",
-			},
-			Version: aws.String("1.3.0"),
-			ProxyServer: &proxyServer{
-				TCPEndpoint:  "localhost:2000",
-				ProxyAddress: "",
-				NoVerifySsl:  aws.Bool(false),
-				Region:       "",
-				RoleARN:      "",
-				AWSEndpoint:  "",
-				LocalMode:    aws.Bool(false),
-			},
-		},
-		r1)
-
 	// ensure the UDP endpoint can be properly overwritten
-	r2 := cfg.Receivers[typeStr+"/udp_endpoint"].(*Config)
+	r1 := cfg.Receivers[typeStr+"/udp_endpoint"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
@@ -77,21 +55,23 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  typeStr + "/udp_endpoint",
 				Endpoint: "localhost:5678",
 			},
-			Version: aws.String(version),
 			ProxyServer: &proxyServer{
 				TCPEndpoint:  "localhost:2000",
 				ProxyAddress: "",
-				NoVerifySsl:  aws.Bool(false),
-				Region:       "",
-				RoleARN:      "",
-				AWSEndpoint:  "",
-				LocalMode:    aws.Bool(false),
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure:   false,
+					ServerName: "",
+				},
+				Region:      "",
+				RoleARN:     "",
+				AWSEndpoint: "",
+				LocalMode:   aws.Bool(false),
 			},
 		},
-		r2)
+		r1)
 
 	// ensure the fields under proxy_server are properly overwritten
-	r3 := cfg.Receivers[typeStr+"/proxy_server"].(*Config)
+	r2 := cfg.Receivers[typeStr+"/proxy_server"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
@@ -99,16 +79,18 @@ func TestLoadConfig(t *testing.T) {
 				NameVal:  typeStr + "/proxy_server",
 				Endpoint: "localhost:2000",
 			},
-			Version: aws.String(version),
 			ProxyServer: &proxyServer{
 				TCPEndpoint:  "localhost:1234",
 				ProxyAddress: "https://proxy.proxy.com",
-				NoVerifySsl:  aws.Bool(true),
-				Region:       "us-west-1",
-				RoleARN:      "arn:aws:iam::123456789012:role/awesome_role",
-				AWSEndpoint:  "https://another.aws.endpoint.com",
-				LocalMode:    aws.Bool(true),
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure:   true,
+					ServerName: "something",
+				},
+				Region:      "us-west-1",
+				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
+				AWSEndpoint: "https://another.aws.endpoint.com",
+				LocalMode:   aws.Bool(true),
 			},
 		},
-		r3)
+		r2)
 }

@@ -6,6 +6,8 @@
 The AWS X-Ray receiver accepts segments (i.e. spans) in the [X-Ray Segment format](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html).
 This enables the collector to receive spans emitted by the existing X-Ray SDK. [Centralized sampling](https://github.com/aws/aws-xray-daemon/blob/master/CHANGELOG.md#300-2018-08-28) is also supported via a local TCP port.
 
+The requests sent to AWS are authenticated using the mechanism documented [here](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
+
 ## Configuration
 
 Example:
@@ -13,7 +15,6 @@ Example:
 ```yaml
 receivers:
   aws_xray:
-    version: 1.0.0
     endpoint: localhost:2000
     proxy_server:
       tcp_endpoint: localhost:2000
@@ -27,47 +28,37 @@ receivers:
 
 The default configurations below are based on the [default configurations](https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99) of the existing X-Ray Daemon.
 
-### version
-The version of the configuration schema for this receiver.
-
-Default: `1.0.0`
-
-### endpoint
+### endpoint (Optional)
 The UDP address and port on which this receiver listens for X-Ray segment documents emitted by the X-Ray SDK.
 
 Default: `localhost:2000`
 
-### tcp_endpoint
+### proxy_server (Optional)
+Defines configurations related to the local TCP proxy server.
+
+### tcp_endpoint (Optional)
 The address and port on which this receiver listens for calls from the X-Ray SDK and relays them to the AWS X-Ray backend to get sampling rules and report sampling statistics.
 
 Default: `localhost:2000`
 
-### proxy_address
-Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through.
-
-Default: `""`
+### proxy_address (Optional)
+Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
 
 ### no_verify_ssl
 Enables or disables TLS certificate verification when the local TCP server forwards HTTP requests to the AWS X-Ray backend.
 
 Default: `false`
 
-### region
+### region (Optional)
 The AWS region the local TCP server forwards requests to.
 
-Default: `""`
+### role_arn (Optional)
+The IAM role used by the local TCP server when communicating with the AWS X-Ray service. If non-empty, the receiver will attempt to call STS to retrieve temporary credentials, otherwise the standard AWS credential [lookup](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) will be performed.
 
-### role_arn
-The IAM role used by the local TCP server when communicating with the AWS X-Ray service.
-
-Default: `""`
-
-### aws_endpoint
+### aws_endpoint (Optional)
 The X-Ray service endpoint which the local TCP server forwards requests to.
 
-Default: `""`
-
 ### local_mode
-Determines whether the ECS instance metadata endpoint will be called or not. Set to `true` to skip EC2 instance metadata check.
+Determines whether the EC2 instance metadata endpoint will be called or not. Set to `true` to skip EC2 instance metadata check.
 
 Default: `false`
