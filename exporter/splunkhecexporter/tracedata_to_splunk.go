@@ -20,7 +20,7 @@ import (
 )
 
 type splunkEvent struct {
-	Time       int64       `json:"time"`                 // epoch time
+	Time       float64     `json:"time"`                 // epoch time
 	Host       string      `json:"host"`                 // hostname
 	Source     string      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
@@ -40,7 +40,7 @@ func traceDataToSplunk(logger *zap.Logger, data consumerdata.TraceData, config *
 	splunkEvents := make([]*splunkEvent, 0)
 	for _, span := range data.Spans {
 		if span.StartTime == nil {
-			logger.Warn(
+			logger.Debug(
 				"Span dropped as it had no start timestamp",
 				zap.Any("span", span))
 			numDroppedSpans++

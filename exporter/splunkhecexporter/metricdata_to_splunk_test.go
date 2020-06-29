@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -39,7 +41,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
+	tsMSecs := float64(tsUnix.UnixNano()) / 1e3
 
 	doubleVal := 1234.5678
 	doublePt := metricstestutils.Double(tsUnix, doubleVal)
@@ -208,7 +210,7 @@ func getFieldValue(metric *splunkMetric) string {
 
 func commonSplunkMetric(
 	metricName string,
-	ts int64,
+	ts float64,
 	keys []string,
 	values []string,
 	val interface{},
@@ -229,7 +231,7 @@ func commonSplunkMetric(
 
 func expectedFromDistribution(
 	metricName string,
-	ts int64,
+	ts float64,
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
@@ -266,7 +268,7 @@ func expectedFromDistribution(
 
 func expectedFromSummary(
 	metricName string,
-	ts int64,
+	ts float64,
 	keys []string,
 	values []string,
 	summaryTimeSeries *metricspb.TimeSeries,
@@ -293,4 +295,14 @@ func expectedFromSummary(
 	}
 
 	return dps
+}
+
+func TestTimestampFormat(t *testing.T) {
+	ts := timestamp.Timestamp{Seconds: 32, Nanos: 1000345}
+	assert.Equal(t, 32.001, timestampToEpochMilliseconds(&ts))
+}
+
+func TestTimestampFormatRounding(t *testing.T) {
+	ts := timestamp.Timestamp{Seconds: 32, Nanos: 1999345}
+	assert.Equal(t, 32.002, timestampToEpochMilliseconds(&ts))
 }
