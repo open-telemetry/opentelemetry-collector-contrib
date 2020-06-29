@@ -10,7 +10,7 @@ receivers:
     proxy_server:
       tcp_endpoint: "localhost:1234"
       proxy_address: "https://proxy.proxy.com"
-      Insecure: true
+      insecure: true
       server_name_override: "something"
       region: "us-west-1"
       role_arn: "arn:aws:iam::123456789012:role/awesome_role"

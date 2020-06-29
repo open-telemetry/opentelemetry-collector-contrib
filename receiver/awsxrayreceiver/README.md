@@ -19,7 +19,8 @@ receivers:
     proxy_server:
       tcp_endpoint: localhost:2000
       proxy_address: ""
-      no_verify_ssl: false
+      insecure: false
+      server_name_override: ""
       region: ""
       role_arn: ""
       aws_endpoint: ""
@@ -44,13 +45,16 @@ Default: `localhost:2000`
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
 
-### no_verify_ssl
-Enables or disables TLS certificate verification when the local TCP server forwards HTTP requests to the AWS X-Ray backend.
+### insecure
+Enables or disables TLS certificate verification when the local TCP server forwards HTTP requests to the AWS X-Ray backend. This sets the `InsecureSkipVerify` in the [TLSConfig](https://godoc.org/crypto/tls#Config). When setting to true, TLS is susceptible to man-in-the-middle attacks so it should be used only for testing.
 
 Default: `false`
 
+### server_name_override (Optional)
+This sets the ``ServerName` in the [TLSConfig](https://godoc.org/crypto/tls#Config).
+
 ### region (Optional)
-The AWS region the local TCP server forwards requests to.
+The AWS region the local TCP server forwards requests to. When missing, we will try to retrieve this value through environment variables or optionally ECS/EC2 metadata endpoint (depends on `local_mode` below).
 
 ### role_arn (Optional)
 The IAM role used by the local TCP server when communicating with the AWS X-Ray service. If non-empty, the receiver will attempt to call STS to retrieve temporary credentials, otherwise the standard AWS credential [lookup](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials) will be performed.
@@ -59,6 +63,6 @@ The IAM role used by the local TCP server when communicating with the AWS X-Ray 
 The X-Ray service endpoint which the local TCP server forwards requests to.
 
 ### local_mode
-Determines whether the EC2 instance metadata endpoint will be called or not. Set to `true` to skip EC2 instance metadata check.
+Determines whether the ECS/EC2 instance metadata endpoint will be called to fetch the AWS region to send requests to. Set to `true` to skip metadata check.
 
 Default: `false`
