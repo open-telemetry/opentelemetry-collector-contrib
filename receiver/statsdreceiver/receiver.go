@@ -3,14 +3,16 @@ package statsdreceiver
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net/http"
 	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 )
 
 var (
@@ -24,11 +26,13 @@ var _ component.MetricsReceiver = (*statsdReceiver)(nil)
 // statsdReceiver implements the component.MetricsReceiver for StatsD protocol.
 type statsdReceiver struct {
 	sync.Mutex
-	logger             *zap.Logger
-	addr               string
-	server             *http.Server
-	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumerOld
+	logger *zap.Logger
+	addr   string
+	// config *Config
+
+	server       transport.Server
+	parser       protocol.Parser
+	nextConsumer consumer.MetricsConsumerOld
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -44,16 +48,21 @@ func New(
 		return nil, errNilNextConsumer
 	}
 
+	if addr == "" {
+		addr = "localhost:8125"
+	}
+
+	server, err := transport.NewUDPServer(addr)
+	if err != nil {
+		return nil, err
+	}
+
 	r := &statsdReceiver{
 		logger:       logger,
 		addr:         addr,
+		parser:       &protocol.DogStatsDParser{},
 		nextConsumer: nextConsumer,
-	}
-	r.server = &http.Server{
-		Addr:         addr,
-		Handler:      r,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
+		server:       server,
 	}
 	return r, nil
 }
@@ -63,13 +72,13 @@ func (ddr *statsdReceiver) Start(_ context.Context, host component.Host) error {
 	ddr.Lock()
 	defer ddr.Unlock()
 
-	err := errAlreadyStarted
+	err := componenterror.ErrAlreadyStarted
 	ddr.startOnce.Do(func() {
 		err = nil
 		go func() {
-			err = ddr.server.ListenAndServe()
+			err = ddr.server.ListenAndServe(ddr.parser, ddr.nextConsumer)
 			if err != nil {
-				host.ReportFatalError(fmt.Errorf("error starting statsd receiver: %v", err))
+				host.ReportFatalError(err)
 			}
 		}()
 	})
@@ -84,26 +93,7 @@ func (ddr *statsdReceiver) Shutdown(context.Context) error {
 
 	var err = errAlreadyStopped
 	ddr.stopOnce.Do(func() {
-		err = ddr.server.Shutdown(context.Background())
+		err = ddr.server.Close()
 	})
 	return err
-}
-
-// ServeHTTP acts as the default and only HTTP handler for the StatsD receiver.
-func (ddr *statsdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	w.Write([]byte("OK"))
-}
-
-func (ddr *statsdReceiver) handleHTTPErr(w http.ResponseWriter, err error, msg string) {
-	w.WriteHeader(http.StatusBadRequest)
-	ddr.logger.Error(msg, zap.Error(err))
-	_, err = w.Write([]byte(msg))
-	if err != nil {
-		ddr.logger.Error("error writing to response writer", zap.Error(err))
-	}
 }
