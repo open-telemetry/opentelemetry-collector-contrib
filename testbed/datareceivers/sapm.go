@@ -17,7 +17,6 @@ package datareceivers
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/testbed/testbed"
@@ -55,12 +54,11 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 }
 
 // Stop the receiver.
-func (sr *SapmDataReceiver) Stop() {
+func (sr *SapmDataReceiver) Stop() error {
 	if sr.receiver != nil {
-		if err := sr.receiver.Shutdown(context.Background()); err != nil {
-			log.Printf("Cannot stop Sapm receiver: %s", err.Error())
-		}
+		return sr.receiver.Shutdown(context.Background())
 	}
+	return nil
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.

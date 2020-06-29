@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutils"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
 
 func TestNew(t *testing.T) {
@@ -78,17 +78,17 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 
 	smallBatch := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_gauge",
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
-					metricstestutils.Double(time.Now(), 123))),
+					metricstestutil.Double(time.Now(), 123))),
 		},
 	}
 
@@ -203,7 +203,7 @@ func TestConsumeMetricsData(t *testing.T) {
 // Other tests didn't for the concurrency aspect of connPool, this test
 // is designed to force that.
 func Test_connPool_Concurrency(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
 	ln, err := net.ListenTCP("tcp", laddr)
@@ -286,14 +286,14 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
 		md.Metrics = append(md.Metrics,
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutils.Timestamp(ts),
+						Timestamp: metricstestutil.Timestamp(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),

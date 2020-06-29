@@ -61,8 +61,8 @@ func (cr *CarbonDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.M
 }
 
 // Stop the receiver.
-func (cr *CarbonDataReceiver) Stop() {
-	cr.receiver.Shutdown(context.Background())
+func (cr *CarbonDataReceiver) Stop() error {
+	return cr.receiver.Shutdown(context.Background())
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.

@@ -56,8 +56,8 @@ func (sr *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testb
 }
 
 // Stop the receiver.
-func (sr *SFxMetricsDataReceiver) Stop() {
-	sr.receiver.Shutdown(context.Background())
+func (sr *SFxMetricsDataReceiver) Stop() error {
+	return sr.receiver.Shutdown(context.Background())
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.
