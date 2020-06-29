@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/signalfx/opencensus-go-exporter-kinesis v0.4.2
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.4.1-0.20200625162555-bd886e86b7ca
+	go.opentelemetry.io/collector v0.4.1-0.20200629203949-144127fb4481
 	go.uber.org/zap v1.13.0
 )
 

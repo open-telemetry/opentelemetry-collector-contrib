@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
@@ -235,7 +235,7 @@ func TestReception(t *testing.T) {
 	now := time.Unix(1542158650, 536343000).UTC()
 	nowPlus10min := now.Add(10 * time.Minute)
 	nowPlus10min2sec := now.Add(10 * time.Minute).Add(2 * time.Second)
-	tlsAddress := testutils.GetAvailableLocalAddress(t)
+	tlsAddress := testutil.GetAvailableLocalAddress(t)
 
 	type args struct {
 		config *Config
