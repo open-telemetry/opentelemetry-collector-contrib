@@ -41,7 +41,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	tsMSecs := float64(tsUnix.UnixNano()) / 1e3
+	tsMSecs := timestampToEpochMilliseconds(&timestamp.Timestamp{Seconds: unixSecs, Nanos: int32(unixNSecs)})
 
 	doubleVal := 1234.5678
 	doublePt := metricstestutils.Double(tsUnix, doubleVal)

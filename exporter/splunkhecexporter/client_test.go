@@ -193,9 +193,9 @@ func TestReceiveTraces(t *testing.T) {
 	assert.NoError(t, err)
 	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1000,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2000,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -205,9 +205,9 @@ func TestReceiveMetrics(t *testing.T) {
 	assert.NoError(t, err)
 	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1000,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2000,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
