@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
-	subprocessconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -48,25 +47,32 @@ func new(logger *zap.Logger, config *Config, consumer consumer.MetricsConsumerOl
 func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	factory := &prometheusreceiver.Factory{}
 
-	config, ok := getPrometheusConfig(wrapper.config, wrapper.logger)
+	receiverConfig, subprocessConfig, ok := getPrometheusConfig(wrapper.config, wrapper.logger)
 	if ok != nil {
 		return fmt.Errorf("unable to generate the prometheusexec receiver config: %v", ok)
 	}
 
-	receiver, ok := factory.CreateMetricsReceiver(wrapper.logger, config, wrapper.consumer)
+	receiver, ok := factory.CreateMetricsReceiver(wrapper.logger, receiverConfig, wrapper.consumer)
 	if ok != nil {
 		return fmt.Errorf("unable to create Prometheus receiver: %v", ok)
 	}
 
 	wrapper.prometheusReceiver = receiver
+
+	// Start the process with the built config
+	subprocessConfig.Receiver = receiver
+	subprocessConfig.Context = ctx
+	subprocessConfig.Host = host
+	go subprocessmanager.StartProcess(subprocessConfig)
+
 	return wrapper.prometheusReceiver.Start(ctx, host)
 }
 
 // getPrometheusConfig returns the config after the correct logic is made
 // All the scrape/subprocess configs are looped over and the proper attributes are assigned into the struct
-func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, error) {
+func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, *subprocessmanager.Process, error) {
 	if cfg.SubprocessConfig.CommandString == "" {
-		return nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
+		return nil, nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
 	}
 
 	scrapeConfig := &config.ScrapeConfig{}
@@ -108,29 +114,13 @@ func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.C
 
 	subprocessConfig.Command = cfg.SubprocessConfig.CommandString
 	subprocessConfig.Port = cfg.SubprocessConfig.Port
-	subprocessConfig.Env = formatEnvSlice(&cfg.SubprocessConfig.Env)
-
-	// Start the process with the built config
-	go subprocessmanager.StartProcess(subprocessConfig)
+	subprocessConfig.Env = cfg.SubprocessConfig.Env
 
 	return &prometheusreceiver.Config{
 		PrometheusConfig: &config.Config{
 			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
-	}, nil
-}
-
-func formatEnvSlice(envs *[]subprocessconfig.EnvConfig) []string {
-	if len(*envs) == 0 {
-		return nil
-	}
-
-	envSlice := []string{}
-	for _, env := range *envs {
-		envSlice = append(envSlice, fmt.Sprintf("%v=%v", env.Name, env.Value))
-	}
-
-	return envSlice
+	}, subprocessConfig, nil
 }
 
 // Shutdown stops the underlying Prometheus receiver.

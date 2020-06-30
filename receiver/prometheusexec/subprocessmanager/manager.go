@@ -15,20 +15,30 @@
 package subprocessmanager
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"math"
 	"math/rand"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+	"go.opentelemetry.io/collector/component"
 )
 
 // Process struct holds all the info needed for subprocesses
 type Process struct {
 	Command    string
 	Port       int
-	Env        []string
+	Env        []config.EnvConfig
 	CustomName string
+
+	// Receiver data
+	Receiver component.MetricsReceiver
+	Context  context.Context
+	Host     component.Host
 }
 
 const (
@@ -39,18 +49,24 @@ const (
 )
 
 // StartProcess will put a process in an infinite starting loop (if the process crashes there is a delay before it starts again computed by the exponentional backoff algorithm)
-func StartProcess(proc *Process) {
+func StartProcess(proc *Process) error {
 	var (
-		start      time.Time
-		elapsed    time.Duration
-		crashCount int
+		start        time.Time
+		elapsed      time.Duration
+		crashCount   int
+		originalPort int = proc.Port
+		newPort      int
 	)
 
 	for true {
+		if originalPort == 0 {
+			newPort = generateRandomPort(newPort)
+		}
+
 		// Create the command object and attach current os environment + env variables configured by user
 		childProcess := exec.Command(proc.Command)
 		childProcess.Env = os.Environ()
-		childProcess.Env = append(childProcess.Env, proc.Env...)
+		childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
 		attachChildOutputToParent(childProcess)
 
 		// Start and stop timer right before and after executing command
@@ -59,18 +75,56 @@ func StartProcess(proc *Process) {
 		elapsed = time.Since(start)
 
 		if errProcess != nil {
-			log.Printf("%v", errProcess) // TODO: update with better logging
+			log.Printf("%v process error: %v", proc.CustomName, errProcess) // TODO: update with better logging
 		}
 
-		// Reset crash count to 1 if the process seems to be healthy now
+		// Reset crash count to 1 if the process seems to be healthy now, else increase crashCount
 		if elapsed > healthyProcessTime {
 			crashCount = 1
 		} else {
 			crashCount++
+
+			// Stop the associated receiver until process starts back up again if process is unhealthy, keep alive if process is deemed healthy to not lose data
+			if crashCount > healthyCrashCount {
+				err := proc.Receiver.Shutdown(proc.Context)
+				if err != nil {
+					return fmt.Errorf("could not stop receiver associated to %v process, killing this single process(%v)", proc.CustomName, proc.CustomName)
+				}
+			}
 		}
 		// Sleep this goroutine for a certain amount of time, computed by exponential backoff
 		time.Sleep(getDelay(elapsed, crashCount))
+
+		// Stop the associated receiver if process is unhealthy, keep alive if process is deemed healthy to not lose data
+		if crashCount > healthyCrashCount {
+			err := proc.Receiver.Start(proc.Context, proc.Host)
+			if err != nil {
+				return fmt.Errorf("could not restart receiver associated to %v process, killing this single process (%v)", proc.CustomName, proc.CustomName)
+			}
+		}
 	}
+
+	return nil
+}
+
+func generateRandomPort(lastPort int) int {
+	for true {
+		random := rand.New(rand.NewSource(0)).Seed(time.Now().UnixNano())
+		fmt.Println(random.Intn(100))
+	}
+}
+
+func formatEnvSlice(envs *[]config.EnvConfig) []string {
+	if len(*envs) == 0 {
+		return nil
+	}
+
+	envSlice := make([]string, len(*envs))
+	for i, env := range *envs {
+		envSlice[i] = fmt.Sprintf("%v=%v", env.Name, env.Value)
+	}
+
+	return envSlice
 }
 
 func getDelay(elapsed time.Duration, crashCount int) time.Duration {
