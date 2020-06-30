@@ -27,11 +27,11 @@ func TestCreateReceiver(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig()
 
-	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
 	assert.NoError(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 

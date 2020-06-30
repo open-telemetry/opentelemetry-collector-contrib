@@ -43,7 +43,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	waitableConsumer := waitableMetricsConsumer{}
-	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), rCfg, &waitableConsumer)
+	rcvr, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), rCfg, &waitableConsumer)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
