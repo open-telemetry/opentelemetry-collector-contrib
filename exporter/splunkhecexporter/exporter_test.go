@@ -37,7 +37,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	got, err := createExporter(nil, zap.NewNop())
+	got, err := New(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
@@ -46,9 +46,13 @@ func TestNew(t *testing.T) {
 		Endpoint: "https://example.com:8088",
 		Timeout:  1 * time.Second,
 	}
-	got, err = createExporter(config, zap.NewNop())
+	got, err = New(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
+
+	// This is expected to fail.
+	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{})
+	assert.Error(t, err)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
