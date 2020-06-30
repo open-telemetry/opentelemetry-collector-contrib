@@ -69,7 +69,7 @@ func (f *Factory) CreateMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newMetricsTransformProcessor(nextConsumer, oCfg)
+	return newMetricsTransformProcessor(nextConsumer, oCfg), nil
 
 }
 

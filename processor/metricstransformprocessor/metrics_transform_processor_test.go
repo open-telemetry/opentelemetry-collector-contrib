@@ -230,9 +230,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				Transforms: test.transforms,
 			}
 
-			mtp, err := newMetricsTransformProcessor(next, cfg)
+			mtp := newMetricsTransformProcessor(next, cfg)
 			assert.NotNil(t, mtp)
-			assert.Nil(t, err)
 
 			caps := mtp.GetCapabilities()
 			assert.Equal(t, true, caps.MutatesConsumedData)
@@ -244,14 +243,11 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				Metrics: make([]*metricspb.Metric, len(test.inMN)),
 			}
 			for idx, in := range test.inMN {
-				labels := make([]*metricspb.LabelKey, 0)
-				for _, l := range test.inLabels {
-					labels = append(
-						labels,
-						&metricspb.LabelKey{
-							Key: l,
-						},
-					)
+				labels := make([]*metricspb.LabelKey, len(test.inLabels))
+				for lidx, l := range test.inLabels {
+					labels[lidx] = &metricspb.LabelKey{
+						Key: l,
+					}
 				}
 				md.Metrics[idx] = &metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
@@ -338,9 +334,8 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			Transforms: test.transforms,
 		}
 
-		amp, err := newMetricsTransformProcessor(next, cfg)
-		assert.NotNil(b, amp)
-		assert.Nil(b, err)
+		mtp := newMetricsTransformProcessor(next, cfg)
+		assert.NotNil(b, mtp)
 
 		md := consumerdata.MetricsData{
 			Metrics: make([]*metricspb.Metric, len(test.inMN)),
@@ -356,7 +351,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 
 		b.Run(test.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				assert.NoError(b, amp.ConsumeMetrics(
+				assert.NoError(b, mtp.ConsumeMetrics(
 					context.Background(),
 					pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
 						md,

@@ -19,6 +19,7 @@ import (
 	"log"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,12 +39,12 @@ type metricsTransformProcessor struct {
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) (*metricsTransformProcessor, error) {
+func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
 		cfg:        cfg,
 		next:       next,
 		transforms: cfg.Transforms,
-	}, nil
+	}
 }
 
 // GetCapabilities returns the Capabilities associated with the metrics transform processor.
@@ -72,7 +73,6 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 
 	for i, data := range mds {
 		nameToMetricMapping := make(map[string]*metricspb.Metric)
-		// O(len(data.Metrics))
 		for _, metric := range data.Metrics {
 			nameToMetricMapping[metric.MetricDescriptor.Name] = metric
 		}
@@ -88,7 +88,6 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 				continue
 			}
 
-			// mtp.action is already validated to only contain either update or insert
 			if transform.Action == Update {
 				mtp.update(metric, transform)
 				if transform.NewName == "" {
@@ -109,17 +108,17 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	return pdatautil.MetricsFromMetricsData(mds)
 }
 
-// update updates the original metric content in the metricPtr pointer.
-func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric, transform Transform) {
+// update updates the original metric content in the metric pointer.
+func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform Transform) {
 	// metric name update
 	if transform.NewName != "" {
-		metricPtr.MetricDescriptor.Name = transform.NewName
+		metric.MetricDescriptor.Name = transform.NewName
 	}
 
 	for _, op := range transform.Operations {
 		// update label
 		if op.Action == UpdateLabel {
-			mtp.updateLabelOp(metricPtr, op)
+			mtp.updateLabelOp(metric, op)
 		}
 		// aggregate across labels
 
@@ -128,22 +127,23 @@ func (mtp *metricsTransformProcessor) update(metricPtr *metricspb.Metric, transf
 	}
 }
 
-// insert inserts a new copy of the metricPtr content into the metricPtrs slice.
+// insert inserts a new copy of the metric content into the metrics slice.
 // returns the new metrics list and the new metric
-func (mtp *metricsTransformProcessor) insert(metricPtr *metricspb.Metric, metricPtrs []*metricspb.Metric, transform Transform) ([]*metricspb.Metric, *metricspb.Metric) {
-	metricCopy := mtp.createCopy(metricPtr)
+func (mtp *metricsTransformProcessor) insert(metric *metricspb.Metric, metrics []*metricspb.Metric, transform Transform) ([]*metricspb.Metric, *metricspb.Metric) {
+	// metricCopy := mtp.createCopy(metric)
+	metricCopy := proto.Clone(metric).(*metricspb.Metric)
 	mtp.update(metricCopy, transform)
-	return append(metricPtrs, metricCopy), metricCopy
+	return append(metrics, metricCopy), metricCopy
 }
 
-func (mtp *metricsTransformProcessor) updateLabelOp(metricPtr *metricspb.Metric, op Operation) {
+func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
 	// if new_label is invalid, skip this operation
-	if !mtp.validNewLabel(metricPtr.MetricDescriptor.LabelKeys, op.NewLabel) {
-		log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metricPtr.MetricDescriptor.Name, validNewLabelFuncName)
+	if !mtp.validNewLabel(metric.MetricDescriptor.LabelKeys, op.NewLabel) {
+		log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metric.MetricDescriptor.Name, validNewLabelFuncName)
 		return
 	}
 
-	for _, label := range metricPtr.MetricDescriptor.LabelKeys {
+	for _, label := range metric.MetricDescriptor.LabelKeys {
 		if label.Key != op.Label {
 			continue
 		}
@@ -153,29 +153,6 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metricPtr *metricspb.Metric,
 		}
 		// label value update
 	}
-}
-
-// createCopy creates a new copy of the input metric.
-func (mtp *metricsTransformProcessor) createCopy(metricPtr *metricspb.Metric) *metricspb.Metric {
-	copyMetricDescriptor := *metricPtr.MetricDescriptor
-	copyLabelKeys := make([]*metricspb.LabelKey, 0)
-	for _, labelKey := range copyMetricDescriptor.LabelKeys {
-		copyLabelKeys = append(
-			copyLabelKeys,
-			&metricspb.LabelKey{
-				Key:         labelKey.Key,
-				Description: labelKey.Description,
-			},
-		)
-	}
-	copyMetricDescriptor.LabelKeys = copyLabelKeys
-
-	copy := &metricspb.Metric{
-		MetricDescriptor: &copyMetricDescriptor,
-		Timeseries:       metricPtr.Timeseries,
-		Resource:         metricPtr.Resource,
-	}
-	return copy
 }
 
 // validNewName determines if the new name is a valid one. An invalid one is one that already exists.
