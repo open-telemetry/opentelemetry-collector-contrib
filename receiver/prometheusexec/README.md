@@ -9,7 +9,7 @@ This receiver makes it easy for a user to collect metrics from third-party servi
 ### How?
 Through the configuration file, you can indicate which binaries to run (usually [Prometheus exporters](https://prometheus.io/docs/instrumenting/exporters/), which are custom binaries that expose the third-party services' metrics using the Prometheus protocol) and `prometheus_exec` will take care of starting the specified binaries with their equivalent Prometheus receiver. This receiver also supports starting binaries with flags and environment variables, retrying them with exponentional backoff if they crash, string templating, and random port assignments.
 
-*Note*: If you do not need to spawn the binaries locally, please condider using the [core Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver/prometheusreceiver) or the [Simple Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/receiver/simpleprometheusreceiver).
+*Note*: If you do not need to spawn the binaries locally, please consider using the [core Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver/prometheusreceiver) or the [Simple Prometheus receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/receiver/simpleprometheusreceiver).
 
 ## Config
 For each `prometheus_exec` defined in the configuration file, the specified command will be run. The command *should* start a binary that exposes Prometheus metrics and an equivalent Prometheus receiver will be instantiated to scrape its metrics, if configured correctly.
