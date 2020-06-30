@@ -53,7 +53,7 @@ var (
 )
 
 type splunkMetric struct {
-	Time       int64                  `json:"time"`                 // epoch time
+	Time       float64                `json:"time"`                 // epoch time
 	Host       string                 `json:"host"`                 // hostname
 	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
@@ -120,11 +120,11 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
-func timestampToEpochMilliseconds(ts *timestamp.Timestamp) int64 {
+func timestampToEpochMilliseconds(ts *timestamp.Timestamp) float64 {
 	if ts == nil {
 		return 0
 	}
-	return ts.GetSeconds()*1e3 + int64(ts.GetNanos()/1e6)
+	return float64(ts.GetSeconds()) + math.Round(float64(ts.GetNanos())/1e6)/1e3
 }
 
 func mapValues(logger *zap.Logger, metric *metricspb.Metric, value interface{}) (map[string]interface{}, error) {
