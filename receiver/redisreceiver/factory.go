@@ -62,6 +62,7 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a Redis metrics receiver.
 func (f *Factory) CreateMetricsReceiver(
+	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,

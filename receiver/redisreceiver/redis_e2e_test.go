@@ -53,7 +53,7 @@ func TestIntegration(t *testing.T) {
 	consumer := &exportertest.SinkMetricsExporterOld{}
 	logger := zaptest.NewLogger(t)
 
-	rcvr, err := f.CreateMetricsReceiver(logger, cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), logger, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{
 		t: t,
