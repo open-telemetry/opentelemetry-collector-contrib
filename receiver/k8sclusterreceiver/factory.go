@@ -70,7 +70,7 @@ func (f Factory) CreateTraceReceiver(ctx context.Context, logger *zap.Logger, cf
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-func (f Factory) CreateMetricsReceiver(logger *zap.Logger, cfg configmodels.Receiver,
+func (f Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 	return newReceiver(logger, rCfg, consumer)
