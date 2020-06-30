@@ -11,11 +11,12 @@ require (
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
 	github.com/open-telemetry/opentelemetry-proto v0.3.0
+	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/signalfx/sapm-proto v0.5.3
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.4.1-0.20200629203949-144127fb4481
+	go.opentelemetry.io/collector v0.4.1-0.20200630153623-992cdc57871e
 	go.uber.org/zap v1.13.0
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect

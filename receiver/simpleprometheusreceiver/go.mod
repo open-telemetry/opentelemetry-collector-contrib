@@ -5,8 +5,9 @@ go 1.14
 require (
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
+	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.4.1-0.20200629203949-144127fb4481
+	go.opentelemetry.io/collector v0.4.1-0.20200630153623-992cdc57871e
 	go.uber.org/zap v1.14.1
 	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 )
