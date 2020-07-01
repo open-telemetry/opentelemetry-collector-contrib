@@ -31,8 +31,8 @@ processors:
           regex: field=(?P<value>.+)
       namespace:
         labels:
-          - tag_name: intuit.asset_id
-            key: intuit.asset_id
+          - tag_name: testing.asset_id
+            key: test.asset_id
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace

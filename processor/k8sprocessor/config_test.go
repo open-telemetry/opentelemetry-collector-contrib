@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 				Namespace:NamespaceExtractConfig{
 					Annotations: nil,
 					Labels:      []FieldExtractConfig{
-						{TagName: "intuit.asset_id", Key: "intuit.asset_id"},
+						{TagName: "testing.asset_id", Key: "test.asset_id"},
 					},
 				},
 			},

@@ -41,7 +41,7 @@ type Config struct {
 	Filter FilterConfig `mapstructure:"filter"`
 }
 
-// ExtractConfig section allows specifying extraction rules to extract
+// NamespaceExtractConfig section allows specifying extraction rules to extract
 // data from k8s namespace specs.
 type NamespaceExtractConfig struct {
 	// Annotations allows extracting data from namespace annotations and record it
