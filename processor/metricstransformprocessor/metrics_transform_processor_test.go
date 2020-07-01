@@ -80,12 +80,6 @@ var (
 		NewLabel: "label1/new",
 	}
 
-	invalidUpdateLabelOperation = Operation{
-		Action:   UpdateLabel,
-		Label:    "label1",
-		NewLabel: "label2",
-	}
-
 	standardTests = []metricsTransformTest{
 		// UPDATE
 		{
