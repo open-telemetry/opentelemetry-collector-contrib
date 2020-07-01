@@ -25,11 +25,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 )
 
-const (
-	validNewNameFuncName  = "validNewName()"
-	validNewLabelFuncName = "validNewLabel()"
-)
-
 type metricsTransformProcessor struct {
 	cfg        *Config
 	next       consumer.MetricsConsumer
@@ -92,7 +87,8 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 				delete(nameToMetricMapping, transform.MetricName)
 			} else if transform.Action == Insert {
 				var newMetric *metricspb.Metric
-				mds[i].Metrics, newMetric = mtp.insert(metric, mds[i].Metrics, transform)
+				curMd := &mds[i]
+				curMd.Metrics, newMetric = mtp.insert(metric, curMd.Metrics, transform)
 				// mapping has to be updated with the name metric
 				nameToMetricMapping[newMetric.MetricDescriptor.Name] = newMetric
 			}
