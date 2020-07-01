@@ -130,18 +130,6 @@ var (
 			outMN: initialMetricNames,
 		},
 		{
-			name: "metric_name_update_invalid",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					NewName:    "metric5",
-				},
-			},
-			inMN:  initialMetricNames,
-			outMN: initialMetricNames,
-		},
-		{
 			name: "metric_label_update",
 			transforms: []Transform{
 				{
@@ -154,20 +142,6 @@ var (
 			outMN:     initialMetricNames,
 			inLabels:  initialLabels,
 			outLabels: outLabels,
-		},
-		{
-			name: "metric_label_update_invalid",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{invalidUpdateLabelOperation},
-				},
-			},
-			inMN:      initialMetricNames,
-			outMN:     initialMetricNames,
-			inLabels:  initialLabels,
-			outLabels: initialLabels,
 		},
 		// INSERT
 		{

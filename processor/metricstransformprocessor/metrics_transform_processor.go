@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	"context"
-	"log"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
@@ -78,11 +77,6 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 		}
 
 		for _, transform := range mtp.transforms {
-			if !mtp.validNewName(transform, nameToMetricMapping) {
-				log.Printf("error running %q processor due to collision %q: %v with existing metric names detected by the function %q", typeStr, NewNameFieldName, transform.NewName, validNewNameFuncName)
-				continue
-			}
-
 			metric, ok := nameToMetricMapping[transform.MetricName]
 			if !ok {
 				continue
@@ -133,12 +127,6 @@ func (mtp *metricsTransformProcessor) insert(metric *metricspb.Metric, metrics [
 }
 
 func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
-	// if new_label is invalid, skip this operation
-	if !mtp.validNewLabel(metric.MetricDescriptor.LabelKeys, op.NewLabel) {
-		log.Printf("error running %q processor due to collided %q: %v with existing label on metric named: %v detected by function %q", typeStr, NewLabelFieldName, op.NewLabel, metric.MetricDescriptor.Name, validNewLabelFuncName)
-		return
-	}
-
 	for _, label := range metric.MetricDescriptor.LabelKeys {
 		if label.Key != op.Label {
 			continue
@@ -149,20 +137,4 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op
 		}
 		// label value update
 	}
-}
-
-// validNewName determines if the new name is a valid one. An invalid one is one that already exists.
-func (mtp *metricsTransformProcessor) validNewName(transform Transform, nameToMetricMapping map[string]*metricspb.Metric) bool {
-	_, ok := nameToMetricMapping[transform.NewName]
-	return !ok
-}
-
-// validNewLabel determines if the new label is a valid one. An invalid one is one that already exists.
-func (mtp *metricsTransformProcessor) validNewLabel(labelKeys []*metricspb.LabelKey, newLabel string) bool {
-	for _, label := range labelKeys {
-		if label.Key == newLabel {
-			return false
-		}
-	}
-	return true
 }
