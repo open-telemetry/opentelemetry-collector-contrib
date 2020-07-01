@@ -2,6 +2,34 @@
 
 ## Unreleased
 
+## v0.5.0
+
+Released 01-07-2020
+
+# 🎉 OpenTelemetry Collector Contrib v0.5.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.5.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- Processors
+  - `resourcedetection` to automatically detect the resource based on the configured set of detectors (#309)
+
+## 💡 Enhancements 💡
+
+- `kubeletstats` receiver: Support for ServiceAccount authentication (#324)
+- `signalfx` exporter and receiver
+  - Add SignalFx metric token passthrough and config option (#325)
+  - Set default endpoint of `signalfx` receiver to `:9943` (#351)
+- `awsxray` exporter: Support aws plugins EC2/ECS/Beanstalk (#343)
+- `sapm` exporter and receiver: Add SAPM access token passthrough and config option (#349)
+- `k8s` processor: Add metrics support (#358)
+- `k8s` observer: Separate annotations from labels in discovered pods (#363)
+
+## 🧰 Bug fixes 🧰
+
+- `honeycomb` exporter: Remove shared use of libhoney from goroutines (#305)
+
 ## v0.4.0
 
 Released 17-06-2020
