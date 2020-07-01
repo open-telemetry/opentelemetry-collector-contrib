@@ -74,6 +74,12 @@ func TestLoadConfig(t *testing.T) {
 					{TagName: "l1", Key: "label1"},
 					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
 				},
+				Namespace:NamespaceExtractConfig{
+					Annotations: nil,
+					Labels:      []FieldExtractConfig{
+						{TagName: "intuit.asset_id", Key: "intuit.asset_id"},
+					},
+				},
 			},
 			Filter: FilterConfig{
 				Namespace:      "ns2",

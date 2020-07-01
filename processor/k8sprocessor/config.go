@@ -42,6 +42,22 @@ type Config struct {
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
+// data from k8s namespace specs.
+type NamespaceExtractConfig struct {
+	// Annotations allows extracting data from namespace annotations and record it
+	// as resource attributes.
+	// It is a list of FieldExtractConfig type. See FieldExtractConfig
+	// documentation for more details.
+	Annotations []FieldExtractConfig `mapstructure:"annotations"`
+
+	// Annotations allows extracting data from namespace labels and record it
+	// as resource attributes.
+	// It is a list of FieldExtractConfig type. See FieldExtractConfig
+	// documentation for more details.
+	Labels []FieldExtractConfig `mapstructure:"labels"`
+}
+
+// ExtractConfig section allows specifying extraction rules to extract
 // data from k8s pod specs.
 type ExtractConfig struct {
 	// Metadata allows to extract pod metadata from a list of metadata fields.
@@ -65,6 +81,9 @@ type ExtractConfig struct {
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.
 	Labels []FieldExtractConfig `mapstructure:"labels"`
+
+	// Namespace allows extracting data from namespace labels and annotations.
+	Namespace NamespaceExtractConfig `mapstructure:"namespace"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.

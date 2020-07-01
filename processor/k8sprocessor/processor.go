@@ -235,17 +235,32 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 		for k, v := range attrsToAdd {
 			md.Resource.Labels[k] = v
 		}
+
 	}
 
 	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, metrics)
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
+
 	pod, ok := kp.kc.GetPodByIP(ip)
 	if !ok {
 		return nil
 	}
-	return pod.Attributes
+
+	namespace, ok := kp.kc.GetNamespace(pod.Namespace)
+	if !ok {
+		return pod.Attributes
+	}
+	attrs := map[string]string{}
+	for k, v := range namespace.Attributes {
+		attrs[k] = v
+	}
+	//Pod attributes overwrite NS attributes if conflicting
+	for k, v := range pod.Attributes {
+		attrs[k] = v
+	}
+	return attrs
 }
 
 func (kp *kubernetesprocessor) k8sIPFromAttributes(attrs pdata.AttributeMap) string {

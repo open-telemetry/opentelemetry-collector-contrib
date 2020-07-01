@@ -301,6 +301,52 @@ func TestTraceProcessorAddLabels(t *testing.T) {
 	}
 }
 
+func TestTraceProcessorAddNamespaceLabels(t *testing.T) {
+	next := &testTraceConsumer{}
+	p, err := NewTraceProcessor(
+		zap.NewNop(),
+		next,
+		newFakeClient,
+	)
+	require.NoError(t, err)
+
+	kp, ok := p.(*kubernetesprocessor)
+	assert.True(t, ok)
+	kc, ok := kp.kc.(*fakeClient)
+	assert.True(t, ok)
+
+	tests := map[string]map[string]string{
+		"1": {
+			"pod":         "test-2323",
+			"ns":          "default",
+			"another tag": "value",
+		},
+		"2": {},
+	}
+	kc.Namespaces = map[string]*kube.Namespace {
+		"default": &kube.Namespace{Name:"default", Attributes:map[string]string{"ns-test": "foo"}},
+	}
+	for ip, attrs := range tests {
+		kc.Pods[ip] = &kube.Pod{Attributes: attrs, Namespace: "default"}
+	}
+
+	var i int
+	for ip := range tests {
+		ctx := client.NewContext(context.Background(), &client.Client{IP: ip})
+		err = p.ConsumeTraces(ctx, generateTraces())
+		require.NoError(t, err)
+
+		require.Len(t, next.data, i+1)
+		td := next.data[i]
+		rss := td.ResourceSpans()
+		require.Equal(t, rss.Len(), 1)
+		r := rss.At(0).Resource()
+		require.False(t, r.IsNil())
+		assertResourceHasStringAttribute(t, r, "ns-test", "foo")
+		i++
+	}
+}
+
 func TestPassthroughStart(t *testing.T) {
 	next := &testTraceConsumer{}
 	opts := []Option{WithPassthrough()}

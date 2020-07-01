@@ -29,6 +29,10 @@ processors:
         - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
           key: label2
           regex: field=(?P<value>.+)
+      namespace:
+        labels:
+          - tag_name: intuit.asset_id
+            key: intuit.asset_id
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace

@@ -40,11 +40,13 @@ type WatchClient struct {
 	logger          *zap.Logger
 	kc              kubernetes.Interface
 	informer        cache.SharedInformer
+	namespaceInformer cache.SharedInformer
 	deploymentRegex *regexp.Regexp
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
 
 	Pods    map[string]*Pod
+	Namespaces map[string]*Namespace
 	Rules   ExtractionRules
 	Filters Filters
 }
@@ -83,6 +85,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	c.namespaceInformer = newSharedNamespaceInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
 	return c, err
 }
 
@@ -93,8 +96,40 @@ func (c *WatchClient) Start() {
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
+
+	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+
 	c.informer.Run(c.stopCh)
 }
+
+func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
+	if namespace, ok := obj.(*api_v1.Namespace); ok {
+		c.addOrUpdateNamespace(namespace)
+	} else {
+
+	}
+}
+
+func (c *WatchClient) handleNamespaceUpdate(old, obj interface{}) {
+	if namespace, ok := obj.(*api_v1.Namespace); ok {
+		c.addOrUpdateNamespace(namespace)
+	} else {
+
+	}
+}
+
+func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
+	if namespace, ok := obj.(*api_v1.Namespace); ok {
+		delete(c.Namespaces, namespace.Name)
+	} else {
+
+	}
+}
+
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
@@ -182,6 +217,15 @@ func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
 	return nil, false
 }
 
+// GetNamespace gets a namespace by name
+func (c *WatchClient) GetNamespace(name string) (*Namespace, bool) {
+	namespace, ok := c.Namespaces[name]
+	if ok {
+		return namespace, ok
+	}
+	return nil, false
+}
+
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
@@ -237,6 +281,23 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	return tags
 }
 
+func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.NamespaceRules.Labels {
+		if v, ok := namespace.Labels[r.Key]; ok {
+			tags[r.Name] = c.extractField(v, r)
+		}
+	}
+
+	for _, r := range c.Rules.NamespaceRules.Annotations {
+		if v, ok := namespace.Annotations[r.Key]; ok {
+			tags[r.Name] = c.extractField(v, r)
+		}
+	}
+	return tags
+}
+
 func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
 	// Check if a subset of the field should be extracted with a regular expression
 	// instead of the whole field.
@@ -269,6 +330,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 	}
 	newPod := &Pod{
 		Name:      pod.Name,
+		Namespace: pod.Namespace,
 		Address:   pod.Status.PodIP,
 		StartTime: pod.Status.StartTime,
 	}
@@ -279,6 +341,14 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		newPod.Attributes = c.extractPodAttributes(pod)
 	}
 	c.Pods[pod.Status.PodIP] = newPod
+}
+
+func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
+	newNamespace := &Namespace{
+		Name:      namespace.Name,
+		Attributes: c.extractNamespaceAttributes(namespace),
+	}
+	c.Namespaces[namespace.Name] = newNamespace
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {

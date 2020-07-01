@@ -52,6 +52,7 @@ var (
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
 	GetPodByIP(string) (*Pod, bool)
+	GetNamespace(string) (*Namespace, bool)
 	Start()
 	Stop()
 }
@@ -68,10 +69,16 @@ type Pod struct {
 	Name       string
 	Address    string
 	Attributes map[string]string
+	Namespace  string
 	StartTime  *metav1.Time
 	Ignore     bool
 
 	DeletedAt time.Time
+}
+
+type Namespace struct {
+	Name       string
+	Attributes map[string]string
 }
 
 type deleteRequest struct {
@@ -104,6 +111,11 @@ type FieldFilter struct {
 	Op selection.Operator
 }
 
+type NamespaceRules struct {
+	Annotations []FieldExtractionRule
+	Labels      []FieldExtractionRule
+}
+
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
@@ -117,6 +129,8 @@ type ExtractionRules struct {
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+
+	NamespaceRules NamespaceRules
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

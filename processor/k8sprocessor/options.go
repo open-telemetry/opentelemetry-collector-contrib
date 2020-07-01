@@ -101,6 +101,25 @@ func WithExtractMetadata(fields ...string) Option {
 	}
 }
 
+func WithExtractNamespace(config NamespaceExtractConfig) Option {
+	return func(p *kubernetesprocessor) error {
+		labels, err := extractFieldRules("label", config.Labels...)
+		if err != nil {
+			return err
+		}
+
+		annotations, err := extractFieldRules("annotation", config.Labels...)
+		if err != nil {
+			return err
+		}
+		p.rules.NamespaceRules = kube.NamespaceRules{
+			Annotations: annotations,
+			Labels:      labels,
+		}
+		return nil
+	}
+}
+
 // WithExtractLabels allows specifying options to control extraction of pod labels.
 func WithExtractLabels(labels ...FieldExtractConfig) Option {
 	return func(p *kubernetesprocessor) error {

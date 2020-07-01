@@ -51,6 +51,23 @@ func newSharedInformer(
 	return informer
 }
 
+func newSharedNamespaceInformer(
+	client kubernetes.Interface,
+	namespace string,
+	ls labels.Selector,
+	fs fields.Selector,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  namespaceInformerListFuncWithSelectors(client, namespace, ls, fs),
+			WatchFunc: namespaceInformerWatchFuncWithSelectors(client, namespace, ls, fs),
+		},
+		&api_v1.Namespace{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
 func informerListFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		opts.LabelSelector = ls.String()
@@ -67,3 +84,21 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 		return client.CoreV1().Pods(namespace).Watch(opts)
 	}
 }
+
+func namespaceInformerListFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		opts.LabelSelector = ls.String()
+		opts.FieldSelector = fs.String()
+		return client.CoreV1().Namespaces().List(opts)
+	}
+
+}
+
+func namespaceInformerWatchFuncWithSelectors(client kubernetes.Interface, namespace string, ls labels.Selector, fs fields.Selector) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		opts.LabelSelector = ls.String()
+		opts.FieldSelector = fs.String()
+		return client.CoreV1().Namespaces().Watch(opts)
+	}
+}
+
