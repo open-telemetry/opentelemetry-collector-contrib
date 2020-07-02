@@ -65,8 +65,9 @@ func (mtp *metricsTransformProcessor) ConsumeMetrics(ctx context.Context, md pda
 func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics {
 	mds := pdatautil.MetricsToMetricsData(md)
 
-	for i, data := range mds {
-		nameToMetricMapping := make(map[string]*metricspb.Metric)
+	for i := range mds {
+		data := &mds[i]
+		nameToMetricMapping := make(map[string]*metricspb.Metric, len(data.Metrics))
 		for _, metric := range data.Metrics {
 			nameToMetricMapping[metric.MetricDescriptor.Name] = metric
 		}
@@ -77,20 +78,18 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 				continue
 			}
 
-			if transform.Action == Update {
-				mtp.update(metric, transform)
-				if transform.NewName == "" {
-					continue
+			if transform.Action == Insert {
+				metric = proto.Clone(metric).(*metricspb.Metric)
+				data.Metrics = append(data.Metrics, metric)
+			}
+
+			mtp.update(metric, transform)
+
+			if transform.NewName != "" {
+				if transform.Action == Update {
+					delete(nameToMetricMapping, transform.MetricName)
 				}
-				// if name is updated, the map has to be updated
-				nameToMetricMapping[transform.NewName] = nameToMetricMapping[transform.MetricName]
-				delete(nameToMetricMapping, transform.MetricName)
-			} else if transform.Action == Insert {
-				var newMetric *metricspb.Metric
-				curMd := &mds[i]
-				curMd.Metrics, newMetric = mtp.insert(metric, curMd.Metrics, transform)
-				// mapping has to be updated with the name metric
-				nameToMetricMapping[newMetric.MetricDescriptor.Name] = newMetric
+				nameToMetricMapping[transform.NewName] = metric
 			}
 		}
 	}
@@ -111,15 +110,6 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 			mtp.updateLabelOp(metric, op)
 		}
 	}
-}
-
-// insert inserts a new copy of the metric content into the metrics slice.
-// returns the new metrics list and the new metric
-func (mtp *metricsTransformProcessor) insert(metric *metricspb.Metric, metrics []*metricspb.Metric, transform Transform) ([]*metricspb.Metric, *metricspb.Metric) {
-	// metricCopy := mtp.createCopy(metric)
-	metricCopy := proto.Clone(metric).(*metricspb.Metric)
-	mtp.update(metricCopy, transform)
-	return append(metrics, metricCopy), metricCopy
 }
 
 func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {

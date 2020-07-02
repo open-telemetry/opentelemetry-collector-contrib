@@ -84,13 +84,13 @@ var (
 // TestLoadingFullConfig tests loading testdata/config_full.yaml.
 func TestLoadingFullConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Processors[configmodels.Type(typeStr)] = factory
 	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	require.NotNil(t, config)
 
 	for _, test := range tests {

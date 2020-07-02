@@ -232,7 +232,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 					md,
 				}),
 			)
-			assert.Nil(t, cErr)
+			assert.NoError(t, cErr)
 
 			// get and check results
 			got := next.AllMetrics()
@@ -241,7 +241,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.Equal(t, 1, len(gotMD))
 			require.Equal(t, len(test.outMN), len(gotMD[0].Metrics))
 
-			targetNameToTransform := make(map[string]Transform)
+			targetNameToTransform := make(map[string]Transform, len(test.transforms))
 			for _, transform := range test.transforms {
 				targetName := transform.MetricName
 				if transform.NewName != "" {
