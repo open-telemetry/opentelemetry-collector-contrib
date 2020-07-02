@@ -589,8 +589,8 @@ def update_dependencies(targets, version):
         targets,
         version,
         "setup.cfg",
-        r"(opentelemetry-.*)= (.*)",
-        r"\1= " + version,
+        r"(opentelemetry-.*)==(.*)",
+        r"\1== " + version,
     )
 
 
