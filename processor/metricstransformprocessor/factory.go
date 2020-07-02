@@ -79,20 +79,20 @@ func (f *Factory) CreateMetricsProcessor(
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
 		if transform.MetricName == "" {
-			return fmt.Errorf("error creating %q processor due to missing required field %q", typeStr, MetricNameFieldName)
+			return fmt.Errorf("missing required field %q", MetricNameFieldName)
 		}
 
 		if transform.Action != Update && transform.Action != Insert {
-			return fmt.Errorf("error creating %q processor due to unsupported %q: %v, the supported actions are %q and %q", typeStr, ActionFieldName, transform.Action, Insert, Update)
+			return fmt.Errorf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, transform.Action, Insert, Update)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
-			return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v", typeStr, NewNameFieldName, ActionFieldName, Insert)
+			return fmt.Errorf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert)
 		}
 
 		for i, op := range transform.Operations {
 			if op.Action == UpdateLabel && op.Label == "" {
-				return fmt.Errorf("error creating %q processor due to missing required field %q while %q is %v in the %vth operation", typeStr, LabelFieldName, ActionFieldName, UpdateLabel, i)
+				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, i)
 			}
 		}
 	}

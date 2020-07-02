@@ -48,35 +48,40 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessors(t *testing.T) {
 	tests := []struct {
-		configName string
-		succeed    bool
+		configName   string
+		succeed      bool
+		errorMessage string
 	}{
 		{
 			configName: "config_full.yaml",
 			succeed:    true,
 		}, {
-			configName: "config_invalid_newname.yaml",
-			succeed:    false,
+			configName:   "config_invalid_newname.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert),
 		}, {
-			configName: "config_invalid_action.yaml",
-			succeed:    false,
+			configName:   "config_invalid_action.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
 		}, {
-			configName: "config_invalid_metricname.yaml",
-			succeed:    false,
+			configName:   "config_invalid_metricname.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q", MetricNameFieldName),
 		}, {
-			configName: "config_invalid_label.yaml",
-			succeed:    false,
+			configName:   "config_invalid_label.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, 0),
 		},
 	}
 
 	for _, test := range tests {
 		factories, err := config.ExampleComponents()
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		factory := &Factory{}
 		factories.Processors[typeStr] = factory
 		config, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
@@ -88,7 +93,7 @@ func TestCreateProcessors(t *testing.T) {
 					nil,
 					cfg)
 				// Not implemented error
-				assert.NotNil(t, tErr)
+				assert.Error(t, tErr)
 				assert.Nil(t, tp)
 
 				mp, mErr := factory.CreateMetricsProcessor(
@@ -96,8 +101,12 @@ func TestCreateProcessors(t *testing.T) {
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					nil,
 					cfg)
-				assert.Equal(t, test.succeed, mp != nil)
-				assert.Equal(t, test.succeed, mErr == nil)
+				if test.succeed {
+					assert.NotNil(t, mp)
+					assert.NoError(t, mErr)
+				} else {
+					assert.EqualError(t, mErr, test.errorMessage)
+				}
 			})
 		}
 	}
