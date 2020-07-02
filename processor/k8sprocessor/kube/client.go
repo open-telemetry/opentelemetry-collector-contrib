@@ -107,26 +107,29 @@ func (c *WatchClient) Start() {
 }
 
 func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
+	observability.RecordNamespaceAdded()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
-
+		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
 	}
 }
 
 func (c *WatchClient) handleNamespaceUpdate(old, obj interface{}) {
+	observability.RecordNamespaceUpdated()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
-
+		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
 	}
 }
 
 func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
+	observability.RecordNamespaceDeleted()
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		delete(c.Namespaces, namespace.Name)
 	} else {
-
+		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
 	}
 }
 
