@@ -47,7 +47,6 @@ type CUDAMetricsCollector struct {
 	scrapeInterval time.Duration
 	metricPrefix   string
 	done           chan struct{}
-
 	logger *zap.Logger
 }
 
@@ -67,18 +66,6 @@ func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger,
 		done:           make(chan struct{}),
 		logger:         logger,
 	}
-
-	return c, nil
-}
-
-func detectResource() {
-	resourceDetectionSync.Do(func() {
-		res, err := auto.Detect(context.Background())
-		if err != nil {
-			panic(fmt.Sprintf("Resource detection failed, err:%v", err))
-		}
-		if res != nil {
-			rsc = &resourcepb.Resource{
 				Type:   res.Type,
 				Labels: make(map[string]string, len(res.Labels)),
 			}
@@ -98,6 +85,10 @@ func (c *CUDAMetricsCollector) StartCollection() {
 		return
 	}
 
+=======
+// StartCollection starts a ticker'd goroutine that will scrape and export CUDA metrics periodically.
+func (c *CUDAMetricsCollector) StartCollection() {
+>>>>>>> Add initial code of cudareceiver
 	go func() {
 		ticker := time.NewTicker(c.scrapeInterval)
 		for {
