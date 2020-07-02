@@ -30,6 +30,8 @@ var (
 	testWriters = newWriterPool(2048)
 )
 
+// TODO: add unit test to test 30 days expiration functionality (Cong)
+
 func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	spanName := "AmazonDynamoDB.getItem"
 	parentSpanID := newSegmentID()
