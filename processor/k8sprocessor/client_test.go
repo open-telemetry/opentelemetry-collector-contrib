@@ -28,12 +28,12 @@ import (
 
 // fakeClient is used as a replacement for WatchClient in test cases.
 type fakeClient struct {
-	Pods     map[string]*kube.Pod
-	Namespaces     map[string]*kube.Namespace
-	Rules    kube.ExtractionRules
-	Filters  kube.Filters
-	Informer cache.SharedInformer
-	StopCh   chan struct{}
+	Pods       map[string]*kube.Pod
+	Namespaces map[string]*kube.Namespace
+	Rules      kube.ExtractionRules
+	Filters    kube.Filters
+	Informer   cache.SharedInformer
+	StopCh     chan struct{}
 }
 
 func (f *fakeClient) GetNamespace(name string) (*kube.Namespace, bool) {
@@ -59,12 +59,12 @@ func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.Extract
 
 	ls, fs := selectors()
 	return &fakeClient{
-		Pods:     map[string]*kube.Pod{},
+		Pods:       map[string]*kube.Pod{},
 		Namespaces: map[string]*kube.Namespace{},
-		Rules:    rules,
-		Filters:  filters,
-		Informer: kube.NewFakeInformer(cs, "", ls, fs),
-		StopCh:   make(chan struct{}),
+		Rules:      rules,
+		Filters:    filters,
+		Informer:   kube.NewFakeInformer(cs, "", ls, fs),
+		StopCh:     make(chan struct{}),
 	}, nil
 }
 

@@ -35,20 +35,20 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m               sync.RWMutex
-	deleteMut       sync.Mutex
-	logger          *zap.Logger
-	kc              kubernetes.Interface
-	informer        cache.SharedInformer
+	m                 sync.RWMutex
+	deleteMut         sync.Mutex
+	logger            *zap.Logger
+	kc                kubernetes.Interface
+	informer          cache.SharedInformer
 	namespaceInformer cache.SharedInformer
-	deploymentRegex *regexp.Regexp
-	deleteQueue     []deleteRequest
-	stopCh          chan struct{}
+	deploymentRegex   *regexp.Regexp
+	deleteQueue       []deleteRequest
+	stopCh            chan struct{}
 
-	Pods    map[string]*Pod
+	Pods       map[string]*Pod
 	Namespaces map[string]*Namespace
-	Rules   ExtractionRules
-	Filters Filters
+	Rules      ExtractionRules
+	Filters    Filters
 }
 
 // Extract deployment name from the pod name. Pod name is created using
@@ -61,7 +61,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[string]*Pod{}
-	c.Namespaces= map[string]*Namespace{}
+	c.Namespaces = map[string]*Namespace{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -133,7 +133,6 @@ func (c *WatchClient) handleNamespaceDelete(obj interface{}) {
 		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", obj))
 	}
 }
-
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
@@ -349,7 +348,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 
 func (c *WatchClient) addOrUpdateNamespace(namespace *api_v1.Namespace) {
 	newNamespace := &Namespace{
-		Name:      namespace.Name,
+		Name:       namespace.Name,
 		Attributes: c.extractNamespaceAttributes(namespace),
 	}
 	c.Namespaces[namespace.Name] = newNamespace

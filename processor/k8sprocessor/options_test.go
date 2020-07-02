@@ -576,7 +576,7 @@ func TestWithExtractNamespace(t *testing.T) {
 			"empty",
 			NamespaceExtractConfig{},
 			kube.NamespaceRules{
-				Labels: []kube.FieldExtractionRule{},
+				Labels:      []kube.FieldExtractionRule{},
 				Annotations: []kube.FieldExtractionRule{},
 			},
 			"",
@@ -595,7 +595,7 @@ func TestWithExtractNamespace(t *testing.T) {
 				Labels: []kube.FieldExtractionRule{
 					{
 						Name: "test",
-						Key: "foo",
+						Key:  "foo",
 					},
 				},
 				Annotations: []kube.FieldExtractionRule{},
@@ -616,7 +616,7 @@ func TestWithExtractNamespace(t *testing.T) {
 				Annotations: []kube.FieldExtractionRule{
 					{
 						Name: "test",
-						Key: "foo",
+						Key:  "foo",
 					},
 				},
 				Labels: []kube.FieldExtractionRule{},

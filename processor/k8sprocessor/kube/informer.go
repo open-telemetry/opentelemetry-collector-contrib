@@ -101,4 +101,3 @@ func namespaceInformerWatchFuncWithSelectors(client kubernetes.Interface, namesp
 		return client.CoreV1().Namespaces().Watch(opts)
 	}
 }
-

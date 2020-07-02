@@ -323,8 +323,8 @@ func TestTraceProcessorAddNamespaceLabels(t *testing.T) {
 		},
 		"2": {},
 	}
-	kc.Namespaces = map[string]*kube.Namespace {
-		"default": &kube.Namespace{Name:"default", Attributes:map[string]string{"ns-test": "foo"}},
+	kc.Namespaces = map[string]*kube.Namespace{
+		"default": {Name: "default", Attributes: map[string]string{"ns-test": "foo"}},
 	}
 	for ip, attrs := range tests {
 		kc.Pods[ip] = &kube.Pod{Attributes: attrs, Namespace: "default"}

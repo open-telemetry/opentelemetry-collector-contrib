@@ -38,10 +38,9 @@ var (
 	mPodsAdded   = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
 	mPodsDeleted = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
 
-	mNamespacesAdded = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
+	mNamespacesAdded   = stats.Int64("otelsvc/k8s/namespace_added", "Number of namespace add events received", "1")
 	mNamespacesUpdated = stats.Int64("otelsvc/k8s/namespace_updated", "Number of namespace update events received", "1")
 	mNamespacesDeleted = stats.Int64("otelsvc/k8s/namespace_deleted", "Number of namespace delete events received", "1")
-
 
 	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
 )
@@ -103,7 +102,6 @@ func RecordNamespaceUpdated() {
 func RecordNamespaceDeleted() {
 	stats.Record(context.Background(), mNamespacesDeleted.M(int64(1)))
 }
-
 
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
 func RecordIPLookupMiss() {

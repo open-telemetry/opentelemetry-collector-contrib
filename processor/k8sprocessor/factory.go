@@ -87,7 +87,6 @@ func createProcessorOpts(cfg configmodels.Processor) []Option {
 	opts = append(opts, WithExtractAnnotations(oCfg.Extract.Annotations...))
 	opts = append(opts, WithExtractNamespace(oCfg.Extract.Namespace))
 
-
 	// filters
 	opts = append(opts, WithFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))
 	opts = append(opts, WithFilterNamespace(oCfg.Filter.Namespace))
