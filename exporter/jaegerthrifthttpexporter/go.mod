@@ -9,6 +9,6 @@ require (
 	github.com/google/go-cmp v0.4.0
 	github.com/jaegertracing/jaeger v1.18.0
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.4.1-0.20200629224201-e7a7690e21fc
+	go.opentelemetry.io/collector v0.5.0
 	go.uber.org/zap v1.13.0
 )
