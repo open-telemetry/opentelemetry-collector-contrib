@@ -108,7 +108,7 @@ func WithExtractNamespace(config NamespaceExtractConfig) Option {
 			return err
 		}
 
-		annotations, err := extractFieldRules("annotation", config.Labels...)
+		annotations, err := extractFieldRules("annotation", config.Annotations...)
 		if err != nil {
 			return err
 		}

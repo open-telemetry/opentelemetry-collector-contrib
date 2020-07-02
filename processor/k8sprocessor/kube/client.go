@@ -61,6 +61,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
 	c.Pods = map[string]*Pod{}
+	c.Namespaces= map[string]*Namespace{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}

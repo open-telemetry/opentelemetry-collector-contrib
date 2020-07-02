@@ -68,6 +68,19 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 	assert.Equal(t, got.Name, "podB")
 }
 
+func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interface{})) {
+	assert.Equal(t, len(c.Namespaces), 0)
+
+	ns := &api_v1.Namespace{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: "default",
+		},
+	}
+
+	handler(ns)
+	assert.Equal(t, len(c.Namespaces), 1)
+}
+
 func TestDefaultClientset(t *testing.T) {
 	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, nil, nil)
 	assert.Error(t, err)
@@ -212,8 +225,6 @@ func TestPodDelete(t *testing.T) {
 	assert.Equal(t, len(c.Pods), 1)
 	assert.Equal(t, got.Address, "1.1.1.1")
 	assert.Equal(t, len(c.deleteQueue), 0)
-
-	// delete matching IP and name
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
 	pod.Status.PodIP = "1.1.1.1"
@@ -543,6 +554,27 @@ func TestPodIgnorePatterns(t *testing.T) {
 	for _, tc := range testCases {
 		assert.Equal(t, tc.ignore, c.shouldIgnorePod(&tc.pod))
 	}
+}
+
+func TestNamespaceAdd(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, c.handleNamespaceAdd)
+}
+
+func TestNamespaceUpdate(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, func(obj interface{}) {
+		c.handleNamespaceUpdate(&api_v1.Pod{}, obj)
+	})
+}
+
+func TestNamespaceDelete(t *testing.T) {
+	c, _ := newTestClient(t)
+	namespaceAddAndUpdateTest(t, c, func(obj interface{}) {
+		assert.Equal(t, len(c.Namespaces), 1)
+		c.handleNamespaceDelete(obj)
+		assert.Equal(t, len(c.Namespaces), 0)
+	})
 }
 
 func Test_extractField(t *testing.T) {

@@ -564,3 +564,82 @@ func Test_extractFieldRules(t *testing.T) {
 		})
 	}
 }
+
+func TestWithExtractNamespace(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      NamespaceExtractConfig
+		want      kube.NamespaceRules
+		wantError string
+	}{
+		{
+			"empty",
+			NamespaceExtractConfig{},
+			kube.NamespaceRules{
+				Labels: []kube.FieldExtractionRule{},
+				Annotations: []kube.FieldExtractionRule{},
+			},
+			"",
+		},
+		{
+			"single label",
+			NamespaceExtractConfig{
+				Labels: []FieldExtractConfig{
+					{
+						TagName: "test",
+						Key:     "foo",
+					},
+				},
+			},
+			kube.NamespaceRules{
+				Labels: []kube.FieldExtractionRule{
+					{
+						Name: "test",
+						Key: "foo",
+					},
+				},
+				Annotations: []kube.FieldExtractionRule{},
+			},
+			"",
+		},
+		{
+			"single annotation",
+			NamespaceExtractConfig{
+				Annotations: []FieldExtractConfig{
+					{
+						TagName: "test",
+						Key:     "foo",
+					},
+				},
+			},
+			kube.NamespaceRules{
+				Annotations: []kube.FieldExtractionRule{
+					{
+						Name: "test",
+						Key: "foo",
+					},
+				},
+				Labels: []kube.FieldExtractionRule{},
+			},
+			"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &kubernetesprocessor{}
+			option := WithExtractNamespace(tt.args)
+			err := option(p)
+			if tt.wantError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Equal(t, err.Error(), tt.wantError)
+				return
+			}
+			got := p.rules.NamespaceRules
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("WithExtractLabels() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
