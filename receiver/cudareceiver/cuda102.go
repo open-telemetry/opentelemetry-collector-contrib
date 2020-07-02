@@ -20,7 +20,6 @@ package cudareceiver
 #include <stdio.h>
 #include <nvml.h>
 */
-
 import "C"
 
 // NVMLInit is the wrapper of nvmlInit()
