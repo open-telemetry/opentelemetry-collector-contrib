@@ -570,11 +570,14 @@ func TestNamespaceUpdate(t *testing.T) {
 
 func TestNamespaceDelete(t *testing.T) {
 	c, _ := newTestClient(t)
+	ns := &api_v1.Namespace{}
 	namespaceAddAndUpdateTest(t, c, func(obj interface{}) {
-		assert.Equal(t, len(c.Namespaces), 1)
-		c.handleNamespaceDelete(obj)
-		assert.Equal(t, len(c.Namespaces), 0)
+		c.handleNamespaceAdd(obj)
+		ns = obj.(*api_v1.Namespace)
 	})
+	assert.Equal(t, len(c.Namespaces), 1)
+	c.handleNamespaceDelete(ns)
+	assert.Equal(t, len(c.Namespaces), 0)
 }
 
 func Test_extractField(t *testing.T) {
