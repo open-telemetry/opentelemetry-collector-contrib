@@ -17,41 +17,42 @@ package cudareceiver
 /*
 #cgo CFLAGS: -I/usr/local/cuda-10.2/include/
 #cgo LDFLAGS: -L/usr/lib -L/usr/local/cuda-10.2/targets/x86_64-linux/lib/stubs/ -lnvidia-ml
-#include <stdio.h>
 #include <nvml.h>
 */
 import "C"
+
+// TODO: Add build flags for the locations of header files and dynamic libraries.
 
 // NVMLReturn is the wrapper of nvmlReturn_t
 // https://docs.nvidia.com/deploy/nvml-api/group__nvmlDeviceEnumvs.html#group__nvmlDeviceEnumvs_1g06fa9b5de08c6cc716fbf565e93dd3d0
 type NVMLReturn int
 
 const (
-	Success                  NVMLReturn = NVMLReturn(C.NVML_SUCCESS)
-	ErrUninitialized                    = NVMLReturn(C.NVML_ERROR_UNINITIALIZED)
-	ErrInvalidArgument                  = NVMLReturn(C.NVML_ERROR_INVALID_ARGUMENT)
-	ErrNotSupported                     = NVMLReturn(C.NVML_ERROR_NOT_SUPPORTED)
-	ErrNoPermission                     = NVMLReturn(C.NVML_ERROR_NO_PERMISSION)
-	ErrAlreadyInitialized               = NVMLReturn(C.NVML_ERROR_ALREADY_INITIALIZED)
-	ErrNotFound                         = NVMLReturn(C.NVML_ERROR_NOT_FOUND)
-	ErrInsufficientSize                 = NVMLReturn(C.NVML_ERROR_INSUFFICIENT_SIZE)
-	ErrInsufficientPower                = NVMLReturn(C.NVML_ERROR_INSUFFICIENT_POWER)
-	ErrDriverNotLoaded                  = NVMLReturn(C.NVML_ERROR_DRIVER_NOT_LOADED)
-	ErrTimeout                          = NVMLReturn(C.NVML_ERROR_TIMEOUT)
-	ErrIRQIssue                         = NVMLReturn(C.NVML_ERROR_IRQ_ISSUE)
-	ErrLibraryNotFound                  = NVMLReturn(C.NVML_ERROR_LIBRARY_NOT_FOUND)
-	ErrFunctionNotFound                 = NVMLReturn(C.NVML_ERROR_FUNCTION_NOT_FOUND)
-	ErrCorruputedInfoROM                = NVMLReturn(C.NVML_ERROR_CORRUPTED_INFOROM)
-	ErrGPUIsLost                        = NVMLReturn(C.NVML_ERROR_GPU_IS_LOST)
-	ErrResetRequired                    = NVMLReturn(C.NVML_ERROR_RESET_REQUIRED)
-	ErrOperatingSystem                  = NVMLReturn(C.NVML_ERROR_OPERATING_SYSTEM)
-	ErrLibRMVersionMismatch             = NVMLReturn(C.NVML_ERROR_LIB_RM_VERSION_MISMATCH)
-	ErrInUse                            = NVMLReturn(C.NVML_ERROR_IN_USE)
-	ErrMemory                           = NVMLReturn(C.NVML_ERROR_MEMORY)
-	ErrNoData                           = NVMLReturn(C.NVML_ERROR_NO_DATA)
-	ErrVGPUECCNotSupported              = NVMLReturn(C.NVML_ERROR_VGPU_ECC_NOT_SUPPORTED)
+	NVMLSuccess                 NVMLReturn = NVMLReturn(C.NVML_SUCCESS)
+	NVMLErrUninitialized                   = NVMLReturn(C.NVML_ERROR_UNINITIALIZED)
+	NVMLErrInvalidArgument                 = NVMLReturn(C.NVML_ERROR_INVALID_ARGUMENT)
+	NVMLErrNotSupported                    = NVMLReturn(C.NVML_ERROR_NOT_SUPPORTED)
+	NVMLErrNoPermission                    = NVMLReturn(C.NVML_ERROR_NO_PERMISSION)
+	NVMLErrAlreadyInitialized              = NVMLReturn(C.NVML_ERROR_ALREADY_INITIALIZED)
+	NVMLErrNotFound                        = NVMLReturn(C.NVML_ERROR_NOT_FOUND)
+	NVMLErrInsufficientSize                = NVMLReturn(C.NVML_ERROR_INSUFFICIENT_SIZE)
+	NVMLErrInsufficientPower               = NVMLReturn(C.NVML_ERROR_INSUFFICIENT_POWER)
+	NVMLErrDriverNotLoaded                 = NVMLReturn(C.NVML_ERROR_DRIVER_NOT_LOADED)
+	NVMLErrTimeout                         = NVMLReturn(C.NVML_ERROR_TIMEOUT)
+	NVMLErrIRQIssue                        = NVMLReturn(C.NVML_ERROR_IRQ_ISSUE)
+	NVMLErrLibraryNotFound                 = NVMLReturn(C.NVML_ERROR_LIBRARY_NOT_FOUND)
+	NVMLErrFunctionNotFound                = NVMLReturn(C.NVML_ERROR_FUNCTION_NOT_FOUND)
+	NVMLErrCorruputedInfoROM               = NVMLReturn(C.NVML_ERROR_CORRUPTED_INFOROM)
+	NVMLErrGPUIsLost                       = NVMLReturn(C.NVML_ERROR_GPU_IS_LOST)
+	NVMLErrResetRequired                   = NVMLReturn(C.NVML_ERROR_RESET_REQUIRED)
+	NVMLErrOperatingSystem                 = NVMLReturn(C.NVML_ERROR_OPERATING_SYSTEM)
+	NVMLErrLibRMVersionMismatch            = NVMLReturn(C.NVML_ERROR_LIB_RM_VERSION_MISMATCH)
+	NVMLErrInUse                           = NVMLReturn(C.NVML_ERROR_IN_USE)
+	NVMLErrMemory                          = NVMLReturn(C.NVML_ERROR_MEMORY)
+	NVMLErrNoData                          = NVMLReturn(C.NVML_ERROR_NO_DATA)
+	NVMLErrVGPUECCNotSupported             = NVMLReturn(C.NVML_ERROR_VGPU_ECC_NOT_SUPPORTED)
 	// ErrInsufficientResources            = int(C.NVML_ERROR_INSUFFICIENT_RESOURCES)
-	ErrUnknown                          = NVMLReturn(C.NVML_ERROR_UNKNOWN)
+	NVMLErrUnknown = NVMLReturn(C.NVML_ERROR_UNKNOWN)
 )
 
 // NVMLPCIeUtilCounter is the wrapper of nvmlPcieUtilCounter_t
@@ -60,7 +61,7 @@ type NVMLPCIeUtilCounter int
 
 const (
 	PCIeUtilTXBytes NVMLPCIeUtilCounter = NVMLPCIeUtilCounter(C.NVML_PCIE_UTIL_TX_BYTES)
-	PCIeUtilRxBytes                     = NVMLPCIeUtilCounter(C.NVML_PCIE_UTIL_RX_BYTES)
+	PCIeUtilRXBytes                     = NVMLPCIeUtilCounter(C.NVML_PCIE_UTIL_RX_BYTES)
 	PCIeUtilCount                       = NVMLPCIeUtilCounter(C.NVML_PCIE_UTIL_COUNT)
 )
 
