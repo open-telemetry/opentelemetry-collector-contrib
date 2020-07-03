@@ -39,8 +39,16 @@ var metricPower = &metricspb.MetricDescriptor{
 }
 
 // https://docs.nvidia.com/deploy/nvml-api/group__nvmlDeviceQueries.html#group__nvmlDeviceQueries_1gd86f1c74f81b5ddfaa6cb81b51030c72
-var metricPCIeThroughput = &metricspb.MetricDescriptor{
-	Name:        "gpu/pcie_throughput",
+var metricPCIeThroughputTX = &metricspb.MetricDescriptor{
+	Name:        "gpu/pcie_throughput_tx",
+	Description: "",
+	Unit:        "KB/s",
+	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+	LabelKeys:   nil,
+}
+
+var metricPCIeThroughputRX = &metricspb.MetricDescriptor{
+	Name:        "gpu/pcie_throughput_rx",
 	Description: "",
 	Unit:        "KB/s",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
@@ -50,5 +58,6 @@ var metricPCIeThroughput = &metricspb.MetricDescriptor{
 var cudaMetricDescriptors = []*metricspb.MetricDescriptor{
 	metricTemperature,
 	metricPower,
-	metricPCIeThroughput,
+	metricPCIeThroughputTX,
+	metricPCIeThroughputRX,
 }
