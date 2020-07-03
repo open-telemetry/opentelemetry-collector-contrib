@@ -29,7 +29,7 @@ receivers:
 ```
 
 - ### exec (required)
-Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The value of this key is a string of the command to be run, with any flags needed (this will probably be the binary to run, in the correct relative directory). The format should be: `directory/binary_to_run --flag1 --flag2` (the binary as well as all flasg should be separated by spaces). Environment variables can be set in a later configuration setting. Example:
+Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The value of this key is a string of the command to be run, with any flags needed (this will probably be the binary to run, in the correct relative directory). The format should be: `directory/binary_to_run flag1 flag2` (the binary should be separated from the flags by a space - as well as the flags separated from themselves by a space). Environment variables can be set in a later configuration setting. Example:
 
 ```yaml
 receivers:
