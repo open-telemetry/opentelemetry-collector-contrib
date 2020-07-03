@@ -76,6 +76,24 @@ func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger,
 	})
 }
 
+func detectResource() {
+	resourceDetectionSync.Do(func() {
+		res, err := auto.Detect(context.Background())
+		if err != nil {
+			panic(fmt.Sprintf("Resource detection failed, err:%v", err))
+		}
+		if res != nil {
+			rsc = &resourcepb.Resource{
+				Type:   res.Type,
+				Labels: make(map[string]string, len(res.Labels)),
+			}
+			for k, v := range res.Labels {
+				rsc.Labels[k] = v
+			}
+		}
+	})
+}
+
 // StartCollection starts a ticker'd goroutine that will scrape and export CUDA metrics periodically.
 func (c *CUDAMetricsCollector) StartCollection() {
 	detectResource()
@@ -84,23 +102,6 @@ func (c *CUDAMetricsCollector) StartCollection() {
 		// TODO: handle inappropriate GPU state
 		return
 	}
-
-=======
-// StartCollection starts a ticker'd goroutine that will scrape and export CUDA metrics periodically.
-func (c *CUDAMetricsCollector) StartCollection() {
->>>>>>> Add initial code of cudareceiver
-	go func() {
-		ticker := time.NewTicker(c.scrapeInterval)
-		for {
-			select {
-			case <-ticker.C:
-				c.scrapeAndExport()
-
-			case <-c.done:
-				return
-			}
-		}
-	}()
 }
 
 // StopCollection stops the collection of metric information
