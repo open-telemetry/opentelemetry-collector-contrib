@@ -15,17 +15,16 @@
 package subprocessmanager
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math"
 	"math/rand"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
-	"go.opentelemetry.io/collector/component"
 )
 
 // Process struct holds all the info needed for subprocesses
@@ -34,86 +33,53 @@ type Process struct {
 	Port       int
 	Env        []config.EnvConfig
 	CustomName string
-
-	// Receiver data
-	Receiver component.MetricsReceiver
-	Context  context.Context
-	Host     component.Host
 }
 
 const (
-	healthyProcessTime time.Duration = 30 * time.Minute // Default time for a process to stay alive and be considered healthy
-	healthyCrashCount  int           = 3                // Amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
-	delayMultiplier    float64       = 2.0              // The factor by which the delay scales (i.e. doubling every crash)
-	baseDelay          time.Duration = 1 * time.Second  // Base exponential backoff delay
+	// HealthyProcessTime is the default time a process needs to stay alive to be considered healthy
+	HealthyProcessTime time.Duration = 30 * time.Minute
+	healthyCrashCount  int           = 3               // Amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
+	delayMultiplier    float64       = 2.0             // The factor by which the delay scales (i.e. doubling every crash)
+	baseDelay          time.Duration = 1 * time.Second // Base exponential backoff dela
 )
 
-// StartProcess will put a process in an infinite starting loop (if the process crashes there is a delay before it starts again computed by the exponentional backoff algorithm)
-func StartProcess(proc *Process) error {
+// StartProcess will start the process and keep track of running time
+func StartProcess(proc *Process) (time.Duration, error) {
 	var (
-		start        time.Time
-		elapsed      time.Duration
-		crashCount   int
-		originalPort int = proc.Port
-		newPort      int
+		start     time.Time
+		elapsed   time.Duration
+		command   string
+		argsSlice []string
 	)
 
-	for true {
-		if originalPort == 0 {
-			newPort = generateRandomPort(newPort)
-		}
-
-		// Create the command object and attach current os environment + env variables configured by user
-		childProcess := exec.Command(proc.Command)
-		childProcess.Env = os.Environ()
-		childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
-		attachChildOutputToParent(childProcess)
-
-		// Start and stop timer right before and after executing command
-		start = time.Now()
-		errProcess := childProcess.Run()
-		elapsed = time.Since(start)
-
-		if errProcess != nil {
-			log.Printf("%v process error: %v", proc.CustomName, errProcess) // TODO: update with better logging
-		}
-
-		// Reset crash count to 1 if the process seems to be healthy now, else increase crashCount
-		if elapsed > healthyProcessTime {
-			crashCount = 1
+	// Iterate over the space-delimited args in the command, and set it to the correct variables, since the Command object needs the args separated
+	for i, val := range strings.Split(proc.Command, " ") {
+		if i == 0 {
+			command = val
 		} else {
-			crashCount++
-
-			// Stop the associated receiver until process starts back up again if process is unhealthy, keep alive if process is deemed healthy to not lose data
-			if crashCount > healthyCrashCount {
-				err := proc.Receiver.Shutdown(proc.Context)
-				if err != nil {
-					return fmt.Errorf("could not stop receiver associated to %v process, killing this single process(%v)", proc.CustomName, proc.CustomName)
-				}
-			}
-		}
-		// Sleep this goroutine for a certain amount of time, computed by exponential backoff
-		time.Sleep(getDelay(elapsed, crashCount))
-
-		// Stop the associated receiver if process is unhealthy, keep alive if process is deemed healthy to not lose data
-		if crashCount > healthyCrashCount {
-			err := proc.Receiver.Start(proc.Context, proc.Host)
-			if err != nil {
-				return fmt.Errorf("could not restart receiver associated to %v process, killing this single process (%v)", proc.CustomName, proc.CustomName)
-			}
+			argsSlice = append(argsSlice, val)
 		}
 	}
 
-	return nil
-}
+	// Create the command object and attach current os environment + env variables defined by user
+	childProcess := exec.Command(command, argsSlice...)
+	childProcess.Env = os.Environ()
+	childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
+	attachChildOutputToParent(childProcess)
 
-func generateRandomPort(lastPort int) int {
-	for true {
-		random := rand.New(rand.NewSource(0)).Seed(time.Now().UnixNano())
-		fmt.Println(random.Intn(100))
+	// Start and stop timer right before and after executing the command
+	start = time.Now()
+	errProcess := childProcess.Run()
+	elapsed = time.Since(start)
+
+	if errProcess != nil {
+		log.Printf("%v process error: %v", proc.CustomName, errProcess) // TODO: update with better logging
 	}
+
+	return elapsed, nil
 }
 
+// formatEnvSlice will loop over the key-value pairs and format the slice correctly for use by the Command object ("name=value")
 func formatEnvSlice(envs *[]config.EnvConfig) []string {
 	if len(*envs) == 0 {
 		return nil
@@ -127,9 +93,10 @@ func formatEnvSlice(envs *[]config.EnvConfig) []string {
 	return envSlice
 }
 
-func getDelay(elapsed time.Duration, crashCount int) time.Duration {
+// GetDelay will compute the exponential backoff for a given process according to its crash count and time alive
+func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
 	// Return baseDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
-	if elapsed > healthyProcessTime || crashCount <= healthyCrashCount {
+	if elapsed > HealthyProcessTime || crashCount <= healthyCrashCount {
 		return baseDelay
 	}
 
@@ -137,7 +104,7 @@ func getDelay(elapsed time.Duration, crashCount int) time.Duration {
 	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
 }
 
-// Swap the child processes' Stdout and Stderr to parent processe's Stdout/Stderr for now
+// Swap the child processe's Stdout and Stderr to parent processe's Stdout/Stderr
 func attachChildOutputToParent(childProcess *exec.Cmd) {
 	childProcess.Stdout = os.Stdout
 	childProcess.Stderr = os.Stderr
