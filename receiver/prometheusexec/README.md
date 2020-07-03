@@ -34,10 +34,10 @@ Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The va
 ```yaml
 receivers:
     prometheus_exec/apache:
-        exec: ./apache_exporter --log.level="info"
+        exec: ./apache_exporter --log.level=info
 
     prometheus_exec/postgresql:
-        exec: ./postgres_exporter --web.telemetry-path="/metrics"
+        exec: ./postgres_exporter --web.telemetry-path=/metrics
 ```
 
 - ### port
@@ -56,12 +56,12 @@ receivers:
     # this receiver will listen on port 9117
 
     prometheus_exec/postgresql:
-        exec: ./postgres_exporter --web.listen-address=":{{port}}"
+        exec: ./postgres_exporter --web.listen-address=:{{port}}
         port: 9187
     # this receiver will listen on port 9187 and {{port}} inside the command will become 9187
 
     prometheus_exec/mysql:
-        exec: ./mysqld_exporter --web.listen-address=":{{port}}"
+        exec: ./mysqld_exporter --web.listen-address=:{{port}}
     # this receiver will listen on a random port and that port will be substituting the {{port}} inside the command
 ```
 
@@ -77,7 +77,7 @@ receivers:
     # this receiver will scrape every 60 seconds
 
     prometheus_exec/postgresql:
-        exec: ./postgres_exporter --web.listen-address=":{{port}}"
+        exec: ./postgres_exporter --web.listen-address=:{{port}}
         port: 9187
     # this receiver will scrape every 10 seconds, by default
 ```
