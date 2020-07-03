@@ -41,10 +41,14 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/tcnksm/ghr v0.13.0
 <<<<<<< HEAD
+<<<<<<< HEAD
 	go.opentelemetry.io/collector v0.5.0
 =======
 	go.opentelemetry.io/collector v0.4.0
 >>>>>>> 1b18a40... have this built with the main collector
+=======
+	go.opentelemetry.io/collector v0.4.0
+>>>>>>> 1b18a4037361491bb38f2df6299847edfe1382bd
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
 
@@ -116,9 +120,13 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 =======
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 >>>>>>> 1b18a40... have this built with the main collector
+=======
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
+>>>>>>> 1b18a4037361491bb38f2df6299847edfe1382bd
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
