@@ -61,11 +61,5 @@ func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
 
-	w := testWriters.borrow()
-	if err := w.Encode(sqlData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
-	jsonStr := w.String()
-	testWriters.release(w)
-	assert.True(t, strings.Contains(jsonStr, "localhost/customers"))
+	assert.Equal(t, "localhost/customers", sqlData.URL)
 }
