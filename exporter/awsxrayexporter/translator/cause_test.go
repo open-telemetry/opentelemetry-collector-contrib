@@ -84,7 +84,10 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 
 	span := constructExceptionServerSpan(attributes, 0)
 	filtered, _ := makeHTTP(span)
-
+	// Status is used to determine whether an error or not.
+	// This span illustrates incorrect instrumentation,
+	// marking a success status with an error http status code, and status wins.
+	// We do not expect to see such spans in practice.
 	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
 
 	assert.False(t, isError)
@@ -98,7 +101,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes := make(map[string]interface{})
 	attributes[semconventions.AttributeHTTPMethod] = "POST"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
-	attributes[semconventions.AttributeHTTPStatusCode] = 500
+	attributes[semconventions.AttributeHTTPStatusCode] = 499
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
 	span := constructExceptionServerSpan(attributes, 1)
