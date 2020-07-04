@@ -1,0 +1,18 @@
+receivers:
+  cudametrics:
+  cudametrics/customname:
+    scrape_interval: 1m
+    metric_prefix: testgpumetric
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [cudametrics]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
