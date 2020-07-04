@@ -30,7 +30,7 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "cuda"
+	typeStr = "cudametrics"
 )
 
 // Factory is the Factory for receiver.
@@ -72,7 +72,7 @@ func (f *Factory) CreateTraceReceiver(ctx context.Context, logger *zap.Logger, c
 func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if runtime.GOOS != "linux" {
 		// TODO: consider the support for other platforms.
-		return nil, errors.New("vmmetrics receiver is only supported on linux")
+		return nil, errors.New("cudametrics receiver is only supported on linux")
 	}
 	rcfg := cfg.(*Config)
 
