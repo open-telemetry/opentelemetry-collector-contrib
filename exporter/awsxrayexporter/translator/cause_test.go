@@ -116,7 +116,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	assert.NotNil(t, cause)
 }
 
-func constructExceptionServerSpan(attributes map[string]interface{}, statuscode int) pdata.Span {
+func constructExceptionServerSpan(attributes map[string]interface{}, statuscode pdata.StatusCode) pdata.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
