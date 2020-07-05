@@ -19,10 +19,10 @@ import (
 	"testing"
 	"time"
 
+	tracepb "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
 func TestCauseWithStatusMessage(t *testing.T) {
@@ -31,7 +31,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPMethod] = "POST"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	span := constructExceptionServerSpan(attributes, tracetranslator.OCInternal)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_InternalError))
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
@@ -57,7 +57,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
-	span := constructExceptionServerSpan(attributes, tracetranslator.OCInternal)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_InternalError))
 	filtered, _ := makeHTTP(span)
 
 	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
@@ -83,7 +83,7 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, tracetranslator.OCOK)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_Ok))
 	filtered, _ := makeHTTP(span)
 	// Status is used to determine whether an error or not.
 	// This span illustrates incorrect instrumentation,
@@ -105,7 +105,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 499
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, tracetranslator.OCCancelled)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_Cancelled))
 	filtered, _ := makeHTTP(span)
 
 	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
