@@ -123,11 +123,7 @@ docker-otelcontribcol:
 
 .PHONY: otelcontribcol
 otelcontribcol:
-<<<<<<< HEAD
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
-=======
-	GO111MODULE=on CGO_ENABLED=1 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
->>>>>>> Enable CGO for CUDA compilation
 
 
 .PHONY: otelcontribcol-all-sys

@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.uber.org/zap"
 )
 
 // Receiver is the type used to handle metrics from CUDA.
@@ -30,6 +31,8 @@ type Receiver struct {
 
 	stopOnce  sync.Once
 	startOnce sync.Once
+
+	logger *zap.Logger
 }
 
 // Start scrapes VM metrics based on the OS platform.

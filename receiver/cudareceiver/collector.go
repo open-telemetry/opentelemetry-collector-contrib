@@ -23,7 +23,8 @@ import (
 	"contrib.go.opencensus.io/resource/auto"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -46,22 +47,25 @@ type CUDAMetricsCollector struct {
 	scrapeInterval time.Duration
 	metricPrefix   string
 	done           chan struct{}
+
+	logger *zap.Logger
 }
 
 // NewCUDAMetricsCollector creates a new set of CUDA (GPU) Metrics (temperature, power, et al.).
-func NewCUDAMetricsCollector(d time.Duration, prefix string, consumer consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
+func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
 	device, status := NVMLDeviceGetHandledByIndex(uint64(0))
 	if status != NVMLSuccess {
 		return nil, fmt.Errorf("Could not get GPU device: status=%d", status)
 	}
 
 	c := &CUDAMetricsCollector{
-		consumer:       consumer,
+		consumer:       con,
 		startTime:      time.Now(),
 		device:         device,
 		scrapeInterval: d,
 		metricPrefix:   prefix,
 		done:           make(chan struct{}),
+		logger:         logger,
 	}
 
 	return c, nil
@@ -123,57 +127,66 @@ func (c *CUDAMetricsCollector) scrapeAndExport() {
 	ctx := context.Background()
 
 	metrics := make([]*metricspb.Metric, 0, len(cudaMetricDescriptors))
-	var errs []error
+
+	tempTs, err := c.getInt64TimeSeries(c.device.Temperature())
+	if err != nil {
+		c.logger.Error("Failed to create temperature timeseries", zap.Error(err))
+		return
+	}
+	powerTs, err := c.getInt64TimeSeries(c.device.PowerUsage())
+	if err != nil {
+		c.logger.Error("Failed to create poewr timeseries", zap.Error(err))
+		return
+	}
+	pcietxTs, err := c.getInt64TimeSeries(c.device.PCIeThroughput(PCIeUtilTXBytes))
+	if err != nil {
+		c.logger.Error("Failed to create PCIe Throuput TX timeseries", zap.Error(err))
+		return
+	}
+	pcierxTs, err := c.getInt64TimeSeries(c.device.PCIeThroughput(PCIeUtilRXBytes))
+	if err != nil {
+		c.logger.Error("Failed to create PCIe Throuput RX timeseries", zap.Error(err))
+		return
+	}
 
 	metrics = append(
 		metrics,
 		&metricspb.Metric{
 			MetricDescriptor: metricTemperature,
 			Resource:         rsc,
-			Timeseries:       []*metricspb.TimeSeries{c.getInt64TimeSeries(c.device.Temperature())},
+			Timeseries:       []*metricspb.TimeSeries{tempTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPower,
 			Resource:         rsc,
-			Timeseries:       []*metricspb.TimeSeries{c.getInt64TimeSeries(c.device.PowerUsage())},
+			Timeseries:       []*metricspb.TimeSeries{powerTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPCIeThroughputTX,
 			Resource:         rsc,
-			Timeseries:       []*metricspb.TimeSeries{c.getInt64TimeSeries(c.device.PCIeThroughput(PCIeUtilTXBytes))},
+			Timeseries:       []*metricspb.TimeSeries{pcietxTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPCIeThroughputRX,
 			Resource:         rsc,
-			Timeseries:       []*metricspb.TimeSeries{c.getInt64TimeSeries(c.device.PCIeThroughput(PCIeUtilRXBytes))},
+			Timeseries:       []*metricspb.TimeSeries{pcierxTs},
 		},
 	)
-
-	if len(errs) > 0 {
-		// TODO: emit error log
-		return
-	}
 
 	c.consumer.ConsumeMetricsData(ctx, consumerdata.MetricsData{Metrics: metrics})
 }
 
-// TimeToTimestamp converts a time.Time to a timestamp.Timestamp pointer.
-// TODO: remove this function once it gets exposed.
-// https://github.com/open-telemetry/opentelemetry-collector/blob/master/internal/internal.go
-func TimeToTimestamp(t time.Time) *timestamp.Timestamp {
-	if t.IsZero() {
-		return nil
+func (c *CUDAMetricsCollector) getInt64TimeSeries(val uint64) (*metricspb.TimeSeries, error) {
+	ts, err := ptypes.TimestampProto(c.startTime)
+	if err != nil {
+		return nil, err
 	}
-	nanoTime := t.UnixNano()
-	return &timestamp.Timestamp{
-		Seconds: nanoTime / 1e9,
-		Nanos:   int32(nanoTime % 1e9),
+	now, err := ptypes.TimestampProto(time.Now())
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (c *CUDAMetricsCollector) getInt64TimeSeries(val uint64) *metricspb.TimeSeries {
 	return &metricspb.TimeSeries{
-		StartTimestamp: TimeToTimestamp(c.startTime),
-		Points:         []*metricspb.Point{{Timestamp: TimeToTimestamp(time.Now()), Value: &metricspb.Point_Int64Value{Int64Value: int64(val)}}},
-	}
+		StartTimestamp: ts,
+		Points:         []*metricspb.Point{{Timestamp: now, Value: &metricspb.Point_Int64Value{Int64Value: int64(val)}}},
+	}, nil
 }
