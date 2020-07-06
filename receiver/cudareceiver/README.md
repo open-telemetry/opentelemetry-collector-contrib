@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-CUDA Receiver is currently only supporte on the following environment.
+CUDA Receiver is currently only supported on the following environment.
 
 * OS: Ubuntu 18.04
 * CPU architecture: x86_64
