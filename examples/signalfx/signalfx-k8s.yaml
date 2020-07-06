@@ -32,6 +32,9 @@ data:
                 - source_labels: [ __name__ ]
                   regex: '.*grpc_io.*'
                   action: drop
+      # Enable Zipkin to support Istio Mixer Adapter
+      # https://github.com/signalfx/signalfx-istio-adapter
+      zipkin:
     processors:
       batch:
       # Optional: If you have a different environment tag name
@@ -75,7 +78,7 @@ data:
     service:
       pipelines:
         traces:
-          receivers: [sapm, otlp]
+          receivers: [sapm, otlp, zipkin]
           processors: [memory_limiter, batch, queued_retry]
           exporters: [sapm]
         metrics:
@@ -98,6 +101,8 @@ spec:
     targetPort: 55680
   - name: sapm # Default endpoint for SignalFx APM receiver.
     port: 7276
+  - name: zipkin # Default endpoint for Zipkin trace receiver.
+    port: 9411
   - name: signalfx # Default endpoint for SignalFx metrics receiver.
     port: 9943
   - name: metrics # Default endpoint for querying metrics.
@@ -145,6 +150,7 @@ spec:
         - containerPort: 55679 # Default endpoint for ZPages.
         - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
         - containerPort: 7276 # Default endpoint for SignalFx APM receiver.
+        - containerPort: 9411 # Default endpoint for Zipkin trace receiver.
         - containerPort: 9943 # Default endpoint for SignalFx metrics receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
         volumeMounts:

@@ -22,6 +22,9 @@ receivers:
             - source_labels: [ __name__ ]
               regex: '.*grpc_io.*'
               action: drop
+  # Enable Zipkin to support Istio Mixer Adapter
+  # https://github.com/signalfx/signalfx-istio-adapter
+  zipkin:
 processors:
   batch:
   # Optional: If you have a different environment tag name
@@ -65,7 +68,7 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [sapm, otlp]
+      receivers: [sapm, otlp, zipkin]
       processors: [memory_limiter, batch, queued_retry]
       exporters: [sapm]
     metrics:
