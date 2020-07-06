@@ -56,6 +56,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := &Factory{}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
+		context.Background(),
 		zap.NewNop(),
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
@@ -73,7 +74,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 			},
 		},
 	}
-	_, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &testbed.MockMetricConsumer{})
+	_, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &testbed.MockMetricConsumer{})
 	require.Error(t, err)
 }
 
