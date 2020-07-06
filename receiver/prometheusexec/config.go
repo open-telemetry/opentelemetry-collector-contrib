@@ -28,6 +28,6 @@ type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// ScrapeInterval is the time between each scrape completed by the Receiver
 	ScrapeInterval time.Duration `mapstructure:"scrape_interval,omitempty"`
-	// SubprocessConfigs is the list of subprocess configurations
+	// SubprocessConfig is the configuration needed for the subprocess
 	SubprocessConfig config.SubprocessConfig `mapstructure:",squash"`
 }

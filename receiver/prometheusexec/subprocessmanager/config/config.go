@@ -16,7 +16,7 @@ package config
 
 // SubprocessConfig is the config definition for the subprocess manager
 type SubprocessConfig struct {
-	// CommandString is the command to be run (binary + flags)
+	// CommandString is the command to be run (binary + flags, separated by commas)
 	CommandString string `mapstructure:"exec"`
 	// Port is the port assigned to the Receiver, and to the {{port}} template variables
 	Port int `mapstructure:"port"`
@@ -26,10 +26,10 @@ type SubprocessConfig struct {
 	Env []EnvConfig `mapstructure:"env"`
 }
 
-// EnvConfig is the config definition of each key-value pair for env variables
+// EnvConfig is the config definition of each key-value pair for environment variables
 type EnvConfig struct {
 	// Name is the name of the environment variable
 	Name string `mapstructure:"name"`
-	// Value is the value of the variables
+	// Value is the value of the variable
 	Value string `mapstructure:"value"`
 }

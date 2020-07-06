@@ -32,7 +32,7 @@ const (
 	// Key to invoke this receiver (prometheus_exec)
 	typeStr = "prometheus_exec"
 
-	defaultEndpoint           = "localhost:10000"
+	defaultEndpoint           = "localhost:10001"
 	defaultMetricsPath        = "/metrics"
 	defaultCollectionInterval = 10 * time.Second
 )
@@ -67,8 +67,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided Config.
-// In this case it returns nil since this receiver only support metrics
+// CreateTraceReceiver creates a trace receiver based on provided Config, BUT in this case it returns nil since this receiver only support metrics
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,

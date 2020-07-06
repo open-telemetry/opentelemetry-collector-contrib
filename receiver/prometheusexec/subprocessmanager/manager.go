@@ -16,7 +16,6 @@ package subprocessmanager
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"os"
@@ -38,9 +37,12 @@ type Process struct {
 const (
 	// HealthyProcessTime is the default time a process needs to stay alive to be considered healthy
 	HealthyProcessTime time.Duration = 30 * time.Minute
-	healthyCrashCount  int           = 3               // Amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
-	delayMultiplier    float64       = 2.0             // The factor by which the delay scales (i.e. doubling every crash)
-	baseDelay          time.Duration = 1 * time.Second // Base exponential backoff dela
+	// healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
+	healthyCrashCount int = 3
+	// delayMutiplier is the factor by which the delay scales (default is doubling every crash)
+	delayMultiplier float64 = 2.0
+	// baseDelay is the base exponential backoff delay that every process waits for before restarting
+	baseDelay time.Duration = 1 * time.Second
 )
 
 // StartProcess will start the process and keep track of running time
@@ -52,19 +54,27 @@ func StartProcess(proc *Process) (time.Duration, error) {
 		argsSlice []string
 	)
 
-	// Iterate over the space-delimited args in the command, and set it to the correct variables, since the Command object needs the args separated
-	for i, val := range strings.Split(proc.Command, " ") {
-		if i == 0 {
+	// Iterate over the space-delimited argumentss in the command, and set it to the correct variables, since the Command object needs the arguments and flags separated
+	for _, val := range strings.Split(proc.Command, " ") {
+		// This is to filter out empty strings in case the user put double spaces or other whitespace in the config by mistake
+		if val == "" {
+			continue
+		}
+
+		// The first word in the command is the binary to run, and the rest are flags
+		if command == "" {
 			command = val
 		} else {
 			argsSlice = append(argsSlice, val)
 		}
 	}
 
-	// Create the command object and attach current os environment + env variables defined by user
+	// Create the command object and attach current os environment + environment variables defined by user
 	childProcess := exec.Command(command, argsSlice...)
 	childProcess.Env = os.Environ()
 	childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
+
+	// For now, simply attach the child processe's output to the parent's
 	attachChildOutputToParent(childProcess)
 
 	// Start and stop timer right before and after executing the command
@@ -73,7 +83,7 @@ func StartProcess(proc *Process) (time.Duration, error) {
 	elapsed = time.Since(start)
 
 	if errProcess != nil {
-		log.Printf("%v process error: %v", proc.CustomName, errProcess) // TODO: update with better logging
+		return elapsed, fmt.Errorf("[%v] process error: %v", proc.CustomName, errProcess)
 	}
 
 	return elapsed, nil
@@ -100,7 +110,7 @@ func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
 		return baseDelay
 	}
 
-	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number, all in time.Duration
+	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
 	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
 }
 

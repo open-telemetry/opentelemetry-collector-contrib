@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -41,17 +40,20 @@ const (
 	stringTemplate string = "{{port}}" // Template for port in strings
 )
 
-// Local random seed
+// Local random seed to not override anything being used globally
 var random *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type prometheusReceiverWrapper struct {
 	logger   *zap.Logger
 	config   *Config
 	consumer consumer.MetricsConsumerOld
+
 	// Prometheus receiver config
 	receiverConfig *prometheusreceiver.Config
+
 	// Subprocess data
 	subprocessConfig *subprocessmanager.Process
+
 	// Receiver data
 	prometheusReceiver component.MetricsReceiver
 	context            context.Context
@@ -67,7 +69,14 @@ func new(logger *zap.Logger, config *Config, consumer consumer.MetricsConsumerOl
 func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	factory := &prometheusreceiver.Factory{}
 
-	receiverConfig, subprocessConfig, ok := getPrometheusConfig(wrapper.config, wrapper.logger)
+	customName := getCustomName(wrapper.config)
+
+	subprocessConfig, ok := getSubprocessConfig(wrapper.config, customName)
+	if ok != nil {
+		return fmt.Errorf("unable to generate the subprocess config: %v", ok)
+	}
+
+	receiverConfig, ok := getReceiverConfig(wrapper.config, customName)
 	if ok != nil {
 		return fmt.Errorf("unable to generate the prometheusexec receiver config: %v", ok)
 	}
@@ -77,16 +86,78 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 		return fmt.Errorf("unable to create Prometheus receiver: %v", ok)
 	}
 
+	wrapper.subprocessConfig = subprocessConfig
 	wrapper.receiverConfig = receiverConfig
 	wrapper.prometheusReceiver = receiver
 	wrapper.context = ctx
 	wrapper.host = host
 
 	// Start the process with the built config
-	wrapper.subprocessConfig = subprocessConfig
 	go wrapper.manageProcess()
 
 	return nil
+}
+
+// getReceiverConfig returns the Prometheus receiver config
+func getReceiverConfig(cfg *Config, customName string) (*prometheusreceiver.Config, error) {
+	scrapeConfig := &config.ScrapeConfig{}
+
+	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeInterval)
+	scrapeConfig.Scheme = "http"
+	scrapeConfig.MetricsPath = defaultMetricsPath
+	scrapeConfig.JobName = customName
+
+	// This is a default Prometheus scrape config value, which indicates that the scraped metrics can be modified
+	scrapeConfig.HonorLabels = false
+	// This is a default Prometheus scrape config value, which indicates that timestamps of the scrape should be respected
+	scrapeConfig.HonorTimestamps = true
+
+	// Set the proper target by creating one target inside a single target group (this is how Prometheus wants its scrape config)
+	scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
+		StaticConfigs: []*targetgroup.Group{
+			{
+				Targets: []model.LabelSet{
+					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.SubprocessConfig.Port))},
+				},
+			},
+		},
+	}
+
+	return &prometheusreceiver.Config{
+		PrometheusConfig: &config.Config{
+			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
+		},
+	}, nil
+}
+
+// getSubprocessConfig returns the subprocess config after the correct logic is made
+func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.Process, error) {
+	if cfg.SubprocessConfig.CommandString == "" {
+		return nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
+	}
+
+	subprocessConfig := &subprocessmanager.Process{}
+
+	subprocessConfig.Command = cfg.SubprocessConfig.CommandString
+	subprocessConfig.Port = cfg.SubprocessConfig.Port
+	subprocessConfig.Env = cfg.SubprocessConfig.Env
+	subprocessConfig.CustomName = customName
+
+	return subprocessConfig, nil
+}
+
+// getCustomName will return the receiver's given custom name or try to generate one if none was given
+func getCustomName(cfg *Config) string {
+	// Try to get a custom name from the config (receivers should be named prometheus_exec/customName)
+	splitName := strings.SplitN(cfg.Name(), "/", 2)
+	customName := strings.TrimSpace(splitName[1])
+
+	if customName == "" || len(splitName) < 2 {
+		// If there is no customName, try to simply generate one by using the first word in the exec string, assuming it's the binary (i.e. ./mysqld_exporter ...)
+		return strings.Split(cfg.SubprocessConfig.CommandString, " ")[0]
+	}
+	return customName
 }
 
 // manageProcess will put the process in an infinite starting loop
@@ -99,23 +170,17 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 	)
 
 	for true {
-		// Generate a port if none was specified, and if process is unhealthy (Receiver has been stopped)
+
+		// Generate a port if none was specified and if process is unhealthy (Receiver has been stopped)
 		if wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime {
 			newPort = generateRandomPort(newPort)
 
-			// TODO: refactor
 			// Assign the new port in the config
-			wrapper.receiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
-				StaticConfigs: []*targetgroup.Group{
-					{
-						Targets: []model.LabelSet{
-							{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", newPort))},
-						},
-					},
-				},
+			wrapper.receiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
+				{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", newPort))},
 			}
 
-			// Create new Prometheus receiver with new config and keep pointer to it in wrapper
+			// Create new Prometheus receiver with new config and replace pointer to it in wrapper
 			factory := &prometheusreceiver.Factory{}
 			wrapper.prometheusReceiver, err = factory.CreateMetricsReceiver(wrapper.logger, wrapper.receiverConfig, wrapper.consumer)
 			if err != nil {
@@ -126,7 +191,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		// Replace the templating in the strings of the process data
 		wrapper.stringTemplating(newPort)
 
-		// Start the receiver if it's the first pass, or if the process in unhealthy and Receiver was stopped
+		// Start the receiver if it's the first pass, or if the process is unhealthy and Receiver was stopped last pass
 		if elapsed <= subprocessmanager.HealthyProcessTime {
 			err := wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
 			if err != nil {
@@ -134,10 +199,8 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 			}
 		}
 
-		elapsed, err = subprocessmanager.StartProcess(wrapper.subprocessConfig)
-		if err != nil {
-			return err // ??
-		}
+		// Start the process
+		elapsed, subprocessErr = subprocessmanager.StartProcess(wrapper.subprocessConfig)
 
 		// Reset crash count to 1 if the process seems to be healthy now, else increase crashCount
 		if elapsed > subprocessmanager.HealthyProcessTime {
@@ -152,14 +215,22 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 			}
 		}
 
+		// Compute how long this process will wait before restarting
+		sleepTime := subprocessmanager.GetDelay(elapsed, crashCount)
+
+		// Now we can log the process error
+		if err != nil {
+			wrapper.logger.Info("Subprocess error", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("time until process restarts", sleepTime.String()), zap.String("error", err.Error()))
+		}
+
 		// Sleep this goroutine for a certain amount of time, computed by exponential backoff
-		time.Sleep(subprocessmanager.GetDelay(elapsed, crashCount))
+		time.Sleep(sleepTime)
 	}
 
 	return nil
 }
 
-// stringTemplating will check if any of the strings in the process data have a certain templating, and replace it if necessary
+// stringTemplating will check if any of the strings in the process data have the {{port}} placeholder, and replace it if necessary
 func (wrapper *prometheusReceiverWrapper) stringTemplating(newPort int) {
 	var port string
 	if wrapper.subprocessConfig.Port == 0 {
@@ -168,16 +239,11 @@ func (wrapper *prometheusReceiverWrapper) stringTemplating(newPort int) {
 		port = strconv.Itoa(wrapper.subprocessConfig.Port)
 	}
 
-	r, _ := regexp.Compile(stringTemplate)
-
-	if r.MatchString(wrapper.config.SubprocessConfig.CommandString) {
-		wrapper.subprocessConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.CommandString, stringTemplate, port)
-	}
+	// ReplaceAll runs much faster (about 5x according to my tests) than checking for a regex match, therefore no checks are made and ReplaceAll simply returns the original string if no match is found
+	wrapper.subprocessConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.CommandString, stringTemplate, port)
 
 	for i, env := range wrapper.config.SubprocessConfig.Env {
-		if r.MatchString(env.Value) {
-			wrapper.subprocessConfig.Env[i].Value = strings.ReplaceAll(env.Value, stringTemplate, port)
-		}
+		wrapper.subprocessConfig.Env[i].Value = strings.ReplaceAll(env.Value, stringTemplate, port)
 	}
 }
 
@@ -189,63 +255,7 @@ func generateRandomPort(lastPort int) int {
 			return newPort
 		}
 	}
-	return 0
-}
-
-// TODO: refactor
-// getPrometheusConfig returns the config after the correct logic is made
-// All the scrape/subprocess configs are looped over and the proper attributes are assigned into the struct
-func getPrometheusConfig(cfg *Config, logger *zap.Logger) (*prometheusreceiver.Config, *subprocessmanager.Process, error) {
-	if cfg.SubprocessConfig.CommandString == "" {
-		return nil, nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
-	}
-
-	scrapeConfig := &config.ScrapeConfig{}
-	subprocessConfig := &subprocessmanager.Process{}
-
-	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
-	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeInterval)
-	scrapeConfig.Scheme = "http"
-	scrapeConfig.MetricsPath = defaultMetricsPath
-
-	// This is a default Prometheus scrape config value, which indicates that the scraped metrics can be modified
-	scrapeConfig.HonorLabels = false
-	// This is a default Prometheus scrape config value, which indicates that timestamps of the scrape should be respected
-	scrapeConfig.HonorTimestamps = true
-
-	// Try to get a custom name from the config (receivers should be named prometheus_exec/customName)
-	splitName := strings.SplitN(cfg.Name(), "/", 2)
-	customName := strings.TrimSpace(splitName[1])
-	if customName == "" || len(splitName) < 2 {
-		// If there is no customName, try to simply generate one by using the first word in the exec string, assuming it's the binary (i.e. ./mysqld_exporter ...)
-		defaultName := strings.Split(cfg.SubprocessConfig.CommandString, " ")[0]
-		scrapeConfig.JobName = defaultName
-		subprocessConfig.CustomName = defaultName
-	} else {
-		scrapeConfig.JobName = customName
-		subprocessConfig.CustomName = customName
-	}
-
-	// Set the proper target
-	scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
-		StaticConfigs: []*targetgroup.Group{
-			{
-				Targets: []model.LabelSet{
-					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.SubprocessConfig.Port))},
-				},
-			},
-		},
-	}
-
-	subprocessConfig.Command = cfg.SubprocessConfig.CommandString
-	subprocessConfig.Port = cfg.SubprocessConfig.Port
-	subprocessConfig.Env = cfg.SubprocessConfig.Env
-
-	return &prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
-			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
-		},
-	}, subprocessConfig, nil
+	return minPortRange
 }
 
 // Shutdown stops the underlying Prometheus receiver.
