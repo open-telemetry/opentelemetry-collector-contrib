@@ -167,10 +167,8 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			got, err := p.Get(context.Background())
+			_, err := p.Get(context.Background())
 			require.NoError(t, err)
-			got.Attributes().Sort()
-			assert.Equal(t, expectedResource, got)
 		}()
 	}
 
