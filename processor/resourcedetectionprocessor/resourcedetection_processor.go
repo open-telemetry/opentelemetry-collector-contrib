@@ -61,8 +61,14 @@ func (*resourceTraceProcessor) Shutdown(context.Context) error {
 func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
 	rs := traces.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
-		internal.MergeResource(rs.At(i).Resource(), rtp.resource, rtp.override)
+		res := rs.At(i).Resource()
+		if res.IsNil() {
+			res.InitEmpty()
+		}
+
+		internal.MergeResource(res, rtp.resource, rtp.override)
 	}
+
 	return rtp.next.ConsumeTraces(ctx, traces)
 }
 
@@ -103,7 +109,13 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, metrics 
 	md := pdatautil.MetricsToInternalMetrics(metrics)
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
-		internal.MergeResource(rm.At(i).Resource(), rmp.resource, rmp.override)
+		res := rm.At(i).Resource()
+		if res.IsNil() {
+			res.InitEmpty()
+		}
+
+		internal.MergeResource(res, rmp.resource, rmp.override)
 	}
+
 	return rmp.next.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
 }
