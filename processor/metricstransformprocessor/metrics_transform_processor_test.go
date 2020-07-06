@@ -16,8 +16,6 @@ package metricstransformprocessor
 
 import (
 	"context"
-	"testing"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -28,348 +26,174 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"testing"
 )
 
-type labelKeyValue struct {
-	Key   string
-	Value string
-}
-
-type metricsTransformTest struct {
-	name       string // test name
-	transforms []Transform
-	inMetrics  []*metricspb.MetricDescriptor // input Metric names
-	outMetrics []*metricspb.MetricDescriptor // output Metric names
-	inLabels   []labelKeyValue
-	outLabels  []labelKeyValue
-}
-
-var (
-	initialMetricNames = []*metricspb.MetricDescriptor{
-		{Name: "metric1"},
-		{Name: "metric5"},
-	}
-
-	outMetricNamesUpdateSingle = []*metricspb.MetricDescriptor{
-		{Name: "metric1/new"},
-		{Name: "metric5"},
-	}
-	outMetricNamesUpdateMultiple = []*metricspb.MetricDescriptor{
-		{Name: "metric1/new"},
-		{Name: "metric5/new"},
-	}
-
-	outMetricNamesInsertSingle = []*metricspb.MetricDescriptor{
-		{Name: "metric1"},
-		{Name: "metric5"},
-		{Name: "metric1/new"},
-	}
-
-	outMetricNamesInsertMultiple = []*metricspb.MetricDescriptor{
-		{Name: "metric1"},
-		{Name: "metric5"},
-		{Name: "metric1/new"},
-		{Name: "metric5/new"},
-	}
-
-	initialLabels = []labelKeyValue{
-		{
-			Key:   "label1",
-			Value: "value1",
-		},
-		{
-			Key:   "label2",
-			Value: "value2",
-		},
-	}
-
-	outputLabels = []labelKeyValue{
-		{
-			Key:   "label1/new",
-			Value: "value1",
-		},
-		{
-			Key:   "label2",
-			Value: "value2",
-		},
-	}
-
-	validUpateLabelOperation = Operation{
-		Action:   UpdateLabel,
-		Label:    "label1",
-		NewLabel: "label1/new",
-	}
-
-	standardTests = []metricsTransformTest{
-		// UPDATE
-		{
-			name: "metric_name_update",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					NewName:    "metric1/new",
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: outMetricNamesUpdateSingle,
-		},
-		{
-			name: "metric_name_update_multiple",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					NewName:    "metric1/new",
-				},
-				{
-					MetricName: "metric5",
-					Action:     Update,
-					NewName:    "metric5/new",
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: outMetricNamesUpdateMultiple,
-		},
-		{
-			name: "metric_name_update_nonexist",
-			transforms: []Transform{
-				{
-					MetricName: "metric100",
-					Action:     Update,
-					NewName:    "metric1/new",
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-		},
-		{
-			name: "metric_label_update",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{validUpateLabelOperation},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-			inLabels:   initialLabels,
-			outLabels:  outputLabels,
-		},
-		// INSERT
-		{
-			name: "metric_name_insert",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "metric1/new",
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: outMetricNamesInsertSingle,
-		},
-		{
-			name: "metric_name_insert_multiple",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "metric1/new",
-				},
-				{
-					MetricName: "metric5",
-					Action:     Insert,
-					NewName:    "metric5/new",
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: outMetricNamesInsertMultiple,
-		},
-		{
-			name: "metric_label_update_with_metric_insert",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "metric1/new",
-					Operations: []Operation{validUpateLabelOperation},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: outMetricNamesInsertSingle,
-			inLabels:   initialLabels,
-			outLabels:  outputLabels,
-		},
-		// Toggle Data Type
-		{
-			name: "metric_toggle_scalar_data_type_int64_to_double",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{{Action: ToggleScalarDataType}},
-				},
-				{
-					MetricName: "metric2",
-					Action:     Update,
-					Operations: []Operation{{Action: ToggleScalarDataType}},
-				},
-			},
-			inMetrics: []*metricspb.MetricDescriptor{
-				{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
-				{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
-			},
-			outMetrics: []*metricspb.MetricDescriptor{
-				{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
-				{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
-			},
-		},
-		{
-			name: "metric_toggle_scalar_data_type_double_to_int64",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{{Action: ToggleScalarDataType}},
-				},
-				{
-					MetricName: "metric2",
-					Action:     Update,
-					Operations: []Operation{{Action: ToggleScalarDataType}},
-				},
-			},
-			inMetrics: []*metricspb.MetricDescriptor{
-				{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
-				{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
-			},
-			outMetrics: []*metricspb.MetricDescriptor{
-				{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
-				{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
-			},
-		},
-		{
-			name: "metric_toggle_scalar_data_type_no_effect",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{{Action: ToggleScalarDataType}},
-				},
-			},
-			inMetrics:  []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
-			outMetrics: []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
-		},
-		// Add Label to a metric
-		{
-			name: "update existing metric by adding a new label when there are no labels",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{
-						{
-							Action:   AddLabel,
-							NewLabel: "foo",
-							NewValue: "bar",
-						},
-					},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-			outLabels:  []labelKeyValue{{Key: "foo", Value: "bar"}},
-		},
-		{
-			name: "update existing metric by adding a new label when there are labels",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{
-						{
-							Action:   AddLabel,
-							NewLabel: "foo",
-							NewValue: "bar",
-						},
-					},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-			inLabels:   initialLabels,
-			outLabels: []labelKeyValue{
-				{
-					Key:   "label1",
-					Value: "value1",
-				},
-				{
-					Key:   "label2",
-					Value: "value2",
-				},
-				{
-					Key:   "foo",
-					Value: "bar",
-				},
-			},
-		},
-		{
-			name: "update existing metric by adding a label that is duplicated in the list",
-			transforms: []Transform{
-				{
-					MetricName: "metric1",
-					Action:     Update,
-					Operations: []Operation{
-						{
-							Action:   AddLabel,
-							NewLabel: "label1",
-							NewValue: "value1",
-						},
-					},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-			inLabels:   initialLabels,
-			outLabels: []labelKeyValue{
-				{
-					Key:   "label1",
-					Value: "value1",
-				},
-				{
-					Key:   "label2",
-					Value: "value2",
-				},
-				{
-					Key:   "label1",
-					Value: "value1",
-				},
-			},
-		},
-		{
-			name: "update does not happen because target metric doesn't exist",
-			transforms: []Transform{
-				{
-					MetricName: "mymetric",
-					Action:     Update,
-					Operations: []Operation{
-						{
-							Action:   AddLabel,
-							NewLabel: "foo",
-							NewValue: "bar",
-						},
-					},
-				},
-			},
-			inMetrics:  initialMetricNames,
-			outMetrics: initialMetricNames,
-			inLabels:   initialLabels,
-			outLabels:  initialLabels,
-		},
-	}
-)
-
+// Toggle Data Type
+// {
+// 	name: "metric_toggle_scalar_data_type_int64_to_double",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{{Action: ToggleScalarDataType}},
+// 		},
+// 		{
+// 			MetricName: "metric2",
+// 			Action:     Update,
+// 			Operations: []Operation{{Action: ToggleScalarDataType}},
+// 		},
+// 	},
+// 	inMetrics: []*metricspb.MetricDescriptor{
+// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
+// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
+// 	},
+// 	outMetrics: []*metricspb.MetricDescriptor{
+// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
+// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
+// 	},
+// },
+// {
+// 	name: "metric_toggle_scalar_data_type_double_to_int64",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{{Action: ToggleScalarDataType}},
+// 		},
+// 		{
+// 			MetricName: "metric2",
+// 			Action:     Update,
+// 			Operations: []Operation{{Action: ToggleScalarDataType}},
+// 		},
+// 	},
+// 	inMetrics: []*metricspb.MetricDescriptor{
+// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
+// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
+// 	},
+// 	outMetrics: []*metricspb.MetricDescriptor{
+// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
+// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
+// 	},
+// },
+// {
+// 	name: "metric_toggle_scalar_data_type_no_effect",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{{Action: ToggleScalarDataType}},
+// 		},
+// 	},
+// 	inMetrics:  []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
+// 	outMetrics: []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
+// },
+// // Add Label to a metric
+// {
+// 	name: "update existing metric by adding a new label when there are no labels",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{
+// 				{
+// 					Action:   AddLabel,
+// 					NewLabel: "foo",
+// 					NewValue: "bar",
+// 				},
+// 			},
+// 		},
+// 	},
+// 	inMetrics:  initialMetricNames,
+// 	outMetrics: initialMetricNames,
+// 	outLabels:  []labelKeyValue{{Key: "foo", Value: "bar"}},
+// },
+// {
+// 	name: "update existing metric by adding a new label when there are labels",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{
+// 				{
+// 					Action:   AddLabel,
+// 					NewLabel: "foo",
+// 					NewValue: "bar",
+// 				},
+// 			},
+// 		},
+// 	},
+// 	inMetrics:  initialMetricNames,
+// 	outMetrics: initialMetricNames,
+// 	inLabels:   initialLabels,
+// 	outLabels: []labelKeyValue{
+// 		{
+// 			Key:   "label1",
+// 			Value: "value1",
+// 		},
+// 		{
+// 			Key:   "label2",
+// 			Value: "value2",
+// 		},
+// 		{
+// 			Key:   "foo",
+// 			Value: "bar",
+// 		},
+// 	},
+// },
+// {
+// 	name: "update existing metric by adding a label that is duplicated in the list",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "metric1",
+// 			Action:     Update,
+// 			Operations: []Operation{
+// 				{
+// 					Action:   AddLabel,
+// 					NewLabel: "label1",
+// 					NewValue: "value1",
+// 				},
+// 			},
+// 		},
+// 	},
+// 	inMetrics:  initialMetricNames,
+// 	outMetrics: initialMetricNames,
+// 	inLabels:   initialLabels,
+// 	outLabels: []labelKeyValue{
+// 		{
+// 			Key:   "label1",
+// 			Value: "value1",
+// 		},
+// 		{
+// 			Key:   "label2",
+// 			Value: "value2",
+// 		},
+// 		{
+// 			Key:   "label1",
+// 			Value: "value1",
+// 		},
+// 	},
+// },
+// {
+// 	name: "update does not happen because target metric doesn't exist",
+// 	transforms: []Transform{
+// 		{
+// 			MetricName: "mymetric",
+// 			Action:     Update,
+// 			Operations: []Operation{
+// 				{
+// 					Action:   AddLabel,
+// 					NewLabel: "foo",
+// 					NewValue: "bar",
+// 				},
+// 			},
+// 		},
+// 	},
+// 	inMetrics:  initialMetricNames,
+// 	outMetrics: initialMetricNames,
+// 	inLabels:   initialLabels,
+// 	outLabels:  initialLabels,
+// },
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
@@ -384,50 +208,65 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			inputMetrics := createTestMetrics(test.inMetrics, test.inLabels)
 			assert.NoError(t, mtp.ConsumeMetrics(context.Background(), inputMetrics))
 
+			// contruct metrics data to feed into the processor
+			md := constructTestInputMetricsData(test)
+
+			// process
+			cErr := mtp.ConsumeMetrics(
+				context.Background(),
+				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+					md,
+				}),
+			)
+			assert.NoError(t, cErr)
+
+			// get and check results
 			got := next.AllMetrics()
-
-			// build map of metric names to transforms
-			targetNameToTransform := make(map[string]Transform, len(test.transforms))
-			for _, transform := range test.transforms {
-				targetName := transform.MetricName
-				if transform.NewName != "" {
-					targetName = transform.NewName
-				}
-				targetNameToTransform[targetName] = transform
-			}
-
-			// validate results
 			require.Equal(t, 1, len(got))
 			gotMD := pdatautil.MetricsToMetricsData(got[0])
 			require.Equal(t, 1, len(gotMD))
-			require.Equal(t, len(test.outMetrics), len(gotMD[0].Metrics))
+			actualOut := gotMD[0].Metrics
+			require.Equal(t, len(test.out), len(actualOut))
 
-			for idx, out := range gotMD[0].Metrics {
-				assert.Equal(t, test.outMetrics[idx].Name, out.MetricDescriptor.Name)
-				assert.Equal(t, test.outMetrics[idx].Type, out.MetricDescriptor.Type)
-
-				transform, ok := targetNameToTransform[out.MetricDescriptor.Name]
-
-				// Check the original labels are untouched if not transformed, or insert.
-				if !ok || (transform.Action == Insert && out.MetricDescriptor.Name == transform.MetricName) {
-					validateLabels(t, test.inLabels, out)
+			for idx, out := range test.out {
+				actualDescriptor := actualOut[idx].MetricDescriptor
+				// name
+				assert.Equal(t, out.name, actualDescriptor.Name)
+				// label keys
+				assert.Equal(t, len(out.labelKeys), len(actualDescriptor.LabelKeys))
+				for lidx, l := range out.labelKeys {
+					assert.Equal(t, l, actualDescriptor.LabelKeys[lidx].Key)
 				}
-
-				if !ok {
-					continue
-				}
-
-				// Check the labels are correctly updated.
-				validateLabels(t, test.outLabels, out)
-
-				// check the data type was changed correctly
-				for _, ts := range out.Timeseries {
-					for _, p := range ts.Points {
-						switch out.MetricDescriptor.Type {
-						case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
-							assert.Equal(t, float64(0), p.GetDoubleValue())
-						case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
-							assert.Equal(t, int64(0), p.GetInt64Value())
+				// timeseries
+				assert.Equal(t, len(out.timeseries), len(actualOut[idx].Timeseries))
+				for tidx, ts := range out.timeseries {
+					actualTimeseries := actualOut[idx].Timeseries[tidx]
+					// start timestamp
+					assert.Equal(t, ts.startTimestamp, actualTimeseries.StartTimestamp.Seconds)
+					// label values
+					assert.Equal(t, len(ts.labelValues), len(actualTimeseries.LabelValues))
+					for vidx, v := range ts.labelValues {
+						assert.Equal(t, v, actualTimeseries.LabelValues[vidx].Value)
+					}
+					// points
+					assert.Equal(t, len(ts.points), len(actualTimeseries.Points))
+					for pidx, p := range ts.points {
+						actualPoint := actualTimeseries.Points[pidx]
+						assert.Equal(t, p.timestamp, actualPoint.Timestamp.Seconds)
+						if p.isInt64 {
+							assert.Equal(t, int64(p.value), actualPoint.GetInt64Value())
+						} else if p.isDouble {
+							assert.Equal(t, float64(p.value), actualPoint.GetDoubleValue())
+						} else {
+							assert.Equal(t, p.sum, actualPoint.GetDistributionValue().GetSum())
+							assert.Equal(t, p.count, actualPoint.GetDistributionValue().GetCount())
+							assert.Equal(t, p.sumOfSquaredDeviation, actualPoint.GetDistributionValue().GetSumOfSquaredDeviation())
+							for boIdx, bound := range p.bounds {
+								assert.Equal(t, bound, actualPoint.GetDistributionValue().GetBucketOptions().GetExplicit().Bounds[boIdx])
+							}
+							for buIdx, bucket := range p.buckets {
+								assert.Equal(t, bucket, actualPoint.GetDistributionValue().GetBuckets()[buIdx].Count)
+							}
 						}
 					}
 				}
@@ -492,15 +331,15 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		name: "1000Metrics",
 		transforms: []Transform{
 			{
-				MetricName: "metric1",
-				Action:     "insert",
-				NewName:    "newname",
+				MetricName: metric1,
+				Action:     Insert,
+				NewName:    newMetric1,
 			},
 		},
 	}
 
-	for len(stressTest.inMetrics) < 1000 {
-		stressTest.inMetrics = append(stressTest.inMetrics, initialMetricNames...)
+	for len(stressTest.in) < 1000 {
+		stressTest.in = append(stressTest.in, initialMetricRename1)
 	}
 
 	benchmarkTests := []metricsTransformTest{stressTest}
@@ -519,15 +358,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		mtp := newMetricsTransformProcessor(next, cfg)
 		assert.NotNil(b, mtp)
 
-		md := consumerdata.MetricsData{
-			Metrics: make([]*metricspb.Metric, len(test.inMetrics)),
-		}
-
-		for idx, in := range test.inMetrics {
-			md.Metrics[idx] = &metricspb.Metric{
-				MetricDescriptor: in,
-			}
-		}
+		md := constructTestInputMetricsData(test)
 
 		b.Run(test.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
