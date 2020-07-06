@@ -200,7 +200,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		}
 
 		// Start the process
-		elapsed, subprocessErr = subprocessmanager.StartProcess(wrapper.subprocessConfig)
+		elapsed, err = subprocessmanager.StartProcess(wrapper.subprocessConfig)
 
 		// Reset crash count to 1 if the process seems to be healthy now, else increase crashCount
 		if elapsed > subprocessmanager.HealthyProcessTime {
