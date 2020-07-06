@@ -96,31 +96,3 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 
 	return pdatautil.MetricsFromMetricsData(mds)
 }
-
-// update updates the original metric content in the metric pointer.
-func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform Transform) {
-	// metric name update
-	if transform.NewName != "" {
-		metric.MetricDescriptor.Name = transform.NewName
-	}
-
-	for _, op := range transform.Operations {
-		// update label
-		if op.Action == UpdateLabel {
-			mtp.updateLabelOp(metric, op)
-		}
-	}
-}
-
-func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
-	for _, label := range metric.MetricDescriptor.LabelKeys {
-		if label.Key != op.Label {
-			continue
-		}
-		// label key update
-		if op.NewLabel != "" {
-			label.Key = op.NewLabel
-		}
-		// label value update
-	}
-}
