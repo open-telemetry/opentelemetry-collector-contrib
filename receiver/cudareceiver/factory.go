@@ -76,13 +76,14 @@ func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger,
 	}
 	rcfg := cfg.(*Config)
 
-	cudac, err := NewCUDAMetricsCollector(rcfg.ScrapeInterval, rcfg.MetricPrefix, nextConsumer)
+	cudac, err := NewCUDAMetricsCollector(rcfg.ScrapeInterval, rcfg.MetricPrefix, logger, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
 
 	cudar := &Receiver{
-		c: cudac,
+		c:      cudac,
+		logger: logger,
 	}
 	return cudar, nil
 }

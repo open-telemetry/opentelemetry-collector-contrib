@@ -41,6 +41,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+<<<<<<< HEAD
+=======
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cudareceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
+>>>>>>> Add logging
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
@@ -83,8 +88,13 @@ func components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
+<<<<<<< HEAD
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
+=======
+		&cudareceiver.Factory{},
+		&receivercreator.Factory{},
+>>>>>>> Add logging
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
