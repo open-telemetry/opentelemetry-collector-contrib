@@ -81,7 +81,7 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 		return fmt.Errorf("unable to generate the prometheusexec receiver config: %v", ok)
 	}
 
-	receiver, ok := factory.CreateMetricsReceiver(wrapper.logger, receiverConfig, wrapper.consumer)
+	receiver, ok := factory.CreateMetricsReceiver(wrapper.context, wrapper.logger, receiverConfig, wrapper.consumer)
 	if ok != nil {
 		return fmt.Errorf("unable to create Prometheus receiver: %v", ok)
 	}
@@ -182,7 +182,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 
 			// Create new Prometheus receiver with new config and replace pointer to it in wrapper
 			factory := &prometheusreceiver.Factory{}
-			wrapper.prometheusReceiver, err = factory.CreateMetricsReceiver(wrapper.logger, wrapper.receiverConfig, wrapper.consumer)
+			wrapper.prometheusReceiver, err = factory.CreateMetricsReceiver(wrapper.context, wrapper.logger, wrapper.receiverConfig, wrapper.consumer)
 			if err != nil {
 				return fmt.Errorf("unable to create Prometheus receiver: %v. Killing this process (%v)", err, wrapper.subprocessConfig.CustomName)
 			}
