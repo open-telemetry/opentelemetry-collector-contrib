@@ -25,6 +25,10 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
+
 	// Configures the receiver to use TLS.
 	// The default value is nil, which will cause the receiver to not use TLS.
 	TLSCredentials *configtls.TLSSetting `mapstructure:"tls, omitempty"`

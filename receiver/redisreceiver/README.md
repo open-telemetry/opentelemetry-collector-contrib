@@ -57,7 +57,7 @@ The hostname and port of the Redis instance, separated by a colon.
 
 _Required._
 
-### collection_interval
+### collection_interval (default: 10s)
 
 This receiver runs on an interval. Each time it runs, it queries Redis, creates
 metrics, and sends them to the next consumer. The `collection_interval`

@@ -23,6 +23,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver v0.0.0
@@ -39,7 +41,7 @@ require (
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/stretchr/testify v1.5.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.4.0
+	go.opentelemetry.io/collector v0.5.0
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
 
@@ -111,5 +113,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavef
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver => ./receiver/zipkinscribereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab

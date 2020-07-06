@@ -35,55 +35,76 @@ type Client interface {
 	Get(path string) ([]byte, error)
 }
 
-func NewClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
+func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
 	switch cfg.APIConfig.AuthType {
 	case k8sconfig.AuthTypeTLS:
-		return newTLSClient(endpoint, cfg, logger)
+		return &tlsClientProvider{
+			endpoint: endpoint,
+			cfg:      cfg,
+			logger:   logger,
+		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
-		return newServiceAccountClient(endpoint, svcAcctCACertPath, svcAcctTokenPath, logger)
+		return &saClientProvider{
+			endpoint:   endpoint,
+			caCertPath: svcAcctCACertPath,
+			tokenPath:  svcAcctTokenPath,
+			logger:     logger,
+		}, nil
 	default:
 		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
 	}
 }
 
-func newTLSClient(endpoint string, cfg *ClientConfig, logger *zap.Logger) (Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(cfg.CAFile)
+type ClientProvider interface {
+	BuildClient() (Client, error)
+}
+
+type tlsClientProvider struct {
+	endpoint string
+	cfg      *ClientConfig
+	logger   *zap.Logger
+}
+
+func (p *tlsClientProvider) BuildClient() (Client, error) {
+	rootCAs, err := systemCertPoolPlusPath(p.cfg.CAFile)
 	if err != nil {
 		return nil, err
 	}
-	clientCert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	clientCert, err := tls.LoadX509KeyPair(p.cfg.CertFile, p.cfg.KeyFile)
 	if err != nil {
 		return nil, err
 	}
 	return defaultTLSClient(
-		endpoint,
-		cfg.InsecureSkipVerify,
+		p.endpoint,
+		p.cfg.InsecureSkipVerify,
 		rootCAs,
 		[]tls.Certificate{clientCert},
 		nil,
-		logger,
+		p.logger,
 	)
 }
 
-func newServiceAccountClient(
-	endpoint string,
-	caCertPath string,
-	tokenPath string,
-	logger *zap.Logger,
-) (*clientImpl, error) {
-	rootCAs, err := systemCertPoolPlusPath(caCertPath)
+type saClientProvider struct {
+	endpoint   string
+	caCertPath string
+	tokenPath  string
+	logger     *zap.Logger
+}
+
+func (p *saClientProvider) BuildClient() (Client, error) {
+	rootCAs, err := systemCertPoolPlusPath(p.caCertPath)
 	if err != nil {
 		return nil, err
 	}
-	tok, err := ioutil.ReadFile(tokenPath)
+	tok, err := ioutil.ReadFile(p.tokenPath)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessagef(err, "Unable to read token file %s", p.tokenPath)
 	}
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
 		RootCAs: rootCAs,
 	}
-	return defaultTLSClient(endpoint, true, rootCAs, nil, tok, logger)
+	return defaultTLSClient(p.endpoint, true, rootCAs, nil, tok, p.logger)
 }
 
 func defaultTLSClient(

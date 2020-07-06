@@ -1,0 +1,23 @@
+receivers:
+    examplereceiver:
+
+processors:
+    metricstransform:
+        transforms:
+          - metric_name: old_name
+            action: invalid # invalid action type
+            
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]

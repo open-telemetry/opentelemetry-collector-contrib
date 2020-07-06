@@ -9,7 +9,7 @@ BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
-BUILD_X3=-X github.com/open-telemetry/opentelemetry-collector/internal/version.BuildType=$(BUILD_TYPE)
+BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 STATIC_CHECK=staticcheck
 OTEL_VERSION=master
@@ -27,7 +27,7 @@ all: common otelcontribcol
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol
-	$(MAKE) -C testbed runtests
+	$(MAKE) -C testbed run-tests
 
 .PHONY: test-with-cover
 unit-tests-with-cover:
@@ -40,9 +40,10 @@ integration-tests-with-cover:
 	@echo $(INTEGRATION_TEST_MODULES)
 	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
 
+# Long-running e2e tests
 .PHONY: stability-tests
-stability-tests:
-	@echo Stability tests have not been implemented yet
+stability-tests: otelcontribcol
+	$(MAKE) -C testbed run-stability-tests
 
 .PHONY: gotidy
 gotidy:
@@ -65,6 +66,7 @@ for-all:
 add-tag:
 	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
 	@echo "Adding tag ${TAG}"
+	@git tag -a ${TAG} -s -m "Version ${TAG}"
 	@set -e; for dir in $(ALL_MODULES); do \
 	  (echo Adding tag "$${dir:2}/$${TAG}" && \
 	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
@@ -84,8 +86,8 @@ GOMODULES = $(ALL_MODULES) $(PWD)
 .PHONY: $(GOMODULES)
 MODULEDIRS = $(GOMODULES:%=for-all-target-%)
 for-all-target: $(MODULEDIRS)
-$(MODULEDIRS): 
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET) 
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 .PHONY: for-all-target
 
 .PHONY: install-tools

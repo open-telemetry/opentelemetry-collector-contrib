@@ -135,12 +135,20 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
 	attributes := span.Attributes()
-	if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
-		// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
-		// to be named "Service"
-		name = awsService.StringVal()
 
-		namespace = "aws"
+	// peer.service should always be prioritized for segment names when set because it is what the user decided.
+	if peerService, ok := attributes.Get(semconventions.AttributePeerService); ok {
+		name = peerService.StringVal()
+	}
+
+	if name == "" {
+		if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
+			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
+			// to be named "Service"
+			name = awsService.StringVal()
+
+			namespace = "aws"
+		}
 	}
 
 	if name == "" {

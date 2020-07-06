@@ -52,7 +52,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 		return fmt.Errorf("failed to create prometheus receiver config: %v", err)
 	}
 
-	pr, err := pFactory.CreateMetricsReceiver(prw.logger, pConfig, prw.consumer)
+	pr, err := pFactory.CreateMetricsReceiver(ctx, prw.logger, pConfig, prw.consumer)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver: %v", err)
 	}

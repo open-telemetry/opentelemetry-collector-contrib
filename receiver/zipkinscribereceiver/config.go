@@ -20,6 +20,10 @@ import "go.opentelemetry.io/collector/config/configmodels"
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
+
 	// Category is the string that will be used to identify the scribe log
 	// messages that contain Zipkin spans.
 	Category string `mapstructure:"category"`

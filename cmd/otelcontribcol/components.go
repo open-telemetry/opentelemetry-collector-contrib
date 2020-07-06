@@ -36,6 +36,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
@@ -80,7 +82,7 @@ func components() (config.Factories, error) {
 		&wavefrontreceiver.Factory{},
 		&jaegerlegacyreceiver.Factory{},
 		&redisreceiver.Factory{},
-		kubeletstatsreceiver.NewFactory(),
+		&kubeletstatsreceiver.Factory{},
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
 		&receivercreator.Factory{},
@@ -120,6 +122,8 @@ func components() (config.Factories, error) {
 
 	processors := []component.ProcessorFactoryBase{
 		&k8sprocessor.Factory{},
+		resourcedetectionprocessor.NewFactory(),
+		&metricstransformprocessor.Factory{},
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

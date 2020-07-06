@@ -27,5 +27,8 @@ var _ configmodels.Receiver = (*Config)(nil)
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	kubelet.ClientConfig          `mapstructure:",squash"`
-	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint           string        `mapstructure:"endpoint"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 }

@@ -7,8 +7,8 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0
-	github.com/jaegertracing/jaeger v1.17.0
+	github.com/jaegertracing/jaeger v1.18.0
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.4.0
-	go.uber.org/zap v1.10.0
+	go.opentelemetry.io/collector v0.5.0
+	go.uber.org/zap v1.13.0
 )

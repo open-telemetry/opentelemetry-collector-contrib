@@ -16,11 +16,14 @@ package k8sprocessor
 
 import (
 	"context"
+	"net"
 
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -33,43 +36,72 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger          *zap.Logger
-	apiConfig       k8sconfig.APIConfig
-	nextConsumer    consumer.TraceConsumer
-	kc              kube.Client
-	passthroughMode bool
-	rules           kube.ExtractionRules
-	filters         kube.Filters
+	logger              *zap.Logger
+	apiConfig           k8sconfig.APIConfig
+	kc                  kube.Client
+	passthroughMode     bool
+	rules               kube.ExtractionRules
+	filters             kube.Filters
+	nextTraceConsumer   consumer.TraceConsumer
+	nextMetricsConsumer consumer.MetricsConsumer
 }
 
 var _ (component.TraceProcessor) = (*kubernetesprocessor)(nil)
+var _ (component.MetricsProcessor) = (*kubernetesprocessor)(nil)
 
-// NewTraceProcessor returns a component.TraceProcessorOld that adds the WithAttributeMap(attributes) to all spans
+// NewTraceProcessor returns a component.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
 // passed to it.
 func NewTraceProcessor(
 	logger *zap.Logger,
-	nextConsumer consumer.TraceConsumer,
+	nextTraceConsumer consumer.TraceConsumer,
 	kubeClient kube.ClientProvider,
 	options ...Option,
 ) (component.TraceProcessor, error) {
-	kp := &kubernetesprocessor{logger: logger, nextConsumer: nextConsumer}
+	kp := &kubernetesprocessor{logger: logger, nextTraceConsumer: nextTraceConsumer}
 	for _, opt := range options {
 		if err := opt(kp); err != nil {
 			return nil, err
 		}
 	}
+	err := kp.initKubeClient(logger, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+	return kp, nil
+}
 
+// NewMetricsProcessor returns a component.MetricProcessor that adds the k8s attributes to metrics passed to it.
+func NewMetricsProcessor(
+	logger *zap.Logger,
+	nextMetricsConsumer consumer.MetricsConsumer,
+	kubeClient kube.ClientProvider,
+	options ...Option,
+) (component.MetricsProcessor, error) {
+	kp := &kubernetesprocessor{logger: logger, nextMetricsConsumer: nextMetricsConsumer}
+	for _, opt := range options {
+		if err := opt(kp); err != nil {
+			return nil, err
+		}
+	}
+	err := kp.initKubeClient(logger, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+	return kp, nil
+}
+
+func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
 	if kubeClient == nil {
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
 		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, nil, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		kp.kc = kc
 	}
-	return kp, nil
+	return nil
 }
 
 func (kp *kubernetesprocessor) GetCapabilities() component.ProcessorCapabilities {
@@ -144,7 +176,68 @@ func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Trace
 		}
 	}
 
-	return kp.nextConsumer.ConsumeTraces(ctx, td)
+	return kp.nextTraceConsumer.ConsumeTraces(ctx, td)
+}
+
+// ConsumeMetrics process metrics and add k8s metadata using resource hostname as pod origin.
+// TODO: Move to internal data model once it's available in contrib.
+func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
+	mds := pdatautil.MetricsToMetricsData(metrics)
+
+	for i := range mds {
+		md := &mds[i]
+		var presetPodIP string
+		var podIP string
+
+		// Check if a collector/agent or a prior processor has already annotated the metrics with IP.
+		if md.Resource.GetLabels() != nil {
+			presetPodIP = md.Resource.Labels[k8sIPLabelName]
+		}
+
+		// Most of the metric receivers uses "host.hostname" resource label (which is represented as
+		// Node.Identifier.HostName in OpenCensus format) to identify metrics origin.
+		// In k8s environment, it's set to a pod IP address. If the value doesn't represent
+		// an IP address, we skip it.
+		if podIP == "" && md.Node.GetIdentifier().GetHostName() != "" {
+			hostname := md.Node.Identifier.HostName
+			if net.ParseIP(hostname) != nil {
+				podIP = hostname
+			}
+		}
+
+		if presetPodIP == "" && podIP != "" {
+			if md.Resource == nil {
+				md.Resource = &resourcepb.Resource{}
+			}
+			if md.Resource.Labels == nil {
+				md.Resource.Labels = map[string]string{}
+			}
+			md.Resource.Labels[k8sIPLabelName] = podIP
+		}
+
+		// Ignore metrics if cannot infer IP address of the origin pod.
+		if podIP == "" {
+			continue
+		}
+
+		// Don't invoke any k8s client functionality in passthrough mode.
+		// Just tag the IP and forward the batch.
+		if kp.passthroughMode {
+			continue
+		}
+
+		// Add k8s tags to resource.
+		attrsToAdd := kp.getAttributesForPodIP(podIP)
+		if len(attrsToAdd) == 0 {
+			continue
+		}
+
+		for k, v := range attrsToAdd {
+			md.Resource.Labels[k] = v
+		}
+	}
+
+	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, metrics)
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {

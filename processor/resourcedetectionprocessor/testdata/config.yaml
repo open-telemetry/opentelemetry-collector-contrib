@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  resourcedetection:
+  resourcedetection/2:
+    detectors: [env, gce]
+    timeout: 2s
+    override: false
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [resourcedetection/2]
+      exporters: [exampleexporter]

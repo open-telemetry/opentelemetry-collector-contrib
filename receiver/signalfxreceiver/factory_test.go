@@ -45,17 +45,47 @@ func (m *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consume
 func TestCreateReceiver(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
+	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
-	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, &mockMetricsConsumer{})
+	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
 	mReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
+}
+
+func TestCreateInvalidHTTPEndpoint(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = ""
+
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.Nil(t, tReceiver)
+}
+
+func TestCreateNoPort(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:"
+
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"\": invalid syntax")
+	assert.Nil(t, tReceiver)
+}
+
+func TestCreateLargePort(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:65536"
+
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
+	assert.Error(t, err, "port number must be between 1 and 65535")
+	assert.Nil(t, tReceiver)
 }

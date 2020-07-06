@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -61,6 +61,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: defaultConfig.ReceiverSettings,
+					Endpoint:         defaultConfig.Endpoint,
 					Transport:        defaultConfig.Transport,
 					TCPIdleTimeout:   defaultConfig.TCPIdleTimeout,
 				},
@@ -89,9 +90,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "invalid_transport_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "invalid_transport_rcv",
 					},
+					Endpoint:  "localhost:2003",
 					Transport: "unknown_transp",
 					Parser: &protocol.Config{
 						Type:   "plaintext",
@@ -107,9 +108,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "regex_parser_rcv",
-						Endpoint: "localhost:2003",
+						NameVal: "regex_parser_rcv",
 					},
+					Endpoint:  "localhost:2003",
 					Transport: "tcp",
 					Parser: &protocol.Config{
 						Type: "regex",
@@ -130,9 +131,9 @@ func Test_carbonreceiver_New(t *testing.T) {
 			args: args{
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{
-						NameVal:  "negative_tcp_idle_timeout",
-						Endpoint: "localhost:2003",
+						NameVal: "negative_tcp_idle_timeout",
 					},
+					Endpoint:       "localhost:2003",
 					Transport:      "tcp",
 					TCPIdleTimeout: -1 * time.Second,
 					Parser: &protocol.Config{
@@ -160,7 +161,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 }
 
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	host, portStr, err := net.SplitHostPort(addr)
 	require.NoError(t, err)
 	port, err := strconv.Atoi(portStr)

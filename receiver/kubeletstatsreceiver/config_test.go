@@ -43,10 +43,10 @@ func TestLoadConfig(t *testing.T) {
 	duration := 10 * time.Second
 	require.Equal(t, &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  "kubeletstats",
-			NameVal:  "kubeletstats/tls",
-			Endpoint: "1.2.3.4:5555",
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/tls",
 		},
+		Endpoint: "1.2.3.4:5555",
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",

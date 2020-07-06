@@ -54,10 +54,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
-			Endpoint: defaultEndpoint,
+			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
+		Endpoint: defaultEndpoint,
 	}
 }
 
@@ -79,6 +79,15 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	return int(port), nil
 }
 
+// verify that the configured port is not 0
+func (rCfg *Config) validate() error {
+	_, err := extractPortFromEndpoint(rCfg.Endpoint)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // CreateTraceReceiver creates a trace receiver based on provided config.
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
@@ -89,16 +98,8 @@ func (f *Factory) CreateTraceReceiver(
 	// assert config is SAPM config
 	rCfg := cfg.(*Config)
 
-	port, err := extractPortFromEndpoint(rCfg.Endpoint)
+	err := rCfg.validate()
 	if err != nil {
-		return nil, err
-	}
-
-	// verify that the configured port is not 0
-	if port == 0 {
-		err = fmt.Errorf("endpoint with non-zero port must be enabled for %s receiver",
-			rCfg.Name(),
-		)
 		return nil, err
 	}
 

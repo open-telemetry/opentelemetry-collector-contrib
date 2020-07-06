@@ -89,7 +89,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	mockConsumer := &mockMetricsConsumer{}
-	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
+	rcvr, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
 	dyn := rcvr.(*receiverCreator)
 	require.NoError(t, rcvr.Start(context.Background(), host))
