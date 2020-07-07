@@ -103,12 +103,12 @@ workflows:
       - setup:
           requires:
             - checkout-commit
-      - build:
+      - cross-compile:
           requires:
             - setup
       - run-stability-tests:
           requires:
-            - build
+            - cross-compile 
       - publish-dev:
           requires:
             - run-stability-tests
@@ -121,12 +121,6 @@ workflows:
             tags:
               only: /.*/
       - lint:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-      - build:
           requires:
             - setup
           filters:
@@ -146,7 +140,7 @@ workflows:
               only: /.*/
       - loadtest:
           requires:
-            - build
+            - cross-compile 
           filters:
             tags:
               only: /.*/
@@ -161,8 +155,7 @@ workflows:
             - lint
             - unit-tests
             - integration-tests
-            - build
-            - cross-compile
+            - cross-compile 
           filters:
             branches:
               ignore: /.*/
@@ -173,7 +166,7 @@ workflows:
             - lint
             - unit-tests
             - integration-tests
-            - build
+            - cross-compile 
           filters:
             branches:
               only: /master|release\/.+/
@@ -205,17 +198,6 @@ jobs:
           name: Checks
           command: make -j4 checklicense impi misspell
 
-  build:
-    executor: golang
-    steps:
-      - restore_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make otelcontribcol
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
-
   build-examples:
     docker:
       - image: cimg/go:1.14
@@ -234,6 +216,9 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
 
   unit-tests:
     executor: golang
