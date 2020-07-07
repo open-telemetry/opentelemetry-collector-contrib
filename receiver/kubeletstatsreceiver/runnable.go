@@ -61,21 +61,22 @@ func (r *runnable) Setup() error {
 
 func (r *runnable) Run() error {
 	const transport = "http"
-	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
-	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 	summary, err := r.provider.StatsSummary()
 	if err != nil {
 		r.logger.Error("StatsSummary failed", zap.Error(err))
-		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, 0, err)
 		return nil
 	}
 	mds := kubelet.MetricsData(summary, typeStr)
+	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
 	for _, md := range mds {
+		ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 		err = r.consumer.ConsumeMetricsData(ctx, *md)
+		var numTimeSeries, numPoints int
 		if err != nil {
 			r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
+		} else {
+			numTimeSeries, numPoints = obsreport.CountMetricPoints(*md)
 		}
-		numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
 		obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
 	}
 	return nil
