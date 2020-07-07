@@ -59,5 +59,7 @@ func labels(labels map[string]string, descriptions map[string]string) (
 }
 
 func applyLabels(metric *metricspb.Metric, attrs map[string]string) {
-	metric.MetricDescriptor.LabelKeys, metric.Timeseries[0].LabelValues = labels(attrs, nil)
+	if metric != nil {
+		metric.MetricDescriptor.LabelKeys, metric.Timeseries[0].LabelValues = labels(attrs, nil)
+	}
 }
