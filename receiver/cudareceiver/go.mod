@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cudare
 
 go 1.14
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
 require (
 	contrib.go.opencensus.io/resource v0.1.2
 	github.com/census-instrumentation/opencensus-proto v0.2.1
