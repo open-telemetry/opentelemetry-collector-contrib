@@ -108,6 +108,8 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 		// update label
 		if op.Action == UpdateLabel {
 			mtp.updateLabelOp(metric, op)
+		} else if op.Action == ToggleScalarDataType {
+			mtp.ToggleScalarDataType(metric)
 		}
 	}
 }
@@ -122,5 +124,29 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op
 			label.Key = op.NewLabel
 		}
 		// label value update
+	}
+}
+
+func (mtp *metricsTransformProcessor) ToggleScalarDataType(metric *metricspb.Metric) {
+	for _, ts := range metric.Timeseries {
+		for _, dp := range ts.Points {
+			switch metric.MetricDescriptor.Type {
+			case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
+				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: float64(dp.GetInt64Value())}
+			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
+				dp.Value = &metricspb.Point_Int64Value{Int64Value: int64(dp.GetDoubleValue())}
+			}
+		}
+	}
+
+	switch metric.MetricDescriptor.Type {
+	case metricspb.MetricDescriptor_GAUGE_INT64:
+		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_DOUBLE
+	case metricspb.MetricDescriptor_CUMULATIVE_INT64:
+		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
+	case metricspb.MetricDescriptor_GAUGE_DOUBLE:
+		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_INT64
+	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
+		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
 	}
 }
