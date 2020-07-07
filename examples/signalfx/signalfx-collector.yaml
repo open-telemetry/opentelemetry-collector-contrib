@@ -5,7 +5,7 @@ receivers:
   otlp:
   sapm:
   signalfx:
-  # This section is used to collect OpenTelemetry metrics
+  # This section is used to collect the OpenTelemetry Collector metrics
   # Even if just a SignalFx µAPM customer, these metrics are included
   prometheus:
     config:
