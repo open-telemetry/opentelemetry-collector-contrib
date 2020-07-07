@@ -176,3 +176,8 @@ otel-from-lib:
 build-examples:
 	docker-compose -f examples/tracing/docker-compose.yml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
+
+.PHONY: deb-rpm-package
+%-package: otelcontribcol-linux_amd64
+	docker build -t otelcontribcol-$*-packager packaging/$*
+	docker run --rm -v $(CURDIR):/repo -e VERSION=$(VERSION) otelcontribcol-$*-packager
