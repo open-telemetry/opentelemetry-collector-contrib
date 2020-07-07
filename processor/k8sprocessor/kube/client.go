@@ -39,7 +39,7 @@ type WatchClient struct {
 	deleteMut         sync.Mutex
 	logger            *zap.Logger
 	kc                kubernetes.Interface
-	informer          cache.SharedInformer
+	podInformer       cache.SharedInformer
 	namespaceInformer cache.SharedInformer
 	deploymentRegex   *regexp.Regexp
 	deleteQueue       []deleteRequest
@@ -56,7 +56,7 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newPodInformer InformerProvider) (Client, error) {
 	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex, stopCh: make(chan struct{})}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -81,30 +81,36 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if newInformer == nil {
-		newInformer = newSharedInformer
+	if newPodInformer == nil {
+		newPodInformer = newSharedInformer
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
-	c.namespaceInformer = newSharedNamespaceInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	c.podInformer = newPodInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	if len(c.Rules.NamespaceRules.Annotations) > 0 || len(c.Rules.NamespaceRules.Labels) > 0 {
+		c.namespaceInformer = newSharedNamespaceInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	}
 	return c, err
 }
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
-	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
 
-	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
+	c.podInformer.Run(c.stopCh)
 
-	c.informer.Run(c.stopCh)
+	if c.namespaceInformer != nil {
+		c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleNamespaceAdd,
+			UpdateFunc: c.handleNamespaceUpdate,
+			DeleteFunc: c.handleNamespaceDelete,
+		})
+
+		c.namespaceInformer.Run(c.stopCh)
+	}
 }
 
 func (c *WatchClient) handleNamespaceAdd(obj interface{}) {

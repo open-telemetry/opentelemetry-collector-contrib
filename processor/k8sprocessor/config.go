@@ -50,7 +50,7 @@ type NamespaceExtractConfig struct {
 	// documentation for more details.
 	Annotations []FieldExtractConfig `mapstructure:"annotations"`
 
-	// Annotations allows extracting data from namespace labels and record it
+	// Labels allows extracting data from namespace labels and record it
 	// as resource attributes.
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.

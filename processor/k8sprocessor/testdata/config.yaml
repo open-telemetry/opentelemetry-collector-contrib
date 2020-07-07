@@ -34,6 +34,7 @@ processors:
           - tag_name: testing.asset_id
             key: test.asset_id
 
+
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace
       node: ip-111.us-west-2.compute.internal # only look for pods running on this node/host
