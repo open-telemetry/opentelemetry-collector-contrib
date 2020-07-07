@@ -105,7 +105,7 @@ spec:
     port: 9411
   - name: signalfx # Default endpoint for SignalFx metrics receiver.
     port: 9943
-  - name: metrics # Default endpoint for querying metrics.
+  - name: metrics # Default endpoint for the Collector metrics.
     port: 8888
   selector:
     component: otel-collector
