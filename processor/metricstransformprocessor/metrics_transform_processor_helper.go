@@ -76,7 +76,7 @@ func (mtp *metricsTransformProcessor) aggregateOp(metric *metricspb.Metric, op O
 	// keyToLabelValuesMap groups the actual label values objects
 	keyToTimeseriesMap, keyToLabelValuesMap := mtp.groupTimeseries(metric, labelIdxs, op.NewValue)
 	// compose groups into timeseries
-	newTimeseries := mtp.aggregateTimeseriesGroups(keyToTimeseriesMap, keyToLabelValuesMap, op.AggregationType)
+	newTimeseries := mtp.aggregateTimeseriesGroups(keyToTimeseriesMap, keyToLabelValuesMap, op.AggregationType, metric.MetricDescriptor.Type)
 	metric.Timeseries = newTimeseries
 	if op.Action == AggregateLabels {
 		metric.MetricDescriptor.LabelKeys = labels
@@ -173,27 +173,12 @@ func (mtp *metricsTransformProcessor) composeKeyWithNewValue(labelIdx int, times
 }
 
 // aggregateTimeseriesGroups merges each group into one timeseries
-func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string][]*metricspb.TimeSeries, keyToLabelValuesMap map[string][]*metricspb.LabelValue, aggrType AggregationType) []*metricspb.TimeSeries {
+func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string][]*metricspb.TimeSeries, keyToLabelValuesMap map[string][]*metricspb.LabelValue, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
 	newTimeSeriesList := make([]*metricspb.TimeSeries, len(keyToTimeseriesMap))
 	idxCounter := 0
 	for key, element := range keyToTimeseriesMap {
 		timestampToPoints, startTimestamp := mtp.analyzeTimeseriesForAggregation(element)
-		newPoints := make([]*metricspb.Point, len(timestampToPoints))
-		pidxCounter := 0
-		for _, points := range timestampToPoints {
-			newPoints[pidxCounter] = &metricspb.Point{
-				Timestamp: points[0].Timestamp,
-			}
-			intPoint, doublePoint, distPoint := mtp.compute(points, aggrType)
-			if intPoint != nil {
-				newPoints[pidxCounter].Value = intPoint
-			} else if doublePoint != nil {
-				newPoints[pidxCounter].Value = doublePoint
-			} else {
-				newPoints[pidxCounter].Value = distPoint
-			}
-			pidxCounter++
-		}
+		newPoints := mtp.aggregatePoints(timestampToPoints, aggrType, dataType)
 		// newSingleTimeSeries is an aggregated timeseries
 		newSingleTimeSeries := &metricspb.TimeSeries{
 			StartTimestamp: startTimestamp,
@@ -227,13 +212,34 @@ func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries
 	return timestampToPoints, startTimestamp
 }
 
+// aggregatePoints aggregates points
+func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[string][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
+	newPoints := make([]*metricspb.Point, len(timestampToPoints))
+	pidxCounter := 0
+	for _, points := range timestampToPoints {
+		newPoints[pidxCounter] = &metricspb.Point{
+			Timestamp: points[0].Timestamp,
+		}
+		intPoint, doublePoint, distPoint := mtp.compute(points, aggrType, dataType)
+		if intPoint != nil {
+			newPoints[pidxCounter].Value = intPoint
+		} else if doublePoint != nil {
+			newPoints[pidxCounter].Value = doublePoint
+		} else {
+			newPoints[pidxCounter].Value = distPoint
+		}
+		pidxCounter++
+	}
+	return newPoints
+}
+
 // compute merges points into one point based on the provided aggregation type
-// TODO: ensure no dropping data for distributed
-func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, *metricspb.Point_DistributionValue) {
+func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, *metricspb.Point_DistributionValue) {
 	intVal := int64(0)
 	doubleVal := float64(0)
 	var distVal *metricspb.DistributionValue
-	if points[0].GetInt64Value() != 0 {
+	switch dataType {
+	case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
 		for _, p := range points {
 			if aggrType == Sum || aggrType == Average {
 				intVal += p.GetInt64Value()
@@ -249,7 +255,7 @@ func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrTyp
 			intVal /= int64(len(points))
 		}
 		return &metricspb.Point_Int64Value{Int64Value: intVal}, nil, nil
-	} else if points[0].GetDoubleValue() != 0 {
+	case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
 		for _, p := range points {
 			if aggrType == Sum || aggrType == Average {
 				doubleVal += p.GetDoubleValue()
@@ -265,7 +271,7 @@ func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrTyp
 			doubleVal /= float64(len(points))
 		}
 		return nil, &metricspb.Point_DoubleValue{DoubleValue: doubleVal}, nil
-	} else if points[0].GetDistributionValue() != nil && aggrType == Sum {
+	case metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
 		for _, p := range points {
 			if distVal == nil {
 				distVal = p.GetDistributionValue()
@@ -276,6 +282,7 @@ func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrTyp
 			}
 		}
 		return nil, nil, &metricspb.Point_DistributionValue{DistributionValue: distVal}
+
 	}
 	return nil, nil, nil
 }

@@ -523,6 +523,7 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, len(test.in)),
 	}
+	var dataType metricspb.MetricDescriptor_Type
 	for idx, in := range test.in {
 		// construct label keys
 		labels := make([]*metricspb.LabelKey, len(in.labelKeys))
@@ -552,10 +553,12 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 					points[pidx].Value = &metricspb.Point_Int64Value{
 						Int64Value: int64(p.value),
 					}
+					dataType = metricspb.MetricDescriptor_GAUGE_INT64
 				} else if p.isDouble {
 					points[pidx].Value = &metricspb.Point_DoubleValue{
 						DoubleValue: float64(p.value),
 					}
+					dataType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 				} else {
 					buckets := make([]*metricspb.DistributionValue_Bucket, len(p.buckets))
 					for buIdx, bucket := range p.buckets {
@@ -578,6 +581,7 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 							SumOfSquaredDeviation: p.sumOfSquaredDeviation,
 						},
 					}
+					dataType = metricspb.MetricDescriptor_GAUGE_DISTRIBUTION
 				}
 			}
 			timeseries[tidx] = &metricspb.TimeSeries{
@@ -595,6 +599,7 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 			MetricDescriptor: &metricspb.MetricDescriptor{
 				Name:      in.name,
 				LabelKeys: labels,
+				Type:      dataType,
 			},
 			Timeseries: timeseries,
 		}
