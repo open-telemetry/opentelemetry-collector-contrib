@@ -234,6 +234,8 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[stri
 }
 
 // compute merges points into one point based on the provided aggregation type
+// TODO: combine int and double operations
+// TODO: no dropping data if mismatched bounds
 func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, *metricspb.Point_DistributionValue) {
 	intVal := int64(0)
 	doubleVal := float64(0)

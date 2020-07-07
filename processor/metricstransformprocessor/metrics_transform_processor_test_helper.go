@@ -36,6 +36,7 @@ const (
 	nonexist        = "nonexist"
 )
 
+// TODO: add datatype in, and take out the current type indicator
 type testPoint struct {
 	timestamp             int64
 	value                 int
