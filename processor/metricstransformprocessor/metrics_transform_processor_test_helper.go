@@ -20,10 +20,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-// clean TODO:
-// 1. move function construction to struct construction
-// 2. try to eliminate repitition in struct construction
-
 const (
 	metric1         = "metric1"
 	metric2         = "metric2"
@@ -181,25 +177,25 @@ var (
 
 	validUpdateLabelValuesAggrSumOperation = Operation{
 		Action:           AggregateLabelValues,
-		Label:            label1,
-		AggregatedValues: []string{labelValue11, labelValue12},
-		NewValue:         newLabelValue11,
+		Label:            label2,
+		AggregatedValues: []string{labelValue21, labelValue22},
+		NewValue:         labelValue21,
 		AggregationType:  Sum,
 	}
 
 	validUpdateLabelValuesAggrAverageOperation = Operation{
 		Action:           AggregateLabelValues,
-		Label:            label1,
-		AggregatedValues: []string{labelValue11, labelValue12},
-		NewValue:         newLabelValue11,
+		Label:            label2,
+		AggregatedValues: []string{labelValue21, labelValue22},
+		NewValue:         labelValue21,
 		AggregationType:  Average,
 	}
 
 	validUpdateLabelValuesAggrMaxOperation = Operation{
 		Action:           AggregateLabelValues,
-		Label:            label1,
-		AggregatedValues: []string{labelValue11, labelValue12},
-		NewValue:         newLabelValue11,
+		Label:            label2,
+		AggregatedValues: []string{labelValue21, labelValue22},
+		NewValue:         labelValue21,
 		AggregationType:  Max,
 	}
 
@@ -280,7 +276,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelAggrBuilder(4, true, false)},
 		},
 		{
@@ -292,7 +288,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelAggrBuilder(2, true, false)},
 		},
 		{
@@ -304,7 +300,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelAggrBuilder(3, true, false)},
 		},
 		{
@@ -316,7 +312,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelAggrBuilder(4, false, true)},
 		},
 		{
@@ -328,7 +324,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelAggrBuilder(2, false, true)},
 		},
 		{
@@ -340,7 +336,7 @@ var (
 					Operations: []Operation{validUpdateLabelAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelAggrBuilder(3, false, true)},
 		},
 		{
@@ -352,7 +348,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelValuesAggrBuilder(4, true, false)},
 		},
 		{
@@ -364,7 +360,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelValuesAggrBuilder(2, true, false)},
 		},
 		{
@@ -376,7 +372,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
 			out: []testMetric{outLabelValuesAggrBuilder(3, true, false)},
 		},
 		{
@@ -388,7 +384,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelValuesAggrBuilder(4, false, true)},
 		},
 		{
@@ -400,7 +396,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelValuesAggrBuilder(2, false, true)},
 		},
 		{
@@ -412,7 +408,7 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(false, true)},
+			in:  []testMetric{initialAggrBuilder(false, true)},
 			out: []testMetric{outLabelValuesAggrBuilder(3, false, true)},
 		},
 		{
@@ -492,8 +488,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelAggrBuilder(true, false)},
-			out: []testMetric{initialLabelAggrBuilder(true, false), outLabelAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
+			out: []testMetric{initialAggrBuilder(true, false), outLabelAggrBuilder(4, true, false)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_insert",
@@ -504,8 +500,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialLabelValuesAggrBuilder(true, false)},
-			out: []testMetric{initialLabelValuesAggrBuilder(true, false), outLabelValuesAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(true, false)},
+			out: []testMetric{initialAggrBuilder(true, false), outLabelValuesAggrBuilder(4, true, false)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_distribution_insert",
@@ -606,7 +602,7 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 	return md
 }
 
-func initialLabelAggrBuilder(isInt bool, isDouble bool) testMetric {
+func initialAggrBuilder(isInt bool, isDouble bool) testMetric {
 	return testMetric{
 		name:      metric1,
 		labelKeys: []string{label1, label2},
@@ -660,39 +656,6 @@ func outLabelAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
 	}
 }
 
-func initialLabelValuesAggrBuilder(isInt bool, isDouble bool) testMetric {
-	return testMetric{
-		name:      metric1,
-		labelKeys: []string{label1, label2},
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 2,
-				labelValues:    []string{labelValue11, labelValue21},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     1,
-						isInt64:   isInt,
-						isDouble:  isDouble,
-					},
-				},
-			},
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue12, labelValue21},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     3,
-						isInt64:   isInt,
-						isDouble:  isDouble,
-					},
-				},
-			},
-		},
-	}
-}
-
 func outLabelValuesAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
 	outMetric := testMetric{
 		name:      metric1,
@@ -700,7 +663,7 @@ func outLabelValuesAggrBuilder(value int, isInt bool, isDouble bool) testMetric 
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 1,
-				labelValues:    []string{newLabelValue11, labelValue21},
+				labelValues:    []string{labelValue11, labelValue21},
 				points: []testPoint{
 					{
 						timestamp: 2,
