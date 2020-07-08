@@ -16,8 +16,8 @@ package config
 
 // SubprocessConfig is the config definition for the subprocess manager
 type SubprocessConfig struct {
-	// CommandString is the command to be run (binary + flags, separated by commas)
-	CommandString string `mapstructure:"exec"`
+	// Command is the command to be run (binary + flags, separated by commas)
+	Command string `mapstructure:"exec"`
 	// Port is the port assigned to the Receiver, and to the {{port}} template variables
 	Port int `mapstructure:"port"`
 	// CustomName is a custom user-specified name to keep track of a certain process in logs

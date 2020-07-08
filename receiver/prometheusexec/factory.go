@@ -32,9 +32,8 @@ const (
 	// Key to invoke this receiver (prometheus_exec)
 	typeStr = "prometheus_exec"
 
-	defaultEndpoint           = "localhost:10001"
 	defaultMetricsPath        = "/metrics"
-	defaultCollectionInterval = 10 * time.Second
+	defaultCollectionInterval = 60 * time.Second
 )
 
 // Factory is the factory struct for prometheusexec
@@ -59,9 +58,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		},
 		ScrapeInterval: defaultCollectionInterval,
 		SubprocessConfig: config.SubprocessConfig{
-			CommandString: "",
-			CustomName:    "",
-			Env:           []config.EnvConfig{},
+			Command:    "",
+			CustomName: "",
+			Env:        []config.EnvConfig{},
 		},
 	}
 }

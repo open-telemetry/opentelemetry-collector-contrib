@@ -15,15 +15,17 @@
 package subprocessmanager
 
 import (
+	"bufio"
 	"fmt"
 	"math"
 	"math/rand"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
+	"github.com/kballard/go-shellquote"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+	"go.uber.org/zap"
 )
 
 // Process struct holds all the info needed for subprocesses
@@ -45,48 +47,55 @@ const (
 	baseDelay time.Duration = 1 * time.Second
 )
 
-// StartProcess will start the process and keep track of running time
-func StartProcess(proc *Process) (time.Duration, error) {
+// Run will start the process and keep track of running time
+func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 	var (
 		start     time.Time
 		elapsed   time.Duration
-		command   string
 		argsSlice []string
 	)
 
-	// Iterate over the space-delimited argumentss in the command, and set it to the correct variables, since the Command object needs the arguments and flags separated
-	for _, val := range strings.Split(proc.Command, " ") {
-		// This is to filter out empty strings in case the user put double spaces or other whitespace in the config by mistake
-		if val == "" {
-			continue
-		}
-
-		// The first word in the command is the binary to run, and the rest are flags
-		if command == "" {
-			command = val
-		} else {
-			argsSlice = append(argsSlice, val)
-		}
+	// Parse the command line string into arguments
+	args, err := shellquote.Split(proc.Command)
+	if err != nil {
+		return elapsed, fmt.Errorf("[%v] could not parse command error: %v", proc.CustomName, err)
+	}
+	// Separate the executable from the flags for the Command object
+	if len(args) > 1 {
+		argsSlice = args[1:]
 	}
 
 	// Create the command object and attach current os environment + environment variables defined by user
-	childProcess := exec.Command(command, argsSlice...)
+	childProcess := exec.Command(args[0], argsSlice...)
 	childProcess.Env = os.Environ()
 	childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
 
-	// For now, simply attach the child processe's output to the parent's
-	attachChildOutputToParent(childProcess)
+	// Handle the subprocess output in a goroutine, and pipe the stderr/stdout into one
+	cmdReader, err := childProcess.StdoutPipe()
+	childProcess.Stderr = childProcess.Stdout
+	go proc.handleSubprocessOutput(bufio.NewScanner(cmdReader), logger)
 
-	// Start and stop timer right before and after executing the command
+	// Start and stop timer (elapsed) right before and after executing the command
 	start = time.Now()
-	errProcess := childProcess.Run()
-	elapsed = time.Since(start)
+	errProcess := childProcess.Start()
+	if errProcess != nil {
+		return elapsed, fmt.Errorf("[%v] process could not start: %v", proc.CustomName, errProcess)
+	}
 
+	errProcess = childProcess.Wait()
+	elapsed = time.Since(start)
 	if errProcess != nil {
 		return elapsed, fmt.Errorf("[%v] process error: %v", proc.CustomName, errProcess)
 	}
 
 	return elapsed, nil
+}
+
+// Log every line of the subprocesse's output using zap, and EOF (when the reader passed is closed - the process has exited) is handled by the scanner automatically
+func (proc *Process) handleSubprocessOutput(scanner *bufio.Scanner, logger *zap.Logger) {
+	for scanner.Scan() {
+		logger.Info("subprocess output line", zap.String("subprocess name", proc.CustomName), zap.String("raw output", scanner.Text()))
+	}
 }
 
 // formatEnvSlice will loop over the key-value pairs and format the slice correctly for use by the Command object ("name=value")
@@ -112,10 +121,4 @@ func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
 
 	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
 	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
-}
-
-// Swap the child processe's Stdout and Stderr to parent processe's Stdout/Stderr
-func attachChildOutputToParent(childProcess *exec.Cmd) {
-	childProcess.Stdout = os.Stdout
-	childProcess.Stderr = os.Stderr
 }

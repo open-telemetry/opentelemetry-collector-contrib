@@ -15,17 +15,17 @@ Through the configuration file, you can indicate which binaries to run (usually 
 For each `prometheus_exec` defined in the configuration file, the specified command will be run. The command *should* start a binary that exposes Prometheus metrics and an equivalent Prometheus receiver will be instantiated to scrape its metrics, if configured correctly.
 
 - ### prometheus_exec (required)
-`prometheus_exec` receivers should hierarchically be placed under the `receivers` key. You can define as many of these as you want, and they should be named as follows: `prometheus_exec/custom_name`. The `custom_name` should be unique per receiver you define, and is important for logging and error tracing. If no `custom_name` is given (i.e. simply having `prometheus_exec`), one will be generated for you by using the first word in the command to be executed (doing this limits the amount of receivers to 1 though since you can't define multiple receivers with duplicate names, so it's not recommended). Example:
+`prometheus_exec` receivers should hierarchically be placed under the `receivers` key. You can define as many of these as you want, and they should be named as follows: `prometheus_exec/custom_name`. The `custom_name` is unique per receiver you define, and is important for logging and error tracing. Example:
 
 ```yaml
 receivers:
+    # custom_name here is "mysql"
     prometheus_exec/mysql: 
         exec: ./mysqld_exporter
-        # custom_name here is "mysql"
 
-    prometheus_exec:
+    # custom_name here is "postgres"
+    prometheus_exec/postgres:
         exec: ./postgres_exporter
-        # custom_name here is "./postgres_exporter"
 ```
 
 - ### exec (required)
@@ -35,9 +35,11 @@ Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The va
 receivers:
     prometheus_exec/apache:
         exec: ./apache_exporter --log.level=info
+        port: 9117
 
     prometheus_exec/postgresql:
         exec: ./postgres_exporter --web.telemetry-path=/metrics
+        port: 9187
 ```
 
 - ### port
@@ -50,43 +52,44 @@ Example:
 
 ```yaml
 receivers:
+    # this receiver will listen on port 9117
     prometheus_exec/apache:
         exec: ./apache_exporter
         port: 9117 
-    # this receiver will listen on port 9117
 
+    # this receiver will listen on port 9187 and {{port}} inside the command will become 9187
     prometheus_exec/postgresql:
         exec: ./postgres_exporter --web.listen-address=:{{port}}
         port: 9187
-    # this receiver will listen on port 9187 and {{port}} inside the command will become 9187
 
+    # this receiver will listen on a random port and that port will be substituting the {{port}} inside the command
     prometheus_exec/mysql:
         exec: ./mysqld_exporter --web.listen-address=:{{port}}
-    # this receiver will listen on a random port and that port will be substituting the {{port}} inside the command
 ```
 
 - ### scrape_interval
-`scrape_interval` is an optional entry. Its value is a duration, in seconds (`s`), indicating how long the delay between scrapes done by the receiver is. The default is `10s` (10 seconds). Example:
+`scrape_interval` is an optional entry. Its value is a duration, in seconds (`s`), indicating how long the delay between scrapes done by the receiver is. The default is `60s` (60 seconds). Example:
 
 ```yaml
 receivers:
+    # this receiver will scrape every 80 seconds
     prometheus_exec/apache:
         exec: ./apache_exporter
         port: 9117 
-        scrape_interval: 60s
-    # this receiver will scrape every 60 seconds
+        scrape_interval: 80s
 
+    # this receiver will scrape every 60 seconds, by default
     prometheus_exec/postgresql:
         exec: ./postgres_exporter --web.listen-address=:{{port}}
         port: 9187
-    # this receiver will scrape every 10 seconds, by default
 ```
 
 - ### env
-`env` is an optional entry to indicate which environment variables the command needs to run properly. Under it, there should be a list of key (`name`) - value (`value`) pairs, separate by dashes (`-`). They are case-sensitive. When running a command, these environment variables are added to the pre-existing environment variables the Collector is currently running with (the entire environment is replicated, including the directory). Example:
+`env` is an optional entry to indicate which environment variables the command needs to run properly. Under it, there should be a list of key (`name`) - value (`value`) pairs. They are case-sensitive. When running a command, these environment variables are added to the pre-existing environment variables the Collector is currently running with (the entire environment is replicated, including the directory). Example:
 
 ```yaml
 receivers:
+    # this binary will start with the two defined environment variables, notice how string templating also works in env
     prometheus_exec/mysql:
         exec: ./mysqld_exporter 
         port: 9104 
@@ -96,6 +99,5 @@ receivers:
             value: user:password@(hostname:port)/dbname
           - name: SECONDARY_PORT
             value: {{port}}
-    # this binary will start with the two above defined environment variables, notice how string templating also works in env
 ```
 
