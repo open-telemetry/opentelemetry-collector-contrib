@@ -178,6 +178,8 @@ build-examples:
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
 .PHONY: deb-rpm-package
-%-package: otelcontribcol-linux_amd64
-	docker build -t otelcontribcol-$*-packager packaging/$*
-	docker run --rm -v $(CURDIR):/repo -e VERSION=$(VERSION) otelcontribcol-$*-packager
+%-package: ARCH ?= amd64
+%-package:
+	$(MAKE) otelcontribcol-linux_$(ARCH)
+	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
+	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
