@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Program otelcontribcol is the Omnition Telemetry Service built on top of
-// OpenTelemetry Service.
+// Program otelcontribcol is an extension to the OpenTelemetry Collector
+// that includes additional components, some vendor-specific, contributed
+// from the wider community.
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"go.opentelemetry.io/collector/service"
@@ -25,14 +27,10 @@ import (
 )
 
 func main() {
-	handleErr := func(message string, err error) {
-		if err != nil {
-			log.Fatalf("%s: %v", message, err)
-		}
-	}
-
 	factories, err := components()
-	handleErr("Failed to build components", err)
+	if err != nil {
+		log.Fatalf("failed to build components: %v", err)
+	}
 
 	info := service.ApplicationStartInfo{
 		ExeName:  "otelcontribcol",
@@ -41,9 +39,21 @@ func main() {
 		GitHash:  version.GitHash,
 	}
 
-	svc, err := service.New(service.Parameters{Factories: factories, ApplicationStartInfo: info})
-	handleErr("Failed to construct the application", err)
+	if err := run(service.Parameters{ApplicationStartInfo: info, Factories: factories}); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	err = svc.Start()
-	handleErr("Application run finished with error", err)
+func runInteractive(params service.Parameters) error {
+	app, err := service.New(params)
+	if err != nil {
+		return fmt.Errorf("failed to construct the application: %w", err)
+	}
+
+	err = app.Start()
+	if err != nil {
+		return fmt.Errorf("application run finished with error: %w", err)
+	}
+
+	return nil
 }
