@@ -15,6 +15,7 @@
 package metricstransformprocessor
 
 import (
+	"fmt"
 	"math"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -214,32 +215,38 @@ func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries
 
 // aggregatePoints aggregates points
 func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[string][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
-	newPoints := make([]*metricspb.Point, len(timestampToPoints))
-	pidxCounter := 0
+	// initialize to size 0, unsure how many points will come out because distribution points are not guarantteed to have matching bounds
+	newPoints := make([]*metricspb.Point, 0)
 	for _, points := range timestampToPoints {
-		newPoints[pidxCounter] = &metricspb.Point{
-			Timestamp: points[0].Timestamp,
-		}
-		intPoint, doublePoint, distPoint := mtp.compute(points, aggrType, dataType)
+		timestamp := points[0].Timestamp
+		intPoint, doublePoint, distPoints := mtp.compute(points, aggrType, dataType)
 		if intPoint != nil {
-			newPoints[pidxCounter].Value = intPoint
+			newPoints = append(newPoints, &metricspb.Point{
+				Timestamp: timestamp,
+				Value:     intPoint,
+			})
 		} else if doublePoint != nil {
-			newPoints[pidxCounter].Value = doublePoint
-		} else {
-			newPoints[pidxCounter].Value = distPoint
+			newPoints = append(newPoints, &metricspb.Point{
+				Timestamp: timestamp,
+				Value:     doublePoint,
+			})
+		} else if distPoints != nil {
+			for _, p := range distPoints {
+				newPoints = append(newPoints, &metricspb.Point{
+					Timestamp: timestamp,
+					Value:     p,
+				})
+			}
 		}
-		pidxCounter++
 	}
 	return newPoints
 }
 
 // compute merges points into one point based on the provided aggregation type
-// TODO: combine int and double operations
-// TODO: no dropping data if mismatched bounds
-func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, *metricspb.Point_DistributionValue) {
+func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, []*metricspb.Point_DistributionValue) {
 	intVal := int64(0)
 	doubleVal := float64(0)
-	var distVal *metricspb.DistributionValue
+	distVals := make([]*metricspb.Point_DistributionValue, 0)
 	switch dataType {
 	case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
 		for _, p := range points {
@@ -274,33 +281,46 @@ func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrTyp
 		}
 		return nil, &metricspb.Point_DoubleValue{DoubleValue: doubleVal}, nil
 	case metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		for _, p := range points {
-			if distVal == nil {
-				distVal = p.GetDistributionValue()
-				continue
-			}
-			if mtp.haveMatchingBounds(distVal, p.GetDistributionValue()) {
+		if aggrType != Sum {
+			break
+		}
+		boundsToPoints := mtp.groupPointsByBounds(points)
+		for _, v := range boundsToPoints {
+			var distVal *metricspb.DistributionValue
+			for _, p := range v {
+				if distVal == nil {
+					distVal = p.GetDistributionValue()
+					continue
+				}
 				distVal = mtp.computeDistVals(distVal, p.GetDistributionValue())
 			}
+			distVals = append(distVals, &metricspb.Point_DistributionValue{DistributionValue: distVal})
 		}
-		return nil, nil, &metricspb.Point_DistributionValue{DistributionValue: distVal}
+		return nil, nil, distVals
 
 	}
 	return nil, nil, nil
 }
 
-func (mtp *metricsTransformProcessor) haveMatchingBounds(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) bool {
-	bounds1 := val1.BucketOptions.GetExplicit().Bounds
-	bounds2 := val2.BucketOptions.GetExplicit().Bounds
-	if len(bounds1) != len(bounds2) {
-		return false
-	}
-	for i, b := range bounds1 {
-		if b != bounds2[i] {
-			return false
+func (mtp *metricsTransformProcessor) groupPointsByBounds(points []*metricspb.Point) map[string][]*metricspb.Point {
+	boundsToPoints := make(map[string][]*metricspb.Point, 0)
+	for _, p := range points {
+		boundsKey := mtp.boundsToString(p.GetDistributionValue().BucketOptions.GetExplicit().Bounds)
+		if groupedPoints, ok := boundsToPoints[boundsKey]; ok {
+			boundsToPoints[boundsKey] = append(groupedPoints, p)
+		} else {
+			boundsToPoints[boundsKey] = []*metricspb.Point{p}
 		}
 	}
-	return true
+	return boundsToPoints
+}
+
+func (mtp *metricsTransformProcessor) boundsToString(bounds []float64) string {
+	var boundsKey string
+	for _, b := range bounds {
+		boundsKey += fmt.Sprintf("%f-", b)
+	}
+	return boundsKey
 }
 
 // sumOfSquaredDeviation calculation

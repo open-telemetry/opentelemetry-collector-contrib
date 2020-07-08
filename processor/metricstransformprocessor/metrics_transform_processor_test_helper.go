@@ -36,7 +36,6 @@ const (
 	nonexist        = "nonexist"
 )
 
-// TODO: add datatype in, and take out the current type indicator
 type testPoint struct {
 	timestamp             int64
 	value                 int
@@ -45,8 +44,6 @@ type testPoint struct {
 	bounds                []float64
 	buckets               []int64
 	sumOfSquaredDeviation float64
-	isInt64               bool
-	isDouble              bool
 }
 
 type testTimeseries struct {
@@ -57,6 +54,7 @@ type testTimeseries struct {
 
 type testMetric struct {
 	name       string
+	dataType   metricspb.MetricDescriptor_Type
 	labelKeys  []string
 	timeseries []testTimeseries
 }
@@ -277,8 +275,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_aggregation_average_int_update",
@@ -289,8 +287,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelAggrBuilder(2, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_aggregation_max_int_update",
@@ -301,8 +299,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelAggrBuilder(3, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_aggregation_sum_double_update",
@@ -313,8 +311,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelAggrBuilder(4, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_aggregation_average_double_update",
@@ -325,8 +323,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelAggrBuilder(2, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_aggregation_max_double_update",
@@ -337,8 +335,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelAggrBuilder(3, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_update",
@@ -349,8 +347,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelValuesAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_values_aggregation_average_int_update",
@@ -361,8 +359,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelValuesAggrBuilder(2, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_values_aggregation_max_int_update",
@@ -373,8 +371,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{outLabelValuesAggrBuilder(3, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_double_update",
@@ -385,8 +383,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelValuesAggrBuilder(4, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_values_aggregation_average_double_update",
@@ -397,8 +395,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelValuesAggrBuilder(2, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_values_aggregation_max_double_update",
@@ -409,8 +407,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(false, true)},
-			out: []testMetric{outLabelValuesAggrBuilder(3, false, true)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+			out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_distribution_update",
@@ -489,8 +487,8 @@ var (
 					Operations: []Operation{validUpdateLabelAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{initialAggrBuilder(true, false), outLabelAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_insert",
@@ -501,8 +499,8 @@ var (
 					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
 				},
 			},
-			in:  []testMetric{initialAggrBuilder(true, false)},
-			out: []testMetric{initialAggrBuilder(true, false), outLabelValuesAggrBuilder(4, true, false)},
+			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+			out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
 		{
 			name: "metric_label_values_aggregation_sum_distribution_insert",
@@ -524,8 +522,8 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, len(test.in)),
 	}
-	var dataType metricspb.MetricDescriptor_Type
 	for idx, in := range test.in {
+		dataType := in.dataType
 		// construct label keys
 		labels := make([]*metricspb.LabelKey, len(in.labelKeys))
 		for lidx, l := range in.labelKeys {
@@ -550,17 +548,16 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 						Nanos:   0,
 					},
 				}
-				if p.isInt64 {
+				switch dataType {
+				case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
 					points[pidx].Value = &metricspb.Point_Int64Value{
 						Int64Value: int64(p.value),
 					}
-					dataType = metricspb.MetricDescriptor_GAUGE_INT64
-				} else if p.isDouble {
+				case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
 					points[pidx].Value = &metricspb.Point_DoubleValue{
 						DoubleValue: float64(p.value),
 					}
-					dataType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-				} else {
+				case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 					buckets := make([]*metricspb.DistributionValue_Bucket, len(p.buckets))
 					for buIdx, bucket := range p.buckets {
 						buckets[buIdx] = &metricspb.DistributionValue_Bucket{
@@ -582,7 +579,6 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 							SumOfSquaredDeviation: p.sumOfSquaredDeviation,
 						},
 					}
-					dataType = metricspb.MetricDescriptor_GAUGE_DISTRIBUTION
 				}
 			}
 			timeseries[tidx] = &metricspb.TimeSeries{
@@ -608,10 +604,11 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 	return md
 }
 
-func initialAggrBuilder(isInt bool, isDouble bool) testMetric {
+func initialAggrBuilder(dataType metricspb.MetricDescriptor_Type) testMetric {
 	return testMetric{
 		name:      metric1,
 		labelKeys: []string{label1, label2},
+		dataType:  dataType,
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 2,
@@ -620,8 +617,6 @@ func initialAggrBuilder(isInt bool, isDouble bool) testMetric {
 					{
 						timestamp: 2,
 						value:     3,
-						isInt64:   isInt,
-						isDouble:  isDouble,
 					},
 				},
 			},
@@ -632,8 +627,6 @@ func initialAggrBuilder(isInt bool, isDouble bool) testMetric {
 					{
 						timestamp: 2,
 						value:     1,
-						isInt64:   isInt,
-						isDouble:  isDouble,
 					},
 				},
 			},
@@ -641,10 +634,11 @@ func initialAggrBuilder(isInt bool, isDouble bool) testMetric {
 	}
 }
 
-func outLabelAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
+func outLabelAggrBuilder(value int, dataType metricspb.MetricDescriptor_Type) testMetric {
 	return testMetric{
 		name:      metric1,
 		labelKeys: []string{label1},
+		dataType:  dataType,
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 1,
@@ -653,8 +647,6 @@ func outLabelAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
 					{
 						timestamp: 2,
 						value:     value,
-						isInt64:   isInt,
-						isDouble:  isDouble,
 					},
 				},
 			},
@@ -662,10 +654,11 @@ func outLabelAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
 	}
 }
 
-func outLabelValuesAggrBuilder(value int, isInt bool, isDouble bool) testMetric {
+func outLabelValuesAggrBuilder(value int, dataType metricspb.MetricDescriptor_Type) testMetric {
 	outMetric := testMetric{
 		name:      metric1,
 		labelKeys: []string{label1, label2},
+		dataType:  dataType,
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 1,
@@ -674,8 +667,6 @@ func outLabelValuesAggrBuilder(value int, isInt bool, isDouble bool) testMetric 
 					{
 						timestamp: 2,
 						value:     value,
-						isInt64:   isInt,
-						isDouble:  isDouble,
 					},
 				},
 			},
@@ -688,6 +679,7 @@ func initialDistValueMetricBuilder() testMetric {
 	return testMetric{
 		name:      metric1,
 		labelKeys: []string{label1, label2},
+		dataType:  metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 1,
@@ -700,8 +692,6 @@ func initialDistValueMetricBuilder() testMetric {
 						bounds:                []float64{1, 2},
 						buckets:               []int64{0, 1, 2},
 						sumOfSquaredDeviation: 3,
-						isInt64:               false,
-						isDouble:              false,
 					},
 				},
 			},
@@ -716,8 +706,6 @@ func initialDistValueMetricBuilder() testMetric {
 						bounds:                []float64{1, 2},
 						buckets:               []int64{1, 1, 3},
 						sumOfSquaredDeviation: 4,
-						isInt64:               false,
-						isDouble:              false,
 					},
 				},
 			},
@@ -729,6 +717,7 @@ func outDistValueMetricBuilder() testMetric {
 	return testMetric{
 		name:      metric1,
 		labelKeys: []string{label1},
+		dataType:  metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
 		timeseries: []testTimeseries{
 			{
 				startTimestamp: 1,
@@ -741,8 +730,6 @@ func outDistValueMetricBuilder() testMetric {
 						bounds:                []float64{1, 2},
 						buckets:               []int64{1, 2, 5},
 						sumOfSquaredDeviation: 7,
-						isInt64:               false,
-						isDouble:              false,
 					},
 				},
 			},

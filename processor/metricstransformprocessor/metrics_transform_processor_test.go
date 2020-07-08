@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -71,6 +72,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				actualDescriptor := actualOut[idx].MetricDescriptor
 				// name
 				assert.Equal(t, out.name, actualDescriptor.Name)
+				// data type
+				assert.Equal(t, out.dataType, actualDescriptor.Type)
 				// label keys
 				assert.Equal(t, len(out.labelKeys), len(actualDescriptor.LabelKeys))
 				for lidx, l := range out.labelKeys {
@@ -92,11 +95,12 @@ func TestMetricsTransformProcessor(t *testing.T) {
 					for pidx, p := range ts.points {
 						actualPoint := actualTimeseries.Points[pidx]
 						assert.Equal(t, p.timestamp, actualPoint.Timestamp.Seconds)
-						if p.isInt64 {
+						switch out.dataType {
+						case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
 							assert.Equal(t, int64(p.value), actualPoint.GetInt64Value())
-						} else if p.isDouble {
+						case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
 							assert.Equal(t, float64(p.value), actualPoint.GetDoubleValue())
-						} else {
+						case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 							assert.Equal(t, p.sum, actualPoint.GetDistributionValue().GetSum())
 							assert.Equal(t, p.count, actualPoint.GetDistributionValue().GetCount())
 							assert.Equal(t, p.sumOfSquaredDeviation, actualPoint.GetDistributionValue().GetSumOfSquaredDeviation())
@@ -106,6 +110,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 							for buIdx, bucket := range p.buckets {
 								assert.Equal(t, bucket, actualPoint.GetDistributionValue().GetBuckets()[buIdx].Count)
 							}
+
 						}
 					}
 				}
