@@ -32,7 +32,7 @@ e2e-test: otelcontribcol
 .PHONY: test-with-cover
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
+	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
 
 .PHONY: integration-tests-with-cover
@@ -147,7 +147,7 @@ otelcontribcol-windows_amd64:
 
 .PHONY: update-dep
 update-dep:
-	$(MAKE) for-all CMD="$(PWD)/scripts/update-dep"
+	$(MAKE) for-all CMD="$(PWD)/internal/buildscripts/update-dep"
 	$(MAKE) otelcontribcol
 	$(MAKE) gotidy
 
