@@ -123,7 +123,7 @@ docker-otelcontribcol:
 
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
 
 
 .PHONY: otelcontribcol-all-sys
@@ -143,7 +143,7 @@ otelcontribcol-linux_arm64:
 
 .PHONY: otelcontribcol-windows_amd64
 otelcontribcol-windows_amd64:
-	GOOS=windows GOARCH=amd64 $(MAKE) otelcontribcol
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcontribcol
 
 .PHONY: update-dep
 update-dep:

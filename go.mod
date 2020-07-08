@@ -39,6 +39,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/collector v0.5.1-0.20200708003418-541edde63b3a
+	golang.org/x/sys v0.0.0-20200413165638-669c56c373c4
 	honnef.co/go/tools v0.0.1-2020.1.4
 )
 
