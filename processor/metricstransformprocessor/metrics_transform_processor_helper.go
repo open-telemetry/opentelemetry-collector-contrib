@@ -245,7 +245,7 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[stri
 				Timestamp: timestamp,
 				Value:     doublePoint,
 			})
-		} else if distPoints != nil {
+		} else {
 			for _, p := range distPoints {
 				newPoints = append(newPoints, &metricspb.Point{
 					Timestamp: timestamp,
@@ -321,7 +321,7 @@ func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrTyp
 // groupPointsByBounds groups distribution value points by the bounds to further determine the aggregatability because distribution value points can only be aggregated if they have match bounds
 // Returns a map with groups of aggregatable distribution value points
 func (mtp *metricsTransformProcessor) groupPointsByBounds(points []*metricspb.Point) map[string][]*metricspb.Point {
-	boundsToPoints := make(map[string][]*metricspb.Point, 0)
+	boundsToPoints := make(map[string][]*metricspb.Point)
 	for _, p := range points {
 		boundsKey := mtp.boundsToString(p.GetDistributionValue().BucketOptions.GetExplicit().Bounds)
 		if groupedPoints, ok := boundsToPoints[boundsKey]; ok {
