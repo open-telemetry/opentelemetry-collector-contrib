@@ -50,6 +50,15 @@ type Port struct {
 	Transport Transport
 }
 
+// HostPort is an endpoint discovered on a host.
+type HostPort struct {
+	Name      string
+	Command   string
+	Port      uint16
+	Transport Transport
+	IsIPv6    bool
+}
+
 type EndpointEnv map[string]interface{}
 
 // EndpointToEnv converts an endpoint into a map suitable for expr evaluation.
@@ -81,6 +90,17 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 				"labels":      o.Pod.Labels,
 				"annotations": o.Pod.Annotations,
 			},
+			"transport": o.Transport,
+		}, nil
+	case HostPort:
+		ruleTypes["port"] = true
+		return map[string]interface{}{
+			"type":      ruleTypes,
+			"endpoint":  endpoint.Target,
+			"name":      o.Name,
+			"command":   o.Command,
+			"is_ipv6":   o.IsIPv6,
+			"port":      o.Port,
 			"transport": o.Transport,
 		}, nil
 
