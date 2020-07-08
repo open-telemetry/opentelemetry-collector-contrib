@@ -38,7 +38,7 @@ type receiver struct {
 
 // Creates and starts the kubelet stats runnable.
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	runnable := newRunnable(ctx, r.consumer, r.rest, r.logger)
+	runnable := newRunnable(ctx, r.cfg.Name(), r.consumer, r.rest, r.logger)
 
 	cfg := r.cfg.(*Config)
 	r.runner = interval.NewRunner(cfg.CollectionInterval, runnable)

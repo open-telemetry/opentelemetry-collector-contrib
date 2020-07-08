@@ -32,7 +32,7 @@ e2e-test: otelcontribcol
 .PHONY: test-with-cover
 unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
-	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
+	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
 	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
 
 .PHONY: integration-tests-with-cover
@@ -123,7 +123,7 @@ docker-otelcontribcol:
 
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
 
 
 .PHONY: otelcontribcol-all-sys
@@ -143,11 +143,11 @@ otelcontribcol-linux_arm64:
 
 .PHONY: otelcontribcol-windows_amd64
 otelcontribcol-windows_amd64:
-	GOOS=windows GOARCH=amd64 $(MAKE) otelcontribcol
+	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcontribcol
 
 .PHONY: update-dep
 update-dep:
-	$(MAKE) for-all CMD="$(PWD)/scripts/update-dep"
+	$(MAKE) for-all CMD="$(PWD)/internal/buildscripts/update-dep"
 	$(MAKE) otelcontribcol
 	$(MAKE) gotidy
 

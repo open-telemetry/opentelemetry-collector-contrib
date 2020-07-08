@@ -8,8 +8,8 @@ require (
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/signalfx/sapm-proto v0.5.3
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
-	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.5.0
+	github.com/stretchr/testify v1.6.1
+	go.opentelemetry.io/collector v0.5.1-0.20200708194928-7d7e0083f30b
 	go.uber.org/zap v1.13.0
 )
 
