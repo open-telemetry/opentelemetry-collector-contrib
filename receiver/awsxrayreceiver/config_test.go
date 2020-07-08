@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "localhost:5678",
 			},
 			ProxyServer: &proxyServer{
-				TCPEndpoint:  "localhost:2000",
+				TCPEndpoint:  "0.0.0.0:2000",
 				ProxyAddress: "",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure:   false,
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal:  configmodels.Type(typeStr),
 				NameVal:  typeStr + "/proxy_server",
-				Endpoint: "localhost:2000",
+				Endpoint: "0.0.0.0:2000",
 			},
 			ProxyServer: &proxyServer{
 				TCPEndpoint:  "localhost:1234",

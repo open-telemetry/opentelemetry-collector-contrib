@@ -52,13 +52,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
-			// we use localhost here so that IPv6 can work.
-			Endpoint: "localhost:2000",
+			// the default in OT is 0.0.0.0.
+			Endpoint: "0.0.0.0:2000",
 		},
 		ProxyServer: &proxyServer{
-			// Similar reasoning here. Use localhost instead
-			// of 127.0.0.1
-			TCPEndpoint:  "localhost:2000",
+			TCPEndpoint:  "0.0.0.0:2000",
 			ProxyAddress: "",
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure:   false,

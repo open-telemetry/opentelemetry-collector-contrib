@@ -1,6 +1,7 @@
 # AWS X-Ray Receiver
 
-**Status: alpha**
+**Status: Not fully implemented**
+This receiver can not be used yet.
 
 ## Overview
 The AWS X-Ray receiver accepts segments (i.e. spans) in the [X-Ray Segment format](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html).
@@ -15,9 +16,9 @@ Example:
 ```yaml
 receivers:
   aws_xray:
-    endpoint: localhost:2000
+    endpoint: 0.0.0.0:2000
     proxy_server:
-      tcp_endpoint: localhost:2000
+      tcp_endpoint: 0.0.0.0:2000
       proxy_address: ""
       insecure: false
       server_name_override: ""
@@ -32,7 +33,7 @@ The default configurations below are based on the [default configurations](https
 ### endpoint (Optional)
 The UDP address and port on which this receiver listens for X-Ray segment documents emitted by the X-Ray SDK.
 
-Default: `localhost:2000`
+Default: `0.0.0.0:2000`
 
 ### proxy_server (Optional)
 Defines configurations related to the local TCP proxy server.
@@ -40,7 +41,7 @@ Defines configurations related to the local TCP proxy server.
 ### tcp_endpoint (Optional)
 The address and port on which this receiver listens for calls from the X-Ray SDK and relays them to the AWS X-Ray backend to get sampling rules and report sampling statistics.
 
-Default: `localhost:2000`
+Default: `0.0.0.0:2000`
 
 ### proxy_address (Optional)
 Defines the proxy address that the local TCP server forwards HTTP requests to AWS X-Ray backend through. If left unconfigured, requests will be sent directly.
