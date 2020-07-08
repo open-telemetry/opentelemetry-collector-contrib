@@ -16,20 +16,25 @@ package kubeletstatsreceiver
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
+
+const dataLen = 19
 
 func TestRunnable(t *testing.T) {
 	consumer := &fakeConsumer{}
 	r := newRunnable(
 		context.Background(),
+		"",
 		consumer,
 		&fakeRestClient{},
 		zap.NewNop(),
@@ -38,29 +43,97 @@ func TestRunnable(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Run()
 	require.NoError(t, err)
-	require.Equal(t, 19, len(consumer.mds))
+	require.Equal(t, dataLen, len(consumer.mds))
+}
+
+func TestClientErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		fail    bool
+		numLogs int
+	}{
+		{"no error", false, 0},
+		{"rest error", true, 1},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zap.ErrorLevel)
+			r := newRunnable(
+				context.Background(),
+				"",
+				&fakeConsumer{},
+				&fakeRestClient{fail: test.fail},
+				zap.New(core),
+			)
+			err := r.Setup()
+			require.NoError(t, err)
+			err = r.Run()
+			require.NoError(t, err)
+			require.Equal(t, test.numLogs, observedLogs.Len())
+		})
+	}
+}
+
+func TestConsumerErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		fail    bool
+		numLogs int
+	}{
+		{"no error", false, 0},
+		{"consume error", true, dataLen},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zap.ErrorLevel)
+			r := newRunnable(
+				context.Background(),
+				"",
+				&fakeConsumer{fail: test.fail},
+				&fakeRestClient{},
+				zap.New(core),
+			)
+			err := r.Setup()
+			require.NoError(t, err)
+			err = r.Run()
+			require.NoError(t, err)
+			require.Equal(t, test.numLogs, observedLogs.Len())
+		})
+	}
 }
 
 type fakeConsumer struct {
-	mds []consumerdata.MetricsData
+	fail bool
+	mds  []consumerdata.MetricsData
 }
 
 func (c *fakeConsumer) ConsumeMetricsData(
 	ctx context.Context,
 	md consumerdata.MetricsData,
 ) error {
+	if c.fail {
+		return errors.New("")
+	}
 	c.mds = append(c.mds, md)
 	return nil
 }
 
 var _ kubelet.RestClient = (*fakeRestClient)(nil)
 
-type fakeRestClient struct{}
+type fakeRestClient struct {
+	fail bool
+}
 
 func (f *fakeRestClient) StatsSummary() ([]byte, error) {
+	if f.fail {
+		return nil, errors.New("")
+	}
 	return ioutil.ReadFile("testdata/stats-summary.json")
 }
 
 func (f *fakeRestClient) Pods() ([]byte, error) {
+	if f.fail {
+		return nil, errors.New("")
+	}
 	return ioutil.ReadFile("testdata/pods.json")
 }
