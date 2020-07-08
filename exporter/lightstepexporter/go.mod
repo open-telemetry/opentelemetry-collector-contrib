@@ -3,19 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lights
 go 1.14
 
 require (
-	contrib.go.opencensus.io/resource v0.1.2 // indirect
-	github.com/bmizerany/perks v0.0.0-20141205001514-d9a9656a3a4b // indirect
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/golang/protobuf v1.3.5
 	github.com/lightstep/opentelemetry-exporter-go v0.6.2
-	github.com/prashantv/protectmem v0.0.0-20171002184600-e20412882b3a // indirect
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
-	github.com/streadway/quantile v0.0.0-20150917103942-b0c588724d25 // indirect
 	github.com/stretchr/testify v1.6.1
-	github.com/uber/tchannel-go v1.16.0 // indirect
 	go.opentelemetry.io/collector v0.5.1-0.20200708032135-c966e140fd4f
 	go.opentelemetry.io/otel v0.6.0
 	go.uber.org/zap v1.14.0
 )
 
-replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
+replace github.com/apache/thrift => github.com/apache/thrift v0.13.0
