@@ -14,9 +14,9 @@ require (
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/signalfx/sapm-proto v0.5.3
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.5.0
+	go.opentelemetry.io/collector v0.5.1-0.20200708003418-541edde63b3a
 	go.uber.org/zap v1.13.0
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect

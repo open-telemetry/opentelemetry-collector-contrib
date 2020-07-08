@@ -26,7 +26,7 @@ import (
 	"github.com/omnition/scribe-go/if/scribe/gen-go/scribe"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/observability"
+	"go.opentelemetry.io/collector/obsreport"
 	zipkintranslator "go.opentelemetry.io/collector/translator/trace/zipkin"
 )
 
@@ -65,7 +65,7 @@ func New(
 			msgDecoder:          base64.StdEncoding.WithPadding('='),
 			tBinProtocolFactory: thrift.NewTBinaryProtocolFactory(true, false),
 			nextConsumer:        nextConsumer,
-			defaultCtx:          observability.ContextWithReceiverName(context.Background(), "zipkin-scribe"),
+			defaultCtx:          obsreport.LegacyContextWithReceiverName(context.Background(), "zipkin-scribe"),
 		},
 	}
 	return r, nil
@@ -163,7 +163,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 	tds, err := zipkintranslator.V1ThriftBatchToOCProto(zSpans)
 	if err != nil {
 		// If failed to convert, record all the received spans as dropped.
-		observability.RecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans))
+		obsreport.LegacyRecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans))
 		return scribe.ResultCode_OK, err
 	}
 
@@ -174,7 +174,7 @@ func (sc *scribeCollector) Log(messages []*scribe.LogEntry) (r scribe.ResultCode
 		tdsSize += len(td.Spans)
 	}
 
-	observability.RecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
+	obsreport.LegacyRecordMetricsForTraceReceiver(sc.defaultCtx, len(zSpans), len(zSpans)-tdsSize)
 
 	return scribe.ResultCode_OK, nil
 }
