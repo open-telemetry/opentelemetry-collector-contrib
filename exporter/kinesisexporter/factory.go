@@ -67,7 +67,7 @@ func (f *Factory) CreateTraceExporter(
 	config configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	c := config.(*Config)
-	k, err := kinesis.NewExporter(kinesis.Options{
+	k, err := kinesis.NewExporter(&kinesis.Options{
 		Name:               c.Name(),
 		StreamName:         c.AWS.StreamName,
 		AWSRegion:          c.AWS.Region,
