@@ -20,12 +20,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/observability/observabilitytest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/zap"
 )
 
 func TestReporterObservability(t *testing.T) {
-	doneFn := observabilitytest.SetupRecordedMetricsTest()
+	doneFn := obsreporttest.SetupRecordedMetricsTest()
 	defer doneFn()
 
 	const receiverName = "fake_carbon_receiver"
@@ -35,7 +35,7 @@ func TestReporterObservability(t *testing.T) {
 
 	reporter.OnMetricsProcessed(ctx, 17, 13, nil)
 
-	err := observabilitytest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
+	err := obsreporttest.CheckValueViewReceiverReceivedTimeSeries(receiverName, 17)
 	require.NoError(t, err)
 
 	// Below just exercise the error paths.
@@ -43,6 +43,6 @@ func TestReporterObservability(t *testing.T) {
 	reporter.OnTranslationError(ctx, err)
 	reporter.OnMetricsProcessed(ctx, 10, 10, err)
 
-	err = observabilitytest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 10)
+	err = obsreporttest.CheckValueViewReceiverDroppedTimeSeries(receiverName, 10)
 	require.NoError(t, err)
 }
