@@ -58,8 +58,8 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		}
 	}
 
-	if len(filtered) == len(attributes) {
-		// Didn't filter any attributes meaning didn't have any SQL information.
+	if dbType != "sql" {
+		// Either no DB attributes or this is not an SQL DB.
 		return attributes, nil
 	}
 

@@ -26,5 +26,5 @@ func TestGCEMetadata(t *testing.T) {
 	metadata.Hostname()
 	metadata.InstanceID()
 	metadata.InstanceName()
-	metadata.InstanceAttributeValue("")
+	metadata.Get("")
 }

@@ -1,4 +1,5 @@
 version: 2.1
+
 parameters:
   run-build-publish:
     type: boolean
@@ -9,6 +10,9 @@ parameters:
   collector-sha:
     type: string
     default: ""
+
+orbs:
+  win: circleci/windows@2.4.0
 
 executors:
   golang:
@@ -103,12 +107,12 @@ workflows:
       - setup:
           requires:
             - checkout-commit
-      - build:
+      - cross-compile:
           requires:
             - setup
       - run-stability-tests:
           requires:
-            - build
+            - cross-compile 
       - publish-dev:
           requires:
             - run-stability-tests
@@ -121,12 +125,6 @@ workflows:
             tags:
               only: /.*/
       - lint:
-          requires:
-            - setup
-          filters:
-            tags:
-              only: /.*/
-      - build:
           requires:
             - setup
           filters:
@@ -146,7 +144,7 @@ workflows:
               only: /.*/
       - loadtest:
           requires:
-            - build
+            - cross-compile 
           filters:
             tags:
               only: /.*/
@@ -156,13 +154,19 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /.*/
       - publish-stable:
           requires:
             - lint
             - unit-tests
             - integration-tests
-            - build
             - cross-compile
+            - windows-msi
           filters:
             branches:
               ignore: /.*/
@@ -173,7 +177,7 @@ workflows:
             - lint
             - unit-tests
             - integration-tests
-            - build
+            - cross-compile
           filters:
             branches:
               only: /master|release\/.+/
@@ -205,17 +209,6 @@ jobs:
           name: Checks
           command: make -j4 checklicense impi misspell
 
-  build:
-    executor: golang
-    steps:
-      - restore_workspace
-      - run:
-          name: Build collector for linux_amd64
-          command: make otelcontribcol
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
-
   build-examples:
     docker:
       - image: cimg/go:1.14
@@ -234,6 +227,9 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
 
   unit-tests:
     executor: golang
@@ -258,6 +254,27 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          name: Install Wix Toolset
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
 
   publish-stable:
     docker:

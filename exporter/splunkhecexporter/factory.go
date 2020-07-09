@@ -15,10 +15,10 @@
 package splunkhecexporter
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
@@ -59,7 +59,18 @@ func (f *Factory) CreateTraceExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
 ) (component.TraceExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	if config == nil {
+		return nil, errors.New("nil config")
+	}
+	expCfg := config.(*Config)
+
+	exp, err := createExporter(expCfg, logger)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return exp, nil
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
@@ -67,10 +78,12 @@ func (f *Factory) CreateMetricsExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
 ) (component.MetricsExporterOld, error) {
-
+	if config == nil {
+		return nil, errors.New("nil config")
+	}
 	expCfg := config.(*Config)
 
-	exp, err := New(expCfg, logger)
+	exp, err := createExporter(expCfg, logger)
 
 	if err != nil {
 		return nil, err
