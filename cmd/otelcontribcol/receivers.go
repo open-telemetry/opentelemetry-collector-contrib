@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -35,7 +34,6 @@ func allReceivers() []component.ReceiverFactoryBase {
 	return []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
 		&sapmreceiver.Factory{},
-		&zipkinscribereceiver.Factory{},
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
