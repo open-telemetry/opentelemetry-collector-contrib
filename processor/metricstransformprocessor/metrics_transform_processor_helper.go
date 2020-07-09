@@ -61,7 +61,6 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op
 }
 
 // aggregateOp aggregates the data points in metric based on given operation
-// This is shared by aggregation across labels and aggregation across label values as they have similar aggragation processes
 func (mtp *metricsTransformProcessor) aggregateOp(metric *metricspb.Metric, op Operation) {
 	// labelSet is a set of labels to select
 	var labelSet map[string]bool
@@ -184,7 +183,7 @@ func (mtp *metricsTransformProcessor) composeKeyWithNewValue(labelIdx int, times
 	return key, newLabelValues
 }
 
-// aggregateTimeseriesGroups attempts to merge each group of timesreis in keyToTimeseriesMap through the spefic calculation indicated by aggrType and dataType to construct the new timeseries with new label values indicated in keyToLabelValuesMap
+// aggregateTimeseriesGroups attempts to merge each group of timeseries in keyToTimeseriesMap through the specific calculation indicated by aggrType and dataType to construct the new timeseries with new label values indicated in keyToLabelValuesMap
 // Returns the new list of timeseries
 func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string][]*metricspb.TimeSeries, keyToLabelValuesMap map[string][]*metricspb.LabelValue, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
 	newTimeSeriesList := make([]*metricspb.TimeSeries, len(keyToTimeseriesMap))
