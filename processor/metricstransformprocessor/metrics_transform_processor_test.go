@@ -209,7 +209,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			inputMetrics := createTestMetrics(test.inMetrics, test.inLabels)
 			assert.NoError(t, mtp.ConsumeMetrics(context.Background(), inputMetrics))
 
-			// contruct metrics data to feed into the processor
+			// construct metrics data to feed into the processor
 			md := constructTestInputMetricsData(test)
 
 			// process
@@ -230,150 +230,151 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.Equal(t, len(test.out), len(actualOut))
 
 			for idx, out := range test.out {
-				actualDescriptor := actualOut[idx].MetricDescriptor
-				// name
-				assert.Equal(t, out.name, actualDescriptor.Name)
-				// data type
-				assert.Equal(t, out.dataType, actualDescriptor.Type)
-				// label keys
-				assert.Equal(t, len(out.labelKeys), len(actualDescriptor.LabelKeys))
-				for lidx, l := range out.labelKeys {
-					assert.Equal(t, l, actualDescriptor.LabelKeys[lidx].Key)
-				}
-				// timeseries
-				assert.Equal(t, len(out.timeseries), len(actualOut[idx].Timeseries))
-				for tidx, ts := range out.timeseries {
-					actualTimeseries := actualOut[idx].Timeseries[tidx]
-					// start timestamp
-					assert.Equal(t, ts.startTimestamp, actualTimeseries.StartTimestamp.Seconds)
-					// label values
-					assert.Equal(t, len(ts.labelValues), len(actualTimeseries.LabelValues))
-					for vidx, v := range ts.labelValues {
-						assert.Equal(t, v, actualTimeseries.LabelValues[vidx].Value)
-					}
-					// points
-					assert.Equal(t, len(ts.points), len(actualTimeseries.Points))
-					for pidx, p := range ts.points {
-						actualPoint := actualTimeseries.Points[pidx]
-						assert.Equal(t, p.timestamp, actualPoint.Timestamp.Seconds)
-						switch out.dataType {
-						case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
-							assert.Equal(t, int64(p.value), actualPoint.GetInt64Value())
-						case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
-							assert.Equal(t, float64(p.value), actualPoint.GetDoubleValue())
-						case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-							assert.Equal(t, p.sum, actualPoint.GetDistributionValue().GetSum())
-							assert.Equal(t, p.count, actualPoint.GetDistributionValue().GetCount())
-							assert.Equal(t, p.sumOfSquaredDeviation, actualPoint.GetDistributionValue().GetSumOfSquaredDeviation())
-							for boIdx, bound := range p.bounds {
-								assert.Equal(t, bound, actualPoint.GetDistributionValue().GetBucketOptions().GetExplicit().Bounds[boIdx])
-							}
-							for buIdx, bucket := range p.buckets {
-								assert.Equal(t, bucket, actualPoint.GetDistributionValue().GetBuckets()[buIdx].Count)
-							}
+				// actualDescriptor := actualOut[idx].MetricDescriptor
+				assert.Equal(t, *out, *actualOut[idx])
+				// // name
+				// assert.Equal(t, out.name, actualDescriptor.Name)
+				// // data type
+				// assert.Equal(t, out.dataType, actualDescriptor.Type)
+				// // label keys
+				// assert.Equal(t, len(out.labelKeys), len(actualDescriptor.LabelKeys))
+				// for lidx, l := range out.labelKeys {
+				// 	assert.Equal(t, l, actualDescriptor.LabelKeys[lidx].Key)
+				// }
+				// // timeseries
+				// assert.Equal(t, len(out.timeseries), len(actualOut[idx].Timeseries))
+				// for tidx, ts := range out.timeseries {
+				// 	actualTimeseries := actualOut[idx].Timeseries[tidx]
+				// 	// start timestamp
+				// 	assert.Equal(t, ts.startTimestamp, actualTimeseries.StartTimestamp.Seconds)
+				// 	// label values
+				// 	assert.Equal(t, len(ts.labelValues), len(actualTimeseries.LabelValues))
+				// 	for vidx, v := range ts.labelValues {
+				// 		assert.Equal(t, v, actualTimeseries.LabelValues[vidx].Value)
+				// 	}
+				// 	// points
+				// 	assert.Equal(t, len(ts.points), len(actualTimeseries.Points))
+				// 	for pidx, p := range ts.points {
+				// 		actualPoint := actualTimeseries.Points[pidx]
+				// 		assert.Equal(t, p.timestamp, actualPoint.Timestamp.Seconds)
+				// 		switch out.dataType {
+				// 		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
+				// 			assert.Equal(t, int64(p.value), actualPoint.GetInt64Value())
+				// 		case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
+				// 			assert.Equal(t, float64(p.value), actualPoint.GetDoubleValue())
+				// 		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+				// 			assert.Equal(t, p.sum, actualPoint.GetDistributionValue().GetSum())
+				// 			assert.Equal(t, p.count, actualPoint.GetDistributionValue().GetCount())
+				// 			assert.Equal(t, p.sumOfSquaredDeviation, actualPoint.GetDistributionValue().GetSumOfSquaredDeviation())
+				// 			for boIdx, bound := range p.bounds {
+				// 				assert.Equal(t, bound, actualPoint.GetDistributionValue().GetBucketOptions().GetExplicit().Bounds[boIdx])
+				// 			}
+				// 			for buIdx, bucket := range p.buckets {
+				// 				assert.Equal(t, bucket, actualPoint.GetDistributionValue().GetBuckets()[buIdx].Count)
+				// 			}
 
-						}
-					}
-				}
+				// 		}
+				// 	}
+				// }
 			}
 		})
 	}
 }
 
-func validateLabels(t *testing.T, expectLabels []labelKeyValue, inMetric *metricspb.Metric) {
-	assert.Equal(t, len(expectLabels), len(inMetric.MetricDescriptor.LabelKeys))
-	for lidx, l := range inMetric.MetricDescriptor.LabelKeys {
-		assert.Equal(t, expectLabels[lidx].Key, l.Key)
-	}
-	for _, ts := range inMetric.Timeseries {
-		assert.Equal(t, len(expectLabels), len(ts.LabelValues))
-		for lidx, l := range ts.LabelValues {
-			assert.Equal(t, expectLabels[lidx].Value, l.Value)
-			assert.True(t, l.HasValue)
-		}
-	}
-}
+// func validateLabels(t *testing.T, expectLabels []labelKeyValue, inMetric *metricspb.Metric) {
+// 	assert.Equal(t, len(expectLabels), len(inMetric.MetricDescriptor.LabelKeys))
+// 	for lidx, l := range inMetric.MetricDescriptor.LabelKeys {
+// 		assert.Equal(t, expectLabels[lidx].Key, l.Key)
+// 	}
+// 	for _, ts := range inMetric.Timeseries {
+// 		assert.Equal(t, len(expectLabels), len(ts.LabelValues))
+// 		for lidx, l := range ts.LabelValues {
+// 			assert.Equal(t, expectLabels[lidx].Value, l.Value)
+// 			assert.True(t, l.HasValue)
+// 		}
+// 	}
+// }
 
-func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, labelKV []labelKeyValue) pdata.Metrics {
-	md := consumerdata.MetricsData{
-		Metrics: make([]*metricspb.Metric, len(inMetrics)),
-	}
+// func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, labelKV []labelKeyValue) pdata.Metrics {
+// 	md := consumerdata.MetricsData{
+// 		Metrics: make([]*metricspb.Metric, len(inMetrics)),
+// 	}
 
-	for i, inMetric := range inMetrics {
-		descriptor := proto.Clone(inMetric).(*metricspb.MetricDescriptor)
+// 	for i, inMetric := range inMetrics {
+// 		descriptor := proto.Clone(inMetric).(*metricspb.MetricDescriptor)
 
-		labelKeys := make([]*metricspb.LabelKey, len(labelKV))
-		labelValues := make([]*metricspb.LabelValue, len(labelKV))
-		for j, label := range labelKV {
-			labelKeys[j] = &metricspb.LabelKey{Key: label.Key}
-			labelValues[j] = &metricspb.LabelValue{Value: label.Value, HasValue: true}
-		}
-		descriptor.LabelKeys = labelKeys
+// 		labelKeys := make([]*metricspb.LabelKey, len(labelKV))
+// 		labelValues := make([]*metricspb.LabelValue, len(labelKV))
+// 		for j, label := range labelKV {
+// 			labelKeys[j] = &metricspb.LabelKey{Key: label.Key}
+// 			labelValues[j] = &metricspb.LabelValue{Value: label.Value, HasValue: true}
+// 		}
+// 		descriptor.LabelKeys = labelKeys
 
-		md.Metrics[i] = &metricspb.Metric{
-			MetricDescriptor: descriptor,
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					Points: []*metricspb.Point{
-						{
-							Value: &metricspb.Point_Int64Value{Int64Value: 1},
-						}, {
-							Value: &metricspb.Point_DoubleValue{DoubleValue: 2},
-						},
-					},
-					LabelValues: labelValues,
-				},
-			},
-		}
-	}
+// 		md.Metrics[i] = &metricspb.Metric{
+// 			MetricDescriptor: descriptor,
+// 			Timeseries: []*metricspb.TimeSeries{
+// 				{
+// 					Points: []*metricspb.Point{
+// 						{
+// 							Value: &metricspb.Point_Int64Value{Int64Value: 1},
+// 						}, {
+// 							Value: &metricspb.Point_DoubleValue{DoubleValue: 2},
+// 						},
+// 					},
+// 					LabelValues: labelValues,
+// 				},
+// 			},
+// 		}
+// 	}
 
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
-}
+// 	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+// }
 
-func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
-	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
-	stressTest := metricsTransformTest{
-		name: "1000Metrics",
-		transforms: []Transform{
-			{
-				MetricName: metric1,
-				Action:     Insert,
-				NewName:    newMetric1,
-			},
-		},
-	}
+// func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
+// 	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
+// 	stressTest := metricsTransformTest{
+// 		name: "1000Metrics",
+// 		transforms: []Transform{
+// 			{
+// 				MetricName: metric1,
+// 				Action:     Insert,
+// 				NewName:    newMetric1,
+// 			},
+// 		},
+// 	}
 
-	for len(stressTest.in) < 1000 {
-		stressTest.in = append(stressTest.in, initialMetricRename1)
-	}
+// 	for len(stressTest.in) < 1000 {
+// 		stressTest.in = append(stressTest.in, initialMetricRename1)
+// 	}
 
-	benchmarkTests := []metricsTransformTest{stressTest}
+// 	benchmarkTests := []metricsTransformTest{stressTest}
 
-	for _, test := range benchmarkTests {
-		// next stores the results of the filter metric processor.
-		next := &exportertest.SinkMetricsExporter{}
-		cfg := &Config{
-			ProcessorSettings: configmodels.ProcessorSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
-			Transforms: test.transforms,
-		}
+// 	for _, test := range benchmarkTests {
+// 		// next stores the results of the filter metric processor.
+// 		next := &etest.SinkMetricsExporter{}
+// 		cfg := &Config{
+// 			ProcessorSettings: configmodels.ProcessorSettings{
+// 				TypeVal: typeStr,
+// 				NameVal: typeStr,
+// 			},
+// 			Transforms: test.transforms,
+// 		}
 
-		mtp := newMetricsTransformProcessor(next, cfg)
-		assert.NotNil(b, mtp)
+// 		mtp := newMetricsTransformProcessor(next, cfg)
+// 		assert.NotNil(b, mtp)
 
-		md := constructTestInputMetricsData(test)
+// 		md := constructTestInputMetricsData(test)
 
-		b.Run(test.name, func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				assert.NoError(b, mtp.ConsumeMetrics(
-					context.Background(),
-					pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-						md,
-					}),
-				))
-			}
-		})
-	}
-}
+// 		b.Run(test.name, func(b *testing.B) {
+// 			for i := 0; i < b.N; i++ {
+// 				assert.NoError(b, mtp.ConsumeMetrics(
+// 					context.Background(),
+// 					pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+// 						md,
+// 					}),
+// 				))
+// 			}
+// 		})
+// 	}
+// }

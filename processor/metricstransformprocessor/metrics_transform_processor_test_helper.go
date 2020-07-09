@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
@@ -62,82 +61,11 @@ type testMetric struct {
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []Transform
-	in         []testMetric
-	out        []testMetric
+	in         []*metricspb.Metric
+	out        []*metricspb.Metric
 }
 
 var (
-	// test metrics
-	initialMetricRename1 = testMetric{
-		name: metric1,
-	}
-
-	outMetricRename1 = testMetric{
-		name: newMetric1,
-	}
-
-	initialMetricRename2 = testMetric{
-		name: metric2,
-	}
-
-	outMetricRename2 = testMetric{
-		name: newMetric2,
-	}
-
-	initialMetricLabelRename1 = testMetric{
-		name:      metric1,
-		labelKeys: []string{label1, label2},
-	}
-
-	outMetricLabelRenameUpdate1 = testMetric{
-		name:      metric1,
-		labelKeys: []string{newLabel1, label2},
-	}
-
-	outMetricLabelRenameInsert1 = testMetric{
-		name:      newMetric1,
-		labelKeys: []string{newLabel1, label2},
-	}
-
-	initialLabelValueRename1 = testMetric{
-		name:      metric1,
-		labelKeys: []string{label1},
-		timeseries: []testTimeseries{
-			{
-				labelValues: []string{labelValue11},
-			},
-			{
-				labelValues: []string{labelValue12},
-			},
-		},
-	}
-
-	outLabelValueRenameUpdate1 = testMetric{
-		name:      metric1,
-		labelKeys: []string{label1},
-		timeseries: []testTimeseries{
-			{
-				labelValues: []string{newLabelValue11},
-			},
-			{
-				labelValues: []string{labelValue12},
-			},
-		},
-	}
-
-	outLabelValueRenameInsert1 = testMetric{
-		name:      newMetric1,
-		labelKeys: []string{label1},
-		timeseries: []testTimeseries{
-			{
-				labelValues: []string{newLabelValue11},
-			},
-			{
-				labelValues: []string{labelValue12},
-			},
-		},
-	}
-
 	// operations
 	validUpateLabelOperation = Operation{
 		Action:   UpdateLabel,
@@ -205,315 +133,400 @@ var (
 			name: "metric_name_update",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Update,
-					NewName:    newMetric1,
+					NewName:    "new/metric1",
 				},
 			},
-			in:  []testMetric{initialMetricRename1},
-			out: []testMetric{outMetricRename1},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("new/metric1").Build(),
+			},
 		},
 		{
 			name: "metric_name_update_multiple",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Update,
-					NewName:    newMetric1,
+					NewName:    "new/metric1",
 				},
 				{
-					MetricName: metric2,
+					MetricName: "metric2",
 					Action:     Update,
-					NewName:    newMetric2,
+					NewName:    "new/metric2",
 				},
 			},
-			in:  []testMetric{initialMetricRename1, initialMetricRename2},
-			out: []testMetric{outMetricRename1, outMetricRename2},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+				TestcaseBuilder().SetName("metric2").Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("new/metric1").Build(),
+				TestcaseBuilder().SetName("new/metric2").Build(),
+			},
 		},
 		{
 			name: "metric_name_update_nonexist",
 			transforms: []Transform{
 				{
-					MetricName: nonexist,
+					MetricName: "nonexist",
 					Action:     Update,
-					NewName:    newMetric1,
+					NewName:    "new/metric1",
 				},
 			},
-			in:  []testMetric{initialMetricRename1},
-			out: []testMetric{initialMetricRename1},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+			},
 		},
 		{
 			name: "metric_label_update",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{validUpateLabelOperation},
+					Operations: []Operation{
+						{
+							Action:   UpdateLabel,
+							Label:    "label1",
+							NewLabel: "new/label1",
+						},
+					},
 				},
 			},
-			in:  []testMetric{initialMetricLabelRename1},
-			out: []testMetric{outMetricLabelRenameUpdate1},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"new/label1", "label2"}).Build(),
+			},
 		},
 		{
 			name: "metric_label_value_update",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{validUpdateLabelValueOperation},
+					Operations: []Operation{
+						{
+							Action: UpdateLabel,
+							Label:  "label1",
+							ValueActions: []ValueAction{
+								{
+									Value:    "label1-value1",
+									NewValue: "new/label1-value1",
+								},
+							},
+						},
+					},
 				},
 			},
-			in:  []testMetric{initialLabelValueRename1},
-			out: []testMetric{outLabelValueRenameUpdate1},
-		},
-		{
-			name: "metric_label_aggregation_sum_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrSumOperation},
-				},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
+					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
 			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_aggregation_average_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrAverageOperation},
-				},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
+					InitTimeseries(2).SetLabelValues([][]string{{"new/label1-value1"}, {"label1-value2"}}).Build(),
 			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
-		{
-			name: "metric_label_aggregation_max_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrMaxOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_aggregation_sum_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrSumOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_aggregation_average_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrAverageOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_aggregation_max_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrMaxOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_values_aggregation_sum_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_values_aggregation_average_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_values_aggregation_max_int_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_values_aggregation_sum_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_values_aggregation_average_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_values_aggregation_max_double_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
-				},
-			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-			out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		},
-		{
-			name: "metric_label_values_aggregation_sum_distribution_update",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Update,
-					Operations: []Operation{validUpdateLabelAggrSumOperation},
-				},
-			},
-			in:  []testMetric{initialDistValueMetricBuilder()},
-			out: []testMetric{outDistValueMetricBuilder()},
-		},
+		// {
+		// 	name: "metric_label_aggregation_sum_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_aggregation_average_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrAverageOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_aggregation_max_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrMaxOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_aggregation_sum_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_aggregation_average_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrAverageOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_aggregation_max_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrMaxOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_sum_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_average_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_max_int_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_sum_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_average_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_max_double_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// 	out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_sum_distribution_update",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Update,
+		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialDistValueMetricBuilder()},
+		// 	out: []testMetric{outDistValueMetricBuilder()},
+		// },
 		// INSERT
 		{
 			name: "metric_name_insert",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Insert,
-					NewName:    newMetric1,
+					NewName:    "new/metric1",
 				},
 			},
-			in:  []testMetric{initialMetricRename1},
-			out: []testMetric{initialMetricRename1, outMetricRename1},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+				TestcaseBuilder().SetName("new/metric1").Build(),
+			},
 		},
 		{
 			name: "metric_name_insert_multiple",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Insert,
-					NewName:    newMetric1,
+					NewName:    "new/metric1",
 				},
 				{
-					MetricName: metric2,
+					MetricName: "metric2",
 					Action:     Insert,
-					NewName:    newMetric2,
+					NewName:    "new/metric2",
 				},
 			},
-			in:  []testMetric{initialMetricRename1, initialMetricRename2},
-			out: []testMetric{initialMetricRename1, initialMetricRename2, outMetricRename1, outMetricRename2},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+				TestcaseBuilder().SetName("metric2").Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").Build(),
+				TestcaseBuilder().SetName("metric2").Build(),
+				TestcaseBuilder().SetName("new/metric1").Build(),
+				TestcaseBuilder().SetName("new/metric2").Build(),
+			},
 		},
 		{
 			name: "metric_label_update_with_metric_insert",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Insert,
-					NewName:    newMetric1,
-					Operations: []Operation{validUpateLabelOperation},
+					NewName:    "new/metric1",
+					Operations: []Operation{
+						{
+							Action:   UpdateLabel,
+							Label:    "label1",
+							NewLabel: "new/label1",
+						},
+					},
 				},
 			},
-			in:  []testMetric{initialMetricLabelRename1},
-			out: []testMetric{initialMetricLabelRename1, outMetricLabelRenameInsert1},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).Build(),
+				TestcaseBuilder().SetName("new/metric1").SetLabels([]string{"new/label1", "label2"}).Build(),
+			},
 		},
 		{
 			name: "metric_label_value_update_with_metric_insert",
 			transforms: []Transform{
 				{
-					MetricName: metric1,
+					MetricName: "metric1",
 					Action:     Insert,
-					NewName:    newMetric1,
-					Operations: []Operation{validUpdateLabelValueOperation},
+					NewName:    "new/metric1",
+					Operations: []Operation{
+						{
+							Action: UpdateLabel,
+							Label:  "label1",
+							ValueActions: []ValueAction{
+								{
+									Value:    "label1-value1",
+									NewValue: "new/label1-value1",
+								},
+							},
+						},
+					},
 				},
 			},
-			in:  []testMetric{initialLabelValueRename1},
-			out: []testMetric{initialLabelValueRename1, outLabelValueRenameInsert1},
-		},
-		{
-			name: "metric_label_aggregation_sum_int_insert",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Insert,
-					Operations: []Operation{validUpdateLabelAggrSumOperation},
-				},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
+					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
 			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		},
-		{
-			name: "metric_label_values_aggregation_sum_int_insert",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Insert,
-					Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-				},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
+					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
+
+				TestcaseBuilder().SetName("new/metric1").SetLabels([]string{"label1"}).
+					InitTimeseries(2).SetLabelValues([][]string{{"new/label1-value1"}, {"label1-value2"}}).Build(),
 			},
-			in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-			out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
 		},
-		{
-			name: "metric_label_values_aggregation_sum_distribution_insert",
-			transforms: []Transform{
-				{
-					MetricName: metric1,
-					Action:     Insert,
-					Operations: []Operation{validUpdateLabelAggrSumOperation},
-				},
-			},
-			in:  []testMetric{initialDistValueMetricBuilder()},
-			out: []testMetric{initialDistValueMetricBuilder(), outDistValueMetricBuilder()},
-		},
+		// {
+		// 	name: "metric_label_aggregation_sum_int_insert",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Insert,
+		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_sum_int_insert",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Insert,
+		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
+		// 	out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
+		// },
+		// {
+		// 	name: "metric_label_values_aggregation_sum_distribution_insert",
+		// 	transforms: []Transform{
+		// 		{
+		// 			MetricName: metric1,
+		// 			Action:     Insert,
+		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
+		// 		},
+		// 	},
+		// 	in:  []testMetric{initialDistValueMetricBuilder()},
+		// 	out: []testMetric{initialDistValueMetricBuilder(), outDistValueMetricBuilder()},
+		// },
 	}
 )
 
@@ -523,83 +536,76 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 		Metrics: make([]*metricspb.Metric, len(test.in)),
 	}
 	for idx, in := range test.in {
-		dataType := in.dataType
-		// construct label keys
-		labels := make([]*metricspb.LabelKey, len(in.labelKeys))
-		for lidx, l := range in.labelKeys {
-			labels[lidx] = &metricspb.LabelKey{
-				Key: l,
-			}
-		}
-		// construct timeseries with label values and points
-		timeseries := make([]*metricspb.TimeSeries, len(in.timeseries))
-		for tidx, ts := range in.timeseries {
-			labelValues := make([]*metricspb.LabelValue, len(ts.labelValues))
-			for vidx, value := range ts.labelValues {
-				labelValues[vidx] = &metricspb.LabelValue{
-					Value: value,
-				}
-			}
-			points := make([]*metricspb.Point, len(ts.points))
-			for pidx, p := range ts.points {
-				points[pidx] = &metricspb.Point{
-					Timestamp: &timestamp.Timestamp{
-						Seconds: p.timestamp,
-						Nanos:   0,
-					},
-				}
-				switch dataType {
-				case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
-					points[pidx].Value = &metricspb.Point_Int64Value{
-						Int64Value: int64(p.value),
-					}
-				case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
-					points[pidx].Value = &metricspb.Point_DoubleValue{
-						DoubleValue: float64(p.value),
-					}
-				case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-					buckets := make([]*metricspb.DistributionValue_Bucket, len(p.buckets))
-					for buIdx, bucket := range p.buckets {
-						buckets[buIdx] = &metricspb.DistributionValue_Bucket{
-							Count: bucket,
-						}
-					}
-					points[pidx].Value = &metricspb.Point_DistributionValue{
-						DistributionValue: &metricspb.DistributionValue{
-							BucketOptions: &metricspb.DistributionValue_BucketOptions{
-								Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-									Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-										Bounds: p.bounds,
-									},
-								},
-							},
-							Count:                 p.count,
-							Sum:                   p.sum,
-							Buckets:               buckets,
-							SumOfSquaredDeviation: p.sumOfSquaredDeviation,
-						},
-					}
-				}
-			}
-			timeseries[tidx] = &metricspb.TimeSeries{
-				StartTimestamp: &timestamp.Timestamp{
-					Seconds: ts.startTimestamp,
-					Nanos:   0,
-				},
-				LabelValues: labelValues,
-				Points:      points,
-			}
-		}
+		// dataType := in.dataType
+		// // construct label keys
+		// labels := make([]*metricspb.LabelKey, len(in.labelKeys))
+		// for lidx, l := range in.labelKeys {
+		// 	labels[lidx] = &metricspb.LabelKey{
+		// 		Key: l,
+		// 	}
+		// }
+		// // construct timeseries with label values and points
+		// timeseries := make([]*metricspb.TimeSeries, len(in.timeseries))
+		// for tidx, ts := range in.timeseries {
+		// 	labelValues := make([]*metricspb.LabelValue, len(ts.labelValues))
+		// 	for vidx, value := range ts.labelValues {
+		// 		labelValues[vidx] = &metricspb.LabelValue{
+		// 			Value: value,
+		// 		}
+		// 	}
+		// 	points := make([]*metricspb.Point, len(ts.points))
+		// 	for pidx, p := range ts.points {
+		// 		points[pidx] = &metricspb.Point{
+		// 			Timestamp: &timestamp.Timestamp{
+		// 				Seconds: p.timestamp,
+		// 				Nanos:   0,
+		// 			},
+		// 		}
+		// 		switch dataType {
+		// 		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
+		// 			points[pidx].Value = &metricspb.Point_Int64Value{
+		// 				Int64Value: int64(p.value),
+		// 			}
+		// 		case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
+		// 			points[pidx].Value = &metricspb.Point_DoubleValue{
+		// 				DoubleValue: float64(p.value),
+		// 			}
+		// 		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+		// 			buckets := make([]*metricspb.DistributionValue_Bucket, len(p.buckets))
+		// 			for buIdx, bucket := range p.buckets {
+		// 				buckets[buIdx] = &metricspb.DistributionValue_Bucket{
+		// 					Count: bucket,
+		// 				}
+		// 			}
+		// 			points[pidx].Value = &metricspb.Point_DistributionValue{
+		// 				DistributionValue: &metricspb.DistributionValue{
+		// 					BucketOptions: &metricspb.DistributionValue_BucketOptions{
+		// 						Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+		// 							Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+		// 								Bounds: p.bounds,
+		// 							},
+		// 						},
+		// 					},
+		// 					Count:                 p.count,
+		// 					Sum:                   p.sum,
+		// 					Buckets:               buckets,
+		// 					SumOfSquaredDeviation: p.sumOfSquaredDeviation,
+		// 				},
+		// 			}
+		// 		}
+		// 	}
+		// 	timeseries[tidx] = &metricspb.TimeSeries{
+		// 		StartTimestamp: &timestamp.Timestamp{
+		// 			Seconds: ts.startTimestamp,
+		// 			Nanos:   0,
+		// 		},
+		// 		LabelValues: labelValues,
+		// 		Points:      points,
+		// 	}
+		// }
 
 		// compose the metric
-		md.Metrics[idx] = &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:      in.name,
-				LabelKeys: labels,
-				Type:      dataType,
-			},
-			Timeseries: timeseries,
-		}
+		md.Metrics[idx] = in
 	}
 	return md
 }
