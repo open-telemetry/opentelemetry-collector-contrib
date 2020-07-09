@@ -123,11 +123,7 @@ docker-otelcontribcol:
 
 .PHONY: otelcontribcol
 otelcontribcol:
-<<<<<<< HEAD
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
-=======
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) ./cmd/otelcontribcol
->>>>>>> Add build constraints for CUDA receiver and targets in Makefile
 
 otelcontribcol-gpu:
 	GO111MODULE=on CGO_ENABLED=1 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH) $(BUILD_INFO) -tags gpu ./cmd/otelcontribcol
