@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,4 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jaegerlegacyreceiver
+// +build !windows
+
+package main
+
+import "go.opentelemetry.io/collector/service"
+
+func run(params service.Parameters) error {
+	return runInteractive(params)
+}

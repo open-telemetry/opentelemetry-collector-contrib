@@ -68,7 +68,7 @@ func TestStabilityTracesSAPM(t *testing.T) {
 		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
 		datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      24,
+			ExpectedMaxCPU:      28,
 			ExpectedMaxRAM:      100,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},

@@ -28,3 +28,7 @@ coverage.txt
 integration-coverage.txt
 coverage.html
 integration-coverage.html
+
+# Wix
+*.wixobj
+*.wixpdb

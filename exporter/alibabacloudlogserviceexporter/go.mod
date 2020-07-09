@@ -7,7 +7,7 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.5
-	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.5.0
+	github.com/stretchr/testify v1.6.1
+	go.opentelemetry.io/collector v0.5.1-0.20200708194928-7d7e0083f30b
 	go.uber.org/zap v1.13.0
 )

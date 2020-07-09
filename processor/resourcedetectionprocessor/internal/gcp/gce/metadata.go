@@ -23,7 +23,7 @@ type gceMetadata interface {
 	Hostname() (string, error)
 	InstanceID() (string, error)
 	InstanceName() (string, error)
-	InstanceAttributeValue(attr string) (string, error)
+	Get(suffix string) (string, error)
 }
 
 type gceMetadataImpl struct{}
@@ -52,6 +52,6 @@ func (m *gceMetadataImpl) InstanceName() (string, error) {
 	return metadata.InstanceName()
 }
 
-func (m *gceMetadataImpl) InstanceAttributeValue(attr string) (string, error) {
-	return metadata.InstanceAttributeValue(attr)
+func (m *gceMetadataImpl) Get(suffix string) (string, error) {
+	return metadata.Get(suffix)
 }
