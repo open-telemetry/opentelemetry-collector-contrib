@@ -40,7 +40,6 @@ func allReceivers() []component.ReceiverFactoryBase {
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
-		&jaegerlegacyreceiver.Factory{},
 		&redisreceiver.Factory{},
 		&kubeletstatsreceiver.Factory{},
 		&simpleprometheusreceiver.Factory{},
