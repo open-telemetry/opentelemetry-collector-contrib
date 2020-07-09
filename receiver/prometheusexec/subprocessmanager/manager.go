@@ -17,6 +17,7 @@ package subprocessmanager
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
 	"os"
@@ -70,10 +71,10 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 	childProcess.Env = os.Environ()
 	childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
 
-	// Handle the subprocess output in a goroutine, and pipe the stderr/stdout into one
+	// Handle the subprocess output in a goroutine, and pipe the stderr/stdout into one stream
 	cmdReader, err := childProcess.StdoutPipe()
 	childProcess.Stderr = childProcess.Stdout
-	go proc.handleSubprocessOutput(bufio.NewScanner(cmdReader), logger)
+	go proc.handleSubprocessOutput(bufio.NewReader(cmdReader), logger)
 
 	// Start and stop timer (elapsed) right before and after executing the command
 	start = time.Now()
@@ -91,10 +92,27 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 	return elapsed, nil
 }
 
-// Log every line of the subprocesse's output using zap, and EOF (when the reader passed is closed - the process has exited) is handled by the scanner automatically
-func (proc *Process) handleSubprocessOutput(scanner *bufio.Scanner, logger *zap.Logger) {
-	for scanner.Scan() {
-		logger.Info("subprocess output line", zap.String("subprocess name", proc.CustomName), zap.String("raw output", scanner.Text()))
+// Log every line of the subprocesse's output using zap
+func (proc *Process) handleSubprocessOutput(reader *bufio.Reader, logger *zap.Logger) {
+	var (
+		line string
+		err  error
+	)
+
+	// Infinite reading loop until EOF (pipe is closed)
+	for true {
+		line, err = reader.ReadString('\n')
+		if err != nil && err != io.EOF {
+			logger.Info("subprocess logging failed", zap.String("subprocess name", proc.CustomName), zap.String("error", err.Error()))
+			break
+		}
+
+		logger.Info("subprocess output (1 line of stderr/stdout)", zap.String("subprocess name", proc.CustomName), zap.String("output", line))
+
+		// Leave this function when error is EOF (stderr/stdout pipe was closed)
+		if err == io.EOF {
+			break
+		}
 	}
 }
 
