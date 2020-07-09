@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
@@ -83,6 +84,7 @@ func components() (config.Factories, error) {
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
 		&receivercreator.Factory{},
+		&awsxrayreceiver.Factory{},
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

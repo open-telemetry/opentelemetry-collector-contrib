@@ -1,0 +1,31 @@
+receivers:
+  # The following demonstrates initializing the default awsxray receiver.
+  # By awsxray-http is enabled and the default endpoint is specified in factory.go
+  awsxray:
+  # The following demonstrates specifying different endpoints.
+  # The awsxray receiver connects to ports on all available network interfaces.
+  # Ex: `endpoint: "7276"` is incorrect.
+  # Ex: `endpoint: "1.2.3.4:7276"`  and ":7276" is correct
+  awsxray/customname:
+    endpoint: "0.0.0.0:7276"
+
+  # The following demonstrates how to specify TLS for the receiver.
+  awsxray/tls:
+    tls:
+      cert_file: /test.crt
+      key_file: /test.key
+
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+     receivers: [awsxray]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]
+
