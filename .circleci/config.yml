@@ -310,7 +310,7 @@ jobs:
       # Number of runners must be always in sync with number of stability tests,
       # so every node runs exactly one stability test.
       runners-number:
-        type: integer 
+        type: integer
         default: 9
     executor: golang
     resource_class: medium+
