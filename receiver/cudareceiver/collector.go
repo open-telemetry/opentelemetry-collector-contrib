@@ -24,10 +24,9 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.uber.org/zap"
 )
 
 var (
@@ -55,7 +54,7 @@ type CUDAMetricsCollector struct {
 func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
 	device, status := NVMLDeviceGetHandledByIndex(uint64(0))
 	if status != NVMLSuccess {
-		return nil, fmt.Errorf("Could not get GPU device: status=%d", status)
+		return nil, fmt.Errorf("could not get GPU device: status=%d", status)
 	}
 
 	c := &CUDAMetricsCollector{
