@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
 	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.3.1-0.20200615181810-b28cbd9c8e2e
+	go.opentelemetry.io/collector v0.5.0
 	go.uber.org/zap v1.13.0
 )
 

@@ -50,6 +50,8 @@ type Pod struct {
 	Name string
 	// Labels is a map of user-specified metadata.
 	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
 }
 
 // Port is an endpoint that has a target as well as a port.

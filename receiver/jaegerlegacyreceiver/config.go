@@ -16,7 +16,7 @@ package jaegerlegacyreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
-	jaegercore "go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 // The config field name to load the protocol map from
@@ -24,9 +24,9 @@ const protocolsFieldName = "protocols"
 
 // Config defines configuration for Jaeger receiver.
 type Config struct {
-	TypeVal   configmodels.Type                    `mapstructure:"-"`
-	NameVal   string                               `mapstructure:"-"`
-	Protocols map[string]*jaegercore.SecureSetting `mapstructure:"protocols"`
+	TypeVal   configmodels.Type                                 `mapstructure:"-"`
+	NameVal   string                                            `mapstructure:"-"`
+	Protocols map[string]*configprotocol.ProtocolServerSettings `mapstructure:"protocols"`
 }
 
 // Name gets the receiver name.

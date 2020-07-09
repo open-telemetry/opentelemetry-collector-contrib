@@ -23,6 +23,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0
@@ -39,15 +40,15 @@ require (
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
 	github.com/stretchr/testify v1.5.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.4.0
+	go.opentelemetry.io/collector v0.5.0
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
+
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200709094216-57486cde1244
 
 replace git.apache.org/thrift.git v0.12.0 => github.com/apache/thrift v0.12.0
 
 replace github.com/apache/thrift => github.com/apache/thrift v0.0.0-20161221203622-b2a4d4ae21c7
-
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200618143706-98e95f47a6d5
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
@@ -113,5 +114,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipki
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ./processor/sourceprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab

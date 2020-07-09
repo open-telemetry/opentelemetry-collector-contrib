@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
@@ -59,7 +59,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutils.GetAvailableLocalAddress(t)
+			addr := testutil.GetAvailableLocalAddress(t)
 			svr, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, svr)

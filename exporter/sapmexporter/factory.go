@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -44,6 +46,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		NumWorkers: defaultNumWorkers,
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: true,
+		},
 	}
 }
 

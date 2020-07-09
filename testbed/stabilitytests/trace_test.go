@@ -1,0 +1,123 @@
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package stabilitytests contains long-running test cases verifying that otel-collector can run
+// sustainably for long time, 1 hour by default.
+// Tests supposed to be run on CircleCI, each tests must be allocated to exactly one runner
+// to make sure that the whole test suit will not take longer than one hour.
+// Because of that, every time overall number of stability tests changed,
+// make sure to update CircleCI parameter: run-stability-tests.runners-number
+
+package tests
+
+import (
+	"testing"
+	"time"
+
+	"go.opentelemetry.io/collector/testbed/testbed"
+	scenarios "go.opentelemetry.io/collector/testbed/tests"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datareceivers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
+)
+
+var (
+	contribPerfResultsSummary = &testbed.PerformanceResults{}
+	resourceCheckPeriod, _    = time.ParseDuration("1m")
+	processorsConfig          = map[string]string{
+		"batch": `
+  batch:
+`,
+	}
+)
+
+// TestMain is used to initiate setup, execution and tear down of testbed.
+func TestMain(m *testing.M) {
+	testbed.DoTestMain(m, contribPerfResultsSummary)
+}
+
+func TestStabilityTracesOpenCensus(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      30,
+			ExpectedMaxRAM:      90,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		processorsConfig,
+	)
+}
+
+func TestStabilityTracesSAPM(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
+		datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      24,
+			ExpectedMaxRAM:      100,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		processorsConfig,
+	)
+}
+
+func TestStabilityTracesOTLP(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		testbed.NewOTLPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewOTLPDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      20,
+			ExpectedMaxRAM:      80,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		processorsConfig,
+	)
+}
+
+func TestStabilityTracesJaegerGRPC(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		testbed.NewJaegerGRPCDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewJaegerDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      40,
+			ExpectedMaxRAM:      90,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		processorsConfig,
+	)
+}
+
+func TestStabilityTracesZipkin(t *testing.T) {
+	scenarios.Scenario10kItemsPerSecond(
+		t,
+		testbed.NewZipkinDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+		testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
+		testbed.ResourceSpec{
+			ExpectedMaxCPU:      60,
+			ExpectedMaxRAM:      95,
+			ResourceCheckPeriod: resourceCheckPeriod,
+		},
+		contribPerfResultsSummary,
+		processorsConfig,
+	)
+}

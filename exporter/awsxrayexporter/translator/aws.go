@@ -54,6 +54,8 @@ type AWSData struct {
 type EC2Metadata struct {
 	InstanceID       string `json:"instance_id"`
 	AvailabilityZone string `json:"availability_zone"`
+	InstanceSize     string `json:"instance_size"`
+	AmiID            string `json:"ami_id"`
 }
 
 // ECSMetadata provides the shape for unmarshalling ECS metadata.
@@ -74,9 +76,12 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		account      string
 		zone         string
 		hostID       string
+		hostType     string
+		amiID        string
 		container    string
 		namespace    string
 		deployID     string
+		versionLabel string
 		operation    string
 		remoteRegion string
 		requestID    string
@@ -99,6 +104,10 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				zone = value.StringVal()
 			case semconventions.AttributeHostID:
 				hostID = value.StringVal()
+			case semconventions.AttributeHostType:
+				hostType = value.StringVal()
+			case semconventions.AttributeHostImageID:
+				amiID = value.StringVal()
 			case semconventions.AttributeContainerName:
 				if container == "" {
 					container = value.StringVal()
@@ -109,6 +118,8 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				namespace = value.StringVal()
 			case semconventions.AttributeServiceInstance:
 				deployID = value.StringVal()
+			case semconventions.AttributeServiceVersion:
+				versionLabel = value.StringVal()
 			}
 		})
 	}
@@ -148,6 +159,8 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		ec2 = &EC2Metadata{
 			InstanceID:       hostID,
 			AvailabilityZone: zone,
+			InstanceSize:     hostType,
+			AmiID:            amiID,
 		}
 	}
 	if container != "" {
@@ -163,6 +176,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		ebs = &BeanstalkMetadata{
 			Environment:  namespace,
 			DeploymentID: deployNum,
+			VersionLabel: versionLabel,
 		}
 	}
 	awsData := &AWSData{

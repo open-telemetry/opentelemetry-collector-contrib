@@ -46,6 +46,12 @@ breaking changes. Component creators must be available to update or review
 their components when such changes happen, otherwise the component will be excluded
 from the default builds.
 
+Generally, maintenance of components is the responsibility of contributors who
+authored them. If the original author or some other contributor does not maintain
+the component it may be excluded from the default build. The component **will** be
+excluded if it causes build problems, has failing tests or otherwise causes problems
+to the rest of the repository and the rest of contributors.
+
 - Create your component under the proper folder and use
 Go standard package naming recommendations.
 - Use a boiler-plate Makefile that just references the one at top level, 

@@ -38,26 +38,28 @@ config:
 
 ## Rule Expressions
 
-Each rule must start with `type.(pod|port) &&` such that the rule matches only one endpoint type. Depending on the type of endpoint the rule is targeting it will have different variables available. 
+Each rule must start with `type.(pod|port) &&` such that the rule matches only one endpoint type. Depending on the type of endpoint the rule is targeting it will have different variables available.
 
 ### Pod
 
-| Variable  | Description                  |
-|-----------|------------------------------|
-| type.pod  | `true`                       |
-| name      | name of the pod              |
-| labels    | map of labels set on the pod |
+| Variable    | Description                       |
+|-------------|-----------------------------------|
+| type.pod    | `true`                            |
+| name        | name of the pod                   |
+| labels      | map of labels set on the pod      |
+| annotations | map of annotations set on the pod |
 
 ### Port
 
-| Variable   | Description                     |
-|------------|---------------------------------|
-| type.port  | `true`                          |
-| name       | container port name             |
-| port       | port number                     |
-| pod.name   | name of the owning pod          |
-| pod.labels | map of labels of the owning pod |
-| protocol   | "TCP" or "UDP"                  |
+| Variable        | Description                          |
+|-----------------|--------------------------------------|
+| type.port       | `true`                               |
+| name            | container port name                  |
+| port            | port number                          |
+| pod.name        | name of the owning pod               |
+| pod.labels      | map of labels of the owning pod      |
+| pod.annotations | map of annotations of the owning pod |
+| protocol        | "TCP" or "UDP"                       |
 
 ## Example
 
@@ -71,14 +73,21 @@ receivers:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [k8s_observer]
     receivers:
-        redis/1:
-          # If this rule matches an instance of this receiver will be started.
-          rule: type.port && port == 6379
-          config:
-            # Static receiver-specific config.
-            password: secret
-            # Dynamic configuration value.
-            service_name: `pod.labels["service_name"]`
+      prometheus_simple:
+        # Configure prometheus scraping if standard prometheus annotations are set on the pod.
+        rule: type.pod && annotations["prometheus.io/scrape"] == "true"
+        config:
+          metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
+          endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+
+      redis/1:
+        # If this rule matches an instance of this receiver will be started.
+        rule: type.port && port == 6379
+        config:
+          # Static receiver-specific config.
+          password: secret
+          # Dynamic configuration value.
+          service_name: `pod.labels["service_name"]`
 
 processors:
   exampleprocessor:

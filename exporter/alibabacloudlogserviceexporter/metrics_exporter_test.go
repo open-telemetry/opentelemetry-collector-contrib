@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
 
@@ -42,12 +42,12 @@ func TestNewMetricsExporter(t *testing.T) {
 	tsUnix := time.Unix(unixSecs, unixNSecs)
 
 	doubleVal := 1234.5678
-	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 
 	// This will put trace data to send buffer and return success.
 	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
-			metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
+			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
 		}})
 	// a
 	assert.Error(t, err)

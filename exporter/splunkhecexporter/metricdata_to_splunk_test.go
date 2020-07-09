@@ -26,7 +26,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
 
@@ -42,24 +42,24 @@ func Test_metricDataToSplunk(t *testing.T) {
 	tsMSecs := unixSecs*1e3 + unixNSecs/1e6
 
 	doubleVal := 1234.5678
-	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 	int64Val := int64(123)
 	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutils.Timestamp(tsUnix),
+		Timestamp: metricstestutil.Timestamp(tsUnix),
 		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
 	}
 
 	distributionBounds := []float64{1, 2, 4}
 	distributionCounts := []int64{4, 2, 3, 7}
-	distributionTimeSeries := metricstestutils.Timeseries(
+	distributionTimeSeries := metricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutils.DistPt(tsUnix, distributionBounds, distributionCounts))
+		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
 
-	summaryTimeSeries := metricstestutils.Timeseries(
+	summaryTimeSeries := metricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutils.SummPt(
+		metricstestutil.SummPt(
 			tsUnix,
 			11,
 			111,
@@ -77,10 +77,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutils.GaugeInt("gauge_int_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
-						metricstestutils.Cumulative("cumulative_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutils.CumulativeInt("cumulative_int_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
+						metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+						metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+						metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+						metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
 					},
 				}
 			},
@@ -96,10 +96,10 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Gauge("gauge_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
-						metricstestutils.GaugeInt("gauge_int_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, int64Pt)),
-						metricstestutils.Cumulative("cumulative_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
-						metricstestutils.CumulativeInt("cumulative_int_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, int64Pt)),
+						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
 					},
 				}
 			},
@@ -127,8 +127,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 						},
 					},
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Gauge("gauge_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
-						metricstestutils.GaugeInt("gauge_int_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, int64Pt)),
+						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
 					},
 				}
 			},
@@ -152,8 +152,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
-						metricstestutils.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
+						metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
+						metricstestutil.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
 					},
 				}
 			},
@@ -166,7 +166,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Summary("summary", keys, summaryTimeSeries),
+						metricstestutil.Summary("summary", keys, summaryTimeSeries),
 					},
 				}
 			},

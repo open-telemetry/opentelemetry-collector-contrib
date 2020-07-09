@@ -51,8 +51,11 @@ type ExtractConfig struct {
 	// Metadata allows to extract pod metadata from a list of metadata fields.
 	// The field accepts a list of strings.
 	//
-	// Specifying anything not-supported will result in an error.
-	// By default all of the fields are extracted and added to spans.
+	// Metadata fields supported right now are,
+	//   namespace, podName, podUID, deployment, cluster, node and startTime
+	//
+	// Specifying anything other than these values will result in an error.
+	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`
 
 	// Tags allow to specify output name used for each of the kubernetes tags

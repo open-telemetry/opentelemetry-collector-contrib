@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
-	jaegercore "go.opentelemetry.io/collector/receiver/jaegerreceiver"
+	"go.opentelemetry.io/collector/config/configprotocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -45,11 +45,9 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: "jaeger_legacy/customname",
-			Protocols: map[string]*jaegercore.SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"thrift_tchannel": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "0.0.0.0:123",
-					},
+					Endpoint: "0.0.0.0:123",
 				},
 			},
 		})
@@ -59,11 +57,9 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: "jaeger_legacy/defaults",
-			Protocols: map[string]*jaegercore.SecureSetting{
+			Protocols: map[string]*configprotocol.ProtocolServerSettings{
 				"thrift_tchannel": {
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: defaultTChannelBindEndpoint,
-					},
+					Endpoint: defaultTChannelBindEndpoint,
 				},
 			},
 		})

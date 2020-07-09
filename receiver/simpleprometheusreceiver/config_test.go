@@ -48,10 +48,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/all_settings",
-				Endpoint: "localhost:1234",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/all_settings",
 			},
+			Endpoint: "localhost:1234",
 			httpConfig: httpConfig{
 				TLSEnabled: true,
 				TLSConfig: tlsConfig{
@@ -70,10 +70,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/partial_settings",
-				Endpoint: "localhost:1234",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/partial_settings",
 			},
+			Endpoint:           "localhost:1234",
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/metrics",
 		})
@@ -82,10 +82,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r4,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/partial_tls_settings",
-				Endpoint: "localhost:1234",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/partial_tls_settings",
 			},
+			Endpoint: "localhost:1234",
 			httpConfig: httpConfig{
 				TLSEnabled: true,
 			},

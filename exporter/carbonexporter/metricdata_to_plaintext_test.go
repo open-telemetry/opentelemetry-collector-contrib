@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
 
 func Test_sanitizeTagKey(t *testing.T) {
@@ -150,29 +150,29 @@ func Test_metricDataToPlaintext(t *testing.T) {
 
 	doubleVal := 1234.5678
 	expectedDobuleValStr := strconv.FormatFloat(doubleVal, 'g', -1, 64)
-	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 	int64Val := int64(123)
 	expectedInt64ValStr := "123"
 	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutils.Timestamp(tsUnix),
+		Timestamp: metricstestutil.Timestamp(tsUnix),
 		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
 	}
 
 	distributionBounds := []float64{1.5, 2, 4}
 	distributionCounts := []int64{4, 2, 3, 7}
-	distributionTimeSeries := metricstestutils.Timeseries(
+	distributionTimeSeries := metricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutils.DistPt(tsUnix, distributionBounds, distributionCounts))
+		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
 	distributionPoints := distributionTimeSeries.GetPoints()
 	require.Equal(t, 1, len(distributionPoints))
 	distribubionPoint := distributionPoints[0].Value.(*metricspb.Point_DistributionValue)
 	distributionValue := distribubionPoint.DistributionValue
 
-	summaryTimeSeries := metricstestutils.Timeseries(
+	summaryTimeSeries := metricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutils.SummPt(
+		metricstestutil.SummPt(
 			tsUnix,
 			11,
 			111,
@@ -194,10 +194,10 @@ func Test_metricDataToPlaintext(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Gauge("gauge_double_no_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutils.GaugeInt("gauge_int_no_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
-						metricstestutils.Cumulative("cumulative_double_no_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutils.CumulativeInt("cumulative_int_no_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
+						metricstestutil.Gauge("gauge_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+						metricstestutil.GaugeInt("gauge_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+						metricstestutil.Cumulative("cumulative_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+						metricstestutil.CumulativeInt("cumulative_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
 					},
 				}
 			},
@@ -214,10 +214,10 @@ func Test_metricDataToPlaintext(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Gauge("gauge_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
-						metricstestutils.GaugeInt("gauge_int_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, int64Pt)),
-						metricstestutils.Cumulative("cumulative_double_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, doublePt)),
-						metricstestutils.CumulativeInt("cumulative_int_with_dims", keys, metricstestutils.Timeseries(tsUnix, values, int64Pt)),
+						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
 					},
 				}
 			},
@@ -234,7 +234,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.GaugeDist("distrib", keys, distributionTimeSeries),
+						metricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
 					},
 				}
 			},
@@ -251,7 +251,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutils.Summary("summary", keys, summaryTimeSeries),
+						metricstestutil.Summary("summary", keys, summaryTimeSeries),
 					},
 				}
 			},

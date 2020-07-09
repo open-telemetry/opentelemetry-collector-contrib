@@ -9,9 +9,16 @@ BUILD_X1=-X $(BUILD_INFO_IMPORT_PATH).GitHash=$(GIT_SHA)
 ifdef VERSION
 BUILD_X2=-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)
 endif
-BUILD_X3=-X github.com/open-telemetry/opentelemetry-collector/internal/version.BuildType=$(BUILD_TYPE)
+BUILD_X3=-X go.opentelemetry.io/collector/internal/version.BuildType=$(BUILD_TYPE)
 BUILD_INFO=-ldflags "${BUILD_X1} ${BUILD_X2} ${BUILD_X3}"
 STATIC_CHECK=staticcheck
+OTEL_VERSION=master
+
+# Modules to run integration tests on.
+# XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
+INTEGRATION_TEST_MODULES := \
+	receiver/redisreceiver \
+	internal/common
 
 .DEFAULT_GOAL := all
 
@@ -20,28 +27,23 @@ all: common otelcontribcol
 
 .PHONY: e2e-test
 e2e-test: otelcontribcol
-	$(MAKE) -C testbed runtests
-
-.PHONY: precommit
-precommit:
-	$(MAKE) gotidy
-	$(MAKE) ci
+	$(MAKE) -C testbed run-tests
 
 .PHONY: test-with-cover
-test-with-cover:
+unit-tests-with-cover:
 	@echo Verifying that all packages have test files to count in coverage
 	@scripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@echo pre-compiling tests
-	set -e; for dir in $(ALL_MODULES); do \
-	  echo "go test ./... + coverage in $${dir}"; \
-	  (cd "$${dir}" && \
-	    $(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./... && \
-	 	go tool cover -html=coverage.txt -o coverage.html ); \
-	done
+	@$(MAKE) for-all CMD="make do-unit-tests-with-cover"
 
+.PHONY: integration-tests-with-cover
+integration-tests-with-cover:
+	@echo $(INTEGRATION_TEST_MODULES)
+	@$(MAKE) for-all CMD="make do-integration-tests-with-cover" ALL_MODULES="$(INTEGRATION_TEST_MODULES)"
+
+# Long-running e2e tests
 .PHONY: stability-tests
-stability-tests:
-	@echo Stability tests have not been implemented yet 
+stability-tests: otelcontribcol
+	$(MAKE) -C testbed run-stability-tests
 
 .PHONY: gotidy
 gotidy:
@@ -60,12 +62,32 @@ for-all:
 	 	$${CMD} ); \
 	done
 
+.PHONY: add-tag
+add-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Adding tag ${TAG}"
+	@git tag -a ${TAG} -s -m "Version ${TAG}"
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Adding tag "$${dir:2}/$${TAG}" && \
+	 	git tag -a "$${dir:2}/$${TAG}" -s -m "Version ${dir:2}/${TAG}" ); \
+	done
+
+.PHONY: delete-tag
+delete-tag:
+	@[ "${TAG}" ] || ( echo ">> env var TAG is not set"; exit 1 )
+	@echo "Deleting tag ${TAG}"
+	@git tag -d ${TAG}
+	@set -e; for dir in $(ALL_MODULES); do \
+	  (echo Deleting tag "$${dir:2}/$${TAG}" && \
+	 	git tag -d "$${dir:2}/$${TAG}" ); \
+	done
+
 GOMODULES = $(ALL_MODULES) $(PWD)
 .PHONY: $(GOMODULES)
 MODULEDIRS = $(GOMODULES:%=for-all-target-%)
 for-all-target: $(MODULEDIRS)
-$(MODULEDIRS): 
-	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET) 
+$(MODULEDIRS):
+	$(MAKE) -C $(@:for-all-target-%=%) $(TARGET)
 .PHONY: for-all-target
 
 .PHONY: install-tools
@@ -73,9 +95,10 @@ install-tools:
 	go install github.com/client9/misspell/cmd/misspell
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	go install github.com/google/addlicense
-	go install honnef.co/go/tools/cmd/staticcheck
+	go install github.com/jstemmer/go-junit-report
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/tcnksm/ghr
+	go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: run
 run:
@@ -130,7 +153,7 @@ update-dep:
 
 .PHONY: update-otel
 update-otel:
-	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=master
+	$(MAKE) update-dep MODULE=go.opentelemetry.io/collector VERSION=$(OTEL_VERSION)
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -148,3 +171,8 @@ otel-from-tree:
 otel-from-lib:
 	# Sets opentelemetry core to be not be pulled from local source tree. (Undoes otel-from-tree.)
 	$(MAKE) for-all CMD="go mod edit -dropreplace go.opentelemetry.io/collector"
+
+.PHONY: build-examples
+build-examples:
+	docker-compose -f examples/tracing/docker-compose.yml build
+	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build

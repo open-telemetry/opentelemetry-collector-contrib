@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 
@@ -57,9 +56,25 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 func (f *Factory) CreateTraceProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
+	nextTraceConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
 ) (component.TraceProcessor, error) {
+	opts := createProcessorOpts(cfg)
+	return NewTraceProcessor(params.Logger, nextTraceConsumer, f.KubeClient, opts...)
+}
+
+// CreateMetricsProcessor creates a metrics processor based on this config.
+func (f *Factory) CreateMetricsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	nextMetricsConsumer consumer.MetricsConsumer,
+	cfg configmodels.Processor,
+) (component.MetricsProcessor, error) {
+	opts := createProcessorOpts(cfg)
+	return NewMetricsProcessor(params.Logger, nextMetricsConsumer, f.KubeClient, opts...)
+}
+
+func createProcessorOpts(cfg configmodels.Processor) []Option {
 	oCfg := cfg.(*Config)
 	opts := []Option{}
 	if oCfg.Passthrough {
@@ -82,15 +97,6 @@ func (f *Factory) CreateTraceProcessor(
 	opts = append(opts, WithFilterLabels(oCfg.Filter.Labels...))
 	opts = append(opts, WithFilterFields(oCfg.Filter.Fields...))
 	opts = append(opts, WithAPIConfig(oCfg.APIConfig))
-	return NewTraceProcessor(params.Logger, nextConsumer, f.KubeClient, opts...)
-}
 
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
-	nextConsumer consumer.MetricsConsumer,
-	cfg configmodels.Processor,
-) (component.MetricsProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return opts
 }

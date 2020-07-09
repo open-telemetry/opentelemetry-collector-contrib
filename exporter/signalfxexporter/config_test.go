@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -60,6 +62,9 @@ func TestLoadConfig(t *testing.T) {
 			"dot.test":    "test",
 		},
 		Timeout: 2 * time.Second,
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: false,
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

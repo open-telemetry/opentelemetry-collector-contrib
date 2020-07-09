@@ -17,13 +17,12 @@ package datareceivers
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 )
 
@@ -41,9 +40,8 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 // Start the receiver.
 func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	sapmCfg := sapmreceiver.Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
-		},
+		Endpoint:                     fmt.Sprintf("localhost:%d", sr.Port),
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error
 	params := component.ReceiverCreateParams{Logger: zap.L()}
@@ -56,12 +54,11 @@ func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.Moc
 }
 
 // Stop the receiver.
-func (sr *SapmDataReceiver) Stop() {
+func (sr *SapmDataReceiver) Stop() error {
 	if sr.receiver != nil {
-		if err := sr.receiver.Shutdown(context.Background()); err != nil {
-			log.Printf("Cannot stop Sapm receiver: %s", err.Error())
-		}
+		return sr.receiver.Shutdown(context.Background())
 	}
+	return nil
 }
 
 // GenConfigYAMLStr returns exporter config for the agent.
@@ -70,7 +67,8 @@ func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   sapm:
     endpoint: "http://localhost:%d/v2/trace"
-    disable_compression: true`, sr.Port)
+    disable_compression: true
+    access_token_passthrough: true`, sr.Port)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

@@ -56,10 +56,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
-			Endpoint: defaultEndpoint,
+			TypeVal: typeStr,
+			NameVal: typeStr,
 		},
+		Endpoint:           defaultEndpoint,
 		MetricsPath:        defaultMetricsPath,
 		CollectionInterval: defaultCollectionInterval,
 	}
@@ -78,6 +78,7 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided Config.
 func (f *Factory) CreateMetricsReceiver(
+	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,

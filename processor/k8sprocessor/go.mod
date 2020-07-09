@@ -3,10 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8spr
 go 1.14
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.3.0-20200605184202-f640b7103f96
+	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
+	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.5.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200615181810-b28cbd9c8e2e
+	go.opentelemetry.io/collector v0.5.0
 	go.uber.org/zap v1.13.0
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
@@ -15,4 +17,4 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200618143706-98e95f47a6d5
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.2.7-0.20200709094216-57486cde1244

@@ -24,6 +24,9 @@ var pod = observer.Pod{
 		"app":    "redis",
 		"region": "west-1",
 	},
+	Annotations: map[string]string{
+		"scrape": "true",
+	},
 }
 
 var podEndpoint = observer.Endpoint{

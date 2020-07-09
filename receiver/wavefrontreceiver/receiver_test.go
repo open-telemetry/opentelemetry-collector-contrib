@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
 
@@ -40,10 +40,10 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	rCfg.ExtractCollectdTags = true
 	rCfg.TCPIdleTimeout = time.Second
 
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
 	waitableConsumer := waitableMetricsConsumer{}
-	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), rCfg, &waitableConsumer)
+	rcvr, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), rCfg, &waitableConsumer)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

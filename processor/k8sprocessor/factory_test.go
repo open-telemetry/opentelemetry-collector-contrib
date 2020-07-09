@@ -46,13 +46,18 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
+	assert.NotNil(t, mp)
+	assert.NoError(t, err, "cannot create metrics processor")
+
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
+
 	tp, err = factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
-	assert.Nil(t, mp)
-	assert.Error(t, err, "should not be able to create metric processor")
+	mp, err = factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
+	assert.NotNil(t, mp)
+	assert.NoError(t, err, "cannot create metrics processor")
 }

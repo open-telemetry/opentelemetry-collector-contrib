@@ -39,13 +39,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -70,20 +69,17 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			wantErr: errNilNextConsumer,
 		},
 		{
-			name: "empty_endpoint",
+			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
-			wantErr: errEmptyEndpoint,
 		},
 		{
 			name: "happy_path",
 			args: args{
 				config: Config{
-					ReceiverSettings: configmodels.ReceiverSettings{
-						Endpoint: "localhost:1234",
-					},
+					Endpoint: "localhost:1234",
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
@@ -103,7 +99,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(exportertest.SinkMetricsExporterOld)
@@ -119,18 +115,18 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
 	doubleVal := 1234.5678
-	doublePt := metricstestutils.Double(tsUnix, doubleVal)
+	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 	int64Val := int64(123)
 	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutils.Timestamp(tsUnix),
+		Timestamp: metricstestutil.Timestamp(tsUnix),
 		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
 	}
 	want := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
-			metricstestutils.Gauge("gauge_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-			metricstestutils.GaugeInt("gauge_int_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
-			metricstestutils.Cumulative("cumulative_double_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, doublePt)),
-			metricstestutils.CumulativeInt("cumulative_int_with_dims", nil, metricstestutils.Timeseries(tsUnix, nil, int64Pt)),
+			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+			metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+			metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+			metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
 		},
 	}
 
@@ -320,7 +316,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 }
 
 func Test_sfxReceiver_TLS(t *testing.T) {
-	addr := testutils.GetAvailableLocalAddress(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	cfg.TLSCredentials = &configtls.TLSSetting{
@@ -415,6 +411,84 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	got := sink.AllMetrics()
 	require.Equal(t, 1, len(got))
 	assert.Equal(t, want, got[0])
+}
+
+func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
+	tests := []struct {
+		name        string
+		passthrough bool
+		token       string
+	}{
+		{
+			name:        "No token provided and passthrough false",
+			passthrough: false,
+			token:       "",
+		},
+		{
+			name:        "No token provided and passthrough true",
+			passthrough: true,
+			token:       "",
+		},
+		{
+			name:        "token provided and passthrough false",
+			passthrough: false,
+			token:       "myToken",
+		},
+		{
+			name:        "token provided and passthrough true",
+			passthrough: true,
+			token:       "myToken",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := (&Factory{}).CreateDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+			config.AccessTokenPassthrough = tt.passthrough
+
+			sink := new(exportertest.SinkMetricsExporterOld)
+			rcv, err := New(zap.NewNop(), *config, sink)
+			assert.NoError(t, err)
+
+			currentTime := time.Now().Unix() * 1e3
+			sFxMsg := buildSFxMsg(&currentTime, 13, 3)
+			msgBytes, _ := proto.Marshal(sFxMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/x-protobuf")
+			if tt.token != "" {
+				req.Header.Set("x-sf-token", tt.token)
+			}
+
+			r := rcv.(*sfxReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+
+			got := sink.AllMetrics()
+			require.Equal(t, 1, len(got))
+
+			tokenLabel := ""
+			if got[0].Resource != nil && got[0].Resource.Labels != nil {
+				tokenLabel = got[0].Resource.Labels["com.splunk.signalfx.access_token"]
+			}
+
+			if tt.passthrough {
+				assert.Equal(t, tt.token, tokenLabel)
+			} else {
+				assert.Empty(t, tokenLabel)
+			}
+		})
+	}
 }
 
 func buildSFxMsg(time *int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {

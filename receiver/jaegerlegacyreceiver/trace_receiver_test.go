@@ -25,7 +25,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/reporter/tchannel"
+	"github.com/jaegertracing/jaeger/tchannel/agent/app/reporter/tchannel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber/jaeger-lib/metrics"
@@ -33,7 +33,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
@@ -71,7 +71,7 @@ func TestPortsNotOpen(t *testing.T) {
 }
 
 func TestThriftTChannelReception(t *testing.T) {
-	port := testutils.GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 	config := &Configuration{
 		CollectorThriftPort: int(port),
 	}
@@ -101,7 +101,7 @@ func TestThriftTChannelReception(t *testing.T) {
 	assert.NoError(t, err, "should not have failed proto/thrift translation")
 
 	//confirm port is open before attempting
-	err = testutils.WaitForPort(t, port)
+	err = testutil.WaitForPort(t, port)
 	assert.NoError(t, err, "WaitForPort failed")
 
 	err = p.GetReporter().EmitBatch(batch)

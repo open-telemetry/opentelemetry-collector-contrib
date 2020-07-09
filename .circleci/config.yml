@@ -14,8 +14,38 @@ executors:
   golang:
     docker:
       - image: cimg/go:1.14
+  machine:
+    machine:
+      image: ubuntu-1604:201903-01
 
 commands:
+  setup:
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Install deps
+          command: make -j8 for-all-target TARGET=dep
+      - run:
+          name: Install tools
+          command: make install-tools
+      - run:
+          name: Install testbed tools
+          command: make -C testbed install-tools
+      - save_module_cache
+
+  setup_go:
+    steps:
+      - run:
+          name: Install Go 1.14
+          command: |
+            sudo rm -rf /usr/local/go
+            curl -L https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+      - run:
+          name: Add ~/go/bin to PATH
+          command: |
+            echo 'export PATH=$HOME/go/bin:$PATH' >> $BASH_ENV
+
   restore_workspace:
     steps:
       - attach_to_workspace
@@ -81,7 +111,7 @@ workflows:
             - build
       - publish-dev:
           requires:
-            - run-stability-tests 
+            - run-stability-tests
 
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
@@ -102,7 +132,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - build-examples-tracing:
+      - build-examples:
           requires:
             - setup
           filters:
@@ -114,7 +144,7 @@ workflows:
           filters:
             tags:
               only: /.*/
-      - test:
+      - unit-tests:
           requires:
             - setup
           filters:
@@ -122,7 +152,11 @@ workflows:
               only: /.*/
       - publish-stable:
           requires:
+            - lint
+            - unit-tests
+            - integration-tests
             - build
+            - cross-compile
           filters:
             branches:
               ignore: /.*/
@@ -134,18 +168,7 @@ jobs:
   setup:
     executor: golang
     steps:
-      - checkout
-      - restore_module_cache
-      - run:
-          name: Install deps
-          command: make -j8 for-all-target TARGET='dep'
-      - run:
-          name: Install tools
-          command: make install-tools
-      - run:
-          name: Install testbed tools
-          command: make -C testbed install-tools
-      - save_module_cache
+      - setup
       - persist_to_workspace:
           root: ~/
           paths:
@@ -157,7 +180,7 @@ jobs:
       - restore_workspace
       - run:
           name: Lint
-          command: make -j8 for-all-target TARGET="lint"
+          command: make -j8 for-all-target TARGET=lint
       - run:
           name: Checks
           command: make -j4 checklicense impi misspell
@@ -173,15 +196,15 @@ jobs:
           root: ~/
           paths: project/bin
 
-  build-examples-tracing:
+  build-examples:
     docker:
       - image: cimg/go:1.14
     steps:
       - restore_workspace
       - setup_remote_docker
       - run:
-          name: Build trace example
-          command: docker-compose -f examples/tracing/docker-compose.yml build
+          name: Build examples
+          command: make build-examples
 
   cross-compile:
     executor: golang
@@ -191,20 +214,17 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
 
-  test:
+  unit-tests:
     executor: golang
     steps:
       - restore_workspace
       - run:
-          name: Coverage tests
-          command: make test-with-cover
+          name: Unit test coverage
+          command: make unit-tests-with-cover
       - run:
-          name: Code coverage
-          command: bash <(curl -s https://codecov.io/bash)
+          name: Upload unit test coverage
+          command: bash <(curl -s https://codecov.io/bash) -F unit
 
   loadtest:
     executor: golang
@@ -213,7 +233,7 @@ jobs:
       - restore_workspace
       - run:
           name: Loadtest
-          command: make -C testbed runtests
+          command: make e2e-test
       - store_artifacts:
           path: testbed/tests/results
       - store_test_results:
@@ -238,7 +258,7 @@ jobs:
   publish-dev:
     executor: golang
     steps:
-      - restore_workspace 
+      - restore_workspace
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-dev
@@ -266,12 +286,33 @@ jobs:
             git status
 
   run-stability-tests:
+    parameters:
+      # Number of runners must be always in sync with number of stability tests,
+      # so every node runs exactly one stability test.
+      runners-number:
+        type: integer
+        default: 9
     executor: golang
+    resource_class: medium+
+    parallelism: << parameters.runners-number >>
     steps:
-      - restore_workspace 
+      - restore_workspace
       - run:
+          no_output_timeout: 70m
           name: Run stability tests
-          command: make stability-tests
+          command: |
+            export TESTS=$(make -C testbed -s list-stability-tests)
+            export TEST_NUM=$(echo ${TESTS} | wc -w | tr -d '[:space:]')
+            if [ "${TEST_NUM}" -ne "<< parameters.runners-number >>" ]; then \
+              echo "ERROR: Number of stability tests must match number of CircleCI runners. Update runners-number parameter"; exit 2; \
+            fi
+            export TEST_NAME=$(echo ${TESTS} | sed 's/ /\n/g' | circleci tests split --total=${TEST_NUM})
+            echo "Running ${TEST_NAME}..."
+            TEST_ARGS="-test.run=${TEST_NAME}" make stability-tests
+      - store_artifacts:
+          path: testbed/stabilitytests/results
+      - store_test_results:
+          path: testbed/stabilitytests/results/junit
       - run:
           name: Run on fail status
           command: |
@@ -284,3 +325,24 @@ jobs:
                 "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
                 }'
           when: on_fail
+
+  integration-tests:
+    executor: machine
+    environment:
+      GOPATH: /home/circleci/go
+    steps:
+      - setup_go
+      - setup
+      - run:
+          name: Integration tests with coverage
+          command: |
+            mkdir -p test-results/junit
+            trap "go-junit-report -set-exit-code < test-results/go-integration-tests.out > test-results/junit/results.xml" EXIT
+            make integration-tests-with-cover | tee test-results/go-integration-tests.out
+      - run:
+          name: Upload integration test coverage
+          command: bash <(curl -s https://codecov.io/bash) -F integration
+      - store_test_results:
+          path: test-results/junit
+      - store_artifacts:
+          path: test-results
