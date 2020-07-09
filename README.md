@@ -83,8 +83,8 @@ contributors.
   collector to take a limited sets of dependencies - so run `go mod` commands
   as appropriate for your component.
 - Implement the needed interface on your component by importing the appropriate
-  component from the core repo.  Follow the pattern of existing components
-  regarding config and factory source files and tests. 
+  component from the core repo. Follow the pattern of existing components
+  regarding config and factory source files and tests.
 - Implement your component as appropriate. Provide end-to-end tests (or mock
   backend/client as appropriate). Target is to get 80% or more of code
   coverage.
