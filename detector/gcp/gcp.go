@@ -20,9 +20,9 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/open-telemetry/opentelemetry-go/blob/master/api/standard/resource.go"
 
 	"go.opentelemetry.io/otel/api/kv"
+	"go.opentelemetry.io/otel/api/standard"
 	"go.opentelemetry.io/otel/sdk/resource"
 )
 
@@ -37,44 +37,44 @@ func (gcp *GCP) Detect(ctx context.Context) (*resource.Resource, error) {
 
 	labels := []kv.KeyValue{}
 
-	labels = append(labels, kv.String(CloudKeyProvider, CloudProviderGCP))
+	labels = append(labels, standard.CloudProviderGCP)
 
 	projectID, err := metadata.ProjectID()
 	logError(err)
 	if projectID != "" {
-		labels = append(labels, kv.String(CloudKeyAccountID, projectID))
+		labels = append(labels, standard.CloudAccountIDKey.String(projectID))
 	}
 
 	zone, err := metadata.Zone()
 	logError(err)
 	if zone != "" {
-		labels = append(labels, kv.String(CloudZoneKey, zone))
+		labels = append(labels, standard.CloudZoneKey.String(zone))
 	}
 
-	labels = append(labels, kv.String(CloudRegionKey, ""))
+	labels = append(labels, standard.CloudRegionKey.String(""))
 
 	instanceID, err := metadata.InstanceID()
 	logError(err)
 	if instanceID != "" {
-		labels = append(labels, kv.String(HostIDKey, instanceID))
+		labels = append(labels, standard.HostIDKey.String(instanceID))
 	}
 
 	name, err := metadata.InstanceName()
 	logError(err)
 	if instanceID != "" {
-		labels = append(labels, kv.String(HostNameKey, name))
+		labels = append(labels, standard.HostNameKey.String(name))
 	}
 
 	hostname, err := metadata.Hostname()
 	logError(err)
 	if instanceID != "" {
-		labels = append(labels, kv.String(HostHostNameKey, hostname))
+		labels = append(labels, standard.HostHostNameKey.String(hostname))
 	}
 
 	hostType, err := metadata.Get("instance/machine-type")
 	logError(err)
 	if instanceID != "" {
-		labels = append(labels, kv.String(HostTypeKey, hostType))
+		labels = append(labels, standard.HostTypeKey.String(hostType))
 	}
 
 	return resource.New(labels...), nil
