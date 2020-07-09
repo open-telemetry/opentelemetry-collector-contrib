@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/compute/metadata"
-
 	"go.opentelemetry.io/otel/api/kv"
 	"go.opentelemetry.io/otel/api/standard"
 	"go.opentelemetry.io/otel/sdk/resource"
