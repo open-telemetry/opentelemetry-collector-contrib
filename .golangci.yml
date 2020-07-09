@@ -107,8 +107,4 @@ issues:
     - path: _test\.go
       linters:
         - scopelint
-    # Exclude staticcheck for cudareceiver until the bug in staticcheck gets solved.
-    # https://github.com/dominikh/go-tools/issues/572
-    - path: receiver/cudareceiver/
-      linters:
-        - staticcheck
+
