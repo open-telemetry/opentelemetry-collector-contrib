@@ -17,6 +17,7 @@ package stackdriverexporter
 
 import (
 	"errors"
+	"time"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -24,6 +25,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	// "go.opentelemetry.io/otel/api/kv"
+	apitrace "go.opentelemetry.io/otel/api/trace"
+	export "go.opentelemetry.io/otel/sdk/export/trace"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	"google.golang.org/grpc/codes"
 )
 
 var errNilSpan = errors.New("expected a non-nil span")
@@ -63,6 +70,94 @@ func protoSpanToOCSpanData(span *tracepb.Span, resource *resourcepb.Resource) (*
 	}
 
 	return sd, nil
+}
+
+func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) ([]*export.SpanData, error) {
+	resource := rs.Resource()
+	var sds []*export.SpanData
+	ilss := rs.InstrumentationLibrarySpans()
+	for i := 0; i < ilss.Len(); i++ {
+		ils := ilss.At(i)
+		spans := ils.Spans()
+		for j := 0; j < spans.Len(); j++ {
+			sd, err := pdataSpanToOTSpanData(spans.At(j), resource, ils.InstrumentationLibrary())
+			if err != nil {
+				return nil, err
+			}
+			sds = append(sds, sd)
+		}
+	}
+
+	return sds, nil
+}
+
+func pdataSpanToOTSpanData(
+	span pdata.Span, 
+	resource pdata.Resource, 
+	il pdata.InstrumentationLibrary,
+) (*export.SpanData, error) {
+	sc := apitrace.SpanContext{}
+	copy(sc.TraceID[:], span.TraceID())
+	copy(sc.SpanID[:], span.SpanID())
+	var parentSpanID apitrace.SpanID
+	copy(parentSpanID[:], span.ParentSpanID())
+	startTime := time.Unix(0, int64(span.StartTime()))
+	endTime := time.Unix(0, int64(span.EndTime()))
+	status := span.Status()
+	instrumentationLibrary := instrumentation.Library{
+		Name: il.Name(),
+		Version: il.Version(),
+	}
+	sd := &export.SpanData{
+		SpanContext:     sc,
+		ParentSpanID:    parentSpanID,
+		SpanKind:        pdataSpanKindToOTSpanKind(span.Kind()),
+		StartTime:       startTime,
+		EndTime:         endTime,
+		Name:            span.Name(),
+		/* // TODO
+		Attributes:      protoAttributesToOCAttributes(span.Attributes, resource),
+		Links:           protoLinksToOCLinks(span.Links),
+		MessageEvents:   protoTimeEventsToOCMessageEvents(span.TimeEvents),
+		*/
+		HasRemoteParent: false, // no field for this?
+		StatusCode:      pdataStatusCodeToGRPCCode(status.Code()),
+		StatusMessage:   status.Message(),
+		DroppedAttributeCount: int(span.DroppedAttributesCount()),
+		DroppedMessageEventCount: int(span.DroppedEventsCount()),
+		DroppedLinkCount: int(span.DroppedLinksCount()),
+		InstrumentationLibrary: instrumentationLibrary,
+	}
+
+	return sd, nil
+}
+
+// func commonAttributesToOTAttributes(ckv *[]common.KeyValue, r *otresourcepb.Resource) []kv.KeyValue {
+// 	// TODO
+// 	return nil
+// }
+
+func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
+	switch k {
+	case pdata.SpanKindUNSPECIFIED:
+		return apitrace.SpanKindInternal
+	case pdata.SpanKindINTERNAL:
+		return apitrace.SpanKindInternal
+	case pdata.SpanKindSERVER:
+		return apitrace.SpanKindServer
+	case pdata.SpanKindCLIENT:
+		return apitrace.SpanKindClient
+	case pdata.SpanKindPRODUCER:
+		return apitrace.SpanKindProducer
+	case pdata.SpanKindCONSUMER:
+		return apitrace.SpanKindConsumer
+	default:
+		return apitrace.SpanKindUnspecified
+	}
+}
+
+func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
+	return codes.Code(c)
 }
 
 func derefTruncatableString(ts *tracepb.TruncatableString) string {

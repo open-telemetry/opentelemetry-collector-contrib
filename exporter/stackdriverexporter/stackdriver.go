@@ -21,11 +21,14 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
+	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
@@ -33,6 +36,7 @@ import (
 // stackdriverExporter is a wrapper struct of Stackdriver exporter
 type stackdriverExporter struct {
 	exporter *stackdriver.Exporter
+	texporter *cloudtrace.Exporter
 }
 
 func (*stackdriverExporter) Name() string {
@@ -45,16 +49,40 @@ func (se *stackdriverExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newStackdriverTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
-	sde, serr := newStackdriverExporter(cfg)
-	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
+func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
+	// sde, serr := newStackdriverExporter(cfg)
+	// if serr != nil {
+	// 	return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
+	// }
+	// tExp := &stackdriverExporter{exporter: sde}
+	topts := []cloudtrace.Option{
+		cloudtrace.WithProjectID(cfg.ProjectID),
 	}
-	tExp := &stackdriverExporter{exporter: sde}
+	if cfg.Endpoint != "" {
+		var copts []option.ClientOption
+		if cfg.UseInsecure {
+			conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
+			if err != nil {
+				return nil, fmt.Errorf("cannot configure grpc conn: %v", err)
+			}
+			copts = append(copts, option.WithGRPCConn(conn))
+		} else {
+			copts = append(copts, option.WithEndpoint(cfg.Endpoint))
+		}
+		topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
+	}
+	if cfg.NumOfWorkers > 0 {
+		topts = append(topts, cloudtrace.WithMaxNumberOfWorkers(cfg.NumOfWorkers))
+	}
+	exp, err := cloudtrace.NewExporter(topts...)
+	if err != nil {
+		return nil, fmt.Errorf("Error creating Stackdriver Trace exporter: %v", err)
+	}
+	tExp := &stackdriverExporter{texporter: exp}
 
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		cfg,
-		tExp.pushTraceData,
+		tExp.newPushTraceData,
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
@@ -140,4 +168,30 @@ func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdat
 	}
 
 	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
+}
+
+
+// pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans
+func (se *stackdriverExporter) newPushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+	var errs []error
+	resourceSpans := td.ResourceSpans()
+	numSpans := td.SpanCount()
+	goodSpans := 0
+	spans := make([]*export.SpanData, 0, numSpans)
+
+	for i := 0; i < resourceSpans.Len(); i++ {
+		sd, err := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
+		if err == nil {
+			spans = append(spans, sd...)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	for _, span := range spans {
+		se.texporter.ExportSpan(ctx, span)
+		goodSpans++
+	}
+
+	return numSpans - goodSpans, componenterror.CombineErrors(errs)
 }
