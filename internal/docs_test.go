@@ -11,7 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package main
+
+package internal
 
 import (
 	"os"
@@ -37,8 +38,8 @@ func TestComponentDocs(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err, "failed to get working directory: %v")
 
-	// Absolute path to the project root directory
-	projectPath := filepath.Join(wd, "../../")
+	// path to the project root directory
+	projectPath := filepath.Join(wd, "../")
 
 	err = componenttest.CheckDocs(
 		projectPath,
