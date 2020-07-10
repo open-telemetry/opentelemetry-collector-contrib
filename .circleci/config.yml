@@ -23,7 +23,7 @@ executors:
       image: ubuntu-1604:201903-01
   cuda:
     docker:
-      - image: nvidia/cuda:10.2-base-ubuntu18.04
+      - image: ymotongpoo/cuda:10.2
 
 commands:
   setup:
