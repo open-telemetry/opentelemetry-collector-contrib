@@ -21,6 +21,9 @@ executors:
   machine:
     machine:
       image: ubuntu-1604:201903-01
+  cuda:
+    docker:
+      - image: ymotongpoo/cuda:10.2
 
 commands:
   setup:
@@ -112,7 +115,7 @@ workflows:
             - setup
       - run-stability-tests:
           requires:
-            - cross-compile 
+            - cross-compile
       - publish-dev:
           requires:
             - run-stability-tests
@@ -144,7 +147,7 @@ workflows:
               only: /.*/
       - loadtest:
           requires:
-            - cross-compile 
+            - cross-compile
           filters:
             tags:
               only: /.*/
@@ -157,6 +160,12 @@ workflows:
       - windows-msi:
           requires:
             - cross-compile
+          filters:
+            tags:
+              only: /.*/
+      - cudareceiver:
+          requires:
+            - setup
           filters:
             tags:
               only: /.*/
@@ -275,6 +284,31 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project/bin
+
+  cudareceiver:
+    executor:
+      name: cuda
+    steps:
+      - restore_workspace
+      - run:
+          name: Unit test for CUDA receiver
+          command: |
+            cd receiver/cudareceiver
+            make do-unit-tests-with-cover
+      - run:
+          name: Upload unit test coverage of CUDA receiver
+          command: bash <(curl -s https://codecov.io/bash) -F unit
+      - restore_workspace
+      - run:
+          name: Lint CUDA receiver
+          command: |
+            cd receiver/cudareceiver
+            make lint-static-check
+      - run:
+          name: Checks CUDA receiver
+          command: |
+            cd receiver/cudareceiver
+            make -j4 checklicense impi misspell
 
   publish-stable:
     docker:
