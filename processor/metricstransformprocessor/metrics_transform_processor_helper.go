@@ -229,92 +229,101 @@ func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries
 // Returns a group of aggregated points
 func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[string][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
 	// initialize to size 0. unsure how many points will come out because distribution points are not guaranteed to be aggregatable. (mismatched bounds)
-	newPoints := make([]*metricspb.Point, 0)
+	newPoints := make([]*metricspb.Point, 0, len(timestampToPoints))
 	for _, points := range timestampToPoints {
 		// use the timestamp from the first element because these all have the same timestamp as they are grouped by timestamp
 		timestamp := points[0].Timestamp
-		intPoint, doublePoint, distPoints := mtp.compute(points, aggrType, dataType)
-		if intPoint != nil {
+		switch dataType {
+		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
+			intPoint := mtp.computeInt64(points, aggrType)
 			newPoints = append(newPoints, &metricspb.Point{
 				Timestamp: timestamp,
 				Value:     intPoint,
 			})
-		} else if doublePoint != nil {
+		case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
+			doublePoint := mtp.computeDouble(points, aggrType)
 			newPoints = append(newPoints, &metricspb.Point{
 				Timestamp: timestamp,
 				Value:     doublePoint,
 			})
-		} else {
+		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
+			if aggrType != Sum {
+				break
+			}
+			distPoints := mtp.computeDistribution(points)
 			for _, p := range distPoints {
 				newPoints = append(newPoints, &metricspb.Point{
 					Timestamp: timestamp,
 					Value:     p,
 				})
 			}
+
 		}
 	}
 	return newPoints
 }
 
-// compute attempts to merge points into one point based on the provided aggrType and dataType
-// Returns an int value, a double value and a slice of distribution values, and only one of these would contain values based on the dataType.
-func (mtp *metricsTransformProcessor) compute(points []*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) (*metricspb.Point_Int64Value, *metricspb.Point_DoubleValue, []*metricspb.Point_DistributionValue) {
+// computeInt64 attempts to merge int64 points into one point based on the provided aggrType
+// Returns the aggregated int64 value
+func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_Int64Value {
 	intVal := int64(0)
-	doubleVal := float64(0)
-	distVals := make([]*metricspb.Point_DistributionValue, 0)
-	switch dataType {
-	case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
-		for _, p := range points {
-			if aggrType == Sum || aggrType == Average {
-				intVal += p.GetInt64Value()
-			} else if aggrType == Max {
-				if p.GetInt64Value() <= intVal {
-					continue
-				}
-				intVal = p.GetInt64Value()
-			}
-
-		}
-		if aggrType == Average {
-			intVal /= int64(len(points))
-		}
-		return &metricspb.Point_Int64Value{Int64Value: intVal}, nil, nil
-	case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-		for _, p := range points {
-			if aggrType == Sum || aggrType == Average {
-				doubleVal += p.GetDoubleValue()
-			} else if aggrType == Max {
-				if p.GetDoubleValue() <= doubleVal {
-					continue
-				}
-				doubleVal = p.GetDoubleValue()
-			}
-
-		}
-		if aggrType == Average {
-			doubleVal /= float64(len(points))
-		}
-		return nil, &metricspb.Point_DoubleValue{DoubleValue: doubleVal}, nil
-	case metricspb.MetricDescriptor_GAUGE_DISTRIBUTION, metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-		if aggrType != Sum {
-			break
-		}
-		boundsToPoints := mtp.groupPointsByBounds(points)
-		for _, v := range boundsToPoints {
-			var distVal *metricspb.DistributionValue
-			for _, p := range v {
-				if distVal == nil {
-					distVal = p.GetDistributionValue()
-					continue
-				}
-				distVal = mtp.computeDistVals(distVal, p.GetDistributionValue())
-			}
-			distVals = append(distVals, &metricspb.Point_DistributionValue{DistributionValue: distVal})
-		}
-		return nil, nil, distVals
-
+	if len(points) > 0 {
+		intVal = points[0].GetInt64Value()
 	}
-	return nil, nil, nil
+	for _, p := range points[1:] {
+		if aggrType == Sum || aggrType == Average {
+			intVal += p.GetInt64Value()
+		} else if aggrType == Max {
+			intVal = int64(math.Max(float64(intVal), float64(p.GetInt64Value())))
+		} else if aggrType == Min {
+			intVal = int64(math.Min(float64(intVal), float64(p.GetInt64Value())))
+		}
+	}
+	if aggrType == Average {
+		intVal /= int64(len(points))
+	}
+	return &metricspb.Point_Int64Value{Int64Value: intVal}
+}
+
+// computeDouble attempts to merge double points into one point based on the provided aggrType
+// Returns the aggregated double value
+func (mtp *metricsTransformProcessor) computeDouble(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_DoubleValue {
+	doubleVal := float64(0)
+	if len(points) > 0 {
+		doubleVal = points[0].GetDoubleValue()
+	}
+	for _, p := range points[1:] {
+		if aggrType == Sum || aggrType == Average {
+			doubleVal += p.GetDoubleValue()
+		} else if aggrType == Max {
+			doubleVal = math.Max(doubleVal, p.GetDoubleValue())
+		} else if aggrType == Min {
+			doubleVal = math.Min(doubleVal, p.GetDoubleValue())
+		}
+	}
+	if aggrType == Average {
+		doubleVal /= float64(len(points))
+	}
+	return &metricspb.Point_DoubleValue{DoubleValue: doubleVal}
+}
+
+// computeDistribution attempts to merge distribution points into one point
+// Returns the aggregated distribution value or values if there are mismatching bounds
+func (mtp *metricsTransformProcessor) computeDistribution(points []*metricspb.Point) []*metricspb.Point_DistributionValue {
+	distVals := make([]*metricspb.Point_DistributionValue, 0)
+	boundsToPoints := mtp.groupPointsByBounds(points)
+	for _, v := range boundsToPoints {
+		var distVal *metricspb.DistributionValue
+		for _, p := range v {
+			if distVal == nil {
+				distVal = p.GetDistributionValue()
+				continue
+			}
+			distVal = mtp.computeDistVals(distVal, p.GetDistributionValue())
+		}
+		distVals = append(distVals, &metricspb.Point_DistributionValue{DistributionValue: distVal})
+	}
+	return distVals
 }
 
 // groupPointsByBounds groups distribution value points by the bounds to further determine the aggregatability because distribution value points can only be aggregated if they have match bounds
@@ -349,7 +358,8 @@ func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.Distributi
 	buckets := make([]*metricspb.DistributionValue_Bucket, len(val1.Buckets))
 	for i := range buckets {
 		buckets[i] = &metricspb.DistributionValue_Bucket{
-			Count: val1.Buckets[i].Count + val2.Buckets[i].Count,
+			Count:    val1.Buckets[i].Count + val2.Buckets[i].Count,
+			Exemplar: val1.Buckets[i].Exemplar,
 		}
 	}
 	mean1 := val1.Sum / float64(val1.Count)
