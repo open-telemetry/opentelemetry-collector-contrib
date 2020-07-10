@@ -23,7 +23,7 @@ executors:
       image: ubuntu-1604:201903-01
   cuda:
     docker:
-      - image: ymotongpoo/cuda:10.2
+      - image: nvidia/cuda:10.2-base-ubuntu18.04
 
 commands:
   setup:
@@ -166,6 +166,7 @@ workflows:
       - cudareceiver:
           requires:
             - setup
+            - setup_go
           filters:
             tags:
               only: /.*/
