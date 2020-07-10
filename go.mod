@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.14
 
 require (
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.2.1-0.20200710010320-8556f4b5bc41 // indirect
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.27.0
 	github.com/google/addlicense v0.0.0-20200301095109-7c013a14f2e2
@@ -37,9 +38,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver v0.0.0
 	github.com/pavius/impi v0.0.0-20180302134524-c1cbdcb8df2b
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/collector v0.5.0
+	go.opentelemetry.io/otel v0.8.0 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.3
 )
 
