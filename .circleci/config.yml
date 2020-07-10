@@ -290,7 +290,6 @@ jobs:
       name: cuda
     steps:
       - restore_workspace
-      - setup_go
       - run:
           name: Unit test for CUDA receiver
           command: |
