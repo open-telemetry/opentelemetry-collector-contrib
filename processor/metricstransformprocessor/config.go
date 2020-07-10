@@ -112,6 +112,9 @@ const (
 	// Update updates an existing metric.
 	Update ConfigAction = "update"
 
+	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
+	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
+
 	// UpdateLabel applies name changes to label and/or label values.
 	UpdateLabel OperationAction = "update_label"
 
