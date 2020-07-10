@@ -298,17 +298,6 @@ jobs:
       - run:
           name: Upload unit test coverage of CUDA receiver
           command: bash <(curl -s https://codecov.io/bash) -F unit
-      - restore_workspace
-      - run:
-          name: Lint CUDA receiver
-          command: |
-            cd receiver/cudareceiver
-            make lint-static-check
-      - run:
-          name: Checks CUDA receiver
-          command: |
-            cd receiver/cudareceiver
-            make -j4 checklicense impi misspell
 
   publish-stable:
     docker:
