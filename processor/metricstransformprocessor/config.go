@@ -140,4 +140,7 @@ const (
 
 	// Sum indicates taking the sum of the aggregated data.
 	Sum AggregationType = "sum"
+
+	// Min indicates taking the minimum of the aggregated data.
+	Min AggregationType = "min"
 )

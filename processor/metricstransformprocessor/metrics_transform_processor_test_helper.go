@@ -19,45 +19,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-const (
-	metric1         = "metric1"
-	metric2         = "metric2"
-	label1          = "label1"
-	label2          = "label2"
-	labelValue11    = "label1-value1"
-	labelValue21    = "label2-value1"
-	labelValue12    = "label1-value2"
-	labelValue22    = "label2-value2"
-	newMetric1      = "metric1/new"
-	newMetric2      = "metric2/new"
-	newLabel1       = "label1/new"
-	newLabelValue11 = "label1-value1/new"
-	nonexist        = "nonexist"
-)
-
-type testPoint struct {
-	timestamp             int64
-	value                 int
-	count                 int64
-	sum                   float64
-	bounds                []float64
-	buckets               []int64
-	sumOfSquaredDeviation float64
-}
-
-type testTimeseries struct {
-	startTimestamp int64
-	labelValues    []string
-	points         []testPoint
-}
-
-type testMetric struct {
-	name       string
-	dataType   metricspb.MetricDescriptor_Type
-	labelKeys  []string
-	timeseries []testTimeseries
-}
-
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []Transform
@@ -66,66 +27,6 @@ type metricsTransformTest struct {
 }
 
 var (
-	// operations
-	validUpateLabelOperation = Operation{
-		Action:   UpdateLabel,
-		Label:    label1,
-		NewLabel: newLabel1,
-	}
-
-	validUpdateLabelValueOperation = Operation{
-		Action: UpdateLabel,
-		Label:  label1,
-		ValueActions: []ValueAction{
-			{
-				Value:    labelValue11,
-				NewValue: newLabelValue11,
-			},
-		},
-	}
-
-	validUpdateLabelAggrSumOperation = Operation{
-		Action:          AggregateLabels,
-		LabelSet:        []string{label1},
-		AggregationType: Sum,
-	}
-
-	validUpdateLabelAggrAverageOperation = Operation{
-		Action:          AggregateLabels,
-		LabelSet:        []string{label1},
-		AggregationType: Average,
-	}
-
-	validUpdateLabelAggrMaxOperation = Operation{
-		Action:          AggregateLabels,
-		LabelSet:        []string{label1},
-		AggregationType: Max,
-	}
-
-	validUpdateLabelValuesAggrSumOperation = Operation{
-		Action:           AggregateLabelValues,
-		Label:            label2,
-		AggregatedValues: []string{labelValue21, labelValue22},
-		NewValue:         labelValue21,
-		AggregationType:  Sum,
-	}
-
-	validUpdateLabelValuesAggrAverageOperation = Operation{
-		Action:           AggregateLabelValues,
-		Label:            label2,
-		AggregatedValues: []string{labelValue21, labelValue22},
-		NewValue:         labelValue21,
-		AggregationType:  Average,
-	}
-
-	validUpdateLabelValuesAggrMaxOperation = Operation{
-		Action:           AggregateLabelValues,
-		Label:            label2,
-		AggregatedValues: []string{labelValue21, labelValue22},
-		NewValue:         labelValue21,
-		AggregationType:  Max,
-	}
-
 	// test cases
 	standardTests = []metricsTransformTest{
 		// UPDATE
@@ -228,169 +129,299 @@ var (
 			},
 			in: []*metricspb.Metric{
 				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
-					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
+					AddTimeseries(1, []string{"label1-value1"}).AddTimeseries(1, []string{"label1-value2"}).
+					Build(),
 			},
 			out: []*metricspb.Metric{
 				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
-					InitTimeseries(2).SetLabelValues([][]string{{"new/label1-value1"}, {"label1-value2"}}).Build(),
+					AddTimeseries(1, []string{"new/label1-value1"}).AddTimeseries(1, []string{"label1-value2"}).
+					Build(),
 			},
 		},
-		// {
-		// 	name: "metric_label_aggregation_sum_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_aggregation_average_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrAverageOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_aggregation_max_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrMaxOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_aggregation_sum_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_aggregation_average_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrAverageOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_aggregation_max_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrMaxOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_sum_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_average_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_max_int_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_sum_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_average_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrAverageOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(2, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_max_double_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrMaxOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// 	out: []testMetric{outLabelValuesAggrBuilder(3, metricspb.MetricDescriptor_GAUGE_DOUBLE)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_sum_distribution_update",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Update,
-		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialDistValueMetricBuilder()},
-		// 	out: []testMetric{outDistValueMetricBuilder()},
-		// },
+		{
+			name: "metric_label_aggregation_sum_int_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddInt64Point(0, 4, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_average_int_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Average,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddInt64Point(0, 2, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_max_int_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Max,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddInt64Point(0, 3, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_min_int_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Min,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddInt64Point(0, 1, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_sum_double_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddDoublePoint(0, 3, 2).AddDoublePoint(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDoublePoint(0, 4, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_average_double_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Average,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddDoublePoint(0, 3, 2).AddDoublePoint(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDoublePoint(0, 2, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_max_double_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Max,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddDoublePoint(0, 3, 2).AddDoublePoint(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDoublePoint(0, 3, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_min_double_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Min,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddDoublePoint(0, 3, 2).AddDoublePoint(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDoublePoint(0, 1, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_values_aggregation_sum_int_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:           AggregateLabelValues,
+							Label:            "label2",
+							AggregatedValues: []string{"label2-value1", "label2-value2"},
+							NewValue:         "new/label2-value",
+							AggregationType:  Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1", "new/label2-value"}).
+					AddInt64Point(0, 4, 2).
+					Build(),
+			},
+		},
+		// this test case also tests the correctness of the SumOfSquaredDeviation merging
+		{
+			name: "metric_label_values_aggregation_sum_distribution_update",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					AddTimeseries(1, []string{"label1-value1", "label2-value1"}).AddTimeseries(3, []string{"label1-value1", "label2-value2"}).
+					AddDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 2).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
+					AddDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{0, 2, 3}, 4). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDistributionPoints(0, 1, 8, 16, []float64{1, 2}, []int64{0, 3, 5}, 6). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1}, SumOfSquaredDeviation = 6
+					Build(),
+			},
+		},
 		// INSERT
 		{
 			name: "metric_name_insert",
@@ -481,52 +512,119 @@ var (
 			},
 			in: []*metricspb.Metric{
 				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
-					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
+					AddTimeseries(1, []string{"label1-value1"}).AddTimeseries(1, []string{"label1-value2"}).
+					Build(),
 			},
 			out: []*metricspb.Metric{
 				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).
-					InitTimeseries(2).SetLabelValues([][]string{{"label1-value1"}, {"label1-value2"}}).Build(),
+					AddTimeseries(1, []string{"label1-value1"}).AddTimeseries(1, []string{"label1-value2"}).
+					Build(),
 
 				TestcaseBuilder().SetName("new/metric1").SetLabels([]string{"label1"}).
-					InitTimeseries(2).SetLabelValues([][]string{{"new/label1-value1"}, {"label1-value2"}}).Build(),
+					AddTimeseries(1, []string{"new/label1-value1"}).AddTimeseries(1, []string{"label1-value2"}).
+					Build(),
 			},
 		},
-		// {
-		// 	name: "metric_label_aggregation_sum_int_insert",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Insert,
-		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_sum_int_insert",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Insert,
-		// 			Operations: []Operation{validUpdateLabelValuesAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64)},
-		// 	out: []testMetric{initialAggrBuilder(metricspb.MetricDescriptor_GAUGE_INT64), outLabelValuesAggrBuilder(4, metricspb.MetricDescriptor_GAUGE_INT64)},
-		// },
-		// {
-		// 	name: "metric_label_values_aggregation_sum_distribution_insert",
-		// 	transforms: []Transform{
-		// 		{
-		// 			MetricName: metric1,
-		// 			Action:     Insert,
-		// 			Operations: []Operation{validUpdateLabelAggrSumOperation},
-		// 		},
-		// 	},
-		// 	in:  []testMetric{initialDistValueMetricBuilder()},
-		// 	out: []testMetric{initialDistValueMetricBuilder(), outDistValueMetricBuilder()},
-		// },
+		{
+			name: "metric_label_aggregation_sum_int_insert",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Insert,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddInt64Point(0, 4, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_label_values_aggregation_sum_int_insert",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Insert,
+					Operations: []Operation{
+						{
+							Action:           AggregateLabelValues,
+							Label:            "label2",
+							AggregatedValues: []string{"label2-value1", "label2-value2"},
+							NewValue:         "new/label2-value",
+							AggregationType:  Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(2, []string{"label1-value1", "label2-value1"}).AddTimeseries(1, []string{"label1-value1", "label2-value2"}).
+					AddInt64Point(0, 3, 2).AddInt64Point(1, 1, 2).
+					Build(),
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					AddTimeseries(1, []string{"label1-value1", "new/label2-value"}).
+					AddInt64Point(0, 4, 2).
+					Build(),
+			},
+		},
+		{
+			name: "metric_labels_aggregation_sum_distribution_insert",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Insert,
+					Operations: []Operation{
+						{
+							Action:          AggregateLabels,
+							LabelSet:        []string{"label1"},
+							AggregationType: Sum,
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					AddTimeseries(1, []string{"label1-value1", "label2-value1"}).AddTimeseries(3, []string{"label1-value1", "label2-value2"}).
+					AddDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
+					AddDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
+					Build(),
+			},
+			out: []*metricspb.Metric{
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1", "label2"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					AddTimeseries(1, []string{"label1-value1", "label2-value1"}).AddTimeseries(3, []string{"label1-value1", "label2-value2"}).
+					AddDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
+					AddDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
+					Build(),
+				TestcaseBuilder().SetName("metric1").SetLabels([]string{"label1"}).SetDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					AddTimeseries(1, []string{"label1-value1"}).
+					AddDistributionPoints(0, 1, 8, 16, []float64{1, 2}, []int64{1, 2, 5}, 7).
+					Build(),
+			},
+		},
 	}
 )
 
@@ -536,209 +634,8 @@ func constructTestInputMetricsData(test metricsTransformTest) consumerdata.Metri
 		Metrics: make([]*metricspb.Metric, len(test.in)),
 	}
 	for idx, in := range test.in {
-		// dataType := in.dataType
-		// // construct label keys
-		// labels := make([]*metricspb.LabelKey, len(in.labelKeys))
-		// for lidx, l := range in.labelKeys {
-		// 	labels[lidx] = &metricspb.LabelKey{
-		// 		Key: l,
-		// 	}
-		// }
-		// // construct timeseries with label values and points
-		// timeseries := make([]*metricspb.TimeSeries, len(in.timeseries))
-		// for tidx, ts := range in.timeseries {
-		// 	labelValues := make([]*metricspb.LabelValue, len(ts.labelValues))
-		// 	for vidx, value := range ts.labelValues {
-		// 		labelValues[vidx] = &metricspb.LabelValue{
-		// 			Value: value,
-		// 		}
-		// 	}
-		// 	points := make([]*metricspb.Point, len(ts.points))
-		// 	for pidx, p := range ts.points {
-		// 		points[pidx] = &metricspb.Point{
-		// 			Timestamp: &timestamp.Timestamp{
-		// 				Seconds: p.timestamp,
-		// 				Nanos:   0,
-		// 			},
-		// 		}
-		// 		switch dataType {
-		// 		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
-		// 			points[pidx].Value = &metricspb.Point_Int64Value{
-		// 				Int64Value: int64(p.value),
-		// 			}
-		// 		case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
-		// 			points[pidx].Value = &metricspb.Point_DoubleValue{
-		// 				DoubleValue: float64(p.value),
-		// 			}
-		// 		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
-		// 			buckets := make([]*metricspb.DistributionValue_Bucket, len(p.buckets))
-		// 			for buIdx, bucket := range p.buckets {
-		// 				buckets[buIdx] = &metricspb.DistributionValue_Bucket{
-		// 					Count: bucket,
-		// 				}
-		// 			}
-		// 			points[pidx].Value = &metricspb.Point_DistributionValue{
-		// 				DistributionValue: &metricspb.DistributionValue{
-		// 					BucketOptions: &metricspb.DistributionValue_BucketOptions{
-		// 						Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-		// 							Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-		// 								Bounds: p.bounds,
-		// 							},
-		// 						},
-		// 					},
-		// 					Count:                 p.count,
-		// 					Sum:                   p.sum,
-		// 					Buckets:               buckets,
-		// 					SumOfSquaredDeviation: p.sumOfSquaredDeviation,
-		// 				},
-		// 			}
-		// 		}
-		// 	}
-		// 	timeseries[tidx] = &metricspb.TimeSeries{
-		// 		StartTimestamp: &timestamp.Timestamp{
-		// 			Seconds: ts.startTimestamp,
-		// 			Nanos:   0,
-		// 		},
-		// 		LabelValues: labelValues,
-		// 		Points:      points,
-		// 	}
-		// }
-
 		// compose the metric
 		md.Metrics[idx] = in
 	}
 	return md
-}
-
-func initialAggrBuilder(dataType metricspb.MetricDescriptor_Type) testMetric {
-	return testMetric{
-		name:      metric1,
-		labelKeys: []string{label1, label2},
-		dataType:  dataType,
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 2,
-				labelValues:    []string{labelValue11, labelValue21},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     3,
-					},
-				},
-			},
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue11, labelValue22},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     1,
-					},
-				},
-			},
-		},
-	}
-}
-
-func outLabelAggrBuilder(value int, dataType metricspb.MetricDescriptor_Type) testMetric {
-	return testMetric{
-		name:      metric1,
-		labelKeys: []string{label1},
-		dataType:  dataType,
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue11},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     value,
-					},
-				},
-			},
-		},
-	}
-}
-
-func outLabelValuesAggrBuilder(value int, dataType metricspb.MetricDescriptor_Type) testMetric {
-	outMetric := testMetric{
-		name:      metric1,
-		labelKeys: []string{label1, label2},
-		dataType:  dataType,
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue11, labelValue21},
-				points: []testPoint{
-					{
-						timestamp: 2,
-						value:     value,
-					},
-				},
-			},
-		},
-	}
-	return outMetric
-}
-
-func initialDistValueMetricBuilder() testMetric {
-	return testMetric{
-		name:      metric1,
-		labelKeys: []string{label1, label2},
-		dataType:  metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue11, labelValue21},
-				points: []testPoint{
-					{
-						timestamp:             1,
-						count:                 3,
-						sum:                   6,
-						bounds:                []float64{1, 2},
-						buckets:               []int64{0, 1, 2},
-						sumOfSquaredDeviation: 3,
-					},
-				},
-			},
-			{
-				startTimestamp: 3,
-				labelValues:    []string{labelValue11, labelValue22},
-				points: []testPoint{
-					{
-						timestamp:             1,
-						count:                 5,
-						sum:                   10,
-						bounds:                []float64{1, 2},
-						buckets:               []int64{1, 1, 3},
-						sumOfSquaredDeviation: 4,
-					},
-				},
-			},
-		},
-	}
-}
-
-func outDistValueMetricBuilder() testMetric {
-	return testMetric{
-		name:      metric1,
-		labelKeys: []string{label1},
-		dataType:  metricspb.MetricDescriptor_GAUGE_DISTRIBUTION,
-		timeseries: []testTimeseries{
-			{
-				startTimestamp: 1,
-				labelValues:    []string{labelValue11},
-				points: []testPoint{
-					{
-						timestamp:             1,
-						count:                 8,
-						sum:                   16,
-						bounds:                []float64{1, 2},
-						buckets:               []int64{1, 2, 5},
-						sumOfSquaredDeviation: 7,
-					},
-				},
-			},
-		},
-	}
 }
