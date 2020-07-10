@@ -166,7 +166,6 @@ workflows:
       - cudareceiver:
           requires:
             - setup
-            - setup_go
           filters:
             tags:
               only: /.*/
@@ -291,6 +290,7 @@ jobs:
       name: cuda
     steps:
       - restore_workspace
+      - setup_go
       - run:
           name: Unit test for CUDA receiver
           command: |
