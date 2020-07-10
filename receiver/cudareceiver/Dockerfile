@@ -3,7 +3,7 @@ FROM nvidia/cuda:10.2-devel-ubuntu18.04
 LABEL maintainer "OpenTelemetry Authors"
 
 ENV GO_VER 1.14.4
-ENV PATH $HOME/go/bin:${PATH}
+ENV PATH /usr/local/go/bin:$HOME/go/bin:${PATH}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
      ca-certificates \
