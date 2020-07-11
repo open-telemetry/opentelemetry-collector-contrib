@@ -78,8 +78,6 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
 	smallBatch := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge(
@@ -135,16 +133,8 @@ func TestConsumeMetricsData(t *testing.T) {
 		testName := fmt.Sprintf(
 			"%s_createServer_%t_acceptClient_%t", tt.name, tt.createServer, tt.acceptClient)
 		t.Run(testName, func(t *testing.T) {
-			var ln *net.TCPListener
-			if tt.createServer {
-				laddr, err := net.ResolveTCPAddr("tcp", addr)
-				require.NoError(t, err)
-				ln, err = net.ListenTCP("tcp", laddr)
-				require.NoError(t, err)
-				defer ln.Close()
-			}
-
-			config := Config{Endpoint: addr, Timeout: 500 * time.Millisecond}
+			addr := testutil.GetAvailableLocalAddress(t)
+			config := Config{Endpoint: addr, Timeout: 2 * time.Second}
 			exp, err := New(config)
 			require.NoError(t, err)
 
@@ -170,8 +160,24 @@ func TestConsumeMetricsData(t *testing.T) {
 			// for all of them.
 			var wg sync.WaitGroup
 			wg.Add(exporterhelper.NumTimeSeries(tt.md))
+
+			// Wait for the server to initialize
+			var wgInit sync.WaitGroup
+			wgInit.Add(1)
+
 			go func() {
-				ln.SetDeadline(time.Now().Add(time.Second))
+				var ln *net.TCPListener
+				if tt.createServer {
+					laddr, err := net.ResolveTCPAddr("tcp", addr)
+					require.NoError(t, err)
+					ln, err = net.ListenTCP("tcp", laddr)
+					require.NoError(t, err)
+					defer ln.Close()
+				}
+				require.NoError(t, ln.SetDeadline(time.Now().Add(time.Second)))
+
+				wgInit.Done()
+
 				conn, err := ln.AcceptTCP()
 				require.NoError(t, err)
 				defer conn.Close()
@@ -191,6 +197,9 @@ func TestConsumeMetricsData(t *testing.T) {
 					wg.Done()
 				}
 			}()
+
+			wgInit.Wait()
+			<- time.After(200 * time.Millisecond)
 
 			require.NoError(t, exp.ConsumeMetricsData(context.Background(), tt.md))
 			assert.NoError(t, exp.Shutdown(context.Background()))
