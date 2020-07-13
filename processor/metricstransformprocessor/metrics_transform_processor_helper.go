@@ -191,19 +191,19 @@ func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesM
 
 // analyzeTimeseriesForAggregation uses timestamp as an indicator to group aggregatable points in the group of timeseries, and determines the final value of the start timestamp for this groups of timeseries.
 // Returns a map that groups points by timestamps and the final start timestamp
-func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries []*metricspb.TimeSeries) (map[string][]*metricspb.Point, *timestamp.Timestamp) {
+func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
 	var startTimestamp *timestamp.Timestamp
 	// timestampToPoints maps from timestamp string to aggregatable points
-	timestampToPoints := make(map[string][]*metricspb.Point)
+	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
 		if startTimestamp == nil || ts.StartTimestamp.Seconds < startTimestamp.Seconds || (ts.StartTimestamp.Seconds == startTimestamp.Seconds && ts.StartTimestamp.Nanos < startTimestamp.Nanos) {
 			startTimestamp = ts.StartTimestamp
 		}
 		for _, p := range ts.Points {
-			if points, ok := timestampToPoints[p.Timestamp.String()]; ok {
-				timestampToPoints[p.Timestamp.String()] = append(points, p)
+			if points, ok := timestampToPoints[p.Timestamp.Seconds]; ok {
+				timestampToPoints[p.Timestamp.Seconds] = append(points, p)
 			} else {
-				timestampToPoints[p.Timestamp.String()] = []*metricspb.Point{p}
+				timestampToPoints[p.Timestamp.Seconds] = []*metricspb.Point{p}
 			}
 		}
 	}
@@ -212,7 +212,7 @@ func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries
 
 // aggregatePoints aggregates points in the groups provided in timestampToPoints by the specific caluculation indicated by aggrType and dataType
 // Returns a group of aggregated points
-func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[string][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
+func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int64][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
 	// initialize to size 0. unsure how many points will come out because distribution points are not guaranteed to be aggregatable. (mismatched bounds)
 	newPoints := make([]*metricspb.Point, 0, len(timestampToPoints))
 	for _, points := range timestampToPoints {

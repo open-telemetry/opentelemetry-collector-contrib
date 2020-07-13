@@ -48,7 +48,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.NoError(t, mtp.Start(ctx, nil))
 
 			// construct metrics data to feed into the processor
-			md := constructTestInputMetricsData(test)
+			md := consumerdata.MetricsData{Metrics: test.in}
 
 			// process
 			cErr := mtp.ConsumeMetrics(
@@ -90,7 +90,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	}
 
 	for len(stressTest.in) < 1000 {
-		stressTest.in = append(stressTest.in, TestcaseBuilder().SetName("metric1").Build())
+		stressTest.in = append(stressTest.in, testcaseBuilder().setName("metric1").build())
 	}
 
 	benchmarkTests := []metricsTransformTest{stressTest}
@@ -109,7 +109,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		mtp := newMetricsTransformProcessor(next, cfg, nil)
 		assert.NotNil(b, mtp)
 
-		md := constructTestInputMetricsData(test)
+		md := consumerdata.MetricsData{Metrics: test.in}
 
 		b.Run(test.name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
