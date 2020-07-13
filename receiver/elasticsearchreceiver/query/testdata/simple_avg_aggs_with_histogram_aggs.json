@@ -1,0 +1,207 @@
+{
+  "took": 347,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 240,
+      "relation": "eq"
+    },
+    "max_score": 1.0,
+    "hits": [
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "b802a8b5b4f9b75dc0070c368c84585f",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 52,
+          "memory_utilization": 1,
+          "host": "nairobi",
+          "service": "android",
+          "container_id": "macbook",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "3fbaf0e89b5751032189cea3205c2f9f",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 59,
+          "memory_utilization": 27,
+          "host": "nairobi",
+          "service": "ios",
+          "container_id": "lenovo",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "a8f078176d1cbc17f2cd5808ad0bc0b9",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 70,
+          "memory_utilization": 42,
+          "host": "helsinki",
+          "service": "android",
+          "container_id": "macbook",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "8522c4e5e051820109a250cc94a59a46",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 28,
+          "memory_utilization": 44,
+          "host": "helsinki",
+          "service": "ios",
+          "container_id": "lenovo",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "b9291c17c7405275fa64348af325d260",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 57,
+          "memory_utilization": 11,
+          "host": "madrid",
+          "service": "android",
+          "container_id": "macbook",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "5d8b7cbe94869fe4f11a6f4271351a01",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 46,
+          "memory_utilization": 8,
+          "host": "madrid",
+          "service": "ios",
+          "container_id": "lenovo",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "c0979f4012533bf89bfd79478bb7cc2f",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 94,
+          "memory_utilization": 57,
+          "host": "lisbon",
+          "service": "android",
+          "container_id": "macbook",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "2cbe083ddc80915504931b2134b3cb03",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 54,
+          "memory_utilization": 73,
+          "host": "lisbon",
+          "service": "ios",
+          "container_id": "lenovo",
+          "@timestamp": 1580320265806
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "5ab6896c3faf3fe9fe7d12432b1dce53",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 50,
+          "memory_utilization": 52,
+          "host": "nairobi",
+          "service": "android",
+          "container_id": "macbook",
+          "@timestamp": 1580320275859
+        }
+      },
+      {
+        "_index": "metrics",
+        "_type": "_doc",
+        "_id": "5d4b36f8ea9f92d5922bf17670ae156a",
+        "_score": 1.0,
+        "_source": {
+          "cpu_utilization": 56,
+          "memory_utilization": 90,
+          "host": "nairobi",
+          "service": "ios",
+          "container_id": "lenovo",
+          "@timestamp": 1580320275859
+        }
+      }
+    ]
+  },
+  "aggregations": {
+    "cpu_values": {
+      "buckets": [
+        {
+          "key": 0.0,
+          "doc_count": 59,
+          "metric_agg_1": {
+            "value": 10.559322033898304
+          }
+        },
+        {
+          "key": 20.0,
+          "doc_count": 35,
+          "metric_agg_1": {
+            "value": 30.571428571428573
+          }
+        },
+        {
+          "key": 40.0,
+          "doc_count": 57,
+          "metric_agg_1": {
+            "value": 48.80701754385965
+          }
+        },
+        {
+          "key": 60.0,
+          "doc_count": 42,
+          "metric_agg_1": {
+            "value": 69.64285714285714
+          }
+        },
+        {
+          "key": 80.0,
+          "doc_count": 45,
+          "metric_agg_1": {
+            "value": 89.4
+          }
+        },
+        {
+          "key": 100.0,
+          "doc_count": 2,
+          "metric_agg_1": {
+            "value": 100.0
+          }
+        }
+      ]
+    }
+  }
+}

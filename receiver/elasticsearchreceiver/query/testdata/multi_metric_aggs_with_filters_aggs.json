@@ -1,0 +1,227 @@
+{
+  "took" : 690,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 10000,
+      "relation" : "gte"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "dc095abbb1ee0b499189f970cb38ec7d",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 10,
+          "memory_utilization" : 79,
+          "host" : "nairobi",
+          "service" : "android",
+          "container_id" : "macbook",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "ae18315053410ebadd4b6ddc4d359505",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 15,
+          "memory_utilization" : 43,
+          "host" : "nairobi",
+          "service" : "ios",
+          "container_id" : "lenovo",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "9acae89e1af49398a06ee75054a4005d",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 37,
+          "memory_utilization" : 75,
+          "host" : "helsinki",
+          "service" : "android",
+          "container_id" : "macbook",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "a7c13965b4e2eb225384706074ee7588",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 44,
+          "memory_utilization" : 32,
+          "host" : "helsinki",
+          "service" : "ios",
+          "container_id" : "lenovo",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "1e4b03ea2d3ed9c10259986d80cfc2f6",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 2,
+          "memory_utilization" : 23,
+          "host" : "madrid",
+          "service" : "android",
+          "container_id" : "macbook",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "82f885dd38e36a0952d1b777eecca066",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 32,
+          "memory_utilization" : 95,
+          "host" : "madrid",
+          "service" : "ios",
+          "container_id" : "lenovo",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "451d1cbbaf971eb8a5dc59c1f943f556",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 93,
+          "memory_utilization" : 65,
+          "host" : "lisbon",
+          "service" : "android",
+          "container_id" : "macbook",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "0933b86ee183c15ae8f55c409f6aa2c5",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 78,
+          "memory_utilization" : 83,
+          "host" : "lisbon",
+          "service" : "ios",
+          "container_id" : "lenovo",
+          "@timestamp" : 1580268709579
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "0888844b68d853b5f5fbfad7d80aae3b",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 68,
+          "memory_utilization" : 76,
+          "host" : "nairobi",
+          "service" : "android",
+          "container_id" : "macbook",
+          "@timestamp" : 1580268719626
+        }
+      },
+      {
+        "_index" : "metrics",
+        "_type" : "_doc",
+        "_id" : "1ed155a4a0e66afea83fdbdced5ed696",
+        "_score" : 1.0,
+        "_source" : {
+          "cpu_utilization" : 93,
+          "memory_utilization" : 63,
+          "host" : "nairobi",
+          "service" : "ios",
+          "container_id" : "lenovo",
+          "@timestamp" : 1580268719626
+        }
+      }
+    ]
+  },
+  "aggregations" : {
+    "host" : {
+      "buckets" : {
+        "helsinki" : {
+          "doc_count" : 5366,
+          "metric_agg_3" : {
+            "count" : 5366,
+            "min" : 0.0,
+            "max" : 100.0,
+            "avg" : 49.27953783078643,
+            "sum" : 264434.0,
+            "sum_of_squares" : 1.7629144E7,
+            "variance" : 856.8689327718637,
+            "std_deviation" : 29.27232366539875,
+            "std_deviation_bounds" : {
+              "upper" : 107.82418516158393,
+              "lower" : -9.265109500011071
+            }
+          },
+          "metric_agg_1" : {
+            "values" : {
+              "1.0" : 0.0,
+              "5.0" : 4.0,
+              "25.0" : 24.0,
+              "50.0" : 49.0,
+              "75.0" : 75.0,
+              "95.0" : 95.0,
+              "99.0" : 99.0
+            }
+          },
+          "metric_agg_2" : {
+            "value" : 49.27953783078643
+          }
+        },
+        "nairobi" : {
+          "doc_count" : 5366,
+          "metric_agg_3" : {
+            "count" : 5366,
+            "min" : 0.0,
+            "max" : 100.0,
+            "avg" : 50.084047707789786,
+            "sum" : 268751.0,
+            "sum_of_squares" : 1.7938575E7,
+            "variance" : 834.5950604703294,
+            "std_deviation" : 28.889358948760517,
+            "std_deviation_bounds" : {
+              "upper" : 107.86276560531081,
+              "lower" : -7.694670189731248
+            }
+          },
+          "metric_agg_1" : {
+            "values" : {
+              "1.0" : 1.0,
+              "5.0" : 5.0,
+              "25.0" : 25.0,
+              "50.0" : 50.0,
+              "75.0" : 75.0,
+              "95.0" : 95.0,
+              "99.0" : 99.0
+            }
+          },
+          "metric_agg_2" : {
+            "value" : 50.084047707789786
+          }
+        }
+      }
+    }
+  }
+}
