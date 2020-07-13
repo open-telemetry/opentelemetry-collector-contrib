@@ -45,14 +45,13 @@ func TestRefreshEndpoints(t *testing.T) {
 	addEndpoint(2)
 	removeEndpoint(0)
 
+	time.Sleep(1 * time.Second)
+	ew.StopListAndWatch()
+
 	expected["1"] = Endpoint{ID: "1"}
 	expected["2"] = Endpoint{ID: "2"}
 	delete(expected, "0")
-
-	time.Sleep(1 * time.Second)
-
 	require.Equal(t, expected, ew.existingEndpoints)
-	ew.StopListAndWatch()
 }
 
 var endpointsMap map[string]Endpoint
