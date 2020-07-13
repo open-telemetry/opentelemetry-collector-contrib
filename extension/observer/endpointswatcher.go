@@ -84,7 +84,7 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 	// If endpoint present in existingEndpoints does not exist in the latest
 	// list, it needs to be removed.
 	for id, e := range ew.existingEndpoints {
-		if _, ok := latestEndpointsMap[e.ID]; !ok {
+		if !latestEndpointsMap[e.ID] {
 			delete(ew.existingEndpoints, id)
 			removedEndpoints = append(removedEndpoints, e)
 		}
