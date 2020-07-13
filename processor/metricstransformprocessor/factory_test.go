@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,5 +148,69 @@ func TestFactory_validateConfiguration(t *testing.T) {
 
 	err = validateConfiguration(&v2)
 	assert.Equal(t, "missing required field \"new_value\" while \"action\" is add_label in the 0th operation", err.Error())
+}
 
+func TestCreateProcessorsFilledData(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+
+	oCfg.Transforms = []Transform{
+		{
+			Operations: []Operation{
+				{
+					ValueActions: []ValueAction{
+						{
+							Value:    "value",
+							NewValue: "new/value",
+						},
+					},
+				},
+				{
+					Action:   AggregateLabels,
+					LabelSet: []string{"label1", "label2"},
+				},
+				{
+					Action:           AggregateLabelValues,
+					Label:            "label",
+					AggregatedValues: []string{"value1", "value2"},
+				},
+			},
+		},
+	}
+
+	expData := []Transform{
+		{
+			Operations: []Operation{
+				{
+					ValueActionsMapping: map[string]string{"value": "new/value"},
+				},
+				{
+					LabelSetMap: map[string]bool{
+						"label1": true,
+						"label2": true,
+					},
+				},
+				{
+					LabelSetMap: map[string]bool{
+						"label": true,
+					},
+					AggregatedValuesSet: map[string]bool{
+						"value1": true,
+						"value2": true,
+					},
+				},
+			},
+		},
+	}
+
+	fillMappingData(oCfg)
+
+	for i, tr := range oCfg.Transforms {
+		for j, op := range tr.Operations {
+			assert.True(t, reflect.DeepEqual(op.ValueActionsMapping, expData[i].Operations[j].ValueActionsMapping))
+			assert.True(t, reflect.DeepEqual(op.LabelSetMap, expData[i].Operations[j].LabelSetMap))
+			assert.True(t, reflect.DeepEqual(op.AggregatedValuesSet, expData[i].Operations[j].AggregatedValuesSet))
+		}
+	}
 }

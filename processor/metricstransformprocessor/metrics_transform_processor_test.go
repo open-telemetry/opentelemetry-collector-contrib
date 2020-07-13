@@ -195,13 +195,16 @@ import (
 // 	inLabels:   initialLabels,
 // 	outLabels:  initialLabels,
 // },
+
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
 			next := &exportertest.SinkMetricsExporter{}
 			cfg := &Config{Transforms: test.transforms}
 
-			mtp := newMetricsTransformProcessor(next, cfg)
+			mtp := newMetricsTransformProcessor(next, cfg, nil)
+			assert.NotNil(t, mtp)
+
 			assert.True(t, mtp.GetCapabilities().MutatesConsumedData)
 			assert.NoError(t, mtp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { assert.NoError(t, mtp.Shutdown(context.Background())) }()
@@ -316,7 +319,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			Transforms: test.transforms,
 		}
 
-		mtp := newMetricsTransformProcessor(next, cfg)
+		mtp := newMetricsTransformProcessor(next, cfg, nil)
 		assert.NotNil(b, mtp)
 
 		md := constructTestInputMetricsData(test)

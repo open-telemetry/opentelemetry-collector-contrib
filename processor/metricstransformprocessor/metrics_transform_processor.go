@@ -23,21 +23,24 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.uber.org/zap"
 )
 
 type metricsTransformProcessor struct {
 	cfg        *Config
 	next       consumer.MetricsConsumer
 	transforms []Transform
+	logger     *zap.Logger
 }
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) *metricsTransformProcessor {
+func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config, logger *zap.Logger) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
 		cfg:        cfg,
 		next:       next,
 		transforms: cfg.Transforms,
+		logger:     logger,
 	}
 }
 

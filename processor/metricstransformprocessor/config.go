@@ -88,6 +88,11 @@ type Operation struct {
 
 	// ValueActions is a list of renaming actions for label values.
 	ValueActions []ValueAction `mapstructure:"value_actions"`
+
+	// fields that will be filled later for optimized opertaions processing
+	ValueActionsMapping map[string]string `mapstructure:"-"`
+	LabelSetMap         map[string]bool   `mapstructure:"-"`
+	AggregatedValuesSet map[string]bool   `mapstructure:"-"`
 }
 
 // ValueAction renames label values.

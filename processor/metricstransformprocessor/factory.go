@@ -69,7 +69,8 @@ func (f *Factory) CreateMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newMetricsTransformProcessor(nextConsumer, oCfg), nil
+	fillMappingData(oCfg)
+	return newMetricsTransformProcessor(nextConsumer, oCfg, params.Logger), nil
 
 }
 
@@ -102,6 +103,43 @@ func validateConfiguration(config *Config) error {
 			}
 		}
 	}
-
 	return nil
+}
+
+// fillMappingData constructs the map that will be useful for the operations and stores them in the config
+func fillMappingData(config *Config) {
+	for i := range config.Transforms {
+		t := &config.Transforms[i]
+		for j := range t.Operations {
+			op := &t.Operations[j]
+			if len(op.ValueActions) > 0 {
+				op.ValueActionsMapping = createLabelValueMapping(op.ValueActions)
+			}
+			if op.Action == AggregateLabels {
+				op.LabelSetMap = sliceToSet(op.LabelSet)
+			} else if op.Action == AggregateLabelValues {
+				op.LabelSetMap = map[string]bool{op.Label: true}
+				op.AggregatedValuesSet = sliceToSet(op.AggregatedValues)
+			}
+		}
+	}
+}
+
+// createLabelValueMapping creates the labelValue rename mappings based on the valueActions
+func createLabelValueMapping(valueActions []ValueAction) map[string]string {
+	mapping := make(map[string]string)
+	for _, valueAction := range valueActions {
+		mapping[valueAction.Value] = valueAction.NewValue
+	}
+	return mapping
+}
+
+// sliceToSet converts slice of strings to set of strings
+// Returns the set of strings
+func sliceToSet(slice []string) map[string]bool {
+	set := make(map[string]bool, len(slice))
+	for _, label := range slice {
+		set[label] = true
+	}
+	return set
 }
