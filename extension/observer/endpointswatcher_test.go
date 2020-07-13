@@ -22,47 +22,81 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRefreshEndpoints(t *testing.T) {
-	endpointsMap = map[string]Endpoint{}
+func TestRefreshEndpointsOnStartup(t *testing.T) {
+	endpointsMap = map[EndpointID]Endpoint{}
 
 	ew := EndpointsWatcher{
 		ListEndpoints:     listEndpoints,
-		RefreshInterval:   2,
-		existingEndpoints: map[string]Endpoint{},
+		RefreshInterval:   2 * time.Second,
+		existingEndpoints: map[EndpointID]Endpoint{},
 	}
 
 	mn := mockNotifier{}
 
 	addEndpoint(0)
 	ew.ListAndWatch(mn)
+	ew.StopListAndWatch()
 
 	// Endpoints available before the ListAndWatch call should be
 	// readily discovered.
-	expected := map[string]Endpoint{"0": {ID: "0"}}
+	expected := map[EndpointID]Endpoint{"0": {ID: "0"}}
+	require.Equal(t, expected, ew.existingEndpoints)
+}
+
+func TestRefreshEndpoints(t *testing.T) {
+	endpointsMap = map[EndpointID]Endpoint{}
+
+	ew := EndpointsWatcher{
+		ListEndpoints:     listEndpoints,
+		RefreshInterval:   2 * time.Second,
+		existingEndpoints: map[EndpointID]Endpoint{},
+	}
+
+	mn := mockNotifier{}
+
+	addEndpoint(0)
+	ew.refreshEndpoints(mn)
+
+	expected := map[EndpointID]Endpoint{"0": {ID: "0"}}
 	require.Equal(t, expected, ew.existingEndpoints)
 
 	addEndpoint(1)
 	addEndpoint(2)
 	removeEndpoint(0)
-
-	time.Sleep(1 * time.Second)
-	ew.StopListAndWatch()
+	ew.refreshEndpoints(mn)
 
 	expected["1"] = Endpoint{ID: "1"}
 	expected["2"] = Endpoint{ID: "2"}
 	delete(expected, "0")
 	require.Equal(t, expected, ew.existingEndpoints)
+
+	updateEndpoint(2, "updated_target")
+	ew.refreshEndpoints(mn)
+
+	expected["2"] = Endpoint{ID: "2", Target: "updated_target"}
+	require.Equal(t, expected, ew.existingEndpoints)
 }
 
-var endpointsMap map[string]Endpoint
+var endpointsMap map[EndpointID]Endpoint
 
 func addEndpoint(n int) {
-	e := Endpoint{ID: strconv.Itoa(n)}
-	endpointsMap[e.ID] = e
+	id := EndpointID(strconv.Itoa(n))
+	e := Endpoint{ID: id}
+	endpointsMap[id] = e
 }
 
 func removeEndpoint(n int) {
-	delete(endpointsMap, strconv.Itoa(n))
+	id := EndpointID(strconv.Itoa(n))
+	delete(endpointsMap, id)
+}
+
+func updateEndpoint(n int, target string) {
+	id := EndpointID(strconv.Itoa(n))
+	e := Endpoint{
+		ID:     id,
+		Target: target,
+	}
+	endpointsMap[id] = e
 }
 
 func listEndpoints() []Endpoint {

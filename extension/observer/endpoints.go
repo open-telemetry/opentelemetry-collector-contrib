@@ -16,10 +16,12 @@ package observer
 
 import "fmt"
 
+type EndpointID string
+
 // Endpoint is a service that can be contacted remotely.
 type Endpoint struct {
 	// ID uniquely identifies this endpoint.
-	ID string
+	ID EndpointID
 	// Target is an IP address or hostname of the endpoint.
 	Target string
 	// Details contains additional context about the endpoint such as a Pod or Port.
@@ -75,8 +77,9 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 			"name":     o.Name,
 			"port":     o.Port,
 			"pod": map[string]interface{}{
-				"name":   o.Pod.Name,
-				"labels": o.Pod.Labels,
+				"name":        o.Pod.Name,
+				"labels":      o.Pod.Labels,
+				"annotations": o.Pod.Annotations,
 			},
 			"protocol": o.Protocol,
 		}, nil

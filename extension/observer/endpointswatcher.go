@@ -15,6 +15,7 @@
 package observer
 
 import (
+	"reflect"
 	"time"
 )
 
@@ -26,25 +27,25 @@ import (
 type EndpointsWatcher struct {
 	ListEndpoints     func() []Endpoint
 	RefreshInterval   time.Duration
-	existingEndpoints map[string]Endpoint
+	existingEndpoints map[EndpointID]Endpoint
 	stop              chan struct{}
 }
 
 // ListAndWatch runs ListEndpoints on a regular interval and keeps the list.
 func (ew *EndpointsWatcher) ListAndWatch(listener Notify) {
-	ew.existingEndpoints = make(map[string]Endpoint)
+	ew.existingEndpoints = map[EndpointID]Endpoint{}
 	ew.stop = make(chan struct{})
-
-	ticker := time.NewTicker(ew.RefreshInterval)
 
 	// Do the initial listing immediately so that services can be monitored ASAP.
 	ew.refreshEndpoints(listener)
 
 	go func() {
+		ticker := time.NewTicker(ew.RefreshInterval)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ew.stop:
-				ticker.Stop()
 				return
 			case <-ticker.C:
 				ew.refreshEndpoints(listener)
@@ -59,18 +60,24 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 	latestEndpoints := ew.ListEndpoints()
 
 	// Create map from ID to endpoint for lookup.
-	latestEndpointsMap := make(map[string]Endpoint, len(latestEndpoints))
+	latestEndpointsMap := make(map[EndpointID]bool, len(latestEndpoints))
 	for _, e := range latestEndpoints {
-		latestEndpointsMap[e.ID] = e
+		latestEndpointsMap[e.ID] = true
 	}
 
-	var removedEndpoints, addedEndpoints []Endpoint
+	var removedEndpoints, addedEndpoints, updatedEndpoints []Endpoint
 	// Iterate over the latest endpoints obtained. An endpoint needs
 	// to be added in case it is not already available in existingEndpoints.
 	for _, e := range latestEndpoints {
-		if _, ok := ew.existingEndpoints[e.ID]; !ok {
+		if existingEndpoint, ok := ew.existingEndpoints[e.ID]; !ok {
 			ew.existingEndpoints[e.ID] = e
 			addedEndpoints = append(addedEndpoints, e)
+		} else {
+			// Collect updated endpoints.
+			if !reflect.DeepEqual(existingEndpoint, e) {
+				ew.existingEndpoints[e.ID] = e
+				updatedEndpoints = append(updatedEndpoints, e)
+			}
 		}
 	}
 
@@ -89,6 +96,10 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 
 	if len(addedEndpoints) > 0 {
 		listener.OnAdd(addedEndpoints)
+	}
+
+	if len(updatedEndpoints) > 0 {
+		listener.OnChange(updatedEndpoints)
 	}
 }
 

@@ -29,7 +29,7 @@ func TestEndpointToEnv(t *testing.T) {
 		{
 			name: "Pod",
 			endpoint: Endpoint{
-				ID:     "pod_id",
+				ID:     EndpointID("pod_id"),
 				Target: "192.68.73.2",
 				Details: Pod{
 					Name: "pod_name",
@@ -60,7 +60,7 @@ func TestEndpointToEnv(t *testing.T) {
 		{
 			name: "K8s port",
 			endpoint: Endpoint{
-				ID:     "port_id",
+				ID:     EndpointID("port_id"),
 				Target: "192.68.73.2",
 				Details: Port{
 					Name: "port_name",
@@ -90,6 +90,9 @@ func TestEndpointToEnv(t *testing.T) {
 					"labels": map[string]string{
 						"label_key": "label_val",
 					},
+					"annotations": map[string]string{
+						"annotation_1": "value_1",
+					},
 				},
 				"protocol": ProtocolTCP,
 			},
@@ -98,7 +101,7 @@ func TestEndpointToEnv(t *testing.T) {
 		{
 			name: "Unsupported endpoint",
 			endpoint: Endpoint{
-				ID:      "port_id",
+				ID:      EndpointID("port_id"),
 				Target:  "127.0.0.1:2379",
 				Details: map[string]interface{}{},
 			},
