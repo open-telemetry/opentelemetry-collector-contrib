@@ -39,7 +39,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				Transforms: test.transforms,
 			}
 
-			mtp := newMetricsTransformProcessor(next, cfg)
+			mtp := newMetricsTransformProcessor(next, cfg, nil)
 			assert.NotNil(t, mtp)
 
 			caps := mtp.GetCapabilities()
@@ -106,7 +106,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			Transforms: test.transforms,
 		}
 
-		mtp := newMetricsTransformProcessor(next, cfg)
+		mtp := newMetricsTransformProcessor(next, cfg, nil)
 		assert.NotNil(b, mtp)
 
 		md := constructTestInputMetricsData(test)

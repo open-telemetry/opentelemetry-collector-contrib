@@ -117,11 +117,8 @@ var (
 						{
 							Action: UpdateLabel,
 							Label:  "label1",
-							ValueActions: []ValueAction{
-								{
-									Value:    "label1-value1",
-									NewValue: "new/label1-value1",
-								},
+							ValueActionsMapping: map[string]string{
+								"label1-value1": "new/label1-value1",
 							},
 						},
 					},
@@ -147,7 +144,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Sum,
 						},
 					},
@@ -175,7 +172,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Average,
 						},
 					},
@@ -203,7 +200,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Max,
 						},
 					},
@@ -231,7 +228,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Min,
 						},
 					},
@@ -259,7 +256,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Sum,
 						},
 					},
@@ -287,7 +284,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Average,
 						},
 					},
@@ -315,7 +312,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Max,
 						},
 					},
@@ -343,7 +340,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Min,
 						},
 					},
@@ -370,11 +367,11 @@ var (
 					Action:     Update,
 					Operations: []Operation{
 						{
-							Action:           AggregateLabelValues,
-							Label:            "label2",
-							AggregatedValues: []string{"label2-value1", "label2-value2"},
-							NewValue:         "new/label2-value",
-							AggregationType:  Sum,
+							Action:              AggregateLabelValues,
+							LabelSetMap:         map[string]bool{"label2": true},
+							AggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
+							NewValue:            "new/label2-value",
+							AggregationType:     Sum,
 						},
 					},
 				},
@@ -402,7 +399,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Sum,
 						},
 					},
@@ -498,14 +495,9 @@ var (
 					NewName:    "new/metric1",
 					Operations: []Operation{
 						{
-							Action: UpdateLabel,
-							Label:  "label1",
-							ValueActions: []ValueAction{
-								{
-									Value:    "label1-value1",
-									NewValue: "new/label1-value1",
-								},
-							},
+							Action:              UpdateLabel,
+							Label:               "label1",
+							ValueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
 						},
 					},
 				},
@@ -534,7 +526,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Sum,
 						},
 					},
@@ -565,11 +557,11 @@ var (
 					Action:     Insert,
 					Operations: []Operation{
 						{
-							Action:           AggregateLabelValues,
-							Label:            "label2",
-							AggregatedValues: []string{"label2-value1", "label2-value2"},
-							NewValue:         "new/label2-value",
-							AggregationType:  Sum,
+							Action:              AggregateLabelValues,
+							LabelSetMap:         map[string]bool{"label2": true},
+							AggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
+							NewValue:            "new/label2-value",
+							AggregationType:     Sum,
 						},
 					},
 				},
@@ -600,7 +592,7 @@ var (
 					Operations: []Operation{
 						{
 							Action:          AggregateLabels,
-							LabelSet:        []string{"label1"},
+							LabelSetMap:     map[string]bool{"label1": true},
 							AggregationType: Sum,
 						},
 					},

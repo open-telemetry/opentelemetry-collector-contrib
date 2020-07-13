@@ -17,10 +17,20 @@ package metricstransformprocessor
 import (
 	"fmt"
 	"math"
+	"math/rand"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
+
+// timeseriesGroupByLabelValues is a data structure for grouping timeseries that will be aggregated
+type timeseriesGroupByLabelValues struct {
+	// key is a composite of the label values as a single string
+	// keyToTimeseriesMap groups timeseries by the label values
+	keyToTimeseriesMap map[string][]*metricspb.TimeSeries
+	// keyToLabelValuesMap maps the keys to the actual label values objects
+	keyToLabelValuesMap map[string][]*metricspb.LabelValue
+}
 
 // update updates the metric content based on operations indicated in transform.
 func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform Transform) {
@@ -50,7 +60,7 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op
 			label.Key = op.NewLabel
 		}
 		// label value update
-		labelValuesMapping := mtp.createLabelValueMapping(op.ValueActions)
+		labelValuesMapping := op.ValueActionsMapping
 		for _, timeseries := range metric.Timeseries {
 			newValue, ok := labelValuesMapping[timeseries.LabelValues[idx].Value]
 			if ok {
@@ -62,46 +72,20 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op
 
 // aggregateOp aggregates the data points in metric based on given operation
 func (mtp *metricsTransformProcessor) aggregateOp(metric *metricspb.Metric, op Operation) {
-	// labelSet is a set of labels to select
-	var labelSet map[string]bool
-	if op.Action == AggregateLabels {
-		labelSet = mtp.sliceToSet(op.LabelSet)
-	} else {
-		labelSet = map[string]bool{op.Label: true}
-	}
+	labelSet := op.LabelSetMap
 	// labelIdxs is a slice containing the indices of the selected labels.
 	// This is needed because label values are ordered in the same order as the labels
 	labelIdxs, labels := mtp.getLabelIdxs(metric, labelSet)
 	// key is a composite of the label values as a single string
 	// keyToTimeseriesMap groups timeseries by the label values
 	// keyToLabelValuesMap maps the keys to the actual label values objects
-	keyToTimeseriesMap, keyToLabelValuesMap := mtp.groupTimeseries(metric, labelIdxs, op.NewValue, op.AggregatedValues)
+	timeseriesGroup := mtp.groupTimeseries(metric, labelIdxs, op.NewValue, op.AggregatedValuesSet)
 	// merge groups of timeseries
-	newTimeseries := mtp.aggregateTimeseriesGroups(keyToTimeseriesMap, keyToLabelValuesMap, op.AggregationType, metric.MetricDescriptor.Type)
+	newTimeseries := mtp.aggregateTimeseriesGroups(timeseriesGroup.keyToTimeseriesMap, timeseriesGroup.keyToLabelValuesMap, op.AggregationType, metric.MetricDescriptor.Type)
 	metric.Timeseries = newTimeseries
 	if op.Action == AggregateLabels {
 		metric.MetricDescriptor.LabelKeys = labels
 	}
-}
-
-// createLabelValueMapping creates a label value mapping from old value to new value based on valueActions
-// Returns the mapping
-func (mtp *metricsTransformProcessor) createLabelValueMapping(valueActions []ValueAction) map[string]string {
-	mapping := make(map[string]string)
-	for _, valueAction := range valueActions {
-		mapping[valueAction.Value] = valueAction.NewValue
-	}
-	return mapping
-}
-
-// sliceToSet converts slice of strings to set of strings
-// Returns the set of strings
-func (mtp *metricsTransformProcessor) sliceToSet(slice []string) map[string]bool {
-	set := make(map[string]bool, len(slice))
-	for _, label := range slice {
-		set[label] = true
-	}
-	return set
 }
 
 // getLabelIdxs gets the indices of the labelSet labels' indices in the metric's descriptor's labels field
@@ -122,11 +106,9 @@ func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, lab
 // groupTimeseries groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs OR on the entire label values after replacing the aggregatedValues by newValue.
 // Depending on if newValue is set, the approach to group timeseries is different.
 // Returns a map from keys to groups of timeseries and a map from keys to the corresponding label values
-func (mtp *metricsTransformProcessor) groupTimeseries(metric *metricspb.Metric, labelIdxs []int, newValue string, aggregatedValues []string) (map[string][]*metricspb.TimeSeries, map[string][]*metricspb.LabelValue) {
+func (mtp *metricsTransformProcessor) groupTimeseries(metric *metricspb.Metric, labelIdxs []int, newValue string, aggregatedValuesSet map[string]bool) timeseriesGroupByLabelValues {
 	// key is a composite of the label values as a single string
-	// keyToTimeseriesMap groups timeseries by the label values
 	keyToTimeseriesMap := make(map[string][]*metricspb.TimeSeries)
-	// keyToLabelValuesMap maps the keys to the actual label values objects
 	keyToLabelValuesMap := make(map[string][]*metricspb.LabelValue)
 	for _, timeseries := range metric.Timeseries {
 		var composedValues string
@@ -134,7 +116,7 @@ func (mtp *metricsTransformProcessor) groupTimeseries(metric *metricspb.Metric, 
 		if newValue == "" {
 			composedValues, newLabelValues = mtp.composeKeyWithSelectedLabels(labelIdxs, timeseries)
 		} else {
-			composedValues, newLabelValues = mtp.composeKeyWithNewValue(labelIdxs[0], timeseries, newValue, aggregatedValues)
+			composedValues, newLabelValues = mtp.composeKeyWithNewValue(labelIdxs[0], timeseries, newValue, aggregatedValuesSet)
 		}
 		// group the timeseries together if their values match
 		timeseriesGroup, ok := keyToTimeseriesMap[composedValues]
@@ -145,7 +127,11 @@ func (mtp *metricsTransformProcessor) groupTimeseries(metric *metricspb.Metric, 
 			keyToLabelValuesMap[composedValues] = newLabelValues
 		}
 	}
-	return keyToTimeseriesMap, keyToLabelValuesMap
+	timeseriesGroup := timeseriesGroupByLabelValues{
+		keyToTimeseriesMap:  keyToTimeseriesMap,
+		keyToLabelValuesMap: keyToLabelValuesMap,
+	}
+	return timeseriesGroup
 }
 
 // composeKeyWithSelectedLabels composes the key for the timeseries based on the selected labels' values indicated by labelIdxs
@@ -163,13 +149,12 @@ func (mtp *metricsTransformProcessor) composeKeyWithSelectedLabels(labelIdxs []i
 
 // composeKeyWithNewValue composes the key for the timeseries with the aggregatedValues replaced by the newValue
 // Returns the key and a slice of the actual values used in this key
-func (mtp *metricsTransformProcessor) composeKeyWithNewValue(labelIdx int, timeseries *metricspb.TimeSeries, newValue string, aggregatedValues []string) (string, []*metricspb.LabelValue) {
-	aggregatredValuesSet := mtp.sliceToSet(aggregatedValues)
+func (mtp *metricsTransformProcessor) composeKeyWithNewValue(labelIdx int, timeseries *metricspb.TimeSeries, newValue string, aggregatedValuesSet map[string]bool) (string, []*metricspb.LabelValue) {
 	var key string
 	// newLabelValues are the label values after aggregation with the new value name
 	newLabelValues := make([]*metricspb.LabelValue, len(timeseries.LabelValues))
 	for i, labelValue := range timeseries.LabelValues {
-		if _, ok := aggregatredValuesSet[labelValue.Value]; labelIdx == i && ok {
+		if _, ok := aggregatedValuesSet[labelValue.Value]; labelIdx == i && ok {
 			key += fmt.Sprintf("%v-", newValue)
 			newLabelValues[i] = &metricspb.LabelValue{
 				Value:    newValue,
@@ -248,6 +233,7 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[stri
 			})
 		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 			if aggrType != Sum {
+				mtp.logger.Warn("Distribution data can only be aggregated by taking the sum")
 				break
 			}
 			distPoints := mtp.computeDistribution(points)
@@ -357,9 +343,14 @@ func (mtp *metricsTransformProcessor) boundsToString(bounds []float64) string {
 func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) *metricspb.DistributionValue {
 	buckets := make([]*metricspb.DistributionValue_Bucket, len(val1.Buckets))
 	for i := range buckets {
+		r := rand.Intn(2)
+		pickedExemplar := val1.Buckets[i].Exemplar
+		if r == 1 {
+			pickedExemplar = val2.Buckets[i].Exemplar
+		}
 		buckets[i] = &metricspb.DistributionValue_Bucket{
 			Count:    val1.Buckets[i].Count + val2.Buckets[i].Count,
-			Exemplar: val1.Buckets[i].Exemplar,
+			Exemplar: pickedExemplar,
 		}
 	}
 	mean1 := val1.Sum / float64(val1.Count)
