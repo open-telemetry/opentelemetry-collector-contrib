@@ -403,7 +403,8 @@ jobs:
           path: test-results
 
   build-package:
-    executor: golang
+    machine:
+      image: ubuntu-1604:202007-01
     parameters:
       package_type:
         type: enum
@@ -416,7 +417,7 @@ jobs:
           command: |
             sudo apt-get update
             sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
-            sudo gem install --no-document fpm -v 1.11.0
+            gem install --no-document fpm -v 1.11.0
       - run:
           name: Build << parameters.package_type >> amd64 package
           command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./bin/"
@@ -427,11 +428,10 @@ jobs:
           name: Test << parameters.package_type >> package installation
           command: |
             if [[ "<< parameters.package_type >>" = "deb" ]]; then
-                sudo dpkg -i bin/otel-contrib-collector*amd64.deb
+                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
             else
-                sudo rpm -ivh bin/otel-contrib-collector*x86_64.rpm
+                ./internal/buildscripts/packaging/fpm/test.sh bin/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
             fi
-            test -f /usr/bin/otelcontribcol || (echo "/usr/bin/otelcontribcol not found!" && exit 1)
       - persist_to_workspace:
           root: ~/
-          paths: project/bin
+          paths: project/bin/*.<< parameters.package_type >>
