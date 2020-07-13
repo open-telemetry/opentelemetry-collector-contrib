@@ -192,6 +192,6 @@ func (se *stackdriverExporter) newPushTraceData(ctx context.Context, td pdata.Tr
 		se.texporter.ExportSpan(ctx, span)
 		goodSpans++
 	}
-
+	fmt.Println("Good spans:", goodSpans)
 	return numSpans - goodSpans, componenterror.CombineErrors(errs)
 }

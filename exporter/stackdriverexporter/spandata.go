@@ -96,6 +96,9 @@ func pdataSpanToOTSpanData(
 	resource pdata.Resource, 
 	il pdata.InstrumentationLibrary,
 ) (*export.SpanData, error) {
+	if span.IsNil() {
+		return nil, errNilSpan
+	}
 	sc := apitrace.SpanContext{}
 	copy(sc.TraceID[:], span.TraceID())
 	copy(sc.SpanID[:], span.SpanID())
@@ -104,10 +107,7 @@ func pdataSpanToOTSpanData(
 	startTime := time.Unix(0, int64(span.StartTime()))
 	endTime := time.Unix(0, int64(span.EndTime()))
 	status := span.Status()
-	instrumentationLibrary := instrumentation.Library{
-		Name: il.Name(),
-		Version: il.Version(),
-	}
+	
 	sd := &export.SpanData{
 		SpanContext:     sc,
 		ParentSpanID:    parentSpanID,
@@ -126,7 +126,12 @@ func pdataSpanToOTSpanData(
 		DroppedAttributeCount: int(span.DroppedAttributesCount()),
 		DroppedMessageEventCount: int(span.DroppedEventsCount()),
 		DroppedLinkCount: int(span.DroppedLinksCount()),
-		InstrumentationLibrary: instrumentationLibrary,
+	}
+	if !il.IsNil() {
+		sd.InstrumentationLibrary = instrumentation.Library{
+			Name: il.Name(),
+			Version: il.Version(),
+		}
 	}
 
 	return sd, nil
