@@ -32,9 +32,9 @@ func podResource(s stats.PodStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/pod
 		Labels: map[string]string{
-			"k8s.pod.uid":       s.PodRef.UID,
-			"k8s.pod.name":      s.PodRef.Name,
-			"k8s.pod.namespace": s.PodRef.Namespace,
+			"k8s.pod.uid":        s.PodRef.UID,
+			"k8s.pod.name":       s.PodRef.Name,
+			"k8s.namespace.name": s.PodRef.Namespace,
 		},
 	}
 }
@@ -45,7 +45,7 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats) *resour
 		labels[k] = v
 	}
 	// augment the container resource with pod labels
-	labels["k8s.container.name"] = s.Name
+	labels["container.name"] = s.Name
 	return &resourcepb.Resource{
 		Type:   "k8s", // k8s/pod/container
 		Labels: labels,
