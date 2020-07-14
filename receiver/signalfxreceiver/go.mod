@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
-	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49
+	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.3
 	go.opentelemetry.io/collector v0.5.1-0.20200712023338-3711c01b0c35
