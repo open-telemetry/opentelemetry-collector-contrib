@@ -31,6 +31,9 @@ const (
 
 	// NewLabelFieldName is the mapstructure field name for NewLabel field
 	NewLabelFieldName = "new_label"
+
+	// NewValueFieldName is the mapstructure field name for NewValue field
+	NewValueFieldName = "new_value"
 )
 
 // Config defines configuration for Resource processor.
@@ -80,7 +83,8 @@ type Operation struct {
 	// AggregatedValues is a list of label values to aggregate away.
 	AggregatedValues []string `mapstructure:"aggregated_values"`
 
-	// NewValue indicates what is the value called when the AggregatedValues are aggregated into one.
+	// NewValue indicates what is the value called when the AggregatedValues
+	// are aggregated into one or a new label is added to an existing metric.
 	NewValue string `mapstructure:"new_value"`
 
 	// ValueActions is a list of renaming actions for label values.
@@ -114,6 +118,9 @@ const (
 
 	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
 	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
+
+	// AddLabel adds a new label to an existing metric.
+	AddLabel OperationAction = "add_label"
 
 	// UpdateLabel applies name changes to label and/or label values.
 	UpdateLabel OperationAction = "update_label"

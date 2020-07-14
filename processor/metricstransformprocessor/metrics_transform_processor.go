@@ -110,8 +110,18 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 			mtp.updateLabelOp(metric, op)
 		} else if op.Action == ToggleScalarDataType {
 			mtp.ToggleScalarDataType(metric)
+		} else if op.Action == AddLabel {
+			mtp.addLabelOp(metric, op)
 		}
 	}
+}
+
+func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op Operation) {
+	var lb = metricspb.LabelKey{
+		Key:         op.NewLabel,
+		Description: op.NewValue,
+	}
+	metric.MetricDescriptor.LabelKeys = append(metric.MetricDescriptor.LabelKeys, &lb)
 }
 
 func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
