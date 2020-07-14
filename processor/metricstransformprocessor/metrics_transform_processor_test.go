@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -74,6 +75,65 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.NoError(t, mtp.Shutdown(ctx))
 		})
 	}
+}
+
+func TestComputeDistVals(t *testing.T) {
+	t.Run("distribution value calculation test", func(t *testing.T) {
+		// next stores the results of the aggregation metric processor.
+		next := &etest.SinkMetricsExporter{}
+		cfg := &Config{
+			ProcessorSettings: configmodels.ProcessorSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+		}
+
+		mtp := newMetricsTransformProcessor(next, cfg, nil)
+		assert.NotNil(t, mtp)
+
+		caps := mtp.GetCapabilities()
+		assert.Equal(t, true, caps.MutatesConsumedData)
+		ctx := context.Background()
+		assert.NoError(t, mtp.Start(ctx, nil))
+
+		pointGroup1 := []float64{1, 2, 3, 7, 4}
+		pointGroup2 := []float64{1, 2, 3, 3, 1}
+		sum1, sumOfSquaredDeviation1 := analyzeSlice(pointGroup1)
+		sum2, sumOfSquaredDeviation2 := analyzeSlice(pointGroup2)
+		sum, sumOfSquaredDeviation := analyzeSlice(append(pointGroup1, pointGroup2...))
+
+		val1 := &metricspb.DistributionValue{
+			Count:                 int64(len(pointGroup1)),
+			Sum:                   sum1,
+			SumOfSquaredDeviation: sumOfSquaredDeviation1,
+			BucketOptions: &metricspb.DistributionValue_BucketOptions{
+				Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+					Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+						Bounds: []float64{},
+					},
+				},
+			},
+		}
+
+		val2 := &metricspb.DistributionValue{
+			Count:                 int64(len(pointGroup2)),
+			Sum:                   sum2,
+			SumOfSquaredDeviation: sumOfSquaredDeviation2,
+			BucketOptions: &metricspb.DistributionValue_BucketOptions{
+				Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+					Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+						Bounds: []float64{},
+					},
+				},
+			},
+		}
+
+		outVal := mtp.computeDistVals(val1, val2)
+
+		assert.Equal(t, int64(len(pointGroup1)+len(pointGroup2)), outVal.Count)
+		assert.Equal(t, sum, outVal.Sum)
+		assert.Equal(t, sumOfSquaredDeviation, outVal.SumOfSquaredDeviation)
+	})
 }
 
 func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {

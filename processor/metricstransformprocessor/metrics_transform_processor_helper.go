@@ -76,9 +76,6 @@ func (mtp *metricsTransformProcessor) aggregateOp(metric *metricspb.Metric, op O
 	// labelIdxs is a slice containing the indices of the selected labels.
 	// This is needed because label values are ordered in the same order as the labels
 	labelIdxs, labels := mtp.getLabelIdxs(metric, labelSet)
-	// key is a composite of the label values as a single string
-	// keyToTimeseriesMap groups timeseries by the label values
-	// keyToLabelValuesMap maps the keys to the actual label values objects
 	timeseriesGroup := mtp.groupTimeseries(metric, labelIdxs, op.NewValue, op.AggregatedValuesSet)
 	// merge groups of timeseries
 	newTimeseries := mtp.aggregateTimeseriesGroups(timeseriesGroup.keyToTimeseriesMap, timeseriesGroup.keyToLabelValuesMap, op.AggregationType, metric.MetricDescriptor.Type)

@@ -15,6 +15,8 @@
 package metricstransformprocessor
 
 import (
+	"math"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
@@ -618,3 +620,17 @@ var (
 		},
 	}
 )
+
+// analyzeSlice returns the sum and the sumOfSquaredDeviation for this slice
+func analyzeSlice(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
+	sum = 0
+	for _, e := range slice {
+		sum += e
+	}
+	ave := sum / float64(len(slice))
+	sumOfSquaredDeviation = 0
+	for _, e := range slice {
+		sumOfSquaredDeviation += math.Pow((e - ave), 2)
+	}
+	return
+}
