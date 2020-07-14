@@ -16,9 +16,11 @@
 package stackdriverexporter
 
 import (
+	"context"
 	"errors"
 	"time"
 
+	"cloud.google.com/go/logging"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
@@ -26,10 +28,12 @@ import (
 	"go.opencensus.io/trace"
 	"go.opencensus.io/trace/tracestate"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	// "go.opentelemetry.io/otel/api/kv"
+	"go.opentelemetry.io/otel/api/kv"
+	"go.opentelemetry.io/otel/api/kv/value"
 	apitrace "go.opentelemetry.io/otel/api/trace"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/codes"
 )
 
@@ -107,6 +111,9 @@ func pdataSpanToOTSpanData(
 	startTime := time.Unix(0, int64(span.StartTime()))
 	endTime := time.Unix(0, int64(span.EndTime()))
 	status := span.Status()
+	r := sdkresource.New(
+		pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...,
+	)
 	
 	sd := &export.SpanData{
 		SpanContext:     sc,
@@ -115,17 +122,16 @@ func pdataSpanToOTSpanData(
 		StartTime:       startTime,
 		EndTime:         endTime,
 		Name:            span.Name(),
-		/* // TODO
-		Attributes:      protoAttributesToOCAttributes(span.Attributes, resource),
-		Links:           protoLinksToOCLinks(span.Links),
-		MessageEvents:   protoTimeEventsToOCMessageEvents(span.TimeEvents),
-		*/
-		HasRemoteParent: false, // no field for this?
+		Attributes:      pdataAttributesToOTAttributes(span.Attributes(), resource),
+		Links:           pdataLinksToOTLinks(span.Links()),
+		MessageEvents:   pdataEventsToOTMessageEvents(span.Events()),
+		HasRemoteParent: false, // no field for this in pdata Span
 		StatusCode:      pdataStatusCodeToGRPCCode(status.Code()),
 		StatusMessage:   status.Message(),
 		DroppedAttributeCount: int(span.DroppedAttributesCount()),
 		DroppedMessageEventCount: int(span.DroppedEventsCount()),
 		DroppedLinkCount: int(span.DroppedLinksCount()),
+		Resource: r,
 	}
 	if !il.IsNil() {
 		sd.InstrumentationLibrary = instrumentation.Library{
@@ -136,11 +142,6 @@ func pdataSpanToOTSpanData(
 
 	return sd, nil
 }
-
-// func commonAttributesToOTAttributes(ckv *[]common.KeyValue, r *otresourcepb.Resource) []kv.KeyValue {
-// 	// TODO
-// 	return nil
-// }
 
 func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
 	switch k {
@@ -163,6 +164,83 @@ func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
 
 func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
 	return codes.Code(c)
+}
+
+func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []kv.KeyValue {
+	ctx := context.Background()
+	client, _ := logging.NewClient(ctx, "my-project-id")
+	logName := "spans"
+	logger := client.Logger(logName)
+
+	otAttrs := make([]kv.KeyValue, 0, attrs.Len())
+	//logger.Log(logging.Entry{Payload: map[string]interface{} {"num_pdata_attrs": attrs.Len()}})
+	appendAttrs := func(m pdata.AttributeMap) {
+		m.ForEach(func(k string, v pdata.AttributeValue) {
+			var newVal value.Value
+			logger.Log(logging.Entry{Payload: map[string]interface{} {"key": k}})
+			logger.Log(logging.Entry{Payload: map[string]interface{} {
+				// always giving "NULL"??
+				"val_type": pdata.AttributeValueType(v.Type()).String(),
+			}})
+			switch v.Type() {
+			case pdata.AttributeValueSTRING:
+				newVal = value.String(v.StringVal())
+			case pdata.AttributeValueBOOL:
+				newVal = value.Bool(v.BoolVal())
+			case pdata.AttributeValueINT:
+				newVal = value.Int64(v.IntVal())
+			// pdata Double, Array, and Map cannot be converted to value.Value
+			default:
+				return
+			}
+			otAttrs = append(otAttrs, kv.KeyValue{
+				Key: kv.Key(k),
+				Value: newVal,
+			})
+			logger.Log(logging.Entry{Payload: map[string]interface{} {"ot_attrs": otAttrs}})
+		})
+	}
+	if !resource.IsNil() {
+		appendAttrs(resource.Attributes())
+	}
+	appendAttrs(attrs)
+	return otAttrs
+}
+
+func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
+	size := links.Len()
+	otLinks := make([]apitrace.Link, 0, size)
+	for i := 0; i < size; i++ {
+		link := links.At(i)
+		if link.IsNil() {
+			continue
+		}
+		sc := apitrace.SpanContext{}
+		copy(sc.TraceID[:], link.TraceID())
+		copy(sc.SpanID[:], link.SpanID())
+		otLinks = append(otLinks, apitrace.Link{
+			SpanContext: sc,
+			Attributes: pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),
+		})
+	}
+	return otLinks
+}
+
+func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []export.Event {
+	size := events.Len()
+	otEvents := make([]export.Event, 0, size)
+	for i := 0; i < size; i++ {
+		event := events.At(i)
+		if event.IsNil() {
+			continue
+		}
+		otEvents = append(otEvents, export.Event{
+			Name: event.Name(),
+			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),
+			Time: time.Unix(0, int64(event.Timestamp())),
+		})
+	}
+	return otEvents
 }
 
 func derefTruncatableString(ts *tracepb.TruncatableString) string {
