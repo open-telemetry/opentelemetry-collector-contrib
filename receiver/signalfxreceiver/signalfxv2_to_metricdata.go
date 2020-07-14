@@ -21,7 +21,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
@@ -100,7 +100,7 @@ func convertType(
 	// Combine metric type with the actual data point type
 	sfxMetricType := sfxDataPoint.GetMetricType()
 	sfxDatum := sfxDataPoint.Value
-	if sfxDatum == nil {
+	if sfxDatum.IntValue == nil && sfxDatum.DoubleValue == nil && sfxDatum.StrValue == nil {
 		return metricspb.MetricDescriptor_UNSPECIFIED, errSFxNilDatum
 	}
 
@@ -138,8 +138,8 @@ func buildPoint(
 	sfxDataPoint *sfxpb.DataPoint,
 	expectedMetricType metricspb.MetricDescriptor_Type,
 ) (*metricspb.Point, error) {
-	if sfxDataPoint.Value == nil {
-		return nil, errSFxNilDatum
+	if sfxDataPoint.Value.IntValue == nil && sfxDataPoint.Value.DoubleValue == nil && sfxDataPoint.Value.StrValue == nil {
+		return nil, errSFxNoDatumValue
 	}
 
 	p := &metricspb.Point{
@@ -172,9 +172,6 @@ func buildPoint(
 			return nil, errSFxStringDatumNotNumber
 		}
 		p.Value = &metricspb.Point_DoubleValue{DoubleValue: dbl}
-
-	default:
-		return nil, errSFxNoDatumValue
 	}
 
 	return p, nil
@@ -221,14 +218,12 @@ func buildLabelKeysAndValues(
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		lk := &metricspb.LabelKey{Key: *dim.Key}
+		lk := &metricspb.LabelKey{Key: dim.Key}
 		keys = append(keys, lk)
 
 		lv := &metricspb.LabelValue{}
-		if dim.Value != nil {
-			lv.Value = *dim.Value
-			lv.HasValue = true
-		}
+		lv.Value = dim.Value
+		lv.HasValue = true
 		values = append(values, lv)
 	}
 	return keys, values

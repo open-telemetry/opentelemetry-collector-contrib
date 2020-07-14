@@ -21,7 +21,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
@@ -33,9 +33,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 
 	buildDefaulstSFxDataPt := func() *sfxpb.DataPoint {
 		return &sfxpb.DataPoint{
-			Metric:    strPtr("single"),
-			Timestamp: &msec,
-			Value: &sfxpb.Datum{
+			Metric:    "single",
+			Timestamp: msec,
+			Value: sfxpb.Datum{
 				IntValue: int64Ptr(13),
 			},
 			MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),
@@ -98,7 +98,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
 				pt.MetricType = sfxTypePtr(sfxpb.MetricType_GAUGE)
-				pt.Value = &sfxpb.Datum{
+				pt.Value = sfxpb.Datum{
 					DoubleValue: float64Ptr(13.13),
 				}
 				return []*sfxpb.DataPoint{pt}
@@ -128,7 +128,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
 				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
-				pt.Value = &sfxpb.Datum{
+				pt.Value = sfxpb.Datum{
 					DoubleValue: float64Ptr(13.13),
 				}
 				return []*sfxpb.DataPoint{pt}
@@ -144,7 +144,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			name: "nil_timestamp",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.Timestamp = nil
+				pt.Timestamp = 0
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() *consumerdata.MetricsData {
@@ -154,16 +154,16 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			}(),
 		},
 		{
-			name: "nil_dimension_value",
+			name: "empty_dimension_value",
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				pt := buildDefaulstSFxDataPt()
-				pt.Dimensions[0].Value = nil
+				pt.Dimensions[0].Value = ""
 				return []*sfxpb.DataPoint{pt}
 			}(),
 			wantMetricsData: func() *consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].Timeseries[0].LabelValues[0].Value = ""
-				md.Metrics[0].Timeseries[0].LabelValues[0].HasValue = false
+				md.Metrics[0].Timeseries[0].LabelValues[0].HasValue = true
 				return md
 			}(),
 		},
@@ -191,7 +191,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 			sfxDataPoints: func() []*sfxpb.DataPoint {
 				// nil Datum
 				pt0 := buildDefaulstSFxDataPt()
-				pt0.Value = nil
+				pt0.Value = sfxpb.Datum{}
 
 				// nil expected Datum value
 				pt1 := buildDefaulstSFxDataPt()
@@ -234,17 +234,19 @@ func Test_buildPoint_errors(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil_datum_value",
+			name: "no_value",
 			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{},
+				sfxDataPoint: &sfxpb.DataPoint{
+					Value: sfxpb.Datum{},
+				},
 			},
-			wantErr: errSFxNilDatum,
+			wantErr: errSFxNoDatumValue,
 		},
 		{
 			name: "expect_double_value",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{
+					Value: sfxpb.Datum{
 						IntValue: int64Ptr(13),
 					},
 				},
@@ -256,7 +258,7 @@ func Test_buildPoint_errors(t *testing.T) {
 			name: "expect_int_value",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{
+					Value: sfxpb.Datum{
 						DoubleValue: float64Ptr(13.13),
 					},
 				},
@@ -265,19 +267,10 @@ func Test_buildPoint_errors(t *testing.T) {
 			wantErr: errSFxUnexpectedFloat64DatumType,
 		},
 		{
-			name: "no_value",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{},
-				},
-			},
-			wantErr: errSFxNoDatumValue,
-		},
-		{
 			name: "unexpect_str_value",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{
+					Value: sfxpb.Datum{
 						StrValue: strPtr("13.13"),
 					},
 				},
@@ -288,7 +281,7 @@ func Test_buildPoint_errors(t *testing.T) {
 			name: "dbl_as_str",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{StrValue: strPtr("13.13")},
+					Value: sfxpb.Datum{StrValue: strPtr("13.13")},
 				},
 				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
 			},
@@ -300,7 +293,7 @@ func Test_buildPoint_errors(t *testing.T) {
 			name: "str_not_dbl",
 			args: args{
 				sfxDataPoint: &sfxpb.DataPoint{
-					Value: &sfxpb.Datum{StrValue: strPtr("not_a_number")},
+					Value: sfxpb.Datum{StrValue: strPtr("not_a_number")},
 				},
 				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
 			},
@@ -342,8 +335,8 @@ func buildNDimensions(n uint) []*sfxpb.Dimension {
 		idx := int(i)
 		suffix := strconv.Itoa(idx)
 		d = append(d, &sfxpb.Dimension{
-			Key:   strPtr("k" + suffix),
-			Value: strPtr("v" + suffix),
+			Key:   "k" + suffix,
+			Value: "v" + suffix,
 		})
 	}
 	return d
