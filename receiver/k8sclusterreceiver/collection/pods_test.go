@@ -73,11 +73,11 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/container/ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[2], "k8s/container/request",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 10000)
+	testutils.AssertMetrics(t, *rm.metrics[2], "k8s/container/cpu/request",
+		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[3], "k8s/container/limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 20000)
+	testutils.AssertMetrics(t, *rm.metrics[3], "k8s/container/cpu/limit",
+		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
 }
 
 func TestPodAndContainerMetadata(t *testing.T) {
