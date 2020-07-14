@@ -1279,6 +1279,8 @@ github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd/go.mod h1:TrYk7fJV
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190222193949-1fb69526e884/go.mod h1:muYA2clvwCdj7nzAJ5vJIXYpJsUumhAl4Uu1wUNpWzA=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49 h1:a6us2VYa4abLd4FG6F3BaGEzuq6WIvloIx3M40ePaJ0=
 github.com/signalfx/com_signalfx_metrics_protobuf v0.0.0-20190530013331-054be550cb49/go.mod h1:muYA2clvwCdj7nzAJ5vJIXYpJsUumhAl4Uu1wUNpWzA=
+github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1 h1:r5mHbdmAj8EFuVvbe/MxiIyhoV4FVWCO0qPTxqNo1rM=
+github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1/go.mod h1:QkslgLDW0N9qRi9qkxcNDaf812gg0kWcf3ZZORE5/FI=
 github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083/go.mod h1:adPDS6s7WaajdFBV9mQ7i0dKfQ8xiDnF9ZNETVPpp7c=
 github.com/signalfx/golib/v3 v3.3.0 h1:vSXsAb73bdrlnjk5rnZ7y3t09Qzu9qfBEbXdcyBHsmE=
 github.com/signalfx/golib/v3 v3.3.0/go.mod h1:GzjWpV0skAXZn7+u9LnkOkiXAx9KKd5XZcd5r+RoF5o=
