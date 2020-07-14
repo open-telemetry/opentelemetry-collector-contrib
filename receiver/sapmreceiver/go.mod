@@ -15,7 +15,7 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.5.1-0.20200714180902-7066029f586b
+	go.opentelemetry.io/collector v0.5.1-0.20200714184030-fd27134ae2fb
 	go.uber.org/zap v1.13.0
 	google.golang.org/appengine v1.6.5 // indirect
 )
