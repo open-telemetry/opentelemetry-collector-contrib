@@ -274,7 +274,7 @@ jobs:
           command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
-          paths: project/bin
+          paths: project/bin/*.msi
 
   publish-stable:
     docker:
