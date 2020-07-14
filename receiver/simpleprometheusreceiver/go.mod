@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20190924101040-52e0504f83ea
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.5.1-0.20200708194928-7d7e0083f30b
+	go.opentelemetry.io/collector v0.5.1-0.20200713215410-08e53d465374
 	go.uber.org/zap v1.14.1
 	k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 )
