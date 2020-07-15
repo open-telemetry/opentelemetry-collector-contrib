@@ -50,7 +50,7 @@ func TestEndToEnd(t *testing.T) {
 		t.Errorf("end_to_end_test.go didn't get error, was expecting one")
 	}
 
-	// Normal test, make sure the process is restarted by reading from the while the test code writes to
+	// Normal test, make sure the process is restarted by reading from a file while the test code writes to it intermittently
 	receiverConfig := config.Receivers["prometheus_exec/test2/secondary"]
 	wrapper = new(zap.NewNop(), receiverConfig.(*Config), nil)
 
@@ -63,7 +63,7 @@ func TestEndToEnd(t *testing.T) {
 
 	go wrapper.manageProcess()
 
-	file, err := os.Open("testdata/hello")
+	file, err := os.Open("testdata/test")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -74,7 +74,7 @@ func TestEndToEnd(t *testing.T) {
 	for scanner.Scan() {
 		line, _ := strconv.ParseInt(scanner.Text(), 10, 64)
 		if timestamp > line {
-			t.Errorf("end_to_end_test.go timestamp in file is smaller than now")
+			t.Errorf("end_to_end_test.go - first timestamp in file is smaller than time.Now()")
 		}
 		timestamp = line
 	}
@@ -84,7 +84,7 @@ func TestEndToEnd(t *testing.T) {
 	for scanner.Scan() {
 		line, _ := strconv.ParseInt(scanner.Text(), 10, 64)
 		if timestamp > line {
-			t.Errorf("end_to_end_test.go timestamp in file is smaller than now")
+			t.Errorf("end_to_end_test.go - second timestamp in file is smaller than time.Now()")
 		}
 	}
 

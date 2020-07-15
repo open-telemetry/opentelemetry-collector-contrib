@@ -133,7 +133,7 @@ var (
 				},
 				CustomName: "main",
 			},
-			wantElapsed: 100 * time.Millisecond,
+			wantElapsed: 5 * time.Millisecond,
 			wantErr:     false,
 		},
 		{

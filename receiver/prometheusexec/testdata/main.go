@@ -26,7 +26,7 @@ const defaultSleepTime = 5 * time.Millisecond
 
 func main() {
 	message := []byte(strconv.FormatInt(time.Now().UnixNano(), 10))
-	err := ioutil.WriteFile("./testdata/hello", message, 0644)
+	err := ioutil.WriteFile("./testdata/test", message, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
