@@ -63,12 +63,6 @@ func (f *Factory) CreateTraceReceiver(ctx context.Context, logger *zap.Logger, c
 }
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
-//
-// TODO: ConsumeMetricsOld will be deprecated and should be replaced with ConsumerMetrics.
-// NOTE: The 2nd argument type of ConsumerMetrics#ConsumeMetrics is pdata.Metrics, which can NOT
-// be handled from out of core repository, so keep using ConsumerMetricsOld here until
-// it'll be accessible from contrib repo.
-// https://pkg.go.dev/go.opentelemetry.io/collector/consumer/pdata?tab=doc#Metrics
 func (f *Factory) CreateMetricsReceiver(ctx context.Context, logger *zap.Logger, cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if runtime.GOOS != "linux" {
 		// TODO: consider the support for other platforms.
