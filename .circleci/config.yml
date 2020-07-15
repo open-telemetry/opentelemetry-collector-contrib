@@ -374,7 +374,12 @@ jobs:
     executor: golang
     steps:
       - restore_workspace
-      - verify_dist_files_exist
+      - verify_dist_files_exist:
+          files: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
