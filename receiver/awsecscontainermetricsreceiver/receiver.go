@@ -32,19 +32,20 @@ var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
-	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumer
-	config       *Config
-	cancel       context.CancelFunc
+	logger             *zap.Logger
+	defaultAttrsPrefix string
+	nextConsumer       consumer.MetricsConsumerOld
+	config             *Config
+	cancel             context.CancelFunc
 }
 
-// newAwsEcsContainerMetricsReceiver creates the aws ecs container metrics receiver with the given parameters.
-func newAwsEcsContainerMetricsReceiver(
+// New creates the aws ecs container metrics receiver with the given parameters.
+func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, errNilNextConsumer
 	}
 
 	r := &awsEcsContainerMetricsReceiver{
@@ -58,6 +59,7 @@ func newAwsEcsContainerMetricsReceiver(
 // Start begins collecting metrics from Amazon ECS task metadata endpoint.
 func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, "http", aecmr.config.Name()))
+
 	go func() {
 		ticker := time.NewTicker(aecmr.config.CollectionInterval)
 		defer ticker.Stop()
@@ -67,6 +69,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 			case <-ticker.C:
 				aecmr.collectDataFromEndpoint(ctx)
 			case <-ctx.Done():
+
 				return
 			}
 		}
