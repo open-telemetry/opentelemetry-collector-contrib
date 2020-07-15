@@ -106,8 +106,8 @@ func TestEndpointsChanged(t *testing.T) {
 	assert.Nil(t, sink.added)
 	assert.Nil(t, sink.removed)
 	assert.ElementsMatch(t,
-		[]string{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
-		[]string{sink.changed[0].ID, sink.changed[1].ID})
+		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
+		[]observer.EndpointID{sink.changed[0].ID, sink.changed[1].ID})
 
 	// Running state changed, one added and one removed.
 	sink = endpointSink{}

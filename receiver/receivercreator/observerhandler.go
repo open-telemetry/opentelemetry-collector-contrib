@@ -66,9 +66,9 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
-		env, err := endpointToEnv(e)
+		env, err := observer.EndpointToEnv(e)
 		if err != nil {
-			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", e.ID), zap.Error(err))
+			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 			continue
 		}
 
@@ -84,7 +84,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				zap.String("name", template.fullName),
 				zap.String("type", string(template.typeStr)),
 				zap.String("endpoint", e.Target),
-				zap.String("endpoint_id", e.ID))
+				zap.String("endpoint_id", string(e.ID)))
 
 			resolvedConfig, err := expandMap(template.config, env)
 			if err != nil {
@@ -129,7 +129,7 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 
 	for _, e := range removed {
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
-			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", e.ID))
+			obs.logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
 
 			if err := obs.runner.shutdown(rcvr); err != nil {
 				obs.logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr))

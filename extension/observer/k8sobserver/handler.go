@@ -45,7 +45,7 @@ func (h *handler) OnAdd(obj interface{}) {
 // include the pod itself as well as an endpoint for each container port that is mapped
 // to a container that is in a running state.
 func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
-	podID := fmt.Sprintf("%s/%s", h.idNamespace, pod.UID)
+	podID := observer.EndpointID(fmt.Sprintf("%s/%s", h.idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
 
 	podDetails := observer.Pod{
@@ -76,8 +76,13 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 		}
 
 		for _, port := range container.Ports {
+			endpointID := observer.EndpointID(
+				fmt.Sprintf(
+					"%s/%s(%d)", podID, port.Name, port.ContainerPort,
+				),
+			)
 			endpoints = append(endpoints, observer.Endpoint{
-				ID:     fmt.Sprintf("%s/%s(%d)", podID, port.Name, port.ContainerPort),
+				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: observer.Port{
 					Pod:      podDetails,
@@ -113,8 +118,8 @@ func (h *handler) OnUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	oldEndpoints := map[string]observer.Endpoint{}
-	newEndpoints := map[string]observer.Endpoint{}
+	oldEndpoints := map[observer.EndpointID]observer.Endpoint{}
+	newEndpoints := map[observer.EndpointID]observer.Endpoint{}
 
 	// Convert pods to endpoints and map by ID for easier lookup.
 	for _, e := range h.convertPodToEndpoints(oldPod) {
