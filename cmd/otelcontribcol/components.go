@@ -38,6 +38,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 )
 
 func components() (config.Factories, error) {
@@ -60,7 +70,19 @@ func components() (config.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := allReceivers()
+	receivers := []component.ReceiverFactoryBase{
+		&collectdreceiver.Factory{},
+		&sapmreceiver.Factory{},
+		&signalfxreceiver.Factory{},
+		&carbonreceiver.Factory{},
+		&wavefrontreceiver.Factory{},
+		&redisreceiver.Factory{},
+		&kubeletstatsreceiver.Factory{},
+		&simpleprometheusreceiver.Factory{},
+		&k8sclusterreceiver.Factory{},
+		&receivercreator.Factory{},
+	}
+	receivers = append(receivers, additionalReceivers()...)
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}

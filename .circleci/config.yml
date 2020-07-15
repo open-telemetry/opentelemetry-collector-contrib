@@ -297,7 +297,7 @@ jobs:
             make do-unit-tests-with-cover
       - run:
           name: Upload unit test coverage of CUDA receiver
-          command: bash <(curl -s https://codecov.io/bash) -F unit
+          command: bash <(curl -s https://codecov.io/bash) -F unit_cuda
 
   publish-stable:
     docker:

@@ -16,47 +16,23 @@ package cudareceiver
 
 import (
 	"context"
-	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.uber.org/zap"
 )
 
 // Receiver is the type used to handle metrics from CUDA.
 type Receiver struct {
-	mu sync.Mutex
-
-	c *CUDAMetricsCollector
-
-	stopOnce  sync.Once
-	startOnce sync.Once
-
+	c      *CUDAMetricsCollector
 	logger *zap.Logger
 }
 
 // Start scrapes VM metrics based on the OS platform.
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var err = componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		r.c.StartCollection()
-		err = nil
-	})
-	return err
+	return r.c.StartCollection()
 }
 
 // Shutdown stops and cancels the underlying VM metrics scrapers.
 func (r *Receiver) Shutdown(context.Context) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	var err = componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		r.c.StopCollection()
-		err = nil
-	})
-	return err
+	return r.c.StopCollection()
 }

@@ -125,9 +125,6 @@ docker-otelcontribcol:
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
 
-otelcontribcol-gpu:
-	GO111MODULE=on CGO_ENABLED=1 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) -tags gpu ./cmd/otelcontribcol
-
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
 
@@ -148,12 +145,9 @@ otelcontribcol-windows_amd64:
 	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcontribcol
 
 # CUDA exporter doesn't expect any other platforms than Linux on amd64
-.PHONY: otelcontribcol-gpu-all-sys
-otelcontribcol-gpu-all-sys: otelcontribcol-all-sys otelcontribcol-gpu-linux_amd64
-
 .PHONY: otelcontribcol-gpu-linux_amd64
 otelcontribcol-gpu-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) otelcontribcol-gpu
+	GO111MODULE=on CGO_ENABLED=1 go build -o ./bin/otelcontribcol-gpu_linux_amd64 $(BUILD_INFO) -tags gpu ./cmd/otelcontribcol
 
 .PHONY: update-dep
 update-dep:
