@@ -23,6 +23,32 @@ executors:
       image: ubuntu-1604:201903-01
 
 commands:
+  verify_dist_files_exist:
+    parameters:
+      files:
+        type: string
+        default: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
+            dist/otel-collector-*.arm64.rpm
+            dist/otel-collector_*_amd64.deb
+            dist/otel-collector-*.x86_64.rpm
+            dist/otel-collector_*_arm64.deb
+    steps:
+      - run:
+          name: Check if files exist
+          command: |
+            files="<< parameters.files >>"
+            for f in $files; do
+              if [[ ! -f $f ]]
+              then
+                  echo "$f does not exist."
+                  exit 1 
+              fi
+            done
+
   setup:
     steps:
       - checkout
@@ -160,6 +186,13 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - publish-check:
+          requires:
+            - lint
+            - unit-tests
+            - integration-tests
+            - cross-compile
+            - windows-msi
       - publish-stable:
           requires:
             - lint
@@ -262,6 +295,8 @@ jobs:
     steps:
       - attach_to_workspace
       - run:
+          command: mkdir -p dist
+      - run:
           name: Install Wix Toolset
           command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
       - run:
@@ -274,28 +309,50 @@ jobs:
           command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
-          paths: project/bin/*.msi
+          paths: project/dist/*.msi
+
+  publish-check:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - verify_dist_files_exist
+      - run:
+          name: Check passed
+          command: echo "publish check passed meaning release CI jobs should work as expected"
+          when: on_success
+      - run:
+          name: Check failed
+          command: echo "publish check failed. This means release CI jobs will likely fail as well"
+          when: on_fail
 
   publish-stable:
     docker:
       - image: cimg/go:1.14
     steps:
       - restore_workspace
+      - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib
           tag: ${CIRCLE_TAG:1}
       - run:
+          name: Prepare release artifacts
+          command: |
+            cp bin/* dist/
+      - run:
           name: Calculate checksums
-          command: cd bin && shasum -a 256 * > checksums.txt
+          command: cd dist && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
   publish-dev:
     executor: golang
     steps:
       - restore_workspace
+      - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
