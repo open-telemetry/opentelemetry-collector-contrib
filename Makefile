@@ -176,3 +176,10 @@ otel-from-lib:
 build-examples:
 	docker-compose -f examples/tracing/docker-compose.yml build
 	docker-compose -f exporter/splunkhecexporter/example/docker-compose.yml build
+
+.PHONY: deb-rpm-package
+%-package: ARCH ?= amd64
+%-package:
+	$(MAKE) otelcontribcol-linux_$(ARCH)
+	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
+	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm

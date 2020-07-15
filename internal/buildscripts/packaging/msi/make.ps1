@@ -39,7 +39,7 @@ function New-MSI(
 ) {
     candle -arch x64 -dVersion="$Version" -dConfig="$Config" internal/buildscripts/packaging/msi/opentelemetry-contrib-collector.wxs
     light opentelemetry-contrib-collector.wixobj
-    Move-Item -Force opentelemetry-contrib-collector.msi bin/opentelemetry-contrib-collector.msi
+    Move-Item -Force opentelemetry-contrib-collector.msi dist/opentelemetry-contrib-collector.msi
 }
 
 function Confirm-MSI {
@@ -47,7 +47,7 @@ function Confirm-MSI {
     $env:Path += ";C:\Windows\System32"
 
     # install msi, validate service is installed & running
-    Start-Process -Wait msiexec "/i `"$pwd\bin\opentelemetry-contrib-collector.msi`" /qn"
+    Start-Process -Wait msiexec "/i `"$pwd\dist\opentelemetry-contrib-collector.msi`" /qn"
     sc.exe query state=all | findstr "otelcontribcol" | Out-Null
     if ($LASTEXITCODE -ne 0) { Throw "otelcontribcol service failed to install" }
 
@@ -58,7 +58,7 @@ function Confirm-MSI {
     Start-Service otelcontribcol
 
     # uninstall msi, validate service is uninstalled
-    Start-Process -Wait msiexec "/x `"$pwd\bin\opentelemetry-contrib-collector.msi`" /qn"
+    Start-Process -Wait msiexec "/x `"$pwd\dist\opentelemetry-contrib-collector.msi`" /qn"
     sc.exe query state=all | findstr "otelcontribcol" | Out-Null
     if ($LASTEXITCODE -ne 1) { Throw "otelcontribcol service failed to uninstall" }
 }
