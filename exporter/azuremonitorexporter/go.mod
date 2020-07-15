@@ -8,7 +8,7 @@ require (
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.5.1-0.20200714180902-7066029f586b
+	go.opentelemetry.io/collector v0.6.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	google.golang.org/appengine v1.6.2 // indirect
