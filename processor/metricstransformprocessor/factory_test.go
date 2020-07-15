@@ -120,8 +120,14 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 
 	oCfg.Transforms = []Transform{
 		{
+			MetricName: "name",
+			Action:     Update,
+			NewName:    "new-name",
 			Operations: []Operation{
 				{
+					Action:   UpdateLabel,
+					Label:    "label",
+					NewLabel: "new-label",
 					ValueActions: []ValueAction{
 						{
 							Value:    "value",
@@ -130,35 +136,64 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 					},
 				},
 				{
-					Action:   AggregateLabels,
-					LabelSet: []string{"label1", "label2"},
+					Action:          AggregateLabels,
+					LabelSet:        []string{"label1", "label2"},
+					AggregationType: Sum,
 				},
 				{
 					Action:           AggregateLabelValues,
 					Label:            "label",
 					AggregatedValues: []string{"value1", "value2"},
+					NewValue:         "new-value",
+					AggregationType:  Sum,
 				},
 			},
 		},
 	}
 
-	expData := []Transform{
+	expData := []mtpTransform{
 		{
-			Operations: []Operation{
+			MetricName: "name",
+			Action:     Update,
+			NewName:    "new-name",
+			Operations: []mtpOperation{
 				{
-					ValueActionsMapping: map[string]string{"value": "new/value"},
+					configOperation: Operation{
+						Action:   UpdateLabel,
+						Label:    "label",
+						NewLabel: "new-label",
+						ValueActions: []ValueAction{
+							{
+								Value:    "value",
+								NewValue: "new/value",
+							},
+						},
+					},
+					valueActionsMapping: map[string]string{"value": "new/value"},
 				},
 				{
-					LabelSetMap: map[string]bool{
+					configOperation: Operation{
+						Action:          AggregateLabels,
+						LabelSet:        []string{"label1", "label2"},
+						AggregationType: Sum,
+					},
+					labelSetMap: map[string]bool{
 						"label1": true,
 						"label2": true,
 					},
 				},
 				{
-					LabelSetMap: map[string]bool{
+					configOperation: Operation{
+						Action:           AggregateLabelValues,
+						Label:            "label",
+						AggregatedValues: []string{"value1", "value2"},
+						NewValue:         "new-value",
+						AggregationType:  Sum,
+					},
+					labelSetMap: map[string]bool{
 						"label": true,
 					},
-					AggregatedValuesSet: map[string]bool{
+					aggregatedValuesSet: map[string]bool{
 						"value1": true,
 						"value2": true,
 					},
@@ -167,13 +202,19 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	fillMappingData(oCfg)
+	mtpTransforms := buildHelperConfig(oCfg)
 
-	for i, tr := range oCfg.Transforms {
-		for j, op := range tr.Operations {
-			assert.True(t, reflect.DeepEqual(op.ValueActionsMapping, expData[i].Operations[j].ValueActionsMapping))
-			assert.True(t, reflect.DeepEqual(op.LabelSetMap, expData[i].Operations[j].LabelSetMap))
-			assert.True(t, reflect.DeepEqual(op.AggregatedValuesSet, expData[i].Operations[j].AggregatedValuesSet))
+	for i, expTr := range expData {
+		mtpT := mtpTransforms[i]
+		assert.Equal(t, expTr.NewName, mtpT.NewName)
+		assert.Equal(t, expTr.Action, mtpT.Action)
+		assert.Equal(t, expTr.MetricName, mtpT.MetricName)
+		for j, expOp := range expTr.Operations {
+			mtpOp := mtpT.Operations[j]
+			assert.Equal(t, expOp.configOperation, mtpOp.configOperation)
+			assert.True(t, reflect.DeepEqual(mtpOp.valueActionsMapping, expOp.valueActionsMapping))
+			assert.True(t, reflect.DeepEqual(mtpOp.labelSetMap, expOp.labelSetMap))
+			assert.True(t, reflect.DeepEqual(mtpOp.aggregatedValuesSet, expOp.aggregatedValuesSet))
 		}
 	}
 }

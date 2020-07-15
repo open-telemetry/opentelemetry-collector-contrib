@@ -22,7 +22,7 @@ import (
 
 type metricsTransformTest struct {
 	name       string // test name
-	transforms []Transform
+	transforms []mtpTransform
 	in         []*metricspb.Metric
 	out        []*metricspb.Metric
 }
@@ -33,7 +33,7 @@ var (
 		// UPDATE
 		{
 			name: "metric_name_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
@@ -49,7 +49,7 @@ var (
 		},
 		{
 			name: "metric_name_update_multiple",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
@@ -72,7 +72,7 @@ var (
 		},
 		{
 			name: "metric_name_update_nonexist",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "nonexist",
 					Action:     Update,
@@ -88,15 +88,17 @@ var (
 		},
 		{
 			name: "metric_label_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:   UpdateLabel,
-							Label:    "label1",
-							NewLabel: "new/label1",
+							configOperation: Operation{
+								Action:   UpdateLabel,
+								Label:    "label1",
+								NewLabel: "new/label1",
+							},
 						},
 					},
 				},
@@ -110,15 +112,17 @@ var (
 		},
 		{
 			name: "metric_label_value_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action: UpdateLabel,
-							Label:  "label1",
-							ValueActionsMapping: map[string]string{
+							configOperation: Operation{
+								Action: UpdateLabel,
+								Label:  "label1",
+							},
+							valueActionsMapping: map[string]string{
 								"label1-value1": "new/label1-value1",
 							},
 						},
@@ -138,15 +142,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_int_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Sum,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -166,15 +172,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_average_int_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Average,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Average,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -194,15 +202,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_max_int_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Max,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Max,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -222,15 +232,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_min_int_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Min,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Min,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -250,15 +262,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_double_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Sum,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -278,15 +292,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_average_double_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Average,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Average,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -306,15 +322,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_max_double_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Max,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Max,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -334,15 +352,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_min_double_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Min,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Min,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -362,17 +382,19 @@ var (
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:              AggregateLabelValues,
-							LabelSetMap:         map[string]bool{"label2": true},
-							AggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
-							NewValue:            "new/label2-value",
-							AggregationType:     Sum,
+							configOperation: Operation{
+								Action:          AggregateLabelValues,
+								NewValue:        "new/label2-value",
+								AggregationType: Sum,
+							},
+							labelSetMap:         map[string]bool{"label2": true},
+							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
 						},
 					},
 				},
@@ -393,15 +415,17 @@ var (
 		// this test case also tests the correctness of the SumOfSquaredDeviation merging
 		{
 			name: "metric_label_values_aggregation_sum_distribution_update",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Sum,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -423,7 +447,7 @@ var (
 		// INSERT
 		{
 			name: "metric_name_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
@@ -440,7 +464,7 @@ var (
 		},
 		{
 			name: "metric_name_insert_multiple",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
@@ -465,16 +489,18 @@ var (
 		},
 		{
 			name: "metric_label_update_with_metric_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
 					NewName:    "new/metric1",
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:   UpdateLabel,
-							Label:    "label1",
-							NewLabel: "new/label1",
+							configOperation: Operation{
+								Action:   UpdateLabel,
+								Label:    "label1",
+								NewLabel: "new/label1",
+							},
 						},
 					},
 				},
@@ -489,16 +515,18 @@ var (
 		},
 		{
 			name: "metric_label_value_update_with_metric_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
 					NewName:    "new/metric1",
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:              UpdateLabel,
-							Label:               "label1",
-							ValueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
+							configOperation: Operation{
+								Action: UpdateLabel,
+								Label:  "label1",
+							},
+							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
 						},
 					},
 				},
@@ -520,15 +548,17 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_int_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Sum,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -552,17 +582,19 @@ var (
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:              AggregateLabelValues,
-							LabelSetMap:         map[string]bool{"label2": true},
-							AggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
-							NewValue:            "new/label2-value",
-							AggregationType:     Sum,
+							configOperation: Operation{
+								Action:          AggregateLabelValues,
+								NewValue:        "new/label2-value",
+								AggregationType: Sum,
+							},
+							labelSetMap:         map[string]bool{"label2": true},
+							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
 						},
 					},
 				},
@@ -586,15 +618,17 @@ var (
 		},
 		{
 			name: "metric_labels_aggregation_sum_distribution_insert",
-			transforms: []Transform{
+			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []Operation{
+					Operations: []mtpOperation{
 						{
-							Action:          AggregateLabels,
-							LabelSetMap:     map[string]bool{"label1": true},
-							AggregationType: Sum,
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+							},
+							labelSetMap: map[string]bool{"label1": true},
 						},
 					},
 				},
@@ -621,8 +655,8 @@ var (
 	}
 )
 
-// analyzeSlice returns the sum and the sumOfSquaredDeviation for this slice
-func analyzeSlice(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
+// calculateSumOfSquaredDeviation returns the sum and the sumOfSquaredDeviation for this slice
+func calculateSumOfSquaredDeviation(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
 	sum = 0
 	for _, e := range slice {
 		sum += e
