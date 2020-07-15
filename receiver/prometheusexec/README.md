@@ -1,6 +1,3 @@
-# This receiver is currently under development, do not use.
-// TODO: Remove above message when done
-
 # prometheus_exec Receiver
 
 ### Why?
