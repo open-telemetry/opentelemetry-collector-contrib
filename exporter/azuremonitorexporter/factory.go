@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package azuremonitorexporter
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -61,22 +62,27 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, config configmodels.Exporter) (component.TraceExporterOld, error) {
-	exporterConfig, ok := config.(*Config)
+func (f *Factory) CreateTraceExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
+	exporterConfig, ok := cfg.(*Config)
 
 	if !ok {
 		return nil, errUnexpectedConfigurationType
 	}
 
-	tc := f.getTransportChannel(exporterConfig, logger)
-	return newTraceExporter(exporterConfig, tc, logger)
+	tc := f.getTransportChannel(exporterConfig, params.Logger)
+	return newTraceExporter(exporterConfig, tc, params.Logger)
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
 func (f *Factory) CreateMetricsExporter(
-	logger *zap.Logger,
+	ctx context.Context,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.MetricsExporterOld, error) {
+) (component.MetricsExporter, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 

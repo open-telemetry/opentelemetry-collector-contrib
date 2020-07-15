@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"time"
 
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func toTime(t *timestamp.Timestamp) time.Time {
-	return time.Unix(t.Seconds, int64(t.Nanos))
+func toTime(t pdata.TimestampUnixNano) time.Time {
+	return time.Unix(0, int64(t))
 }
 
 // Formats a Duration into the form DD.HH:MM:SS.MMMMMM

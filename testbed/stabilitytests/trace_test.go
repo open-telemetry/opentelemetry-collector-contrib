@@ -53,7 +53,7 @@ func TestStabilityTracesOpenCensus(t *testing.T) {
 		testbed.NewOCTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      30,
+			ExpectedMaxCPU:      39,
 			ExpectedMaxRAM:      90,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
@@ -68,7 +68,7 @@ func TestStabilityTracesSAPM(t *testing.T) {
 		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
 		datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      28,
+			ExpectedMaxCPU:      40,
 			ExpectedMaxRAM:      100,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
