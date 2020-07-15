@@ -15,14 +15,9 @@
 package prometheusexec
 
 import (
-	"bufio"
 	"context"
-	"fmt"
-	"os"
 	"path"
-	"strconv"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config"
@@ -50,42 +45,16 @@ func TestEndToEnd(t *testing.T) {
 		t.Errorf("end_to_end_test.go didn't get error, was expecting one")
 	}
 
+	// IN PROGRESS
+
 	// Normal test, make sure the process is restarted by reading from a file while the test code writes to it intermittently
-	receiverConfig := config.Receivers["prometheus_exec/test2/secondary"]
-	wrapper = new(zap.NewNop(), receiverConfig.(*Config), nil)
+	// receiverConfig := config.Receivers["prometheus_exec/test2/secondary"]
+	// wrapper = new(zap.NewNop(), receiverConfig.(*Config), nil)
 
-	err = wrapper.Start(context.Background(), nil)
-	if err != nil {
-		t.Errorf("end_to_end_test.go got error = %v", err)
-	}
+	// err = wrapper.Start(context.Background(), nil)
+	// if err != nil {
+	// 	t.Errorf("end_to_end_test.go got error = %v", err)
+	// }
 
-	timestamp := time.Now().UnixNano()
-
-	go wrapper.manageProcess()
-
-	file, err := os.Open("testdata/test")
-	if err != nil {
-		fmt.Println(err)
-	}
-	scanner := bufio.NewScanner(file)
-
-	time.Sleep(1 * time.Second)
-
-	for scanner.Scan() {
-		line, _ := strconv.ParseInt(scanner.Text(), 10, 64)
-		if timestamp > line {
-			t.Errorf("end_to_end_test.go - first timestamp in file is smaller than time.Now()")
-		}
-		timestamp = line
-	}
-
-	time.Sleep(1 * time.Second)
-
-	for scanner.Scan() {
-		line, _ := strconv.ParseInt(scanner.Text(), 10, 64)
-		if timestamp > line {
-			t.Errorf("end_to_end_test.go - second timestamp in file is smaller than time.Now()")
-		}
-	}
-
+	// timestamp := time.Now().UnixNano()
 }

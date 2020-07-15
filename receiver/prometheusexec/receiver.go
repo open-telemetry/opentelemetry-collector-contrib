@@ -170,7 +170,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		subprocessErr error
 	)
 
-	for true {
+	for {
 
 		// Generate a port if none was specified and if process is unhealthy (Receiver has been stopped)
 		if wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime {
@@ -276,7 +276,7 @@ func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *sub
 
 // generateRandomPort will try to generate a random port until it is different than the last one generated
 func generateRandomPort(lastPort int) int {
-	for true {
+	for {
 		newPort := random.Intn(maxPortRange-minPortRange) + minPortRange
 
 		// Generate another port if it's the same

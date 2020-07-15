@@ -74,6 +74,9 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 
 	// Handle the subprocess output in a goroutine, and pipe the stderr/stdout into one stream
 	cmdReader, err := childProcess.StdoutPipe()
+	if err != nil {
+		return elapsed, fmt.Errorf("[%v] could not get the command's output pipe, err: %v", proc.CustomName, err)
+	}
 	childProcess.Stderr = childProcess.Stdout
 	go proc.handleSubprocessOutput(bufio.NewReader(cmdReader), logger)
 
@@ -101,7 +104,7 @@ func (proc *Process) handleSubprocessOutput(reader *bufio.Reader, logger *zap.Lo
 	)
 
 	// Infinite reading loop until EOF (pipe is closed)
-	for true {
+	for {
 		line, err = reader.ReadString('\n')
 		if err != nil && err != io.EOF {
 			logger.Info("subprocess logging failed", zap.String("subprocess name", proc.CustomName), zap.String("error", err.Error()))
