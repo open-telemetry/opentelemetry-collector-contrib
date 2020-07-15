@@ -69,8 +69,7 @@ func (f *Factory) CreateMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	fillMappingData(oCfg)
-	return newMetricsTransformProcessor(nextConsumer, oCfg, params.Logger), nil
+	return newMetricsTransformProcessor(nextConsumer, params.Logger, buildHelperConfig(oCfg)), nil
 
 }
 
@@ -106,23 +105,34 @@ func validateConfiguration(config *Config) error {
 	return nil
 }
 
-// fillMappingData constructs the map that will be useful for the operations and stores them in the config
-func fillMappingData(config *Config) {
-	for i := range config.Transforms {
-		t := &config.Transforms[i]
-		for j := range t.Operations {
-			op := &t.Operations[j]
+// buildHelperConfig constructs the maps that will be useful for the operations and stores them in the config
+func buildHelperConfig(config *Config) []mtpTransform {
+	helperDataTransforms := make([]mtpTransform, len(config.Transforms))
+	for i, t := range config.Transforms {
+		helperT := mtpTransform{
+			MetricName: t.MetricName,
+			Action:     t.Action,
+			NewName:    t.NewName,
+			Operations: make([]mtpOperation, len(t.Operations)),
+		}
+		for j, op := range t.Operations {
+			mtpOp := mtpOperation{
+				configOperation: op,
+			}
 			if len(op.ValueActions) > 0 {
-				op.ValueActionsMapping = createLabelValueMapping(op.ValueActions)
+				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions)
 			}
 			if op.Action == AggregateLabels {
-				op.LabelSetMap = sliceToSet(op.LabelSet)
+				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
 			} else if op.Action == AggregateLabelValues {
-				op.LabelSetMap = map[string]bool{op.Label: true}
-				op.AggregatedValuesSet = sliceToSet(op.AggregatedValues)
+				mtpOp.labelSetMap = map[string]bool{op.Label: true}
+				mtpOp.aggregatedValuesSet = sliceToSet(op.AggregatedValues)
 			}
+			helperT.Operations[j] = mtpOp
 		}
+		helperDataTransforms[i] = helperT
 	}
+	return helperDataTransforms
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions

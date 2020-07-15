@@ -26,20 +26,33 @@ import (
 	"go.uber.org/zap"
 )
 
+type mtpTransform struct {
+	MetricName string
+	Action     ConfigAction
+	NewName    string
+	Operations []mtpOperation
+}
+
+type mtpOperation struct {
+	configOperation Operation
+	// fields that will be filled later for optimized opertaions processing
+	valueActionsMapping map[string]string
+	labelSetMap         map[string]bool
+	aggregatedValuesSet map[string]bool
+}
+
 type metricsTransformProcessor struct {
-	cfg        *Config
 	next       consumer.MetricsConsumer
-	transforms []Transform
+	transforms []mtpTransform
 	logger     *zap.Logger
 }
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config, logger *zap.Logger) *metricsTransformProcessor {
+func newMetricsTransformProcessor(next consumer.MetricsConsumer, logger *zap.Logger, mtpTransforms []mtpTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
-		cfg:        cfg,
 		next:       next,
-		transforms: cfg.Transforms,
+		transforms: mtpTransforms,
 		logger:     logger,
 	}
 }
@@ -169,3 +182,22 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 // 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
 // 	}
 // }
+
+// update updates the metric content based on operations indicated in transform.
+func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform mtpTransform) {
+	// metric name update
+	if transform.NewName != "" {
+		metric.MetricDescriptor.Name = transform.NewName
+	}
+
+	for _, op := range transform.Operations {
+		switch op.configOperation.Action {
+		case UpdateLabel:
+			mtp.updateLabelOp(metric, op)
+		case AggregateLabels:
+			mtp.aggregateLabelsOp(metric, op)
+		case AggregateLabelValues:
+			mtp.aggregateLabelValuesOp(metric, op)
+		}
+	}
+}
