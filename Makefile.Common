@@ -11,7 +11,8 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
 # ALL_MODULES includes ./* dirs (excludes . dir)
-# NOTE: excluding cudareceiver because some checks false-positive errors caused by CGO such as:
+# NOTE: excluding cudareceiver from all root make commands due to it requiring CUDA
+# dependencies and using CGO. Linting results in false positives, e.g.:
 # https://github.com/dominikh/go-tools/issues/572
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' | egrep -v cudareceiver )
 
