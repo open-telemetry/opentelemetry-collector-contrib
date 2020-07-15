@@ -26,8 +26,9 @@ import (
 	"time"
 
 	"github.com/kballard/go-shellquote"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 )
 
 // Process struct holds all the info needed for subprocesses

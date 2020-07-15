@@ -161,7 +161,7 @@ func getCustomName(cfg *Config) string {
 // Start the receiver if it is stopped (either first iteration or if it was previously shutdown)
 // We then start the subprocess, get its runtime and decide if the process is considered healthy or not -> the receiver is shutdown if it was deemed unhealthy
 // Finally, the wait time before the subprocess is restarted is computed and this goroutine sleeps for that amount of time, before restarting the loop from the start
-func (wrapper *prometheusReceiverWrapper) manageProcess() error {
+func (wrapper *prometheusReceiverWrapper) manageProcess() {
 	var (
 		elapsed       time.Duration
 		newPort       int
@@ -176,7 +176,8 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		if wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime {
 			newPort, err = wrapper.handleNewPort(newPort)
 			if err != nil {
-				return err
+				wrapper.logger.Info("handleNewPort() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+				return
 			}
 		}
 
@@ -185,9 +186,10 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 
 		// Start the receiver if it's the first pass, or if the process is unhealthy and Receiver was stopped last pass
 		if elapsed <= subprocessmanager.HealthyProcessTime {
-			err := wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
+			err = wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
 			if err != nil {
-				return fmt.Errorf("could not start receiver associated to %v process, killing this single process (%v)", wrapper.subprocessConfig.CustomName, wrapper.subprocessConfig.CustomName)
+				wrapper.logger.Info("Start() error, could not start receiver - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+				return
 			}
 		}
 
@@ -197,7 +199,8 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		// Compute the crashCount depending on subprocess health
 		crashCount, err = wrapper.computeHealthAndCrashCount(elapsed, crashCount)
 		if err != nil {
-			return err
+			wrapper.logger.Info("computeHealthAndCrashCount() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+			return
 		}
 
 		// Compute how long this process will wait before restarting
@@ -211,8 +214,6 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() error {
 		// Sleep this goroutine for a certain amount of time, computed by exponential backoff
 		time.Sleep(sleepTime)
 	}
-
-	return nil
 }
 
 // computeHealthAndCrashCount will decide whether the process is healthy, set the crashCount accordingly and shutdown the receiver if unhealthy
@@ -276,8 +277,9 @@ func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *sub
 
 // generateRandomPort will try to generate a random port until it is different than the last one generated
 func generateRandomPort(lastPort int) int {
+	var newPort int
 	for {
-		newPort := random.Intn(maxPortRange-minPortRange) + minPortRange
+		newPort = random.Intn(maxPortRange-minPortRange) + minPortRange
 
 		// Generate another port if it's the same
 		if newPort == lastPort {
@@ -291,9 +293,9 @@ func generateRandomPort(lastPort int) int {
 		}
 
 		portTest.Close()
-		return newPort
+		break
 	}
-	return minPortRange
+	return newPort
 }
 
 // Shutdown stops the underlying Prometheus receiver.

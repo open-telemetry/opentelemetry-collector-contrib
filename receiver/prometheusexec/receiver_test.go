@@ -18,14 +18,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
-	subconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
+	subconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 )
 
 var (
@@ -52,7 +53,7 @@ var (
 			wantReceiverConfig: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
-						&config.ScrapeConfig{
+						{
 							ScrapeInterval:  model.Duration(60 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							Scheme:          "http",
@@ -86,7 +87,7 @@ var (
 					Port:       9104,
 					CustomName: "mysqld",
 					Env: []subconfig.EnvConfig{
-						subconfig.EnvConfig{
+						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "password:username@(url:port)/dbname",
 						},
@@ -96,7 +97,7 @@ var (
 			wantReceiverConfig: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
-						&config.ScrapeConfig{
+						{
 							ScrapeInterval:  model.Duration(90 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							Scheme:          "http",
@@ -121,7 +122,7 @@ var (
 				Command: "mysqld_exporter",
 				Port:    9104,
 				Env: []subconfig.EnvConfig{
-					subconfig.EnvConfig{
+					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "password:username@(url:port)/dbname",
 					},
@@ -139,7 +140,7 @@ var (
 					Command:    "postgres_exporter",
 					CustomName: "postgres",
 					Env: []subconfig.EnvConfig{
-						subconfig.EnvConfig{
+						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "password:username@(url:port)/dbname",
 						},
@@ -149,7 +150,7 @@ var (
 			wantReceiverConfig: &prometheusreceiver.Config{
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
-						&config.ScrapeConfig{
+						{
 							ScrapeInterval:  model.Duration(60 * time.Second),
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							Scheme:          "http",
@@ -174,7 +175,7 @@ var (
 				Command: "postgres_exporter",
 				Port:    0,
 				Env: []subconfig.EnvConfig{
-					subconfig.EnvConfig{
+					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "password:username@(url:port)/dbname",
 					},
