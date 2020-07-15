@@ -6,7 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname ${BASH_SOURCE[0]} )" && pwd )"
 REPO_DIR="$( cd "$SCRIPT_DIR/../../../../../" && pwd )"
 VERSION="${1:-}"
 ARCH="${2:-"amd64"}"
-OUTPUT_DIR="${3:-"$REPO_DIR/bin/"}"
+OUTPUT_DIR="${3:-"$REPO_DIR/dist/"}"
 OTELCONTRIBCOL_PATH="$REPO_DIR/bin/otelcontribcol_linux_$ARCH"
 
 . $SCRIPT_DIR/../common.sh

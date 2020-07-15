@@ -22,7 +22,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 - `awsxray` exporter: Use `peer.service` as segment name when set. (#385)
 - `splunk` exporter: Add trace exports support (#359, #399)
-- Build and publish Windows MSI (#408)
+- Build and publish Windows MSI (#408) and DEB/RPM Linux packages (#405)
 
 ## 🧰 Bug fixes 🧰
 
