@@ -134,7 +134,7 @@ func (c *CUDAMetricsCollector) scrapeAndExport() {
 	}
 	powerTs, err := c.getInt64TimeSeries(c.device.PowerUsage())
 	if err != nil {
-		c.logger.Error("Failed to create poewr timeseries", zap.Error(err))
+		c.logger.Error("Failed to create power timeseries", zap.Error(err))
 		return
 	}
 	pcietxTs, err := c.getInt64TimeSeries(c.device.PCIeThroughput(PCIeUtilTXBytes))
