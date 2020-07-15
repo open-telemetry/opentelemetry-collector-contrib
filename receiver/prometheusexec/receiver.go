@@ -23,8 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
-
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
@@ -33,6 +31,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
 )
 
 const (

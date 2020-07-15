@@ -19,9 +19,8 @@ import (
 	"path"
 	"testing"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"

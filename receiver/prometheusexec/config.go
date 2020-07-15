@@ -17,9 +17,9 @@ package prometheusexec
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
-
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 )
 
 // Config definition for prometheus_exec configuration
