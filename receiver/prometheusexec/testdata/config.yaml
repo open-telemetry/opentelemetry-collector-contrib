@@ -1,0 +1,29 @@
+receivers:
+  prometheus_exec:
+  prometheus_exec/test:
+    exec: mysqld_exporter
+    port: 9104
+  prometheus_exec/test2:
+    exec: postgres_exporter
+    port: 9187
+    scrape_interval: 90s
+  prometheus_exec/test2/secondary:
+    exec: go run testdata/main.go
+    env: 
+      - name: "DATA_SOURCE_NAME"
+        value: user:password@(hostname:port)/dbname
+      - name: SECONDARY_PORT
+        value: "1234"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus_exec, prometheus_exec/test, prometheus_exec/test2, prometheus_exec/test2/secondary]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

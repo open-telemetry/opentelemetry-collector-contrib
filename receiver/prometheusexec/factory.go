@@ -34,6 +34,7 @@ const (
 
 	defaultMetricsPath        = "/metrics"
 	defaultCollectionInterval = 60 * time.Second
+	defaultScrapeTimeout      = 10 * time.Second
 )
 
 // Factory is the factory struct for prometheusexec

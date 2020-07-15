@@ -22,6 +22,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/kballard/go-shellquote"
@@ -107,7 +108,10 @@ func (proc *Process) handleSubprocessOutput(reader *bufio.Reader, logger *zap.Lo
 			break
 		}
 
-		logger.Info("subprocess output (1 line of stderr/stdout)", zap.String("subprocess name", proc.CustomName), zap.String("output", line))
+		line = strings.TrimSpace(line)
+		if line != "" {
+			logger.Info("subprocess output line", zap.String("subprocess name", proc.CustomName), zap.String("output", line))
+		}
 
 		// Leave this function when error is EOF (stderr/stdout pipe was closed)
 		if err == io.EOF {

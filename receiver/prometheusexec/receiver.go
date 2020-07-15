@@ -37,7 +37,7 @@ import (
 
 const (
 	minPortRange   int    = 10000      // Minimum of the port generation range
-	maxPortRange   int    = 10100      // Maximum of the port generation range
+	maxPortRange   int    = 11000      // Maximum of the port generation range
 	stringTemplate string = "{{port}}" // Template for port in strings
 )
 
@@ -77,10 +77,7 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 		return fmt.Errorf("unable to generate the subprocess config: %v", ok)
 	}
 
-	receiverConfig, ok := getReceiverConfig(wrapper.config, customName)
-	if ok != nil {
-		return fmt.Errorf("unable to generate the prometheusexec receiver config: %v", ok)
-	}
+	receiverConfig := getReceiverConfig(wrapper.config, customName)
 
 	receiver, ok := factory.CreateMetricsReceiver(wrapper.context, wrapper.logger, receiverConfig, wrapper.consumer)
 	if ok != nil {
@@ -100,11 +97,11 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 }
 
 // getReceiverConfig returns the Prometheus receiver config
-func getReceiverConfig(cfg *Config, customName string) (*prometheusreceiver.Config, error) {
+func getReceiverConfig(cfg *Config, customName string) *prometheusreceiver.Config {
 	scrapeConfig := &config.ScrapeConfig{}
 
 	scrapeConfig.ScrapeInterval = model.Duration(cfg.ScrapeInterval)
-	scrapeConfig.ScrapeTimeout = model.Duration(cfg.ScrapeInterval)
+	scrapeConfig.ScrapeTimeout = model.Duration(defaultScrapeTimeout)
 	scrapeConfig.Scheme = "http"
 	scrapeConfig.MetricsPath = defaultMetricsPath
 	scrapeConfig.JobName = customName
@@ -129,7 +126,7 @@ func getReceiverConfig(cfg *Config, customName string) (*prometheusreceiver.Conf
 		PrometheusConfig: &config.Config{
 			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
-	}, nil
+	}
 }
 
 // getSubprocessConfig returns the subprocess config after the correct logic is made
@@ -152,7 +149,7 @@ func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.Pro
 func getCustomName(cfg *Config) string {
 	// Try to get a custom name from the config (receivers should be named prometheus_exec/customName)
 	splitName := strings.SplitN(cfg.Name(), "/", 2)
-	if len(splitName) > 1 {
+	if len(splitName) > 1 && splitName[1] != "" {
 		return splitName[1]
 	}
 	return splitName[0]
@@ -268,6 +265,7 @@ func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *sub
 	// ReplaceAll runs much faster (about 5x according to my tests) than checking for a regex match, therefore no checks are made and ReplaceAll simply returns the original string if no match is found
 	// ReplaceAll is run on the original strings of the config, which remain unchanged
 	newConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.Command, stringTemplate, port)
+	newConfig.CustomName = strings.ReplaceAll(wrapper.config.SubprocessConfig.CustomName, stringTemplate, port)
 
 	for i, env := range wrapper.config.SubprocessConfig.Env {
 		newConfig.Env[i].Value = strings.ReplaceAll(env.Value, stringTemplate, port)
