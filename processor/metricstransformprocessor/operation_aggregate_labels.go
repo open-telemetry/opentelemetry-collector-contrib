@@ -20,24 +20,20 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-// aggregateOp aggregates the data points in metric based on given operation
+// aggregateLabelsOp aggregates the data points in metric across labels
 func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric, mtpOp mtpOperation) {
 	op := mtpOp.configOperation
 	labelSet := mtpOp.labelSetMap
-	// labelIdxs is a slice containing the indices of the selected labels.
-	// This is needed because label values are ordered in the same order as the labels
 	labelIdxs, labels := mtp.getLabelIdxs(metric, labelSet)
 	timeseriesGroup := mtp.groupTimeseriesByLabelSet(metric, labelIdxs)
 
-	// merge groups of timeseries
 	newTimeseries := mtp.aggregateTimeseriesGroups(timeseriesGroup, op.AggregationType, metric.MetricDescriptor.Type)
 	metric.Timeseries = newTimeseries
 	metric.MetricDescriptor.LabelKeys = labels
 }
 
-// groupTimeseries groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs OR on the entire label values after replacing the aggregatedValues by newValue.
-// Depending on if newValue is set, the approach to group timeseries is different.
-// Returns a map from keys to groups of timeseries and a map from keys to the corresponding label values
+// groupTimeseriesByLabelSet groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs.
+// Returns a map from keys to groups of timeseries and the corresponding label values
 func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricspb.Metric, labelIdxs []int) map[string]*timeseriesGroupByLabelValues {
 	// key is a composite of the label values as a single string
 	keyToTimeseriesMap := make(map[string]*timeseriesGroupByLabelValues)
@@ -45,7 +41,7 @@ func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricsp
 		var composedValues string
 		var newLabelValues []*metricspb.LabelValue
 		composedValues, newLabelValues = mtp.composeKeyWithSelectedLabels(labelIdxs, timeseries)
-		// group the timeseries together if their values match
+
 		timeseriesGroup, ok := keyToTimeseriesMap[composedValues]
 		if ok {
 			timeseriesGroup.timeseries = append(timeseriesGroup.timeseries, timeseries)
@@ -63,7 +59,6 @@ func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricsp
 // Returns the key and a slice of the actual values used in this key
 func (mtp *metricsTransformProcessor) composeKeyWithSelectedLabels(labelIdxs []int, timeseries *metricspb.TimeSeries) (string, []*metricspb.LabelValue) {
 	var key string
-	// newLabelValues are the label values after aggregation, dropping the excluded ones
 	newLabelValues := make([]*metricspb.LabelValue, len(labelIdxs))
 	for i, vidx := range labelIdxs {
 		key += fmt.Sprintf("%v-", timeseries.LabelValues[vidx].Value)

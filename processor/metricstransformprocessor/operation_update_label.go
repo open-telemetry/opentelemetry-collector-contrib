@@ -25,11 +25,11 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mt
 		if label.Key != op.Label {
 			continue
 		}
-		// label key update
+
 		if op.NewLabel != "" {
 			label.Key = op.NewLabel
 		}
-		// label value update
+
 		labelValuesMapping := mtpOp.valueActionsMapping
 		for _, timeseries := range metric.Timeseries {
 			newValue, ok := labelValuesMapping[timeseries.LabelValues[idx].Value]

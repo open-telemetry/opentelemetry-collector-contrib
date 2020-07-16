@@ -25,10 +25,7 @@ import (
 
 // timeseriesGroupByLabelValues is a data structure for grouping timeseries that will be aggregated
 type timeseriesGroupByLabelValues struct {
-	// key is a composite of the label values as a single string
-	// keyToTimeseriesMap groups timeseries by the label values
-	timeseries []*metricspb.TimeSeries
-	// keyToLabelValuesMap maps the keys to the actual label values objects
+	timeseries  []*metricspb.TimeSeries
 	labelValues []*metricspb.LabelValue
 }
 
@@ -55,7 +52,6 @@ func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesM
 	for _, element := range keyToTimeseriesMap {
 		timestampToPoints, startTimestamp := mtp.analyzeTimeseriesForAggregation(element.timeseries)
 		newPoints := mtp.aggregatePoints(timestampToPoints, aggrType, dataType)
-		// newSingleTimeSeries is an aggregated timeseries
 		newSingleTimeSeries := &metricspb.TimeSeries{
 			StartTimestamp: startTimestamp,
 			LabelValues:    element.labelValues,
@@ -72,7 +68,6 @@ func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesM
 // Returns a map that groups points by timestamps and the final start timestamp
 func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
 	var startTimestamp *timestamp.Timestamp
-	// timestampToPoints maps from timestamp string to aggregatable points
 	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
 		if startTimestamp == nil || ts.StartTimestamp.Seconds < startTimestamp.Seconds || (ts.StartTimestamp.Seconds == startTimestamp.Seconds && ts.StartTimestamp.Nanos < startTimestamp.Nanos) {
@@ -92,7 +87,6 @@ func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries
 // aggregatePoints aggregates points in the groups provided in timestampToPoints by the specific caluculation indicated by aggrType and dataType
 // Returns a group of aggregated points
 func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int64][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
-	// initialize to size 0. unsure how many points will come out because distribution points are not guaranteed to be aggregatable. (mismatched bounds)
 	newPoints := make([]*metricspb.Point, 0, len(timestampToPoints))
 	for _, points := range timestampToPoints {
 		// use the timestamp from the first element because these all have the same timestamp as they are grouped by timestamp

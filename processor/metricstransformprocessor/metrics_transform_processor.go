@@ -115,7 +115,6 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 
 // update updates the metric content based on operations indicated in transform.
 func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform mtpTransform) {
-	// metric name update
 	if transform.NewName != "" {
 		metric.MetricDescriptor.Name = transform.NewName
 	}
