@@ -66,8 +66,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		factory.CreateDefaultConfig().(*Config),
 		&mockTraceConsumer{},
 	)
-	assert.NotNil(t, err, "not implemented yet")
-	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
+	assert.Nil(t, err, "trace receiver can be created")
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

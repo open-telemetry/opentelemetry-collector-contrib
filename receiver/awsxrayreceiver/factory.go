@@ -19,7 +19,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -48,7 +47,7 @@ func createDefaultConfig() configmodels.Receiver {
 		},
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:2000",
-			Transport: "udp",
+			Transport: transport,
 		},
 		ProxyServer: &proxyServer{
 			TCPAddr: confignet.TCPAddr{
@@ -71,7 +70,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer) (component.TraceReceiver, error) {
-	// TODO: Finish the implementation
-	return nil, configerror.ErrDataTypeIsNotSupported
+	consumer consumer.TraceConsumer) (component.TraceReceiver, error) {
+	rcfg := cfg.(*Config)
+	return newReceiver(rcfg, consumer, params.Logger)
 }
