@@ -74,7 +74,6 @@ func (f *Factory) CreateMetricsProcessor(
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
-// and returns a list of valid actions to configure the processor.
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
@@ -105,7 +104,7 @@ func validateConfiguration(config *Config) error {
 	return nil
 }
 
-// buildHelperConfig constructs the maps that will be useful for the operations and stores them in the config
+// buildHelperConfig constructs the maps that will be useful for the operations
 func buildHelperConfig(config *Config) []mtpTransform {
 	helperDataTransforms := make([]mtpTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
