@@ -17,21 +17,14 @@ package cudareceiver
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
-	"contrib.go.opencensus.io/resource/auto"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
-)
-
-var (
-	rsc                   *resourcepb.Resource
-	resourceDetectionSync sync.Once
 )
 
 // CUDAMetricsCollector is a struct that collects and reports CUDA (GPU) metrics (temprature, power, et al.).
@@ -70,27 +63,8 @@ func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger,
 	return c, nil
 }
 
-func detectResource() {
-	resourceDetectionSync.Do(func() {
-		res, err := auto.Detect(context.Background())
-		if err != nil {
-			panic(fmt.Sprintf("Resource detection failed, err:%v", err))
-		}
-		if res != nil {
-			rsc = &resourcepb.Resource{
-				Type:   res.Type,
-				Labels: make(map[string]string, len(res.Labels)),
-			}
-			for k, v := range res.Labels {
-				rsc.Labels[k] = v
-			}
-		}
-	})
-}
-
 // StartCollection starts a ticker'd goroutine that will scrape and export CUDA metrics periodically.
 func (c *CUDAMetricsCollector) StartCollection() {
-	detectResource()
 	status := NVMLInit()
 	if status != NVMLSuccess {
 		// TODO: handle inappropriate GPU state
@@ -152,22 +126,22 @@ func (c *CUDAMetricsCollector) scrapeAndExport() {
 		metrics,
 		&metricspb.Metric{
 			MetricDescriptor: metricTemperature,
-			Resource:         rsc,
+			Resource:         &resourcepb.Resource{},
 			Timeseries:       []*metricspb.TimeSeries{tempTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPower,
-			Resource:         rsc,
+			Resource:         &resourcepb.Resource{},
 			Timeseries:       []*metricspb.TimeSeries{powerTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPCIeThroughputTX,
-			Resource:         rsc,
+			Resource:         &resourcepb.Resource{},
 			Timeseries:       []*metricspb.TimeSeries{pcietxTs},
 		},
 		&metricspb.Metric{
 			MetricDescriptor: metricPCIeThroughputRX,
-			Resource:         rsc,
+			Resource:         &resourcepb.Resource{},
 			Timeseries:       []*metricspb.TimeSeries{pcierxTs},
 		},
 	)
