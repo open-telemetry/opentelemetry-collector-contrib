@@ -118,10 +118,16 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 
 func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op Operation) {
 	var lb = metricspb.LabelKey{
-		Key:         op.NewLabel,
-		Description: op.NewValue,
+		Key: op.NewLabel,
 	}
 	metric.MetricDescriptor.LabelKeys = append(metric.MetricDescriptor.LabelKeys, &lb)
+	for _, ts := range metric.Timeseries {
+		lv := &metricspb.LabelValue{
+			Value:    op.NewValue,
+			HasValue: true,
+		}
+		ts.LabelValues = append(ts.LabelValues, lv)
+	}
 }
 
 func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {

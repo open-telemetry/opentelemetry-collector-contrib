@@ -83,8 +83,7 @@ type Operation struct {
 	// AggregatedValues is a list of label values to aggregate away.
 	AggregatedValues []string `mapstructure:"aggregated_values"`
 
-	// NewValue indicates what is the value called when the AggregatedValues
-	// are aggregated into one or a new label is added to an existing metric.
+	// NewValue is used to set a new label value either when the operation is `AggregatedValues` or `AddLabel`.
 	NewValue string `mapstructure:"new_value"`
 
 	// ValueActions is a list of renaming actions for label values.
