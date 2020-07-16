@@ -216,27 +216,16 @@ func (mtp *metricsTransformProcessor) boundsToString(bounds []float64) string {
 	return boundsKey
 }
 
-// sumOfSquaredDeviation calculates the combined SumOfSquaredDeviation from the ones in val1 and val2
-// Formula derived and extended from https://math.stackexchange.com/questions/2971315/how-do-i-combine-standard-deviations-of-two-groups
-// SSDcomb = SSD1 + n(ave(x) - ave(z))^2 + SSD2 +n(ave(y) - ave(z))^2
+// computeDistVals does the necessary computations and aggregation to combine two distribution value into one
+// returns the combined distribution value
 func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) *metricspb.DistributionValue {
 	buckets := make([]*metricspb.DistributionValue_Bucket, len(val1.Buckets))
 	for i := range buckets {
-		r := rand.Intn(2)
-		pickedExemplar := val1.Buckets[i].Exemplar
-		if r == 1 {
-			pickedExemplar = val2.Buckets[i].Exemplar
-		}
 		buckets[i] = &metricspb.DistributionValue_Bucket{
 			Count:    val1.Buckets[i].Count + val2.Buckets[i].Count,
-			Exemplar: pickedExemplar,
+			Exemplar: mtp.pickExemplar(val1.Buckets[i].Exemplar, val2.Buckets[i].Exemplar),
 		}
 	}
-	mean1 := val1.Sum / float64(val1.Count)
-	mean2 := val2.Sum / float64(val2.Count)
-	meanCombined := (val1.Sum + val2.Sum) / float64(val1.Count+val2.Count)
-	squaredMeanDiff1 := math.Pow(mean1-meanCombined, 2)
-	squaredMeanDiff2 := math.Pow(mean2-meanCombined, 2)
 	newDistVal := &metricspb.DistributionValue{
 		BucketOptions: &metricspb.DistributionValue_BucketOptions{
 			Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
@@ -248,7 +237,29 @@ func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.Distributi
 		Count:                 val1.Count + val2.Count,
 		Sum:                   val1.Sum + val2.Sum,
 		Buckets:               buckets,
-		SumOfSquaredDeviation: val1.SumOfSquaredDeviation + (float64(val1.Count) * squaredMeanDiff1) + val2.SumOfSquaredDeviation + (float64(val2.Count) * squaredMeanDiff2),
+		SumOfSquaredDeviation: mtp.computeSumOfSquaredDeviation(val1, val2),
 	}
 	return newDistVal
+}
+
+// computeSumOfSquaredDeviation computes the combined SumOfSquaredDeviation from the two point groups
+// Formula derived and extended from https://math.stackexchange.com/questions/2971315/how-do-i-combine-standard-deviations-of-two-groups
+// SSDcomb = SSD1 + n(ave(x) - ave(z))^2 + SSD2 +n(ave(y) - ave(z))^2
+func (mtp *metricsTransformProcessor) computeSumOfSquaredDeviation(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) float64 {
+	mean1 := val1.Sum / float64(val1.Count)
+	mean2 := val2.Sum / float64(val2.Count)
+	meanCombined := (val1.Sum + val2.Sum) / float64(val1.Count+val2.Count)
+	squaredMeanDiff1 := math.Pow(mean1-meanCombined, 2)
+	squaredMeanDiff2 := math.Pow(mean2-meanCombined, 2)
+	return val1.SumOfSquaredDeviation + (float64(val1.Count) * squaredMeanDiff1) + val2.SumOfSquaredDeviation + (float64(val2.Count) * squaredMeanDiff2)
+}
+
+// pickExemplar picks an exemplar from 2 randomly with each haing a 50% chance of getting picked
+func (mtp *metricsTransformProcessor) pickExemplar(e1 *metricspb.DistributionValue_Exemplar, e2 *metricspb.DistributionValue_Exemplar) *metricspb.DistributionValue_Exemplar {
+	r := rand.Intn(2)
+	pickedExemplar := e1
+	if r == 1 {
+		pickedExemplar = e2
+	}
+	return pickedExemplar
 }

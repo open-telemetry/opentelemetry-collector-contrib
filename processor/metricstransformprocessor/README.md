@@ -77,6 +77,19 @@ operations:
     new_label: core
 ```
 
+### Rename Label Values
+```yaml
+# rename the label value slab_reclaimable to sreclaimable, slab_unreclaimable to sunreclaimable
+operations:
+  - action: update_label
+    label: state
+    value_actions:
+      - value: slab_reclaimable
+        new_value: sreclaimable
+      - value: slab_unreclaimable
+        new_value: sunreclaimable
+```
+
 ### Aggregate Labels
 ```yaml
 # aggregate away everything but `state` using summation
