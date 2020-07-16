@@ -185,7 +185,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		wrapper.subprocessConfig = wrapper.fillPortPlaceholders(newPort)
 
 		// Start the receiver if it's the first pass, or if the process is unhealthy and Receiver was stopped last pass
-		if elapsed <= subprocessmanager.HealthyProcessTime {
+		if elapsed == 0 || elapsed <= subprocessmanager.HealthyProcessTime && crashCount > subprocessmanager.HealthyCrashCount || elapsed <= subprocessmanager.HealthyProcessTime && wrapper.subprocessConfig.Port == 0 {
 			err = wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
 			if err != nil {
 				wrapper.logger.Info("Start() error, could not start receiver - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
@@ -224,10 +224,12 @@ func (wrapper *prometheusReceiverWrapper) computeHealthAndCrashCount(elapsed tim
 	}
 	crashCount++
 
-	// Stop the associated receiver until process starts back up again since it is unhealthy
-	err := wrapper.prometheusReceiver.Shutdown(wrapper.context)
-	if err != nil {
-		return crashCount, fmt.Errorf("could not stop receiver associated to %v process, killing this single process(%v)", wrapper.subprocessConfig.CustomName, wrapper.subprocessConfig.CustomName)
+	// Stop the associated receiver until process starts back up again since it is unhealthy (too little elapsed time and high crashCount) or if port is generated, to allow for new port
+	if wrapper.subprocessConfig.Port == 0 || crashCount > subprocessmanager.HealthyCrashCount {
+		err := wrapper.Shutdown(wrapper.context)
+		if err != nil {
+			return crashCount, fmt.Errorf("could not stop receiver associated to %v process, killing this single process(%v)", wrapper.subprocessConfig.CustomName, wrapper.subprocessConfig.CustomName)
+		}
 	}
 
 	return crashCount, nil

@@ -43,7 +43,7 @@ const (
 	// HealthyProcessTime is the default time a process needs to stay alive to be considered healthy
 	HealthyProcessTime time.Duration = 30 * time.Minute
 	// healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
-	healthyCrashCount int = 3
+	HealthyCrashCount int = 3
 	// delayMutiplier is the factor by which the delay scales (default is doubling every crash)
 	delayMultiplier float64 = 2.0
 	// baseDelay is the base exponential backoff delay that every process waits for before restarting
@@ -141,10 +141,10 @@ func formatEnvSlice(envs *[]config.EnvConfig) []string {
 // GetDelay will compute the exponential backoff for a given process according to its crash count and time alive
 func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
 	// Return baseDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
-	if elapsed > HealthyProcessTime || crashCount <= healthyCrashCount {
+	if elapsed > HealthyProcessTime || crashCount <= HealthyCrashCount {
 		return baseDelay
 	}
 
 	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
-	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
+	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-HealthyCrashCount)+rand.Float64()))
 }

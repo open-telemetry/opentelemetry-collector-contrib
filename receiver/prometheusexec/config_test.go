@@ -49,7 +49,6 @@ var (
 		ScrapeInterval: 90 * time.Second,
 		SubprocessConfig: subconfig.SubprocessConfig{
 			Command:    "postgres_exporter",
-			Port:       9187,
 			CustomName: "",
 			Env:        []subconfig.EnvConfig{},
 		},
@@ -58,11 +57,12 @@ var (
 	wantReceiver4 = &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: configmodels.Type("prometheus_exec"),
-			NameVal: "prometheus_exec/test2/secondary",
+			NameVal: "prometheus_exec/end_to_end_test/1",
 		},
-		ScrapeInterval: 60 * time.Second,
+		ScrapeInterval: 3 * time.Second,
 		SubprocessConfig: subconfig.SubprocessConfig{
-			Command:    "go run testdata/main.go",
+			Command:    "go run ./testdata/end_to_end_metrics_test/exporter.go 9999",
+			Port:       9999,
 			CustomName: "",
 			Env: []subconfig.EnvConfig{
 				{
@@ -74,6 +74,19 @@ var (
 					Value: "1234",
 				},
 			},
+		},
+	}
+
+	wantReceiver5 = &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: configmodels.Type("prometheus_exec"),
+			NameVal: "prometheus_exec/end_to_end_test/2",
+		},
+		ScrapeInterval: 3 * time.Second,
+		SubprocessConfig: subconfig.SubprocessConfig{
+			Command:    "go run ./testdata/end_to_end_metrics_test/exporter.go {{port}}",
+			CustomName: "",
+			Env:        []subconfig.EnvConfig{},
 		},
 	}
 )
@@ -91,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 
-	assert.Equal(t, len(config.Receivers), 4)
+	assert.Equal(t, len(config.Receivers), 5)
 
 	receiver1 := config.Receivers[receiverType]
 	assert.Equal(t, factory.CreateDefaultConfig(), receiver1)
@@ -102,6 +115,9 @@ func TestLoadConfig(t *testing.T) {
 	receiver3 := config.Receivers["prometheus_exec/test2"]
 	assert.Equal(t, wantReceiver3, receiver3)
 
-	receiver4 := config.Receivers["prometheus_exec/test2/secondary"]
+	receiver4 := config.Receivers["prometheus_exec/end_to_end_test/1"]
 	assert.Equal(t, wantReceiver4, receiver4)
+
+	receiver5 := config.Receivers["prometheus_exec/end_to_end_test/2"]
+	assert.Equal(t, wantReceiver5, receiver5)
 }
