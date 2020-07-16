@@ -29,10 +29,12 @@ type Receiver struct {
 
 // Start scrapes VM metrics based on the OS platform.
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
-	return r.c.StartCollection()
+	r.c.StartCollection()
+	return nil
 }
 
 // Shutdown stops and cancels the underlying VM metrics scrapers.
 func (r *Receiver) Shutdown(context.Context) error {
-	return r.c.StopCollection()
+	r.c.StopCollection()
+	return nil
 }
