@@ -193,6 +193,7 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
+            - loadtest
             - windows-msi
             - deb-package
             - rpm-package
@@ -202,6 +203,7 @@ workflows:
             - unit-tests
             - integration-tests
             - cross-compile
+            - loadtest
             - windows-msi
             - deb-package
             - rpm-package
@@ -214,6 +216,7 @@ workflows:
           requires:
             - lint
             - unit-tests
+            - loadtest
             - integration-tests
             - cross-compile
           filters:
