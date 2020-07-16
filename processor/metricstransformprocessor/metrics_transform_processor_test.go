@@ -70,54 +70,65 @@ func TestMetricsTransformProcessor(t *testing.T) {
 }
 
 func TestComputeDistVals(t *testing.T) {
-	// next stores the results of the aggregation metric processor.
-	next := &etest.SinkMetricsExporter{}
-
-	mtp := newMetricsTransformProcessor(next, nil, nil)
-	assert.NotNil(t, mtp)
-
-	caps := mtp.GetCapabilities()
-	assert.Equal(t, true, caps.MutatesConsumedData)
-	ctx := context.Background()
-	assert.NoError(t, mtp.Start(ctx, nil))
-
-	pointGroup1 := []float64{1, 2, 3, 7, 4}
-	pointGroup2 := []float64{1, 2, 3, 3, 1}
-	sum1, sumOfSquaredDeviation1 := calculateSumOfSquaredDeviation(pointGroup1)
-	sum2, sumOfSquaredDeviation2 := calculateSumOfSquaredDeviation(pointGroup2)
-	sum, sumOfSquaredDeviation := calculateSumOfSquaredDeviation(append(pointGroup1, pointGroup2...))
-
-	val1 := &metricspb.DistributionValue{
-		Count:                 int64(len(pointGroup1)),
-		Sum:                   sum1,
-		SumOfSquaredDeviation: sumOfSquaredDeviation1,
-		BucketOptions: &metricspb.DistributionValue_BucketOptions{
-			Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-				Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-					Bounds: []float64{},
-				},
-			},
+	ssdTests := []struct {
+		name        string
+		pointGroup1 []float64
+		pointGroup2 []float64
+	}{
+		{
+			name:        "similar point groups",
+			pointGroup1: []float64{1, 2, 3, 7, 4},
+			pointGroup2: []float64{1, 2, 3, 3, 1},
+		},
+		{
+			name:        "different size point groups",
+			pointGroup1: []float64{1, 2, 3, 7, 4},
+			pointGroup2: []float64{1},
+		},
+		{
+			name:        "point groups with an outlier",
+			pointGroup1: []float64{1, 2, 3, 7, 1000},
+			pointGroup2: []float64{1, 2, 5},
 		},
 	}
 
-	val2 := &metricspb.DistributionValue{
-		Count:                 int64(len(pointGroup2)),
-		Sum:                   sum2,
-		SumOfSquaredDeviation: sumOfSquaredDeviation2,
-		BucketOptions: &metricspb.DistributionValue_BucketOptions{
-			Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-				Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-					Bounds: []float64{},
-				},
-			},
-		},
+	for _, test := range ssdTests {
+		t.Run(test.name, func(t *testing.T) {
+			// next stores the results of the aggregation metric processor.
+			next := &etest.SinkMetricsExporter{}
+
+			mtp := newMetricsTransformProcessor(next, nil, nil)
+			assert.NotNil(t, mtp)
+
+			caps := mtp.GetCapabilities()
+			assert.Equal(t, true, caps.MutatesConsumedData)
+			ctx := context.Background()
+			assert.NoError(t, mtp.Start(ctx, nil))
+
+			pointGroup1 := test.pointGroup1
+			pointGroup2 := test.pointGroup2
+			sum1, sumOfSquaredDeviation1 := calculateSumOfSquaredDeviation(pointGroup1)
+			sum2, sumOfSquaredDeviation2 := calculateSumOfSquaredDeviation(pointGroup2)
+			_, sumOfSquaredDeviation := calculateSumOfSquaredDeviation(append(pointGroup1, pointGroup2...))
+
+			val1 := &metricspb.DistributionValue{
+				Count:                 int64(len(pointGroup1)),
+				Sum:                   sum1,
+				SumOfSquaredDeviation: sumOfSquaredDeviation1,
+			}
+
+			val2 := &metricspb.DistributionValue{
+				Count:                 int64(len(pointGroup2)),
+				Sum:                   sum2,
+				SumOfSquaredDeviation: sumOfSquaredDeviation2,
+			}
+
+			outVal := mtp.computeSumOfSquaredDeviation(val1, val2)
+
+			assert.Equal(t, sumOfSquaredDeviation, outVal)
+
+		})
 	}
-
-	outVal := mtp.computeDistVals(val1, val2)
-
-	assert.Equal(t, int64(len(pointGroup1)+len(pointGroup2)), outVal.Count)
-	assert.Equal(t, sum, outVal.Sum)
-	assert.Equal(t, sumOfSquaredDeviation, outVal.SumOfSquaredDeviation)
 }
 
 func TestExemplers(t *testing.T) {
@@ -133,95 +144,17 @@ func TestExemplers(t *testing.T) {
 		ctx := context.Background()
 		assert.NoError(t, mtp.Start(ctx, nil))
 
-		evenVal := &metricspb.DistributionValue{
-			BucketOptions: &metricspb.DistributionValue_BucketOptions{
-				Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-					Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-						Bounds: []float64{},
-					},
-				},
-			},
-			Buckets: []*metricspb.DistributionValue_Bucket{
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 2,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 4,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 6,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 8,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 0,
-					},
-				},
-			},
+		exe1 := &metricspb.DistributionValue_Exemplar{
+			Value: 1,
 		}
 
-		oddVal := &metricspb.DistributionValue{
-			BucketOptions: &metricspb.DistributionValue_BucketOptions{
-				Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-					Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-						Bounds: []float64{},
-					},
-				},
-			},
-			Buckets: []*metricspb.DistributionValue_Bucket{
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 1,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 3,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 5,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 7,
-					},
-				},
-				{
-					Exemplar: &metricspb.DistributionValue_Exemplar{
-						Value: 9,
-					},
-				},
-			},
+		exe2 := &metricspb.DistributionValue_Exemplar{
+			Value: 2,
 		}
 
-		retry := 3
-		foundOdd := false
-		foundEven := false
-		for i := 0; i < retry; i++ {
-			outVal := mtp.computeDistVals(evenVal, oddVal)
-			for _, b := range outVal.Buckets {
-				if int(b.Exemplar.Value)%2 == 0 {
-					foundEven = true
-				} else {
-					foundOdd = true
-				}
-			}
-		}
+		picked := mtp.pickExemplar(exe1, exe2)
 
-		assert.True(t, foundEven && foundOdd)
+		assert.True(t, picked == exe1 || picked == exe2)
 	})
 }
 
