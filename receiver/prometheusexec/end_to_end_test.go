@@ -126,7 +126,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 }
 
 // validateMetrics iterates over the found metrics and returns true if it finds at least 2 unique metrics, meaning the endpoint
-// was succesfully scraped twice AND it the subprocess being handled was stopped and restarted
+// was successfully scraped twice AND it the subprocess being handled was stopped and restarted
 func validateMetrics(metricsSlice *[]consumerdata.MetricsData) bool {
 	var value float64
 	for i, val := range *metricsSlice {
