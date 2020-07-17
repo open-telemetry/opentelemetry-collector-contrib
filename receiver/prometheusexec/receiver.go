@@ -36,9 +36,9 @@ import (
 )
 
 const (
-	minPortRange   int    = 10000      // Minimum of the port generation range
-	maxPortRange   int    = 11000      // Maximum of the port generation range
-	stringTemplate string = "{{port}}" // Template for port in strings
+	minPortRange int    = 10000      // Minimum of the port generation range
+	maxPortRange int    = 11000      // Maximum of the port generation range
+	portTemplate string = "{{port}}" // Template for port in strings
 )
 
 // Local random seed to not override anything being used globally
@@ -152,6 +152,7 @@ func getCustomName(cfg *Config) string {
 	if len(splitName) > 1 && splitName[1] != "" {
 		return splitName[1]
 	}
+	// fall back to the first part of the string, prometheus_exec, which should only happen if there is a single prometheus_exec receiver configured
 	return splitName[0]
 }
 
@@ -173,10 +174,11 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 	for {
 
 		// Generate a port if none was specified and if process is unhealthy (Receiver has been stopped)
-		if wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime {
-			newPort, err = wrapper.handleNewPort(newPort)
+		generatePort := wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime
+		if generatePort {
+			newPort, err = wrapper.assignNewRandomPort(newPort)
 			if err != nil {
-				wrapper.logger.Info("handleNewPort() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+				wrapper.logger.Info("assignNewRandomPort() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
 				return
 			}
 		}
@@ -184,8 +186,11 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		// Replace the templating in the strings of the process data
 		wrapper.subprocessConfig = wrapper.fillPortPlaceholders(newPort)
 
-		// Start the receiver if it's the first pass, or if the process is unhealthy and Receiver was stopped last pass
-		if elapsed == 0 || elapsed <= subprocessmanager.HealthyProcessTime && crashCount > subprocessmanager.HealthyCrashCount || elapsed <= subprocessmanager.HealthyProcessTime && wrapper.subprocessConfig.Port == 0 {
+		// Start the receiver if it's the first pass, or if the process is unhealthy/a newport was generated meaning the Receiver was stopped last pass
+		firstRun := elapsed == 0
+		unhealthyProcess := elapsed <= subprocessmanager.HealthyProcessTime && crashCount > subprocessmanager.HealthyCrashCount
+
+		if firstRun || unhealthyProcess || generatePort {
 			err = wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
 			if err != nil {
 				wrapper.logger.Info("Start() error, could not start receiver - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
@@ -235,8 +240,8 @@ func (wrapper *prometheusReceiverWrapper) computeHealthAndCrashCount(elapsed tim
 	return crashCount, nil
 }
 
-// handleNewPort generates a new port, creates a new metrics receiver with that port and assigns it to the wrapper
-func (wrapper *prometheusReceiverWrapper) handleNewPort(oldPort int) (int, error) {
+// assignNewRandomPort generates a new port, creates a new metrics receiver with that port and assigns it to the wrapper
+func (wrapper *prometheusReceiverWrapper) assignNewRandomPort(oldPort int) (int, error) {
 	var err error
 	newPort := generateRandomPort(oldPort)
 
@@ -267,11 +272,11 @@ func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *sub
 	newConfig := *wrapper.subprocessConfig
 	// ReplaceAll runs much faster (about 5x according to my tests) than checking for a regex match, therefore no checks are made and ReplaceAll simply returns the original string if no match is found
 	// ReplaceAll is run on the original strings of the config, which remain unchanged
-	newConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.Command, stringTemplate, port)
-	newConfig.CustomName = strings.ReplaceAll(wrapper.config.SubprocessConfig.CustomName, stringTemplate, port)
+	newConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.Command, portTemplate, port)
+	newConfig.CustomName = strings.ReplaceAll(wrapper.config.SubprocessConfig.CustomName, portTemplate, port)
 
 	for i, env := range wrapper.config.SubprocessConfig.Env {
-		newConfig.Env[i].Value = strings.ReplaceAll(env.Value, stringTemplate, port)
+		newConfig.Env[i].Value = strings.ReplaceAll(env.Value, portTemplate, port)
 	}
 
 	return &newConfig

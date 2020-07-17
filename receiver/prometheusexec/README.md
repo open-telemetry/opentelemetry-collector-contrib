@@ -18,15 +18,15 @@ For each `prometheus_exec` defined in the configuration file, the specified comm
 receivers:
     # custom_name here is "mysql"
     prometheus_exec/mysql: 
-        exec: ./mysqld_exporter
+        exec: ./mysqld_exporter --web.listen-address=:{{port}}
 
     # custom_name here is "postgres"
     prometheus_exec/postgres:
-        exec: ./postgres_exporter
+        exec: ./postgres_exporter --web.listen-address=:{{port}}
 ```
 
 - ### exec (required)
-Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The value of this key is a string of the command to be run, with any flags needed (this will probably be the binary to run, in the correct relative directory). The format should be: `directory/binary_to_run flag1 flag2` (the binary should be separated from the flags by a space - as well as the flags separated from themselves by a space). Environment variables can be set in a later configuration setting. Example:
+Under each `prometheus_exec/custom_name` there needs to be an `exec` key. The value of this key is a string of the command to be run, with any flags needed (this will probably be the binary to run, in the correct relative directory). The format should be: `directory/binary_to_run flag1 flag2` (the binary should be separated from the flags by a space - as well as the flags separated from themselves by a space). Example:
 
 ```yaml
 receivers:
@@ -43,7 +43,7 @@ receivers:
 `port` is an optional entry. Its value is a number indicating the port the receiver should be scraping the binary's metrics from. Two important notes about `port`:
 1. If it is omitted, we will try to randomly generate a port for you, and retry until we find one that is free. Beware when using this, since you also need to indicate your binary to listen on that same port with the use of a flag and string templating inside the command, which is covered in 2.
 
-2. **All** instances of `{{port}}` in any string of any key for the enclosing `prometheus_exec` will be replaced with either the port value indicated or the randomly generated one if no port value is set with the `port` key.
+2. **All** instances of `{{port}}` in any string of any key for the enclosing `prometheus_exec` will be replaced with either the port value indicated or the randomly generated one if no port value is set with the `port` key. String templating of `{{port}}` is supported in `exec`, `custom_name` and `env`.
 
 Example:
 
@@ -69,11 +69,11 @@ receivers:
 
 ```yaml
 receivers:
-    # this receiver will scrape every 80 seconds
+    # this receiver will scrape every 10 seconds
     prometheus_exec/apache:
         exec: ./apache_exporter
         port: 9117 
-        scrape_interval: 80s
+        scrape_interval: 10s
 
     # this receiver will scrape every 60 seconds, by default
     prometheus_exec/postgresql:
@@ -82,7 +82,7 @@ receivers:
 ```
 
 - ### env
-`env` is an optional entry to indicate which environment variables the command needs to run properly. Under it, there should be a list of key (`name`) - value (`value`) pairs. They are case-sensitive. When running a command, these environment variables are added to the pre-existing environment variables the Collector is currently running with (the entire environment is replicated, including the directory). Example:
+Specifying environment variables with `env` is optional. To use environment variables, under the `env` key should be a list of key (`name`) - value (`value`) pairs. They are case-sensitive. When running a command, these environment variables are added to the pre-existing environment variables the Collector is currently running with (the entire environment is replicated, including the directory). Example:
 
 ```yaml
 receivers:

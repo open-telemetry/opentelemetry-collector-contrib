@@ -23,19 +23,14 @@ import (
 	"time"
 )
 
+// This file will be used in the end_to_end test for prometheus_exec receiver
+// It acts as a Prometheus exporter, exposing an endpoint to be scraped with metrics
 func main() {
 	writeMetrics()
-	go server()
-	time.Sleep(10 * time.Second)
-	os.Exit(1)
+	server()
 }
 
-func server() {
-	http.Handle("/", http.FileServer(http.Dir("./testdata/")))
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", os.Args[1]), nil))
-}
-
-// writeMetrics truncates the previous metricsfile or creates it if not there, populating it with the current time
+// writeMetrics truncates the previous metrics file or creates it if not there, populating it with the current time as a metric
 func writeMetrics() {
 	f, err := os.Create("./testdata/metrics")
 	if err != nil {
@@ -45,4 +40,15 @@ func writeMetrics() {
 	f.WriteString(fmt.Sprintf("# HELP timestamp_now Unix timestamp\n# TYPE timestamp_now gauge\ntimestamp_now %v", strconv.FormatInt(time.Now().Unix(), 10)))
 
 	f.Close()
+}
+
+// server serves one route "./metrics" and will shutdown the server as soon as it is scraped once, to allow for the next subprocess to be run
+func server() {
+	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		defer os.Exit(1)
+		http.ServeFile(w, r, "./testdata/metrics")
+		return
+	})
+
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%v", os.Args[1]), nil))
 }

@@ -21,6 +21,8 @@ import (
 
 const defaultSleepTime = 5 * time.Millisecond
 
+// This program is simply a test program that does nothing but crash after a certain time, with a non-zero exit code, used in
+// subprocessmanager tests
 func main() {
 	time.Sleep(defaultSleepTime)
 	os.Exit(2)

@@ -79,7 +79,7 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 		return elapsed, fmt.Errorf("[%v] could not get the command's output pipe, err: %v", proc.CustomName, err)
 	}
 	childProcess.Stderr = childProcess.Stdout
-	go proc.handleSubprocessOutput(bufio.NewReader(cmdReader), logger)
+	go proc.pipeSubprocessOutput(bufio.NewReader(cmdReader), logger)
 
 	// Start and stop timer (elapsed) right before and after executing the command
 	start = time.Now()
@@ -98,7 +98,7 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 }
 
 // Log every line of the subprocesse's output using zap
-func (proc *Process) handleSubprocessOutput(reader *bufio.Reader, logger *zap.Logger) {
+func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger) {
 	var (
 		line string
 		err  error

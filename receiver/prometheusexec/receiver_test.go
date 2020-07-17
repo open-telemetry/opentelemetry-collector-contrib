@@ -454,7 +454,7 @@ var (
 		},
 	}
 
-	handleNewPortTests = []struct {
+	assignNewRandomPortTests = []struct {
 		name    string
 		wrapper *prometheusReceiverWrapper
 		oldPort int
@@ -549,15 +549,15 @@ func TestFillPortPlaceholders(t *testing.T) {
 	}
 }
 
-func TestHandleNewPort(t *testing.T) {
-	for _, test := range handleNewPortTests {
+func TestAssignNewRandomPort(t *testing.T) {
+	for _, test := range assignNewRandomPortTests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := test.wrapper.handleNewPort(test.oldPort)
+			got, err := test.wrapper.assignNewRandomPort(test.oldPort)
 			if err != nil {
-				t.Errorf("handleNewPort() threw an error: %v", err)
+				t.Errorf("assignNewRandomPort() threw an error: %v", err)
 			}
 			if got == test.oldPort {
-				t.Errorf("handleNewPort() got = %v, want different than %v", got, test.oldPort)
+				t.Errorf("assignNewRandomPort() got = %v, want different than %v", got, test.oldPort)
 			}
 		})
 	}
