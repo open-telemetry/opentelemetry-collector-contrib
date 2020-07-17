@@ -30,13 +30,18 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
+type labelKeyValue struct {
+	Key   string
+	Value string
+}
+
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []Transform
 	inMetrics  []*metricspb.MetricDescriptor // input Metric names
 	outMetrics []*metricspb.MetricDescriptor // output Metric names
-	inLabels   []string
-	outLabels  []string
+	inLabels   []labelKeyValue
+	outLabels  []labelKeyValue
 }
 
 var (
@@ -67,14 +72,26 @@ var (
 		{Name: "metric5/new"},
 	}
 
-	initialLabels = []string{
-		"label1",
-		"label2",
+	initialLabels = []labelKeyValue{
+		{
+			Key:   "label1",
+			Value: "value1",
+		},
+		{
+			Key:   "label2",
+			Value: "value2",
+		},
 	}
 
-	outLabels = []string{
-		"label1/new",
-		"label2",
+	outputLabels = []labelKeyValue{
+		{
+			Key:   "label1/new",
+			Value: "value1",
+		},
+		{
+			Key:   "label2",
+			Value: "value2",
+		},
 	}
 
 	validUpateLabelOperation = Operation{
@@ -138,7 +155,7 @@ var (
 			inMetrics:  initialMetricNames,
 			outMetrics: initialMetricNames,
 			inLabels:   initialLabels,
-			outLabels:  outLabels,
+			outLabels:  outputLabels,
 		},
 		// INSERT
 		{
@@ -183,7 +200,7 @@ var (
 			inMetrics:  initialMetricNames,
 			outMetrics: outMetricNamesInsertSingle,
 			inLabels:   initialLabels,
-			outLabels:  outLabels,
+			outLabels:  outputLabels,
 		},
 		// Toggle Data Type
 		{
@@ -244,6 +261,112 @@ var (
 			inMetrics:  []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
 			outMetrics: []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
 		},
+		// Add Label to a metric
+		{
+			name: "update existing metric by adding a new label when there are no labels",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:   AddLabel,
+							NewLabel: "foo",
+							NewValue: "bar",
+						},
+					},
+				},
+			},
+			inMetrics:  initialMetricNames,
+			outMetrics: initialMetricNames,
+			outLabels:  []labelKeyValue{{Key: "foo", Value: "bar"}},
+		},
+		{
+			name: "update existing metric by adding a new label when there are labels",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:   AddLabel,
+							NewLabel: "foo",
+							NewValue: "bar",
+						},
+					},
+				},
+			},
+			inMetrics:  initialMetricNames,
+			outMetrics: initialMetricNames,
+			inLabels:   initialLabels,
+			outLabels: []labelKeyValue{
+				{
+					Key:   "label1",
+					Value: "value1",
+				},
+				{
+					Key:   "label2",
+					Value: "value2",
+				},
+				{
+					Key:   "foo",
+					Value: "bar",
+				},
+			},
+		},
+		{
+			name: "update existing metric by adding a label that is duplicated in the list",
+			transforms: []Transform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:   AddLabel,
+							NewLabel: "label1",
+							NewValue: "value1",
+						},
+					},
+				},
+			},
+			inMetrics:  initialMetricNames,
+			outMetrics: initialMetricNames,
+			inLabels:   initialLabels,
+			outLabels: []labelKeyValue{
+				{
+					Key:   "label1",
+					Value: "value1",
+				},
+				{
+					Key:   "label2",
+					Value: "value2",
+				},
+				{
+					Key:   "label1",
+					Value: "value1",
+				},
+			},
+		},
+		{
+			name: "update does not happen because target metric doesn't exist",
+			transforms: []Transform{
+				{
+					MetricName: "mymetric",
+					Action:     Update,
+					Operations: []Operation{
+						{
+							Action:   AddLabel,
+							NewLabel: "foo",
+							NewValue: "bar",
+						},
+					},
+				},
+			},
+			inMetrics:  initialMetricNames,
+			outMetrics: initialMetricNames,
+			inLabels:   initialLabels,
+			outLabels:  initialLabels,
+		},
 	}
 )
 
@@ -285,21 +408,17 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 				transform, ok := targetNameToTransform[out.MetricDescriptor.Name]
 
-				// check the original labels are untouched if not transformed, or insert
+				// Check the original labels are untouched if not transformed, or insert.
 				if !ok || (transform.Action == Insert && out.MetricDescriptor.Name == transform.MetricName) {
-					for lidx, l := range out.MetricDescriptor.LabelKeys {
-						assert.Equal(t, test.inLabels[lidx], l.Key)
-					}
+					validateLabels(t, test.inLabels, out)
 				}
 
 				if !ok {
 					continue
 				}
 
-				// check the labels are correctly updated
-				for lidx, l := range out.MetricDescriptor.LabelKeys {
-					assert.Equal(t, test.outLabels[lidx], l.Key)
-				}
+				// Check the labels are correctly updated.
+				validateLabels(t, test.outLabels, out)
 
 				// check the data type was changed correctly
 				for _, ts := range out.Timeseries {
@@ -317,7 +436,21 @@ func TestMetricsTransformProcessor(t *testing.T) {
 	}
 }
 
-func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, inLabels []string) pdata.Metrics {
+func validateLabels(t *testing.T, expectLabels []labelKeyValue, inMetric *metricspb.Metric) {
+	assert.Equal(t, len(expectLabels), len(inMetric.MetricDescriptor.LabelKeys))
+	for lidx, l := range inMetric.MetricDescriptor.LabelKeys {
+		assert.Equal(t, expectLabels[lidx].Key, l.Key)
+	}
+	for _, ts := range inMetric.Timeseries {
+		assert.Equal(t, len(expectLabels), len(ts.LabelValues))
+		for lidx, l := range ts.LabelValues {
+			assert.Equal(t, expectLabels[lidx].Value, l.Value)
+			assert.True(t, l.HasValue)
+		}
+	}
+}
+
+func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, labelKV []labelKeyValue) pdata.Metrics {
 	md := consumerdata.MetricsData{
 		Metrics: make([]*metricspb.Metric, len(inMetrics)),
 	}
@@ -325,11 +458,13 @@ func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, inLabels []strin
 	for i, inMetric := range inMetrics {
 		descriptor := proto.Clone(inMetric).(*metricspb.MetricDescriptor)
 
-		labels := make([]*metricspb.LabelKey, len(inLabels))
-		for j, labelKey := range inLabels {
-			labels[j] = &metricspb.LabelKey{Key: labelKey}
+		labelKeys := make([]*metricspb.LabelKey, len(labelKV))
+		labelValues := make([]*metricspb.LabelValue, len(labelKV))
+		for j, label := range labelKV {
+			labelKeys[j] = &metricspb.LabelKey{Key: label.Key}
+			labelValues[j] = &metricspb.LabelValue{Value: label.Value, HasValue: true}
 		}
-		descriptor.LabelKeys = labels
+		descriptor.LabelKeys = labelKeys
 
 		md.Metrics[i] = &metricspb.Metric{
 			MetricDescriptor: descriptor,
@@ -342,6 +477,7 @@ func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, inLabels []strin
 							Value: &metricspb.Point_DoubleValue{DoubleValue: 2},
 						},
 					},
+					LabelValues: labelValues,
 				},
 			},
 		}

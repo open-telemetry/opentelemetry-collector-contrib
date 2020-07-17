@@ -15,6 +15,7 @@ The metrics transform processor can be used to rename metrics, labels, or label 
   - Aggregation_type: sum, average, max
 - Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
   - Aggregation_type: sum, average, max
+- Add label to an existing metric
 
 ## Configuration
 ```yaml
@@ -96,4 +97,17 @@ operations:
    aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
    new_value: slab 
    aggregation_type: sum
+```
+
+### Add a label to an existing metric
+```yaml
+transforms:
+...
+# The following will append label {Key: `mylabel`, Description: `myvalue`} to the metric `some_name`.
+  - metric_name: some_name
+      action: update
+      operation:
+        - action: add_label
+          new_label: mylabel
+          new_value: myvalue
 ```
