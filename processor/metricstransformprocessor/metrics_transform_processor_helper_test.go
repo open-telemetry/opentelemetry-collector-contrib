@@ -171,7 +171,7 @@ var (
 			},
 		},
 		{
-			name: "metric_label_aggregation_average_int_update",
+			name: "metric_label_aggregation_mean_int_update",
 			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
@@ -180,7 +180,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
-								AggregationType: Average,
+								AggregationType: Mean,
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -291,7 +291,7 @@ var (
 			},
 		},
 		{
-			name: "metric_label_aggregation_average_double_update",
+			name: "metric_label_aggregation_mean_double_update",
 			transforms: []mtpTransform{
 				{
 					MetricName: "metric1",
@@ -300,7 +300,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
-								AggregationType: Average,
+								AggregationType: Mean,
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -402,13 +402,14 @@ var (
 			in: []*metricspb.Metric{
 				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).addInt64Point(2, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "new/label2-value"}).
-					addInt64Point(0, 4, 2).
+					addTimeseries(1, []string{"label1-value1", "new/label2-value"}).addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addInt64Point(0, 4, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 		},

@@ -25,17 +25,23 @@ func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.M
 	op := mtpOp.configOperation
 	labelSet := mtpOp.labelSetMap
 	labelIdxs, _ := mtp.getLabelIdxs(metric, labelSet)
-	timeseriesGroup := mtp.groupTimeseriesWithNewValue(metric, labelIdxs, op.NewValue, mtpOp.aggregatedValuesSet)
+	timeseriesGroup, unchangedTimeseries := mtp.groupTimeseriesWithNewValue(metric, labelIdxs, op.NewValue, mtpOp.aggregatedValuesSet)
 	newTimeseries := mtp.aggregateTimeseriesGroups(timeseriesGroup, op.AggregationType, metric.MetricDescriptor.Type)
+	newTimeseries = append(newTimeseries, unchangedTimeseries...)
 	metric.Timeseries = newTimeseries
 }
 
 // groupTimeseriesWithNewValue groups all timeseries in the metric that will be aggregated together based on the entire label values after replacing the aggregatedValues by newValue.
 // Returns a map from keys to groups of timeseries and the corresponding label values
-func (mtp *metricsTransformProcessor) groupTimeseriesWithNewValue(metric *metricspb.Metric, labelIdxs []int, newValue string, aggregatedValuesSet map[string]bool) map[string]*timeseriesGroupByLabelValues {
+func (mtp *metricsTransformProcessor) groupTimeseriesWithNewValue(metric *metricspb.Metric, labelIdxs []int, newValue string, aggregatedValuesSet map[string]bool) (map[string]*timeseriesGroupByLabelValues, []*metricspb.TimeSeries) {
+	unchangedTimeseries := make([]*metricspb.TimeSeries, 0)
 	// key is a composite of the label values as a single string
 	keyToTimeseriesMap := make(map[string]*timeseriesGroupByLabelValues)
 	for _, timeseries := range metric.Timeseries {
+		if mtp.isUnchangedTimeseries(timeseries, labelIdxs, aggregatedValuesSet) {
+			unchangedTimeseries = append(unchangedTimeseries, timeseries)
+			continue
+		}
 		var composedValues string
 		var newLabelValues []*metricspb.LabelValue
 		composedValues, newLabelValues = mtp.composeKeyWithNewValue(labelIdxs[0], timeseries, newValue, aggregatedValuesSet)
@@ -50,7 +56,17 @@ func (mtp *metricsTransformProcessor) groupTimeseriesWithNewValue(metric *metric
 			}
 		}
 	}
-	return keyToTimeseriesMap
+	return keyToTimeseriesMap, unchangedTimeseries
+}
+
+// isUnchangedTimeseries determines if the timeserieswill remian unchanged based on the aggregatedValueSet and labelIdx information
+func (mtp *metricsTransformProcessor) isUnchangedTimeseries(timeseries *metricspb.TimeSeries, labelIdxs []int, aggregatedValuesSet map[string]bool) bool {
+	for _, idx := range labelIdxs {
+		if _, ok := aggregatedValuesSet[timeseries.LabelValues[idx].Value]; ok {
+			return false
+		}
+	}
+	return true
 }
 
 // composeKeyWithNewValue composes the key for the timeseries with the aggregatedValues replaced by the newValue

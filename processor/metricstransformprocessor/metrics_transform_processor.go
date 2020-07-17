@@ -130,3 +130,18 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 		}
 	}
 }
+
+// getLabelIdxs gets the indices of the labelSet labels' indices in the metric's descriptor's labels field
+// Returns the indices slice and a slice of the actual labels selected by this slice of indices
+func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, labelSet map[string]bool) ([]int, []*metricspb.LabelKey) {
+	labelIdxs := make([]int, 0)
+	labels := make([]*metricspb.LabelKey, 0)
+	for idx, label := range metric.MetricDescriptor.LabelKeys {
+		_, ok := labelSet[label.Key]
+		if ok {
+			labelIdxs = append(labelIdxs, idx)
+			labels = append(labels, label)
+		}
+	}
+	return labelIdxs, labels
+}

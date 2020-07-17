@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
 )
 
 func TestMetricsTransformProcessor(t *testing.T) {
@@ -32,7 +33,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			// next stores the results of the aggregation metric processor.
 			next := &etest.SinkMetricsExporter{}
 
-			mtp := newMetricsTransformProcessor(next, nil, test.transforms)
+			mtp := newMetricsTransformProcessor(next, zap.NewExample(), test.transforms)
 			assert.NotNil(t, mtp)
 
 			caps := mtp.GetCapabilities()
