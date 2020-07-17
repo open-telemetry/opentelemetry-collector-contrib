@@ -72,9 +72,9 @@ func execErrorTest(t *testing.T, errorReceiverConfig configmodels.Receiver) {
 	}
 }
 
-// endToEndScrapeTest scrapes an endpoint twice, and between each scrape waits the correct amount of time for the subprocess exporter (./testdata/end_to_end_metrics_test/expoter.go)
-// to fail and restart, meaning it verifies two things: the scrape is successful (twice), the process was restarted correctly when failed and the underlying
-// Prometheus receiver was correctly stopped and then restarted. For extra testing the metrics are different every time the subprocess exporter is started
+// endToEndScrapeTest scrapes a test endpoint (test_prometheus_exporter.go) twice, and between each scrape yields the execution with Sleep() to wait for the subprocess (exporter) to restar
+// - wait time is about 1s - to fail and restart, meaning it verifies three things: the scrape is successful (twice), the process was restarted correctly when failed and the underlying
+// Prometheus receiver was correctly stopped and then restarted. For extra testing the metrics values are different every time the subprocess exporter is started
 // And the uniqueness of the metric scraped is verified
 func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, waitGroup *sync.WaitGroup) {
 	defer waitGroup.Done()
@@ -83,13 +83,11 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 	sink := &exportertest.SinkMetricsExporterOld{}
 	wrapper := new(zap.NewNop(), receiverConfig.(*Config), sink)
 
-	// Initiate building the embedded configs and managing the subprocess with Start(), and keep track of current time
+	// Initiate building the embedded configs and managing the subprocess with Start()
 	err := wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("end_to_end_test.go got error = %v", err)
 	}
-	now := time.Now()
-
 	defer wrapper.Shutdown(context.Background())
 
 	var metrics []consumerdata.MetricsData
@@ -102,10 +100,13 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 		if len(got) == 0 {
 			return false
 		}
-		time.Sleep(1 * time.Second)
+
 		metrics = got
 		return true
 	}, waitFor, tick, "No metrics were collected after %v for the first scrape", waitFor)
+
+	// Wait for subprocess to restart - wait time is about 1s - and allow the other test to run in parallel
+	time.Sleep(1500 * time.Millisecond)
 
 	metrics = sink.AllMetrics()
 
