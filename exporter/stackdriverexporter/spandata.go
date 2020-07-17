@@ -20,7 +20,6 @@ import (
 	"errors"
 	"time"
 
-	"cloud.google.com/go/logging"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
@@ -167,21 +166,10 @@ func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
 }
 
 func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []kv.KeyValue {
-	ctx := context.Background()
-	client, _ := logging.NewClient(ctx, "my-project-id")
-	logName := "spans"
-	logger := client.Logger(logName)
-
 	otAttrs := make([]kv.KeyValue, 0, attrs.Len())
-	//logger.Log(logging.Entry{Payload: map[string]interface{} {"num_pdata_attrs": attrs.Len()}})
 	appendAttrs := func(m pdata.AttributeMap) {
 		m.ForEach(func(k string, v pdata.AttributeValue) {
 			var newVal value.Value
-			logger.Log(logging.Entry{Payload: map[string]interface{} {"key": k}})
-			logger.Log(logging.Entry{Payload: map[string]interface{} {
-				// always giving "NULL"??
-				"val_type": pdata.AttributeValueType(v.Type()).String(),
-			}})
 			switch v.Type() {
 			case pdata.AttributeValueSTRING:
 				newVal = value.String(v.StringVal())
@@ -197,7 +185,6 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 				Key: kv.Key(k),
 				Value: newVal,
 			})
-			logger.Log(logging.Entry{Payload: map[string]interface{} {"ot_attrs": otAttrs}})
 		})
 	}
 	if !resource.IsNil() {
