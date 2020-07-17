@@ -124,7 +124,7 @@ var (
 		{
 			name: "normal process 1, error process exit",
 			process: &Process{
-				Command: "go run ../testdata/main.go",
+				Command: "go run ../testdata/test_crasher.go",
 				Port:    0,
 				Env: []config.EnvConfig{
 					{
@@ -134,7 +134,7 @@ var (
 				},
 				CustomName: "main",
 			},
-			wantElapsed: 5 * time.Millisecond,
+			wantElapsed: 4 * time.Millisecond,
 			wantErr:     false,
 		},
 		{
