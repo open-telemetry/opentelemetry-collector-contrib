@@ -111,3 +111,41 @@ func TestCreateProcessors(t *testing.T) {
 		}
 	}
 }
+
+func TestFactory_validateConfiguration(t *testing.T) {
+	v1 := Config{
+		Transforms: []Transform{
+			{
+				MetricName: "mymetric",
+				Action:     Update,
+				Operations: []Operation{
+					{
+						Action:   AddLabel,
+						NewValue: "bar",
+					},
+				},
+			},
+		},
+	}
+	err := validateConfiguration(&v1)
+	assert.Equal(t, "missing required field \"new_label\" while \"action\" is add_label in the 0th operation", err.Error())
+
+	v2 := Config{
+		Transforms: []Transform{
+			{
+				MetricName: "mymetric",
+				Action:     Update,
+				Operations: []Operation{
+					{
+						Action:   AddLabel,
+						NewLabel: "foo",
+					},
+				},
+			},
+		},
+	}
+
+	err = validateConfiguration(&v2)
+	assert.Equal(t, "missing required field \"new_value\" while \"action\" is add_label in the 0th operation", err.Error())
+
+}
