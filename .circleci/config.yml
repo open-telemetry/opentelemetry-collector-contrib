@@ -36,7 +36,7 @@ commands:
             dist/otel-contrib-collector_*_amd64.deb
             dist/otel-contrib-collector-*.x86_64.rpm
             dist/otel-contrib-collector_*_arm64.deb
-            dist/opentelemetry-contrib-collector.msi
+            dist/otel-contrib-collector-*-amd64.msi
     steps:
       - run:
           name: Check if files exist
@@ -362,7 +362,6 @@ jobs:
           name: Prepare release artifacts
           command: |
             cp bin/* dist/
-            mv dist/opentelemetry-contrib-collector.msi dist/otel-contrib-collector.msi
       - run:
           name: Calculate checksums
           command: cd dist && shasum -a 256 * > checksums.txt

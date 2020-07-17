@@ -1,0 +1,31 @@
+receivers:
+  aws_xray: # ensure the default configurations are correctly generated
+  
+  aws_xray/udp_endpoint:
+    # ensure the UDP endpoint can be properly overwritten
+    endpoint: "localhost:5678"
+  
+  aws_xray/proxy_server:
+    # ensure the fields under proxy_server can be overwritten
+    proxy_server:
+      tcp_endpoint: "localhost:1234"
+      proxy_address: "https://proxy.proxy.com"
+      insecure: true
+      server_name_override: "something"
+      region: "us-west-1"
+      role_arn: "arn:aws:iam::123456789012:role/awesome_role"
+      aws_endpoint: "https://another.aws.endpoint.com"
+      local_mode: true
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers: [aws_xray, aws_xray/udp_endpoint, aws_xray/proxy_server]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]

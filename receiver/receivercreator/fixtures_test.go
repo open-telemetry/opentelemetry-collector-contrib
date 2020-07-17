@@ -45,3 +45,9 @@ var portEndpoint = observer.Endpoint{
 		Protocol: observer.ProtocolTCP,
 	},
 }
+
+var unsupportedEndpoint = observer.Endpoint{
+	ID:      "endpoint-1",
+	Target:  "localhost:1234",
+	Details: map[string]interface{}{},
+}
