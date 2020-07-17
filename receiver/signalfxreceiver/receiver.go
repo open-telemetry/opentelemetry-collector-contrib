@@ -26,9 +26,8 @@ import (
 	"unsafe"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -201,7 +200,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	msg := &sfxpb.DataPointUploadMessage{}
-	if err = proto.Unmarshal(body, msg); err != nil {
+	if err = msg.Unmarshal(body); err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return
 	}

@@ -59,6 +59,7 @@ func TestOnAdd(t *testing.T) {
 
 	handler.OnAdd([]observer.Endpoint{
 		portEndpoint,
+		unsupportedEndpoint,
 	})
 
 	runner.AssertExpectations(t)

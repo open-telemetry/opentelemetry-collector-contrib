@@ -33,8 +33,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/proto"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -162,7 +162,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
-	sFxMsg := buildSFxMsg(&currentTime, 13, 3)
+	sFxMsg := buildSFxMsg(currentTime, 13, 3)
 
 	tests := []struct {
 		name           string
@@ -381,7 +381,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	t.Log("Sending SignalFx metric data Request")
 
-	body, err := proto.Marshal(buildSFxMsg(&msec, 13, 3))
+	body, err := proto.Marshal(buildSFxMsg(msec, 13, 3))
 	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
@@ -452,7 +452,7 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			currentTime := time.Now().Unix() * 1e3
-			sFxMsg := buildSFxMsg(&currentTime, 13, 3)
+			sFxMsg := buildSFxMsg(currentTime, 13, 3)
 			msgBytes, _ := proto.Marshal(sFxMsg)
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/x-protobuf")
@@ -491,13 +491,13 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func buildSFxMsg(time *int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
+func buildSFxMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
 	return &sfxpb.DataPointUploadMessage{
 		Datapoints: []*sfxpb.DataPoint{
 			{
-				Metric:    strPtr("single"),
+				Metric:    "single",
 				Timestamp: time,
-				Value: &sfxpb.Datum{
+				Value: sfxpb.Datum{
 					IntValue: int64Ptr(value),
 				},
 				MetricType: sfxTypePtr(sfxpb.MetricType_GAUGE),

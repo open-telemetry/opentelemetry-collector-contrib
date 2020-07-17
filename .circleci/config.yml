@@ -26,6 +26,33 @@ executors:
       - image: ymotongpoo/cuda:10.2
 
 commands:
+  verify_dist_files_exist:
+    parameters:
+      files:
+        type: string
+        default: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
+            dist/otel-contrib-collector-*.arm64.rpm
+            dist/otel-contrib-collector_*_amd64.deb
+            dist/otel-contrib-collector-*.x86_64.rpm
+            dist/otel-contrib-collector_*_arm64.deb
+            dist/otel-contrib-collector-*-amd64.msi
+    steps:
+      - run:
+          name: Check if files exist
+          command: |
+            files="<< parameters.files >>"
+            for f in $files; do
+              if [[ ! -f $f ]]
+              then
+                  echo "$f does not exist."
+                  exit 1
+              fi
+            done
+
   setup:
     steps:
       - checkout
@@ -169,6 +196,15 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - publish-check:
+          requires:
+            - lint
+            - unit-tests
+            - integration-tests
+            - cross-compile
+            - windows-msi
+            - deb-package
+            - rpm-package
       - publish-stable:
           requires:
             - lint
@@ -176,6 +212,8 @@ workflows:
             - integration-tests
             - cross-compile
             - windows-msi
+            - deb-package
+            - rpm-package
           filters:
             branches:
               ignore: /.*/
@@ -196,6 +234,22 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-package:
+          name: deb-package
+          package_type: deb
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - build-package:
+          name: rpm-package
+          package_type: rpm
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /^v([0-9])+.([0-9])+.([0-9])+.*/
 
 jobs:
   setup:
@@ -271,6 +325,8 @@ jobs:
     steps:
       - attach_to_workspace
       - run:
+          command: mkdir -p dist
+      - run:
           name: Install Wix Toolset
           command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
       - run:
@@ -283,7 +339,23 @@ jobs:
           command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
       - persist_to_workspace:
           root: ~/
-          paths: project/bin
+          paths: project/dist/*.msi
+
+  publish-check:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - verify_dist_files_exist
+      - run:
+          name: Check passed
+          command: echo "publish check passed meaning release CI jobs should work as expected"
+          when: on_success
+      - run:
+          name: Check failed
+          command: echo "publish check failed. This means release CI jobs will likely fail as well"
+          when: on_fail
 
   cudareceiver:
     executor:
@@ -304,21 +376,32 @@ jobs:
       - image: cimg/go:1.14
     steps:
       - restore_workspace
+      - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib
           tag: ${CIRCLE_TAG:1}
       - run:
+          name: Prepare release artifacts
+          command: |
+            cp bin/* dist/
+      - run:
           name: Calculate checksums
-          command: cd bin && shasum -a 256 * > checksums.txt
+          command: cd dist && shasum -a 256 * > checksums.txt
       - run:
           name: Create Github release and upload artifacts
-          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG bin/
+          command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
   publish-dev:
     executor: golang
     steps:
       - restore_workspace
+      - verify_dist_files_exist:
+          files: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev
@@ -406,3 +489,37 @@ jobs:
           path: test-results/junit
       - store_artifacts:
           path: test-results
+
+  build-package:
+    machine:
+      image: ubuntu-1604:202007-01
+    parameters:
+      package_type:
+        type: enum
+        enum: ["deb", "rpm"]
+    steps:
+      - checkout
+      - attach_to_workspace
+      - run:
+          name: Install fpm and dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+            gem install --no-document fpm -v 1.11.0
+      - run:
+          name: Build << parameters.package_type >> amd64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./dist/"
+      - run:
+          name: Build << parameters.package_type >> arm64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./dist/"
+      - run:
+          name: Test << parameters.package_type >> package installation
+          command: |
+            if [[ "<< parameters.package_type >>" = "deb" ]]; then
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+            else
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+            fi
+      - persist_to_workspace:
+          root: ~/
+          paths: project/dist/*.<< parameters.package_type >>

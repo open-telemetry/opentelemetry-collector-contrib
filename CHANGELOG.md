@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v0.6.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.6.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.6.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- Removed `jaegarlegacy` (#397) and `zipkinscribe` receivers (#410)
+- `kubeletstats` receiver: Renamed `k8s.pod.namespace` pod label to `k8s.namespace.name` and `k8s.container.name` container label to `container.name`
+
+## 🚀 New components 🚀
+
+- Processors
+  - `metricstransform` renames/aggregates within individual metrics (#376) and allow changing the data type between int and float (#402)
+
+## 💡 Enhancements 💡
+
+- `awsxray` exporter: Use `peer.service` as segment name when set. (#385)
+- `splunk` exporter: Add trace exports support (#359, #399)
+- Build and publish Windows MSI (#408) and DEB/RPM Linux packages (#405)
+
+## 🧰 Bug fixes 🧰
+
+- `kubeletstats` receiver:
+  - Fixed NPE for newly created pods (#404)
+  - Updated to latest change in the ReceiverFactoryOld interface (#401)
+  - Fixed logging and self reported metrics (#357)
+- `awsxray` exporter: Only convert SQL information for SQL databases. (#379)
+- `resourcedetection` processor: Correctly obtain machine-type info from gce metadata (#395)
+- `k8scluster` receiver: Fix container resource metrics (#416)
+
 ## v0.5.0
 
 Released 01-07-2020
