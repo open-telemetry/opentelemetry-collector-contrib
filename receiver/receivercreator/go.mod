@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.5.1-0.20200714180902-7066029f586b
+	go.opentelemetry.io/collector v0.6.0
 	go.uber.org/zap v1.13.0
 )
 
