@@ -31,7 +31,22 @@ import (
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := Factory{}
 	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
+	assert.Equal(t, cfg, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		NumberOfWorkers:       8,
+		Endpoint:              "",
+		RequestTimeoutSeconds: 30,
+		MaxRetries:            2,
+		NoVerifySSL:           false,
+		ProxyAddress:          "",
+		Region:                "",
+		LocalMode:             false,
+		ResourceARN:           "",
+		RoleARN:               "",
+	}, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 

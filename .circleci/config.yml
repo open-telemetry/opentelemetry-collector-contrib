@@ -36,7 +36,7 @@ commands:
             dist/otel-contrib-collector_*_amd64.deb
             dist/otel-contrib-collector-*.x86_64.rpm
             dist/otel-contrib-collector_*_arm64.deb
-            dist/opentelemetry-contrib-collector.msi
+            dist/otel-contrib-collector-*-amd64.msi
     steps:
       - run:
           name: Check if files exist
@@ -362,7 +362,6 @@ jobs:
           name: Prepare release artifacts
           command: |
             cp bin/* dist/
-            mv dist/opentelemetry-contrib-collector.msi dist/otel-contrib-collector.msi
       - run:
           name: Calculate checksums
           command: cd dist && shasum -a 256 * > checksums.txt
@@ -374,7 +373,12 @@ jobs:
     executor: golang
     steps:
       - restore_workspace
-      - verify_dist_files_exist
+      - verify_dist_files_exist:
+          files: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-contrib-dev

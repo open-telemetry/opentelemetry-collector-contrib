@@ -14,10 +14,6 @@
 
 package observer
 
-import (
-	"fmt"
-)
-
 // Protocol defines network protocol for container ports.
 type Protocol string
 
@@ -29,38 +25,6 @@ const (
 	// ProtocolUnknown is some other protocol or it is unknown.
 	ProtocolUnknown Protocol = "Unknown"
 )
-
-// Endpoint is a service that can be contacted remotely.
-type Endpoint struct {
-	// ID uniquely identifies this endpoint.
-	ID string
-	// Target is an IP address or hostname of the endpoint.
-	Target string
-	// Details contains additional context about the endpoint such as a Pod or Port.
-	Details interface{}
-}
-
-func (e *Endpoint) String() string {
-	return fmt.Sprintf("Endpoint{ID: %v, Target: %v, Details: %T%+v}", e.ID, e.Target, e.Details, e.Details)
-}
-
-// Pod is a discovered k8s pod.
-type Pod struct {
-	// Name of the pod.
-	Name string
-	// Labels is a map of user-specified metadata.
-	Labels map[string]string
-	// Annotations is a map of user-specified metadata.
-	Annotations map[string]string
-}
-
-// Port is an endpoint that has a target as well as a port.
-type Port struct {
-	Name     string
-	Pod      Pod
-	Port     uint16
-	Protocol Protocol
-}
 
 // Observable is an interface that provides notification of endpoint changes.
 type Observable interface {
