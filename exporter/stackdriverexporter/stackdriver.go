@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
@@ -86,16 +87,16 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
-func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporterOld, error) {
+func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
 	sde, serr := newStackdriverExporter(cfg)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
 	}
 	mExp := &stackdriverExporter{exporter: sde}
 
-	return exporterhelper.NewMetricsExporterOld(
+	return exporterhelper.NewMetricsExporter(
 		cfg,
-		mExp.pushMetricsData,
+		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
@@ -143,6 +144,19 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 // pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
 func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
 	return se.exporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+}
+
+func (se *stackdriverExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+	mds := pdatautil.MetricsToMetricsData(m)
+	dropped := 0
+	for _, md := range mds {
+		d, err := se.pushMetricsData(ctx, md)
+		dropped += d
+		if err != nil {
+			return dropped, err
+		}
+	}
+	return dropped, nil
 }
 
 // pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans

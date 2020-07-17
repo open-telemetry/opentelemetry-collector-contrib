@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	//"go.uber.org/zap"
 )
@@ -61,7 +60,6 @@ func (f *Factory) CreateMetricsExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
-	// eCfg := cfg.(*Config)
-	// return newStackdriverMetricsExporter(eCfg)
-	return nil, configerror.ErrDataTypeIsNotSupported
+	eCfg := cfg.(*Config)
+	return newStackdriverMetricsExporter(eCfg)
 }
