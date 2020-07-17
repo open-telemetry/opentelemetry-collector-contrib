@@ -18,3 +18,10 @@ coverage:
       default:
         enabled: yes
         target: 95%
+        flags:
+          - "unit"
+      cuda:
+        enabled: yes
+        target: 95%
+        flags:
+          - "unit_cuda"
