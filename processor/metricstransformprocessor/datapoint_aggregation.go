@@ -29,28 +29,13 @@ type timeseriesGroupByLabelValues struct {
 	labelValues []*metricspb.LabelValue
 }
 
-// getLabelIdxs gets the indices of the labelSet labels' indices in the metric's descriptor's labels field
-// Returns the indices slice and a slice of the actual labels selected by this slice of indices
-func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, labelSet map[string]bool) ([]int, []*metricspb.LabelKey) {
-	labelIdxs := make([]int, 0)
-	labels := make([]*metricspb.LabelKey, 0)
-	for idx, label := range metric.MetricDescriptor.LabelKeys {
-		_, ok := labelSet[label.Key]
-		if ok {
-			labelIdxs = append(labelIdxs, idx)
-			labels = append(labels, label)
-		}
-	}
-	return labelIdxs, labels
-}
-
 // aggregateTimeseriesGroups attempts to merge each group of timeseries in keyToTimeseriesMap through the specific calculation indicated by aggrType and dataType to construct the new timeseries with new label values indicated in keyToLabelValuesMap
 // Returns the new list of timeseries
 func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string]*timeseriesGroupByLabelValues, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
 	newTimeSeriesList := make([]*metricspb.TimeSeries, len(keyToTimeseriesMap))
 	idxCounter := 0
 	for _, element := range keyToTimeseriesMap {
-		timestampToPoints, startTimestamp := mtp.analyzeTimeseriesForAggregation(element.timeseries)
+		timestampToPoints, startTimestamp := mtp.groupPointsForAggregation(element.timeseries)
 		newPoints := mtp.aggregatePoints(timestampToPoints, aggrType, dataType)
 		newSingleTimeSeries := &metricspb.TimeSeries{
 			StartTimestamp: startTimestamp,
@@ -64,12 +49,13 @@ func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesM
 	return newTimeSeriesList
 }
 
-// analyzeTimeseriesForAggregation uses timestamp as an indicator to group aggregatable points in the group of timeseries, and determines the final value of the start timestamp for this groups of timeseries.
+// groupPointsForAggregation uses timestamp as an indicator to group aggregatable points in the group of timeseries, and determines the final value of the start timestamp for this groups of timeseries.
 // Returns a map that groups points by timestamps and the final start timestamp
-func (mtp *metricsTransformProcessor) analyzeTimeseriesForAggregation(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
+func (mtp *metricsTransformProcessor) groupPointsForAggregation(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
 	var startTimestamp *timestamp.Timestamp
 	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
+		// picking the earliest start timestamp for this set of aggregated timeseries
 		if startTimestamp == nil || ts.StartTimestamp.Seconds < startTimestamp.Seconds || (ts.StartTimestamp.Seconds == startTimestamp.Seconds && ts.StartTimestamp.Nanos < startTimestamp.Nanos) {
 			startTimestamp = ts.StartTimestamp
 		}
@@ -130,7 +116,7 @@ func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, ag
 		intVal = points[0].GetInt64Value()
 	}
 	for _, p := range points[1:] {
-		if aggrType == Sum || aggrType == Average {
+		if aggrType == Sum || aggrType == Mean {
 			intVal += p.GetInt64Value()
 		} else if aggrType == Max {
 			intVal = int64(math.Max(float64(intVal), float64(p.GetInt64Value())))
@@ -138,7 +124,7 @@ func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, ag
 			intVal = int64(math.Min(float64(intVal), float64(p.GetInt64Value())))
 		}
 	}
-	if aggrType == Average {
+	if aggrType == Mean {
 		intVal /= int64(len(points))
 	}
 	return &metricspb.Point_Int64Value{Int64Value: intVal}
@@ -152,7 +138,7 @@ func (mtp *metricsTransformProcessor) computeDouble(points []*metricspb.Point, a
 		doubleVal = points[0].GetDoubleValue()
 	}
 	for _, p := range points[1:] {
-		if aggrType == Sum || aggrType == Average {
+		if aggrType == Sum || aggrType == Mean {
 			doubleVal += p.GetDoubleValue()
 		} else if aggrType == Max {
 			doubleVal = math.Max(doubleVal, p.GetDoubleValue())
@@ -160,7 +146,7 @@ func (mtp *metricsTransformProcessor) computeDouble(points []*metricspb.Point, a
 			doubleVal = math.Min(doubleVal, p.GetDoubleValue())
 		}
 	}
-	if aggrType == Average {
+	if aggrType == Mean {
 		doubleVal /= float64(len(points))
 	}
 	return &metricspb.Point_DoubleValue{DoubleValue: doubleVal}
@@ -196,6 +182,9 @@ func (mtp *metricsTransformProcessor) groupPointsByBounds(points []*metricspb.Po
 		} else {
 			boundsToPoints[boundsKey] = []*metricspb.Point{p}
 		}
+	}
+	if len(boundsToPoints) > 1 {
+		mtp.logger.Warn("Distribution points with different bounds cannot be aggregated")
 	}
 	return boundsToPoints
 }
