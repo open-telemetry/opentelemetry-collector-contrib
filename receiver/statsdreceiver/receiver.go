@@ -1,10 +1,23 @@
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package statsdreceiver
 
 import (
 	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -27,8 +40,7 @@ var _ component.MetricsReceiver = (*statsdReceiver)(nil)
 type statsdReceiver struct {
 	sync.Mutex
 	logger *zap.Logger
-	addr   string
-	// config *Config
+	config *Config
 
 	server       transport.Server
 	parser       protocol.Parser
@@ -41,25 +53,24 @@ type statsdReceiver struct {
 // New creates the StatsD receiver with the given parameters.
 func New(
 	logger *zap.Logger,
-	addr string,
-	timeout time.Duration,
+	config Config,
 	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
 
-	if addr == "" {
-		addr = "localhost:8125"
+	if config.Endpoint == "" {
+		config.Endpoint = "localhost:8125"
 	}
 
-	server, err := transport.NewUDPServer(addr)
+	server, err := transport.NewUDPServer(config.Endpoint)
 	if err != nil {
 		return nil, err
 	}
 
 	r := &statsdReceiver{
 		logger:       logger,
-		addr:         addr,
+		config:       &config,
 		parser:       &protocol.DogStatsDParser{},
 		nextConsumer: nextConsumer,
 		server:       server,
@@ -67,7 +78,7 @@ func New(
 	return r, nil
 }
 
-// StartMetricsReception starts an HTTP server that can process StatsD JSON requests.
+// StartMetricsReception starts a UDP server that can process StatsD messages.
 func (ddr *statsdReceiver) Start(_ context.Context, host component.Host) error {
 	ddr.Lock()
 	defer ddr.Unlock()

@@ -1,19 +1,20 @@
 receivers:
   statsd:
-    # endpoint: "localhost:12345"
+  statsd/receiver_settings:
+    endpoint: "localhost:12345"
 
     # Used as read and write timeout for the HTTP server started by the receiver.
     timeout: "50s"
 
-# processors:
-#   exampleprocessor:
+processors:
+  exampleprocessor:
 
 exporters:
-  logging:
+  exampleexporter:
 
 service:
   pipelines:
     metrics:
      receivers: [statsd]
-    #  processors: [exampleprocessor]
-     exporters: [logging]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]

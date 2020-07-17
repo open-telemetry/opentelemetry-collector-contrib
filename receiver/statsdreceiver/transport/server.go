@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,8 +22,7 @@ import (
 )
 
 var (
-	errNilListenAndServeParameters = errors.New(
-		"no parameter of ListenAndServe can be nil")
+	errNilListenAndServeParameters = errors.New("no parameter of ListenAndServe can be nil")
 )
 
 // Server abstracts the type of transport being used and offer an

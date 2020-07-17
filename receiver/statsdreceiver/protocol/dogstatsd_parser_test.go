@@ -15,26 +15,38 @@
 package protocol
 
 import (
-	"errors"
-	"strings"
+	"testing"
 
 	// TODO: don't use the opencensus-proto package???
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 )
 
-// DogStatsDParser supports the Parse method for parsing StatsD messages with Tags.
-type DogStatsDParser struct{}
-
-// Parse returns an OTLP metric representation of the input StatsD string.
-func (p *DogStatsDParser) Parse(line string) (*metricspb.Metric, error) {
-	parts := strings.Split(line, ":")
-	if len(parts) < 2 {
-		return nil, errors.New("not enough statsd message parts")
+func Test_DogStatsDParser_Parse(t *testing.T) {
+	// TODO: fill in StatsD message parsing test cases
+	tests := []struct {
+		name  string
+		input string
+		want  *metricspb.Metric
+		err   error
+	}{
+		{
+			name: "test",
+			want: nil,
+		},
 	}
 
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: parts[0],
-		},
-	}, nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &DogStatsDParser{}
+
+			got, err := p.Parse(tt.input)
+
+			if tt.err != nil {
+				assert.Equal(t, err, tt.err)
+			} else {
+				assert.Equal(t, got, tt.want)
+			}
+		})
+	}
 }
