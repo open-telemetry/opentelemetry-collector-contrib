@@ -100,7 +100,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 		if len(got) == 0 {
 			return false
 		}
-
+		time.Sleep(1 * time.Second)
 		metrics = got
 		return true
 	}, waitFor, tick, "No metrics were collected after %v for the first scrape", waitFor)
