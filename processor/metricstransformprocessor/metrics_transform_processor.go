@@ -145,3 +145,19 @@ func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, lab
 	}
 	return labelIdxs, labels
 }
+
+// maxInt64 returns the max between num1 and num2
+func (mtp *metricsTransformProcessor) maxInt64(num1 int64, num2 int64) int64 {
+	if num1 > num2 {
+		return num1
+	}
+	return num2
+}
+
+// minInt64 returns the min between num1 and num2
+func (mtp *metricsTransformProcessor) minInt64(num1 int64, num2 int64) int64 {
+	if num1 < num2 {
+		return num1
+	}
+	return num2
+}

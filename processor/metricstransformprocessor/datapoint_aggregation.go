@@ -119,9 +119,9 @@ func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, ag
 		if aggrType == Sum || aggrType == Mean {
 			intVal += p.GetInt64Value()
 		} else if aggrType == Max {
-			intVal = int64(math.Max(float64(intVal), float64(p.GetInt64Value())))
+			intVal = mtp.maxInt64(intVal, p.GetInt64Value())
 		} else if aggrType == Min {
-			intVal = int64(math.Min(float64(intVal), float64(p.GetInt64Value())))
+			intVal = mtp.minInt64(intVal, p.GetInt64Value())
 		}
 	}
 	if aggrType == Mean {
