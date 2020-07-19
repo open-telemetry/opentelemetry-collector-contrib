@@ -78,6 +78,28 @@ var (
 				},
 			},
 		},
+		{
+			filterName: "metricstransform/addlabel",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "metricstransform/addlabel",
+					TypeVal: typeStr,
+				},
+				Transforms: []Transform{
+					{
+						MetricName: "some_name",
+						Action:     Update,
+						Operations: []Operation{
+							{
+								Action:   AddLabel,
+								NewLabel: "mylabel",
+								NewValue: "myvalue",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 )
 

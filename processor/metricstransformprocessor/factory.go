@@ -94,6 +94,12 @@ func validateConfiguration(config *Config) error {
 			if op.Action == UpdateLabel && op.Label == "" {
 				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, i)
 			}
+			if op.Action == AddLabel && op.NewLabel == "" {
+				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewLabelFieldName, ActionFieldName, AddLabel, i)
+			}
+			if op.Action == AddLabel && op.NewValue == "" {
+				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewValueFieldName, ActionFieldName, AddLabel, i)
+			}
 		}
 	}
 
