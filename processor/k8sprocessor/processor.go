@@ -124,7 +124,6 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 
 func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	rss := td.ResourceSpans()
-	kp.logger.Info("received rss len: ", zap.Int("size", rss.Len()))
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
 		if rs.IsNil() {
