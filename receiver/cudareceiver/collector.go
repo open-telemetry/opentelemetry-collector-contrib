@@ -27,6 +27,10 @@ import (
 	"go.uber.org/zap"
 )
 
+func init() {
+	NewCUDAMetricsCollector = newCUDAMetricsCollector
+}
+
 // CUDAMetricsCollector is a struct that collects and reports CUDA (GPU) metrics (temprature, power, et al.).
 //
 // TODO: ConsumeMetricsOld will be deprecated and should be replaced with ConsumerMetrics.
@@ -43,8 +47,10 @@ type CUDAMetricsCollector struct {
 	logger *zap.Logger
 }
 
-// NewCUDAMetricsCollector creates a new set of CUDA (GPU) Metrics (temperature, power, et al.).
-func NewCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
+var NewCUDAMetricsCollector func(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error)
+
+// newCUDAMetricsCollector creates a new set of CUDA (GPU) Metrics (temperature, power, et al.).
+func newCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
 	device, status := NVMLDeviceGetHandledByIndex(uint64(0))
 	if status != NVMLSuccess {
 		return nil, fmt.Errorf("could not get GPU device: status=%d", status)
