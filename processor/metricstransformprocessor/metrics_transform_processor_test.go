@@ -16,6 +16,7 @@ package metricstransformprocessor
 
 import (
 	"context"
+	"math"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -40,6 +41,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.Equal(t, true, caps.MutatesConsumedData)
 			ctx := context.Background()
 			assert.NoError(t, mtp.Start(ctx, nil))
+
+			defer func() { assert.NoError(t, mtp.Shutdown(ctx)) }()
 
 			// construct metrics data to feed into the processor
 			md := consumerdata.MetricsData{Metrics: test.in}
@@ -173,7 +176,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	}
 
 	for len(stressTest.in) < 1000 {
-		stressTest.in = append(stressTest.in, testcaseBuilder().setName("metric1").build())
+		stressTest.in = append(stressTest.in, metricBuilder().setName("metric1").build())
 	}
 
 	benchmarkTests := []metricsTransformTest{stressTest}
@@ -198,4 +201,18 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 			}
 		})
 	}
+}
+
+// calculateSumOfSquaredDeviation returns the sum and the sumOfSquaredDeviation for this slice
+func calculateSumOfSquaredDeviation(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
+	sum = 0
+	for _, e := range slice {
+		sum += e
+	}
+	ave := sum / float64(len(slice))
+	sumOfSquaredDeviation = 0
+	for _, e := range slice {
+		sumOfSquaredDeviation += math.Pow((e - ave), 2)
+	}
+	return
 }
