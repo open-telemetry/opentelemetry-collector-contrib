@@ -46,8 +46,8 @@ func TestEndpointsAdded(t *testing.T) {
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod"},
 				},
-				Port:     443,
-				Protocol: observer.ProtocolTCP,
+				Port:              443,
+				TransportProtocol: observer.ProtocolTCP,
 			},
 		}}, sink.added)
 	assert.Nil(t, sink.removed)
@@ -78,8 +78,8 @@ func TestEndpointsRemoved(t *testing.T) {
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod"},
 				},
-				Port:     443,
-				Protocol: observer.ProtocolTCP,
+				Port:              443,
+				TransportProtocol: observer.ProtocolTCP,
 			},
 		}}, sink.removed)
 	assert.Nil(t, sink.added)
@@ -130,7 +130,7 @@ func TestEndpointsChanged(t *testing.T) {
 				Name: "https", Pod: observer.Pod{
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod", "updated-label": "true"}},
-				Port:     443,
-				Protocol: observer.ProtocolTCP}},
+				Port:              443,
+				TransportProtocol: observer.ProtocolTCP}},
 	}, sink.changed)
 }

@@ -51,15 +51,16 @@ Each rule must start with `type.(pod|port) &&` such that the rule matches only o
 
 ### Port
 
-| Variable        | Description                          |
-|-----------------|--------------------------------------|
-| type.port       | `true`                               |
-| name            | container port name                  |
-| port            | port number                          |
-| pod.name        | name of the owning pod               |
-| pod.labels      | map of labels of the owning pod      |
-| pod.annotations | map of annotations of the owning pod |
-| protocol        | "TCP" or "UDP"                       |
+| Variable           | Description                          |
+|--------------------|--------------------------------------|
+| type.port          | `true`                               |
+| name               | container port name                  |
+| port               | port number                          |
+| pod.name           | name of the owning pod               |
+| pod.labels         | map of labels of the owning pod      |
+| pod.annotations    | map of annotations of the owning pod |
+| transport_protocol | `TCP` or `UDP`                       |
+
 
 ## Example
 

@@ -39,10 +39,10 @@ var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
 	Details: observer.Port{
-		Name:     "http",
-		Pod:      pod,
-		Port:     1234,
-		Protocol: observer.ProtocolTCP,
+		Name:              "http",
+		Pod:               pod,
+		Port:              1234,
+		TransportProtocol: observer.ProtocolTCP,
 	},
 }
 
