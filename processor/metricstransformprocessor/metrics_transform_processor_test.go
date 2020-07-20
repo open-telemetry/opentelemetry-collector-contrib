@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	"context"
-
 	"math"
 	"testing"
 
