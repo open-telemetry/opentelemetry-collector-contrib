@@ -22,7 +22,6 @@ import (
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -36,7 +35,7 @@ import (
 
 // stackdriverExporter is a wrapper struct of Stackdriver exporter
 type stackdriverExporter struct {
-	exporter *stackdriver.Exporter
+	mexporter *stackdriver.Exporter
 	texporter *cloudtrace.Exporter
 }
 
@@ -45,17 +44,12 @@ func (*stackdriverExporter) Name() string {
 }
 
 func (se *stackdriverExporter) Shutdown(context.Context) error {
-	se.exporter.Flush()
-	se.exporter.StopMetricsExporter()
+	se.mexporter.Flush()
+	se.mexporter.StopMetricsExporter()
 	return nil
 }
 
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
-	// sde, serr := newStackdriverExporter(cfg)
-	// if serr != nil {
-	// 	return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
-	// }
-	// tExp := &stackdriverExporter{exporter: sde}
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 	}
@@ -83,24 +77,11 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
-		tExp.newPushTraceData,
+		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
 func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
-	sde, serr := newStackdriverExporter(cfg)
-	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
-	}
-	mExp := &stackdriverExporter{exporter: sde}
-
-	return exporterhelper.NewMetricsExporter(
-		cfg,
-		mExp.pushMetrics,
-		exporterhelper.WithShutdown(mExp.Shutdown))
-}
-
-func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -138,14 +119,24 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 		}
 		options.MapResource = rm.mapResource
 	}
-	return stackdriver.NewExporter(options)
+	sde, serr := stackdriver.NewExporter(options)
+	if serr != nil {
+		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
+	}
+	mExp := &stackdriverExporter{mexporter: sde}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		mExp.pushMetrics,
+		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
 // pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
 func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-	return se.exporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+	return se.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 }
 
+// pushMetrics calls pushMetricsData on each element of the given metrics
 func (se *stackdriverExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
 	mds := pdatautil.MetricsToMetricsData(m)
 	dropped := 0
@@ -159,34 +150,8 @@ func (se *stackdriverExporter) pushMetrics(ctx context.Context, m pdata.Metrics)
 	return dropped, nil
 }
 
-// pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans
-func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
-	var errs []error
-	goodSpans := 0
-	spans := make([]*trace.SpanData, 0, len(td.Spans))
-
-	for _, span := range td.Spans {
-		sd, err := protoSpanToOCSpanData(span, td.Resource)
-		if err == nil {
-			spans = append(spans, sd)
-			goodSpans++
-		} else {
-			errs = append(errs, err)
-		}
-	}
-
-	_, err := se.exporter.PushTraceSpans(ctx, td.Node, td.Resource, spans)
-	if err != nil {
-		goodSpans = 0
-		errs = append(errs, err)
-	}
-
-	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
-}
-
-
-// pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans
-func (se *stackdriverExporter) newPushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
+// pushTraces calls texporter.ExportSpan for each span in the given traces
+func (se *stackdriverExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
