@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter
+package translation
 
 import (
 	"math"
@@ -31,7 +31,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_metricDataToSignalFxV2(t *testing.T) {
+func Test_MetricDataToSignalFxV2(t *testing.T) {
 	logger := zap.NewNop()
 
 	keys := []string{"k0", "k1"}
@@ -178,8 +178,7 @@ func Test_metricDataToSignalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, tt.metricsDataFn())
-			assert.NoError(t, err)
+			gotSfxDataPoints, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, tt.metricsDataFn())
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
@@ -350,9 +349,8 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
@@ -378,9 +376,8 @@ func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidPoint_NoValue(t *testing.T) {
@@ -400,9 +397,8 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidMetric(t *testing.T) {
@@ -416,8 +412,7 @@ func Test_InvalidMetric(t *testing.T) {
 			},
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	// Only 1 timeseries is dropped because the nil metric does not have any timeseries.
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }

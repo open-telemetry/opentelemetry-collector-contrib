@@ -15,6 +15,11 @@ exporters:
       added-entry: "added value"
       dot.test: test
     access_token_passthrough: false
+    send_compatible_metrics: true
+    translation_rules:
+    - action: rename_dimension_keys
+      mapping: 
+        k8s.cluster.name: kubernetes_cluster
 
 service:
   pipelines:

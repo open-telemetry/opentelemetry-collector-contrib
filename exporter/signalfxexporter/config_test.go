@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
@@ -64,6 +65,15 @@ func TestLoadConfig(t *testing.T) {
 		Timeout: 2 * time.Second,
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
+		},
+		SendCompatibleMetrics: true,
+		TranslationRules: []translation.TranslationRule{
+			{
+				Action: translation.Action_RENAME_DIMENSION_KEYS,
+				Mapping: map[string]string{
+					"k8s.cluster.name": "kubernetes_cluster",
+				},
+			},
 		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
