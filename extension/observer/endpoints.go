@@ -44,10 +44,10 @@ type Pod struct {
 
 // Port is an endpoint that has a target as well as a port.
 type Port struct {
-	Name              string
-	Pod               Pod
-	Port              uint16
-	TransportProtocol TransportProtocol
+	Name      string
+	Pod       Pod
+	Port      uint16
+	Transport Transport
 }
 
 type EndpointEnv map[string]interface{}
@@ -81,7 +81,7 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 				"labels":      o.Pod.Labels,
 				"annotations": o.Pod.Annotations,
 			},
-			"transport_protocol": o.TransportProtocol,
+			"transport": o.Transport,
 		}, nil
 
 	default:

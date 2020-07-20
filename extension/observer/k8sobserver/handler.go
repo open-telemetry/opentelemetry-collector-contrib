@@ -85,10 +85,10 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
 				Details: observer.Port{
-					Pod:               podDetails,
-					Name:              port.Name,
-					Port:              uint16(port.ContainerPort),
-					TransportProtocol: getTransportProtocol(port.Protocol),
+					Pod:       podDetails,
+					Name:      port.Name,
+					Port:      uint16(port.ContainerPort),
+					Transport: getTransport(port.Protocol),
 				},
 			})
 		}
@@ -97,7 +97,7 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	return endpoints
 }
 
-func getTransportProtocol(protocol v1.Protocol) observer.TransportProtocol {
+func getTransport(protocol v1.Protocol) observer.Transport {
 	switch protocol {
 	case v1.ProtocolTCP:
 		return observer.ProtocolTCP
