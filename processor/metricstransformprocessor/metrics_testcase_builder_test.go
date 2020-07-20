@@ -56,7 +56,8 @@ func (b builder) addTimeseries(startTimestamp int64, labelValuesVal []string) bu
 	labelValues := make([]*metricspb.LabelValue, len(labelValuesVal))
 	for i, v := range labelValuesVal {
 		labelValues[i] = &metricspb.LabelValue{
-			Value: v,
+			Value:    v,
+			HasValue: true,
 		}
 	}
 	timeseries := &metricspb.TimeSeries{

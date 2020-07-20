@@ -19,192 +19,23 @@ import (
 
 	"math"
 
+	"testing"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
-	"testing"
 )
-
-// Toggle Data Type
-// {
-// 	name: "metric_toggle_scalar_data_type_int64_to_double",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{{Action: ToggleScalarDataType}},
-// 		},
-// 		{
-// 			MetricName: "metric2",
-// 			Action:     Update,
-// 			Operations: []Operation{{Action: ToggleScalarDataType}},
-// 		},
-// 	},
-// 	inMetrics: []*metricspb.MetricDescriptor{
-// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
-// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
-// 	},
-// 	outMetrics: []*metricspb.MetricDescriptor{
-// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
-// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
-// 	},
-// },
-// {
-// 	name: "metric_toggle_scalar_data_type_double_to_int64",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{{Action: ToggleScalarDataType}},
-// 		},
-// 		{
-// 			MetricName: "metric2",
-// 			Action:     Update,
-// 			Operations: []Operation{{Action: ToggleScalarDataType}},
-// 		},
-// 	},
-// 	inMetrics: []*metricspb.MetricDescriptor{
-// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE},
-// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_DOUBLE},
-// 	},
-// 	outMetrics: []*metricspb.MetricDescriptor{
-// 		{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_INT64},
-// 		{Name: "metric2", Type: metricspb.MetricDescriptor_GAUGE_INT64},
-// 	},
-// },
-// {
-// 	name: "metric_toggle_scalar_data_type_no_effect",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{{Action: ToggleScalarDataType}},
-// 		},
-// 	},
-// 	inMetrics:  []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
-// 	outMetrics: []*metricspb.MetricDescriptor{{Name: "metric1", Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION}},
-// },
-// // Add Label to a metric
-// {
-// 	name: "update existing metric by adding a new label when there are no labels",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{
-// 				{
-// 					Action:   AddLabel,
-// 					NewLabel: "foo",
-// 					NewValue: "bar",
-// 				},
-// 			},
-// 		},
-// 	},
-// 	inMetrics:  initialMetricNames,
-// 	outMetrics: initialMetricNames,
-// 	outLabels:  []labelKeyValue{{Key: "foo", Value: "bar"}},
-// },
-// {
-// 	name: "update existing metric by adding a new label when there are labels",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{
-// 				{
-// 					Action:   AddLabel,
-// 					NewLabel: "foo",
-// 					NewValue: "bar",
-// 				},
-// 			},
-// 		},
-// 	},
-// 	inMetrics:  initialMetricNames,
-// 	outMetrics: initialMetricNames,
-// 	inLabels:   initialLabels,
-// 	outLabels: []labelKeyValue{
-// 		{
-// 			Key:   "label1",
-// 			Value: "value1",
-// 		},
-// 		{
-// 			Key:   "label2",
-// 			Value: "value2",
-// 		},
-// 		{
-// 			Key:   "foo",
-// 			Value: "bar",
-// 		},
-// 	},
-// },
-// {
-// 	name: "update existing metric by adding a label that is duplicated in the list",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "metric1",
-// 			Action:     Update,
-// 			Operations: []Operation{
-// 				{
-// 					Action:   AddLabel,
-// 					NewLabel: "label1",
-// 					NewValue: "value1",
-// 				},
-// 			},
-// 		},
-// 	},
-// 	inMetrics:  initialMetricNames,
-// 	outMetrics: initialMetricNames,
-// 	inLabels:   initialLabels,
-// 	outLabels: []labelKeyValue{
-// 		{
-// 			Key:   "label1",
-// 			Value: "value1",
-// 		},
-// 		{
-// 			Key:   "label2",
-// 			Value: "value2",
-// 		},
-// 		{
-// 			Key:   "label1",
-// 			Value: "value1",
-// 		},
-// 	},
-// },
-// {
-// 	name: "update does not happen because target metric doesn't exist",
-// 	transforms: []Transform{
-// 		{
-// 			MetricName: "mymetric",
-// 			Action:     Update,
-// 			Operations: []Operation{
-// 				{
-// 					Action:   AddLabel,
-// 					NewLabel: "foo",
-// 					NewValue: "bar",
-// 				},
-// 			},
-// 		},
-// 	},
-// 	inMetrics:  initialMetricNames,
-// 	outMetrics: initialMetricNames,
-// 	inLabels:   initialLabels,
-// 	outLabels:  initialLabels,
-// },
 
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
-			next := &exportertest.SinkMetricsExporter{}
 			// next stores the results of the aggregation metric processor.
-			// next := &etest.SinkMetricsExporter{}
+			next := &etest.SinkMetricsExporter{}
 
 			mtp := newMetricsTransformProcessor(next, zap.NewExample(), test.transforms)
 			assert.NotNil(t, mtp)
@@ -212,11 +43,6 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			assert.True(t, mtp.GetCapabilities().MutatesConsumedData)
 			assert.NoError(t, mtp.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() { assert.NoError(t, mtp.Shutdown(context.Background())) }()
-
-			inputMetrics := createTestMetrics(test.inMetrics, test.inLabels)
-			assert.NoError(t, mtp.ConsumeMetrics(context.Background(), inputMetrics))
-
-			defer func() { assert.NoError(t, mtp.Shutdown(ctx)) }()
 
 			// construct metrics data to feed into the processor
 			md := consumerdata.MetricsData{Metrics: test.in}
@@ -244,56 +70,6 @@ func TestMetricsTransformProcessor(t *testing.T) {
 		})
 	}
 }
-
-// func validateLabels(t *testing.T, expectLabels []labelKeyValue, inMetric *metricspb.Metric) {
-// 	assert.Equal(t, len(expectLabels), len(inMetric.MetricDescriptor.LabelKeys))
-// 	for lidx, l := range inMetric.MetricDescriptor.LabelKeys {
-// 		assert.Equal(t, expectLabels[lidx].Key, l.Key)
-// 	}
-// 	for _, ts := range inMetric.Timeseries {
-// 		assert.Equal(t, len(expectLabels), len(ts.LabelValues))
-// 		for lidx, l := range ts.LabelValues {
-// 			assert.Equal(t, expectLabels[lidx].Value, l.Value)
-// 			assert.True(t, l.HasValue)
-// 		}
-// 	}
-// }
-
-// func createTestMetrics(inMetrics []*metricspb.MetricDescriptor, labelKV []labelKeyValue) pdata.Metrics {
-// 	md := consumerdata.MetricsData{
-// 		Metrics: make([]*metricspb.Metric, len(inMetrics)),
-// 	}
-
-// 	for i, inMetric := range inMetrics {
-// 		descriptor := proto.Clone(inMetric).(*metricspb.MetricDescriptor)
-
-// 		labelKeys := make([]*metricspb.LabelKey, len(labelKV))
-// 		labelValues := make([]*metricspb.LabelValue, len(labelKV))
-// 		for j, label := range labelKV {
-// 			labelKeys[j] = &metricspb.LabelKey{Key: label.Key}
-// 			labelValues[j] = &metricspb.LabelValue{Value: label.Value, HasValue: true}
-// 		}
-// 		descriptor.LabelKeys = labelKeys
-
-// 		md.Metrics[i] = &metricspb.Metric{
-// 			MetricDescriptor: descriptor,
-// 			Timeseries: []*metricspb.TimeSeries{
-// 				{
-// 					Points: []*metricspb.Point{
-// 						{
-// 							Value: &metricspb.Point_Int64Value{Int64Value: 1},
-// 						}, {
-// 							Value: &metricspb.Point_DoubleValue{DoubleValue: 2},
-// 						},
-// 					},
-// 					LabelValues: labelValues,
-// 				},
-// 			},
-// 		}
-// 	}
-
-// 	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
-// }
 
 func TestComputeDistVals(t *testing.T) {
 	ssdTests := []struct {
@@ -326,10 +102,9 @@ func TestComputeDistVals(t *testing.T) {
 			mtp := newMetricsTransformProcessor(next, nil, nil)
 			assert.NotNil(t, mtp)
 
-			caps := mtp.GetCapabilities()
-			assert.Equal(t, true, caps.MutatesConsumedData)
-			ctx := context.Background()
-			assert.NoError(t, mtp.Start(ctx, nil))
+			assert.True(t, mtp.GetCapabilities().MutatesConsumedData)
+			assert.NoError(t, mtp.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() { assert.NoError(t, mtp.Shutdown(context.Background())) }()
 
 			pointGroup1 := test.pointGroup1
 			pointGroup2 := test.pointGroup2
@@ -365,10 +140,9 @@ func TestExemplers(t *testing.T) {
 		mtp := newMetricsTransformProcessor(next, nil, nil)
 		assert.NotNil(t, mtp)
 
-		caps := mtp.GetCapabilities()
-		assert.Equal(t, true, caps.MutatesConsumedData)
-		ctx := context.Background()
-		assert.NoError(t, mtp.Start(ctx, nil))
+		assert.True(t, mtp.GetCapabilities().MutatesConsumedData)
+		assert.NoError(t, mtp.Start(context.Background(), componenttest.NewNopHost()))
+		defer func() { assert.NoError(t, mtp.Shutdown(context.Background())) }()
 
 		exe1 := &metricspb.DistributionValue_Exemplar{
 			Value: 1,

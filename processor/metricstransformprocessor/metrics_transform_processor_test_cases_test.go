@@ -664,5 +664,211 @@ var (
 					build(),
 			},
 		},
+		// Toggle Data Type
+		{
+			name: "metric_toggle_scalar_data_type_int64_to_double",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action: ToggleScalarDataType,
+							},
+						},
+					},
+				},
+				{
+					MetricName: "metric2",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action: ToggleScalarDataType,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			},
+		},
+		{
+			name: "metric_toggle_scalar_data_type_double_to_int64",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action: ToggleScalarDataType,
+							},
+						},
+					},
+				},
+				{
+					MetricName: "metric2",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action: ToggleScalarDataType,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).build(),
+				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+		},
+		{
+			name: "metric_toggle_scalar_data_type_no_effect",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action: ToggleScalarDataType,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).build(),
+			},
+		},
+		// Add Label to a metric
+		{
+			name: "update existing metric by adding a new label when there are no labels",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "foo",
+								NewValue: "bar",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					addTimeseries(1, nil).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"foo"}).
+					addTimeseries(1, []string{"bar"}).
+					build(),
+			},
+		},
+		{
+			name: "update existing metric by adding a new label when there are labels",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "foo",
+								NewValue: "bar",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"value1", "value2"}).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2", "foo"}).
+					addTimeseries(1, []string{"value1", "value2", "bar"}).
+					build(),
+			},
+		},
+		{
+			name: "update existing metric by adding a label that is duplicated in the list",
+			transforms: []mtpTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "label1",
+								NewValue: "value1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"value1", "value2"}).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2", "label1"}).
+					addTimeseries(1, []string{"value1", "value2", "value1"}).
+					build(),
+			},
+		},
+		{
+			name: "update does not happen because target metric doesn't exist",
+			transforms: []mtpTransform{
+				{
+					MetricName: "mymetric",
+					Action:     Update,
+					Operations: []mtpOperation{
+						{
+							configOperation: Operation{
+								Action:   AddLabel,
+								NewLabel: "foo",
+								NewValue: "bar",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"value1", "value2"}).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"value1", "value2"}).
+					build(),
+			},
+		},
 	}
 )

@@ -12,6 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metricstransformprocessor implements a processor for transforming metrics.
-// The supported transformations are included in the README
 package metricstransformprocessor
+
+import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+
+func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op mtpOperation) {
+	var lb = metricspb.LabelKey{
+		Key: op.configOperation.NewLabel,
+	}
+	metric.MetricDescriptor.LabelKeys = append(metric.MetricDescriptor.LabelKeys, &lb)
+	for _, ts := range metric.Timeseries {
+		lv := &metricspb.LabelValue{
+			Value:    op.configOperation.NewValue,
+			HasValue: true,
+		}
+		ts.LabelValues = append(ts.LabelValues, lv)
+	}
+}

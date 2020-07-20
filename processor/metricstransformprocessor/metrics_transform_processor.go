@@ -112,76 +112,6 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	return pdatautil.MetricsFromMetricsData(mds)
 }
 
-// // update updates the original metric content in the metric pointer.
-// func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform Transform) {
-// 	// metric name update
-// 	if transform.NewName != "" {
-// 		metric.MetricDescriptor.Name = transform.NewName
-// 	}
-
-// 	for _, op := range transform.Operations {
-// 		// update label
-// 		if op.Action == UpdateLabel {
-// 			mtp.updateLabelOp(metric, op)
-// 		} else if op.Action == ToggleScalarDataType {
-// 			mtp.ToggleScalarDataType(metric)
-// 		} else if op.Action == AddLabel {
-// 			mtp.addLabelOp(metric, op)
-// 		}
-// 	}
-// }
-
-// func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op Operation) {
-// 	var lb = metricspb.LabelKey{
-// 		Key: op.NewLabel,
-// 	}
-// 	metric.MetricDescriptor.LabelKeys = append(metric.MetricDescriptor.LabelKeys, &lb)
-// 	for _, ts := range metric.Timeseries {
-// 		lv := &metricspb.LabelValue{
-// 			Value:    op.NewValue,
-// 			HasValue: true,
-// 		}
-// 		ts.LabelValues = append(ts.LabelValues, lv)
-// 	}
-// }
-
-// func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
-// 	for _, label := range metric.MetricDescriptor.LabelKeys {
-// 		if label.Key != op.Label {
-// 			continue
-// 		}
-// 		// label key update
-// 		if op.NewLabel != "" {
-// 			label.Key = op.NewLabel
-// 		}
-// 		// label value update
-// 	}
-// }
-
-// func (mtp *metricsTransformProcessor) ToggleScalarDataType(metric *metricspb.Metric) {
-// 	for _, ts := range metric.Timeseries {
-// 		for _, dp := range ts.Points {
-// 			switch metric.MetricDescriptor.Type {
-// 			case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
-// 				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: float64(dp.GetInt64Value())}
-// 			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-// 				dp.Value = &metricspb.Point_Int64Value{Int64Value: int64(dp.GetDoubleValue())}
-// 			}
-// 		}
-// 	}
-
-// 	switch metric.MetricDescriptor.Type {
-// 	case metricspb.MetricDescriptor_GAUGE_INT64:
-// 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_DOUBLE
-// 	case metricspb.MetricDescriptor_CUMULATIVE_INT64:
-// 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-// 	case metricspb.MetricDescriptor_GAUGE_DOUBLE:
-// 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_INT64
-// 	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-// 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
-// 	}
-// }
-
 // update updates the metric content based on operations indicated in transform.
 func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform mtpTransform) {
 	if transform.NewName != "" {
@@ -196,6 +126,10 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 			mtp.aggregateLabelsOp(metric, op)
 		case AggregateLabelValues:
 			mtp.aggregateLabelValuesOp(metric, op)
+		case ToggleScalarDataType:
+			mtp.ToggleScalarDataType(metric)
+		case AddLabel:
+			mtp.addLabelOp(metric, op)
 		}
 	}
 }
