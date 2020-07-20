@@ -23,7 +23,7 @@ executors:
       image: ubuntu-1604:201903-01
   cuda:
     docker:
-      - image: ymotongpoo/cuda:10.2
+      - image: otel/opentelemetry-conllector-contrib:gpu
 
 commands:
   verify_dist_files_exist:
@@ -127,6 +127,24 @@ commands:
           command: |
             docker push otel/<< parameters.repo >>:<< parameters.tag >>
             docker push otel/<< parameters.repo >>:latest
+
+  publish_gpu_docker_images:
+    parameters:
+      repo:
+        type: string
+    steps:
+      - run:
+          name: Build GPU image
+          command: |
+            make docker-gpu-image
+            docker tag otelgpuimage:latest otel/<< parameters.repo >>:gpu
+      - run:
+          name: Login to Docker Hub
+          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+      - run:
+          name: Push image
+          command: |
+            docker push otel/<< parameters.repo >>:gpu
 
 workflows:
   version: 2
@@ -362,6 +380,8 @@ jobs:
       name: cuda
     steps:
       - restore_workspace
+      - publish_gpu_docker_images:
+          repo: opentelemetry-collector-contrib
       - run:
           name: Unit test for CUDA receiver
           command: |

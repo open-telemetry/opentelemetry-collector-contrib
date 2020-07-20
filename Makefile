@@ -121,6 +121,10 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+.PHONY: docker-gpu-image
+docker-gpu-image:
+	docker build -t otelgpuimage ./receiver/cudareceiver/
+
 .PHONY: otelcontribcol
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
