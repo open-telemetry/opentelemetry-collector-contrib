@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"math"
-
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -40,9 +39,12 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			mtp := newMetricsTransformProcessor(next, zap.NewExample(), test.transforms)
 			assert.NotNil(t, mtp)
 
-			assert.True(t, mtp.GetCapabilities().MutatesConsumedData)
-			assert.NoError(t, mtp.Start(context.Background(), componenttest.NewNopHost()))
-			defer func() { assert.NoError(t, mtp.Shutdown(context.Background())) }()
+			caps := mtp.GetCapabilities()
+			assert.Equal(t, true, caps.MutatesConsumedData)
+			ctx := context.Background()
+			assert.NoError(t, mtp.Start(ctx, nil))
+
+			defer func() { assert.NoError(t, mtp.Shutdown(ctx)) }()
 
 			// construct metrics data to feed into the processor
 			md := consumerdata.MetricsData{Metrics: test.in}
@@ -67,6 +69,8 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			for idx, out := range test.out {
 				assert.Equal(t, *out, *actualOut[idx])
 			}
+
+			assert.NoError(t, mtp.Shutdown(ctx))
 		})
 	}
 }
@@ -127,7 +131,6 @@ func TestComputeDistVals(t *testing.T) {
 			outVal := mtp.computeSumOfSquaredDeviation(val1, val2)
 
 			assert.Equal(t, sumOfSquaredDeviation, outVal)
-
 		})
 	}
 }
