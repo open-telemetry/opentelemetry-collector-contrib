@@ -124,7 +124,6 @@ func buildHelperConfig(config *Config) []mtpTransform {
 			if op.Action == AggregateLabels {
 				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
 			} else if op.Action == AggregateLabelValues {
-				mtpOp.labelSetMap = map[string]bool{op.Label: true}
 				mtpOp.aggregatedValuesSet = sliceToSet(op.AggregatedValues)
 			}
 			helperT.Operations[j] = mtpOp

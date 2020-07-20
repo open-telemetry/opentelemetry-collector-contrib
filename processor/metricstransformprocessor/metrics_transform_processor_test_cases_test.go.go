@@ -15,8 +15,6 @@
 package metricstransformprocessor
 
 import (
-	"math"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
@@ -41,10 +39,10 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric1").build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("new/metric1").build(),
+				metricBuilder().setName("new/metric1").build(),
 			},
 		},
 		{
@@ -62,12 +60,12 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
-				testcaseBuilder().setName("metric2").build(),
+				metricBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric2").build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("new/metric1").build(),
-				testcaseBuilder().setName("new/metric2").build(),
+				metricBuilder().setName("new/metric1").build(),
+				metricBuilder().setName("new/metric2").build(),
 			},
 		},
 		{
@@ -80,10 +78,10 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric1").build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric1").build(),
 			},
 		},
 		{
@@ -104,10 +102,10 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"new/label1", "label2"}).build(),
+				metricBuilder().setName("metric1").setLabels([]string{"new/label1", "label2"}).build(),
 			},
 		},
 		{
@@ -130,12 +128,12 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					addTimeseries(1, []string{"label1-value1"}).addTimeseries(1, []string{"label1-value2"}).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					addTimeseries(1, []string{"new/label1-value1"}).addTimeseries(1, []string{"label1-value2"}).
 					build(),
 			},
@@ -151,6 +149,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -158,13 +157,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1"}).
 					addInt64Point(0, 4, 2).
 					build(),
@@ -181,6 +180,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Mean,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -188,13 +188,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1"}).
 					addInt64Point(0, 2, 2).
 					build(),
@@ -211,6 +211,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Max,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -218,13 +219,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1"}).
 					addInt64Point(0, 3, 2).
 					build(),
@@ -241,6 +242,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Min,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -248,13 +250,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1"}).
 					addInt64Point(0, 1, 2).
 					build(),
@@ -271,6 +273,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -278,13 +281,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addDoublePoint(0, 3, 2).addDoublePoint(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDoublePoint(0, 4, 2).
 					build(),
@@ -301,6 +304,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Mean,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -308,13 +312,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addDoublePoint(0, 3, 2).addDoublePoint(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDoublePoint(0, 2, 2).
 					build(),
@@ -331,6 +335,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Max,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -338,13 +343,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addDoublePoint(0, 3, 2).addDoublePoint(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDoublePoint(0, 3, 2).
 					build(),
@@ -361,6 +366,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Min,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -368,13 +374,13 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addDoublePoint(0, 3, 2).addDoublePoint(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDoublePoint(0, 1, 2).
 					build(),
@@ -392,22 +398,22 @@ var (
 								Action:          AggregateLabelValues,
 								NewValue:        "new/label2-value",
 								AggregationType: Sum,
+								Label:           "label2",
 							},
-							labelSetMap:         map[string]bool{"label2": true},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
 						},
 					},
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).addInt64Point(2, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1", "new/label2-value"}).addTimeseries(1, []string{"label1-value1", "label2-value3"}).
 					addInt64Point(0, 4, 2).addInt64Point(1, 1, 2).
 					build(),
@@ -425,6 +431,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -432,16 +439,18 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(3, []string{"label1-value1", "label2-value2"}).
-					addDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 2).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
-					addDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{0, 2, 3}, 4). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
+					addDistributionPoints(1, 1, 5, 10, []float64{1, 2, 3}, []int64{0, 2, 1, 2}, 4). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
+					addDistributionPoints(2, 1, 7, 14, []float64{1, 2, 3}, []int64{0, 3, 1, 3}, 6). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
-					addDistributionPoints(0, 1, 8, 16, []float64{1, 2}, []int64{0, 3, 5}, 6). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1}, SumOfSquaredDeviation = 6
+					addDistributionPoints(0, 1, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}, 12). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
 					build(),
 			},
 		},
@@ -456,11 +465,11 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric1").build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
-				testcaseBuilder().setName("new/metric1").build(),
+				metricBuilder().setName("metric1").build(),
+				metricBuilder().setName("new/metric1").build(),
 			},
 		},
 		{
@@ -478,14 +487,14 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
-				testcaseBuilder().setName("metric2").build(),
+				metricBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric2").build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").build(),
-				testcaseBuilder().setName("metric2").build(),
-				testcaseBuilder().setName("new/metric1").build(),
-				testcaseBuilder().setName("new/metric2").build(),
+				metricBuilder().setName("metric1").build(),
+				metricBuilder().setName("metric2").build(),
+				metricBuilder().setName("new/metric1").build(),
+				metricBuilder().setName("new/metric2").build(),
 			},
 		},
 		{
@@ -507,11 +516,11 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
-				testcaseBuilder().setName("new/metric1").setLabels([]string{"new/label1", "label2"}).build(),
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).build(),
+				metricBuilder().setName("new/metric1").setLabels([]string{"new/label1", "label2"}).build(),
 			},
 		},
 		{
@@ -533,16 +542,16 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					addTimeseries(1, []string{"label1-value1"}).addTimeseries(1, []string{"label1-value2"}).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					addTimeseries(1, []string{"label1-value1"}).addTimeseries(1, []string{"label1-value2"}).
 					build(),
 
-				testcaseBuilder().setName("new/metric1").setLabels([]string{"label1"}).
+				metricBuilder().setName("new/metric1").setLabels([]string{"label1"}).
 					addTimeseries(1, []string{"new/label1-value1"}).addTimeseries(1, []string{"label1-value2"}).
 					build(),
 			},
@@ -558,6 +567,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -565,17 +575,17 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1"}).
 					addInt64Point(0, 4, 2).
 					build(),
@@ -593,25 +603,25 @@ var (
 								Action:          AggregateLabelValues,
 								NewValue:        "new/label2-value",
 								AggregationType: Sum,
+								Label:           "label2",
 							},
-							labelSetMap:         map[string]bool{"label2": true},
 							aggregatedValuesSet: map[string]bool{"label2-value1": true, "label2-value2": true},
 						},
 					},
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
 					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, []string{"label1-value1", "new/label2-value"}).
 					addInt64Point(0, 4, 2).
 					build(),
@@ -628,6 +638,7 @@ var (
 							configOperation: Operation{
 								Action:          AggregateLabels,
 								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
 						},
@@ -635,19 +646,19 @@ var (
 				},
 			},
 			in: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(3, []string{"label1-value1", "label2-value2"}).
 					addDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
 					addDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
 					build(),
 			},
 			out: []*metricspb.Metric{
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(3, []string{"label1-value1", "label2-value2"}).
 					addDistributionPoints(0, 1, 3, 6, []float64{1, 2}, []int64{0, 1, 2}, 3).
 					addDistributionPoints(1, 1, 5, 10, []float64{1, 2}, []int64{1, 1, 3}, 4).
 					build(),
-				testcaseBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDistributionPoints(0, 1, 8, 16, []float64{1, 2}, []int64{1, 2, 5}, 7).
 					build(),
@@ -655,17 +666,3 @@ var (
 		},
 	}
 )
-
-// calculateSumOfSquaredDeviation returns the sum and the sumOfSquaredDeviation for this slice
-func calculateSumOfSquaredDeviation(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
-	sum = 0
-	for _, e := range slice {
-		sum += e
-	}
-	ave := sum / float64(len(slice))
-	sumOfSquaredDeviation = 0
-	for _, e := range slice {
-		sumOfSquaredDeviation += math.Pow((e - ave), 2)
-	}
-	return
-}

@@ -227,9 +227,6 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 						NewValue:         "new-value",
 						AggregationType:  Sum,
 					},
-					labelSetMap: map[string]bool{
-						"label": true,
-					},
 					aggregatedValuesSet: map[string]bool{
 						"value1": true,
 						"value2": true,

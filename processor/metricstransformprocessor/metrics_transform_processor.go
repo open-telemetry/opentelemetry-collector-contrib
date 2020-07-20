@@ -34,8 +34,7 @@ type mtpTransform struct {
 }
 
 type mtpOperation struct {
-	configOperation Operation
-	// fields that will be filled later for optimized opertaions processing
+	configOperation     Operation
 	valueActionsMapping map[string]string
 	labelSetMap         map[string]bool
 	aggregatedValuesSet map[string]bool
@@ -217,7 +216,7 @@ func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, lab
 }
 
 // maxInt64 returns the max between num1 and num2
-func (mtp *metricsTransformProcessor) maxInt64(num1 int64, num2 int64) int64 {
+func (mtp *metricsTransformProcessor) maxInt64(num1, num2 int64) int64 {
 	if num1 > num2 {
 		return num1
 	}
@@ -225,7 +224,7 @@ func (mtp *metricsTransformProcessor) maxInt64(num1 int64, num2 int64) int64 {
 }
 
 // minInt64 returns the min between num1 and num2
-func (mtp *metricsTransformProcessor) minInt64(num1 int64, num2 int64) int64 {
+func (mtp *metricsTransformProcessor) minInt64(num1, num2 int64) int64 {
 	if num1 < num2 {
 		return num1
 	}

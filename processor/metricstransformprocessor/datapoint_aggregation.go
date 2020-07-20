@@ -23,19 +23,19 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// timeseriesGroupByLabelValues is a data structure for grouping timeseries that will be aggregated
-type timeseriesGroupByLabelValues struct {
+// timeseriesAndLabelValues is a data structure for grouping timeseries that will be aggregated
+type timeseriesAndLabelValues struct {
 	timeseries  []*metricspb.TimeSeries
 	labelValues []*metricspb.LabelValue
 }
 
-// aggregateTimeseriesGroups attempts to merge each group of timeseries in keyToTimeseriesMap through the specific calculation indicated by aggrType and dataType to construct the new timeseries with new label values indicated in keyToLabelValuesMap
-// Returns the new list of timeseries
-func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string]*timeseriesGroupByLabelValues, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
+// aggregateTimeseriesGroups merges each group of timeseries using the specified aggregation
+// Returns the merged timeseries
+func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string]*timeseriesAndLabelValues, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
 	newTimeSeriesList := make([]*metricspb.TimeSeries, len(keyToTimeseriesMap))
 	idxCounter := 0
 	for _, element := range keyToTimeseriesMap {
-		timestampToPoints, startTimestamp := mtp.groupPointsForAggregation(element.timeseries)
+		timestampToPoints, startTimestamp := mtp.groupPointsByTimestamp(element.timeseries)
 		newPoints := mtp.aggregatePoints(timestampToPoints, aggrType, dataType)
 		newSingleTimeSeries := &metricspb.TimeSeries{
 			StartTimestamp: startTimestamp,
@@ -49,9 +49,9 @@ func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesM
 	return newTimeSeriesList
 }
 
-// groupPointsForAggregation uses timestamp as an indicator to group aggregatable points in the group of timeseries, and determines the final value of the start timestamp for this groups of timeseries.
-// Returns a map that groups points by timestamps and the final start timestamp
-func (mtp *metricsTransformProcessor) groupPointsForAggregation(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
+// groupPointsByTimestamp groups points by timestamp
+// Returns a map of grouped points and the minimum start timestamp
+func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
 	var startTimestamp *timestamp.Timestamp
 	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
@@ -75,17 +75,16 @@ func (mtp *metricsTransformProcessor) groupPointsForAggregation(timeseries []*me
 func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int64][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
 	newPoints := make([]*metricspb.Point, 0, len(timestampToPoints))
 	for _, points := range timestampToPoints {
-		// use the timestamp from the first element because these all have the same timestamp as they are grouped by timestamp
 		timestamp := points[0].Timestamp
 		switch dataType {
 		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
-			intPoint := mtp.computeInt64(points, aggrType)
+			intPoint := mtp.mergeInt64(points, aggrType)
 			newPoints = append(newPoints, &metricspb.Point{
 				Timestamp: timestamp,
 				Value:     intPoint,
 			})
 		case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, metricspb.MetricDescriptor_GAUGE_DOUBLE:
-			doublePoint := mtp.computeDouble(points, aggrType)
+			doublePoint := mtp.mergeDouble(points, aggrType)
 			newPoints = append(newPoints, &metricspb.Point{
 				Timestamp: timestamp,
 				Value:     doublePoint,
@@ -95,7 +94,7 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int6
 				mtp.logger.Warn("Distribution data can only be aggregated by taking the sum")
 				break
 			}
-			distPoints := mtp.computeDistribution(points)
+			distPoints := mtp.mergeDistribution(points)
 			for _, p := range distPoints {
 				newPoints = append(newPoints, &metricspb.Point{
 					Timestamp: timestamp,
@@ -108,9 +107,9 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int6
 	return newPoints
 }
 
-// computeInt64 attempts to merge int64 points into one point based on the provided aggrType
+// mergeInt64 merges int64 points into one point based on the provided aggrType
 // Returns the aggregated int64 value
-func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_Int64Value {
+func (mtp *metricsTransformProcessor) mergeInt64(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_Int64Value {
 	intVal := int64(0)
 	if len(points) > 0 {
 		intVal = points[0].GetInt64Value()
@@ -130,9 +129,9 @@ func (mtp *metricsTransformProcessor) computeInt64(points []*metricspb.Point, ag
 	return &metricspb.Point_Int64Value{Int64Value: intVal}
 }
 
-// computeDouble attempts to merge double points into one point based on the provided aggrType
+// mergeDouble merges double points into one point based on the provided aggrType
 // Returns the aggregated double value
-func (mtp *metricsTransformProcessor) computeDouble(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_DoubleValue {
+func (mtp *metricsTransformProcessor) mergeDouble(points []*metricspb.Point, aggrType AggregationType) *metricspb.Point_DoubleValue {
 	doubleVal := float64(0)
 	if len(points) > 0 {
 		doubleVal = points[0].GetDoubleValue()
@@ -152,9 +151,9 @@ func (mtp *metricsTransformProcessor) computeDouble(points []*metricspb.Point, a
 	return &metricspb.Point_DoubleValue{DoubleValue: doubleVal}
 }
 
-// computeDistribution attempts to merge distribution points into one point
+// mergeDistribution merges distribution points into one point
 // Returns the aggregated distribution value or values if there are mismatching bounds
-func (mtp *metricsTransformProcessor) computeDistribution(points []*metricspb.Point) []*metricspb.Point_DistributionValue {
+func (mtp *metricsTransformProcessor) mergeDistribution(points []*metricspb.Point) []*metricspb.Point_DistributionValue {
 	distVals := make([]*metricspb.Point_DistributionValue, 0)
 	boundsToPoints := mtp.groupPointsByBounds(points)
 	for _, v := range boundsToPoints {
@@ -225,8 +224,8 @@ func (mtp *metricsTransformProcessor) computeDistVals(val1 *metricspb.Distributi
 	return newDistVal
 }
 
-// computeSumOfSquaredDeviation computes the combined SumOfSquaredDeviation from the two point groups
-// Formula derived and extended from https://math.stackexchange.com/questions/2971315/how-do-i-combine-standard-deviations-of-two-groups
+// computeSumOfSquaredDeviation computes the combined SumOfSquaredDeviation from the two points
+// Formula derived from https://math.stackexchange.com/questions/2971315/how-do-i-combine-standard-deviations-of-two-groups
 // SSDcomb = SSD1 + n(ave(x) - ave(z))^2 + SSD2 +n(ave(y) - ave(z))^2
 func (mtp *metricsTransformProcessor) computeSumOfSquaredDeviation(val1 *metricspb.DistributionValue, val2 *metricspb.DistributionValue) float64 {
 	mean1 := val1.Sum / float64(val1.Count)

@@ -20,26 +20,26 @@ import (
 )
 
 type builder struct {
-	testcase *metricspb.Metric
+	metric *metricspb.Metric
 }
 
-// testcaseBuilder is used to build metrics testcases
-func testcaseBuilder() builder {
+// metricBuilder is used to build metrics for testing
+func metricBuilder() builder {
 	return builder{
-		testcase: &metricspb.Metric{
+		metric: &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{},
 			Timeseries:       make([]*metricspb.TimeSeries, 0),
 		},
 	}
 }
 
-// setName sets the name for the testcase
+// setName sets the name of the metric
 func (b builder) setName(name string) builder {
-	b.testcase.MetricDescriptor.Name = name
+	b.metric.MetricDescriptor.Name = name
 	return b
 }
 
-// setLabels sets the labels for the testcase
+// setLabels sets the labels for the metric
 func (b builder) setLabels(labels []string) builder {
 	labelKeys := make([]*metricspb.LabelKey, len(labels))
 	for i, l := range labels {
@@ -47,7 +47,7 @@ func (b builder) setLabels(labels []string) builder {
 			Key: l,
 		}
 	}
-	b.testcase.MetricDescriptor.LabelKeys = labelKeys
+	b.metric.MetricDescriptor.LabelKeys = labelKeys
 	return b
 }
 
@@ -67,13 +67,13 @@ func (b builder) addTimeseries(startTimestamp int64, labelValuesVal []string) bu
 		LabelValues: labelValues,
 		Points:      make([]*metricspb.Point, 0),
 	}
-	b.testcase.Timeseries = append(b.testcase.Timeseries, timeseries)
+	b.metric.Timeseries = append(b.metric.Timeseries, timeseries)
 	return b
 }
 
 // setDataType sets the data type of this metric
 func (b builder) setDataType(dataType metricspb.MetricDescriptor_Type) builder {
-	b.testcase.MetricDescriptor.Type = dataType
+	b.metric.MetricDescriptor.Type = dataType
 	return b
 }
 
@@ -88,8 +88,8 @@ func (b builder) addInt64Point(tidx int, val int64, timestampVal int64) builder 
 			Int64Value: val,
 		},
 	}
-	points := b.testcase.Timeseries[tidx].Points
-	b.testcase.Timeseries[tidx].Points = append(points, point)
+	points := b.metric.Timeseries[tidx].Points
+	b.metric.Timeseries[tidx].Points = append(points, point)
 	return b
 }
 
@@ -104,8 +104,8 @@ func (b builder) addDoublePoint(tidx int, val float64, timestampVal int64) build
 			DoubleValue: val,
 		},
 	}
-	points := b.testcase.Timeseries[tidx].Points
-	b.testcase.Timeseries[tidx].Points = append(points, point)
+	points := b.metric.Timeseries[tidx].Points
+	b.metric.Timeseries[tidx].Points = append(points, point)
 	return b
 }
 
@@ -138,12 +138,12 @@ func (b builder) addDistributionPoints(tidx int, timestampVal int64, count int64
 			},
 		},
 	}
-	points := b.testcase.Timeseries[tidx].Points
-	b.testcase.Timeseries[tidx].Points = append(points, point)
+	points := b.metric.Timeseries[tidx].Points
+	b.metric.Timeseries[tidx].Points = append(points, point)
 	return b
 }
 
 // Build builds from the builder to the final metric
 func (b builder) build() *metricspb.Metric {
-	return b.testcase
+	return b.metric
 }
