@@ -17,6 +17,7 @@ package cudareceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -40,11 +41,26 @@ var _ consumer.MetricsConsumerOld = (*mockMetricsConsumer)(nil)
 func (m *mockMetricsConsumer) ConsumeMetricsData(_ context.Context, _ consumerdata.MetricsData) error {
 	return nil
 }
-
 func TestCreateReceiver(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
 
+	var tmp func(time.Duration, string, *zap.Logger, consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error)
+	tmp = NewCUDAMetricsCollector
+	defer func() { NewCUDAMetricsCollector = tmp }()
+
+	NewCUDAMetricsCollector = func(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
+		return &CUDAMetricsCollector{
+			consumer:       con,
+			startTime:      time.Now(),
+			device:         nil,
+			scrapeInterval: d,
+			metricPrefix:   prefix,
+			done:           make(chan struct{}),
+			logger:         logger,
+		}, nil
+
+	}
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
