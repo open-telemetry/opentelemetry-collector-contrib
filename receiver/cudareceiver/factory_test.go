@@ -45,9 +45,10 @@ func TestCreateReceiver(t *testing.T) {
 	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	var tmp func(time.Duration, string, *zap.Logger, consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error)
-	tmp = NewCUDAMetricsCollector
-	defer func() { NewCUDAMetricsCollector = tmp }()
+	// Mock NewCUDAMetricsCollector to run tests on instances without GPU devices.
+	var siding func(time.Duration, string, *zap.Logger, consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error)
+	siding = NewCUDAMetricsCollector
+	defer func() { NewCUDAMetricsCollector = siding }()
 
 	NewCUDAMetricsCollector = func(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error) {
 		return &CUDAMetricsCollector{
