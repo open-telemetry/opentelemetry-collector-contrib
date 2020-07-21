@@ -71,7 +71,7 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	}
 	exp, err := cloudtrace.NewExporter(topts...)
 	if err != nil {
-		return nil, fmt.Errorf("Error creating Stackdriver Trace exporter: %v", err)
+		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %v", err)
 	}
 	tExp := &stackdriverExporter{texporter: exp}
 
