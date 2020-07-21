@@ -65,7 +65,6 @@ func pdataSpanToOTSpanData(
 	copy(parentSpanID[:], span.ParentSpanID())
 	startTime := time.Unix(0, int64(span.StartTime()))
 	endTime := time.Unix(0, int64(span.EndTime()))
-	status := span.Status()
 	r := sdkresource.New(
 		pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...,
 	)
@@ -81,8 +80,6 @@ func pdataSpanToOTSpanData(
 		Links:           pdataLinksToOTLinks(span.Links()),
 		MessageEvents:   pdataEventsToOTMessageEvents(span.Events()),
 		HasRemoteParent: false, // no field for this in pdata Span
-		StatusCode:      pdataStatusCodeToGRPCCode(status.Code()),
-		StatusMessage:   status.Message(),
 		DroppedAttributeCount: int(span.DroppedAttributesCount()),
 		DroppedMessageEventCount: int(span.DroppedEventsCount()),
 		DroppedLinkCount: int(span.DroppedLinksCount()),
@@ -93,6 +90,10 @@ func pdataSpanToOTSpanData(
 			Name: il.Name(),
 			Version: il.Version(),
 		}
+	}
+	if status := span.Status(); !status.IsNil() {
+		sd.StatusCode = pdataStatusCodeToGRPCCode(status.Code())
+		sd.StatusMessage = status.Message()
 	}
 
 	return sd, nil
