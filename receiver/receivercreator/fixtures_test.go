@@ -35,6 +35,18 @@ var podEndpoint = observer.Endpoint{
 	Details: pod,
 }
 
+var portIPv6Endpoint = observer.Endpoint{
+	ID:     "port-1",
+	Target: "localhost:1234",
+	IsIPv6: true,
+	Details: observer.Port{
+		Name:      "http",
+		Pod:       pod,
+		Port:      1234,
+		Transport: observer.ProtocolTCP,
+	},
+}
+
 var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",

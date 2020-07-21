@@ -14,7 +14,10 @@
 
 package observer
 
-import "fmt"
+import (
+	"fmt"
+	"net"
+)
 
 type EndpointID string
 
@@ -24,6 +27,8 @@ type Endpoint struct {
 	ID EndpointID
 	// Target is an IP address or hostname of the endpoint.
 	Target string
+	// IsIPv6 indicates whether or not the target is an IPv6 address.
+	IsIPv6 bool
 	// Details contains additional context about the endpoint such as a Pod or Port.
 	Details interface{}
 }
@@ -87,4 +92,14 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 	default:
 		return nil, fmt.Errorf("unknown endpoint details type %T", endpoint.Details)
 	}
+}
+
+func IsIPv6(ips string) bool {
+	ip := net.ParseIP(ips)
+	if ip == nil {
+		return false
+	}
+	// To4() returns nil if the address is not an IPv4 address.
+	ipv4 := ip.To4()
+	return ipv4 == nil
 }

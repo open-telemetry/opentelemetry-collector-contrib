@@ -72,6 +72,7 @@ var _ component.Host = (*loggingHost)(nil)
 func (rc *receiverCreator) Start(ctx context.Context, host component.Host) error {
 	rc.observerHandler = observerHandler{
 		logger:                rc.logger,
+		preferIPv6:            rc.cfg.PreferIPv6,
 		receiverTemplates:     rc.cfg.receiverTemplates,
 		receiversByEndpointID: receiverMap{},
 		runner: &receiverRunner{

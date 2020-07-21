@@ -47,7 +47,8 @@ func TestOnAdd(t *testing.T) {
 	runner := &mockRunner{}
 	rcvrCfg := receiverConfig{typeStr: configmodels.Type("name"), config: userConfigMap{"foo": "bar"}, fullName: "name/1"}
 	handler := &observerHandler{
-		logger: zap.NewNop(),
+		logger:     zap.NewNop(),
+		preferIPv6: true,
 		receiverTemplates: map[string]receiverTemplate{
 			"name/1": {rcvrCfg, "", newRuleOrPanic(`type.port`)},
 		},
@@ -59,6 +60,7 @@ func TestOnAdd(t *testing.T) {
 
 	handler.OnAdd([]observer.Endpoint{
 		portEndpoint,
+		portIPv6Endpoint,
 		unsupportedEndpoint,
 	})
 

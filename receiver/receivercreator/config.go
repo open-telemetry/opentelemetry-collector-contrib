@@ -79,6 +79,9 @@ type Config struct {
 	receiverTemplates             map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
 	WatchObservers []configmodels.Type `mapstructure:"watch_observers"`
+	// PreferIPv6 indicates whether an IPv6 endpoint should be preferred
+	// over an IPv4 endpoint in case the targets overlap.
+	PreferIPv6 bool `mapstructure:"prefer_ipv6"`
 }
 
 // Copied from the Viper but changed to use the same delimiter.

@@ -29,7 +29,8 @@ var _ observer.Notify = (*observerHandler)(nil)
 // observerHandler manages endpoint change notifications.
 type observerHandler struct {
 	sync.Mutex
-	logger *zap.Logger
+	logger     *zap.Logger
+	preferIPv6 bool
 	// receiverTemplates maps receiver template full name to a receiverTemplate value.
 	receiverTemplates map[string]receiverTemplate
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
@@ -66,6 +67,9 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
+		if obs.omitEndpoint(e) {
+			continue
+		}
 		env, err := observer.EndpointToEnv(e)
 		if err != nil {
 			obs.logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
@@ -145,4 +149,8 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 	// TODO: optimize to only restart if effective config has changed.
 	obs.OnRemove(changed)
 	obs.OnAdd(changed)
+}
+
+func (obs *observerHandler) omitEndpoint(e observer.Endpoint) bool {
+	return obs.preferIPv6 && !e.IsIPv6
 }
