@@ -16,7 +16,7 @@ package metricstransformprocessor
 
 import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 
-func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op mtpOperation) {
+func (mtp *metricsTransformProcessor) addLabelOp(metric *metricspb.Metric, op internalOperation) {
 	var lb = metricspb.LabelKey{
 		Key: op.configOperation.NewLabel,
 	}

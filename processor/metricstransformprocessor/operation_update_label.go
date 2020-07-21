@@ -19,7 +19,7 @@ import (
 )
 
 // updateLabelOp updates labels and label values in metric based on given operation
-func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mtpOp mtpOperation) {
+func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mtpOp internalOperation) {
 	op := mtpOp.configOperation
 	for idx, label := range metric.MetricDescriptor.LabelKeys {
 		if label.Key != op.Label {

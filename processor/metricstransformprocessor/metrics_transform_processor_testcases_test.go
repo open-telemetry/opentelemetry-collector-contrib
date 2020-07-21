@@ -20,7 +20,7 @@ import (
 
 type metricsTransformTest struct {
 	name       string // test name
-	transforms []mtpTransform
+	transforms []internalTransform
 	in         []*metricspb.Metric
 	out        []*metricspb.Metric
 }
@@ -31,7 +31,7 @@ var (
 		// UPDATE
 		{
 			name: "metric_name_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
@@ -47,7 +47,7 @@ var (
 		},
 		{
 			name: "metric_name_update_multiple",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
@@ -70,7 +70,7 @@ var (
 		},
 		{
 			name: "metric_name_update_nonexist",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "nonexist",
 					Action:     Update,
@@ -86,11 +86,11 @@ var (
 		},
 		{
 			name: "metric_label_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   UpdateLabel,
@@ -110,11 +110,11 @@ var (
 		},
 		{
 			name: "metric_label_value_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: UpdateLabel,
@@ -140,11 +140,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_int_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -171,11 +171,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_mean_int_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -202,11 +202,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_max_int_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -221,7 +221,8 @@ var (
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addInt64Point(0, 1, 2).addInt64Point(1, 3, 2).addInt64Point(2, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
@@ -233,11 +234,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_min_int_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -252,7 +253,8 @@ var (
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).addInt64Point(2, 3, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
@@ -264,11 +266,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_double_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -295,11 +297,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_mean_double_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -326,11 +328,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_max_double_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -357,11 +359,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_min_double_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -376,7 +378,7 @@ var (
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(2, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDoublePoint(0, 3, 2).addDoublePoint(1, 1, 2).
+					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
@@ -388,11 +390,11 @@ var (
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabelValues,
@@ -422,11 +424,11 @@ var (
 		// this test case also tests the correctness of the SumOfSquaredDeviation merging
 		{
 			name: "metric_label_values_aggregation_sum_distribution_update",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -454,10 +456,41 @@ var (
 					build(),
 			},
 		},
+		{
+			name: "metric_label_values_aggregation_not_sum_distribution_update",
+			transforms: []internalTransform{
+				{
+					MetricName: "metric1",
+					Action:     Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Mean,
+								LabelSet:        []string{"label1"},
+							},
+							labelSetMap: map[string]bool{"label1": true},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DISTRIBUTION).
+					addTimeseries(1, []string{"label1-value1"}).
+					addDistributionPoints(0, 1, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}, 2).
+					build(),
+			},
+		},
 		// INSERT
 		{
 			name: "metric_name_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
@@ -474,7 +507,7 @@ var (
 		},
 		{
 			name: "metric_name_insert_multiple",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
@@ -499,12 +532,12 @@ var (
 		},
 		{
 			name: "metric_label_update_with_metric_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
 					NewName:    "new/metric1",
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   UpdateLabel,
@@ -525,12 +558,12 @@ var (
 		},
 		{
 			name: "metric_label_value_update_with_metric_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
 					NewName:    "new/metric1",
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: UpdateLabel,
@@ -558,11 +591,11 @@ var (
 		},
 		{
 			name: "metric_label_aggregation_sum_int_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -593,11 +626,11 @@ var (
 		},
 		{
 			name: "metric_label_values_aggregation_sum_int_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabelValues,
@@ -629,11 +662,11 @@ var (
 		},
 		{
 			name: "metric_labels_aggregation_sum_distribution_insert",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Insert,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:          AggregateLabels,
@@ -667,11 +700,11 @@ var (
 		// Toggle Data Type
 		{
 			name: "metric_toggle_scalar_data_type_int64_to_double",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: ToggleScalarDataType,
@@ -682,7 +715,7 @@ var (
 				{
 					MetricName: "metric2",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: ToggleScalarDataType,
@@ -702,11 +735,11 @@ var (
 		},
 		{
 			name: "metric_toggle_scalar_data_type_double_to_int64",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: ToggleScalarDataType,
@@ -717,7 +750,7 @@ var (
 				{
 					MetricName: "metric2",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: ToggleScalarDataType,
@@ -737,11 +770,11 @@ var (
 		},
 		{
 			name: "metric_toggle_scalar_data_type_no_effect",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action: ToggleScalarDataType,
@@ -760,11 +793,11 @@ var (
 		// Add Label to a metric
 		{
 			name: "update existing metric by adding a new label when there are no labels",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   AddLabel,
@@ -788,11 +821,11 @@ var (
 		},
 		{
 			name: "update existing metric by adding a new label when there are labels",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   AddLabel,
@@ -816,11 +849,11 @@ var (
 		},
 		{
 			name: "update existing metric by adding a label that is duplicated in the list",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "metric1",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   AddLabel,
@@ -844,11 +877,11 @@ var (
 		},
 		{
 			name: "update does not happen because target metric doesn't exist",
-			transforms: []mtpTransform{
+			transforms: []internalTransform{
 				{
 					MetricName: "mymetric",
 					Action:     Update,
-					Operations: []mtpOperation{
+					Operations: []internalOperation{
 						{
 							configOperation: Operation{
 								Action:   AddLabel,

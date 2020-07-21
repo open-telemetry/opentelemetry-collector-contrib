@@ -105,17 +105,17 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildHelperConfig constructs the maps that will be useful for the operations
-func buildHelperConfig(config *Config) []mtpTransform {
-	helperDataTransforms := make([]mtpTransform, len(config.Transforms))
+func buildHelperConfig(config *Config) []internalTransform {
+	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
-		helperT := mtpTransform{
+		helperT := internalTransform{
 			MetricName: t.MetricName,
 			Action:     t.Action,
 			NewName:    t.NewName,
-			Operations: make([]mtpOperation, len(t.Operations)),
+			Operations: make([]internalOperation, len(t.Operations)),
 		}
 		for j, op := range t.Operations {
-			mtpOp := mtpOperation{
+			mtpOp := internalOperation{
 				configOperation: op,
 			}
 			if len(op.ValueActions) > 0 {

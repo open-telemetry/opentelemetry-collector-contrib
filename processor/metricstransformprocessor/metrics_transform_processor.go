@@ -26,14 +26,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type mtpTransform struct {
+type internalTransform struct {
 	MetricName string
 	Action     ConfigAction
 	NewName    string
-	Operations []mtpOperation
+	Operations []internalOperation
 }
 
-type mtpOperation struct {
+type internalOperation struct {
 	configOperation     Operation
 	valueActionsMapping map[string]string
 	labelSetMap         map[string]bool
@@ -42,16 +42,16 @@ type mtpOperation struct {
 
 type metricsTransformProcessor struct {
 	next       consumer.MetricsConsumer
-	transforms []mtpTransform
+	transforms []internalTransform
 	logger     *zap.Logger
 }
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, logger *zap.Logger, mtpTransforms []mtpTransform) *metricsTransformProcessor {
+func newMetricsTransformProcessor(next consumer.MetricsConsumer, logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
 		next:       next,
-		transforms: mtpTransforms,
+		transforms: internalTransforms,
 		logger:     logger,
 	}
 }
@@ -113,7 +113,7 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 }
 
 // update updates the metric content based on operations indicated in transform.
-func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform mtpTransform) {
+func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform internalTransform) {
 	if transform.NewName != "" {
 		metric.MetricDescriptor.Name = transform.NewName
 	}

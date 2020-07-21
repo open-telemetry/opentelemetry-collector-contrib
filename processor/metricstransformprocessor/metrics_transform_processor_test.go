@@ -62,11 +62,12 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			require.Equal(t, 1, len(got))
 			gotMD := pdatautil.MetricsToMetricsData(got[0])
 			require.Equal(t, 1, len(gotMD))
-			actualOut := gotMD[0].Metrics
-			require.Equal(t, len(test.out), len(actualOut))
+			actualOutMetrics := gotMD[0].Metrics
+			require.Equal(t, len(test.out), len(actualOutMetrics))
 
 			for idx, out := range test.out {
-				assert.Equal(t, *out, *actualOut[idx])
+				actualOut := actualOutMetrics[idx]
+				assert.Equal(t, out, actualOut)
 			}
 
 			assert.NoError(t, mtp.Shutdown(ctx))
@@ -164,7 +165,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	// runs 1000 metrics through a filterprocessor with both include and exclude filters.
 	stressTest := metricsTransformTest{
 		name: "1000Metrics",
-		transforms: []mtpTransform{
+		transforms: []internalTransform{
 			{
 				MetricName: "metric1",
 				Action:     Insert,

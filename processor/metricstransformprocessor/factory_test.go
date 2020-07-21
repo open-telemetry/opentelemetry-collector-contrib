@@ -188,12 +188,12 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	expData := []mtpTransform{
+	expData := []internalTransform{
 		{
 			MetricName: "name",
 			Action:     Update,
 			NewName:    "new-name",
-			Operations: []mtpOperation{
+			Operations: []internalOperation{
 				{
 					configOperation: Operation{
 						Action:   UpdateLabel,
@@ -236,10 +236,10 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	mtpTransforms := buildHelperConfig(oCfg)
+	internalTransforms := buildHelperConfig(oCfg)
 
 	for i, expTr := range expData {
-		mtpT := mtpTransforms[i]
+		mtpT := internalTransforms[i]
 		assert.Equal(t, expTr.NewName, mtpT.NewName)
 		assert.Equal(t, expTr.Action, mtpT.Action)
 		assert.Equal(t, expTr.MetricName, mtpT.MetricName)

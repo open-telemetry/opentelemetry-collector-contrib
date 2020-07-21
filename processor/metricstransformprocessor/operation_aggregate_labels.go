@@ -16,18 +16,19 @@ package metricstransformprocessor
 
 import (
 	"fmt"
+	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
 // aggregateLabelsOp aggregates points that have the labels excluded in label_set
-func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric, mtpOp mtpOperation) {
+func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric, mtpOp internalOperation) {
 	op := mtpOp.configOperation
 	labelSet := mtpOp.labelSetMap
 	labelIdxs, labels := mtp.getLabelIdxs(metric, labelSet)
 	groupedTimeseries := mtp.groupTimeseriesByLabelSet(metric, labelIdxs)
 
-	aggregatedTimeseries := mtp.aggregateTimeseriesGroups(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
+	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
 	metric.Timeseries = aggregatedTimeseries
 	metric.MetricDescriptor.LabelKeys = labels
 }
@@ -35,12 +36,16 @@ func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric
 // groupTimeseriesByLabelSet groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs.
 // Returns a map of grouped timeseries and the corresponding selected labels
 func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricspb.Metric, labelIdxs []int) map[string]*timeseriesAndLabelValues {
+	metricType := metric.MetricDescriptor.Type
 	// key is a composite of the label values as a single string
 	groupedTimeseries := make(map[string]*timeseriesAndLabelValues)
 	for _, timeseries := range metric.Timeseries {
-		var key string
-		var newLabelValues []*metricspb.LabelValue
-		key, newLabelValues = mtp.composeKeyWithSelectedLabels(labelIdxs, timeseries)
+		key, newLabelValues := mtp.selectedLabelsAsKey(labelIdxs, timeseries)
+		if metricType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION ||
+			metricType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
+			metricType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
+			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
+		}
 
 		timeseriesGroup, ok := groupedTimeseries[key]
 		if ok {
@@ -55,9 +60,9 @@ func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricsp
 	return groupedTimeseries
 }
 
-// composeKeyWithSelectedLabels composes the key for the timeseries based on the selected labels' values indicated by labelIdxs
+// selectedLabelsAsKey composes the key for the timeseries based on the selected labels' values indicated by labelIdxs
 // Returns the key and a slice of the actual values used in this key
-func (mtp *metricsTransformProcessor) composeKeyWithSelectedLabels(labelIdxs []int, timeseries *metricspb.TimeSeries) (string, []*metricspb.LabelValue) {
+func (mtp *metricsTransformProcessor) selectedLabelsAsKey(labelIdxs []int, timeseries *metricspb.TimeSeries) (string, []*metricspb.LabelValue) {
 	var key string
 	newLabelValues := make([]*metricspb.LabelValue, len(labelIdxs))
 	for i, vidx := range labelIdxs {

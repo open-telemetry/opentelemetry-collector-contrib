@@ -15,7 +15,6 @@
 package metricstransformprocessor
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 
@@ -29,17 +28,17 @@ type timeseriesAndLabelValues struct {
 	labelValues []*metricspb.LabelValue
 }
 
-// aggregateTimeseriesGroups merges each group of timeseries using the specified aggregation
+// mergeTimeseries merges each group of timeseries using the specified aggregation
 // Returns the merged timeseries
-func (mtp *metricsTransformProcessor) aggregateTimeseriesGroups(keyToTimeseriesMap map[string]*timeseriesAndLabelValues, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
-	newTimeSeriesList := make([]*metricspb.TimeSeries, len(keyToTimeseriesMap))
+func (mtp *metricsTransformProcessor) mergeTimeseries(groupedTimeseries map[string]*timeseriesAndLabelValues, aggrType AggregationType, metricType metricspb.MetricDescriptor_Type) []*metricspb.TimeSeries {
+	newTimeSeriesList := make([]*metricspb.TimeSeries, len(groupedTimeseries))
 	idxCounter := 0
-	for _, element := range keyToTimeseriesMap {
-		timestampToPoints, startTimestamp := mtp.groupPointsByTimestamp(element.timeseries)
-		newPoints := mtp.aggregatePoints(timestampToPoints, aggrType, dataType)
+	for _, tlv := range groupedTimeseries {
+		timestampToPoints, startTimestamp := mtp.groupPointsByTimestamp(tlv.timeseries)
+		newPoints := mtp.mergePoints(timestampToPoints, aggrType, metricType)
 		newSingleTimeSeries := &metricspb.TimeSeries{
 			StartTimestamp: startTimestamp,
-			LabelValues:    element.labelValues,
+			LabelValues:    tlv.labelValues,
 			Points:         newPoints,
 		}
 		newTimeSeriesList[idxCounter] = newSingleTimeSeries
@@ -70,13 +69,13 @@ func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metri
 	return timestampToPoints, startTimestamp
 }
 
-// aggregatePoints aggregates points in the groups provided in timestampToPoints by the specific caluculation indicated by aggrType and dataType
+// mergePoints aggregates points in the groups provided in timestampToPoints by the specific caluculation indicated by aggrType and dataType
 // Returns a group of aggregated points
-func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int64][]*metricspb.Point, aggrType AggregationType, dataType metricspb.MetricDescriptor_Type) []*metricspb.Point {
+func (mtp *metricsTransformProcessor) mergePoints(timestampToPoints map[int64][]*metricspb.Point, aggrType AggregationType, metricType metricspb.MetricDescriptor_Type) []*metricspb.Point {
 	newPoints := make([]*metricspb.Point, 0, len(timestampToPoints))
 	for _, points := range timestampToPoints {
 		timestamp := points[0].Timestamp
-		switch dataType {
+		switch metricType {
 		case metricspb.MetricDescriptor_CUMULATIVE_INT64, metricspb.MetricDescriptor_GAUGE_INT64:
 			intPoint := mtp.mergeInt64(points, aggrType)
 			newPoints = append(newPoints, &metricspb.Point{
@@ -92,15 +91,14 @@ func (mtp *metricsTransformProcessor) aggregatePoints(timestampToPoints map[int6
 		case metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION, metricspb.MetricDescriptor_GAUGE_DISTRIBUTION:
 			if aggrType != Sum {
 				mtp.logger.Warn("Distribution data can only be aggregated by taking the sum")
+				newPoints = append(newPoints, points...)
 				break
 			}
-			distPoints := mtp.mergeDistribution(points)
-			for _, p := range distPoints {
-				newPoints = append(newPoints, &metricspb.Point{
-					Timestamp: timestamp,
-					Value:     p,
-				})
-			}
+			distPoint := mtp.mergeDistribution(points)
+			newPoints = append(newPoints, &metricspb.Point{
+				Timestamp: timestamp,
+				Value:     distPoint,
+			})
 
 		}
 	}
@@ -152,50 +150,17 @@ func (mtp *metricsTransformProcessor) mergeDouble(points []*metricspb.Point, agg
 }
 
 // mergeDistribution merges distribution points into one point
-// Returns the aggregated distribution value or values if there are mismatching bounds
-func (mtp *metricsTransformProcessor) mergeDistribution(points []*metricspb.Point) []*metricspb.Point_DistributionValue {
-	distVals := make([]*metricspb.Point_DistributionValue, 0)
-	boundsToPoints := mtp.groupPointsByBounds(points)
-	for _, v := range boundsToPoints {
-		var distVal *metricspb.DistributionValue
-		for _, p := range v {
-			if distVal == nil {
-				distVal = p.GetDistributionValue()
-				continue
-			}
-			distVal = mtp.computeDistVals(distVal, p.GetDistributionValue())
-		}
-		distVals = append(distVals, &metricspb.Point_DistributionValue{DistributionValue: distVal})
-	}
-	return distVals
-}
-
-// groupPointsByBounds groups distribution value points by the bounds to further determine the aggregatability because distribution value points can only be aggregated if they have match bounds
-// Returns a map with groups of aggregatable distribution value points
-func (mtp *metricsTransformProcessor) groupPointsByBounds(points []*metricspb.Point) map[string][]*metricspb.Point {
-	boundsToPoints := make(map[string][]*metricspb.Point)
+// Returns the aggregated distribution value
+func (mtp *metricsTransformProcessor) mergeDistribution(points []*metricspb.Point) *metricspb.Point_DistributionValue {
+	var distVal *metricspb.DistributionValue
 	for _, p := range points {
-		boundsKey := mtp.boundsToString(p.GetDistributionValue().BucketOptions.GetExplicit().Bounds)
-		if groupedPoints, ok := boundsToPoints[boundsKey]; ok {
-			boundsToPoints[boundsKey] = append(groupedPoints, p)
-		} else {
-			boundsToPoints[boundsKey] = []*metricspb.Point{p}
+		if distVal == nil {
+			distVal = p.GetDistributionValue()
+			continue
 		}
+		distVal = mtp.computeDistVals(distVal, p.GetDistributionValue())
 	}
-	if len(boundsToPoints) > 1 {
-		mtp.logger.Warn("Distribution points with different bounds cannot be aggregated")
-	}
-	return boundsToPoints
-}
-
-// boundsToString converts bounds slice into a string
-// Returns a string that represents this bounds
-func (mtp *metricsTransformProcessor) boundsToString(bounds []float64) string {
-	var boundsKey string
-	for _, b := range bounds {
-		boundsKey += fmt.Sprintf("%f-", b)
-	}
-	return boundsKey
+	return &metricspb.Point_DistributionValue{DistributionValue: distVal}
 }
 
 // computeDistVals does the necessary computations and aggregation to combine two distribution value into one

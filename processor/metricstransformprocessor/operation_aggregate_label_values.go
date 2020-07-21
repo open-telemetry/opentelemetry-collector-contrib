@@ -16,29 +16,31 @@ package metricstransformprocessor
 
 import (
 	"fmt"
+	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
-func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.Metric, mtpOp mtpOperation) {
+func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.Metric, mtpOp internalOperation) {
 	op := mtpOp.configOperation
-	var labelIdx int
+	var operationLabelIdx int
 	for idx, label := range metric.MetricDescriptor.LabelKeys {
 		if label.Key == mtpOp.configOperation.Label {
-			labelIdx = idx
+			operationLabelIdx = idx
 			break
 		}
 	}
-	groupedTimeseries, unchangedTimeseries := mtp.groupTimeseriesWithNewValue(metric, labelIdx, op.NewValue, mtpOp.aggregatedValuesSet)
-	aggregatedTimeseries := mtp.aggregateTimeseriesGroups(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
+	groupedTimeseries, unchangedTimeseries := mtp.groupTimeseriesByNewLabelValue(metric, operationLabelIdx, op.NewValue, mtpOp.aggregatedValuesSet)
+	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
 	aggregatedTimeseries = append(aggregatedTimeseries, unchangedTimeseries...)
 	metric.Timeseries = aggregatedTimeseries
 }
 
-// groupTimeseriesWithNewValue groups all timeseries in the metric that will be aggregated together based on the entire label values after replacing the aggregatedValues by newValue.
+// groupTimeseriesByNewLabelValue groups all timeseries in the metric that will be aggregated together based on the entire label values after replacing the aggregatedValues by newValue.
 // Returns a map of grouped timeseries and the corresponding updated label values, as well as a slice of unchanged timeseries
-func (mtp *metricsTransformProcessor) groupTimeseriesWithNewValue(metric *metricspb.Metric, labelIdx int, newValue string, aggregatedValuesSet map[string]bool) (map[string]*timeseriesAndLabelValues, []*metricspb.TimeSeries) {
+func (mtp *metricsTransformProcessor) groupTimeseriesByNewLabelValue(metric *metricspb.Metric, labelIdx int, newValue string, aggregatedValuesSet map[string]bool) (map[string]*timeseriesAndLabelValues, []*metricspb.TimeSeries) {
+	metricType := metric.MetricDescriptor.Type
 	unchangedTimeseries := make([]*metricspb.TimeSeries, 0)
 	// key is a composite of the label values as a single string
 	groupedTimeseries := make(map[string]*timeseriesAndLabelValues)
@@ -47,9 +49,13 @@ func (mtp *metricsTransformProcessor) groupTimeseriesWithNewValue(metric *metric
 			unchangedTimeseries = append(unchangedTimeseries, timeseries)
 			continue
 		}
-		var key string
-		var newLabelValues []*metricspb.LabelValue
-		key, newLabelValues = mtp.composeKeyWithNewValue(labelIdx, timeseries, newValue, aggregatedValuesSet)
+
+		key, newLabelValues := mtp.newLabelValuesAsKey(labelIdx, timeseries, newValue, aggregatedValuesSet)
+		if metricType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION ||
+			metricType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
+			metricType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
+			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
+		}
 
 		timeseriesGroup, ok := groupedTimeseries[key]
 		if ok {
@@ -72,9 +78,9 @@ func (mtp *metricsTransformProcessor) isUnchangedTimeseries(timeseries *metricsp
 	return true
 }
 
-// composeKeyWithNewValue composes the key for the timeseries with the aggregatedValues replaced by the newValue
+// newLabelValuesAsKey composes the key for the timeseries with the aggregatedValues replaced by the newValue
 // Returns the key and a slice of the actual values used in this key
-func (mtp *metricsTransformProcessor) composeKeyWithNewValue(labelIdx int, timeseries *metricspb.TimeSeries, newValue string, aggregatedValuesSet map[string]bool) (string, []*metricspb.LabelValue) {
+func (mtp *metricsTransformProcessor) newLabelValuesAsKey(labelIdx int, timeseries *metricspb.TimeSeries, newValue string, aggregatedValuesSet map[string]bool) (string, []*metricspb.LabelValue) {
 	var key string
 	newLabelValues := make([]*metricspb.LabelValue, len(timeseries.LabelValues))
 	for i, labelValue := range timeseries.LabelValues {
