@@ -51,8 +51,8 @@ func pdataResourceSpansToOTSpanData(rs pdata.ResourceSpans) ([]*export.SpanData,
 }
 
 func pdataSpanToOTSpanData(
-	span pdata.Span, 
-	resource pdata.Resource, 
+	span pdata.Span,
+	resource pdata.Resource,
 	il pdata.InstrumentationLibrary,
 ) (*export.SpanData, error) {
 	if span.IsNil() {
@@ -68,26 +68,26 @@ func pdataSpanToOTSpanData(
 	r := sdkresource.New(
 		pdataAttributesToOTAttributes(pdata.NewAttributeMap(), resource)...,
 	)
-	
+
 	sd := &export.SpanData{
-		SpanContext:     sc,
-		ParentSpanID:    parentSpanID,
-		SpanKind:        pdataSpanKindToOTSpanKind(span.Kind()),
-		StartTime:       startTime,
-		EndTime:         endTime,
-		Name:            span.Name(),
-		Attributes:      pdataAttributesToOTAttributes(span.Attributes(), resource),
-		Links:           pdataLinksToOTLinks(span.Links()),
-		MessageEvents:   pdataEventsToOTMessageEvents(span.Events()),
-		HasRemoteParent: false, // no field for this in pdata Span
-		DroppedAttributeCount: int(span.DroppedAttributesCount()),
+		SpanContext:              sc,
+		ParentSpanID:             parentSpanID,
+		SpanKind:                 pdataSpanKindToOTSpanKind(span.Kind()),
+		StartTime:                startTime,
+		EndTime:                  endTime,
+		Name:                     span.Name(),
+		Attributes:               pdataAttributesToOTAttributes(span.Attributes(), resource),
+		Links:                    pdataLinksToOTLinks(span.Links()),
+		MessageEvents:            pdataEventsToOTMessageEvents(span.Events()),
+		HasRemoteParent:          false, // no field for this in pdata Span
+		DroppedAttributeCount:    int(span.DroppedAttributesCount()),
 		DroppedMessageEventCount: int(span.DroppedEventsCount()),
-		DroppedLinkCount: int(span.DroppedLinksCount()),
-		Resource: r,
+		DroppedLinkCount:         int(span.DroppedLinksCount()),
+		Resource:                 r,
 	}
 	if !il.IsNil() {
 		sd.InstrumentationLibrary = instrumentation.Library{
-			Name: il.Name(),
+			Name:    il.Name(),
 			Version: il.Version(),
 		}
 	}
@@ -139,7 +139,7 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 				return
 			}
 			otAttrs = append(otAttrs, kv.KeyValue{
-				Key: kv.Key(k),
+				Key:   kv.Key(k),
 				Value: newVal,
 			})
 		})
@@ -164,7 +164,7 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 		copy(sc.SpanID[:], link.SpanID())
 		otLinks = append(otLinks, apitrace.Link{
 			SpanContext: sc,
-			Attributes: pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),
+			Attributes:  pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),
 		})
 	}
 	return otLinks
@@ -179,9 +179,9 @@ func pdataEventsToOTMessageEvents(events pdata.SpanEventSlice) []export.Event {
 			continue
 		}
 		otEvents = append(otEvents, export.Event{
-			Name: event.Name(),
+			Name:       event.Name(),
 			Attributes: pdataAttributesToOTAttributes(event.Attributes(), pdata.NewResource()),
-			Time: time.Unix(0, int64(event.Timestamp())),
+			Time:       time.Unix(0, int64(event.Timestamp())),
 		})
 	}
 	return otEvents

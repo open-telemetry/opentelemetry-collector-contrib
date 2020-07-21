@@ -81,10 +81,10 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	links.MoveAndAppendTo(span.Links())
 
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"cache_hit": pdata.NewAttributeValueBool(true),
+		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
 		"ping_count": pdata.NewAttributeValueInt(25),
-		"agent": pdata.NewAttributeValueString("ocagent"),
+		"agent":      pdata.NewAttributeValueString("ocagent"),
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
@@ -93,7 +93,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 		"namespace": pdata.NewAttributeValueString("kube-system"),
 	}).CopyTo(resource.Attributes())
 	resource.CopyTo(rs.Resource())
-	
+
 	il := pdata.NewInstrumentationLibrary()
 	il.InitEmpty()
 	il.SetName("test_il_name")
@@ -115,8 +115,8 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 
 	wantOTSpanData := &trace.SpanData{
 		SpanContext: apitrace.SpanContext{
-			TraceID:    apitrace.ID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
-			SpanID:     apitrace.SpanID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
+			TraceID: apitrace.ID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F},
+			SpanID:  apitrace.SpanID{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8},
 		},
 		SpanKind:     apitrace.SpanKindServer,
 		ParentSpanID: apitrace.SpanID{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8},
@@ -125,16 +125,16 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 		EndTime:      endTime,
 		MessageEvents: []trace.Event{
 			{
-				Time: startTime, 
-				Name: "start", 
+				Time:       startTime,
+				Name:       "start",
 				Attributes: []kv.KeyValue{},
 			},
 			{
-				Time: endTime, 
+				Time: endTime,
 				Name: "end",
 				Attributes: []kv.KeyValue{
 					{
-						Key: kv.Key("flag"),
+						Key:   kv.Key("flag"),
 						Value: value.Bool(false),
 					},
 				},
@@ -156,32 +156,32 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []kv.KeyValue{},
 			},
 		},
-		StatusCode: codes.Internal,
+		StatusCode:    codes.Internal,
 		StatusMessage: "This is not a drill!",
 		Attributes: []kv.KeyValue{
 			{
-				Key: kv.Key("namespace"),
+				Key:   kv.Key("namespace"),
 				Value: value.String("kube-system"),
 			},
 			{
-				Key: kv.Key("ping_count"),
+				Key:   kv.Key("ping_count"),
 				Value: value.Int64(25),
 			},
 			{
-				Key: kv.Key("agent"),
+				Key:   kv.Key("agent"),
 				Value: value.String("ocagent"),
 			},
 			{
-				Key: kv.Key("cache_hit"),
+				Key:   kv.Key("cache_hit"),
 				Value: value.Bool(true),
 			},
 			{
-				Key: kv.Key("timeout_ns"),
+				Key:   kv.Key("timeout_ns"),
 				Value: value.Int64(12e9),
 			},
 		},
 		InstrumentationLibrary: instrumentation.Library{
-			Name: "test_il_name",
+			Name:    "test_il_name",
 			Version: "test_il_version",
 		},
 	}
