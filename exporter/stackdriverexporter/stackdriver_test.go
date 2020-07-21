@@ -16,6 +16,7 @@ package stackdriverexporter
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -65,7 +66,7 @@ func TestStackdriverExport(t *testing.T) {
 
 	cloudtracepb.RegisterTraceServiceServer(srv, &testServer{ch: reqCh})
 
-	lis, err := net.Listen("tcp", ":8080")
+	lis, err := net.Listen("tcp", ":8081")
 	defer func() {
 		_ = lis.Close()
 	}()
@@ -75,12 +76,13 @@ func TestStackdriverExport(t *testing.T) {
 
 	sde, err := newStackdriverTraceExporter(&Config{
 		ProjectID:   "idk",
-		Endpoint:    "127.0.0.1:8080",
+		Endpoint:    "127.0.0.1:8081",
 		UseInsecure: true,
 	})
 	require.NoError(t, err)
 
 	testTime := time.Now()
+	spanName := "foobar"
 
 	resource := pdata.NewResource()
 	resource.InitEmpty()
@@ -93,8 +95,9 @@ func TestStackdriverExport(t *testing.T) {
 	ispans.Spans().Resize(1)
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	span.SetName("foobar")
+	span.SetName(spanName)
 	span.SetStartTime(pdata.TimestampUnixNano(testTime.UnixNano()))
+	span.CopyTo(ispans.Spans().At(0))
 	err = sde.ConsumeTraces(ctx, traces)
 	assert.NoError(t, err)
 
@@ -103,7 +106,7 @@ func TestStackdriverExport(t *testing.T) {
 		t.Errorf("test timed out")
 	case r := <-reqCh:
 		assert.Len(t, r.Spans, 1)
-		assert.Equal(t, "foobar", r.Spans[0].GetName())
+		assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
 		assert.Equal(t, mustTS(testTime), r.Spans[0].StartTime)
 	}
 }
