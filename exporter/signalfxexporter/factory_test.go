@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -154,4 +156,58 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 			assert.Nil(t, te)
 		})
 	}
+}
+
+func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
+	f := &Factory{}
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:           "testToken",
+		Realm:                 "us1",
+		SendCompatibleMetrics: true,
+	}
+
+	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+
+	// Validate that default translation rules are loaded
+	// Expected values has to be updated once default config changed
+	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
+	assert.Equal(t, 6, len(config.TranslationRules[0].Mapping))
+}
+
+func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
+	f := &Factory{}
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:           "testToken",
+		Realm:                 "us1",
+		SendCompatibleMetrics: true,
+		TranslationRules: []translation.Rule{
+			{
+				Action: translation.ActionRenameDimensionKeys,
+				Mapping: map[string]string{
+					"old_dimension": "new_dimension",
+				},
+			},
+		},
+	}
+
+	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	assert.NoError(t, err)
+	assert.NotNil(t, te)
+
+	// Validate that specified translation rules are loaded instead of default ones
+	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
+	assert.Equal(t, 1, len(config.TranslationRules[0].Mapping))
+	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
 }
