@@ -66,7 +66,7 @@ func TestStackdriverExport(t *testing.T) {
 
 	cloudtracepb.RegisterTraceServiceServer(srv, &testServer{ch: reqCh})
 
-	lis, err := net.Listen("tcp", ":8081")
+	lis, err := net.Listen("tcp", ":8080")
 	defer func() {
 		_ = lis.Close()
 	}()
@@ -76,7 +76,7 @@ func TestStackdriverExport(t *testing.T) {
 
 	sde, err := newStackdriverTraceExporter(&Config{
 		ProjectID:   "idk",
-		Endpoint:    "127.0.0.1:8081",
+		Endpoint:    "127.0.0.1:8080",
 		UseInsecure: true,
 	})
 	require.NoError(t, err)
