@@ -40,7 +40,6 @@ func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.M
 // groupTimeseriesByNewLabelValue groups all timeseries in the metric that will be aggregated together based on the entire label values after replacing the aggregatedValues by newValue.
 // Returns a map of grouped timeseries and the corresponding updated label values, as well as a slice of unchanged timeseries
 func (mtp *metricsTransformProcessor) groupTimeseriesByNewLabelValue(metric *metricspb.Metric, labelIdx int, newValue string, aggregatedValuesSet map[string]bool) (map[string]*timeseriesAndLabelValues, []*metricspb.TimeSeries) {
-	metricType := metric.MetricDescriptor.Type
 	unchangedTimeseries := make([]*metricspb.TimeSeries, 0)
 	// key is a composite of the label values as a single string
 	groupedTimeseries := make(map[string]*timeseriesAndLabelValues)
@@ -51,11 +50,7 @@ func (mtp *metricsTransformProcessor) groupTimeseriesByNewLabelValue(metric *met
 		}
 
 		key, newLabelValues := mtp.newLabelValuesAsKey(labelIdx, timeseries, newValue, aggregatedValuesSet)
-		if metricType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION ||
-			metricType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
-			metricType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
-			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
-		}
+		key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
 
 		timeseriesGroup, ok := groupedTimeseries[key]
 		if ok {

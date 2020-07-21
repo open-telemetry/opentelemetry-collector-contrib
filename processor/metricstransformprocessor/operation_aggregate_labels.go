@@ -36,16 +36,11 @@ func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric
 // groupTimeseriesByLabelSet groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs.
 // Returns a map of grouped timeseries and the corresponding selected labels
 func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricspb.Metric, labelIdxs []int) map[string]*timeseriesAndLabelValues {
-	metricType := metric.MetricDescriptor.Type
 	// key is a composite of the label values as a single string
 	groupedTimeseries := make(map[string]*timeseriesAndLabelValues)
 	for _, timeseries := range metric.Timeseries {
 		key, newLabelValues := mtp.selectedLabelsAsKey(labelIdxs, timeseries)
-		if metricType == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION ||
-			metricType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
-			metricType == metricspb.MetricDescriptor_CUMULATIVE_INT64 {
-			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
-		}
+		key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
 
 		timeseriesGroup, ok := groupedTimeseries[key]
 		if ok {

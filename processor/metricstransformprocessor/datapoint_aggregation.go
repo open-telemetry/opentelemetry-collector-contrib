@@ -54,8 +54,7 @@ func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metri
 	var startTimestamp *timestamp.Timestamp
 	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
-		// picking the earliest start timestamp for this set of aggregated timeseries
-		if startTimestamp == nil || ts.StartTimestamp.Seconds < startTimestamp.Seconds || (ts.StartTimestamp.Seconds == startTimestamp.Seconds && ts.StartTimestamp.Nanos < startTimestamp.Nanos) {
+		if startTimestamp == nil {
 			startTimestamp = ts.StartTimestamp
 		}
 		for _, p := range ts.Points {
