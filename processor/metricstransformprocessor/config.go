@@ -132,12 +132,15 @@ const (
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
 
-	// Average indicates taking the average of the aggregated data.
-	Average AggregationType = "average"
+	// Mean indicates taking the mean of the aggregated data.
+	Mean AggregationType = "mean"
 
 	// Max indicates taking the max of the aggregated data.
 	Max AggregationType = "max"
 
 	// Sum indicates taking the sum of the aggregated data.
 	Sum AggregationType = "sum"
+
+	// Min indicates taking the minimum of the aggregated data.
+	Min AggregationType = "min"
 )
