@@ -22,7 +22,7 @@ import (
 )
 
 // NewPod is a helper function for creating Pods for testing.
-func NewPod(name, host string) *v1.Pod {
+func NewPod(name, host, podIP string) *v1.Pod {
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
@@ -36,7 +36,7 @@ func NewPod(name, host string) *v1.Pod {
 			NodeName: host,
 		},
 		Status: v1.PodStatus{
-			PodIP: "1.2.3.4",
+			PodIP: podIP,
 			Conditions: []v1.PodCondition{
 				{
 					Type:   v1.PodReady,
@@ -49,7 +49,7 @@ func NewPod(name, host string) *v1.Pod {
 	return pod
 }
 
-var pod1V1 = NewPod("pod1", "localhost")
+var pod1V1 = NewPod("pod1", "localhost", "")
 var pod1V2 = func() *v1.Pod {
 	pod := pod1V1.DeepCopy()
 	pod.Labels["pod-version"] = "2"
@@ -95,8 +95,8 @@ var container2StatusRunning = v1.ContainerStatus{
 	Started: pointer.BoolPtr(true),
 }
 
-var podWithNamedPorts = func() *v1.Pod {
-	pod := NewPod("pod-2", "localhost")
+var podWithNamedPorts = func(podIP string) *v1.Pod {
+	pod := NewPod("pod-2", "localhost", podIP)
 	pod.Labels = map[string]string{
 		"env": "prod",
 	}
@@ -109,4 +109,4 @@ var podWithNamedPorts = func() *v1.Pod {
 		container2,
 	}
 	return pod
-}()
+}

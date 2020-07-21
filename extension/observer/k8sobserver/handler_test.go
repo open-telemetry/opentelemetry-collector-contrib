@@ -28,7 +28,8 @@ func TestEndpointsAdded(t *testing.T) {
 		idNamespace: "test-1",
 		watcher:     &sink,
 	}
-	h.OnAdd(podWithNamedPorts)
+	h.OnAdd(podWithNamedPorts("1.2.3.4"))
+	h.OnAdd(podWithNamedPorts("2001:db8::68"))
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -49,6 +50,28 @@ func TestEndpointsAdded(t *testing.T) {
 				Port:      443,
 				Transport: observer.ProtocolTCP,
 			},
+		},
+		{
+			ID:     "test-1/pod-2-UID",
+			Target: "[2001:db8::68]",
+			IsIPv6: true,
+			Details: observer.Pod{
+				Name:   "pod-2",
+				Labels: map[string]string{"env": "prod"},
+			},
+		}, {
+			ID:     "test-1/pod-2-UID/https(443)",
+			Target: "[2001:db8::68]:443",
+			IsIPv6: true,
+			Details: observer.Port{
+				Name: "https",
+				Pod: observer.Pod{
+					Name:   "pod-2",
+					Labels: map[string]string{"env": "prod"},
+				},
+				Port:      443,
+				Transport: observer.ProtocolTCP,
+			},
 		}}, sink.added)
 	assert.Nil(t, sink.removed)
 	assert.Nil(t, sink.changed)
@@ -60,7 +83,7 @@ func TestEndpointsRemoved(t *testing.T) {
 		idNamespace: "test-1",
 		watcher:     &sink,
 	}
-	h.OnDelete(podWithNamedPorts)
+	h.OnDelete(podWithNamedPorts("1.2.3.4"))
 	assert.ElementsMatch(t, []observer.Endpoint{
 		{
 			ID:     "test-1/pod-2-UID",
@@ -93,13 +116,14 @@ func TestEndpointsChanged(t *testing.T) {
 		watcher:     &sink,
 	}
 	// Nothing changed.
-	h.OnUpdate(podWithNamedPorts, podWithNamedPorts)
+	pod := podWithNamedPorts("1.2.3.4")
+	h.OnUpdate(pod, pod)
 	assert.Nil(t, sink.added)
 	assert.Nil(t, sink.changed)
 	assert.Nil(t, sink.removed)
 
 	// Labels changed.
-	changedLabels := podWithNamedPorts.DeepCopy()
+	changedLabels := pod.DeepCopy()
 	changedLabels.Labels["new-label"] = "value"
 	h.OnUpdate(podWithNamedPorts, changedLabels)
 
@@ -111,7 +135,7 @@ func TestEndpointsChanged(t *testing.T) {
 
 	// Running state changed, one added and one removed.
 	sink = endpointSink{}
-	updatedPod := podWithNamedPorts.DeepCopy()
+	updatedPod := pod.DeepCopy()
 	updatedPod.Labels["updated-label"] = "true"
 	h.OnUpdate(podWithNamedPorts, updatedPod)
 	assert.Nil(t, sink.added)

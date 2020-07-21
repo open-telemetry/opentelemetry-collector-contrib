@@ -47,6 +47,11 @@ func (h *handler) OnAdd(obj interface{}) {
 func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	podID := observer.EndpointID(fmt.Sprintf("%s/%s", h.idNamespace, pod.UID))
 	podIP := pod.Status.PodIP
+	isIPv6 := observer.IsIPv6(podIP)
+
+	if isIPv6 {
+		podIP = "[" + podIP + "]"
+	}
 
 	podDetails := observer.Pod{
 		Annotations: pod.Annotations,
@@ -57,6 +62,7 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 	endpoints := []observer.Endpoint{{
 		ID:      podID,
 		Target:  podIP,
+		IsIPv6:  isIPv6,
 		Details: podDetails,
 	}}
 
@@ -84,6 +90,7 @@ func (h *handler) convertPodToEndpoints(pod *v1.Pod) []observer.Endpoint {
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     endpointID,
 				Target: fmt.Sprintf("%s:%d", podIP, port.ContainerPort),
+				IsIPv6: isIPv6,
 				Details: observer.Port{
 					Pod:       podDetails,
 					Name:      port.Name,
