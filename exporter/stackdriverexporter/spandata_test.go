@@ -19,13 +19,13 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc/codes"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/otel/api/kv"
 	"go.opentelemetry.io/otel/api/kv/value"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	apitrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
+	"google.golang.org/grpc/codes"
 )
 
 func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {

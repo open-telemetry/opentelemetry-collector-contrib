@@ -26,10 +26,9 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	"google.golang.org/grpc"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func mustTS(t time.Time) *timestamp.Timestamp {
