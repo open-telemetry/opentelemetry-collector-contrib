@@ -8,8 +8,8 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
-	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.5.1-0.20200721173458-f10fbf228f0e
+	go.opencensus.io v0.22.4
+	go.opentelemetry.io/collector v0.5.1-0.20200722180048-c0b3cf61a63a
 	go.uber.org/zap v1.15.0
 	google.golang.org/api v0.29.0
 	google.golang.org/genproto v0.0.0-20200513103714-09dca8ec2884
