@@ -176,9 +176,9 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, 7, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 6, len(config.TranslationRules[0].Mapping))
+	assert.Equal(t, 15, len(config.TranslationRules[0].Mapping))
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {

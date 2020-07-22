@@ -83,7 +83,7 @@ func MetricDataToSignalFxV2(
 ) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
 	sfxDataPoints, numDroppedTimeSeries = metricDataToSfxDataPoints(logger, md)
 	if metricTranslator != nil {
-		metricTranslator.TranslateDataPoints(sfxDataPoints)
+		sfxDataPoints = metricTranslator.TranslateDataPoints(logger, sfxDataPoints)
 	}
 	sanitizeDataPointDimensions(sfxDataPoints)
 	return
