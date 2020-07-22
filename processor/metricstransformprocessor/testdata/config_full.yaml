@@ -22,6 +22,14 @@ processors:
                   aggregated_values: [value1,  value2]
                   new_value: new_value
                   aggregation_type: sum
+    metricstransform/addlabel:
+      transforms:
+        - metric_name: some_name
+          action: update
+          operations:
+            - action: add_label
+              new_label: mylabel
+              new_value: myvalue
             
 
 exporters:

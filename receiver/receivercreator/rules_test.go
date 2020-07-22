@@ -54,7 +54,7 @@ func Test_ruleEval(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
-			env, err := endpointToEnv(tt.args.endpoint)
+			env, err := observer.EndpointToEnv(tt.args.endpoint)
 			require.NoError(t, err)
 
 			match, err := got.eval(env)

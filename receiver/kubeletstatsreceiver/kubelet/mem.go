@@ -28,13 +28,13 @@ func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
 }
 
 func memAvailableMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/available", "By", s.AvailableBytes)
+	return intGauge(prefix+"memory.available", "By", s.AvailableBytes)
 }
 
 func memUsageMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/usage", "By", s.UsageBytes)
+	return intGauge(prefix+"memory.usage", "By", s.UsageBytes)
 }
 
 func memRssMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/rss", "By", s.RSSBytes)
+	return intGauge(prefix+"memory.rss", "By", s.RSSBytes)
 }

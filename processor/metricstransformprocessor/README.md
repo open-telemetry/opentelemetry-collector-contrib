@@ -12,9 +12,10 @@ The metrics transform processor can be used to rename metrics, labels, or label 
 - Rename labels (e.g. rename `cpu` to `core`)
 - Rename label values (e.g. rename `done` to `complete`)
 - Aggregate across label sets (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
-  - Aggregation_type: sum, average, max
+  - Aggregation_type: sum, mean, max
 - Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
-  - Aggregation_type: sum, average, max
+  - Aggregation_type: sum, mean, max
+- Add label to an existing metric
 
 ## Configuration
 ```yaml
@@ -44,7 +45,7 @@ transforms:
     - action: aggregate_labels
     # label_set contains a list of labels that will remain after the aggregation. The excluded labels will be aggregated by the way specified by aggregation_type.
       label_set: [labels...]
-      aggregation_type: {sum, average, max}
+      aggregation_type: {sum, mean, max}
 
     # aggregate_label_values action aggregates labels across label values (e.g. want memory{slab}, but don’t care about memory{slab_reclaimable} & memory{slab_unreclaimable})
     - action: aggregate_label_values
@@ -52,7 +53,7 @@ transforms:
     # aggregated_values contains a list of label values that will be aggregated by the way specified by aggregation_type into new_value. The excluded label values will remain.
       aggregated_values: [values...]
       new_value: <new_value> 
-      aggregation_type: {sum, average, max}
+      aggregation_type: {sum, mean, max}
 ```
 
 ## Examples
@@ -76,6 +77,19 @@ operations:
     new_label: core
 ```
 
+### Rename Label Values
+```yaml
+# rename the label value slab_reclaimable to sreclaimable, slab_unreclaimable to sunreclaimable
+operations:
+  - action: update_label
+    label: state
+    value_actions:
+      - value: slab_reclaimable
+        new_value: sreclaimable
+      - value: slab_unreclaimable
+        new_value: sunreclaimable
+```
+
 ### Aggregate Labels
 ```yaml
 # aggregate away everything but `state` using summation
@@ -96,4 +110,17 @@ operations:
    aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
    new_value: slab 
    aggregation_type: sum
+```
+
+### Add a label to an existing metric
+```yaml
+transforms:
+...
+# The following will append label {Key: `mylabel`, Description: `myvalue`} to the metric `some_name`.
+  - metric_name: some_name
+      action: update
+      operation:
+        - action: add_label
+          new_label: mylabel
+          new_value: myvalue
 ```

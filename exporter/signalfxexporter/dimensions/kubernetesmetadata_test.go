@@ -18,12 +18,23 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 func TestGetDimensionUpdateFromMetadata(t *testing.T) {
+	translator, _ := translation.NewMetricTranslator([]translation.Rule{
+		{
+			Action: translation.ActionRenameDimensionKeys,
+			Mapping: map[string]string{
+				"prope/rty1": "rty1",
+				"prope_rty2": "rty2",
+				"prope.rty3": "rty3"},
+		},
+	})
 	type args struct {
-		metadata collection.KubernetesMetadataUpdate
+		metadata         collection.KubernetesMetadataUpdate
+		metricTranslator *translation.MetricTranslator
 	}
 	tests := []struct {
 		name string
@@ -32,19 +43,22 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 	}{
 		{
 			"Test tags update",
-			args{metadata: collection.KubernetesMetadataUpdate{
-				ResourceIDKey: "name",
-				ResourceID:    "val",
-				MetadataDelta: collection.MetadataDelta{
-					MetadataToAdd: map[string]string{
-						"tag1": "",
+			args{
+				metadata: collection.KubernetesMetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: collection.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"tag1": "",
+						},
+						MetadataToRemove: map[string]string{
+							"tag2": "",
+						},
+						MetadataToUpdate: map[string]string{},
 					},
-					MetadataToRemove: map[string]string{
-						"tag2": "",
-					},
-					MetadataToUpdate: map[string]string{},
 				},
-			}},
+				metricTranslator: nil,
+			},
 			&DimensionUpdate{
 				Name:       "name",
 				Value:      "val",
@@ -57,22 +71,25 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		},
 		{
 			"Test properties update",
-			args{metadata: collection.KubernetesMetadataUpdate{
-				ResourceIDKey: "name",
-				ResourceID:    "val",
-				MetadataDelta: collection.MetadataDelta{
-					MetadataToAdd: map[string]string{
-						"property1": "value1",
-					},
-					MetadataToRemove: map[string]string{
-						"property2": "value2",
-					},
-					MetadataToUpdate: map[string]string{
-						"property3": "value33",
-						"property4": "",
+			args{
+				metadata: collection.KubernetesMetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: collection.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"property1": "value1",
+						},
+						MetadataToRemove: map[string]string{
+							"property2": "value2",
+						},
+						MetadataToUpdate: map[string]string{
+							"property3": "value33",
+							"property4": "",
+						},
 					},
 				},
-			}},
+				metricTranslator: nil,
+			},
 			&DimensionUpdate{
 				Name:  "name",
 				Value: "val",
@@ -87,24 +104,27 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		},
 		{
 			"Test with unsupported characters",
-			args{metadata: collection.KubernetesMetadataUpdate{
-				ResourceIDKey: "name",
-				ResourceID:    "val",
-				MetadataDelta: collection.MetadataDelta{
-					MetadataToAdd: map[string]string{
-						"prope/rty1": "value1",
-						"ta.g1":      "",
-					},
-					MetadataToRemove: map[string]string{
-						"prope.rty2": "value2",
-						"ta/g2":      "",
-					},
-					MetadataToUpdate: map[string]string{
-						"prope_rty3": "value33",
-						"prope.rty4": "",
+			args{
+				metadata: collection.KubernetesMetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: collection.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"prope/rty1": "value1",
+							"ta.g1":      "",
+						},
+						MetadataToRemove: map[string]string{
+							"prope.rty2": "value2",
+							"ta/g2":      "",
+						},
+						MetadataToUpdate: map[string]string{
+							"prope_rty3": "value33",
+							"prope.rty4": "",
+						},
 					},
 				},
-			}},
+				metricTranslator: nil,
+			},
 			&DimensionUpdate{
 				Name:  "name",
 				Value: "val",
@@ -120,10 +140,49 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			"Test dimensions translation",
+			args{
+				metadata: collection.KubernetesMetadataUpdate{
+					ResourceIDKey: "name",
+					ResourceID:    "val",
+					MetadataDelta: collection.MetadataDelta{
+						MetadataToAdd: map[string]string{
+							"prope/rty1": "value1",
+							"ta.g1":      "",
+						},
+						MetadataToRemove: map[string]string{
+							"prope_rty2": "value2",
+							"ta/g2":      "",
+						},
+						MetadataToUpdate: map[string]string{
+							"prope.rty3": "value33",
+							"prope.rty4": "",
+						},
+					},
+				},
+				metricTranslator: translator,
+			},
+			&DimensionUpdate{
+				Name:  "name",
+				Value: "val",
+				Properties: getMapToPointers(map[string]string{
+					"rty1":       "value1",
+					"rty2":       "",
+					"rty3":       "value33",
+					"prope_rty4": "",
+				}),
+				Tags: map[string]bool{
+					"ta_g1": true,
+					"ta_g2": false,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getDimensionUpdateFromMetadata(tt.args.metadata); !reflect.DeepEqual(*got, *tt.want) {
+			got := getDimensionUpdateFromMetadata(tt.args.metadata, tt.args.metricTranslator)
+			if !reflect.DeepEqual(*got, *tt.want) {
 				t.Errorf("getDimensionUpdateFromMetadata() = %v, want %v", *got, *tt.want)
 			}
 		})

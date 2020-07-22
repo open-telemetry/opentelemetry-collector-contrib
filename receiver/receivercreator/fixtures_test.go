@@ -39,9 +39,15 @@ var portEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
 	Details: observer.Port{
-		Name:     "http",
-		Pod:      pod,
-		Port:     1234,
-		Protocol: observer.ProtocolTCP,
+		Name:      "http",
+		Pod:       pod,
+		Port:      1234,
+		Transport: observer.ProtocolTCP,
 	},
+}
+
+var unsupportedEndpoint = observer.Endpoint{
+	ID:      "endpoint-1",
+	Target:  "localhost:1234",
+	Details: map[string]interface{}{},
 }

@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-20200518175917-05cf2ea24e6c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.5.1-0.20200714180902-7066029f586b
-	go.uber.org/zap v1.13.0
+	go.opentelemetry.io/collector v0.5.1-0.20200721173458-f10fbf228f0e
+	go.uber.org/zap v1.15.0
 	k8s.io/kubernetes v1.12.0
 )
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter
+package translation
 
 import (
 	"math"
@@ -26,12 +26,13 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
 
-func Test_metricDataToSignalFxV2(t *testing.T) {
+func Test_MetricDataToSignalFxV2(t *testing.T) {
 	logger := zap.NewNop()
 
 	keys := []string{"k0", "k1"}
@@ -178,8 +179,7 @@ func Test_metricDataToSignalFxV2(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, tt.metricsDataFn())
-			assert.NoError(t, err)
+			gotSfxDataPoints, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, tt.metricsDataFn())
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
@@ -188,6 +188,60 @@ func Test_metricDataToSignalFxV2(t *testing.T) {
 			assert.Equal(t, tt.wantSfxDataPoints, gotSfxDataPoints)
 		})
 	}
+}
+
+func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
+	translator, err := NewMetricTranslator([]Rule{
+		{
+			Action: ActionRenameDimensionKeys,
+			Mapping: map[string]string{
+				"old.dim": "new.dim",
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			Attributes: map[string]string{"old.dim": "val1"},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "metric1",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						Points: []*metricspb.Point{
+							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	gaugeType := sfxpb.MetricType_GAUGE
+	expected := []*sfxpb.DataPoint{
+		{
+			Metric: "metric1",
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(123),
+			},
+			MetricType: &gaugeType,
+			Dimensions: []*sfxpb.Dimension{
+				{
+					Key:   "new_dim",
+					Value: "val1",
+				},
+			},
+		},
+	}
+	got, dropped := MetricDataToSignalFxV2(zap.NewNop(), translator, md)
+
+	assert.EqualValues(t, 0, dropped)
+	assert.EqualValues(t, expected, got)
 }
 
 func sortDimensions(points []*sfxpb.DataPoint) {
@@ -350,9 +404,8 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
@@ -378,9 +431,8 @@ func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidPoint_NoValue(t *testing.T) {
@@ -400,9 +452,8 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
 
 func Test_InvalidMetric(t *testing.T) {
@@ -416,8 +467,7 @@ func Test_InvalidMetric(t *testing.T) {
 			},
 		},
 	}
-	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
 	// Only 1 timeseries is dropped because the nil metric does not have any timeseries.
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-	assert.NoError(t, err)
 }
