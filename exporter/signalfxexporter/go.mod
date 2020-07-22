@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
