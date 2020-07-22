@@ -13,8 +13,8 @@ require (
 	github.com/signalfx/sapm-proto v0.5.3
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.6.1
-	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.5.1-0.20200721173458-f10fbf228f0e
+	go.opencensus.io v0.22.4
+	go.opentelemetry.io/collector v0.5.1-0.20200722180048-c0b3cf61a63a
 	go.uber.org/zap v1.15.0
 )
 
