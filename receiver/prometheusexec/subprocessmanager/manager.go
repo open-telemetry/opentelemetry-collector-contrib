@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 )
 
-// Process struct holds all the info needed for subprocesses
+// Process struct holds all the info needed to instantiate a subprocess
 type Process struct {
 	Command    string
 	Port       int
@@ -42,12 +42,12 @@ type Process struct {
 const (
 	// HealthyProcessTime is the default time a process needs to stay alive to be considered healthy
 	HealthyProcessTime time.Duration = 30 * time.Minute
-	// healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
+	// HealthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
 	HealthyCrashCount int = 3
-	// delayMutiplier is the factor by which the delay scales (default is doubling every crash)
+	// delayMutiplier is the factor by which the delay scales
 	delayMultiplier float64 = 2.0
-	// baseDelay is the base exponential backoff delay that every process waits for before restarting
-	baseDelay time.Duration = 1 * time.Second
+	// initialDelay is the initial delay before a process is restarted
+	initialDelay time.Duration = 1 * time.Second
 )
 
 // Run will start the process and keep track of running time
@@ -99,14 +99,9 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 
 // Log every line of the subprocesse's output using zap
 func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger) {
-	var (
-		line string
-		err  error
-	)
-
 	// Infinite reading loop until EOF (pipe is closed)
 	for {
-		line, err = reader.ReadString('\n')
+		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
 			logger.Info("subprocess logging failed", zap.String("subprocess name", proc.CustomName), zap.String("error", err.Error()))
 			break
@@ -140,11 +135,11 @@ func formatEnvSlice(envs *[]config.EnvConfig) []string {
 
 // GetDelay will compute the exponential backoff for a given process according to its crash count and time alive
 func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
-	// Return baseDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
+	// Return initialDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
 	if elapsed > HealthyProcessTime || crashCount <= HealthyCrashCount {
-		return baseDelay
+		return initialDelay
 	}
 
-	// Return baseDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
-	return baseDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-HealthyCrashCount)+rand.Float64()))
+	// Return initialDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
+	return initialDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-HealthyCrashCount)+rand.Float64()))
 }
