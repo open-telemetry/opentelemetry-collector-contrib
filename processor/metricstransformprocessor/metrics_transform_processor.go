@@ -23,21 +23,36 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.uber.org/zap"
 )
 
+type internalTransform struct {
+	MetricName string
+	Action     ConfigAction
+	NewName    string
+	Operations []internalOperation
+}
+
+type internalOperation struct {
+	configOperation     Operation
+	valueActionsMapping map[string]string
+	labelSetMap         map[string]bool
+	aggregatedValuesSet map[string]bool
+}
+
 type metricsTransformProcessor struct {
-	cfg        *Config
 	next       consumer.MetricsConsumer
-	transforms []Transform
+	transforms []internalTransform
+	logger     *zap.Logger
 }
 
 var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, cfg *Config) *metricsTransformProcessor {
+func newMetricsTransformProcessor(next consumer.MetricsConsumer, logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
-		cfg:        cfg,
 		next:       next,
-		transforms: cfg.Transforms,
+		transforms: internalTransforms,
+		logger:     logger,
 	}
 }
 
@@ -97,56 +112,55 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 	return pdatautil.MetricsFromMetricsData(mds)
 }
 
-// update updates the original metric content in the metric pointer.
-func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform Transform) {
-	// metric name update
+// update updates the metric content based on operations indicated in transform.
+func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform internalTransform) {
 	if transform.NewName != "" {
 		metric.MetricDescriptor.Name = transform.NewName
 	}
 
 	for _, op := range transform.Operations {
-		// update label
-		if op.Action == UpdateLabel {
+		switch op.configOperation.Action {
+		case UpdateLabel:
 			mtp.updateLabelOp(metric, op)
-		} else if op.Action == ToggleScalarDataType {
+		case AggregateLabels:
+			mtp.aggregateLabelsOp(metric, op)
+		case AggregateLabelValues:
+			mtp.aggregateLabelValuesOp(metric, op)
+		case ToggleScalarDataType:
 			mtp.ToggleScalarDataType(metric)
+		case AddLabel:
+			mtp.addLabelOp(metric, op)
 		}
 	}
 }
 
-func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, op Operation) {
-	for _, label := range metric.MetricDescriptor.LabelKeys {
-		if label.Key != op.Label {
-			continue
+// getLabelIdxs gets the indices of the labelSet labels' indices in the metric's descriptor's labels field
+// Returns the indices slice and a slice of the actual labels selected by this slice of indices
+func (mtp *metricsTransformProcessor) getLabelIdxs(metric *metricspb.Metric, labelSet map[string]bool) ([]int, []*metricspb.LabelKey) {
+	labelIdxs := make([]int, 0)
+	labels := make([]*metricspb.LabelKey, 0)
+	for idx, label := range metric.MetricDescriptor.LabelKeys {
+		_, ok := labelSet[label.Key]
+		if ok {
+			labelIdxs = append(labelIdxs, idx)
+			labels = append(labels, label)
 		}
-		// label key update
-		if op.NewLabel != "" {
-			label.Key = op.NewLabel
-		}
-		// label value update
 	}
+	return labelIdxs, labels
 }
 
-func (mtp *metricsTransformProcessor) ToggleScalarDataType(metric *metricspb.Metric) {
-	for _, ts := range metric.Timeseries {
-		for _, dp := range ts.Points {
-			switch metric.MetricDescriptor.Type {
-			case metricspb.MetricDescriptor_GAUGE_INT64, metricspb.MetricDescriptor_CUMULATIVE_INT64:
-				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: float64(dp.GetInt64Value())}
-			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-				dp.Value = &metricspb.Point_Int64Value{Int64Value: int64(dp.GetDoubleValue())}
-			}
-		}
+// maxInt64 returns the max between num1 and num2
+func (mtp *metricsTransformProcessor) maxInt64(num1, num2 int64) int64 {
+	if num1 > num2 {
+		return num1
 	}
+	return num2
+}
 
-	switch metric.MetricDescriptor.Type {
-	case metricspb.MetricDescriptor_GAUGE_INT64:
-		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_DOUBLE
-	case metricspb.MetricDescriptor_CUMULATIVE_INT64:
-		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-	case metricspb.MetricDescriptor_GAUGE_DOUBLE:
-		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_INT64
-	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
-		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
+// minInt64 returns the min between num1 and num2
+func (mtp *metricsTransformProcessor) minInt64(num1, num2 int64) int64 {
+	if num1 < num2 {
+		return num1
 	}
+	return num2
 }

@@ -59,7 +59,9 @@ Each rule must start with `type.(pod|port) &&` such that the rule matches only o
 | pod.name        | name of the owning pod               |
 | pod.labels      | map of labels of the owning pod      |
 | pod.annotations | map of annotations of the owning pod |
-| protocol        | "TCP" or "UDP"                       |
+| protocol        | `TCP` or `UDP`                       |
+
+
 
 ## Example
 

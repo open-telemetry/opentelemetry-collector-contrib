@@ -16,6 +16,7 @@ package awsxrayreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -30,6 +31,8 @@ type Config struct {
 	// and port on which this receiver listens for X-Ray segment documents
 	// emitted by the X-Ray SDK.
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	confignet.TCPAddr             `mapstructure:",squash"`
+
 	// squash ensures fields are correctly decoded in embedded struct
 	// https://godoc.org/github.com/mitchellh/mapstructure#hdr-Embedded_Structs_and_Squashing
 

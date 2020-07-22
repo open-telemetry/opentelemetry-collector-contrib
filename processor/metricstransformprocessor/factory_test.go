@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,6 +109,146 @@ func TestCreateProcessors(t *testing.T) {
 					assert.EqualError(t, mErr, test.errorMessage)
 				}
 			})
+		}
+	}
+}
+
+func TestFactory_validateConfiguration(t *testing.T) {
+	v1 := Config{
+		Transforms: []Transform{
+			{
+				MetricName: "mymetric",
+				Action:     Update,
+				Operations: []Operation{
+					{
+						Action:   AddLabel,
+						NewValue: "bar",
+					},
+				},
+			},
+		},
+	}
+	err := validateConfiguration(&v1)
+	assert.Equal(t, "missing required field \"new_label\" while \"action\" is add_label in the 0th operation", err.Error())
+
+	v2 := Config{
+		Transforms: []Transform{
+			{
+				MetricName: "mymetric",
+				Action:     Update,
+				Operations: []Operation{
+					{
+						Action:   AddLabel,
+						NewLabel: "foo",
+					},
+				},
+			},
+		},
+	}
+
+	err = validateConfiguration(&v2)
+	assert.Equal(t, "missing required field \"new_value\" while \"action\" is add_label in the 0th operation", err.Error())
+}
+
+func TestCreateProcessorsFilledData(t *testing.T) {
+	factory := Factory{}
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+
+	oCfg.Transforms = []Transform{
+		{
+			MetricName: "name",
+			Action:     Update,
+			NewName:    "new-name",
+			Operations: []Operation{
+				{
+					Action:   UpdateLabel,
+					Label:    "label",
+					NewLabel: "new-label",
+					ValueActions: []ValueAction{
+						{
+							Value:    "value",
+							NewValue: "new/value",
+						},
+					},
+				},
+				{
+					Action:          AggregateLabels,
+					LabelSet:        []string{"label1", "label2"},
+					AggregationType: Sum,
+				},
+				{
+					Action:           AggregateLabelValues,
+					Label:            "label",
+					AggregatedValues: []string{"value1", "value2"},
+					NewValue:         "new-value",
+					AggregationType:  Sum,
+				},
+			},
+		},
+	}
+
+	expData := []internalTransform{
+		{
+			MetricName: "name",
+			Action:     Update,
+			NewName:    "new-name",
+			Operations: []internalOperation{
+				{
+					configOperation: Operation{
+						Action:   UpdateLabel,
+						Label:    "label",
+						NewLabel: "new-label",
+						ValueActions: []ValueAction{
+							{
+								Value:    "value",
+								NewValue: "new/value",
+							},
+						},
+					},
+					valueActionsMapping: map[string]string{"value": "new/value"},
+				},
+				{
+					configOperation: Operation{
+						Action:          AggregateLabels,
+						LabelSet:        []string{"label1", "label2"},
+						AggregationType: Sum,
+					},
+					labelSetMap: map[string]bool{
+						"label1": true,
+						"label2": true,
+					},
+				},
+				{
+					configOperation: Operation{
+						Action:           AggregateLabelValues,
+						Label:            "label",
+						AggregatedValues: []string{"value1", "value2"},
+						NewValue:         "new-value",
+						AggregationType:  Sum,
+					},
+					aggregatedValuesSet: map[string]bool{
+						"value1": true,
+						"value2": true,
+					},
+				},
+			},
+		},
+	}
+
+	internalTransforms := buildHelperConfig(oCfg)
+
+	for i, expTr := range expData {
+		mtpT := internalTransforms[i]
+		assert.Equal(t, expTr.NewName, mtpT.NewName)
+		assert.Equal(t, expTr.Action, mtpT.Action)
+		assert.Equal(t, expTr.MetricName, mtpT.MetricName)
+		for j, expOp := range expTr.Operations {
+			mtpOp := mtpT.Operations[j]
+			assert.Equal(t, expOp.configOperation, mtpOp.configOperation)
+			assert.True(t, reflect.DeepEqual(mtpOp.valueActionsMapping, expOp.valueActionsMapping))
+			assert.True(t, reflect.DeepEqual(mtpOp.labelSetMap, expOp.labelSetMap))
+			assert.True(t, reflect.DeepEqual(mtpOp.aggregatedValuesSet, expOp.aggregatedValuesSet))
 		}
 	}
 }

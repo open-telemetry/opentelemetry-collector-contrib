@@ -14,16 +14,24 @@
 
 package observer
 
-// Protocol defines network protocol for container ports.
-type Protocol string
+// Transport defines protocol for ports.
+type Transport string
 
 const (
 	// ProtocolTCP is the TCP protocol.
-	ProtocolTCP Protocol = "TCP"
+	ProtocolTCP Transport = "TCP"
+	// ProtocolTCP4 is the TCP4 protocol.
+	ProtocolTCP4 Transport = "TCP4"
+	// ProtocolTCP6 is the TCP6 protocol.
+	ProtocolTCP6 Transport = "TCP6"
 	// ProtocolUDP is the UDP protocol.
-	ProtocolUDP Protocol = "UDP"
+	ProtocolUDP Transport = "UDP"
+	// ProtocolUDP4 is the UDP4 protocol.
+	ProtocolUDP4 Transport = "UDP4"
+	// ProtocolUDP6 is the UDP6 protocol.
+	ProtocolUDP6 Transport = "UDP6"
 	// ProtocolUnknown is some other protocol or it is unknown.
-	ProtocolUnknown Protocol = "Unknown"
+	ProtocolUnknown Transport = "Unknown"
 )
 
 // Observable is an interface that provides notification of endpoint changes.

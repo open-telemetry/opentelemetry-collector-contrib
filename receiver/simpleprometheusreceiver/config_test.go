@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -51,7 +52,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(receiverType),
 				NameVal: "prometheus_simple/all_settings",
 			},
-			Endpoint: "localhost:1234",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:1234",
+			},
 			httpConfig: httpConfig{
 				TLSEnabled: true,
 				TLSConfig: tlsConfig{
@@ -73,7 +76,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(receiverType),
 				NameVal: "prometheus_simple/partial_settings",
 			},
-			Endpoint:           "localhost:1234",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:1234",
+			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/metrics",
 		})
@@ -85,7 +90,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(receiverType),
 				NameVal: "prometheus_simple/partial_tls_settings",
 			},
-			Endpoint: "localhost:1234",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:1234",
+			},
 			httpConfig: httpConfig{
 				TLSEnabled: true,
 			},

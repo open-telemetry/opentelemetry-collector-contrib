@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
@@ -59,7 +60,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint:           defaultEndpoint,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: defaultEndpoint,
+		},
 		MetricsPath:        defaultMetricsPath,
 		CollectionInterval: defaultCollectionInterval,
 	}
