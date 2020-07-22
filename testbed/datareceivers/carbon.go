@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -45,7 +46,9 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 func (cr *CarbonDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", cr.Port)
 	config := carbonreceiver.Config{
-		Endpoint: addr,
+		NetAddr: confignet.NetAddr{
+			Endpoint: addr,
+		},
 		Parser: &protocol.Config{
 			Type:   "plaintext",
 			Config: &protocol.PlaintextConfig{},

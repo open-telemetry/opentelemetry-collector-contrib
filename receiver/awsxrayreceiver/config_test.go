@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -51,8 +52,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr + "/udp_endpoint",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: typeStr + "/udp_endpoint",
+			},
+			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:5678",
 			},
 			ProxyServer: &proxyServer{
@@ -75,8 +78,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  typeStr + "/proxy_server",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: typeStr + "/proxy_server",
+			},
+			TCPAddr: confignet.TCPAddr{
 				Endpoint: "0.0.0.0:2000",
 			},
 			ProxyServer: &proxyServer{
