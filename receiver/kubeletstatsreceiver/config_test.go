@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -46,7 +47,9 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/tls",
 		},
-		Endpoint: "1.2.3.4:5555",
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: "1.2.3.4:5555",
+		},
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",

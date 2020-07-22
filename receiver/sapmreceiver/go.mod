@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmre
 go 1.14
 
 require (
-	cloud.google.com/go v0.49.0 // indirect
 	github.com/golang/protobuf v1.3.5
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/mux v1.7.4
@@ -15,9 +14,8 @@ require (
 	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.6.0
-	go.uber.org/zap v1.13.0
-	google.golang.org/appengine v1.6.5 // indirect
+	go.opentelemetry.io/collector v0.5.1-0.20200721173458-f10fbf228f0e
+	go.uber.org/zap v1.15.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
