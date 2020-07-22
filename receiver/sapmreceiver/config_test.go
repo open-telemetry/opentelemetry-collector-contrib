@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -53,7 +54,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "sapm/customname",
 			},
-			Endpoint: "0.0.0.0:7276",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: "0.0.0.0:7276",
+			},
 		})
 
 	r2 := cfg.Receivers["sapm/tls"].(*Config)
@@ -63,10 +66,14 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "sapm/tls",
 			},
-			Endpoint: ":7276",
-			TLSCredentials: &configtls.TLSSetting{
-				CertFile: "/test.crt",
-				KeyFile:  "/test.key",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: ":7276",
+				TLSSetting: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "/test.crt",
+						KeyFile:  "/test.key",
+					},
+				},
 			},
 		})
 
@@ -77,7 +84,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "sapm/passthrough",
 			},
-			Endpoint: ":7276",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: ":7276",
+			},
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: true,
 			},
