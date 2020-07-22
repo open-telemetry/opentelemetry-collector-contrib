@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -53,6 +54,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
 			// the default in OT is 0.0.0.0.
+		},
+		TCPAddr: confignet.TCPAddr{
 			Endpoint: "0.0.0.0:2000",
 		},
 		ProxyServer: &proxyServer{

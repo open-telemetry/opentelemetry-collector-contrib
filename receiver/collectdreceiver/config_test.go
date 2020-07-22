@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -50,7 +51,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(typeStr),
 				NameVal: "collectd/one",
 			},
-			Endpoint:         "localhost:12345",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "localhost:12345",
+			},
 			Timeout:          time.Second * 50,
 			AttributesPrefix: "dap_",
 			Encoding:         "command",
