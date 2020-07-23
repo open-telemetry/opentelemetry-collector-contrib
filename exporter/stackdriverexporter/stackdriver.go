@@ -24,29 +24,58 @@ import (
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	export "go.opentelemetry.io/otel/sdk/export/trace"
+	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
 
-// stackdriverExporter is a wrapper struct of Stackdriver exporter
-type stackdriverExporter struct {
-	mexporter *stackdriver.Exporter
+const name = "stackdriver"
+
+// traceExporter is a wrapper struct of OT cloud trace exporter
+type traceExporter struct {
 	texporter *cloudtrace.Exporter
 }
 
-func (*stackdriverExporter) Name() string {
-	return "stackdriver"
+// metricsExporter is a wrapper struct of OC stackdriver exporter
+type metricsExporter struct {
+	mexporter *stackdriver.Exporter
 }
 
-func (se *stackdriverExporter) Shutdown(context.Context) error {
-	se.mexporter.Flush()
-	se.mexporter.StopMetricsExporter()
+func (*traceExporter) Name() string {
+	return name
+}
+
+func (*metricsExporter) Name() string {
+	return name
+}
+
+func (te *traceExporter) Shutdown(context.Context) error {
+	// uncomment when flush is implemented in trace exporter
+	// te.texporter.Flush() 
 	return nil
+}
+
+func (me *metricsExporter) Shutdown(context.Context) error {
+	me.mexporter.Flush()
+	me.mexporter.StopMetricsExporter()
+	return nil
+}
+
+func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
+	var copts []option.ClientOption
+	if cfg.UseInsecure {
+		conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
+		if err != nil {
+			return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
+		}
+		copts = append(copts, option.WithGRPCConn(conn))
+	} else {
+		copts = append(copts, option.WithEndpoint(cfg.Endpoint))
+	}
+	return copts, nil
 }
 
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
@@ -54,15 +83,9 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 		cloudtrace.WithProjectID(cfg.ProjectID),
 	}
 	if cfg.Endpoint != "" {
-		var copts []option.ClientOption
-		if cfg.UseInsecure {
-			conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
-			if err != nil {
-				return nil, fmt.Errorf("cannot configure grpc conn: %v", err)
-			}
-			copts = append(copts, option.WithGRPCConn(conn))
-		} else {
-			copts = append(copts, option.WithEndpoint(cfg.Endpoint))
+		copts, err := generateClientOptions(cfg)
+		if err != nil {
+			return nil, err
 		}
 		topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
 	}
@@ -71,9 +94,9 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	}
 	exp, err := cloudtrace.NewExporter(topts...)
 	if err != nil {
-		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %v", err)
+		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %w", err)
 	}
-	tExp := &stackdriverExporter{texporter: exp}
+	tExp := &traceExporter{texporter: exp}
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
@@ -95,17 +118,11 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	}
 	if cfg.Endpoint != "" {
-		if cfg.UseInsecure {
-			conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
-			if err != nil {
-				return nil, fmt.Errorf("cannot configure grpc conn: %v", err)
-			}
-			options.TraceClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
-			options.MonitoringClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
-		} else {
-			options.TraceClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
-			options.MonitoringClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
+		copts, err := generateClientOptions(cfg)
+		if err != nil {
+			return nil, err
 		}
+		options.MonitoringClientOptions = copts
 	}
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
@@ -121,9 +138,9 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 	}
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
+		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %w", serr)
 	}
-	mExp := &stackdriverExporter{mexporter: sde}
+	mExp := &metricsExporter{mexporter: sde}
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
@@ -131,17 +148,12 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
-// pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
-func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-	return se.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-}
-
-// pushMetrics calls pushMetricsData on each element of the given metrics
-func (se *stackdriverExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+// pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
+func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
 	mds := pdatautil.MetricsToMetricsData(m)
 	dropped := 0
 	for _, md := range mds {
-		d, err := se.pushMetricsData(ctx, md)
+		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 		dropped += d
 		if err != nil {
 			return dropped, err
@@ -151,12 +163,12 @@ func (se *stackdriverExporter) pushMetrics(ctx context.Context, m pdata.Metrics)
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
-func (se *stackdriverExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
+func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
 	goodSpans := 0
-	spans := make([]*export.SpanData, 0, numSpans)
+	spans := make([]*traceexport.SpanData, 0, numSpans)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
 		sd, err := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
@@ -168,7 +180,7 @@ func (se *stackdriverExporter) pushTraces(ctx context.Context, td pdata.Traces) 
 	}
 
 	for _, span := range spans {
-		se.texporter.ExportSpan(ctx, span)
+		te.texporter.ExportSpan(ctx, span)
 		goodSpans++
 	}
 
