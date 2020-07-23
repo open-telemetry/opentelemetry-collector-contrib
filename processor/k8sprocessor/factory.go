@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
@@ -30,19 +31,18 @@ const (
 	typeStr = "k8s_tagger"
 )
 
-// Factory is the factory for Attributes processor.
-type Factory struct {
-	// Factory dependencies that can be provided form outside.
-	KubeClient kube.ClientProvider
+var kubeClientProvider = kube.ClientProvider(nil)
+
+// NewFactory returns a new factory for the Memory Limiter processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraces(createTraceProcessor),
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
-// Type gets the type of the config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -52,26 +52,22 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
-	ctx context.Context,
+func createTraceProcessor(
+	_ context.Context,
 	params component.ProcessorCreateParams,
-	nextTraceConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
+	nextTraceConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
-	opts := createProcessorOpts(cfg)
-	return NewTraceProcessor(params.Logger, nextTraceConsumer, f.KubeClient, opts...)
+	return newTraceProcessor(params.Logger, nextTraceConsumer, kubeClientProvider, createProcessorOpts(cfg)...)
 }
 
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
+func createMetricsProcessor(
+	_ context.Context,
 	params component.ProcessorCreateParams,
-	nextMetricsConsumer consumer.MetricsConsumer,
 	cfg configmodels.Processor,
+	nextMetricsConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	opts := createProcessorOpts(cfg)
-	return NewMetricsProcessor(params.Logger, nextMetricsConsumer, f.KubeClient, opts...)
+	return newMetricsProcessor(params.Logger, nextMetricsConsumer, kubeClientProvider, createProcessorOpts(cfg)...)
 }
 
 func createProcessorOpts(cfg configmodels.Processor) []Option {

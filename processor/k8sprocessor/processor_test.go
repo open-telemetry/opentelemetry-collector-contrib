@@ -37,7 +37,7 @@ import (
 )
 
 func TestNewTraceProcessor(t *testing.T) {
-	_, err := NewTraceProcessor(
+	_, err := newTraceProcessor(
 		zap.NewNop(),
 		exportertest.NewNopTraceExporter(),
 		newFakeClient,
@@ -49,7 +49,7 @@ func TestTraceProcessorBadOption(t *testing.T) {
 	opt := func(p *kubernetesprocessor) error {
 		return fmt.Errorf("bad option")
 	}
-	p, err := NewTraceProcessor(
+	p, err := newTraceProcessor(
 		zap.NewNop(),
 		exportertest.NewNopTraceExporter(),
 		newFakeClient,
@@ -64,7 +64,7 @@ func TestTraceProcessorBadClientProvider(t *testing.T) {
 	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
-	p, err := NewTraceProcessor(
+	p, err := newTraceProcessor(
 		zap.NewNop(),
 		exportertest.NewNopTraceExporter(),
 		clientProvider,
@@ -88,8 +88,8 @@ func generateTraces() pdata.Traces {
 }
 
 func TestIPDetection(t *testing.T) {
-	next := &testTraceConsumer{}
-	kp, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	kp, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -100,8 +100,8 @@ func TestIPDetection(t *testing.T) {
 	err = kp.ConsumeTraces(ctx, generateTraces())
 	require.NoError(t, err)
 
-	require.Len(t, next.data, 1)
-	rss := next.data[0].ResourceSpans()
+	require.Len(t, next.AllTraces(), 1)
+	rss := next.AllTraces()[0].ResourceSpans()
 	assert.Equal(t, 1, rss.Len())
 
 	r := rss.At(0).Resource()
@@ -110,8 +110,8 @@ func TestIPDetection(t *testing.T) {
 }
 
 func TestNilBatch(t *testing.T) {
-	next := &testTraceConsumer{}
-	kp, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	kp, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -120,12 +120,12 @@ func TestNilBatch(t *testing.T) {
 
 	err = kp.ConsumeTraces(context.Background(), pdata.NewTraces())
 	require.NoError(t, err)
-	require.Len(t, next.data, 1)
+	require.Len(t, next.AllTraces(), 1)
 }
 
 func TestTraceProcessorNoAttrs(t *testing.T) {
-	next := &testTraceConsumer{}
-	p, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	p, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -138,9 +138,9 @@ func TestTraceProcessorNoAttrs(t *testing.T) {
 
 	// pod doesn't have attrs to add
 	kc.Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
-	p.ConsumeTraces(ctx, generateTraces())
-	require.Len(t, next.data, 1)
-	rss := next.data[0]
+	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
+	require.Len(t, next.AllTraces(), 1)
+	rss := next.AllTraces()[0]
 	rs := rss.ResourceSpans()
 	assert.Equal(t, 1, rs.Len())
 	assert.Equal(t, 1, rs.At(0).Resource().Attributes().Len())
@@ -154,21 +154,19 @@ func TestTraceProcessorNoAttrs(t *testing.T) {
 			"aa": "b",
 		},
 	}
-	next.data = []pdata.Traces{}
-	p.ConsumeTraces(ctx, generateTraces())
+	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
 	require.NoError(t, err)
-	require.Len(t, next.data, 1)
-	rss = next.data[0]
+	require.Len(t, next.AllTraces(), 2)
+	rss = next.AllTraces()[1]
 	rs = rss.ResourceSpans()
 	assert.Equal(t, 1, rs.Len())
 	assert.Equal(t, 4, rs.At(0).Resource().Attributes().Len())
 
 	// passthrough doesn't add attrs
-	next.data = []pdata.Traces{}
 	kp.passthroughMode = true
-	p.ConsumeTraces(ctx, generateTraces())
-	require.Len(t, next.data, 1)
-	rss = next.data[0]
+	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
+	require.Len(t, next.AllTraces(), 3)
+	rss = next.AllTraces()[2]
 	rs = rss.ResourceSpans()
 	assert.Equal(t, 1, rs.Len())
 	assert.Equal(t, 1, rs.At(0).Resource().Attributes().Len())
@@ -176,8 +174,8 @@ func TestTraceProcessorNoAttrs(t *testing.T) {
 }
 
 func TestNoIP(t *testing.T) {
-	next := &testTraceConsumer{}
-	kp, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	kp, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -187,16 +185,16 @@ func TestNoIP(t *testing.T) {
 	err = kp.ConsumeTraces(context.Background(), generateTraces())
 	require.NoError(t, err)
 
-	require.Len(t, next.data, 1)
-	rss := next.data[0]
+	require.Len(t, next.AllTraces(), 1)
+	rss := next.AllTraces()[0]
 	rs := rss.ResourceSpans()
 	assert.Equal(t, 1, rs.Len())
 	assert.True(t, rs.At(0).Resource().IsNil())
 }
 
 func TestIPSource(t *testing.T) {
-	next := &testTraceConsumer{}
-	kp, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	kp, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -247,8 +245,8 @@ func TestIPSource(t *testing.T) {
 			}
 			err := kp.ConsumeTraces(ctx, traces)
 			require.NoError(t, err)
-			res := next.data[i].ResourceSpans().At(0).Resource()
-			require.Len(t, next.data, i+1)
+			res := next.AllTraces()[i].ResourceSpans().At(0).Resource()
+			require.Len(t, next.AllTraces(), i+1)
 			require.False(t, res.IsNil())
 			assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
 		})
@@ -256,8 +254,8 @@ func TestIPSource(t *testing.T) {
 }
 
 func TestTraceProcessorAddLabels(t *testing.T) {
-	next := &testTraceConsumer{}
-	p, err := NewTraceProcessor(
+	next := &exportertest.SinkTraceExporter{}
+	p, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -287,8 +285,8 @@ func TestTraceProcessorAddLabels(t *testing.T) {
 		err = p.ConsumeTraces(ctx, generateTraces())
 		require.NoError(t, err)
 
-		require.Len(t, next.data, i+1)
-		td := next.data[i]
+		require.Len(t, next.AllTraces(), i+1)
+		td := next.AllTraces()[i]
 		rss := td.ResourceSpans()
 		require.Equal(t, rss.Len(), 1)
 		r := rss.At(0).Resource()
@@ -302,10 +300,10 @@ func TestTraceProcessorAddLabels(t *testing.T) {
 }
 
 func TestPassthroughStart(t *testing.T) {
-	next := &testTraceConsumer{}
+	next := &exportertest.SinkTraceExporter{}
 	opts := []Option{WithPassthrough()}
 
-	p, err := NewTraceProcessor(
+	p, err := newTraceProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -319,9 +317,9 @@ func TestPassthroughStart(t *testing.T) {
 }
 
 func TestRealClient(t *testing.T) {
-	p, err := NewTraceProcessor(
+	p, err := newTraceProcessor(
 		zap.NewNop(),
-		&testTraceConsumer{},
+		exportertest.NewNopTraceExporter(),
 		nil,
 		WithAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
@@ -331,17 +329,16 @@ func TestRealClient(t *testing.T) {
 }
 
 func TestCapabilities(t *testing.T) {
-	p, err := NewTraceProcessor(zap.NewNop(), &testTraceConsumer{}, newFakeClient)
+	p, err := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), newFakeClient)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
 	assert.True(t, caps.MutatesConsumedData)
 }
 
 func TestStartStop(t *testing.T) {
-	next := &testTraceConsumer{}
-	p, err := NewTraceProcessor(
+	p, err := newTraceProcessor(
 		zap.NewNop(),
-		next,
+		exportertest.NewNopTraceExporter(),
 		newFakeClient,
 	)
 	require.NoError(t, err)
@@ -360,7 +357,7 @@ func TestStartStop(t *testing.T) {
 }
 
 func TestNewMetricsProcessor(t *testing.T) {
-	_, err := NewMetricsProcessor(
+	_, err := newMetricsProcessor(
 		zap.NewNop(),
 		exportertest.NewNopMetricsExporter(),
 		newFakeClient,
@@ -372,7 +369,7 @@ func TestMetricsProcessorBadOption(t *testing.T) {
 	opt := func(p *kubernetesprocessor) error {
 		return fmt.Errorf("bad option")
 	}
-	p, err := NewMetricsProcessor(
+	p, err := newMetricsProcessor(
 		zap.NewNop(),
 		exportertest.NewNopMetricsExporter(),
 		newFakeClient,
@@ -387,7 +384,7 @@ func TestMetricsProcessorBadClientProvider(t *testing.T) {
 	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
-	p, err := NewMetricsProcessor(
+	p, err := newMetricsProcessor(
 		zap.NewNop(),
 		exportertest.NewNopMetricsExporter(),
 		clientProvider,
@@ -399,8 +396,8 @@ func TestMetricsProcessorBadClientProvider(t *testing.T) {
 }
 
 func TestMetricsProcessorNoAttrs(t *testing.T) {
-	next := &testMetricsConsumer{}
-	p, err := NewMetricsProcessor(
+	next := &exportertest.SinkMetricsExporter{}
+	p, err := newMetricsProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -414,9 +411,9 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 	kc.Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
 	metrics := generateMetrics()
 
-	p.ConsumeMetrics(context.Background(), metrics)
-	require.Len(t, next.data, 1)
-	mds := pdatautil.MetricsToMetricsData(next.data[0])
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	require.Len(t, next.AllMetrics(), 1)
+	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md := mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
@@ -434,9 +431,9 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 		},
 	}
 
-	p.ConsumeMetrics(context.Background(), metrics)
-	require.Len(t, next.data, 2)
-	mds = pdatautil.MetricsToMetricsData(next.data[1])
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	require.Len(t, next.AllMetrics(), 2)
+	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[1])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 4, len(md.Resource.Labels))
@@ -450,17 +447,17 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 	// passthrough doesn't add attrs
 	metrics = generateMetrics()
 	kp.passthroughMode = true
-	p.ConsumeMetrics(context.Background(), metrics)
-	require.Len(t, next.data, 3)
-	mds = pdatautil.MetricsToMetricsData(next.data[2])
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	require.Len(t, next.AllMetrics(), 3)
+	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[2])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
 }
 
 func TestMetricsProcessoInvalidIP(t *testing.T) {
-	next := &testMetricsConsumer{}
-	p, err := NewMetricsProcessor(
+	next := &exportertest.SinkMetricsExporter{}
+	p, err := newMetricsProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -483,17 +480,17 @@ func TestMetricsProcessoInvalidIP(t *testing.T) {
 	md := pdatautil.MetricsToMetricsData(metrics)[0]
 	md.Node.Identifier.HostName = "invalid-ip"
 
-	p.ConsumeMetrics(context.Background(), metrics)
-	require.Len(t, next.data, 1)
-	mds := pdatautil.MetricsToMetricsData(next.data[0])
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	require.Len(t, next.AllMetrics(), 1)
+	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Nil(t, md.Resource)
 }
 
 func TestMetricsProcessorAddLabels(t *testing.T) {
-	next := &testMetricsConsumer{}
-	p, err := NewMetricsProcessor(
+	next := &exportertest.SinkMetricsExporter{}
+	p, err := newMetricsProcessor(
 		zap.NewNop(),
 		next,
 		newFakeClient,
@@ -528,8 +525,8 @@ func TestMetricsProcessorAddLabels(t *testing.T) {
 		err = p.ConsumeMetrics(context.Background(), metrics)
 		require.NoError(t, err)
 
-		require.Len(t, next.data, i+1)
-		mds := pdatautil.MetricsToMetricsData(next.data[i])
+		require.Len(t, next.AllMetrics(), i+1)
+		mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[i])
 		require.Equal(t, len(mds), 1)
 		md = mds[0]
 		require.Equal(t, len(attrs)+1, len(md.Resource.Labels))
@@ -543,24 +540,6 @@ func TestMetricsProcessorAddLabels(t *testing.T) {
 		}
 		i++
 	}
-}
-
-type testTraceConsumer struct {
-	data []pdata.Traces
-}
-
-func (tc *testTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	tc.data = append(tc.data, td)
-	return nil
-}
-
-type testMetricsConsumer struct {
-	data []pdata.Metrics
-}
-
-func (mc *testMetricsConsumer) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
-	mc.data = append(mc.data, td)
-	return nil
 }
 
 func generateMetrics() pdata.Metrics {
