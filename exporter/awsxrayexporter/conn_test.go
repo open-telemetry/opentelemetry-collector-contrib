@@ -87,7 +87,7 @@ func TestRegionEnv(t *testing.T) {
 func loadExporterConfig(t *testing.T) *Config {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	otelcfg, _ := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,

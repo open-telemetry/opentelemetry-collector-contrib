@@ -50,7 +50,7 @@ func (je *SapmDataSender) Start() error {
 	}
 
 	var err error
-	factory := sapmexporter.Factory{}
+	factory := sapmexporter.NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 
