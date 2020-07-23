@@ -1211,8 +1211,6 @@ github.com/prometheus/client_golang v1.1.0/go.mod h1:I1FGZT9+L76gKKOs5djB6ezCbFQ
 github.com/prometheus/client_golang v1.2.1/go.mod h1:XMU6Z2MjaRKVu/dC1qupJI9SiNkDYzz3xecMgSW/F+U=
 github.com/prometheus/client_golang v1.3.0/go.mod h1:hJaj2vgQTGQmVCsAACORcieXFeDPbaTKGT+JTgUa3og=
 github.com/prometheus/client_golang v1.4.1/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=
-github.com/prometheus/client_golang v1.5.1 h1:bdHYieyGlH+6OLEk2YQha8THib30KP0/yD0YH9m6xcA=
-github.com/prometheus/client_golang v1.5.1/go.mod h1:e9GMxYsXl05ICDXkRhurwBS4Q3OK1iX/F2sw+iXX5zU=
 github.com/prometheus/client_golang v1.7.1 h1:NTGy1Ja9pByO+xAeH/qiWnLrKtr3hJPNjaVUwnjpdpA=
 github.com/prometheus/client_golang v1.7.1/go.mod h1:PY5Wy2awLA44sXw4AOSfFBetzPP4j5+D6mVACh+pe2M=
 github.com/prometheus/client_model v0.0.0-20180712105110-5c3871d89910/go.mod h1:MbSGuTsp3dbXC40dX6PRTWyKYBIrTGTE9sqQNg2J8bo=
@@ -1515,8 +1513,6 @@ go.opencensus.io v0.22.3 h1:8sGtKOrtQqkN1bp2AtX+misvLIlOmsEsNd+9NIcPEm8=
 go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opencensus.io v0.22.4 h1:LYy1Hy3MJdrCdMwwzxA/dRok4ejH+RwNGbuoD9fCjto=
 go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
-go.opentelemetry.io/collector v0.5.1-0.20200722180048-c0b3cf61a63a h1:1iX1c5qGFIwEuFNsipNZYx0msmkUJaUd8D0i1wtfAmk=
-go.opentelemetry.io/collector v0.5.1-0.20200722180048-c0b3cf61a63a/go.mod h1:uN+yjTTWw70hrz7oALcIUv68a9f9bSWqecwE3yaiFJo=
 go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0 h1:zPpNVfbdyiIBxkDbeM5s42Oq9mOoGb7DooYNi+hq0pc=
 go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0/go.mod h1:s7tGsu1ASn7wHuFdNsIozszFIEkrxqYP0yzYUcEiSV8=
 go.opentelemetry.io/otel v0.6.0 h1:+vkHm/XwJ7ekpISV2Ixew93gCrxTbuwTF5rSewnLLgw=
