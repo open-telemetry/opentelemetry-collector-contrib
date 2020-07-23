@@ -55,11 +55,14 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(typeStr),
 				NameVal: typeStr + "/udp_endpoint",
 			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "localhost:5678",
+			NetAddr: confignet.NetAddr{
+				Endpoint:  "0.0.0.0:5678",
+				Transport: "udp",
 			},
 			ProxyServer: &proxyServer{
-				TCPEndpoint:  "0.0.0.0:2000",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "0.0.0.0:2000",
+				},
 				ProxyAddress: "",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure:   false,
@@ -81,11 +84,14 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: configmodels.Type(typeStr),
 				NameVal: typeStr + "/proxy_server",
 			},
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "0.0.0.0:2000",
+			NetAddr: confignet.NetAddr{
+				Endpoint:  "0.0.0.0:2000",
+				Transport: "udp",
 			},
 			ProxyServer: &proxyServer{
-				TCPEndpoint:  "localhost:1234",
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "0.0.0.0:1234",
+				},
 				ProxyAddress: "https://proxy.proxy.com",
 				TLSSetting: configtls.TLSClientSetting{
 					Insecure:   true,
