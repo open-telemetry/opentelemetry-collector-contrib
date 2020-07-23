@@ -54,7 +54,7 @@ func (*metricsExporter) Name() string {
 
 func (te *traceExporter) Shutdown(context.Context) error {
 	// uncomment when flush is implemented in trace exporter
-	// te.texporter.Flush() 
+	// te.texporter.Flush()
 	return nil
 }
 
