@@ -48,7 +48,7 @@ func TestCreateExporter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{
+	me, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}, eCfg)
 	assert.Nil(t, err)
