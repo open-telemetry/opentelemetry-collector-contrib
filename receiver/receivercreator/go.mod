@@ -6,7 +6,6 @@ require (
 	github.com/antonmedv/expr v1.8.4
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0
-	github.com/ory/x v0.0.109 // indirect
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.0

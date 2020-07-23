@@ -6,7 +6,6 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.4.2
 	github.com/newrelic/newrelic-telemetry-sdk-go v0.2.0
-	github.com/ory/x v0.0.109 // indirect
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.4

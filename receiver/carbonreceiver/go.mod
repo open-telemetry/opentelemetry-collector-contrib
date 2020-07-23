@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.4.2
-	github.com/ory/x v0.0.109 // indirect
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
