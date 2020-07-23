@@ -64,7 +64,6 @@ func TestRefreshEndpoints(t *testing.T) {
 
 func setup() (*mockEndpointsLister, EndpointsWatcher, mockNotifier) {
 	ml := &mockEndpointsLister{
-		Mutex:        sync.Mutex{},
 		endpointsMap: map[EndpointID]Endpoint{},
 	}
 

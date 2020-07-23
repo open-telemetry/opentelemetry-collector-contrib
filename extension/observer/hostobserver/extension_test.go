@@ -48,8 +48,10 @@ func TestHostObserver(t *testing.T) {
 			host, port, err := net.SplitHostPort(conn.Addr().String())
 			assert.NoError(t, err, "Failed to et host and port")
 
-			expectedID := observer.EndpointID(fmt.Sprintf("%s-%s-%s-%d", host, port, observer.ProtocolTCP, selfPid))
-
+			expectedID := observer.EndpointID(
+				fmt.Sprintf(
+					"(host_observer/1)%s-%s-%s-%d", host, port, observer.ProtocolTCP, selfPid),
+			)
 			actualEndpoint := mn.endpointsMap[expectedID]
 			assert.NotEmpty(t, actualEndpoint, "expected endpoint ID not found")
 			assert.Equal(t, expectedID, actualEndpoint.ID, "unexpected endpoint ID found")
@@ -71,7 +73,10 @@ func TestHostObserver(t *testing.T) {
 			host, port, err := net.SplitHostPort(conn.LocalAddr().String())
 			assert.NoError(t, err, "Failed to et host and port")
 
-			expectedID := observer.EndpointID(fmt.Sprintf("%s-%s-%s-%d", host, port, observer.ProtocolUDP, selfPid))
+			expectedID := observer.EndpointID(
+				fmt.Sprintf(
+					"(host_observer/1)%s-%s-%s-%d", host, port, observer.ProtocolUDP, selfPid),
+			)
 
 			actualEndpoint := mn.endpointsMap[expectedID]
 			assert.NotEmpty(t, actualEndpoint, "expected endpoint ID not found")
@@ -105,7 +110,8 @@ func startAndStopObserver(getConnectionsOverride func() (conns []psnet.Connectio
 	}
 
 	ml := endpointsLister{
-		logger: zap.NewNop(),
+		logger:       zap.NewNop(),
+		observerName: "host_observer/1",
 	}
 
 	h := &hostObserver{
@@ -336,7 +342,7 @@ func TestCollectConnectionDetails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := collectConnectionDetails(tt.conn); !reflect.DeepEqual(got, tt.want) {
+			if got := collectConnectionDetails(&tt.conn); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("collectConnectionDetails() = %v, want %v", got, tt.want)
 			}
 		})
@@ -415,10 +421,10 @@ func TestCollectEndpoints(t *testing.T) {
 			},
 			want: []observer.Endpoint{
 				{
-					ID:     observer.EndpointID("123.345.567.789-80-TCP"),
+					ID:     observer.EndpointID("()123.345.567.789-80-TCP"),
 					Target: "123.345.567.789:80",
 					Details: observer.HostPort{
-						Name:      "123.345.567.789-80-TCP",
+						Name:      "()123.345.567.789-80-TCP",
 						Port:      80,
 						Transport: observer.ProtocolTCP,
 						IsIPv6:    false,

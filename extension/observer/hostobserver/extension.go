@@ -33,7 +33,8 @@ type hostObserver struct {
 }
 
 type endpointsLister struct {
-	logger *zap.Logger
+	logger       *zap.Logger
+	observerName string
 }
 
 var _ component.ServiceExtension = (*hostObserver)(nil)
@@ -43,7 +44,8 @@ func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
-				logger: logger,
+				logger:       logger,
+				observerName: config.Name(),
 			},
 		},
 	}
@@ -104,8 +106,12 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 		// endpoints even though there's no process metadata available so users can
 		// still do discovery rules on such sockets.
 		if c.Pid == 0 {
-			cd := collectConnectionDetails(c)
-			id := observer.EndpointID(fmt.Sprintf("%s-%d-%s", c.Laddr.IP, cd.port, cd.transport))
+			cd := collectConnectionDetails(&c)
+			id := observer.EndpointID(
+				fmt.Sprintf(
+					"(%s)%s-%d-%s", e.observerName, c.Laddr.IP, cd.port, cd.transport,
+				),
+			)
 
 			endpoints = append(endpoints, observer.Endpoint{
 				ID:     id,
@@ -134,21 +140,19 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 
 		pd, err := collectProcessDetails(proc)
 		if err != nil {
-			e.logger.Error(
-				"Skipping process",
-				zap.Int32("pid", pid),
-				zap.Error(err),
+			e.logger.Error("failed collecting process details (skipping)",
+				zap.Int32("pid", pid), zap.Error(err),
 			)
 			continue
 		}
 
 		for _, c := range conns {
-			cd := collectConnectionDetails(*c)
+			cd := collectConnectionDetails(c)
 
 			id := observer.EndpointID(
 				fmt.Sprintf(
-					"%s-%d-%s-%d",
-					c.Laddr.IP, cd.port, cd.transport, pid,
+					"(%s)%s-%d-%s-%d",
+					e.observerName, c.Laddr.IP, cd.port, cd.transport, pid,
 				),
 			)
 
@@ -180,7 +184,7 @@ type connectionDetails struct {
 	transport observer.Transport
 }
 
-func collectConnectionDetails(c net.ConnectionStat) connectionDetails {
+func collectConnectionDetails(c *net.ConnectionStat) connectionDetails {
 	ip := c.Laddr.IP
 	// An IP addr of 0.0.0.0 means it listens on all interfaces, including
 	// localhost, so use that since we can't actually connect to 0.0.0.0.

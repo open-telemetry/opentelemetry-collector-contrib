@@ -44,19 +44,32 @@ type Pod struct {
 
 // Port is an endpoint that has a target as well as a port.
 type Port struct {
-	Name      string
-	Pod       Pod
-	Port      uint16
+	// Name is the name of the container port.
+	Name string
+	// Pod is the k8s pod in which the container is running.
+	Pod Pod
+	// Port number of the endpoint.
+	Port uint16
+	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
 	Transport Transport
 }
 
 // HostPort is an endpoint discovered on a host.
 type HostPort struct {
-	Name      string
-	Command   string
-	Port      uint16
+	// Name of the process associated to Endpoint.  If host_observer
+	// is unable to collect information about process using the
+	// Port, this value is set by the observer to be "IP-Port-Transport"
+	// prefixed by the name of the host_observer instance,
+	// "(host_observer/2)127.0.0.1-9099-UDP" for example.
+	Name string
+	// Command used to invoke the process using the Endpoint.
+	Command string
+	// Port number of the endpoint.
+	Port uint16
+	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
 	Transport Transport
-	IsIPv6    bool
+	// IsIPv6 indicates whether or not the Endpoint is IPv6.
+	IsIPv6 bool
 }
 
 type EndpointEnv map[string]interface{}
