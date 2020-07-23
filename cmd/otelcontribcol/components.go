@@ -73,7 +73,7 @@ func components() (config.Factories, error) {
 
 	receivers := []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
-		&sapmreceiver.Factory{},
+		sapmreceiver.NewFactory(),
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
@@ -117,7 +117,7 @@ func components() (config.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactoryBase{
-		&k8sprocessor.Factory{},
+		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		&metricstransformprocessor.Factory{},
 	}

@@ -47,7 +47,7 @@ func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) 
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -57,7 +57,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateTraceReceiver(t *testing.T) {
 	// TODO: Create proper tests after CreateTraceReceiver is implemented.
-	factory := &Factory{}
+	factory := NewFactory()
 	_, err := factory.CreateTraceReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{
@@ -71,7 +71,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{

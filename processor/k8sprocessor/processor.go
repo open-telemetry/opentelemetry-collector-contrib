@@ -49,9 +49,9 @@ type kubernetesprocessor struct {
 var _ (component.TraceProcessor) = (*kubernetesprocessor)(nil)
 var _ (component.MetricsProcessor) = (*kubernetesprocessor)(nil)
 
-// NewTraceProcessor returns a component.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
+// newTraceProcessor returns a component.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
 // passed to it.
-func NewTraceProcessor(
+func newTraceProcessor(
 	logger *zap.Logger,
 	nextTraceConsumer consumer.TraceConsumer,
 	kubeClient kube.ClientProvider,
@@ -70,8 +70,8 @@ func NewTraceProcessor(
 	return kp, nil
 }
 
-// NewMetricsProcessor returns a component.MetricProcessor that adds the k8s attributes to metrics passed to it.
-func NewMetricsProcessor(
+// newMetricsProcessor returns a component.MetricProcessor that adds the k8s attributes to metrics passed to it.
+func newMetricsProcessor(
 	logger *zap.Logger,
 	nextMetricsConsumer consumer.MetricsConsumer,
 	kubeClient kube.ClientProvider,
