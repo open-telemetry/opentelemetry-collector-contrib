@@ -33,7 +33,7 @@ const (
 
 var kubeClientProvider = kube.ClientProvider(nil)
 
-// NewFactory returns a new factory for the Memory Limiter processor.
+// NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {
 	return processorhelper.NewFactory(
 		typeStr,
