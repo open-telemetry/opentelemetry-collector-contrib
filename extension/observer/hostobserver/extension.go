@@ -117,7 +117,6 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 				ID:     id,
 				Target: cd.target,
 				Details: observer.HostPort{
-					Name:      string(id),
 					Port:      cd.port,
 					Transport: cd.transport,
 					// TODO: Move this field to observer.Endpoint and

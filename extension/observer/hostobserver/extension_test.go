@@ -424,7 +424,7 @@ func TestCollectEndpoints(t *testing.T) {
 					ID:     observer.EndpointID("()123.345.567.789-80-TCP"),
 					Target: "123.345.567.789:80",
 					Details: observer.HostPort{
-						Name:      "()123.345.567.789-80-TCP",
+						Name:      "",
 						Port:      80,
 						Transport: observer.ProtocolTCP,
 						IsIPv6:    false,

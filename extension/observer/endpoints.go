@@ -58,9 +58,7 @@ type Port struct {
 type HostPort struct {
 	// Name of the process associated to Endpoint.  If host_observer
 	// is unable to collect information about process using the
-	// Port, this value is set by the observer to be "IP-Port-Transport"
-	// prefixed by the name of the host_observer instance,
-	// "(host_observer/2)127.0.0.1-9099-UDP" for example.
+	// Port, this value is an empty string.
 	Name string
 	// Command used to invoke the process using the Endpoint.
 	Command string
