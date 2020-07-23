@@ -219,10 +219,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	testutil.WaitFor(t, func() bool {
 		got := sink.AllTraces()
-		if len(got) == 1 {
-			return true
-		}
-		return false
+		return len(got) == 1
 	}, "consumer should eventually get the X-Ray span")
 }
 
@@ -453,7 +450,7 @@ func writePacket(t *testing.T, addr, toWrite string) error {
 	}
 	defer conn.Close()
 
-	n, err := fmt.Fprintf(conn, toWrite)
+	n, err := fmt.Fprint(conn, toWrite)
 	if err != nil {
 		return err
 	}

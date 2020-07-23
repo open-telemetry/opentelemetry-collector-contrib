@@ -15,8 +15,10 @@
 package udp
 
 import (
+	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -33,4 +35,72 @@ func TestUDPPortUnavailable(t *testing.T) {
 	_, err = New(address)
 	assert.Error(t, err, "should have failed to create a UDP listener")
 	assert.Contains(t, err.Error(), "address already in use", "error message should complain about address in-use")
+}
+
+func TestSuccessfullyListen(t *testing.T) {
+	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	assert.NoError(t, err, "should resolve UDP address")
+
+	sock, err := net.ListenUDP("udp", addr)
+	assert.NoError(t, err, "should be able to listen")
+	address := sock.LocalAddr().String()
+	sock.Close()
+
+	_, err = New(address)
+	assert.NoError(t, err, "should create a UDP listener")
+}
+
+func TestSuccessfullyRead(t *testing.T) {
+	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	assert.NoError(t, err, "should resolve UDP address")
+
+	sck, err := net.ListenUDP("udp", addr)
+	assert.NoError(t, err, "should be able to listen")
+	address := sck.LocalAddr().String()
+	sck.Close()
+
+	sock, err := New(address)
+	assert.NoError(t, err, "should create a UDP listener")
+
+	err = writePacket(t, address, "123")
+	assert.NoError(t, err, "write should not return error")
+	assert.Eventuallyf(t, func() bool {
+		buf := make([]byte, 100)
+		rlen, err := sock.Read(buf)
+		assert.NoError(t, err, "Read should not return error")
+		return rlen == 3
+	}, time.Second, 10*time.Millisecond, "should read 3 bytes")
+}
+
+func TestSuccessfullyClose(t *testing.T) {
+	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	assert.NoError(t, err, "should resolve UDP address")
+
+	sck, err := net.ListenUDP("udp", addr)
+	assert.NoError(t, err, "should be able to listen")
+	address := sck.LocalAddr().String()
+	sck.Close()
+
+	sock, err := New(address)
+	assert.NoError(t, err, "should create a UDP listener")
+	sock.Close()
+
+	buf := make([]byte, 100)
+	_, err = sock.Read(buf)
+	assert.Error(t, err, "Read should fail after the listener is closed")
+}
+
+func writePacket(t *testing.T, addr, toWrite string) error {
+	conn, err := net.Dial("udp", addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	n, err := fmt.Fprint(conn, toWrite)
+	if err != nil {
+		return err
+	}
+	assert.Equal(t, len(toWrite), n, "exunpected number of bytes written")
+	return nil
 }
