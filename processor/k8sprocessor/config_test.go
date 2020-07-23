@@ -30,7 +30,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory
 	require.NoError(t, err)
 
