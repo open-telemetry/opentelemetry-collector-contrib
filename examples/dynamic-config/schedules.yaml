@@ -1,0 +1,12 @@
+ConfigBlocks:
+    - Resource:
+      Schedules:
+          - InclusionPatterns:
+                - StartsWith: "*"
+            ExclusionPatterns:
+                - Equals: "/metric/not/collected"
+            Period: "MIN_1"
+
+          - InclusionPatterns:
+                - Equals: "/metric/collected/hourly"
+            Period: "HR_1"

@@ -1,0 +1,5 @@
+ConfigBlocks:
+    Schedules:
+    - InclusionPatterns:
+        - StartsWith: "*"
+      Period: SEC_5

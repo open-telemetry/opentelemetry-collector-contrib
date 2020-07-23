@@ -1,0 +1,13 @@
+ConfigBlocks:
+    - Resource:
+      Schedules:
+          - InclusionPatterns:
+                - StartsWith: "*"
+                  Equals: "/cannot/have/both" # must choose only "StartsWith" or "Equals"
+            ExclusionPatterns:
+                - Equals: "/do/not/collect"
+            Period: "MIN_5"
+
+          - InclusionPatterns:
+                - Equals: "/collect/every/week"
+            Period: "DAY_7"

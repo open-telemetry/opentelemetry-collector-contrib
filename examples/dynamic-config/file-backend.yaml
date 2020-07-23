@@ -1,0 +1,20 @@
+extensions:
+    dynamicconfig:
+        endpoint: 0.0.0.0:55700
+        local_config_file: 'examples/dynamic-config/schedules.yaml'
+
+receivers:
+    otlp:
+        protocols:
+            grpc:
+
+exporters:
+    logging:
+
+service:
+    pipelines:
+        metrics:
+            receivers: [otlp]
+            exporters: [logging]
+
+    extensions: [dynamicconfig]
