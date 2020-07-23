@@ -29,7 +29,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
@@ -55,8 +55,8 @@ func TestCreateTraceExporter(t *testing.T) {
 
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	factory := Factory{}
-	factories.Exporters[configmodels.Type(typeStr)] = &factory
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -73,8 +73,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	factories, err := config.ExampleComponents()
 	require.NoError(t, err)
-	factory := Factory{}
-	factories.Exporters[configmodels.Type(typeStr)] = &factory
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)

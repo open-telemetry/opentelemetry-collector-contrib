@@ -18,8 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -27,17 +27,15 @@ const (
 	typeStr = "awsxray"
 )
 
-// Factory is the factory for AWS X-Ray exporter.
-type Factory struct {
+// NewFactory creates a factory for AWS-Xray exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -56,21 +54,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
+func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	eCfg := cfg.(*Config)
 	return NewTraceExporter(eCfg, params.Logger, &Conn{})
-}
-
-// CreateMetricsExporter always returns nil.
-func (f *Factory) CreateMetricsExporter(
-	_ context.Context,
-	_ component.ExporterCreateParams,
-	_ configmodels.Exporter,
-) (component.MetricsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

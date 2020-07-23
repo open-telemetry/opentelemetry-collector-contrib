@@ -29,7 +29,7 @@ func TestDefaultConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "default.yaml"), factories,
@@ -69,7 +69,7 @@ func TestConfig(t *testing.T) {
 	factories, err := config.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := config.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -114,6 +114,6 @@ func TestConfig(t *testing.T) {
 }
 
 func TestConfigCheck(t *testing.T) {
-	cfg := (&Factory{}).CreateDefaultConfig()
+	cfg := (NewFactory()).CreateDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }

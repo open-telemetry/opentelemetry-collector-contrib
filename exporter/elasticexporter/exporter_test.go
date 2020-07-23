@@ -32,7 +32,7 @@ import (
 )
 
 func TestTraceExporter(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
@@ -85,7 +85,7 @@ func newRecorder(t *testing.T) (*transporttest.RecorderTransport, *Config) {
 	})
 	require.NoError(t, err)
 
-	var factory Factory
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.TLSClientSetting.CAFile = certfile.Name()
