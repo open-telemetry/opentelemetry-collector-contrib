@@ -72,7 +72,7 @@ func components() (config.Factories, error) {
 
 	receivers := []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
-		&sapmreceiver.Factory{},
+		sapmreceiver.NewFactory(),
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
