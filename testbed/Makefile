@@ -2,7 +2,7 @@ include ../Makefile.Common
 
 .PHONY: list-tests
 list-tests:
-	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./tests --test.list '.*' | sed '$$d'
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./tests --test.list '.*' | grep "^Test" | sed '$$d'
 
 .PHONY: run-tests
 run-tests:
@@ -10,7 +10,7 @@ run-tests:
 
 .PHONY: list-stability-tests
 list-stability-tests:
-	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./stabilitytests --test.list '.*' | sed '$$d'
+	TESTBED_CONFIG=local.yaml $(GOTEST) -v ./stabilitytests --test.list '.*' | grep "^Test" | sed '$$d'
 
 .PHONY: run-stability-tests
 run-stability-tests:

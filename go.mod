@@ -31,7 +31,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-20200518175917-05cf2ea24e6c
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.0.0-00010101000000-000000000000
@@ -41,7 +41,7 @@ require (
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/otel v0.9.0 // indirect
 	golang.org/x/tools v0.0.0-20200721220347-b42efcd11c08 // indirect
-	go.opentelemetry.io/collector v0.5.1-0.20200721173458-f10fbf228f0e
+	go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
 	honnef.co/go/tools v0.0.1-2020.1.4
 )
