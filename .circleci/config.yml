@@ -129,7 +129,8 @@ commands:
     steps:
       - when:
           condition:
-            equal: [master, << pipeline.git.branch >>]
+            not:
+              equal: [master, << pipeline.git.branch >>]
           steps:
             - run:
                 name: Generate GitHub Issue
@@ -255,6 +256,9 @@ workflows:
           filters:
             tags:
               only: /^v([0-9])+.([0-9])+.([0-9])+.*/
+      - issuegenerator-test:
+          requires:
+            - setup
 
 jobs:
   setup:
@@ -505,3 +509,10 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project/dist/*.<< parameters.package_type >>
+
+  issuegenerator-test:
+    executor: golang
+    steps:
+      - restore_workspace
+      - run: exit 1
+      - github_issue_generator
