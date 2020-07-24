@@ -12,51 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and limitations under the License.
+
 package util
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 
-	"go.uber.org/zap"
+	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
-
-// Reference for this port:
-// https://github.com/aws/aws-xray-daemon/blob/master/pkg/util/util.go
 
 // ProtocolSeparator is the character used to split the header and body in an
 // X-Ray segment
-const ProtocolSeparator = "\n"
+const ProtocolSeparator = '\n'
 
-// SplitHeaderBody separates header and body of buf using provided separator sep, and stores in returnByte.
-func SplitHeaderBody(log *zap.Logger, buf, sep *[]byte, returnByte *[][]byte) [][]byte {
+// SplitHeaderBody separates header and body from `buf` using a known separator: ProtocolSeparator.
+// It returns the body of the segment if:
+// 1. header and body can be correctly separated
+// 2. header is valid
+func SplitHeaderBody(buf []byte) (*tracesegment.Header, []byte, error) {
 	if buf == nil {
-		log.Error("buffer to split is nil")
-		return nil
-	}
-	if sep == nil {
-		log.Error("separator used to split the buffer is nil")
-		return nil
-	}
-	if returnByte == nil {
-		log.Error("buffer used to store splitted result is nil")
-		return nil
+		return nil, nil, &recvErr.ErrRecoverable{
+			errors.New("buffer to split is nil"),
+		}
 	}
 
-	separator := *sep
-	bufVal := *buf
-	lenSeparator := len(separator)
-	var header, body []byte
-	header = *buf
-	for i := 0; i < len(bufVal); i++ {
-		if bytes.Equal(bufVal[i:i+lenSeparator], separator) {
-			header = bufVal[0:i]
-			body = bufVal[i+lenSeparator:]
-			break
-		}
-		if i == len(bufVal)-1 {
-			log.Warn("Missing header", zap.ByteString("header", header))
+	var headerBytes, bodyBytes []byte
+	loc := bytes.IndexByte(buf, byte(ProtocolSeparator))
+	if loc == -1 {
+		return nil, nil, &recvErr.ErrRecoverable{
+			fmt.Errorf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
 		}
 	}
-	returnByteVal := *returnByte
-	return append(returnByteVal[:0], header, body)
+	headerBytes = buf[0:loc]
+	bodyBytes = buf[loc+1:]
+
+	header := tracesegment.Header{}
+	err := json.Unmarshal(headerBytes, &header)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid header %w",
+			&recvErr.ErrRecoverable{err})
+	} else if !header.IsValid() {
+		return nil, nil, &recvErr.ErrRecoverable{
+			fmt.Errorf("invalid header %+v", header),
+		}
+	}
+	return &header, bodyBytes, nil
 }

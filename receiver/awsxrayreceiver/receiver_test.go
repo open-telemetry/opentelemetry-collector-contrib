@@ -19,12 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
-	"sync"
 	"testing"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -35,13 +31,15 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 func TestConsumerCantBeNil(t *testing.T) {
-	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
 	assert.NoError(t, err, "should resolve UDP address")
 
-	sock, err := net.ListenUDP("udp", addr)
+	sock, err := net.ListenUDP(udppoller.Transport, addr)
 	assert.NoError(t, err, "should be able to listen")
 	defer sock.Close()
 	address := sock.LocalAddr().String()
@@ -50,17 +48,16 @@ func TestConsumerCantBeNil(t *testing.T) {
 		&Config{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  address,
-				Transport: transport,
+				Transport: udppoller.Transport,
 			},
 		},
 		nil,
 		zap.NewNop(),
 	)
-	assert.Error(t, err, "should have failed to create a new receiver")
 	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
 }
 
-func TestNonUDPTransport(t *testing.T) {
+func TestPollerCreationFailed(t *testing.T) {
 	_, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -72,69 +69,8 @@ func TestNonUDPTransport(t *testing.T) {
 		zap.NewNop(),
 	)
 	assert.EqualError(t, err,
-		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp")
-}
-
-func TestUDPPortUnavailable(t *testing.T) {
-	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
-	assert.NoError(t, err, "should resolve UDP address")
-
-	sock, err := net.ListenUDP("udp", addr)
-	assert.NoError(t, err, "should be able to listen")
-	defer sock.Close()
-	address := sock.LocalAddr().String()
-
-	sink := new(exportertest.SinkTraceExporter)
-	_, err = newReceiver(
-		&Config{
-			NetAddr: confignet.NetAddr{
-				Endpoint:  address,
-				Transport: transport,
-			},
-		},
-		sink,
-		zap.NewNop(),
-	)
-	assert.Error(t, err, "should have failed to create a new receiver")
-	assert.Contains(t, err.Error(), "address already in use", "error message should complain about address in-use")
-}
-
-func TestShutdownStopsPollers(t *testing.T) {
-	addr, err := findAvailableAddress()
-	assert.NoError(t, err, "there should be address available")
-
-	sink := new(exportertest.SinkTraceExporter)
-	rcvr, err := newReceiver(
-		&Config{
-			NetAddr: confignet.NetAddr{
-				Endpoint:  addr,
-				Transport: transport,
-			},
-		},
-		sink,
-		zap.NewNop(),
-	)
-	assert.NoError(t, err, "receiver should be created")
-
-	// start pollers
-	err = rcvr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "should be able to start receiver")
-
-	pollerStops := make(chan bool)
-	go func() {
-		err = rcvr.Shutdown(context.Background())
-		assert.NoError(t, err, "should be able to shutdown the receiver")
-		close(pollerStops)
-	}()
-
-	testutil.WaitFor(t, func() bool {
-		select {
-		case _, open := <-pollerStops:
-			return !open
-		default:
-			return false
-		}
-	}, "poller is not stopped")
+		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp",
+		"receiver should not be created")
 }
 
 func TestCantStartAnInstanceTwice(t *testing.T) {
@@ -146,7 +82,7 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 		&Config{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
-				Transport: transport,
+				Transport: udppoller.Transport,
 			},
 		},
 		sink,
@@ -172,7 +108,7 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 		&Config{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
-				Transport: transport,
+				Transport: udppoller.Transport,
 			},
 		},
 		sink,
@@ -223,184 +159,6 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}, "consumer should eventually get the X-Ray span")
 }
 
-func TestIssuesOccurredWhenSplitHeaderBody(t *testing.T) {
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, true)
-	defer rcvr.Shutdown(context.Background())
-
-	err := writePacket(t, addr, "Header\n") // no body
-	assert.NoError(t, err, "can not write packet in the no body test case")
-	testutil.WaitFor(t, func() bool {
-		logs := recordedLogs.All()
-		if len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message, "Missing header or segment") {
-			return true
-		}
-		return false
-	}, "poller should reject segment")
-}
-
-func TestInvalidHeader(t *testing.T) {
-	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, true)
-	defer rcvr.Shutdown(context.Background())
-
-	randString, _ := uuid.NewRandom()
-	// the header (i.e. the portion before \n) is invalid
-	err := writePacket(t, addr, randString.String()+"\nBody")
-	assert.NoError(t, err, "can not write packet in the invalid header test case")
-	testutil.WaitFor(t, func() bool {
-		logs := recordedLogs.All()
-		lastEntry := logs[len(logs)-1]
-		if len(logs) > 0 &&
-			strings.Contains(lastEntry.Message, "Invalid header") &&
-			// assert the invalid header is equal to the random string we passed
-			// in previously as the invalid header.
-			strings.Compare(string(lastEntry.Context[0].Interface.([]byte)), randString.String()) == 0 {
-			return true
-		}
-		return false
-	}, "poller should reject segment")
-}
-
-func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	_, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, false)
-	// close the actual socket because we are going to mock it out below
-	rcvr.(*xrayReceiver).udpSock.Close()
-
-	randErrStr, _ := uuid.NewRandom()
-	rcvr.(*xrayReceiver).udpSock = &mockSocketConn{
-		expectedOutput: []byte("dontCare"),
-		expectedError: &mockNetError{
-			mockErrStr: randErrStr.String(),
-		},
-	}
-
-	err := rcvr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "receiver with mock socket should be started")
-
-	testutil.WaitFor(t, func() bool {
-		logs := recordedLogs.All()
-		lastEntry := logs[len(logs)-1]
-		var errIrrecv *errIrrecoverable
-		if len(logs) > 0 &&
-			strings.Contains(lastEntry.Message, "irrecoverable socket read error. Exiting poller") &&
-			lastEntry.Context[0].Type == zapcore.ErrorType &&
-			errors.As(lastEntry.Context[0].Interface.(error), &errIrrecv) &&
-			strings.Compare(errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error(), randErrStr.String()) == 0 {
-			return true
-		}
-		return false
-	}, "poller should exit due to irrecoverable net read error")
-}
-
-func TestSocketReadTemporaryNetError(t *testing.T) {
-	_, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, false)
-	// close the actual socket because we are going to mock it out below
-	rcvr.(*xrayReceiver).udpSock.Close()
-
-	randErrStr, _ := uuid.NewRandom()
-	rcvr.(*xrayReceiver).udpSock = &mockSocketConn{
-		expectedOutput: []byte("dontCare"),
-		expectedError: &mockNetError{
-			mockErrStr: randErrStr.String(),
-			temporary:  true,
-		},
-	}
-
-	err := rcvr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "receiver with mock socket should be started")
-
-	testutil.WaitFor(t, func() bool {
-		logs := recordedLogs.All()
-		lastEntry := logs[len(logs)-1]
-		var errRecv *errRecoverable
-		if len(logs) > 0 &&
-			strings.Contains(lastEntry.Message, "recoverable socket read error") &&
-			lastEntry.Context[0].Type == zapcore.ErrorType &&
-			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
-			strings.Compare(errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error(), randErrStr.String()) == 0 {
-			return true
-		}
-		return false
-	}, "poller should encounter net read error")
-}
-
-func TestSocketGenericReadError(t *testing.T) {
-	_, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, false)
-	// close the actual socket because we are going to mock it out below
-	rcvr.(*xrayReceiver).udpSock.Close()
-
-	randErrStr, _ := uuid.NewRandom()
-	rcvr.(*xrayReceiver).udpSock = &mockSocketConn{
-		expectedOutput: []byte("dontCare"),
-		expectedError: &mockGenericErr{
-			mockErrStr: randErrStr.String(),
-		},
-	}
-
-	err := rcvr.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err, "receiver with mock socket should be started")
-
-	testutil.WaitFor(t, func() bool {
-		logs := recordedLogs.All()
-		lastEntry := logs[len(logs)-1]
-		var errRecv *errRecoverable
-		if len(logs) > 0 &&
-			strings.Contains(lastEntry.Message, "recoverable socket read error") &&
-			lastEntry.Context[0].Type == zapcore.ErrorType &&
-			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
-			strings.Compare(errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error(), randErrStr.String()) == 0 {
-			return true
-		}
-		return false
-	}, "poller should encounter generic socket read error")
-}
-
-type mockNetError struct {
-	mockErrStr string
-	temporary  bool
-}
-
-func (m *mockNetError) Error() string {
-	return m.mockErrStr
-}
-
-func (m *mockNetError) Timeout() bool {
-	return false
-}
-
-func (m *mockNetError) Temporary() bool {
-	return m.temporary
-}
-
-type mockGenericErr struct {
-	mockErrStr string
-}
-
-func (m *mockGenericErr) Error() string {
-	return m.mockErrStr
-}
-
-type mockSocketConn struct {
-	expectedOutput []byte
-	expectedError  error
-	readCount      int
-	mu             sync.Mutex
-}
-
-func (m *mockSocketConn) Read(b []byte) (int, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	copied := copy(b, m.expectedOutput)
-	if m.readCount > 0 {
-		// intentionally slow to prevent a busy loop during any unit tests
-		// that involve the poll() function
-		time.Sleep(5 * time.Second)
-	}
-	m.readCount++
-	return copied, m.expectedError
-}
-
-func (m *mockSocketConn) Close() {}
-
 func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
@@ -411,7 +169,7 @@ func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, compone
 		&Config{
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
-				Transport: transport,
+				Transport: udppoller.Transport,
 			},
 		},
 		sink,
@@ -430,12 +188,12 @@ func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, compone
 // There might be race condition on the address returned by this function if
 // there's some other code that grab the address before we can listen on it.
 func findAvailableAddress() (string, error) {
-	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
+	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
 	if err != nil {
 		return "", err
 	}
 
-	sock, err := net.ListenUDP("udp", addr)
+	sock, err := net.ListenUDP(udppoller.Transport, addr)
 	if err != nil {
 		return "", err
 	}
@@ -444,7 +202,7 @@ func findAvailableAddress() (string, error) {
 }
 
 func writePacket(t *testing.T, addr, toWrite string) error {
-	conn, err := net.Dial("udp", addr)
+	conn, err := net.Dial(udppoller.Transport, addr)
 	if err != nil {
 		return err
 	}

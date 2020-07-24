@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 // NewFactory creates a factory for AWS receiver.
@@ -47,7 +49,7 @@ func createDefaultConfig() configmodels.Receiver {
 		},
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:2000",
-			Transport: transport,
+			Transport: udppoller.Transport,
 		},
 		ProxyServer: &proxyServer{
 			TCPAddr: confignet.TCPAddr{

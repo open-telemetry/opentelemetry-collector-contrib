@@ -11,90 +11,97 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+// Copyright 2018-2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. A copy of the License is located at
+//
+//     http://aws.amazon.com/apache2.0/
+//
+// or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and limitations under the License.
 package util
 
 import (
-	"strings"
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
+
+	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
 func TestSplitHeaderBodyWithSeparatorExists(t *testing.T) {
-	str := "Header\nBody"
-	separator := "\n"
-	buf := []byte(str)
-	separatorArray := []byte(separator)
-	result := make([][]byte, 2)
+	buf := []byte(`{"format":"json", "version":1}` + "\nBody")
 
-	returnResult := SplitHeaderBody(zap.NewNop(), &buf, &separatorArray, &result)
+	header, body, err := SplitHeaderBody(buf)
+	assert.NoError(t, err, "should split correctly")
 
-	assert.EqualValues(t, len(result), 2)
-	assert.EqualValues(t, string(result[0]), "Header")
-	assert.EqualValues(t, string(result[1]), "Body")
-	assert.EqualValues(t, string(returnResult[0]), "Header")
-	assert.EqualValues(t, string(returnResult[1]), "Body")
-	assert.EqualValues(t, string(buf), str)
-	assert.EqualValues(t, string(separatorArray), separator)
+	assert.Equal(t, &tracesegment.Header{
+		Format:  "json",
+		Version: 1,
+	}, header, "actual header is different from the expected")
+	assert.Equal(t, "Body", string(body), "actual body is different from the expected")
 }
 
 func TestSplitHeaderBodyWithSeparatorDoesNotExist(t *testing.T) {
-	str := "Header"
-	separator := "\n"
-	buf := []byte(str)
-	separatorArray := []byte(separator)
-	result := make([][]byte, 2)
+	buf := []byte(`{"format":"json", "version":1}`)
 
-	returnResult := SplitHeaderBody(zap.NewNop(), &buf, &separatorArray, &result)
+	_, _, err := SplitHeaderBody(buf)
 
-	assert.EqualValues(t, len(result), 2)
-	assert.EqualValues(t, string(result[0]), "Header")
-	assert.EqualValues(t, string(result[1]), "")
-	assert.EqualValues(t, string(returnResult[0]), "Header")
-	assert.EqualValues(t, string(returnResult[1]), "")
-	assert.EqualValues(t, string(buf), str)
-	assert.EqualValues(t, string(separatorArray), separator)
+	var errRecv *recvErr.ErrRecoverable
+	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.EqualError(t, err,
+		fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
+		"expected error messages")
 }
 
 func TestSplitHeaderBodyNilBuf(t *testing.T) {
-	logger, recorded := logSetup()
-	separator := "\n"
-	separatorArray := []byte(separator)
-	result := make([][]byte, 2)
-	SplitHeaderBody(logger, nil, &separatorArray, &result)
+	_, _, err := SplitHeaderBody(nil)
 
-	logs := recorded.All()
-	assert.True(t, strings.Contains(logs[0].Message, "buffer to split is nil"))
+	var errRecv *recvErr.ErrRecoverable
+	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.EqualError(t, err, "buffer to split is nil",
+		"expected error messages")
 }
 
-func TestSplitHeaderBodyNilSeparator(t *testing.T) {
-	logger, recorded := logSetup()
-	str := "Test String"
-	buf := []byte(str)
-	result := make([][]byte, 2)
+func TestSplitHeaderBodyNonJsonHeader(t *testing.T) {
+	buf := []byte(`nonJson` + "\nBody")
 
-	SplitHeaderBody(logger, &buf, nil, &result)
+	_, _, err := SplitHeaderBody(buf)
 
-	logs := recorded.All()
-	assert.True(t, strings.Contains(logs[0].Message, "separator used to split the buffer is nil"))
+	var errRecv *recvErr.ErrRecoverable
+	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.Contains(t, err.Error(), "invalid character 'o'")
 }
 
-func TestSplitHeaderBodyNilResult(t *testing.T) {
-	logger, recorded := logSetup()
-	str := "Test String"
-	buf := []byte(str)
-	separator := "\n"
-	separatorArray := []byte(separator)
-	SplitHeaderBody(logger, &buf, &separatorArray, nil)
+func TestSplitHeaderBodyEmptyBody(t *testing.T) {
+	buf := []byte(`{"format":"json", "version":1}` + "\n")
 
-	logs := recorded.All()
-	assert.True(t, strings.Contains(logs[0].Message, "buffer used to store splitted result is nil"))
+	header, body, err := SplitHeaderBody(buf)
+	assert.NoError(t, err, "should split correctly")
+
+	assert.Equal(t, &tracesegment.Header{
+		Format:  "json",
+		Version: 1,
+	}, header, "actual header is different from the expected")
+	assert.Len(t, body, 0, "body should be empty")
 }
 
-func logSetup() (*zap.Logger, *observer.ObservedLogs) {
-	core, recorded := observer.New(zapcore.InfoLevel)
-	return zap.New(core), recorded
+func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
+	buf := []byte(`{"format":"json", "version":20}` + "\n")
+
+	_, _, err := SplitHeaderBody(buf)
+	assert.Error(t, err, "should fail because version is invalid")
+
+	var errRecv *recvErr.ErrRecoverable
+	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
+	assert.Contains(t, err.Error(),
+		fmt.Sprintf("invalid header %+v", tracesegment.Header{
+			Format:  "json",
+			Version: 20,
+		}),
+	)
 }

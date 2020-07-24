@@ -14,26 +14,32 @@
 
 package awsxrayreceiver
 
-type errRecoverable struct {
-	err error
+// ErrRecoverable represents an error that can be ignored
+// so that the receiver can continue to function.
+type ErrRecoverable struct {
+	Err error
 }
 
-func (e *errRecoverable) Error() string {
-	return e.err.Error()
+func (e *ErrRecoverable) Error() string {
+	return e.Err.Error()
 }
 
-func (e *errRecoverable) Unwrap() error {
-	return e.err
+// Unwrap implements the new error feature introduced in Go 1.13
+func (e *ErrRecoverable) Unwrap() error {
+	return e.Err
 }
 
-type errIrrecoverable struct {
-	err error
+// ErrIrrecoverable represents an error that should
+// stop the receiver.
+type ErrIrrecoverable struct {
+	Err error
 }
 
-func (e *errIrrecoverable) Error() string {
-	return e.err.Error()
+func (e *ErrIrrecoverable) Error() string {
+	return e.Err.Error()
 }
 
-func (e *errIrrecoverable) Unwrap() error {
-	return e.err
+// Unwrap implements the new error feature introduced in Go 1.13
+func (e *ErrIrrecoverable) Unwrap() error {
+	return e.Err
 }
