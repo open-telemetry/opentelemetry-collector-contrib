@@ -37,7 +37,7 @@ func TestMetric10kDPS(t *testing.T) {
 			testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 70,
-				ExpectedMaxRAM: 60,
+				ExpectedMaxRAM: 70,
 			},
 		},
 		{

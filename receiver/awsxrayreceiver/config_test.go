@@ -21,19 +21,20 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 

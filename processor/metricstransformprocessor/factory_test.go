@@ -23,9 +23,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
 )
 
@@ -76,12 +77,12 @@ func TestCreateProcessors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		factories, err := config.ExampleComponents()
+		factories, err := componenttest.ExampleComponents()
 		assert.NoError(t, err)
 
 		factory := &Factory{}
 		factories.Processors[typeStr] = factory
-		config, err := config.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
+		config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {

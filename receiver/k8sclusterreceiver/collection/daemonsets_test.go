@@ -35,7 +35,7 @@ func TestDaemonsetMetrics(t *testing.T) {
 	require.Equal(t, 4, len(actualResourceMetrics[0].metrics))
 
 	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, *rm.resource, k8sType,
+	testutils.AssertResource(t, rm.resource, k8sType,
 		map[string]string{
 			"k8s.daemonset.uid":  "test-daemonset-1-uid",
 			"k8s.daemonset.name": "test-daemonset-1",
@@ -44,16 +44,16 @@ func TestDaemonsetMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/daemon_set/current_scheduled_nodes",
+	testutils.AssertMetrics(t, rm.metrics[0], "k8s/daemon_set/current_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/daemon_set/desired_scheduled_nodes",
+	testutils.AssertMetrics(t, rm.metrics[1], "k8s/daemon_set/desired_scheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, *rm.metrics[2], "k8s/daemon_set/misscheduled_nodes",
+	testutils.AssertMetrics(t, rm.metrics[2], "k8s/daemon_set/misscheduled_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, *rm.metrics[3], "k8s/daemon_set/ready_nodes",
+	testutils.AssertMetrics(t, rm.metrics[3], "k8s/daemon_set/ready_nodes",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 

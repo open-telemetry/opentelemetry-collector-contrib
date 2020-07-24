@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"

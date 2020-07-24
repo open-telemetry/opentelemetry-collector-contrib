@@ -20,19 +20,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := config.ExampleComponents()
+	facotries, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := NewFactory()
 	facotries.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), facotries,
 	)
 
