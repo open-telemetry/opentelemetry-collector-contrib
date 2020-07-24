@@ -2,10 +2,9 @@ package awsemfexporter
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/translator"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
@@ -25,8 +24,6 @@ const (
 
 type emfExporter struct {
 
-	//Each (log group, log stream) keeps a separate Pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]Pusher
 	svcStructuredLog LogClient
 	config configmodels.Exporter
 	logger *zap.Logger
@@ -37,6 +34,7 @@ type emfExporter struct {
 	shutdownChan chan bool
 	retryCnt int
 
+	token string
 }
 
 // New func creates an EMF Exporter instance with data push callback func
@@ -68,7 +66,6 @@ func New(
 	if config.(*Config).ForceFlushInterval > 0 {
 		emfExporter.ForceFlushInterval = time.Duration(config.(*Config).ForceFlushInterval) * time.Second
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 	emfExporter.shutdownChan = make(chan bool)
 
 	return emfExporter, nil
@@ -79,46 +76,32 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	logGroup := "/metrics/default"
 	logStream := "otel-stream"
 	// override log group if customer has specified Resource Attributes service.name or service.namespace
-	putLogEvents, namespace := generateLogEventFromMetric(md)
-	if namespace != "" {
-		logGroup = fmt.Sprintf("/metrics/%s", namespace)
-	}
-	// override log group if found it in exp configuration, this configuration has top priority. However, in this case, customer won't have correlation experience
+	putLogEvents := generateLogEventFromMetric(md)
+
+	// override log group if found it in exp configuration, this configuration has top priority.
 	if len(expConfig.LogGroupName) > 0 {
 		logGroup = expConfig.LogGroupName
 	}
 	if len(expConfig.LogStreamName) > 0 {
 		logStream = expConfig.LogStreamName
 	}
-	pusher := emf.getPusher(logGroup, logStream, nil)
-	if pusher != nil {
-		for _, ple := range putLogEvents {
-			pusher.AddLogEntry(ple)
-		}
+	if emf.token == "" {
+		emf.token, _ = emf.svcStructuredLog.CreateStream(aws.String(logGroup), aws.String(logStream))
 	}
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogEvents:     putLogEvents,
+		LogGroupName:  aws.String(logGroup),
+		LogStreamName: aws.String(logStream),
+	}
+	if emf.token != "" {
+		putLogEventsInput.SequenceToken = aws.String(emf.token)
+	}
+	tmpToken := emf.svcStructuredLog.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	if tmpToken != nil {
+		emf.token = *tmpToken
+	}
+
 	return 0, nil
-}
-
-func (emf *emfExporter) getPusher(logGroup, logStream string, stateFolder *string) Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
-
-	var ok bool
-	var streamToPusherMap map[string]Pusher
-	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]Pusher{}
-		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
-	}
-
-	var pusher Pusher
-	if pusher, ok = streamToPusherMap[logStream]; !ok {
-		pusher = NewPusher(
-			aws.String(logGroup), aws.String(logStream), stateFolder,
-			emf.ForceFlushInterval, emf.retryCnt, emf.svcStructuredLog, emf.shutdownChan, &emf.pusherWG)
-		streamToPusherMap[logStream] = pusher
-	}
-
-	return pusher
 }
 
 func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
@@ -141,11 +124,10 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 
-func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, string) {
+func generateLogEventFromMetric(metric pdata.Metrics) ([]*cloudwatchlogs.InputLogEvent) {
 	imd := pdatautil.MetricsToInternalMetrics(metric)
 	rms := imd.ResourceMetrics()
 	cwMetricLists := []*translator.CWMetrics{}
-	var namespace string
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		if rm.IsNil() {
@@ -154,10 +136,7 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, string) {
 		// translate OT metric datapoints into CWMetricLists
 		cwm, err := translator.TranslateOtToCWMetric(&rm)
 		if err != nil || cwm == nil {
-			return nil, ""
-		}
-		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
-			namespace = cwm[0].Measurements[0].Namespace
+			return nil
 		}
 		// append all datapoint metrics in the request into CWMetric list
 		for _, v := range cwm {
@@ -165,31 +144,5 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, string) {
 		}
 	}
 
-	// convert CWMetric into map format for compatible with PLE input
-	ples := make([]*LogEvent, 0, maximumLogEventsPerPut)
-	for _, met := range cwMetricLists {
-		cwmMap := make(map[string]interface{})
-		fieldMap := met.Fields
-		cwmMap["CloudWatchMetrics"] = met.Measurements
-		cwmMap["Timestamp"] = met.Timestamp
-		fieldMap["_aws"] = cwmMap
-
-		pleMsg, err := json.Marshal(fieldMap)
-		if err != nil {
-			continue
-		}
-		metricCreationTime := met.Timestamp
-
-		logEvent := NewLogEvent(
-			metricCreationTime,
-			string(pleMsg),
-			"",
-			0,
-			Structured,
-		)
-		logEvent.multiLineStart = true
-		logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime * int64(time.Millisecond))
-		ples = append(ples, logEvent)
-	}
-	return ples, namespace
+	return translator.TranslateCWMetricToEMF(cwMetricLists)
 }

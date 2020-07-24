@@ -16,15 +16,6 @@ import (
 	"time"
 )
 
-func TestGetPusher(t *testing.T) {
-	logs := &emfExporter{
-		groupStreamToPusherMap: map[string]map[string]Pusher{},
-		ForceFlushInterval:     time.Second,
-	}
-	pusher := logs.getPusher("test_log_group", "test_log_stream", nil)
-	assert.NotEqual(t, nil, pusher)
-}
-
 func TestPushMetricsData(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

@@ -3,7 +3,10 @@ package translator
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"sort"
 	"time"
@@ -25,6 +28,9 @@ const (
 	OtlibDimensionKey = "OTLib"
 	defaultNameSpace = "default"
 	noInstrumentationLibraryName = "Undefined"
+
+	// See: http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+	maximumLogEventsPerPut = 10000
 )
 
 var currentState = mapWithExpiry.NewMapWithExpiry(CleanInterval)
@@ -117,6 +123,31 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
 	return cwMetricLists, nil
 }
 
+func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) ([]*cloudwatchlogs.InputLogEvent) {
+	// convert CWMetric into map format for compatible with PLE input
+	ples := make([]*cloudwatchlogs.InputLogEvent, 0, maximumLogEventsPerPut)
+	for _, met := range cwMetricLists {
+		cwmMap := make(map[string]interface{})
+		fieldMap := met.Fields
+		cwmMap["CloudWatchMetrics"] = met.Measurements
+		cwmMap["Timestamp"] = met.Timestamp
+		fieldMap["_aws"] = cwmMap
+
+		pleMsg, err := json.Marshal(fieldMap)
+		if err != nil {
+			continue
+		}
+		metricCreationTime := met.Timestamp
+
+		LogEvent := &cloudwatchlogs.InputLogEvent{
+			Timestamp: aws.Int64(metricCreationTime),
+			Message: aws.String(string(pleMsg)),
+		}
+		ples = append(ples, LogEvent)
+	}
+	return ples
+}
+
 func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) ([]*CWMetrics, error) {
 	// Histogram data are not supported for now
 	if metric.Int64DataPoints().Len() == 0 && metric.DoubleDataPoints().Len() == 0 && metric.SummaryDataPoints().Len() == 0 {
@@ -179,6 +210,7 @@ func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescri
 
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
+	var dimensionArray [][]string
 	// Dimensions Slice
 	var dimensionSlice []string
 	dimensionKV := metric.LabelsMap()
@@ -188,7 +220,7 @@ func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescri
 	})
 	// add OTLib as an additional dimension
 	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionSlice = append(dimensionSlice, OtlibDimensionKey)
+	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
 
 	fieldsPairs[mDesc.Name()] = metric.Value()
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
@@ -198,9 +230,17 @@ func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescri
 	}
 	fieldsPairs[mDesc.Name()] = metricVal
 
-	// EMF dimension attr takes list of list on dimensions TODO: add single/zero dimension rollup here
-	var dimensionArray [][]string
-	dimensionArray = append(dimensionArray, dimensionSlice)
+	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+	//"Zero" dimension rollup
+	dimensionZero := []string{OtlibDimensionKey}
+	if len(dimensionSlice) > 0 {
+		dimensionArray = append(dimensionArray, dimensionZero)
+	}
+	//"One" dimension rollup
+	for _, dimensionKey := range dimensionSlice {
+		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+	}
+
 	cwMeasurement := &CwMeasurement{
 		Namespace:  namespace,
 		Dimensions: dimensionArray,
@@ -271,6 +311,7 @@ func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescr
 
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
+	var dimensionArray [][]string
 	// Dimensions Slice
 	var dimensionSlice []string
 	dimensionKV := metric.LabelsMap()
@@ -280,7 +321,7 @@ func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescr
 	})
 	// add OTLib as an additional dimension
 	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionSlice = append(dimensionSlice, OtlibDimensionKey)
+	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
 
 	summaryValueAtPercentileSlice := metric.ValueAtPercentiles()
 	metricStats := &CWMetricStats{
@@ -292,9 +333,17 @@ func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescr
 	fieldsPairs[mDesc.Name()] = metricStats
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 
-	// EMF dimension attr takes list of list on dimensions TODO: add single/zero dimension rollup here
-	var dimensionArray [][]string
-	dimensionArray = append(dimensionArray, dimensionSlice)
+	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+	//"Zero" dimension rollup
+	dimensionZero := []string{OtlibDimensionKey}
+	if len(dimensionSlice) > 0 {
+		dimensionArray = append(dimensionArray, dimensionZero)
+	}
+	//"One" dimension rollup
+	for _, dimensionKey := range dimensionSlice {
+		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+	}
+
 	cwMeasurement := &CwMeasurement{
 		Namespace:  namespace,
 		Dimensions: dimensionArray,

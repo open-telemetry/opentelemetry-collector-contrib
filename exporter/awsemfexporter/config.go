@@ -21,30 +21,40 @@ import (
 // Config defines configuration for AWS EMF exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	// LogGroupName
+	// LogGroupName is the name of CloudWatch log group which defines group of log streams
+	// that share the same retention, monitoring, and access control settings.
 	LogGroupName string `mapstructure:"log_group_name"`
-	// LogStreamName
+	// LogStreamName is the name of CloudWatch log stream which is a sequence of log events
+	// that share the same source.
 	LogStreamName string `mapstructure:"log_stream_name"`
-	// CloudWatch metrics namespace
+	// Namespace is a container for CloudWatch metrics.
+	// Metrics in different namespaces are isolated from each other.
 	Namespace string `mapstructure:"namespace"`
-	// CWLogs service endpoint
+	// Endpoint is the CloudWatch Logs service endpoint which the requests
+	// are forwarded to. https://docs.aws.amazon.com/general/latest/gr/cwl_region.html
+	// e.g. logs.us-east-1.amazonaws.com and logs-fips.us-east-1.amazonaws.com
 	Endpoint string `mapstructure:"endpoint"`
-	// Number of seconds before timing out a request.
+	// RequestTimeoutSeconds is number of seconds before a request times out.
 	RequestTimeoutSeconds int `mapstructure:"request_timeout_seconds"`
-	// Upload logs to AWS CWLogs through a proxy.
+	// ProxyAddress defines the proxy address that the local TCP server
+	// forwards HTTP requests to AWS CloudWatch Logs backend through.
 	ProxyAddress string `mapstructure:"proxy_address"`
-	// Send metric logs to AWS CWLogs service in a specific region.
+	// Region is the AWS region where the metric logs are sent to.
 	Region string `mapstructure:"region"`
-	// Local mode to skip EC2 instance metadata check.
+	// LocalMode determines whether the EC2 instance metadata endpoint
+	// will be called or not. Set to `true` to skip EC2 instance
+	// metadata check.
 	LocalMode bool `mapstructure:"local_mode"`
 	// Amazon Resource Name (ARN) of the AWS resource running the collector.
 	ResourceARN string `mapstructure:"resource_arn"`
-	// IAM role to upload emf logs to a different account.
+	// RoleARN is the IAM role used by the collector when communicating
+	// with the CloudWatch Logs service
 	RoleARN string `mapstructure:"role_arn"`
-	// Enable or disable TLS certificate verification.
+	// NoVerifySSL is the option to disable TLS certificate verification.
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
-	// Maximum number of retries before abandoning an attempt to post data.
+	// MaxRetries is the maximum number of retries before abandoning an attempt to post data.
 	MaxRetries int `mapstructure:"max_retries"`
-	// Specifies in seconds the maximum amount of time that metrics remain in the memory buffer before being sent to the server.
+	// ForceFlushInterval specifies in seconds the maximum amount of time that metrics remain
+	// in the memory buffer before being sent to the server.
 	ForceFlushInterval int64 `mapstructure:"force_flush_interval"`
 }

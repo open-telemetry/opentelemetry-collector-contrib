@@ -14,26 +14,6 @@ import (
 "github.com/stretchr/testify/mock"
 )
 
-func NewAlwaysPassMockLogClient() LogClient {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-
-	svc.On("PutLogEvents", mock.Anything).Return(
-		&cloudwatchlogs.PutLogEventsOutput{
-			NextSequenceToken: &expectedNextSequenceToken},
-		nil)
-
-	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
-
-	svc.On("CreateLogStream", mock.Anything).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil)
-
-	svc.On("DescribeLogStreams", mock.Anything).Return(
-		&cloudwatchlogs.DescribeLogStreamsOutput{
-			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}}},
-		nil)
-	return newCloudWatchLogClient(svc, logger)
-}
-
 type mockCloudWatchLogsClient struct {
 	cloudwatchlogsiface.CloudWatchLogsAPI
 	mock.Mock

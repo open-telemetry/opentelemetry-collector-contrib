@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			LogStreamName:         "",
 			Endpoint:              "",
 			RequestTimeoutSeconds: 30,
-			MaxRetries:            2,
+			MaxRetries:            5,
 			NoVerifySSL:           false,
 			ProxyAddress:          "",
 			Region:                "us-west-2",

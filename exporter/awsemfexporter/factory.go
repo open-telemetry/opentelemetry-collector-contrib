@@ -47,7 +47,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 		LogStreamName:         "",
 		Endpoint:              "",
 		RequestTimeoutSeconds: 30,
-		MaxRetries:            2,
+		MaxRetries:            5,
 		NoVerifySSL:           false,
 		ProxyAddress:          "",
 		Region:                "",

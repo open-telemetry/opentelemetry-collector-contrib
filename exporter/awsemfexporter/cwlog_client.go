@@ -10,13 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
 const (
-	// See: http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
-	maximumLogEventsPerPut = 10000
 	// this is the retry count, the total attempts would be retry count + 1 at most.
 	defaultRetryCount = 5
 	ErrCodeThrottlingException = "ThrottlingException"
@@ -40,26 +37,6 @@ type LogClient interface {
 type CloudWatchLogClient struct {
 	svc cloudwatchlogsiface.CloudWatchLogsAPI
 	logger *zap.Logger
-	emfLogData
-	config     configmodels.Exporter
-}
-
-type logStream struct {
-	logEvents         []*cloudwatchlogs.InputLogEvent
-	currentByteLength int
-	currentBatchStart *time.Time
-	currentBatchEnd   *time.Time
-	nextSequenceToken *string
-	logStreamName     string
-	expiration        time.Time
-}
-
-type emfLogData struct {
-	logGroupName                  string
-	logStreamName                 string
-	streams                       map[string]*logStream
-	nextLogStreamCleanUpCheckTime time.Time
-	logGroupCreated               bool
 }
 
 //Create a log client based on the actual cloudwatch logs client.
