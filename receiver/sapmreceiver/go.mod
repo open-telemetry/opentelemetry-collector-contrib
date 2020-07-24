@@ -3,12 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmre
 go 1.14
 
 require (
-	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.2
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.4.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
 	github.com/signalfx/sapm-proto v0.5.3
