@@ -16,7 +16,6 @@ package hostobserver
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -27,7 +26,6 @@ import (
 	"time"
 
 	psnet "github.com/shirou/gopsutil/net"
-	"github.com/shirou/gopsutil/process"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
@@ -39,7 +37,7 @@ func TestHostObserver(t *testing.T) {
 	tcpConns := openTestTCPPorts(t)
 	udpConns := openTestUDPPorts(t)
 
-	mn := startAndStopObserver(nil)
+	mn := startAndStopObserver()
 
 	assert.True(t, len(mn.endpointsMap) >= len(tcpConns)+len(udpConns))
 
@@ -93,22 +91,9 @@ func TestHostObserver(t *testing.T) {
 			}
 		}
 	})
-
-	mn = startAndStopObserver(
-		func() (conns []psnet.ConnectionStat, err error) {
-			return nil, errors.New("always fail")
-		})
-
-	t.Run("Fails to list connections", func(t *testing.T) {
-		assert.True(t, len(mn.endpointsMap) == 0)
-	})
 }
 
-func startAndStopObserver(getConnectionsOverride func() (conns []psnet.ConnectionStat, err error)) mockNotifier {
-	if getConnectionsOverride != nil {
-		getConnections = getConnectionsOverride
-	}
-
+func startAndStopObserver() mockNotifier {
 	ml := endpointsLister{
 		logger:       zap.NewNop(),
 		observerName: "host_observer/1",
@@ -349,55 +334,6 @@ func TestCollectConnectionDetails(t *testing.T) {
 	}
 }
 
-func TestCollectProcessDetails(t *testing.T) {
-	originalGetProcessName := getProcessName
-	originalGetProcessArgs := getProcessName
-
-	t.Cleanup(func() {
-		getProcessName = originalGetProcessName
-		getProcessArgs = originalGetProcessArgs
-	})
-
-	tests := []struct {
-		name                       string
-		proc                       *process.Process
-		overrideProcessInfoMethods func()
-		want                       *processDetails
-		wantErr                    bool
-	}{
-		{
-			name: "Fails to get process args",
-			proc: &process.Process{Pid: 9999},
-			overrideProcessInfoMethods: func() {
-				getProcessArgs = mockGetProcessInfo
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Fails to get process name",
-			proc: &process.Process{Pid: 9999},
-			overrideProcessInfoMethods: func() {
-				getProcessName = mockGetProcessInfo
-			},
-			want:    nil,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := collectProcessDetails(tt.proc)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("collectProcessDetails() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("collectProcessDetails() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestCollectEndpoints(t *testing.T) {
 	tests := []struct {
 		name                       string
@@ -475,8 +411,4 @@ func TestCollectEndpoints(t *testing.T) {
 			}
 		})
 	}
-}
-
-var mockGetProcessInfo = func(p *process.Process) (string, error) {
-	return "", errors.New("always fail")
 }
