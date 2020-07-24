@@ -18,12 +18,12 @@ import (
 	"context"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 )
 
 type internalTransform struct {
