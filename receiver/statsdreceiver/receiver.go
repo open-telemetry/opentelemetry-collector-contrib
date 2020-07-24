@@ -16,7 +16,6 @@ package statsdreceiver
 
 import (
 	"context"
-	"errors"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -26,12 +25,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
-)
-
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
 )
 
 var _ component.MetricsReceiver = (*statsdReceiver)(nil)
@@ -56,7 +49,7 @@ func New(
 	config Config,
 	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	if config.Endpoint == "" {
@@ -102,7 +95,7 @@ func (ddr *statsdReceiver) Shutdown(context.Context) error {
 	ddr.Lock()
 	defer ddr.Unlock()
 
-	var err = errAlreadyStopped
+	var err = componenterror.ErrAlreadyStopped
 	ddr.stopOnce.Do(func() {
 		err = ddr.server.Close()
 	})
