@@ -78,6 +78,14 @@ func spanToEnvelope(
 	envelope.Tags[contracts.OperationId] = span.TraceID().HexString()
 	envelope.Tags[contracts.OperationParentId] = span.ParentSpanID().HexString()
 
+	// If a specific ai.operation.parentid is specified as an attribute, use that instead of the parent span id.
+	// This is a by convention method to enable proper linking of legacy AppInsights hierarchical requests to OpenTelemetry instrumented requests.
+	// Services are responsible for parsing an inbound hierarchical request and adding this special tag.
+	if alternateParentIDAttributeValue, success := attributeMap.Get(contracts.OperationParentId); success {
+		envelope.Tags[contracts.OperationParentId] = alternateParentIDAttributeValue.StringVal()
+		attributeMap.Delete(contracts.OperationParentId)
+	}
+
 	data := contracts.NewData()
 	var dataSanitizeFunc func() []string
 	var dataProperties map[string]string
