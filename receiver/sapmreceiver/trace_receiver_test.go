@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
@@ -143,7 +142,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
 // sendSapm acts as a client for sending sapm to the receiver.  This could be replaced with a sapm exporter in the future.
 func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, tlsEnabled bool, token string) (*http.Response, error) {
 	// marshal the sapm
-	reqBytes, err := proto.Marshal(sapm)
+	reqBytes, err := sapm.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal sapm %v", err.Error())
 	}
