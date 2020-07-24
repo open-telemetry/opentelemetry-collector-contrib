@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_DogStatsDParser_Parse(t *testing.T) {
+func Test_StatsDParser_Parse(t *testing.T) {
 	// TODO: fill in StatsD message parsing test cases
 	tests := []struct {
 		name  string
@@ -38,7 +38,7 @@ func Test_DogStatsDParser_Parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &DogStatsDParser{}
+			p := &StatsDParser{}
 
 			got, err := p.Parse(tt.input)
 

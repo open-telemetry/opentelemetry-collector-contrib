@@ -54,7 +54,6 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal:  typeStr,
 			Endpoint: defaultBindEndpoint,
 		},
-		Timeout: defaultTimeout,
 	}
 }
 

@@ -17,16 +17,18 @@ package protocol
 import (
 	"errors"
 	"strings"
+	"time"
 
 	// TODO: don't use the opencensus-proto package???
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-// DogStatsDParser supports the Parse method for parsing StatsD messages with Tags.
-type DogStatsDParser struct{}
+// StatsDParser supports the Parse method for parsing StatsD messages with Tags.
+type StatsDParser struct{}
 
 // Parse returns an OTLP metric representation of the input StatsD string.
-func (p *DogStatsDParser) Parse(line string) (*metricspb.Metric, error) {
+func (p *StatsDParser) Parse(line string) (*metricspb.Metric, error) {
 	parts := strings.Split(line, ":")
 	if len(parts) < 2 {
 		return nil, errors.New("not enough statsd message parts")
@@ -35,6 +37,20 @@ func (p *DogStatsDParser) Parse(line string) (*metricspb.Metric, error) {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name: parts[0],
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				Points: []*metricspb.Point{
+					{
+						Timestamp: &timestamp.Timestamp{
+							Seconds: time.Now().UnixNano(),
+						},
+						Value: &metricspb.Point_Int64Value{
+							Int64Value: 7,
+						},
+					},
+				},
+			},
 		},
 	}, nil
 }

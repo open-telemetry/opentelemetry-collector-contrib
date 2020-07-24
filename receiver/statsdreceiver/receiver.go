@@ -71,7 +71,7 @@ func New(
 	r := &statsdReceiver{
 		logger:       logger,
 		config:       &config,
-		parser:       &protocol.DogStatsDParser{},
+		parser:       &protocol.StatsDParser{},
 		nextConsumer: nextConsumer,
 		server:       server,
 	}

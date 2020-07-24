@@ -17,7 +17,6 @@ package statsdreceiver
 import (
 	"path"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,6 +49,5 @@ func TestLoadConfig(t *testing.T) {
 			NameVal:  "statsd/receiver_settings",
 			Endpoint: "localhost:12345",
 		},
-		Timeout: 50 * time.Second,
 	}, r1)
 }
