@@ -16,10 +16,10 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -27,21 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
 
-var (
-	errNilNextConsumer = errors.New("nil nextConsumer")
-	errAlreadyStarted  = errors.New("already started")
-	errAlreadyStopped  = errors.New("already stopped")
-)
-
 var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
-	logger             *zap.Logger
-	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumerOld
-	config             *Config
-	cancel             context.CancelFunc
+	logger       *zap.Logger
+	nextConsumer consumer.MetricsConsumerOld
+	config       *Config
+	cancel       context.CancelFunc
 }
 
 // New creates the aws ecs container metrics receiver with the given parameters.
@@ -50,7 +43,7 @@ func New(
 	config *Config,
 	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, componenterror.ErrNilNextConsumer
 	}
 
 	r := &awsEcsContainerMetricsReceiver{
@@ -63,8 +56,7 @@ func New(
 
 // Start begins collecting metrics from Amazon ECS task metadata endpoint.
 func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host component.Host) error {
-	var c context.Context
-	c, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, "nil", aecmr.config.Name()))
+	ctx, aecmr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, "http", aecmr.config.Name()))
 	go func() {
 		ticker := time.NewTicker(aecmr.config.CollectionInterval)
 		defer ticker.Stop()
@@ -72,8 +64,8 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(c)
-			case <-c.Done():
+				aecmr.collectDataFromEndpoint(ctx)
+			case <-ctx.Done():
 				return
 			}
 		}
