@@ -32,7 +32,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
@@ -242,7 +241,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/x-protobuf")
@@ -256,7 +255,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted_gzipped",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 
 				var buf bytes.Buffer
@@ -278,7 +277,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "bad_gzipped_msg",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
@@ -381,7 +380,8 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	t.Log("Sending SignalFx metric data Request")
 
-	body, err := proto.Marshal(buildSFxMsg(msec, 13, 3))
+	sfxMsg := buildSFxMsg(msec, 13, 3)
+	body, err := sfxMsg.Marshal()
 	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
@@ -453,7 +453,7 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 
 			currentTime := time.Now().Unix() * 1e3
 			sFxMsg := buildSFxMsg(currentTime, 13, 3)
-			msgBytes, _ := proto.Marshal(sFxMsg)
+			msgBytes, _ := sFxMsg.Marshal()
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			if tt.token != "" {
