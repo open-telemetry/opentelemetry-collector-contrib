@@ -21,51 +21,72 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager/config"
 )
 
-var (
-	getDelayTests = []struct {
-		name       string
-		elapsed    time.Duration
-		crashCount int
-		want       time.Duration
-	}{
-		{
-			name:       "healthy process",
-			elapsed:    15 * time.Second,
-			crashCount: 2,
-			want:       1 * time.Second,
-		},
-		{
-			name:       "healthy process",
-			elapsed:    15 * time.Hour,
-			crashCount: 6,
-			want:       1 * time.Second,
-		},
-		{
-			name:       "unhealthy process 1",
-			elapsed:    15 * time.Second,
-			crashCount: 4,
-		},
-		{
-			name:       "unhealthy process 2",
-			elapsed:    15 * time.Second,
-			crashCount: 5,
-		},
-		{
-			name:       "unhealthy process 3",
-			elapsed:    15 * time.Second,
-			crashCount: 6,
-		},
-		{
-			name:       "unhealthy process 4",
-			elapsed:    15 * time.Second,
-			crashCount: 7,
-		},
-	}
+func TestGetDelay(t *testing.T) {
+	var (
+		getDelayTests = []struct {
+			name       string
+			elapsed    time.Duration
+			crashCount int
+			want       time.Duration
+		}{
+			{
+				name:       "healthy process",
+				elapsed:    15 * time.Second,
+				crashCount: 2,
+				want:       1 * time.Second,
+			},
+			{
+				name:       "healthy process",
+				elapsed:    15 * time.Hour,
+				crashCount: 6,
+				want:       1 * time.Second,
+			},
+			{
+				name:       "unhealthy process 1",
+				elapsed:    15 * time.Second,
+				crashCount: 4,
+			},
+			{
+				name:       "unhealthy process 2",
+				elapsed:    15 * time.Second,
+				crashCount: 5,
+			},
+			{
+				name:       "unhealthy process 3",
+				elapsed:    15 * time.Second,
+				crashCount: 6,
+			},
+			{
+				name:       "unhealthy process 4",
+				elapsed:    15 * time.Second,
+				crashCount: 7,
+			},
+		}
+		previousResult time.Duration
+	)
 
-	formatEnvSliceTests = []struct {
+	for _, test := range getDelayTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := GetDelay(test.elapsed, test.crashCount)
+			if test.name == "healthy process" {
+				if !reflect.DeepEqual(got, test.want) {
+					t.Errorf("GetDelay() got = %v, want %v", got, test.want)
+					return
+				}
+			}
+			if previousResult > got {
+				t.Errorf("GetDelay() got = %v, want something larger than the previous result %v", got, previousResult)
+			}
+			previousResult = got
+		})
+	}
+}
+
+func TestFormatEnvSlice(t *testing.T) {
+	var formatEnvSliceTests = []struct {
 		name     string
 		envSlice *[]config.EnvConfig
 		want     []string
@@ -115,7 +136,22 @@ var (
 		},
 	}
 
-	runTests = []struct {
+	for _, test := range formatEnvSliceTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := formatEnvSlice(test.envSlice)
+			if test.wantNil && got != nil {
+				t.Errorf("formatEnvSlice() got = %v, wantNil %v", got, test.wantNil)
+				return
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("formatEnvSlice() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestRun(t *testing.T) {
+	var runTests = []struct {
 		name        string
 		process     *Process
 		wantElapsed time.Duration
@@ -132,7 +168,6 @@ var (
 						Value: "username:password@(url:port)/dbname",
 					},
 				},
-				CustomName: "main",
 			},
 			wantElapsed: 4 * time.Millisecond,
 			wantErr:     false,
@@ -148,7 +183,6 @@ var (
 						Value: "username:password@(url:port)/dbname",
 					},
 				},
-				CustomName: "main",
 			},
 			wantElapsed: 0 * time.Nanosecond,
 			wantErr:     false,
@@ -156,52 +190,15 @@ var (
 		{
 			name: "shellquote error",
 			process: &Process{
-				Command:    "command flag='something",
-				Port:       0,
-				Env:        []config.EnvConfig{},
-				CustomName: "main",
+				Command: "command flag='something",
+				Port:    0,
+				Env:     []config.EnvConfig{},
 			},
 			wantElapsed: 0,
 			wantErr:     true,
 		},
 	}
-)
 
-func TestGetDelay(t *testing.T) {
-	var previousResult time.Duration
-	for _, test := range getDelayTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := GetDelay(test.elapsed, test.crashCount)
-			if test.name == "healthy process" {
-				if !reflect.DeepEqual(got, test.want) {
-					t.Errorf("GetDelay() got = %v, want %v", got, test.want)
-					return
-				}
-			}
-			if previousResult > got {
-				t.Errorf("GetDelay() got = %v, want something larger than the previous result %v", got, previousResult)
-			}
-			previousResult = got
-		})
-	}
-}
-
-func TestFormatEnvSlice(t *testing.T) {
-	for _, test := range formatEnvSliceTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := formatEnvSlice(test.envSlice)
-			if test.wantNil && got != nil {
-				t.Errorf("formatEnvSlice() got = %v, wantNil %v", got, test.wantNil)
-				return
-			}
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("getCustomName() got = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestRun(t *testing.T) {
 	for _, test := range runTests {
 		t.Run(test.name, func(t *testing.T) {
 			logger, _ := zap.NewProduction()
