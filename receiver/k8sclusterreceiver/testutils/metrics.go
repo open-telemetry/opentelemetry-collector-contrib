@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func AssertResource(t *testing.T, actualResource resourcepb.Resource,
+func AssertResource(t *testing.T, actualResource *resourcepb.Resource,
 	expectedType string, expectedLabels map[string]string) {
 	require.Equal(t,
 		expectedType,
@@ -37,7 +37,7 @@ func AssertResource(t *testing.T, actualResource resourcepb.Resource,
 	)
 }
 
-func AssertMetricsWithLabels(t *testing.T, actualMetric metricspb.Metric,
+func AssertMetricsWithLabels(t *testing.T, actualMetric *metricspb.Metric,
 	expectedMetric string, expectedType metricspb.MetricDescriptor_Type,
 	expectedLabels map[string]string, expectedValue int64) {
 
@@ -56,7 +56,7 @@ func AssertMetricsWithLabels(t *testing.T, actualMetric metricspb.Metric,
 	AssertMetrics(t, actualMetric, expectedMetric, expectedType, expectedValue)
 }
 
-func AssertMetrics(t *testing.T, actualMetric metricspb.Metric,
+func AssertMetrics(t *testing.T, actualMetric *metricspb.Metric,
 	expectedMetric string, expectedType metricspb.MetricDescriptor_Type,
 	expectedValue int64) {
 
@@ -85,7 +85,7 @@ func AssertMetrics(t *testing.T, actualMetric metricspb.Metric,
 }
 
 // getLabelsMap returns a map of labels.
-func getLabelsMap(m metricspb.Metric) map[string]string {
+func getLabelsMap(m *metricspb.Metric) map[string]string {
 	out := map[string]string{}
 	for i, k := range m.MetricDescriptor.LabelKeys {
 		out[k.Key] = m.Timeseries[0].LabelValues[i].Value

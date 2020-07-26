@@ -25,19 +25,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 	require.NoError(t, err)
@@ -58,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigValidate(t *testing.T) {
-	var factory Factory
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
@@ -77,7 +78,7 @@ func TestConfigAuth(t *testing.T) {
 }
 
 func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
-	var factory Factory
+	factory := NewFactory()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.APIKey = apiKey

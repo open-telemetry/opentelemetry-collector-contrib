@@ -20,8 +20,6 @@ type SubprocessConfig struct {
 	Command string `mapstructure:"exec"`
 	// Port is the port assigned to the Receiver, and to the {{port}} template variables
 	Port int `mapstructure:"port"`
-	// CustomName is a custom user-specified name to keep track of a certain process in logs
-	CustomName string `mapstructure:"custom_name"`
 	// Env is a list of env variables to pass to a specific command
 	Env []EnvConfig `mapstructure:"env"`
 }

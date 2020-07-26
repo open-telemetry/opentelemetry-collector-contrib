@@ -55,7 +55,7 @@ func initializeTraceExporter() component.TraceExporter {
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	os.Setenv("AWS_REGION", "us-east-1")
 	logger := zap.NewNop()
-	factory := Factory{}
+	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true
