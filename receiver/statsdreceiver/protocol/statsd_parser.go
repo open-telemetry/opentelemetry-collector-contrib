@@ -15,11 +15,11 @@
 package protocol
 
 import (
-	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	// TODO: don't use the opencensus-proto package???
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 )
@@ -29,28 +29,65 @@ type StatsDParser struct{}
 
 // Parse returns an OTLP metric representation of the input StatsD string.
 func (p *StatsDParser) Parse(line string) (*metricspb.Metric, error) {
-	parts := strings.Split(line, ":")
+	parts := strings.Split(line, "|")
 	if len(parts) < 2 {
-		return nil, errors.New("not enough statsd message parts")
+		return nil, fmt.Errorf("invalid message format: %s", line)
 	}
 
+	nameValueParts := strings.Split(parts[0], ":")
+	if len(nameValueParts) != 2 {
+		return nil, fmt.Errorf("invalid <name>:<value> format: %s", parts[0])
+	}
+
+	metricName := nameValueParts[0]
+	metricValueString := nameValueParts[1]
+
+	metricType := parts[1]
+
+	// TODO: add sample rate and tag parsing
+
+	metricPoint, err := buildPoint(metricType, metricValueString)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildMetric(metricName, metricPoint), nil
+}
+
+func buildMetric(metricName string, point *metricspb.Point) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name: parts[0],
+			Name: metricName,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				Points: []*metricspb.Point{
-					{
-						Timestamp: &timestamp.Timestamp{
-							Seconds: time.Now().UnixNano(),
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 7,
-						},
-					},
+					point,
 				},
 			},
 		},
-	}, nil
+	}
+}
+
+func buildPoint(metricType, metricValue string) (*metricspb.Point, error) {
+	point := &metricspb.Point{
+		Timestamp: &timestamp.Timestamp{
+			Seconds: time.Now().Unix(),
+		},
+	}
+
+	switch metricType {
+	case "c":
+		i, err := strconv.ParseInt(metricValue, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("parse metric value string %s: %w", metricValue, err)
+		}
+		point.Value = &metricspb.Point_Int64Value{
+			Int64Value: i,
+		}
+	default:
+		return nil, fmt.Errorf("unhandled metric type: %s", metricType)
+	}
+
+	return point, nil
 }

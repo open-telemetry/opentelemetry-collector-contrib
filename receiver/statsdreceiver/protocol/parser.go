@@ -15,7 +15,6 @@
 package protocol
 
 import (
-	// TODO: don't use the opencensus-proto package???
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 

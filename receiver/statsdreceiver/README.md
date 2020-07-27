@@ -2,6 +2,10 @@
 
 StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
 
+## Status
+
+This plugin is still being developed and is **not** ready to be used in a production grade environment.
+
 ## Configuration
 
 ```yaml
@@ -16,7 +20,7 @@ The `"<host>:<port>"` to listen on. By default listen on `"localhost:8125"`.
 
 ## Aggregation
 
-Currently the `statsdreceiver` is not providing any aggregation. There are ideas such as the [Metrics Transform Processor Proposal](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/332) and a [Views API](https://github.com/open-telemetry/opentelemetry-specification/issues/466) that intend to enable control over Metric aggregation in a processor.
+Currently the `statsdreceiver` is not providing any aggregation. There are ideas such as the [Metrics Transform Processor Proposal](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/332) that intend to enable control over Metric aggregation in a processor.
 
 An alternative will be to implement some simple aggregation in this receiver.
 
@@ -30,17 +34,17 @@ General format is:
 
 `<name>:<value>|c`
 
-### Gauge
+<!-- ### Gauge
 
 `<name>:<value>|g`
 
 ### Timer/Histogram
 
-`<name>:<value>|<ms/h>|@<sample-rate>`
+`<name>:<value>|<ms/h>|@<sample-rate>` -->
 
 ## Testing
 
-### Full sample config
+### Full sample collector config
 
 ```yaml
 receivers:
@@ -58,7 +62,7 @@ service:
      exporters: [file]
 ```
 
-### Local
+### Send StatsD message into the receiver
 
 A simple way to send a metric to `localhost:8125`:
 

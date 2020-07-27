@@ -15,24 +15,35 @@
 package protocol
 
 import (
+	"errors"
 	"testing"
 
-	// TODO: don't use the opencensus-proto package???
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_StatsDParser_Parse(t *testing.T) {
-	// TODO: fill in StatsD message parsing test cases
 	tests := []struct {
-		name  string
-		input string
-		want  *metricspb.Metric
-		err   error
+		name            string
+		input           string
+		wantMetricName  string
+		wantMetricValue interface{}
+		err             error
 	}{
 		{
-			name: "test",
-			want: nil,
+			name: "invalid metric format - not enough parts",
+			err:  errors.New("invalid message format: "),
+		},
+		{
+			name:  "invalid metric format - missing value",
+			input: "test.metric|c",
+			err:   errors.New("invalid <name>:<value> format: test.metric"),
+		},
+		{
+			name:            "cumulative counter",
+			input:           "test.metric:42|c",
+			wantMetricName:  "test.metric",
+			wantMetricValue: &metricspb.Point_Int64Value{Int64Value: 42},
 		},
 	}
 
@@ -45,7 +56,8 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			if tt.err != nil {
 				assert.Equal(t, err, tt.err)
 			} else {
-				assert.Equal(t, got, tt.want)
+				assert.Equal(t, got.GetTimeseries()[0].GetPoints()[0].GetValue(), tt.wantMetricValue)
+				assert.Equal(t, got.GetMetricDescriptor().GetName(), tt.wantMetricName)
 			}
 		})
 	}
