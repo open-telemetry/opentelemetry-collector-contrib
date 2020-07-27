@@ -21,19 +21,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -49,11 +51,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  "carbon/receiver_settings",
-				Endpoint: "localhost:8080",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: "carbon/receiver_settings",
 			},
-			Transport:      "udp",
+			NetAddr: confignet.NetAddr{
+				Endpoint:  "localhost:8080",
+				Transport: "udp",
+			},
 			TCPIdleTimeout: 5 * time.Second,
 			Parser: &protocol.Config{
 				Type:   "plaintext",
@@ -66,11 +70,13 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(typeStr),
-				NameVal:  "carbon/regex",
-				Endpoint: "localhost:2003",
+				TypeVal: configmodels.Type(typeStr),
+				NameVal: "carbon/regex",
 			},
-			Transport:      "tcp",
+			NetAddr: confignet.NetAddr{
+				Endpoint:  "localhost:2003",
+				Transport: "tcp",
+			},
 			TCPIdleTimeout: 30 * time.Second,
 			Parser: &protocol.Config{
 				Type: "regex",

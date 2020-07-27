@@ -25,9 +25,9 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/golang/protobuf/proto"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/gorilla/mux"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
@@ -35,6 +35,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -198,7 +200,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	msg := &sfxpb.DataPointUploadMessage{}
-	if err = proto.Unmarshal(body, msg); err != nil {
+	if err = msg.Unmarshal(body); err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 		return
 	}
@@ -210,6 +212,18 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	md, _ := SignalFxV2ToMetricsData(r.logger, msg.Datapoints)
+
+	if r.config.AccessTokenPassthrough {
+		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
+			if md.Resource == nil {
+				md.Resource = &resourcepb.Resource{}
+			}
+			if md.Resource.Labels == nil {
+				md.Resource.Labels = make(map[string]string, 1)
+			}
+			md.Resource.Labels[splunk.SFxAccessTokenLabel] = accessToken
+		}
+	}
 
 	err = r.nextConsumer.ConsumeMetricsData(ctx, *md)
 	obsreport.EndMetricsReceiveOp(

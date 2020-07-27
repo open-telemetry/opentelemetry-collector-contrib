@@ -21,6 +21,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"sync"
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -48,9 +49,13 @@ func testingServer(callback func(data []byte)) *httptest.Server {
 }
 
 func testTraceExporter(td consumerdata.TraceData, t *testing.T) []byte {
+	responseLock := sync.Mutex{}
+
 	response := []byte{}
 	server := testingServer(func(data []byte) {
+		responseLock.Lock()
 		response = append(response, data...)
+		responseLock.Unlock()
 	})
 
 	u, _ := url.Parse(server.URL)
@@ -74,6 +79,9 @@ func testTraceExporter(td consumerdata.TraceData, t *testing.T) []byte {
 	err = exporter.ConsumeTraceData(ctx, td)
 	require.NoError(t, err)
 	exporter.Shutdown(ctx)
+
+	responseLock.Lock()
+	defer responseLock.Unlock()
 	return response
 }
 

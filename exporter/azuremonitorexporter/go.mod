@@ -3,16 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azurem
 go 1.14
 
 require (
-	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
-	github.com/Microsoft/ApplicationInsights-Go v0.4.2
-	github.com/aws/aws-sdk-go v1.23.20 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.2.1
-	github.com/golang/protobuf v1.3.5
-	github.com/stretchr/testify v1.5.1
+	code.cloudfoundry.org/clock v1.0.0 // indirect
+	github.com/microsoft/ApplicationInsights-Go v0.4.3
+	github.com/stretchr/testify v1.6.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
-	go.uber.org/multierr v1.4.0 // indirect
-	go.uber.org/zap v1.13.0
-	google.golang.org/appengine v1.6.2 // indirect
+	go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0
+	go.uber.org/zap v1.15.0
+	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	google.golang.org/grpc v1.29.1
 )

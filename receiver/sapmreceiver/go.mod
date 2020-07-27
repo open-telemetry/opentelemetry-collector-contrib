@@ -3,20 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmre
 go 1.14
 
 require (
-	cloud.google.com/go v0.49.0 // indirect
-	github.com/golang/protobuf v1.3.5
-	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
-	github.com/gorilla/mux v1.7.3
-	github.com/jaegertracing/jaeger v1.17.0
-	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/open-telemetry/opentelemetry-proto v0.3.0
-	github.com/signalfx/sapm-proto v0.5.1
-	github.com/smartystreets/assertions v0.0.0-20190215210624-980c5ac6f3ac // indirect
-	github.com/stretchr/testify v1.5.1
-	go.opencensus.io v0.22.3
-	go.opentelemetry.io/collector v0.3.1-0.20200601172059-a776048b653c
-	go.uber.org/zap v1.13.0
-	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6 // indirect
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	google.golang.org/appengine v1.6.5 // indirect
+	github.com/gorilla/mux v1.7.4
+	github.com/jaegertracing/jaeger v1.18.2-0.20200707061226-97d2319ff2be
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-proto v0.4.0
+	github.com/signalfx/sapm-proto v0.5.3
+	github.com/stretchr/testify v1.6.1
+	go.opencensus.io v0.22.4
+	go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0
+	go.uber.org/zap v1.15.0
+	google.golang.org/grpc/examples v0.0.0-20200723182653-9106c3fff523 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

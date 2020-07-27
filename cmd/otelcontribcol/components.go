@@ -17,9 +17,9 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -35,9 +35,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerlegacyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
@@ -47,14 +48,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinscribereceiver"
 )
 
-func components() (config.Factories, error) {
+func components() (component.Factories, error) {
 	errs := []error{}
 	factories, err := defaultcomponents.Components()
 	if err != nil {
-		return config.Factories{}, err
+		return component.Factories{}, err
 	}
 
 	extensions := []component.ExtensionFactory{
@@ -72,14 +72,12 @@ func components() (config.Factories, error) {
 
 	receivers := []component.ReceiverFactoryBase{
 		&collectdreceiver.Factory{},
-		&sapmreceiver.Factory{},
-		&zipkinscribereceiver.Factory{},
+		sapmreceiver.NewFactory(),
 		&signalfxreceiver.Factory{},
 		&carbonreceiver.Factory{},
 		&wavefrontreceiver.Factory{},
-		&jaegerlegacyreceiver.Factory{},
 		&redisreceiver.Factory{},
-		kubeletstatsreceiver.NewFactory(),
+		&kubeletstatsreceiver.Factory{},
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
 		&receivercreator.Factory{},
@@ -97,16 +95,17 @@ func components() (config.Factories, error) {
 		&stackdriverexporter.Factory{},
 		&azuremonitorexporter.Factory{},
 		&signalfxexporter.Factory{},
-		&sapmexporter.Factory{},
-		&kinesisexporter.Factory{},
-		&awsxrayexporter.Factory{},
+		sapmexporter.NewFactory(),
+		kinesisexporter.NewFactory(),
+		awsxrayexporter.NewFactory(),
 		&carbonexporter.Factory{},
 		&honeycombexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
 		&newrelicexporter.Factory{},
 		&splunkhecexporter.Factory{},
-		&elasticexporter.Factory{},
+		elasticexporter.NewFactory(),
+		&alibabacloudlogserviceexporter.Factory{},
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)
@@ -117,7 +116,9 @@ func components() (config.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactoryBase{
-		&k8sprocessor.Factory{},
+		k8sprocessor.NewFactory(),
+		resourcedetectionprocessor.NewFactory(),
+		&metricstransformprocessor.Factory{},
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

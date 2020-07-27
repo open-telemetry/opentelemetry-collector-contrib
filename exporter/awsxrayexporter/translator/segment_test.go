@@ -15,6 +15,8 @@
 package translator
 
 import (
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"testing"
@@ -59,6 +61,27 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, semconventions.AttributeComponent))
+}
+
+func TestClientSpanWithPeerService(t *testing.T) {
+	spanName := "AmazonDynamoDB.getItem"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[semconventions.AttributePeerService] = "cats-table"
+	attributes[AWSServiceAttribute] = "DynamoDB"
+	attributes[AWSOperationAttribute] = "GetItem"
+	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment := MakeSegment(span, resource)
+	assert.Equal(t, "cats-table", segment.Name)
 }
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
@@ -246,6 +269,26 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.False(t, strings.Contains(jsonStr, "1-11"))
+}
+
+func TestSpanWithExpiredTraceId(t *testing.T) {
+	// First Build expired TraceId
+	const maxAge = 60 * 60 * 24 * 30
+	ExpiredEpoch := time.Now().Unix() - maxAge - 1
+
+	TempTraceID := newTraceID()
+	binary.BigEndian.PutUint32(TempTraceID[0:4], uint32(ExpiredEpoch))
+
+	PrevEpoch := uint32(time.Now().Unix())
+
+	ResTraceID := convertToAmazonTraceID(TempTraceID)
+	BinaryCurEpoch, err := hex.DecodeString(ResTraceID[2:10])
+	if err != nil {
+		panic(err)
+	}
+	CurEpoch := binary.BigEndian.Uint32(BinaryCurEpoch)
+
+	assert.GreaterOrEqual(t, CurEpoch, PrevEpoch)
 }
 
 func TestFixSegmentName(t *testing.T) {

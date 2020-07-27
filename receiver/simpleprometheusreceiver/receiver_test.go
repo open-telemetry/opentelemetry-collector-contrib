@@ -24,7 +24,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 )
 
@@ -38,7 +38,7 @@ func Test_getPrometheusConfig(t *testing.T) {
 		{
 			name: "Test without TLS",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:1234",
 				},
 				CollectionInterval: 10 * time.Second,
@@ -71,7 +71,7 @@ func Test_getPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:1234",
 				},
 				CollectionInterval: 10 * time.Second,
@@ -121,7 +121,7 @@ func Test_getPrometheusConfig(t *testing.T) {
 		{
 			name: "Test with TLS - default CA",
 			config: &Config{
-				ReceiverSettings: configmodels.ReceiverSettings{
+				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:1234",
 				},
 				CollectionInterval: 10 * time.Second,

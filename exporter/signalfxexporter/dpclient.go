@@ -25,32 +25,33 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // sfxDPClient sends the data to the SignalFx backend.
 type sfxDPClient struct {
-	ingestURL *url.URL
-	headers   map[string]string
-	client    *http.Client
-	logger    *zap.Logger
-	zippers   sync.Pool
+	ingestURL              *url.URL
+	headers                map[string]string
+	client                 *http.Client
+	logger                 *zap.Logger
+	zippers                sync.Pool
+	accessTokenPassthrough bool
+	metricTranslator       *translation.MetricTranslator
 }
 
 func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
-
-	sfxDataPoints, numDroppedTimeseries, err := metricDataToSignalFxV2(s.logger, md)
-	if err != nil {
-		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
-	}
+	accessToken := s.retrieveAccessToken(md)
+	sfxDataPoints, numDroppedTimeseries := translation.MetricDataToSignalFxV2(s.logger, s.metricTranslator, md)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
@@ -64,6 +65,10 @@ func (s *sfxDPClient) pushMetricsData(
 
 	for k, v := range s.headers {
 		req.Header.Set(k, v)
+	}
+
+	if s.accessTokenPassthrough && accessToken != "" {
+		req.Header.Set(splunk.SFxAccessTokenHeader, accessToken)
 	}
 
 	if compressed {
@@ -98,7 +103,7 @@ func buildHeaders(config *Config) (map[string]string, error) {
 	}
 
 	if config.AccessToken != "" {
-		headers["X-Sf-Token"] = config.AccessToken
+		headers[splunk.SFxAccessTokenHeader] = config.AccessToken
 	}
 
 	// Add any custom headers from the config. They will override the pre-defined
@@ -112,14 +117,24 @@ func buildHeaders(config *Config) (map[string]string, error) {
 }
 
 func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, compressed bool, err error) {
-	msg := &sfxpb.DataPointUploadMessage{
+	msg := sfxpb.DataPointUploadMessage{
 		Datapoints: dps,
 	}
-	body, err := proto.Marshal(msg)
+	body, err := msg.Marshal()
 	if err != nil {
 		return nil, false, err
 	}
 	return s.getReader(body)
+}
+
+func (s *sfxDPClient) retrieveAccessToken(md consumerdata.MetricsData) string {
+	accessToken := ""
+	if labels := md.Resource.GetLabels(); labels != nil {
+		accessToken = labels[splunk.SFxAccessTokenLabel]
+		// Drop internally passed access token in all cases
+		delete(labels, splunk.SFxAccessTokenLabel)
+	}
+	return accessToken
 }
 
 // avoid attempting to compress things that fit into a single ethernet frame

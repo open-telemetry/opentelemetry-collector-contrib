@@ -1,0 +1,21 @@
+extensions:
+  k8s_observer:
+  k8s_observer/1:
+    node: node-1
+    auth_type: kubeConfig
+
+service:
+  extensions: [k8s_observer, k8s_observer/1]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
+# Data pipeline is required to load the config.
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:

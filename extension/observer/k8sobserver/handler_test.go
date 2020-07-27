@@ -46,8 +46,8 @@ func TestEndpointsAdded(t *testing.T) {
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod"},
 				},
-				Port:     443,
-				Protocol: observer.ProtocolTCP,
+				Port:      443,
+				Transport: observer.ProtocolTCP,
 			},
 		}}, sink.added)
 	assert.Nil(t, sink.removed)
@@ -78,8 +78,8 @@ func TestEndpointsRemoved(t *testing.T) {
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod"},
 				},
-				Port:     443,
-				Protocol: observer.ProtocolTCP,
+				Port:      443,
+				Transport: observer.ProtocolTCP,
 			},
 		}}, sink.removed)
 	assert.Nil(t, sink.added)
@@ -106,8 +106,8 @@ func TestEndpointsChanged(t *testing.T) {
 	assert.Nil(t, sink.added)
 	assert.Nil(t, sink.removed)
 	assert.ElementsMatch(t,
-		[]string{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
-		[]string{sink.changed[0].ID, sink.changed[1].ID})
+		[]observer.EndpointID{"test-1/pod-2-UID", "test-1/pod-2-UID/https(443)"},
+		[]observer.EndpointID{sink.changed[0].ID, sink.changed[1].ID})
 
 	// Running state changed, one added and one removed.
 	sink = endpointSink{}
@@ -130,7 +130,7 @@ func TestEndpointsChanged(t *testing.T) {
 				Name: "https", Pod: observer.Pod{
 					Name:   "pod-2",
 					Labels: map[string]string{"env": "prod", "updated-label": "true"}},
-				Port:     443,
-				Protocol: observer.ProtocolTCP}},
+				Port:      443,
+				Transport: observer.ProtocolTCP}},
 	}, sink.changed)
 }

@@ -38,13 +38,24 @@ func TestTraceExport(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func BenchmarkForTraceExporter(b *testing.B) {
+	traceExporter := initializeTraceExporter()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		ctx := context.Background()
+		td := constructSpanData()
+		b.StartTimer()
+		traceExporter.ConsumeTraces(ctx, td)
+	}
+}
+
 func initializeTraceExporter() component.TraceExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
 	os.Setenv("AWS_REGION", "us-east-1")
 	logger := zap.NewNop()
-	factory := Factory{}
+	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 	config.(*Config).Region = "us-east-1"
 	config.(*Config).LocalMode = true

@@ -33,7 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
@@ -67,13 +67,13 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 		Resource: &resourcepb.Resource{Type: "test"},
 		Metrics: []*metricspb.Metric{
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_gauge",
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
-					metricstestutils.Double(time.Now(), 123))),
+					metricstestutil.Double(time.Now(), 123))),
 		},
 	}
 	tests := []struct {
@@ -144,6 +144,103 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
+func TestConsumeMetricsDataWithAccessTokenPassthrough(t *testing.T) {
+	fromHeaders := "AccessTokenFromClientHeaders"
+	fromLabels := "AccessTokenFromLabel"
+
+	newMetricData := func(includeToken bool) consumerdata.MetricsData {
+		md := consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+			},
+			Resource: &resourcepb.Resource{
+				Type: "test",
+				Labels: map[string]string{
+					"com.splunk.signalfx.access_token": fromLabels,
+				},
+			},
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge(
+					"test_gauge",
+					[]string{"k0", "k1"},
+					metricstestutil.Timeseries(
+						time.Now(),
+						[]string{"v0", "v1"},
+						metricstestutil.Double(time.Now(), 123))),
+			},
+		}
+		if !includeToken {
+			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
+		}
+		return md
+	}
+
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		includedInMetricData   bool
+		expectedToken          string
+	}{
+		{
+			name:                   "passthrough access token and included in md",
+			accessTokenPassthrough: true,
+			includedInMetricData:   true,
+			expectedToken:          fromLabels,
+		},
+		{
+			name:                   "passthrough access token and not included in md",
+			accessTokenPassthrough: true,
+			includedInMetricData:   false,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and included in md",
+			accessTokenPassthrough: false,
+			includedInMetricData:   true,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and not included in md",
+			accessTokenPassthrough: false,
+			includedInMetricData:   false,
+			expectedToken:          fromHeaders,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			dpClient := &sfxDPClient{
+				ingestURL: serverURL,
+				headers: map[string]string{
+					"test_header_": "test",
+					"X-Sf-Token":   fromHeaders,
+				},
+				client: &http.Client{
+					Timeout: 1 * time.Second,
+				},
+				logger: zap.NewNop(),
+				zippers: sync.Pool{New: func() interface{} {
+					return gzip.NewWriter(nil)
+				}},
+				accessTokenPassthrough: tt.accessTokenPassthrough,
+			}
+
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), newMetricData(tt.includedInMetricData))
+			assert.Equal(t, 0, numDroppedTimeSeries)
+			assert.NoError(t, err)
+		})
+	}
+}
+
 func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 	md := &consumerdata.MetricsData{
 		Node: &commonpb.Node{
@@ -155,14 +252,14 @@ func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
 		md.Metrics = append(md.Metrics,
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutils.Timestamp(ts),
+						Timestamp: metricstestutil.Timestamp(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),

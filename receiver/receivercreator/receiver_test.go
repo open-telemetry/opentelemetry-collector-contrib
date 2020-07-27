@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -89,7 +88,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	dynCfg := cfg.Receivers["receiver_creator/1"]
 	factory := &Factory{}
 	mockConsumer := &mockMetricsConsumer{}
-	rcvr, err := factory.CreateMetricsReceiver(zap.NewNop(), dynCfg, mockConsumer)
+	rcvr, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), dynCfg, mockConsumer)
 	require.NoError(t, err)
 	dyn := rcvr.(*receiverCreator)
 	require.NoError(t, rcvr.Start(context.Background(), host))
@@ -109,7 +108,7 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
-		example := receiver.(*config.ExampleReceiverProducer)
+		example := receiver.(*componenttest.ExampleReceiverProducer)
 		assert.NoError(t, example.MetricsConsumer.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
@@ -143,7 +142,7 @@ func TestMockedEndToEnd(t *testing.T) {
 
 	shutdown()
 
-	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*config.ExampleReceiverProducer).Stopped)
+	assert.True(t, dyn.observerHandler.receiversByEndpointID.Values()[0].(*componenttest.ExampleReceiverProducer).Stopped)
 }
 
 func TestLoggingHost(t *testing.T) {

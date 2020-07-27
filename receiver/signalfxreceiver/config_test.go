@@ -20,18 +20,21 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -47,9 +50,12 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  typeStr,
-				NameVal:  "signalfx/allsettings",
-				Endpoint: "localhost:8080",
+				TypeVal: typeStr,
+				NameVal: "signalfx/allsettings",
+			},
+			Endpoint: "localhost:9943",
+			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				AccessTokenPassthrough: true,
 			},
 		})
 
@@ -60,9 +66,13 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "signalfx/tls",
 			},
+			Endpoint: ":9943",
 			TLSCredentials: &configtls.TLSSetting{
 				CertFile: "/test.crt",
 				KeyFile:  "/test.key",
+			},
+			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				AccessTokenPassthrough: false,
 			},
 		})
 }

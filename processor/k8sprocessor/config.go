@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,15 @@ package k8sprocessor
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
+
+	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	// Passthrough mode only annotates resources with the pod IP and
 	// does not try to extract any other metadata. It does not need
@@ -47,7 +51,7 @@ type ExtractConfig struct {
 	//   namespace, podName, podUID, deployment, cluster, node and startTime
 	//
 	// Specifying anything other than these values will result in an error.
-	// By default all of the fields are extracted and added to spans.
+	// By default all of the fields are extracted and added to spans and metrics.
 	Metadata []string `mapstructure:"metadata"`
 
 	// Annotations allows extracting data from pod annotations and record it
@@ -95,7 +99,7 @@ type ExtractConfig struct {
 //	         key: kubernetes.io/change-cause
 //           regex: JENKINS=(?P<value>[\w]+)
 //
-//   this will add the `git.sha` and `ci.build` tags to the spans.
+//   this will add the `git.sha` and `ci.build` tags to the spans or metrics.
 type FieldExtractConfig struct {
 	TagName string `mapstructure:"tag_name"`
 	Key     string `mapstructure:"key"`

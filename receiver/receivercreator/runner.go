@@ -106,5 +106,5 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
 func (run *receiverRunner) createRuntimeReceiver(factory component.ReceiverFactoryOld, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(run.logger, cfg, run.nextConsumer)
+	return factory.CreateMetricsReceiver(context.Background(), run.logger, cfg, run.nextConsumer)
 }

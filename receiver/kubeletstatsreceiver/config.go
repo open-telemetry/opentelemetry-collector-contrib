@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
@@ -27,5 +28,6 @@ var _ configmodels.Receiver = (*Config)(nil)
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	kubelet.ClientConfig          `mapstructure:",squash"`
+	confignet.TCPAddr             `mapstructure:",squash"`
 	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
 }

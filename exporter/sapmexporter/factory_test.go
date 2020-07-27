@@ -25,14 +25,16 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateExporter(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
+	assert.Equal(t, "sapm", string(factory.Type()))
+
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"

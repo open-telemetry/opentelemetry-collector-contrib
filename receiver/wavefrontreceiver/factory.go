@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -56,8 +57,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  typeStr,
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		TCPAddr: confignet.TCPAddr{
 			Endpoint: "localhost:2003",
 		},
 		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
@@ -77,6 +80,7 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
+	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
@@ -92,8 +96,11 @@ func (f *Factory) CreateMetricsReceiver(
 	// a dedicated parser for its format.
 	carbonCfg := carbonreceiver.Config{
 		ReceiverSettings: rCfg.ReceiverSettings,
-		Transport:        "tcp",
-		TCPIdleTimeout:   rCfg.TCPIdleTimeout,
+		NetAddr: confignet.NetAddr{
+			Endpoint:  rCfg.Endpoint,
+			Transport: "tcp",
+		},
+		TCPIdleTimeout: rCfg.TCPIdleTimeout,
 		Parser: &protocol.Config{
 			Type: "plaintext", // TODO: update after other parsers are implemented for Carbon receiver.
 			Config: &WavefrontParser{

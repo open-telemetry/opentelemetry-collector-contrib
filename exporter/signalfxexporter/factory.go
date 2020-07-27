@@ -15,12 +15,18 @@
 package signalfxexporter
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	otelconfig "go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -47,6 +53,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		Timeout: defaultHTTPTimeout,
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+			AccessTokenPassthrough: true,
+		},
+		SendCompatibleMetrics: false,
+		TranslationRules:      nil,
 	}
 }
 
@@ -62,15 +73,35 @@ func (f *Factory) CreateTraceExporter(
 func (f *Factory) CreateMetricsExporter(
 	logger *zap.Logger,
 	config configmodels.Exporter,
-) (component.MetricsExporterOld, error) {
+) (exp component.MetricsExporterOld, err error) {
 
 	expCfg := config.(*Config)
+	if expCfg.SendCompatibleMetrics && expCfg.TranslationRules == nil {
+		expCfg.TranslationRules, err = loadDefaultTranslationRules()
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	exp, err := New(expCfg, logger)
+	exp, err = New(expCfg, logger)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return exp, nil
+}
+
+func loadDefaultTranslationRules() ([]translation.Rule, error) {
+	config := Config{}
+
+	v := otelconfig.NewViper()
+	v.SetConfigType("yaml")
+	v.ReadConfig(strings.NewReader(translation.DefaultTranslationRulesYaml))
+	err := v.UnmarshalExact(&config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load default translation rules: %v", err)
+	}
+
+	return config.TranslationRules, nil
 }

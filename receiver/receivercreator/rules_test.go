@@ -46,6 +46,7 @@ func Test_ruleEval(t *testing.T) {
 		// {"unknown variable", args{`type == "port" && unknown_var == 1`, portEndpoint}, false, true},
 		{"basic port", args{`type.port && name == "http" && pod.labels["app"] == "redis"`, portEndpoint}, true, false},
 		{"basic pod", args{`type.pod && labels["region"] == "west-1"`, podEndpoint}, true, false},
+		{"annotations", args{`type.pod && annotations["scrape"] == "true"`, podEndpoint}, true, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,7 +54,7 @@ func Test_ruleEval(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, got)
 
-			env, err := endpointToEnv(tt.args.endpoint)
+			env, err := observer.EndpointToEnv(tt.args.endpoint)
 			require.NoError(t, err)
 
 			match, err := got.eval(env)

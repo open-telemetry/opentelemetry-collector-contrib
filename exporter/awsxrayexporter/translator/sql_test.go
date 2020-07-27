@@ -37,6 +37,7 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
+
 	w := testWriters.borrow()
 	if err := w.Encode(sqlData); err != nil {
 		assert.Fail(t, "invalid json")
@@ -44,4 +45,37 @@ func TestClientSpanWithStatementAttribute(t *testing.T) {
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "mysql://db.example.com:3306/customers"))
+}
+
+func TestClientSpanWithNonSQLDatabase(t *testing.T) {
+	attributes := make(map[string]string)
+	attributes[semconventions.AttributeComponent] = "db"
+	attributes[semconventions.AttributeDBType] = "redis"
+	attributes[semconventions.AttributeDBInstance] = "0"
+	attributes[semconventions.AttributeDBStatement] = "SET key value"
+	attributes[semconventions.AttributeDBUser] = "readonly_user"
+	attributes[semconventions.AttributeDBURL] = "redis://db.example.com:3306"
+	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = "3306"
+
+	filtered, sqlData := makeSQL(attributes)
+	assert.Nil(t, sqlData)
+	assert.NotNil(t, filtered)
+}
+
+func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
+	attributes := make(map[string]string)
+	attributes[semconventions.AttributeComponent] = "db"
+	attributes[semconventions.AttributeDBType] = "sql"
+	attributes[semconventions.AttributeDBInstance] = "customers"
+	attributes[semconventions.AttributeDBStatement] = "SELECT * FROM user WHERE user_id = ?"
+	attributes[semconventions.AttributeDBUser] = "readonly_user"
+	attributes[semconventions.AttributeDBURL] = ""
+	attributes[semconventions.AttributeNetPeerName] = "db.example.com"
+	attributes[semconventions.AttributeNetPeerPort] = "3306"
+	filtered, sqlData := makeSQL(attributes)
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, sqlData)
+
+	assert.Equal(t, "localhost/customers", sqlData.URL)
 }

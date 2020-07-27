@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
@@ -56,8 +57,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  typeStr,
-			NameVal:  typeStr,
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		TCPAddr: confignet.TCPAddr{
 			Endpoint: defaultEndpoint,
 		},
 		MetricsPath:        defaultMetricsPath,
@@ -78,6 +81,7 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided Config.
 func (f *Factory) CreateMetricsReceiver(
+	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,

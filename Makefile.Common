@@ -15,6 +15,7 @@ ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort 
 
 GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)
@@ -45,6 +46,20 @@ test:
 	  (cd "$${dir}" && \
 	    $(GOTEST) ./... ); \
 	done
+
+.PHONY: do-unit-tests-with-cover
+do-unit-tests-with-cover:
+	@echo "running go unit test ./... + coverage in `pwd`"
+	@$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) ./...
+	go tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: run-integration-tests-with-cover
+do-integration-tests-with-cover:
+	@echo "running go integration test ./... + coverage in `pwd`"
+	@$(GOTEST) $(GOTEST_OPT_WITH_INTEGRATION) ./...
+	@if [ -e integration-coverage.txt ]; then \
+  		go tool cover -html=integration-coverage.txt -o integration-coverage.html; \
+  	fi
 
 .PHONY: benchmark
 benchmark:
@@ -92,7 +107,7 @@ fmt:
 
 .PHONY: lint
 lint: lint-static-check
-	$(LINT) run
+	$(LINT) run --allow-parallel-runners
 
 .PHONY: misspell
 misspell:
@@ -105,3 +120,7 @@ misspell-correction:
 .PHONY: impi
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+
+.PHONY: dep 
+dep:
+	go mod download

@@ -15,6 +15,8 @@
 package collection
 
 import (
+	"fmt"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -80,35 +82,26 @@ func boolToInt64(b bool) int64 {
 	return 0
 }
 
-var containerRequestMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/container/request",
-	Description: "Resource requested for the container",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},
-}
-
-var containerLimitMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/container/limit",
-	Description: "Maximum resource limit set for the container",
-	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-	LabelKeys:   []*metricspb.LabelKey{{Key: "resource"}},
-}
-
 // getSpecMetricsForContainer metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 	metrics := make([]*metricspb.Metric, 0)
 
 	for _, t := range []struct {
-		metric *metricspb.MetricDescriptor
-		rl     corev1.ResourceList
+		typ         string
+		description string
+		rl          corev1.ResourceList
 	}{
 		{
-			containerRequestMetric,
+			"request",
+			"Resource requested for the container. " +
+				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#resourcerequirements-v1-core for details",
 			c.Resources.Requests,
 		},
 		{
-			containerLimitMetric,
+			"limit",
+			"Maximum resource limit set for the container. " +
+				"See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#resourcerequirements-v1-core for details",
 			c.Resources.Limits,
 		},
 	} {
@@ -120,9 +113,13 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 
 			metrics = append(metrics,
 				&metricspb.Metric{
-					MetricDescriptor: t.metric,
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        fmt.Sprintf("k8s/container/%s/%s", k, t.typ),
+						Description: t.description,
+						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					},
 					Timeseries: []*metricspb.TimeSeries{
-						utils.GetInt64TimeSeriesWithLabels(val, []*metricspb.LabelValue{{Value: string(k)}}),
+						utils.GetInt64TimeSeries(val),
 					},
 				},
 			)

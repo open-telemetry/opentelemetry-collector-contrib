@@ -21,18 +21,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	receiverType := "prometheus_simple"
 	factories.Receivers[configmodels.Type(receiverType)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -48,8 +50,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/all_settings",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/all_settings",
+			},
+			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
 			httpConfig: httpConfig{
@@ -70,8 +74,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/partial_settings",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/partial_settings",
+			},
+			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
 			CollectionInterval: 30 * time.Second,
@@ -82,8 +88,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r4,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal:  configmodels.Type(receiverType),
-				NameVal:  "prometheus_simple/partial_tls_settings",
+				TypeVal: configmodels.Type(receiverType),
+				NameVal: "prometheus_simple/partial_tls_settings",
+			},
+			TCPAddr: confignet.TCPAddr{
 				Endpoint: "localhost:1234",
 			},
 			httpConfig: httpConfig{

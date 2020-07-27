@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -34,6 +33,8 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 var gzipWriterPool = &sync.Pool{
@@ -77,6 +78,19 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 	ctx = obsreport.StartTraceDataReceiveOp(ctx, sr.config.Name(), transport)
 
 	td := jaegertranslator.ProtoBatchesToInternalTraces(sapm.Batches)
+
+	if sr.config.AccessTokenPassthrough {
+		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
+			rSpans := td.ResourceSpans()
+			for i := 0; i < rSpans.Len(); i++ {
+				rSpan := rSpans.At(i)
+				if !rSpan.IsNil() {
+					attrs := rSpan.Resource().Attributes()
+					attrs.UpsertString(splunk.SFxAccessTokenLabel, accessToken)
+				}
+			}
+		}
+	}
 
 	// pass the trace data to the next consumer
 	err = sr.nextConsumer.ConsumeTraces(ctx, td)
@@ -211,7 +225,8 @@ func New(
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// build the response message
-	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
+	defaultResponse := &splunksapm.PostSpansResponse{}
+	defaultResponseBytes, err := defaultResponse.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %s receiver: %v", config.Name(), err)
 	}
@@ -219,6 +234,6 @@ func New(
 		logger:          params.Logger,
 		config:          config,
 		nextConsumer:    nextConsumer,
-		defaultResponse: defaultResponse,
+		defaultResponse: defaultResponseBytes,
 	}, nil
 }

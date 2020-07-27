@@ -37,11 +37,11 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	tReceiver, err := factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
+	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 
-	tReceiver, err = factory.CreateMetricsReceiver(zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
+	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, new(exportertest.SinkMetricsExporterOld))
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, tReceiver, "receiver creation failed")
 

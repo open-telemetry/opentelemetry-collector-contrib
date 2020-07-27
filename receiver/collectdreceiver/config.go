@@ -18,11 +18,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for Collectd receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	confignet.TCPAddr             `mapstructure:",squash"`
 
 	Timeout          time.Duration `mapstructure:"timeout"`
 	AttributesPrefix string        `mapstructure:"attributes_prefix"`

@@ -22,6 +22,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // Config defines configuration for SignalFx exporter.
@@ -58,6 +61,16 @@ type Config struct {
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
+
+	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
+
+	// SendCompatibleMetrics specifies if metrics must be sent in a format backward-compatible with
+	// SignalFx naming conventions, "false" by default.
+	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
+
+	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
+	// If not provided explicitly, the rules defined in translations/config/default.yaml are used.
+	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -79,12 +92,21 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 		cfg.Timeout = 5 * time.Second
 	}
 
+	var metricTranslator *translation.MetricTranslator
+	if cfg.SendCompatibleMetrics {
+		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules)
+		if err != nil {
+			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
+		}
+	}
+
 	return &exporterOptions{
-		ingestURL:    ingestURL,
-		apiURL:       apiURL,
-		httpTimeout:  cfg.Timeout,
-		token:        cfg.AccessToken,
-		logDimUpdate: cfg.LogDimensionUpdates,
+		ingestURL:        ingestURL,
+		apiURL:           apiURL,
+		httpTimeout:      cfg.Timeout,
+		token:            cfg.AccessToken,
+		logDimUpdate:     cfg.LogDimensionUpdates,
+		metricTranslator: metricTranslator,
 	}, nil
 }
 

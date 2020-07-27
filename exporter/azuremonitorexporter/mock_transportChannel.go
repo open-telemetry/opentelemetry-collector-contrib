@@ -1,4 +1,4 @@
-// Copyright 2019 OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package azuremonitorexporter
 
 import (
-	contracts "github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	contracts "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	mock "github.com/stretchr/testify/mock"
 )
 

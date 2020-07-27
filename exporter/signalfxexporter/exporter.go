@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
@@ -41,11 +42,12 @@ type signalfxExporter struct {
 }
 
 type exporterOptions struct {
-	ingestURL    *url.URL
-	apiURL       *url.URL
-	httpTimeout  time.Duration
-	token        string
-	logDimUpdate bool
+	ingestURL        *url.URL
+	apiURL           *url.URL
+	httpTimeout      time.Duration
+	token            string
+	logDimUpdate     bool
+	metricTranslator *translation.MetricTranslator
 }
 
 // New returns a new SignalFx exporter.
@@ -81,6 +83,8 @@ func New(
 		zippers: sync.Pool{New: func() interface{} {
 			return gzip.NewWriter(nil)
 		}},
+		accessTokenPassthrough: config.AccessTokenPassthrough,
+		metricTranslator:       options.metricTranslator,
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -97,6 +101,7 @@ func New(
 			// buffer a fixed number of updates. Might also be a good candidate
 			// to make configurable.
 			PropertiesMaxBuffered: 10000,
+			MetricTranslator:      options.metricTranslator,
 		})
 	dimClient.Start()
 

@@ -20,17 +20,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	facotries, err := config.ExampleComponents()
+	facotries, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	facotries.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), facotries,
 	)
 
@@ -50,5 +53,27 @@ func TestLoadConfig(t *testing.T) {
 			AccessToken:      "abcd1234",
 			NumWorkers:       3,
 			MaxConnections:   45,
+			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+				AccessTokenPassthrough: false,
+			},
 		})
+}
+
+func TestInvalidConfig(t *testing.T) {
+	invalid := Config{
+		AccessToken:    "abcd1234",
+		NumWorkers:     3,
+		MaxConnections: 45,
+	}
+	noEndpointErr := invalid.validate()
+	require.Error(t, noEndpointErr)
+
+	invalid = Config{
+		Endpoint:       ":123:456",
+		AccessToken:    "abcd1234",
+		NumWorkers:     3,
+		MaxConnections: 45,
+	}
+	invalidURLErr := invalid.validate()
+	require.Error(t, invalidURLErr)
 }

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,17 +18,13 @@ import (
 	"testing"
 	"time"
 
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestToTime(t *testing.T) {
-	// 10 seconds after the Unix epoch of 1970-01-01T00:00:00Z
-	input := &timestamp.Timestamp{
-		Seconds: 60,
-		Nanos:   1,
-	}
-
+	// 61 seconds after the Unix epoch of 1970-01-01T00:00:00Z
+	input := pdata.TimestampUnixNano(60000000001)
 	output := toTime(input)
 
 	assert.NotNil(t, output)

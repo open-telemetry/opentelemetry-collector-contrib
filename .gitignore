@@ -14,6 +14,7 @@ local/
 *.so
 *.dylib
 bin/
+dist/
 
 # Emacs
 *~
@@ -25,4 +26,10 @@ bin/
 
 # Coverage
 coverage.txt
+integration-coverage.txt
 coverage.html
+integration-coverage.html
+
+# Wix
+*.wixobj
+*.wixpdb

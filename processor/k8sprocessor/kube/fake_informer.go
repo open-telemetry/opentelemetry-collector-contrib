@@ -1,4 +1,4 @@
-// Copyright 2019 Omnition Authors
+// Copyright 2020 OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 package kube
 
 import (
+	"sync"
 	"time"
 
 	"k8s.io/apimachinery/pkg/fields"
@@ -23,48 +24,63 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type fakeInformer struct {
-	fakeController
+type FakeInformer struct {
+	*FakeController
 
 	namespace     string
 	labelSelector labels.Selector
 	fieldSelector fields.Selector
 }
 
-func newFakeInformer(
-	client *kubernetes.Clientset,
+func NewFakeInformer(
+	_ kubernetes.Interface,
 	namespace string,
 	labelSelector labels.Selector,
 	fieldSelector fields.Selector,
 ) cache.SharedInformer {
-	return fakeInformer{
-		namespace:     namespace,
-		labelSelector: labelSelector,
-		fieldSelector: fieldSelector,
+	return &FakeInformer{
+		FakeController: &FakeController{},
+		namespace:      namespace,
+		labelSelector:  labelSelector,
+		fieldSelector:  fieldSelector,
 	}
 }
 
-func (f fakeInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
+func (f *FakeInformer) AddEventHandler(handler cache.ResourceEventHandler) {}
 
-func (f fakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
+func (f *FakeInformer) AddEventHandlerWithResyncPeriod(handler cache.ResourceEventHandler, period time.Duration) {
 }
 
-func (f fakeInformer) GetStore() cache.Store {
+func (f *FakeInformer) GetStore() cache.Store {
 	return cache.NewStore(func(obj interface{}) (string, error) { return "", nil })
 }
 
-func (f fakeInformer) GetController() cache.Controller {
-	return f.fakeController
+func (f *FakeInformer) GetController() cache.Controller {
+	return f.FakeController
 }
 
-type fakeController struct{}
+type FakeController struct {
+	sync.Mutex
+	stopped bool
+}
 
-func (c fakeController) HasSynced() bool {
+func (c *FakeController) HasSynced() bool {
 	return true
 }
 
-func (c fakeController) Run(stopCh <-chan struct{}) {}
+func (c *FakeController) Run(stopCh <-chan struct{}) {
+	<-stopCh
+	c.Lock()
+	c.stopped = true
+	c.Unlock()
+}
 
-func (c fakeController) LastSyncResourceVersion() string {
+func (c *FakeController) HasStopped() bool {
+	c.Lock()
+	defer c.Unlock()
+	return c.stopped
+}
+
+func (c *FakeController) LastSyncResourceVersion() string {
 	return ""
 }

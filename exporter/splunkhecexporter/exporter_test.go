@@ -32,12 +32,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/testutils/metricstestutils"
+	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
 
 func TestNew(t *testing.T) {
-	got, err := New(nil, zap.NewNop())
+	got, err := createExporter(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
@@ -46,13 +46,9 @@ func TestNew(t *testing.T) {
 		Endpoint: "https://example.com:8088",
 		Timeout:  1 * time.Second,
 	}
-	got, err = New(config, zap.NewNop())
+	got, err = createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
-
-	// This is expected to fail.
-	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{})
-	assert.Error(t, err)
 }
 
 func TestConsumeMetricsData(t *testing.T) {
@@ -62,13 +58,13 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 		Resource: &resourcepb.Resource{Type: "test"},
 		Metrics: []*metricspb.Metric{
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_gauge",
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
-					metricstestutils.Double(time.Now(), 123))),
+					metricstestutil.Double(time.Now(), 123))),
 		},
 	}
 	tests := []struct {
@@ -171,14 +167,14 @@ func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
 		md.Metrics = append(md.Metrics,
-			metricstestutils.Gauge(
+			metricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
-				metricstestutils.Timeseries(
+				metricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{
-						Timestamp: metricstestutils.Timestamp(ts),
+						Timestamp: metricstestutil.Timestamp(ts),
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),

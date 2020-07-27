@@ -18,12 +18,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	httpConfig                    `mapstructure:",squash"`
+	confignet.TCPAddr             `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.

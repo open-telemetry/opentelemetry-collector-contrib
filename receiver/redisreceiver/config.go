@@ -22,6 +22,9 @@ import (
 
 type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	// TODO: Use one of the configs from core.
+	// The target endpoint.
+	Endpoint string `mapstructure:"endpoint"`
 	// The duration between Redis metric fetches.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// The logical name of the Redis server. This value will be added as a

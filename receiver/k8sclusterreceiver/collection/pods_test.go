@@ -38,7 +38,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	rm := actualResourceMetrics[0]
 
 	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *rm.resource, k8sType,
+	testutils.AssertResource(t, rm.resource, k8sType,
 		map[string]string{
 			"k8s.pod.uid":        "test-pod-1-uid",
 			"k8s.pod.name":       "test-pod-1",
@@ -48,13 +48,13 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/pod/phase",
+	testutils.AssertMetrics(t, rm.metrics[0], "k8s/pod/phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
 	rm = actualResourceMetrics[1]
 
 	require.Equal(t, 4, len(actualResourceMetrics[1].metrics))
-	testutils.AssertResource(t, *rm.resource, "container",
+	testutils.AssertResource(t, rm.resource, "container",
 		map[string]string{
 			"container.id":         "container-id",
 			"container.spec.name":  "container-name",
@@ -67,17 +67,17 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/container/restarts",
+	testutils.AssertMetrics(t, rm.metrics[0], "k8s/container/restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/container/ready",
+	testutils.AssertMetrics(t, rm.metrics[1], "k8s/container/ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[2], "k8s/container/request",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 10000)
+	testutils.AssertMetrics(t, rm.metrics[2], "k8s/container/cpu/request",
+		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
 
-	testutils.AssertMetricsWithLabels(t, *rm.metrics[3], "k8s/container/limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "cpu"}, 20000)
+	testutils.AssertMetrics(t, rm.metrics[3], "k8s/container/cpu/limit",
+		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
 }
 
 func TestPodAndContainerMetadata(t *testing.T) {
