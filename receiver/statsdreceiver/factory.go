@@ -16,7 +16,6 @@ package statsdreceiver
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -29,7 +28,6 @@ const (
 	// The value of "type" key in configuration.
 	typeStr             = "statsd"
 	defaultBindEndpoint = "localhost:8125"
-	defaultTimeout      = time.Duration(time.Second * 30)
 )
 
 // Factory is the factory for StatsD receiver.
