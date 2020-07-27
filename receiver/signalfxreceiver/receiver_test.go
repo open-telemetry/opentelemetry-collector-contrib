@@ -98,7 +98,8 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	port := testutil.GetAvailablePort(t)
+	addr := fmt.Sprintf("localhost:%d", port)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(exportertest.SinkMetricsExporterOld)
@@ -137,6 +138,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, testutil.WaitForPort(t, port))
 	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
 	// Description, unit and start time are expected to be dropped during conversions.
