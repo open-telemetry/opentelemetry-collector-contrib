@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -37,6 +38,7 @@ func TestRunnable(t *testing.T) {
 		"",
 		consumer,
 		&fakeRestClient{},
+		nil,
 		zap.NewNop(),
 	)
 	err := r.Setup()
@@ -46,14 +48,46 @@ func TestRunnable(t *testing.T) {
 	require.Equal(t, dataLen, len(consumer.mds))
 }
 
+func TestRunnableWithMetadata(t *testing.T) {
+	consumer := &fakeConsumer{}
+	r := newRunnable(
+		context.Background(),
+		"",
+		consumer,
+		&fakeRestClient{},
+		[]kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+		zap.NewNop(),
+	)
+	err := r.Setup()
+	require.NoError(t, err)
+	err = r.Run()
+	require.NoError(t, err)
+	require.Equal(t, dataLen, len(consumer.mds))
+
+	// make sure container.id labels are set on all container metrics
+	for _, md := range consumer.mds {
+		for _, m := range md.Metrics {
+			if strings.HasPrefix(m.MetricDescriptor.GetName(), "container.") {
+				_, ok := md.Resource.Labels[string(kubelet.MetadataLabelContainerID)]
+				require.True(t, ok)
+				continue
+			}
+		}
+	}
+}
+
 func TestClientErrors(t *testing.T) {
 	tests := []struct {
-		name    string
-		fail    bool
-		numLogs int
+		name                string
+		statsSummaryFail    bool
+		podsFail            bool
+		extraMetadataLabels []kubelet.MetadataLabel
+		numLogs             int
 	}{
-		{"no error", false, 0},
-		{"rest error", true, 1},
+		{"no_errors_without_metadata", false, false, nil, 0},
+		{"no_errors_with_metadata", false, false, []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID}, 0},
+		{"stats_summary_endpoint_error", true, false, nil, 1},
+		{"pods_endpoint_error", false, true, []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID}, 1},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -62,7 +96,11 @@ func TestClientErrors(t *testing.T) {
 				context.Background(),
 				"",
 				&fakeConsumer{},
-				&fakeRestClient{fail: test.fail},
+				&fakeRestClient{
+					statsSummaryFail: test.statsSummaryFail,
+					podsFail:         test.podsFail,
+				},
+				test.extraMetadataLabels,
 				zap.New(core),
 			)
 			err := r.Setup()
@@ -91,6 +129,7 @@ func TestConsumerErrors(t *testing.T) {
 				"",
 				&fakeConsumer{fail: test.fail},
 				&fakeRestClient{},
+				nil,
 				zap.New(core),
 			)
 			err := r.Setup()
@@ -121,18 +160,19 @@ func (c *fakeConsumer) ConsumeMetricsData(
 var _ kubelet.RestClient = (*fakeRestClient)(nil)
 
 type fakeRestClient struct {
-	fail bool
+	statsSummaryFail bool
+	podsFail         bool
 }
 
 func (f *fakeRestClient) StatsSummary() ([]byte, error) {
-	if f.fail {
+	if f.statsSummaryFail {
 		return nil, errors.New("")
 	}
 	return ioutil.ReadFile("testdata/stats-summary.json")
 }
 
 func (f *fakeRestClient) Pods() ([]byte, error) {
-	if f.fail {
+	if f.podsFail {
 		return nil, errors.New("")
 	}
 	return ioutil.ReadFile("testdata/pods.json")

@@ -30,4 +30,10 @@ type Config struct {
 	kubelet.ClientConfig          `mapstructure:",squash"`
 	confignet.TCPAddr             `mapstructure:",squash"`
 	CollectionInterval            time.Duration `mapstructure:"collection_interval"`
+
+	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
+	// and put as extra labels on metrics resource.
+	// No additional metadata is fetched by default, so there are no extra calls to /pods endpoint.
+	// Only container.id label is supported at the moment.
+	ExtraMetadataLabels []kubelet.MetadataLabel `mapstructure:"extra_metadata_labels"`
 }

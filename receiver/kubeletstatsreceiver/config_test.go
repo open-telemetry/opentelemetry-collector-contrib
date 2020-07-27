@@ -79,4 +79,19 @@ func TestLoadConfig(t *testing.T) {
 		},
 		CollectionInterval: duration,
 	}, saCfg)
+
+	metadataCfg := cfg.Receivers["kubeletstats/metadata"].(*Config)
+	require.Equal(t, &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/metadata",
+		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "serviceAccount",
+			},
+		},
+		CollectionInterval:  duration,
+		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+	}, metadataCfg)
 }
