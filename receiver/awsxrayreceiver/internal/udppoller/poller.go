@@ -149,12 +149,12 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	switch err := err.(type) {
 	case net.Error:
 		if !err.Temporary() {
-			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{err})
+			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: err})
 		}
 	default:
-		return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{err})
+		return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 	}
-	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{err})
+	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 }
 
 func (p *poller) poll() {
