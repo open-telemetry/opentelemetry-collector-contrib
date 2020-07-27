@@ -15,6 +15,10 @@
 package awsecscontainermetrics
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -25,7 +29,17 @@ import (
 
 // GenerateDummyMetrics generates some dummy metrics
 func GenerateDummyMetrics() consumerdata.MetricsData {
+
+	resp, err := http.Get(os.Getenv("URL"))
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println("get:\n", string(body))
+
 	md := consumerdata.MetricsData{}
+
 	ts := time.Now()
 	for i := 0; i < 5; i++ {
 		md.Metrics = append(md.Metrics,
