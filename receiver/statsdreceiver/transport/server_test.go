@@ -15,23 +15,35 @@
 package transport
 
 import (
+	"context"
+	"net"
+	"runtime"
+	"strconv"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport/client"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
 	tests := []struct {
 		name          string
 		buildServerFn func(addr string) (Server, error)
-		// TODO: build StatsD client for testing.
-		// buildClientFn func(host string, port int) (*client.StatsD, error)
+		buildClientFn func(host string, port int) (*client.StatsD, error)
 	}{
 		{
 			name: "udp",
 			buildServerFn: func(addr string) (Server, error) {
 				return NewUDPServer(addr)
+			},
+			buildClientFn: func(host string, port int) (*client.StatsD, error) {
+				return client.NewStatsD(client.UDP, host, port)
 			},
 		},
 	}
@@ -41,6 +53,63 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			srv, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, srv)
+
+			host, portStr, err := net.SplitHostPort(addr)
+			require.NoError(t, err)
+			port, err := strconv.Atoi(portStr)
+			require.NoError(t, err)
+
+			mc := &mockMetricsConsumer{}
+			p := &protocol.StatsDParser{}
+			require.NoError(t, err)
+			mr := NewMockReporter(1)
+
+			wgListenAndServe := sync.WaitGroup{}
+			wgListenAndServe.Add(1)
+			go func() {
+				defer wgListenAndServe.Done()
+				assert.Error(t, srv.ListenAndServe(p, mc, mr))
+			}()
+
+			runtime.Gosched()
+
+			gc, err := tt.buildClientFn(host, port)
+			require.NoError(t, err)
+			require.NotNil(t, gc)
+
+			err = gc.SendMetric(client.Metric{
+				Name:  "test.metric",
+				Value: "42",
+				Type:  "c",
+			})
+			assert.NoError(t, err)
+			runtime.Gosched()
+
+			err = gc.Disconnect()
+			assert.NoError(t, err)
+
+			mr.WaitAllOnMetricsProcessedCalls()
+
+			err = srv.Close()
+			assert.NoError(t, err)
+
+			wgListenAndServe.Wait()
+
+			require.Equal(t, 1, len(mc.md))
+			assert.Equal(t, "test.metric", mc.md[0].Metrics[0].GetMetricDescriptor().GetName())
 		})
 	}
+}
+
+type mockMetricsConsumer struct {
+	sync.Mutex
+	md []consumerdata.MetricsData
+}
+
+func (m *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
+	m.Lock()
+	m.md = append(m.md, td)
+	m.Unlock()
+
+	return nil
 }

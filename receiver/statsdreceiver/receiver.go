@@ -36,6 +36,7 @@ type statsdReceiver struct {
 	config *Config
 
 	server       transport.Server
+	reporter     transport.Reporter
 	parser       protocol.Parser
 	nextConsumer consumer.MetricsConsumerOld
 
@@ -64,23 +65,24 @@ func New(
 	r := &statsdReceiver{
 		logger:       logger,
 		config:       &config,
-		parser:       &protocol.StatsDParser{},
 		nextConsumer: nextConsumer,
 		server:       server,
+		reporter:     newReporter(config.Name(), logger),
+		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil
 }
 
 // StartMetricsReception starts a UDP server that can process StatsD messages.
-func (ddr *statsdReceiver) Start(_ context.Context, host component.Host) error {
-	ddr.Lock()
-	defer ddr.Unlock()
+func (r *statsdReceiver) Start(_ context.Context, host component.Host) error {
+	r.Lock()
+	defer r.Unlock()
 
 	err := componenterror.ErrAlreadyStarted
-	ddr.startOnce.Do(func() {
+	r.startOnce.Do(func() {
 		err = nil
 		go func() {
-			err = ddr.server.ListenAndServe(ddr.parser, ddr.nextConsumer)
+			err = r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter)
 			if err != nil {
 				host.ReportFatalError(err)
 			}
@@ -91,13 +93,13 @@ func (ddr *statsdReceiver) Start(_ context.Context, host component.Host) error {
 }
 
 // StopMetricsReception stops the StatsD receiver.
-func (ddr *statsdReceiver) Shutdown(context.Context) error {
-	ddr.Lock()
-	defer ddr.Unlock()
+func (r *statsdReceiver) Shutdown(context.Context) error {
+	r.Lock()
+	defer r.Unlock()
 
 	var err = componenterror.ErrAlreadyStopped
-	ddr.stopOnce.Do(func() {
-		err = ddr.server.Close()
+	r.stopOnce.Do(func() {
+		err = r.server.Close()
 	})
 	return err
 }

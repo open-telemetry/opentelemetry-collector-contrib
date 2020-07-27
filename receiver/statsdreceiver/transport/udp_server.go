@@ -32,6 +32,7 @@ import (
 type udpServer struct {
 	wg         sync.WaitGroup
 	packetConn net.PacketConn
+	reporter   Reporter
 }
 
 var _ (Server) = (*udpServer)(nil)
@@ -52,10 +53,13 @@ func NewUDPServer(addr string) (Server, error) {
 func (u *udpServer) ListenAndServe(
 	parser protocol.Parser,
 	nextConsumer consumer.MetricsConsumerOld,
+	reporter Reporter,
 ) error {
-	if parser == nil || nextConsumer == nil {
+	if parser == nil || nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
 	}
+
+	u.reporter = reporter
 
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
@@ -70,6 +74,9 @@ func (u *udpServer) ListenAndServe(
 			}()
 		}
 		if err != nil {
+			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
+				u.packetConn.LocalAddr(),
+				err)
 			if netErr, ok := err.(net.Error); ok {
 				if netErr.Temporary() {
 					continue
@@ -91,8 +98,8 @@ func (u *udpServer) handlePacket(
 	nextConsumer consumer.MetricsConsumerOld,
 	data []byte,
 ) {
-	ctx := context.Background()
-	var numReceivedTimeseries, numInvalidTimeseries int
+	ctx := u.reporter.OnDataReceived(context.Background())
+	var numReceivedMessages, numInvalidMessages int
 	var metrics []*metricspb.Metric
 	buf := bytes.NewBuffer(data)
 	for {
@@ -105,10 +112,11 @@ func (u *udpServer) handlePacket(
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			numReceivedTimeseries++
+			numReceivedMessages++
 			metric, err := p.Parse(line)
 			if err != nil {
-				numInvalidTimeseries++
+				numInvalidMessages++
+				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
 
@@ -119,6 +127,6 @@ func (u *udpServer) handlePacket(
 	md := consumerdata.MetricsData{
 		Metrics: metrics,
 	}
-	// TODO: handle error?
-	nextConsumer.ConsumeMetricsData(ctx, md)
+	err := nextConsumer.ConsumeMetricsData(ctx, md)
+	u.reporter.OnMetricsProcessed(ctx, numReceivedMessages, numInvalidMessages, err)
 }
