@@ -83,6 +83,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 // TODO: Replace with acutal logic.
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	md := awsecscontainermetrics.GenerateDummyMetrics()
+
 	err := aecmr.nextConsumer.ConsumeMetricsData(ctx, md)
 	return err
 }
