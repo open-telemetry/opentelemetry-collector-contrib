@@ -109,15 +109,17 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		zap.String(Transport, addr.String()))
 
 	return &poller{
-		udpSock:        sock,
-		logger:         logger,
-		maxPollerCount: cfg.NumOfPollerToStart,
-		shutDown:       make(chan bool),
-		segChan:        make(chan RawSegment, 30),
+		receiverInstanceName: cfg.ReceiverInstanceName,
+		udpSock:              sock,
+		logger:               logger,
+		maxPollerCount:       cfg.NumOfPollerToStart,
+		shutDown:             make(chan bool),
+		segChan:              make(chan RawSegment, 30),
 	}, nil
 }
 
 func (p *poller) Start(receiverLongTermCtx context.Context) {
+	p.receiverLongLivedCtx = receiverLongTermCtx
 	for i := 0; i < p.maxPollerCount; i++ {
 		p.wg.Add(1)
 		go p.poll()
