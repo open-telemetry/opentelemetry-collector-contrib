@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/testutils"
+	"go.opentelemetry.io/collector/testutil"
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
@@ -37,7 +37,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutils.GetAvailableLocalAddress(t)
+			addr := testutil.GetAvailableLocalAddress(t)
 			srv, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, srv)

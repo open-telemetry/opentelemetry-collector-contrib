@@ -18,19 +18,22 @@ import (
 	"path"
 	"testing"
 
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 
@@ -45,8 +48,10 @@ func TestLoadConfig(t *testing.T) {
 	r1 := cfg.Receivers["statsd/receiver_settings"]
 	assert.Equal(t, &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  "statsd/receiver_settings",
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: "statsd/receiver_settings",
+		},
+		NetAddr: confignet.NetAddr{
 			Endpoint: "localhost:12345",
 		},
 	}, r1)

@@ -16,9 +16,11 @@ package statsdreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
+	NetAddr                       confignet.NetAddr `mapstructure:",squash"`
 }

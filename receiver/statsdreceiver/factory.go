@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
@@ -33,6 +34,8 @@ const (
 // Factory is the factory for StatsD receiver.
 type Factory struct {
 }
+
+var _ component.ReceiverFactoryOld = (*Factory)(nil)
 
 // Type gets the type of the Receiver config created by this factory.
 func (f *Factory) Type() configmodels.Type {
@@ -48,8 +51,10 @@ func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
 func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal:  configmodels.Type(typeStr),
-			NameVal:  typeStr,
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		NetAddr: confignet.NetAddr{
 			Endpoint: defaultBindEndpoint,
 		},
 	}
@@ -67,6 +72,7 @@ func (f *Factory) CreateTraceReceiver(
 
 // CreateMetricsReceiver creates a metrics receiver based on provided config.
 func (f *Factory) CreateMetricsReceiver(
+	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumerOld,

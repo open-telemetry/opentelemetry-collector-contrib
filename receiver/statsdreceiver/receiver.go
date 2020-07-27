@@ -52,11 +52,11 @@ func New(
 		return nil, componenterror.ErrNilNextConsumer
 	}
 
-	if config.Endpoint == "" {
-		config.Endpoint = "localhost:8125"
+	if config.NetAddr.Endpoint == "" {
+		config.NetAddr.Endpoint = "localhost:8125"
 	}
 
-	server, err := transport.NewUDPServer(config.Endpoint)
+	server, err := transport.NewUDPServer(config.NetAddr.Endpoint)
 	if err != nil {
 		return nil, err
 	}
