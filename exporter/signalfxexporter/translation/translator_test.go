@@ -241,7 +241,7 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
-			name: "copy_metric_invalid",
+			name: "copy_metric_invalid_no_mapping",
 			trs: []Rule{
 				{
 					Action: ActionCopyMetrics,
@@ -249,6 +249,21 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantDimensionsMap: nil,
 			wantError:         "field \"mapping\" is required for \"copy_metrics\" translation rule",
+		},
+		{
+			name: "copy_metric_invalid_no_dimensions_filter",
+			trs: []Rule{
+				{
+					Action: ActionCopyMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					DimensionKey: "dim1",
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: "\"dimension_values_filer\" has to be provided if \"dimension_key\" is set " +
+				"for \"copy_metrics\" translation rule",
 		},
 		{
 			name: "split_metric_valid",
@@ -613,6 +628,133 @@ func TestTranslateDataPoints(t *testing.T) {
 					},
 					MetricType: &gaugeType,
 					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+		},
+		{
+			name: "copy_with_dimension_filter",
+			trs: []Rule{
+				{
+					Action: ActionCopyMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					DimensionKey: "dim1",
+					DimensionValues: map[string]bool{
+						"val1": true,
+						"val2": true,
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+				// must not be copied
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val3",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val3",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
 				},
 			},
 		},

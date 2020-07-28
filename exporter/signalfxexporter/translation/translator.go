@@ -48,7 +48,10 @@ const (
 	// Rule.TypesMapping key/values as metric_name/new_type.
 	ActionConvertValues Action = "convert_values"
 
-	// ActionCopyMetrics copies metrics using Rule.Mapping
+	// ActionCopyMetrics copies metrics using Rule.Mapping.
+	// Rule.DimensionKey and Rule.DimensionValues can be used to filter datapoints that must be copied,
+	// if these fields are set, only metics having a dimension with key == Rule.DimensionKey and
+	// value in Rule.DimensionValues will be copied.
 	ActionCopyMetrics Action = "copy_metrics"
 
 	// ActionSplitMetric splits a metric with Rule.MetricName into multiple metrics
@@ -129,7 +132,12 @@ type Rule struct {
 	// DimensionKey is used by "split_metric" translation rule action to specify dimension key
 	// that will be used to translate the metric datapoints. Datapoints that don't have
 	// the specified dimension key will not be translated.
+	// DimensionKey is also used by "copy_metrics" for filterring.
 	DimensionKey string `mapstructure:"dimension_key"`
+
+	// DimensionValues is used by "copy_metrics" to filter out datapoints with dimensions values
+	// not matching values set in this field
+	DimensionValues map[string]bool `mapstructure:"dimension_values"`
 
 	// TypesMapping is represents metric_name/metric_type key/value pairs,
 	// used by ActionConvertValues.
@@ -199,6 +207,11 @@ func validateTranslationRules(rules []Rule) error {
 		case ActionCopyMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
+			}
+			if tr.DimensionKey != "" && len(tr.DimensionValues) == 0 {
+				return fmt.Errorf(
+					"\"dimension_values_filer\" has to be provided if \"dimension_key\" is set for %q translation rule",
+					tr.Action)
 			}
 		case ActionSplitMetric:
 			if tr.MetricName == "" || tr.DimensionKey == "" || tr.Mapping == nil {
@@ -293,15 +306,14 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 		case ActionCopyMetrics:
-			newDataPoints := []*sfxpb.DataPoint{}
 			for _, dp := range processedDataPoints {
 				if newMetric, ok := tr.Mapping[dp.Metric]; ok {
-					newDataPoint := proto.Clone(dp).(*sfxpb.DataPoint)
-					newDataPoint.Metric = newMetric
-					newDataPoints = append(newDataPoints, newDataPoint)
+					newDataPoint := copyMetric(tr, dp, newMetric)
+					if newDataPoint != nil {
+						processedDataPoints = append(processedDataPoints, newDataPoint)
+					}
 				}
 			}
-			processedDataPoints = append(processedDataPoints, newDataPoints...)
 		case ActionSplitMetric:
 			for _, dp := range processedDataPoints {
 				if tr.MetricName == dp.Metric {
@@ -489,4 +501,23 @@ func convertMetricValue(logger *zap.Logger, dp *sfxpb.DataPoint, newType MetricV
 		var floatVal = float64(*val)
 		dp.Value = sfxpb.Datum{DoubleValue: &floatVal}
 	}
+}
+
+func copyMetric(tr Rule, dp *sfxpb.DataPoint, newMetricName string) *sfxpb.DataPoint {
+	if tr.DimensionKey != "" {
+		var match bool
+		for _, d := range dp.Dimensions {
+			if d.Key == tr.DimensionKey {
+				match = tr.DimensionValues[d.Value]
+				break
+			}
+		}
+		if !match {
+			return nil
+		}
+	}
+
+	newDataPoint := proto.Clone(dp).(*sfxpb.DataPoint)
+	newDataPoint.Metric = newMetricName
+	return newDataPoint
 }
