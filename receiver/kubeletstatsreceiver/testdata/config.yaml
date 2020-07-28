@@ -11,6 +11,11 @@ receivers:
     collection_interval: 10s
     auth_type: "serviceAccount"
     insecure_skip_verify: true
+  kubeletstats/metadata:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    extra_metadata_labels:
+    - container.id
 exporters:
   exampleexporter:
 service:

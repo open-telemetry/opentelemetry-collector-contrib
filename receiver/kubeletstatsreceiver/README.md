@@ -83,3 +83,25 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```    
+
+### Extra metadata labels
+
+By default all produced metrics get resource labels based on what kubelet /stats/summary endpoint provides.
+For some use cases it might be not enough. So it's possible to leverage other endpoints to fetch
+additional metadata entities and set them as extra labels on metric resource.
+The only additional label supported at the moment is `container.id`. If you want to have that label
+added to your metrics, use `extra_metadata_labels` field to enable it, for example:
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "${K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    extra_metadata_labels:
+      - container.id
+```
+
+If `extra_metadata_labels` is not set, no additional API calls is done to fetch extra metadata.
+

@@ -16,6 +16,7 @@ package observer
 
 import (
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -23,17 +24,9 @@ import (
 )
 
 func TestRefreshEndpointsOnStartup(t *testing.T) {
-	endpointsMap = map[EndpointID]Endpoint{}
+	ml, ew, mn := setup()
 
-	ew := EndpointsWatcher{
-		ListEndpoints:     listEndpoints,
-		RefreshInterval:   2 * time.Second,
-		existingEndpoints: map[EndpointID]Endpoint{},
-	}
-
-	mn := mockNotifier{}
-
-	addEndpoint(0)
+	ml.addEndpoint(0)
 	ew.ListAndWatch(mn)
 	ew.StopListAndWatch()
 
@@ -44,25 +37,17 @@ func TestRefreshEndpointsOnStartup(t *testing.T) {
 }
 
 func TestRefreshEndpoints(t *testing.T) {
-	endpointsMap = map[EndpointID]Endpoint{}
+	ml, ew, mn := setup()
 
-	ew := EndpointsWatcher{
-		ListEndpoints:     listEndpoints,
-		RefreshInterval:   2 * time.Second,
-		existingEndpoints: map[EndpointID]Endpoint{},
-	}
-
-	mn := mockNotifier{}
-
-	addEndpoint(0)
+	ml.addEndpoint(0)
 	ew.refreshEndpoints(mn)
 
 	expected := map[EndpointID]Endpoint{"0": {ID: "0"}}
 	require.Equal(t, expected, ew.existingEndpoints)
 
-	addEndpoint(1)
-	addEndpoint(2)
-	removeEndpoint(0)
+	ml.addEndpoint(1)
+	ml.addEndpoint(2)
+	ml.removeEndpoint(0)
 	ew.refreshEndpoints(mn)
 
 	expected["1"] = Endpoint{ID: "1"}
@@ -70,41 +55,27 @@ func TestRefreshEndpoints(t *testing.T) {
 	delete(expected, "0")
 	require.Equal(t, expected, ew.existingEndpoints)
 
-	updateEndpoint(2, "updated_target")
+	ml.updateEndpoint(2, "updated_target")
 	ew.refreshEndpoints(mn)
 
 	expected["2"] = Endpoint{ID: "2", Target: "updated_target"}
 	require.Equal(t, expected, ew.existingEndpoints)
 }
 
-var endpointsMap map[EndpointID]Endpoint
-
-func addEndpoint(n int) {
-	id := EndpointID(strconv.Itoa(n))
-	e := Endpoint{ID: id}
-	endpointsMap[id] = e
-}
-
-func removeEndpoint(n int) {
-	id := EndpointID(strconv.Itoa(n))
-	delete(endpointsMap, id)
-}
-
-func updateEndpoint(n int, target string) {
-	id := EndpointID(strconv.Itoa(n))
-	e := Endpoint{
-		ID:     id,
-		Target: target,
+func setup() (*mockEndpointsLister, EndpointsWatcher, mockNotifier) {
+	ml := &mockEndpointsLister{
+		endpointsMap: map[EndpointID]Endpoint{},
 	}
-	endpointsMap[id] = e
-}
 
-func listEndpoints() []Endpoint {
-	endpoints := make([]Endpoint, 0)
-	for _, e := range endpointsMap {
-		endpoints = append(endpoints, e)
+	ew := EndpointsWatcher{
+		Endpointslister:   ml,
+		RefreshInterval:   2 * time.Second,
+		existingEndpoints: map[EndpointID]Endpoint{},
 	}
-	return endpoints
+
+	mn := mockNotifier{}
+
+	return ml, ew, mn
 }
 
 type mockNotifier struct {
@@ -120,3 +91,54 @@ func (m mockNotifier) OnRemove([]Endpoint) {
 
 func (m mockNotifier) OnChange([]Endpoint) {
 }
+
+type mockEndpointsLister struct {
+	sync.Mutex
+	endpointsMap map[EndpointID]Endpoint
+}
+
+func (m *mockEndpointsLister) addEndpoint(n int) {
+	m.Lock()
+	defer m.Unlock()
+
+	id := EndpointID(strconv.Itoa(n))
+	e := Endpoint{ID: id}
+	m.endpointsMap[id] = e
+}
+
+func (m *mockEndpointsLister) removeEndpoint(n int) {
+	m.Lock()
+	defer m.Unlock()
+
+	id := EndpointID(strconv.Itoa(n))
+	delete(m.endpointsMap, id)
+}
+
+func (m *mockEndpointsLister) updateEndpoint(n int, target string) {
+	m.Lock()
+	defer m.Unlock()
+
+	id := EndpointID(strconv.Itoa(n))
+	e := Endpoint{
+		ID:     id,
+		Target: target,
+	}
+	m.endpointsMap[id] = e
+}
+
+func (m *mockEndpointsLister) ListEndpoints() []Endpoint {
+	m.Lock()
+	defer m.Unlock()
+
+	out := make([]Endpoint, len(m.endpointsMap))
+
+	i := 0
+	for _, e := range m.endpointsMap {
+		out[i] = e
+		i++
+	}
+
+	return out
+}
+
+var _ EndpointsLister = (*mockEndpointsLister)(nil)

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,30 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubeletstatsreceiver
+package hostobserver
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testbed/testbed"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcheck"
 )
 
-func TestMetricsReceiver(t *testing.T) {
+func TestType(t *testing.T) {
 	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-	metricsReceiver := receiver{
-		cfg:      cfg,
-		logger:   zap.NewNop(),
-		consumer: &testbed.MockMetricConsumer{},
-		rest:     &fakeRestClient{},
-	}
-	ctx := context.Background()
-	err := metricsReceiver.Start(ctx, componenttest.NewNopHost())
+	typ := factory.Type()
+	require.EqualValues(t, "host_observer", typ)
+}
+
+func TestValidConfig(t *testing.T) {
+	factory := &Factory{}
+	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
-	err = metricsReceiver.Shutdown(ctx)
+}
+
+func TestCreateMetricsReceiver(t *testing.T) {
+	factory := &Factory{}
+	hostObserver, err := factory.CreateExtension(
+		context.Background(),
+		component.ExtensionCreateParams{},
+		&Config{},
+	)
 	require.NoError(t, err)
+	require.NotNil(t, hostObserver)
 }
