@@ -26,7 +26,7 @@ import (
 
 func TestMetricsReceiver(t *testing.T) {
 	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := factory.CreateDefaultConfig().(*Config)
 	metricsReceiver := receiver{
 		cfg:      cfg,
 		logger:   zap.NewNop(),

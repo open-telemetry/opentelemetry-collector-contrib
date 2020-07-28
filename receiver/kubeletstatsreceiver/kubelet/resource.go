@@ -16,6 +16,7 @@ package kubelet
 
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/pkg/errors"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -23,7 +24,7 @@ func nodeResource(s stats.NodeStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/node
 		Labels: map[string]string{
-			"k8s.node.name": s.NodeName,
+			labelNodeName: s.NodeName,
 		},
 	}
 }
@@ -32,22 +33,27 @@ func podResource(s stats.PodStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/pod
 		Labels: map[string]string{
-			"k8s.pod.uid":        s.PodRef.UID,
-			"k8s.pod.name":       s.PodRef.Name,
-			"k8s.namespace.name": s.PodRef.Namespace,
+			labelPodUID:        s.PodRef.UID,
+			labelPodName:       s.PodRef.Name,
+			labelNamespaceName: s.PodRef.Namespace,
 		},
 	}
 }
 
-func containerResource(pod *resourcepb.Resource, s stats.ContainerStats) *resourcepb.Resource {
+func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadata Metadata) (*resourcepb.Resource, error) {
 	labels := map[string]string{}
 	for k, v := range pod.Labels {
 		labels[k] = v
 	}
 	// augment the container resource with pod labels
-	labels["container.name"] = s.Name
+	labels[labelContainerName] = s.Name
+	err := metadata.setExtraLabels(labels, labels[labelPodUID], labels[labelContainerName])
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
+
+	}
 	return &resourcepb.Resource{
 		Type:   "k8s", // k8s/pod/container
 		Labels: labels,
-	}
+	}, nil
 }
