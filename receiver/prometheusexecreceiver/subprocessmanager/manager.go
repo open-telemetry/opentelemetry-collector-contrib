@@ -27,15 +27,13 @@ import (
 
 	"github.com/kballard/go-shellquote"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager/config"
 )
 
 // Process struct holds all the info needed to instantiate a subprocess
 type Process struct {
 	Command string
 	Port    int
-	Env     []config.EnvConfig
+	Env     []EnvConfig
 }
 
 const (
@@ -123,7 +121,7 @@ func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logg
 }
 
 // formatEnvSlice will loop over the key-value pairs and format the slice correctly for use by the Command object ("name=value")
-func formatEnvSlice(envs *[]config.EnvConfig) []string {
+func formatEnvSlice(envs *[]EnvConfig) []string {
 	if len(*envs) == 0 {
 		return nil
 	}

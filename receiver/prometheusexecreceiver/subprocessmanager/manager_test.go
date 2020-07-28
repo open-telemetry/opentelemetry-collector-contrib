@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager/config"
 )
 
 func TestGetDelay(t *testing.T) {
@@ -88,19 +86,19 @@ func TestGetDelay(t *testing.T) {
 func TestFormatEnvSlice(t *testing.T) {
 	var formatEnvSliceTests = []struct {
 		name     string
-		envSlice *[]config.EnvConfig
+		envSlice *[]EnvConfig
 		want     []string
 		wantNil  bool
 	}{
 		{
 			name:     "empty slice",
-			envSlice: &[]config.EnvConfig{},
+			envSlice: &[]EnvConfig{},
 			want:     nil,
 			wantNil:  true,
 		},
 		{
 			name: "one entry",
-			envSlice: &[]config.EnvConfig{
+			envSlice: &[]EnvConfig{
 				{
 					Name:  "DATA_SOURCE",
 					Value: "password:username",
@@ -113,7 +111,7 @@ func TestFormatEnvSlice(t *testing.T) {
 		},
 		{
 			name: "three entries",
-			envSlice: &[]config.EnvConfig{
+			envSlice: &[]EnvConfig{
 				{
 					Name:  "DATA_SOURCE",
 					Value: "password:username",
@@ -162,7 +160,7 @@ func TestRun(t *testing.T) {
 			process: &Process{
 				Command: "go run ../testdata/test_crasher.go",
 				Port:    0,
-				Env: []config.EnvConfig{
+				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
@@ -177,7 +175,7 @@ func TestRun(t *testing.T) {
 			process: &Process{
 				Command: "go version",
 				Port:    0,
-				Env: []config.EnvConfig{
+				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
 						Value: "username:password@(url:port)/dbname",
@@ -192,7 +190,7 @@ func TestRun(t *testing.T) {
 			process: &Process{
 				Command: "command flag='something",
 				Port:    0,
-				Env:     []config.EnvConfig{},
+				Env:     []EnvConfig{},
 			},
 			wantElapsed: 0,
 			wantErr:     true,
