@@ -44,10 +44,30 @@ type Pod struct {
 
 // Port is an endpoint that has a target as well as a port.
 type Port struct {
-	Name      string
-	Pod       Pod
-	Port      uint16
+	// Name is the name of the container port.
+	Name string
+	// Pod is the k8s pod in which the container is running.
+	Pod Pod
+	// Port number of the endpoint.
+	Port uint16
+	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
 	Transport Transport
+}
+
+// HostPort is an endpoint discovered on a host.
+type HostPort struct {
+	// Name of the process associated to Endpoint.  If host_observer
+	// is unable to collect information about process using the
+	// Port, this value is an empty string.
+	Name string
+	// Command used to invoke the process using the Endpoint.
+	Command string
+	// Port number of the endpoint.
+	Port uint16
+	// Transport is the transport protocol used by the Endpoint. (TCP or UDP).
+	Transport Transport
+	// IsIPv6 indicates whether or not the Endpoint is IPv6.
+	IsIPv6 bool
 }
 
 type EndpointEnv map[string]interface{}
@@ -81,6 +101,17 @@ func EndpointToEnv(endpoint Endpoint) (EndpointEnv, error) {
 				"labels":      o.Pod.Labels,
 				"annotations": o.Pod.Annotations,
 			},
+			"transport": o.Transport,
+		}, nil
+	case HostPort:
+		ruleTypes["port"] = true
+		return map[string]interface{}{
+			"type":      ruleTypes,
+			"endpoint":  endpoint.Target,
+			"name":      o.Name,
+			"command":   o.Command,
+			"is_ipv6":   o.IsIPv6,
+			"port":      o.Port,
 			"transport": o.Transport,
 		}, nil
 
