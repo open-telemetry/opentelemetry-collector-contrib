@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexec
+package prometheusexecreceiver
 
 import (
 	"context"
@@ -86,7 +86,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 	// Initiate building the embedded configs and managing the subprocess with Start()
 	err := wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
-		t.Errorf("end_to_end_test.go got error = %v", err)
+		t.Errorf("end_to_end_test.go got error = %w", err)
 	}
 	defer wrapper.Shutdown(context.Background())
 

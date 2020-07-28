@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexec
+package prometheusexecreceiver
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 // Factory for prometheusexec
@@ -58,10 +58,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		ScrapeInterval: defaultCollectionInterval,
-		SubprocessConfig: config.SubprocessConfig{
-			Command:    "",
-			CustomName: "",
-			Env:        []config.EnvConfig{},
+		SubprocessConfig: subprocessmanager.SubprocessConfig{
+			Command: "",
+			Env:     []subprocessmanager.EnvConfig{},
 		},
 	}
 }

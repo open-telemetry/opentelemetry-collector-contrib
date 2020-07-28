@@ -3,12 +3,14 @@ receivers:
   
   aws_xray/udp_endpoint:
     # ensure the UDP endpoint can be properly overwritten
-    endpoint: "localhost:5678"
+    endpoint: "0.0.0.0:5678"
+    # transport can only be "udp"
+    transport: udp
   
   aws_xray/proxy_server:
     # ensure the fields under proxy_server can be overwritten
     proxy_server:
-      tcp_endpoint: "localhost:1234"
+      endpoint: "0.0.0.0:1234"
       proxy_address: "https://proxy.proxy.com"
       insecure: true
       server_name_override: "something"

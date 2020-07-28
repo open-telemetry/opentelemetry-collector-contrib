@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package prometheusexec
+package prometheusexecreceiver
 
 import (
 	"reflect"
@@ -25,8 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
-	subconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 var (
@@ -43,11 +42,10 @@ var (
 			customName: "prometheus_exec",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "",
-					Port:       9104,
-					CustomName: "",
-					Env:        []subconfig.EnvConfig{},
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "",
+					Port:    9104,
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
@@ -82,11 +80,10 @@ var (
 			customName: "mysqld",
 			config: &Config{
 				ScrapeInterval: 90 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "mysqld_exporter",
-					Port:       9104,
-					CustomName: "mysqld",
-					Env: []subconfig.EnvConfig{
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Port:    9104,
+					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "password:username@(url:port)/dbname",
@@ -121,13 +118,12 @@ var (
 			wantSubprocessConfig: &subprocessmanager.Process{
 				Command: "mysqld_exporter",
 				Port:    9104,
-				Env: []subconfig.EnvConfig{
+				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "password:username@(url:port)/dbname",
 					},
 				},
-				CustomName: "mysqld",
 			},
 			wantErr: false,
 		},
@@ -136,10 +132,9 @@ var (
 			customName: "postgres",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "postgres_exporter",
-					CustomName: "postgres",
-					Env: []subconfig.EnvConfig{
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "postgres_exporter",
+					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "password:username@(url:port)/dbname",
@@ -174,13 +169,12 @@ var (
 			wantSubprocessConfig: &subprocessmanager.Process{
 				Command: "postgres_exporter",
 				Port:    0,
-				Env: []subconfig.EnvConfig{
+				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "password:username@(url:port)/dbname",
 					},
 				},
-				CustomName: "postgres",
 			},
 			wantErr: false,
 		},
@@ -199,11 +193,10 @@ var (
 					NameVal: "prometheus_exec",
 				},
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "mysqld_exporter",
-					Port:       9104,
-					CustomName: "",
-					Env:        []subconfig.EnvConfig{},
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Port:    9104,
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "prometheus_exec",
@@ -216,11 +209,10 @@ var (
 					NameVal: "prometheus_exec/",
 				},
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "mysqld_exporter",
-					Port:       9104,
-					CustomName: "",
-					Env:        []subconfig.EnvConfig{},
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Port:    9104,
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "prometheus_exec",
@@ -233,11 +225,10 @@ var (
 					NameVal: "prometheus_exec/custom",
 				},
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "mysqld_exporter",
-					Port:       9104,
-					CustomName: "",
-					Env:        []subconfig.EnvConfig{},
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Port:    9104,
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "custom",
@@ -250,11 +241,10 @@ var (
 					NameVal: "prometheus_exec/custom/name",
 				},
 				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subconfig.SubprocessConfig{
-					Command:    "mysqld_exporter",
-					Port:       9104,
-					CustomName: "",
-					Env:        []subconfig.EnvConfig{},
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Port:    9104,
+					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "custom/name",
@@ -297,11 +287,10 @@ var (
 			name: "port is defined by user",
 			wrapper: &prometheusReceiverWrapper{
 				config: &Config{
-					SubprocessConfig: subconfig.SubprocessConfig{
-						Command:    "apache_exporter --port:{{port}}",
-						CustomName: "apache exporter with port {{port}}",
-						Port:       10500,
-						Env: []subconfig.EnvConfig{
+					SubprocessConfig: subprocessmanager.SubprocessConfig{
+						Command: "apache_exporter --port:{{port}}",
+						Port:    10500,
+						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
 								Value: "user:password@(hostname:{{port}})/dbname",
@@ -314,10 +303,9 @@ var (
 					},
 				},
 				subprocessConfig: &subprocessmanager.Process{
-					Command:    "apache_exporter --port:{{port}}",
-					CustomName: "apache exporter with port {{port}}",
-					Port:       10500,
-					Env: []subconfig.EnvConfig{
+					Command: "apache_exporter --port:{{port}}",
+					Port:    10500,
+					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "user:password@(hostname:{{port}})/dbname",
@@ -331,10 +319,9 @@ var (
 			},
 			newPort: 0,
 			want: &subprocessmanager.Process{
-				Command:    "apache_exporter --port:10500",
-				CustomName: "apache exporter with port 10500",
-				Port:       10500,
-				Env: []subconfig.EnvConfig{
+				Command: "apache_exporter --port:10500",
+				Port:    10500,
+				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "user:password@(hostname:10500)/dbname",
@@ -350,11 +337,10 @@ var (
 			name: "no string templating",
 			wrapper: &prometheusReceiverWrapper{
 				config: &Config{
-					SubprocessConfig: subconfig.SubprocessConfig{
-						Command:    "apache_exporter",
-						CustomName: "apache exporter",
-						Port:       10500,
-						Env: []subconfig.EnvConfig{
+					SubprocessConfig: subprocessmanager.SubprocessConfig{
+						Command: "apache_exporter",
+						Port:    10500,
+						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
 								Value: "user:password@(hostname:port)/dbname",
@@ -367,10 +353,9 @@ var (
 					},
 				},
 				subprocessConfig: &subprocessmanager.Process{
-					Command:    "apache_exporter",
-					CustomName: "apache exporter",
-					Port:       10500,
-					Env: []subconfig.EnvConfig{
+					Command: "apache_exporter",
+					Port:    10500,
+					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "user:password@(hostname:port)/dbname",
@@ -384,10 +369,9 @@ var (
 			},
 			newPort: 0,
 			want: &subprocessmanager.Process{
-				Command:    "apache_exporter",
-				CustomName: "apache exporter",
-				Port:       10500,
-				Env: []subconfig.EnvConfig{
+				Command: "apache_exporter",
+				Port:    10500,
+				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "user:password@(hostname:port)/dbname",
@@ -403,11 +387,10 @@ var (
 			name: "no port defined",
 			wrapper: &prometheusReceiverWrapper{
 				config: &Config{
-					SubprocessConfig: subconfig.SubprocessConfig{
-						Command:    "apache_exporter --port={{port}}",
-						CustomName: "apache exporter with port:{{port}}",
-						Port:       0,
-						Env: []subconfig.EnvConfig{
+					SubprocessConfig: subprocessmanager.SubprocessConfig{
+						Command: "apache_exporter --port={{port}}",
+						Port:    0,
+						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
 								Value: "user:password@(hostname:{{port}})/dbname",
@@ -420,10 +403,9 @@ var (
 					},
 				},
 				subprocessConfig: &subprocessmanager.Process{
-					Command:    "apache_exporter --port={{port}}",
-					CustomName: "apache exporter with port:{{port}}",
-					Port:       0,
-					Env: []subconfig.EnvConfig{
+					Command: "apache_exporter --port={{port}}",
+					Port:    0,
+					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
 							Value: "user:password@(hostname:{{port}})/dbname",
@@ -437,10 +419,9 @@ var (
 			},
 			newPort: 10111,
 			want: &subprocessmanager.Process{
-				Command:    "apache_exporter --port=10111",
-				CustomName: "apache exporter with port:10111",
-				Port:       10111,
-				Env: []subconfig.EnvConfig{
+				Command: "apache_exporter --port=10111",
+				Port:    10111,
+				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
 						Value: "user:password@(hostname:10111)/dbname",
@@ -542,7 +523,7 @@ func TestFillPortPlaceholders(t *testing.T) {
 	for _, test := range fillPortPlaceholdersTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.wrapper.fillPortPlaceholders(test.newPort)
-			if got.Command != test.want.Command || got.CustomName != test.want.CustomName || !reflect.DeepEqual(got.Env, test.want.Env) {
+			if got.Command != test.want.Command || !reflect.DeepEqual(got.Env, test.want.Env) {
 				t.Errorf("fillPortPlaceholders() got = %v, want %v", got, test.want)
 			}
 		})

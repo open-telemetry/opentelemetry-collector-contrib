@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package prometheusexec
+package prometheusexecreceiver
 
 import (
 	"context"
@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 const (
@@ -74,14 +74,14 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 
 	subprocessConfig, ok := getSubprocessConfig(wrapper.config, customName)
 	if ok != nil {
-		return fmt.Errorf("unable to generate the subprocess config: %v", ok)
+		return fmt.Errorf("unable to generate the subprocess config: %w", ok)
 	}
 
 	receiverConfig := getReceiverConfig(wrapper.config, customName)
 
 	receiver, ok := factory.CreateMetricsReceiver(wrapper.context, wrapper.logger, receiverConfig, wrapper.consumer)
 	if ok != nil {
-		return fmt.Errorf("unable to create Prometheus receiver: %v", ok)
+		return fmt.Errorf("unable to create Prometheus receiver: %w", ok)
 	}
 
 	wrapper.subprocessConfig = subprocessConfig
@@ -140,7 +140,6 @@ func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.Pro
 	subprocessConfig.Command = cfg.SubprocessConfig.Command
 	subprocessConfig.Port = cfg.SubprocessConfig.Port
 	subprocessConfig.Env = cfg.SubprocessConfig.Env
-	subprocessConfig.CustomName = customName
 
 	return subprocessConfig, nil
 }
@@ -178,7 +177,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		if generatePort {
 			newPort, err = wrapper.assignNewRandomPort(newPort)
 			if err != nil {
-				wrapper.logger.Info("assignNewRandomPort() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+				wrapper.logger.Info("assignNewRandomPort() error - killing this single process/receiver", zap.String("error", err.Error()))
 				return
 			}
 		}
@@ -193,7 +192,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		if firstRun || unhealthyProcess || generatePort {
 			err = wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
 			if err != nil {
-				wrapper.logger.Info("Start() error, could not start receiver - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+				wrapper.logger.Info("Start() error, could not start receiver - killing this single process/receiver", zap.String("error", err.Error()))
 				return
 			}
 		}
@@ -204,7 +203,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		// Compute the crashCount depending on subprocess health
 		crashCount, err = wrapper.computeHealthAndCrashCount(elapsed, crashCount)
 		if err != nil {
-			wrapper.logger.Info("computeHealthAndCrashCount() error - killing this single process/receiver", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("error", err.Error()))
+			wrapper.logger.Info("computeHealthAndCrashCount() error - killing this single process/receiver", zap.String("error", err.Error()))
 			return
 		}
 
@@ -213,7 +212,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 
 		// Now we can log the process error, no need to escalate the error, simply log and restart the subprocess
 		if subprocessErr != nil {
-			wrapper.logger.Info("Subprocess error", zap.String("process custom name", wrapper.subprocessConfig.CustomName), zap.String("time until process restarts", sleepTime.String()), zap.String("error", subprocessErr.Error()))
+			wrapper.logger.Info("Subprocess error", zap.String("time until process restarts", sleepTime.String()), zap.String("error", subprocessErr.Error()))
 		}
 
 		// Sleep this goroutine for a certain amount of time, computed by exponential backoff
@@ -233,7 +232,7 @@ func (wrapper *prometheusReceiverWrapper) computeHealthAndCrashCount(elapsed tim
 	if wrapper.subprocessConfig.Port == 0 || crashCount > subprocessmanager.HealthyCrashCount {
 		err := wrapper.Shutdown(wrapper.context)
 		if err != nil {
-			return crashCount, fmt.Errorf("could not stop receiver associated to %v process, killing this single process(%v)", wrapper.subprocessConfig.CustomName, wrapper.subprocessConfig.CustomName)
+			return crashCount, fmt.Errorf("could not stop receiver associated to process, killing it")
 		}
 	}
 
@@ -254,7 +253,7 @@ func (wrapper *prometheusReceiverWrapper) assignNewRandomPort(oldPort int) (int,
 	factory := &prometheusreceiver.Factory{}
 	wrapper.prometheusReceiver, err = factory.CreateMetricsReceiver(wrapper.context, wrapper.logger, wrapper.receiverConfig, wrapper.consumer)
 	if err != nil {
-		return 0, fmt.Errorf("unable to create Prometheus receiver: %v. Killing this process (%v)", err, wrapper.subprocessConfig.CustomName)
+		return 0, fmt.Errorf("unable to create Prometheus receiver. Killing this process")
 	}
 
 	return newPort, nil
@@ -273,7 +272,6 @@ func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *sub
 	// ReplaceAll runs much faster (about 5x according to my tests) than checking for a regex match, therefore no checks are made and ReplaceAll simply returns the original string if no match is found
 	// ReplaceAll is run on the original strings of the config, which remain unchanged
 	newConfig.Command = strings.ReplaceAll(wrapper.config.SubprocessConfig.Command, portTemplate, port)
-	newConfig.CustomName = strings.ReplaceAll(wrapper.config.SubprocessConfig.CustomName, portTemplate, port)
 
 	for i, env := range wrapper.config.SubprocessConfig.Env {
 		newConfig.Env[i].Value = strings.ReplaceAll(env.Value, portTemplate, port)

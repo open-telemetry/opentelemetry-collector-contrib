@@ -19,13 +19,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 )
 
 func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	run := &receiverRunner{logger: zap.NewNop(), nextConsumer: &mockMetricsConsumer{}, idNamespace: "receiver_creator/1"}
-	exampleFactory := &config.ExampleReceiverFactory{}
+	exampleFactory := &componenttest.ExampleReceiverFactory{}
 	template, err := newReceiverTemplate("examplereceiver/1", nil)
 	require.NoError(t, err)
 
@@ -34,7 +34,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.NotNil(t, loadedConfig)
-	exampleConfig := loadedConfig.(*config.ExampleReceiver)
+	exampleConfig := loadedConfig.(*componenttest.ExampleReceiver)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
 	assert.Equal(t, "localhost:12345", exampleConfig.Endpoint)
 	assert.Equal(t, "receiver_creator/1/examplereceiver/1{endpoint=\"localhost:12345\"}", exampleConfig.Name())
@@ -44,7 +44,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 		recvr, err := run.createRuntimeReceiver(exampleFactory, loadedConfig)
 		require.NoError(t, err)
 		assert.NotNil(t, recvr)
-		exampleReceiver := recvr.(*config.ExampleReceiverProducer)
+		exampleReceiver := recvr.(*componenttest.ExampleReceiverProducer)
 		assert.Equal(t, run.nextConsumer, exampleReceiver.MetricsConsumer)
 	})
 }

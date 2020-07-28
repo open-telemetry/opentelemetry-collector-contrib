@@ -27,16 +27,13 @@ import (
 
 	"github.com/kballard/go-shellquote"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexec/subprocessmanager/config"
 )
 
 // Process struct holds all the info needed to instantiate a subprocess
 type Process struct {
-	Command    string
-	Port       int
-	Env        []config.EnvConfig
-	CustomName string
+	Command string
+	Port    int
+	Env     []EnvConfig
 }
 
 const (
@@ -52,16 +49,13 @@ const (
 
 // Run will start the process and keep track of running time
 func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
-	var (
-		start     time.Time
-		elapsed   time.Duration
-		argsSlice []string
-	)
+
+	var argsSlice []string
 
 	// Parse the command line string into arguments
 	args, err := shellquote.Split(proc.Command)
 	if err != nil {
-		return elapsed, fmt.Errorf("[%v] could not parse command error: %v", proc.CustomName, err)
+		return 0, fmt.Errorf("could not parse command error: %w", err)
 	}
 	// Separate the executable from the flags for the Command object
 	if len(args) > 1 {
@@ -70,46 +64,53 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 
 	// Create the command object and attach current os environment + environment variables defined by user
 	childProcess := exec.Command(args[0], argsSlice...)
-	childProcess.Env = os.Environ()
-	childProcess.Env = append(childProcess.Env, formatEnvSlice(&proc.Env)...)
+	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
-	// Handle the subprocess output in a goroutine, and pipe the stderr/stdout into one stream
-	cmdReader, err := childProcess.StdoutPipe()
-	if err != nil {
-		return elapsed, fmt.Errorf("[%v] could not get the command's output pipe, err: %v", proc.CustomName, err)
+	// Handle the subprocess standard and error outputs in goroutines
+	stdoutReader, stdoutErr := childProcess.StdoutPipe()
+	if stdoutErr != nil {
+		return 0, fmt.Errorf("could not get the command's stdout pipe, err: %w", stdoutErr)
 	}
-	childProcess.Stderr = childProcess.Stdout
-	go proc.pipeSubprocessOutput(bufio.NewReader(cmdReader), logger)
+	go proc.pipeSubprocessOutput(bufio.NewReader(stdoutReader), logger, true)
+
+	stderrReader, stderrErr := childProcess.StderrPipe()
+	if stderrErr != nil {
+		return 0, fmt.Errorf("could not get the command's stderr pipe, err: %w", stderrErr)
+	}
+	go proc.pipeSubprocessOutput(bufio.NewReader(stderrReader), logger, false)
 
 	// Start and stop timer (elapsed) right before and after executing the command
-	start = time.Now()
+	start := time.Now()
 	errProcess := childProcess.Start()
 	if errProcess != nil {
-		return elapsed, fmt.Errorf("[%v] process could not start: %v", proc.CustomName, errProcess)
+		return 0, fmt.Errorf("process could not start: %w", errProcess)
 	}
 
 	errProcess = childProcess.Wait()
-	elapsed = time.Since(start)
+	elapsed := time.Since(start)
 	if errProcess != nil {
-		return elapsed, fmt.Errorf("[%v] process error: %v", proc.CustomName, errProcess)
+		return elapsed, fmt.Errorf("process error: %w", errProcess)
 	}
 
 	return elapsed, nil
 }
 
-// Log every line of the subprocesse's output using zap
-func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger) {
-	// Infinite reading loop until EOF (pipe is closed)
+// Log every line of the subprocesse's output using zap, until pipe is closed (EOF)
+func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
-			logger.Info("subprocess logging failed", zap.String("subprocess name", proc.CustomName), zap.String("error", err.Error()))
+			logger.Info("subprocess logging failed", zap.String("error", err.Error()))
 			break
 		}
 
 		line = strings.TrimSpace(line)
 		if line != "" {
-			logger.Info("subprocess output line", zap.String("subprocess name", proc.CustomName), zap.String("output", line))
+			if isStdout {
+				logger.Info("subprocess output line", zap.String("output", line))
+			} else {
+				logger.Error("subprocess output line", zap.String("output", line))
+			}
 		}
 
 		// Leave this function when error is EOF (stderr/stdout pipe was closed)
@@ -120,7 +121,7 @@ func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logg
 }
 
 // formatEnvSlice will loop over the key-value pairs and format the slice correctly for use by the Command object ("name=value")
-func formatEnvSlice(envs *[]config.EnvConfig) []string {
+func formatEnvSlice(envs *[]EnvConfig) []string {
 	if len(*envs) == 0 {
 		return nil
 	}
@@ -133,7 +134,7 @@ func formatEnvSlice(envs *[]config.EnvConfig) []string {
 	return envSlice
 }
 
-// GetDelay will compute the exponential backoff for a given process according to its crash count and time alive
+// GetDelay will compute the delay for a given process according to its crash count and time alive using an exponential backoff algorithm
 func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
 	// Return initialDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
 	if elapsed > HealthyProcessTime || crashCount <= HealthyCrashCount {

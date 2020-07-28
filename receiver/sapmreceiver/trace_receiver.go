@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -226,7 +225,8 @@ func New(
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// build the response message
-	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
+	defaultResponse := &splunksapm.PostSpansResponse{}
+	defaultResponseBytes, err := defaultResponse.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %s receiver: %v", config.Name(), err)
 	}
@@ -234,6 +234,6 @@ func New(
 		logger:          params.Logger,
 		config:          config,
 		nextConsumer:    nextConsumer,
-		defaultResponse: defaultResponse,
+		defaultResponse: defaultResponseBytes,
 	}, nil
 }

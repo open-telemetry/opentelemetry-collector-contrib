@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver
 
-go 1.13
+go 1.14
 
 require (
-	github.com/census-instrumentation/opencensus-proto v0.2.1
+	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/go-redis/redis/v7 v7.2.0
-	github.com/golang/protobuf v1.3.5
+	github.com/golang/protobuf v1.4.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.5.1-0.20200722180048-c0b3cf61a63a
+	go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0
 	go.uber.org/zap v1.15.0
 )
 
