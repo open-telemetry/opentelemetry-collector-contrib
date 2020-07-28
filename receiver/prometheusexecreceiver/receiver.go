@@ -132,7 +132,7 @@ func getReceiverConfig(cfg *Config, customName string) *prometheusreceiver.Confi
 // getSubprocessConfig returns the subprocess config after the correct logic is made
 func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.Process, error) {
 	if cfg.SubprocessConfig.Command == "" {
-		return nil, fmt.Errorf("no command to execute entered in config file for %w", cfg.Name())
+		return nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
 	}
 
 	subprocessConfig := &subprocessmanager.Process{}

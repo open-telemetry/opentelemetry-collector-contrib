@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
 
-	subconfig "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 var (
@@ -33,11 +33,10 @@ var (
 			NameVal: "prometheus_exec/test",
 		},
 		ScrapeInterval: 60 * time.Second,
-		SubprocessConfig: subconfig.SubprocessConfig{
-			Command:    "mysqld_exporter",
-			Port:       9104,
-			CustomName: "",
-			Env:        []subconfig.EnvConfig{},
+		SubprocessConfig: subprocessmanager.SubprocessConfig{
+			Command: "mysqld_exporter",
+			Port:    9104,
+			Env:     []subprocessmanager.EnvConfig{},
 		},
 	}
 
@@ -47,10 +46,9 @@ var (
 			NameVal: "prometheus_exec/test2",
 		},
 		ScrapeInterval: 90 * time.Second,
-		SubprocessConfig: subconfig.SubprocessConfig{
-			Command:    "postgres_exporter",
-			CustomName: "",
-			Env:        []subconfig.EnvConfig{},
+		SubprocessConfig: subprocessmanager.SubprocessConfig{
+			Command: "postgres_exporter",
+			Env:     []subprocessmanager.EnvConfig{},
 		},
 	}
 
@@ -60,11 +58,10 @@ var (
 			NameVal: "prometheus_exec/end_to_end_test/1",
 		},
 		ScrapeInterval: 2 * time.Second,
-		SubprocessConfig: subconfig.SubprocessConfig{
-			Command:    "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go 9999",
-			Port:       9999,
-			CustomName: "",
-			Env: []subconfig.EnvConfig{
+		SubprocessConfig: subprocessmanager.SubprocessConfig{
+			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go 9999",
+			Port:    9999,
+			Env: []subprocessmanager.EnvConfig{
 				{
 					Name:  "DATA_SOURCE_NAME",
 					Value: "user:password@(hostname:port)/dbname",
@@ -83,10 +80,9 @@ var (
 			NameVal: "prometheus_exec/end_to_end_test/2",
 		},
 		ScrapeInterval: 2 * time.Second,
-		SubprocessConfig: subconfig.SubprocessConfig{
-			Command:    "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
-			CustomName: "",
-			Env:        []subconfig.EnvConfig{},
+		SubprocessConfig: subprocessmanager.SubprocessConfig{
+			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
+			Env:     []subprocessmanager.EnvConfig{},
 		},
 	}
 )
