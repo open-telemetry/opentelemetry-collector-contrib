@@ -26,7 +26,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -37,7 +37,7 @@ func TestCreateExporter(t *testing.T) {
 		t.Skip("Default credentials not set, skip creating Stackdriver exporter")
 	}
 	ctx := context.Background()
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.ProjectID = "test"
