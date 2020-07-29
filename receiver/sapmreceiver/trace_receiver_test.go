@@ -36,6 +36,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -252,7 +253,9 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					Endpoint: defaultEndpoint,
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: defaultEndpoint,
+					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: false,
@@ -264,7 +267,9 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					Endpoint: defaultEndpoint,
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: defaultEndpoint,
+					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: true,
@@ -276,10 +281,14 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS compressed sapm",
 			args: args{
 				config: &Config{
-					Endpoint: tlsAddress,
-					TLSCredentials: &configtls.TLSSetting{
-						CertFile: ("./testdata/testcert.crt"),
-						KeyFile:  ("./testdata/testkey.key"),
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: tlsAddress,
+						TLSSetting: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: "./testdata/testcert.crt",
+								KeyFile:  "./testdata/testkey.key",
+							},
+						},
 					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
@@ -344,7 +353,9 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				Endpoint: defaultEndpoint,
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: defaultEndpoint,
+				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},

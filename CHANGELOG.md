@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 🛑 Breaking changes 🛑
+
+- TLS config changed for `sapmreceiver` (#488) and `signalfxreceiver` receivers (#488)
+
 ## v0.6.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.6.0 (Beta) 🎉

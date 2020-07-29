@@ -19,7 +19,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -105,18 +107,7 @@ func New(
 		logger:       logger,
 		config:       &config,
 		nextConsumer: nextConsumer,
-		server: &http.Server{
-			Addr: config.Endpoint,
-			// TODO: Evaluate what properties should be configurable, for now
-			//		set some hard-coded values.
-			ReadHeaderTimeout: defaultServerTimeout,
-			WriteTimeout:      defaultServerTimeout,
-		},
 	}
-
-	mx := mux.NewRouter()
-	mx.HandleFunc("/v2/datapoint", r.handleReq)
-	r.server.Handler = mx
 
 	return r, nil
 }
@@ -132,13 +123,27 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	r.startOnce.Do(func() {
 		err = nil
 
+		var ln net.Listener
+		// set up the listener
+		ln, err = r.config.HTTPServerSettings.ToListener()
+		if err != nil {
+			err = fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+			return
+		}
+
+		mx := mux.NewRouter()
+		mx.HandleFunc("/v2/datapoint", r.handleReq)
+
+		r.server = r.config.HTTPServerSettings.ToServer(mx)
+
+		// TODO: Evaluate what properties should be configurable, for now
+		//		set some hard-coded values.
+		r.server.ReadHeaderTimeout = defaultServerTimeout
+		r.server.WriteTimeout = defaultServerTimeout
+
 		go func() {
-			if r.config.TLSCredentials != nil {
-				host.ReportFatalError(r.server.ListenAndServeTLS(r.config.TLSCredentials.CertFile, r.config.TLSCredentials.KeyFile))
-			} else {
-				if err = r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-					host.ReportFatalError(err)
-				}
+			if errHTTP := r.server.Serve(ln); errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	})
@@ -161,7 +166,7 @@ func (r *sfxReceiver) Shutdown(context.Context) error {
 
 func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 	transport := "http"
-	if r.config.TLSCredentials != nil {
+	if r.config.TLSSetting != nil {
 		transport = "https"
 	}
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())

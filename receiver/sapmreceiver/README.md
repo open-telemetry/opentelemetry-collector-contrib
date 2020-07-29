@@ -14,7 +14,7 @@ The following settings are required:
 
 The following setting are optional:
 
-* `tls` (no default): This is an optional object used to specify if TLS should
+* `tls_settings` (no default): This is an optional object used to specify if TLS should
   be used for incoming connections.
     * `cert_file`: Specifies the certificate file to use for TLS connection.
       Note: Both `key_file` and `cert_file` are required for TLS connection. 
