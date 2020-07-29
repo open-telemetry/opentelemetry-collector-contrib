@@ -92,7 +92,11 @@ func buildPoint(metricType, metricValue string) (*metricspb.Point, error) {
 	case "c":
 		i, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("parse metric value string %s: %w", metricValue, err)
+			f, err := strconv.ParseFloat(metricValue, 64)
+			if err != nil {
+				return nil, fmt.Errorf("parse metric value string: %s", metricValue)
+			}
+			i = int64(f)
 		}
 		point.Value = &metricspb.Point_Int64Value{
 			Int64Value: i,

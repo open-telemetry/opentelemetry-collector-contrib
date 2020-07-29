@@ -31,11 +31,12 @@ func Test_StatsDParser_Parse(t *testing.T) {
 		err             error
 	}{
 		{
-			name: "invalid metric format - not enough parts",
-			err:  errors.New("invalid message format: "),
+			name:  "empty input string",
+			input: "",
+			err:   errors.New("invalid message format: "),
 		},
 		{
-			name:  "invalid metric format - missing value",
+			name:  "missing metric value",
 			input: "test.metric|c",
 			err:   errors.New("invalid <name>:<value> format: test.metric"),
 		},
@@ -50,10 +51,21 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			err:   errors.New("empty metric value"),
 		},
 		{
-			name:            "cumulative counter",
+			name:            "integer counter",
 			input:           "test.metric:42|c",
 			wantMetricName:  "test.metric",
 			wantMetricValue: &metricspb.Point_Int64Value{Int64Value: 42},
+		},
+		{
+			name:            "gracefully handle float counter value",
+			input:           "test.metric:42.0|c",
+			wantMetricName:  "test.metric",
+			wantMetricValue: &metricspb.Point_Int64Value{Int64Value: 42},
+		},
+		{
+			name:  "invalid metric value",
+			input: "test.metric:42.abc|c",
+			err:   errors.New("parse metric value string: 42.abc"),
 		},
 	}
 
@@ -66,6 +78,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			if tt.err != nil {
 				assert.Equal(t, err, tt.err)
 			} else {
+				assert.NoError(t, err)
 				assert.Equal(t, got.GetTimeseries()[0].GetPoints()[0].GetValue(), tt.wantMetricValue)
 				assert.Equal(t, got.GetMetricDescriptor().GetName(), tt.wantMetricName)
 			}
