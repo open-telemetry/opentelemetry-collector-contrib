@@ -16,9 +16,10 @@ package observability
 
 import (
 	"context"
+	"testing"
+
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/metric/metricexport"
-	"testing"
 )
 
 type exporter struct {
