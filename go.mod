@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.2.1-0.20200710010320-8556f4b5bc41 // indirect
 	github.com/client9/misspell v0.3.4
-	github.com/golangci/golangci-lint v1.28.3
+	github.com/golangci/golangci-lint v1.29.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0
@@ -40,10 +40,10 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/otel v0.9.0 // indirect
-	golang.org/x/tools v0.0.0-20200721220347-b42efcd11c08 // indirect
-	go.opentelemetry.io/collector v0.5.1-0.20200723232356-d4053cc823a0
+	go.opentelemetry.io/collector v0.5.1-0.20200728200651-9cbf43e372f0
+  go.opentelemetry.io/otel v0.9.0 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
+  golang.org/x/tools v0.0.0-20200721220347-b42efcd11c08 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.4
 )
 
@@ -112,4 +112,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 
-replace k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

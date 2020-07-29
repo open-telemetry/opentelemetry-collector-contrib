@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +build !darwin
+
 package hostobserver
 
 import (
@@ -27,6 +29,7 @@ import (
 
 	psnet "github.com/shirou/gopsutil/net"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
@@ -37,7 +40,7 @@ func TestHostObserver(t *testing.T) {
 	tcpConns := openTestTCPPorts(t)
 	udpConns := openTestUDPPorts(t)
 
-	mn := startAndStopObserver()
+	mn := startAndStopObserver(t)
 
 	assert.True(t, len(mn.endpointsMap) >= len(tcpConns)+len(udpConns))
 
@@ -93,7 +96,7 @@ func TestHostObserver(t *testing.T) {
 	})
 }
 
-func startAndStopObserver() mockNotifier {
+func startAndStopObserver(t *testing.T) mockNotifier {
 	ml := endpointsLister{
 		logger:       zap.NewNop(),
 		observerName: "host_observer/1",
@@ -109,11 +112,11 @@ func startAndStopObserver() mockNotifier {
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
 	ctx := context.Background()
-	h.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, h.Start(ctx, componenttest.NewNopHost()))
 	h.ListAndWatch(mn)
 
 	time.Sleep(1500 * time.Millisecond)
-	h.Shutdown(ctx)
+	require.NoError(t, h.Shutdown(ctx))
 
 	return mn
 }

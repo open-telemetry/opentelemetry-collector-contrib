@@ -152,10 +152,10 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	}
 
 	if name == "" {
-		if dbInstance, ok := attributes.Get(semconventions.AttributeDBInstance); ok {
+		if dbInstance, ok := attributes.Get(semconventions.AttributeDBName); ok {
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.StringVal()
-			if dbURL, ok := attributes.Get(semconventions.AttributeDBURL); ok {
+			if dbURL, ok := attributes.Get(semconventions.AttributeDBConnectionString); ok {
 				if parsed, _ := url.Parse(dbURL.StringVal()); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
