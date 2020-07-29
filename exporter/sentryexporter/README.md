@@ -6,7 +6,7 @@ For more details about distributed tracing in Sentry, please view [our documenta
 
 The following configuration options are supported:
 
-- `dsn`: The DSN tells the exporter where to send the events. If this value is not provided, the exporter will try to read it from the `SENTRY_DSN` environment variable. If that variable also does not exist, the exporter will not send any events.
+- `dsn`: The DSN tells the exporter where to send the events. You can find a Sentry project DSN in the “Client Keys” section of the “Project Settings” section of a Sentry project.
 
 Example:
 
