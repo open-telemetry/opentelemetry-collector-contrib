@@ -40,6 +40,16 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			err:   errors.New("invalid <name>:<value> format: test.metric"),
 		},
 		{
+			name:  "empty metric name",
+			input: ":42|c",
+			err:   errors.New("empty metric name"),
+		},
+		{
+			name:  "empty metric value",
+			input: "test.metric:|c",
+			err:   errors.New("empty metric value"),
+		},
+		{
 			name:            "cumulative counter",
 			input:           "test.metric:42|c",
 			wantMetricName:  "test.metric",

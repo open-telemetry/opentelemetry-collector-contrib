@@ -15,6 +15,7 @@
 package protocol
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,6 +23,11 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
+)
+
+var (
+	errEmptyMetricName  = errors.New("empty metric name")
+	errEmptyMetricValue = errors.New("empty metric value")
 )
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
@@ -34,13 +40,19 @@ func (p *StatsDParser) Parse(line string) (*metricspb.Metric, error) {
 		return nil, fmt.Errorf("invalid message format: %s", line)
 	}
 
-	nameValueParts := strings.Split(parts[0], ":")
-	if len(nameValueParts) != 2 {
+	separatorIndex := strings.IndexByte(parts[0], ':')
+	if separatorIndex < 0 {
 		return nil, fmt.Errorf("invalid <name>:<value> format: %s", parts[0])
 	}
 
-	metricName := nameValueParts[0]
-	metricValueString := nameValueParts[1]
+	metricName := parts[0][0:separatorIndex]
+	if metricName == "" {
+		return nil, errEmptyMetricName
+	}
+	metricValueString := parts[0][separatorIndex+1:]
+	if metricValueString == "" {
+		return nil, errEmptyMetricValue
+	}
 
 	metricType := parts[1]
 
