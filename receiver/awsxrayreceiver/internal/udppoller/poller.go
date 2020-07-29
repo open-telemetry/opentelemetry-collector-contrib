@@ -46,6 +46,10 @@ const (
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L182
 	// https://github.com/aws/aws-xray-daemon/blob/master/cmd/tracing/daemon.go#L171
 	pollerBufferSizeKB = 64 * 1024
+
+	// the size of the channel between the UDP poller
+	// and OT consumer
+	segChanSize = 30
 )
 
 // Poller represents one or more goroutines that are
@@ -82,7 +86,7 @@ type poller struct {
 	maxPollerCount       int
 	// closing this channel will shutdown all goroutines
 	// within this poller
-	shutDown chan bool
+	shutDown chan struct{}
 
 	// all segments read by the poller will be sent to this channel
 	segChan chan RawSegment
@@ -113,8 +117,8 @@ func New(cfg *Config, logger *zap.Logger) (Poller, error) {
 		udpSock:              sock,
 		logger:               logger,
 		maxPollerCount:       cfg.NumOfPollerToStart,
-		shutDown:             make(chan bool),
-		segChan:              make(chan RawSegment, 30),
+		shutDown:             make(chan struct{}),
+		segChan:              make(chan RawSegment, segChanSize),
 	}, nil
 }
 
