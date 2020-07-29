@@ -107,7 +107,7 @@ func components() (component.Factories, error) {
 		&splunkhecexporter.Factory{},
 		elasticexporter.NewFactory(),
 		&alibabacloudlogserviceexporter.Factory{},
-		&sentryexporter.Factory{},
+		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)

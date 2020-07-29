@@ -25,20 +25,25 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateTraceExporterDefault(t *testing.T) {
-	factory := &Factory{}
+func TestCreateExporter(t *testing.T) {
+	factory := NewFactory()
+	assert.Equal(t, typeStr, string(factory.Type()))
+
 	cfg := factory.CreateDefaultConfig()
-
+	eCfg := cfg.(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := factory.CreateTraceExporter(context.Background(), params, cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, exp)
 
-	assert.NoError(t, exp.Shutdown(context.Background()))
+	te, err := factory.CreateTraceExporter(context.Background(), params, eCfg)
+	assert.Nil(t, err)
+	assert.NotNil(t, te, "failed to create trace exporter")
+
+	me, err := factory.CreateMetricsExporter(context.Background(), params, eCfg)
+	assert.Error(t, err)
+	assert.Nil(t, me)
 }

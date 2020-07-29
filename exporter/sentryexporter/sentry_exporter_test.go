@@ -290,7 +290,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeDBType: pdata.NewAttributeValueString("redis"),
+				conventions.AttributeDBSystem: pdata.NewAttributeValueString("redis"),
 			}),
 			spanKind:    pdata.SpanKindCLIENT,
 			op:          "db",
@@ -300,7 +300,7 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 			testName: "db-call-with-statement",
 			name:     "mysql call",
 			attrs: pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-				conventions.AttributeDBType:      pdata.NewAttributeValueString("sql"),
+				conventions.AttributeDBSystem:    pdata.NewAttributeValueString("sqlite"),
 				conventions.AttributeDBStatement: pdata.NewAttributeValueString("SELECT * FROM table"),
 			}),
 			spanKind:    pdata.SpanKindCLIENT,

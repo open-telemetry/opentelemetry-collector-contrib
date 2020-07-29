@@ -260,7 +260,7 @@ func generateSpanDescriptors(name string, attrs pdata.AttributeMap, spanKind pda
 	}
 
 	// If db.type exists then this is a database call span.
-	if _, ok := attrs.Get(conventions.AttributeDBType); ok {
+	if _, ok := attrs.Get(conventions.AttributeDBSystem); ok {
 		opBuilder.WriteString("db")
 
 		// Use DB statement (Ex "SELECT * FROM table") if possible as description.

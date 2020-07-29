@@ -19,25 +19,24 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	typeStr = "sentry"
 )
 
-// Factory is the factory for the Sentry Exporter.
-type Factory struct {
+// NewFactory creates a factory for Sentry exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+	)
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for the Sentry Exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
@@ -46,8 +45,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on the Sentry config.
-func (f *Factory) CreateTraceExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (component.TraceExporter, error) {
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.TraceExporter, error) {
 	sentryConfig, ok := config.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("unexpected config type: %T", config)
@@ -56,11 +58,4 @@ func (f *Factory) CreateTraceExporter(ctx context.Context, params component.Expo
 	// Create exporter based on sentry config.
 	exp, err := CreateSentryExporter(sentryConfig)
 	return exp, err
-}
-
-// CreateMetricsExporter creates a metrics exporter based on the Sentry config.
-// This function is currently a no-op as Sentry does not accept metrics data
-func (f *Factory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.MetricsExporter, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
