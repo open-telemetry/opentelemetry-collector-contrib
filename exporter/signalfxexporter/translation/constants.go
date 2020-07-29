@@ -116,5 +116,17 @@ translation_rules:
     cpu.wait: int
     cpu.softirq: int
     cpu.nice: int
+
+- action: copy_metrics
+  mapping:
+    cpu.idle: machine_cpu_cores
+
+- action: aggregate_metric
+  metric_name: machine_cpu_cores
+  aggregation_method: count
+  dimensions:
+  - host
+  - kubernetes_node
+  - kubernetes_cluster
 `
 )

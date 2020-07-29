@@ -17,7 +17,6 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -34,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -50,15 +50,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 )
 
-func components() (config.Factories, error) {
-	errs := []error{}
+func components() (component.Factories, error) {
+	var errs []error
 	factories, err := defaultcomponents.Components()
 	if err != nil {
-		return config.Factories{}, err
+		return component.Factories{}, err
 	}
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
+		&hostobserver.Factory{},
 	}
 
 	for _, ext := range factories.Extensions {

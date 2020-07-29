@@ -125,6 +125,17 @@ commands:
             docker push otel/<< parameters.repo >>:<< parameters.tag >>
             docker push otel/<< parameters.repo >>:latest
 
+  github_issue_generator:
+    steps:
+      - when:
+          condition:
+            equal: [master, << pipeline.git.branch >>]
+          steps:
+            - run:
+                name: Generate GitHub Issue
+                command: issuegenerator ${TEST_RESULTS}
+                when: on_fail
+
 workflows:
   version: 2
   stability-tests:
@@ -418,6 +429,8 @@ jobs:
     executor: golang
     resource_class: medium+
     parallelism: << parameters.runners-number >>
+    environment:
+      TEST_RESULTS: testbed/stabilitytests/results/junit/results.xml
     steps:
       - restore_workspace
       - run:
@@ -436,18 +449,7 @@ jobs:
           path: testbed/stabilitytests/results
       - store_test_results:
           path: testbed/stabilitytests/results/junit
-      - run:
-          name: Run on fail status
-          command: |
-              curl --request POST \
-              --url https://api.github.com/repos/open-telemetry/opentelemetry-collector-contrib/issues \
-              --header "authorization: Bearer ${GITHUB_TOKEN}" \
-              --header "content-type: application/json" \
-              --data '{
-                "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
-                "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
-                }'
-          when: on_fail
+      - github_issue_generator
 
   integration-tests:
     executor: machine

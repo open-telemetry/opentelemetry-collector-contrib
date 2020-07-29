@@ -22,6 +22,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.uber.org/zap"
 )
 
 type fakeRestClient struct {
@@ -36,9 +37,13 @@ func (f fakeRestClient) Pods() ([]byte, error) {
 }
 
 func TestMetricAccumulator(t *testing.T) {
-	provider := NewStatsProvider(&fakeRestClient{})
-	summary, _ := provider.StatsSummary()
-	requireMetricsDataOk(t, MetricsData(summary, ""))
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	metadataProvider := NewMetadataProvider(rc)
+	podsMetadata, _ := metadataProvider.Pods()
+	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata)
+	requireMetricsDataOk(t, MetricsData(zap.NewNop(), summary, metadata, ""))
 }
 
 func requireMetricsDataOk(t *testing.T, mds []*consumerdata.MetricsData) {
