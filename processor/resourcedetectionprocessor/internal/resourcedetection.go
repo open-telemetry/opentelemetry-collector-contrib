@@ -115,15 +115,14 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 		MergeResource(res, r, false)
 	}
 
-	p.logger.Info("detected resource information", zap.Any("resource", resourceToMap(res)))
+	p.logger.Info("detected resource information", zap.Any("resource", AttributesToMap(res.Attributes())))
 
 	p.detectedResource.resource = res
 }
 
-func resourceToMap(resource pdata.Resource) map[string]interface{} {
-	mp := make(map[string]interface{}, resource.Attributes().Len())
-
-	resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
+	mp := make(map[string]interface{}, am.Len())
+	am.ForEach(func(k string, v pdata.AttributeValue) {
 		switch v.Type() {
 		case pdata.AttributeValueBOOL:
 			mp[k] = v.BoolVal()
@@ -133,15 +132,20 @@ func resourceToMap(resource pdata.Resource) map[string]interface{} {
 			mp[k] = v.DoubleVal()
 		case pdata.AttributeValueSTRING:
 			mp[k] = v.StringVal()
+		case pdata.AttributeValueMAP:
+			mp[k] = AttributesToMap(v.MapVal())
 		}
 	})
-
 	return mp
 }
 
 func MergeResource(to, from pdata.Resource, overrideTo bool) {
 	if IsEmptyResource(from) {
 		return
+	}
+
+	if to.IsNil() {
+		to.InitEmpty()
 	}
 
 	toAttr := to.Attributes()

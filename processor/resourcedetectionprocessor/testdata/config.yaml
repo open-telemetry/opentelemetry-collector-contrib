@@ -3,8 +3,12 @@ receivers:
 
 processors:
   resourcedetection:
-  resourcedetection/2:
+  resourcedetection/gce:
     detectors: [env, gce]
+    timeout: 2s
+    override: false
+  resourcedetection/ec2:
+    detectors: [env, ec2]
     timeout: 2s
     override: false
 
@@ -15,5 +19,8 @@ service:
   pipelines:
     metrics:
       receivers: [examplereceiver]
-      processors: [resourcedetection/2]
+      processors:
+      # Choose one depending on your cloud provider:
+      # - resourcedetection/gce
+      # - resourcedetection/ec2
       exporters: [exampleexporter]

@@ -39,13 +39,24 @@ func TestLoadConfig(t *testing.T) {
 	p1 := cfg.Processors["resourcedetection"]
 	assert.Equal(t, p1, factory.CreateDefaultConfig())
 
-	p2 := cfg.Processors["resourcedetection/2"]
+	p2 := cfg.Processors["resourcedetection/gce"]
 	assert.Equal(t, p2, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: "resourcedetection",
-			NameVal: "resourcedetection/2",
+			NameVal: "resourcedetection/gce",
 		},
 		Detectors: []string{"env", "gce"},
+		Timeout:   2 * time.Second,
+		Override:  false,
+	})
+
+	p3 := cfg.Processors["resourcedetection/ec2"]
+	assert.Equal(t, p3, &Config{
+		ProcessorSettings: configmodels.ProcessorSettings{
+			TypeVal: "resourcedetection",
+			NameVal: "resourcedetection/ec2",
+		},
+		Detectors: []string{"env", "ec2"},
 		Timeout:   2 * time.Second,
 		Override:  false,
 	})

@@ -118,16 +118,35 @@ func TestDetectResource_Error(t *testing.T) {
 	require.EqualError(t, err, "err1")
 }
 
-func TestMergeOverride(t *testing.T) {
-	res1 := NewResource(map[string]interface{}{"a": "11", "b": "2"})
-	res2 := NewResource(map[string]interface{}{"a": "1", "c": "3"})
-	MergeResource(res1, res2, true)
-
-	expected := NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"})
-
-	expected.Attributes().Sort()
-	res1.Attributes().Sort()
-	assert.Equal(t, expected, res1)
+func TestMergeResource(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		res1       pdata.Resource
+		res2       pdata.Resource
+		overrideTo bool
+		expected   pdata.Resource
+	}{
+		{
+			"override non-empty resources",
+			NewResource(map[string]interface{}{"a": "11", "b": "2"}),
+			NewResource(map[string]interface{}{"a": "1", "c": "3"}), true,
+			NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+		}, {
+			"empty resource",
+			pdata.NewResource(),
+			NewResource(map[string]interface{}{"a": "1", "c": "3"}), false,
+			NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			out := pdata.NewResource()
+			tt.res1.CopyTo(out)
+			MergeResource(out, tt.res2, true)
+			tt.expected.Attributes().Sort()
+			out.Attributes().Sort()
+			assert.Equal(t, tt.expected, out)
+		})
+	}
 }
 
 type MockParallelDetector struct {
