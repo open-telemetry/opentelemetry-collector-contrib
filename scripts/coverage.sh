@@ -31,13 +31,13 @@ coverage erase
 
 cov opentelemetry-api
 cov opentelemetry-sdk
-cov ext/opentelemetry-ext-datadog
+cov exporter/opentelemetry-exporter-datadog
 cov ext/opentelemetry-ext-flask
 cov ext/opentelemetry-ext-requests
-cov ext/opentelemetry-ext-jaeger
+cov exporter/opentelemetry-exporter-jaeger
 cov ext/opentelemetry-ext-opentracing-shim
 cov ext/opentelemetry-ext-wsgi
-cov ext/opentelemetry-ext-zipkin
+cov exporter/opentelemetry-exporter-zipkin
 cov docs/examples/opentelemetry-example-app
 
 # aiohttp is only supported on Python 3.5+.
