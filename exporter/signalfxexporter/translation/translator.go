@@ -104,6 +104,7 @@ type AggregationMethod string
 const (
 	// AggregationMethodCount represents count aggregation method
 	AggregationMethodCount AggregationMethod = "count"
+	AggregationMethodSum   AggregationMethod = "sum"
 )
 
 type Rule struct {
@@ -220,7 +221,7 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("fields \"metric_name\", \"dimensions\", and \"aggregation_method\" "+
 					"are required for %q translation rule", tr.Action)
 			}
-			if tr.AggregationMethod != "count" {
+			if tr.AggregationMethod != "count" && tr.AggregationMethod != "sum" {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
@@ -389,6 +390,21 @@ func aggregateDatapoints(
 			dp.Value = sfxpb.Datum{
 				IntValue: &value,
 			}
+		case AggregationMethodSum:
+			var intValue int64
+			var floatValue float64
+			value := sfxpb.Datum{}
+			for _, dp := range dps {
+				if dp.Value.IntValue != nil {
+					intValue += *dp.Value.IntValue
+					value.IntValue = &intValue
+				}
+				if dp.Value.DoubleValue != nil {
+					floatValue += *dp.Value.DoubleValue
+					value.DoubleValue = &floatValue
+				}
+			}
+			dp.Value = value
 		}
 		result = append(result, dp)
 	}
