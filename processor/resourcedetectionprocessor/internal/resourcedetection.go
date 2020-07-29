@@ -155,5 +155,5 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 }
 
 func IsEmptyResource(res pdata.Resource) bool {
-	return res.Attributes().Len() == 0
+	return res.IsNil() || res.Attributes().Len() == 0
 }

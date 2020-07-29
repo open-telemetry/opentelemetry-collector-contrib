@@ -7,11 +7,11 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/google/go-cmp v0.4.0
 	github.com/honeycombio/libhoney-go v1.12.3
-	github.com/klauspost/compress v1.10.2
+	github.com/klauspost/compress v1.10.5
 	github.com/opentracing/opentracing-go v1.1.1-0.20190913142402-a7454ce5950e // indirect
 	github.com/shirou/gopsutil v2.20.4+incompatible // indirect
-	github.com/stretchr/testify v1.5.1
-	go.opentelemetry.io/collector v0.5.0
+	github.com/stretchr/testify v1.6.1
+	go.opentelemetry.io/collector v0.6.0
 	go.uber.org/zap v1.14.0
 	google.golang.org/grpc v1.29.1
 )

@@ -121,6 +121,24 @@ func TestResourceProcessor(t *testing.T) {
 			}),
 		},
 		{
+			name:             "Source resource is nil",
+			sourceResource:   pdata.NewResource(),
+			detectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
+			expectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
+		},
+		{
+			name:             "Detected resource is nil",
+			sourceResource:   internal.NewResource(map[string]interface{}{"host.name": "node"}),
+			detectedResource: pdata.NewResource(),
+			expectedResource: internal.NewResource(map[string]interface{}{"host.name": "node"}),
+		},
+		{
+			name:             "Both resources are nil",
+			sourceResource:   pdata.NewResource(),
+			detectedResource: pdata.NewResource(),
+			expectedResource: internal.NewResource(map[string]interface{}{}),
+		},
+		{
 			name: "Detection error",
 			sourceResource: internal.NewResource(map[string]interface{}{
 				"type":           "original-type",
@@ -222,6 +240,10 @@ func TestResourceProcessor(t *testing.T) {
 }
 
 func oCensusResource(res pdata.Resource) *resourcepb.Resource {
+	if res.IsNil() {
+		return &resourcepb.Resource{}
+	}
+
 	mp := make(map[string]string, res.Attributes().Len())
 	res.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		mp[k] = v.StringVal()

@@ -23,7 +23,8 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -195,7 +196,7 @@ func sortDimensions(points []*sfxpb.DataPoint) {
 			continue
 		}
 		sort.Slice(point.Dimensions, func(i, j int) bool {
-			return *point.Dimensions[i].Key < *point.Dimensions[j].Key
+			return point.Dimensions[i].Key < point.Dimensions[j].Key
 		})
 	}
 }
@@ -208,14 +209,13 @@ func doubleSFxDataPoint(
 	values []string,
 	val float64,
 ) *sfxpb.DataPoint {
-	pt := commonSFxDataPoint(
-		metric,
-		ts,
-		metricType,
-		keys,
-		values)
-	pt.Value = &sfxpb.Datum{DoubleValue: &val}
-	return pt
+	return &sfxpb.DataPoint{
+		Metric:     metric,
+		Timestamp:  ts,
+		Value:      sfxpb.Datum{DoubleValue: &val},
+		MetricType: metricType,
+		Dimensions: sfxDimensions(keys, values),
+	}
 }
 
 func int64SFxDataPoint(
@@ -226,26 +226,10 @@ func int64SFxDataPoint(
 	values []string,
 	val int64,
 ) *sfxpb.DataPoint {
-	pt := commonSFxDataPoint(
-		metric,
-		ts,
-		metricType,
-		keys,
-		values)
-	pt.Value = &sfxpb.Datum{IntValue: &val}
-	return pt
-}
-
-func commonSFxDataPoint(
-	metric string,
-	ts int64,
-	metricType *sfxpb.MetricType,
-	keys []string,
-	values []string,
-) *sfxpb.DataPoint {
 	return &sfxpb.DataPoint{
-		Metric:     &metric,
-		Timestamp:  &ts,
+		Metric:     metric,
+		Timestamp:  ts,
+		Value:      sfxpb.Datum{IntValue: &val},
 		MetricType: metricType,
 		Dimensions: sfxDimensions(keys, values),
 	}
@@ -263,8 +247,8 @@ func sfxDimensions(keys, values []string) []*sfxpb.Dimension {
 	sfxDims := make([]*sfxpb.Dimension, len(keys))
 	for i := 0; i < len(keys); i++ {
 		sfxDims[i] = &sfxpb.Dimension{
-			Key:   &keys[i],
-			Value: &values[i],
+			Key:   keys[i],
+			Value: values[i],
 		}
 	}
 
@@ -295,13 +279,13 @@ func expectedFromDistribution(
 		dps = append(dps,
 			int64SFxDataPoint(metricName+"_bucket", ts, &sfxMetricTypeCumulativeCounter,
 				append(keys, upperBoundDimensionKey),
-				append(values, *float64ToDimValue(explicitBuckets.Bounds[i])),
+				append(values, float64ToDimValue(explicitBuckets.Bounds[i])),
 				distributionValue.Buckets[i].Count))
 	}
 	dps = append(dps,
 		int64SFxDataPoint(metricName+"_bucket", ts, &sfxMetricTypeCumulativeCounter,
 			append(keys, upperBoundDimensionKey),
-			append(values, *float64ToDimValue(math.Inf(1))),
+			append(values, float64ToDimValue(math.Inf(1))),
 			distributionValue.Buckets[len(distributionValue.Buckets)-1].Count))
 	return dps
 }
@@ -330,7 +314,7 @@ func expectedFromSummary(
 		dps = append(dps,
 			doubleSFxDataPoint(metricName+"_quantile", ts, &sfxMetricTypeGauge,
 				append(keys, quantileDimensionKey),
-				append(values, *float64ToDimValue(percentile.Percentile)),
+				append(values, float64ToDimValue(percentile.Percentile)),
 				percentile.Value))
 	}
 
@@ -357,7 +341,7 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 		Buckets: buckets,
 	}
 	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
-	point.GetDistributionValue().BucketOptions.GetExplicit()
+	assert.Nil(t, point.GetDistributionValue().BucketOptions.GetExplicit())
 	metricData := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.GaugeDist("gauge_distrib", keys, metricstestutil.Timeseries(
@@ -367,6 +351,73 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 		},
 	}
 	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	assert.Equal(t, 1, gotNumDroppedTimeSeries)
+	assert.NoError(t, err)
+}
+
+func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
+	logger := zap.NewNop()
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+	keys := []string{"k0", "k1"}
+	values := []string{"v0", "v1"}
+
+	summaryValue := &metricspb.SummaryValue{
+		Count:    &wrappers.Int64Value{Value: 42},
+		Sum:      &wrappers.DoubleValue{Value: 42},
+		Snapshot: &metricspb.SummaryValue_Snapshot{},
+	}
+	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
+	assert.Nil(t, point.GetSummaryValue().GetSnapshot().GetPercentileValues())
+	metricData := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutil.Summary("summary", keys, metricstestutil.Timeseries(
+				tsUnix,
+				values,
+				point)),
+		},
+	}
+	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	assert.Equal(t, 1, gotNumDroppedTimeSeries)
+	assert.NoError(t, err)
+}
+
+func Test_InvalidPoint_NoValue(t *testing.T) {
+	logger := zap.NewNop()
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsUnix := time.Unix(unixSecs, unixNSecs)
+	keys := []string{"k0", "k1"}
+	values := []string{"v0", "v1"}
+
+	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: nil}
+	metricData := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutil.Gauge("gauge", keys, metricstestutil.Timeseries(
+				tsUnix,
+				values,
+				point)),
+		},
+	}
+	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	assert.Equal(t, 1, gotNumDroppedTimeSeries)
+	assert.NoError(t, err)
+}
+
+func Test_InvalidMetric(t *testing.T) {
+	logger := zap.NewNop()
+	metricData := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			nil,
+			{
+				MetricDescriptor: nil,
+				Timeseries:       []*metricspb.TimeSeries{nil},
+			},
+		},
+	}
+	_, gotNumDroppedTimeSeries, err := metricDataToSignalFxV2(logger, metricData)
+	// Only 1 timeseries is dropped because the nil metric does not have any timeseries.
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 	assert.NoError(t, err)
 }

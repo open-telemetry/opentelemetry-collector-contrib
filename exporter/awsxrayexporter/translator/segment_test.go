@@ -61,6 +61,27 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, semconventions.AttributeComponent))
 }
 
+func TestClientSpanWithPeerService(t *testing.T) {
+	spanName := "AmazonDynamoDB.getItem"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes[semconventions.AttributeComponent] = semconventions.ComponentTypeHTTP
+	attributes[semconventions.AttributeHTTPMethod] = "POST"
+	attributes[semconventions.AttributeHTTPScheme] = "https"
+	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
+	attributes[semconventions.AttributeHTTPTarget] = "/"
+	attributes[semconventions.AttributePeerService] = "cats-table"
+	attributes[AWSServiceAttribute] = "DynamoDB"
+	attributes[AWSOperationAttribute] = "GetItem"
+	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment := MakeSegment(span, resource)
+	assert.Equal(t, "cats-table", segment.Name)
+}
+
 func TestServerSpanWithInternalServerError(t *testing.T) {
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()

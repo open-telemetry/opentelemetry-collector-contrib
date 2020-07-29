@@ -99,7 +99,7 @@ func (d *Detector) initializeHostAttributes(attr pdata.AttributeMap) []error {
 		attr.InsertString(conventions.AttributeHostName, name)
 	}
 
-	hostType, err := d.metadata.InstanceAttributeValue("instance/machine-type")
+	hostType, err := d.metadata.Get("instance/machine-type")
 	if err != nil {
 		errors = append(errors, err)
 	} else {

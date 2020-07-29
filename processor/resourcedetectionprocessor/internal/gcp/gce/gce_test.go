@@ -60,8 +60,8 @@ func (m *mockMetadata) InstanceName() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) InstanceAttributeValue(attr string) (string, error) {
-	args := m.MethodCalled("InstanceAttributeValue")
+func (m *mockMetadata) Get(suffix string) (string, error) {
+	args := m.MethodCalled("Get")
 	return args.String(0), args.Error(1)
 }
 
@@ -73,7 +73,7 @@ func TestDetectTrue(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("InstanceID").Return("2", nil)
 	md.On("InstanceName").Return("name", nil)
-	md.On("InstanceAttributeValue").Return("machine-type", nil)
+	md.On("Get").Return("machine-type", nil)
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())
@@ -115,7 +115,7 @@ func TestDetectError(t *testing.T) {
 	md.On("Hostname").Return("", errors.New("err3"))
 	md.On("InstanceID").Return("", errors.New("err4"))
 	md.On("InstanceName").Return("", errors.New("err5"))
-	md.On("InstanceAttributeValue").Return("", errors.New("err6"))
+	md.On("Get").Return("", errors.New("err6"))
 
 	detector := &Detector{metadata: md}
 	res, err := detector.Detect(context.Background())

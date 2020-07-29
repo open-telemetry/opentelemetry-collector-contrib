@@ -45,7 +45,7 @@ func TestStabilityMetricsOpenCensus(t *testing.T) {
 		testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      45,
+			ExpectedMaxCPU:      70,
 			ExpectedMaxRAM:      86,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
