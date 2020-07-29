@@ -1210,7 +1210,7 @@ func TestTranslateDataPoints(t *testing.T) {
 			}
 
 			// Sort metrics to handle not deterministic order from aggregation
-			if tt.name == "aggregate_metric" {
+			if tt.trs[0].Action == ActionAggregateMetric {
 				sort.Sort(byContent(tt.want))
 				sort.Sort(byContent(got))
 			}
