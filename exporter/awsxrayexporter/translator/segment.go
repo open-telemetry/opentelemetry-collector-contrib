@@ -120,7 +120,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 		startTime                              = timestampToFloatSeconds(span.StartTime())
 		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
-		isError, isFault, causefiltered, cause = makeCause(span.Status(), httpfiltered)
+		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered)
 		isThrottled                            = !span.Status().IsNil() && otlptrace.Status_StatusCode(span.Status().Code()) == otlptrace.Status_ResourceExhausted
 		origin                                 = determineAwsOrigin(resource)
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
