@@ -16,6 +16,7 @@ package translator
 
 import (
 	"encoding/hex"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
