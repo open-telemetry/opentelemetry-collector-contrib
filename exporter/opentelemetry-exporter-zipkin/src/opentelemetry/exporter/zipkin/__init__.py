@@ -168,8 +168,9 @@ class ZipkinSpanExporter(SpanExporter):
             duration_mus = _nsec_to_usec_round(span.end_time - span.start_time)
 
             zipkin_span = {
-                "traceId": format(trace_id, "x"),
-                "id": format(span_id, "x"),
+                # Ensure left-zero-padding of traceId, spanId, parentId
+                "traceId": format(trace_id, "032x"),
+                "id": format(span_id, "016x"),
                 "name": span.name,
                 "timestamp": start_timestamp_mus,
                 "duration": duration_mus,
@@ -184,10 +185,10 @@ class ZipkinSpanExporter(SpanExporter):
 
             if isinstance(span.parent, Span):
                 zipkin_span["parentId"] = format(
-                    span.parent.get_context().span_id, "x"
+                    span.parent.get_context().span_id, "016x"
                 )
             elif isinstance(span.parent, SpanContext):
-                zipkin_span["parentId"] = format(span.parent.span_id, "x")
+                zipkin_span["parentId"] = format(span.parent.span_id, "016x")
 
             zipkin_spans.append(zipkin_span)
         return zipkin_spans

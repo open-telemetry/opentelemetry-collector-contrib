@@ -264,6 +264,72 @@ class TestZipkinSpanExporter(unittest.TestCase):
             headers={"Content-Type": "application/json"},
         )
 
+    # pylint: disable=too-many-locals
+    def test_zero_padding(self):
+        """test that hex ids starting with 0
+        are properly padded to 16 or 32 hex chars
+        when exported
+        """
+
+        span_names = "testZeroes"
+        trace_id = 0x0E0C63257DE34C926F9EFCD03927272E
+        span_id = 0x04BF92DEEFC58C92
+        parent_id = 0x0AAAAAAAAAAAAAAA
+
+        start_time = 683647322 * 10 ** 9  # in ns
+        duration = 50 * 10 ** 6
+        end_time = start_time + duration
+
+        span_context = trace_api.SpanContext(
+            trace_id,
+            span_id,
+            is_remote=False,
+            trace_flags=TraceFlags(TraceFlags.SAMPLED),
+        )
+        parent_context = trace_api.SpanContext(
+            trace_id, parent_id, is_remote=False
+        )
+
+        otel_span = trace.Span(
+            name=span_names[0], context=span_context, parent=parent_context,
+        )
+
+        otel_span.start(start_time=start_time)
+        otel_span.end(end_time=end_time)
+
+        service_name = "test-service"
+        local_endpoint = {"serviceName": service_name, "port": 9411}
+
+        exporter = ZipkinSpanExporter(service_name)
+        # Check traceId are properly lowercase 16 or 32 hex
+        expected = [
+            {
+                "traceId": "0e0c63257de34c926f9efcd03927272e",
+                "id": "04bf92deefc58c92",
+                "name": span_names[0],
+                "timestamp": start_time // 10 ** 3,
+                "duration": duration // 10 ** 3,
+                "localEndpoint": local_endpoint,
+                "kind": None,
+                "tags": {},
+                "annotations": None,
+                "debug": True,
+                "parentId": "0aaaaaaaaaaaaaaa",
+            }
+        ]
+
+        mock_post = MagicMock()
+        with patch("requests.post", mock_post):
+            mock_post.return_value = MockResponse(200)
+            status = exporter.export([otel_span])
+            self.assertEqual(SpanExportResult.SUCCESS, status)
+
+        mock_post.assert_called_with(
+            url="http://localhost:9411/api/v2/spans",
+            data=json.dumps(expected),
+            headers={"Content-Type": "application/json"},
+        )
+
     @patch("requests.post")
     def test_invalid_response(self, mock_post):
         mock_post.return_value = MockResponse(404)
