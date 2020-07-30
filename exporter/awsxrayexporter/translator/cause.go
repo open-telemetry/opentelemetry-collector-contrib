@@ -74,7 +74,7 @@ func makeCause(span pdata.Span, attributes map[string]string) (isError, isFault 
 				hexID := hex.EncodeToString(id)
 
 				exceptionType := ""
-				message := ""
+				message = ""
 
 				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionType); ok {
 					exceptionType = val.StringVal()
