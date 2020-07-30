@@ -16,7 +16,6 @@ package translator
 
 import (
 	"encoding/hex"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -45,44 +44,82 @@ type Stack struct {
 	Label string `json:"label,omitempty"`
 }
 
-func makeCause(status pdata.SpanStatus, attributes map[string]string) (isError, isFault bool,
+func makeCause(span pdata.Span, attributes map[string]string) (isError, isFault bool,
 	filtered map[string]string, cause *CauseData) {
+	status := span.Status()
 	if status.IsNil() || status.Code() == 0 {
 		return false, false, attributes, nil
 	}
+	filtered = attributes
+
 	var (
-		message     = status.Message()
-		errorKind   string
-		errorObject string
+		message   string
+		errorKind string
 	)
 
-	filtered = make(map[string]string)
-	for key, value := range attributes {
-		switch key {
-		case semconventions.AttributeHTTPStatusText:
-			if message == "" {
-				message = value
-			}
-		default:
-			filtered[key] = value
+	numExceptions := 0
+	for i := 0; i < span.Events().Len(); i++ {
+		event := span.Events().At(i)
+		if event.Name() == semconventions.AttributeExceptionEventName {
+			numExceptions++
 		}
 	}
-	if message == "" {
-		message = errorObject
-	}
 
-	if message != "" {
-		id := newSegmentID()
-		hexID := hex.EncodeToString(id)
+	if numExceptions > 0 {
+		exceptions := make([]Exception, numExceptions)
+		for i := 0; i < numExceptions; i++ {
+			event := span.Events().At(i)
+			if event.Name() == semconventions.AttributeExceptionEventName {
+				id := newSegmentID()
+				hexID := hex.EncodeToString(id)
 
-		cause = &CauseData{
-			Exceptions: []Exception{
-				{
+				exceptionType := ""
+				message := ""
+
+				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionType); ok {
+					exceptionType = val.StringVal()
+				}
+
+				if val, ok := event.Attributes().Get(semconventions.AttributeExceptionMessage); ok {
+					message = val.StringVal()
+				}
+
+				exceptions[i] = Exception{
 					ID:      hexID,
-					Type:    errorKind,
+					Type:    exceptionType,
 					Message: message,
+				}
+			}
+		}
+		cause = &CauseData{Exceptions: exceptions}
+	} else {
+		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
+		message = status.Message()
+		filtered = make(map[string]string)
+		for key, value := range attributes {
+			switch key {
+			case semconventions.AttributeHTTPStatusText:
+				if message == "" {
+					message = value
+				}
+			default:
+				filtered[key] = value
+			}
+		}
+
+		if message != "" {
+			id := newSegmentID()
+			hexID := hex.EncodeToString(id)
+
+			cause = &CauseData{
+				Exceptions: []Exception{
+					{
+						ID:      hexID,
+						Type:    errorKind,
+						Message: message,
+					},
 				},
-			},
+			}
 		}
 	}
 
