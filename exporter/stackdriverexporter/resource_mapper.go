@@ -45,6 +45,14 @@ func (mr *resourceMapper) mapResource(res *resource.Resource) *monitoredrespb.Mo
 		return result
 	}
 
+	// If resource type is missing, try to infer it
+	// based on the presence of resource labels (semantic conventions)
+	if res.Type == "" {
+		if resType, ok := inferResourceType(res.Labels); ok {
+			res.Type = resType
+		}
+	}
+
 	// Keep original behavior by default
 	return stackdriver.DefaultMapResource(res)
 }
