@@ -25,6 +25,49 @@ import (
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 )
 
+func TestCauseWithExceptions(t *testing.T) {
+	errorMsg := "this is a test"
+	attributeMap := make(map[string]interface{})
+	attributeMap[semconventions.AttributeHTTPMethod] = "POST"
+	attributeMap[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
+	attributeMap[semconventions.AttributeHTTPStatusCode] = 500
+
+	event1 := pdata.NewSpanEvent()
+	event1.InitEmpty()
+	event1.SetName(semconventions.AttributeExceptionEventName)
+	attributes := pdata.NewAttributeMap()
+	attributes.InsertString(semconventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	attributes.InsertString(semconventions.AttributeExceptionMessage, "bad state")
+	attributes.CopyTo(event1.Attributes())
+
+	event2 := pdata.NewSpanEvent()
+	event2.InitEmpty()
+	event2.SetName(semconventions.AttributeExceptionEventName)
+	attributes = pdata.NewAttributeMap()
+	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
+	attributes.CopyTo(event2.Attributes())
+
+	span := constructExceptionServerSpan(attributeMap, pdata.StatusCode(tracepb.Status_InternalError))
+	span.Status().SetMessage(errorMsg)
+	span.Events().Append(&event1)
+	span.Events().Append(&event2)
+	filtered, _ := makeHTTP(span)
+
+	isError, isFault, filteredResult, cause := makeCause(span, filtered)
+
+	assert.False(t, isError)
+	assert.True(t, isFault)
+	assert.Equal(t, filtered, filteredResult)
+	assert.NotNil(t, cause)
+	assert.Len(t, cause.Exceptions, 2)
+	assert.NotEmpty(t, cause.Exceptions[0].ID)
+	assert.Equal(t, "java.lang.IllegalStateException", cause.Exceptions[0].Type)
+	assert.Equal(t, "bad state", cause.Exceptions[0].Message)
+	assert.NotEmpty(t, cause.Exceptions[1].ID)
+	assert.Equal(t, "EmptyError", cause.Exceptions[1].Type)
+	assert.Empty(t, cause.Exceptions[1].Message)
+}
+
 func TestCauseWithStatusMessage(t *testing.T) {
 	errorMsg := "this is a test"
 	attributes := make(map[string]interface{})
@@ -35,7 +78,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
-	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
+	isError, isFault, filtered, cause := makeCause(span, filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
@@ -60,7 +103,7 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_InternalError))
 	filtered, _ := makeHTTP(span)
 
-	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
+	isError, isFault, filtered, cause := makeCause(span, filtered)
 
 	assert.False(t, isError)
 	assert.True(t, isFault)
@@ -89,7 +132,7 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	// This span illustrates incorrect instrumentation,
 	// marking a success status with an error http status code, and status wins.
 	// We do not expect to see such spans in practice.
-	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
+	isError, isFault, filtered, cause := makeCause(span, filtered)
 
 	assert.False(t, isError)
 	assert.False(t, isFault)
@@ -108,7 +151,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	span := constructExceptionServerSpan(attributes, pdata.StatusCode(tracepb.Status_Cancelled))
 	filtered, _ := makeHTTP(span)
 
-	isError, isFault, filtered, cause := makeCause(span.Status(), filtered)
+	isError, isFault, filtered, cause := makeCause(span, filtered)
 
 	assert.True(t, isError)
 	assert.False(t, isFault)
