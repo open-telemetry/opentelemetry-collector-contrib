@@ -38,6 +38,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -78,7 +79,9 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					Endpoint: "localhost:1234",
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: "localhost:1234",
+					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
@@ -98,7 +101,8 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	port := testutil.GetAvailablePort(t)
+	addr := fmt.Sprintf("localhost:%d", port)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(exportertest.SinkMetricsExporterOld)
@@ -137,6 +141,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, testutil.WaitForPort(t, port))
 	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
 	// Description, unit and start time are expected to be dropped during conversions.
@@ -318,9 +323,11 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSCredentials = &configtls.TLSSetting{
-		CertFile: "./testdata/testcert.crt",
-		KeyFile:  "./testdata/testkey.key",
+	cfg.HTTPServerSettings.TLSSetting = &configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: "./testdata/testcert.crt",
+			KeyFile:  "./testdata/testkey.key",
+		},
 	}
 	sink := new(exportertest.SinkMetricsExporterOld)
 	r, err := New(zap.NewNop(), *cfg, sink)

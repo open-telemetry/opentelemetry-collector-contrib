@@ -69,6 +69,7 @@ Each rule must start with `type.(pod|port) &&` such that the rule matches only o
 extensions:
   # Configures the Kubernetes observer to watch for pod start and stop events.
   k8s_observer:
+  host_observer:
 
 receivers:
   receiver_creator/1:
@@ -90,6 +91,16 @@ receivers:
           password: secret
           # Dynamic configuration value.
           service_name: `pod.labels["service_name"]`
+  receiver_creator/2:
+    # Name of the extensions to watch for endpoints to start and stop.
+    watch_observers: [host_observer]
+    receivers:
+      redis/on_host:
+        # If this rule matches an instance of this receiver will be started.
+        rule: type.port && port == 6379 && is_ipv6 == true
+        config:
+          service_name: redis_on_host
+
 
 processors:
   exampleprocessor:
@@ -100,7 +111,8 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1]
+      receivers: [receiver_creator/1, receiver_creator/2]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
+  extensions: [k8s_observer, host_observer]
 ```

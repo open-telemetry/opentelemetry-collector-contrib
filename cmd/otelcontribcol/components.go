@@ -30,9 +30,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -51,7 +53,7 @@ import (
 )
 
 func components() (component.Factories, error) {
-	errs := []error{}
+	var errs []error
 	factories, err := defaultcomponents.Components()
 	if err != nil {
 		return component.Factories{}, err
@@ -59,6 +61,7 @@ func components() (component.Factories, error) {
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
+		&hostobserver.Factory{},
 	}
 
 	for _, ext := range factories.Extensions {
@@ -106,6 +109,7 @@ func components() (component.Factories, error) {
 		&splunkhecexporter.Factory{},
 		elasticexporter.NewFactory(),
 		&alibabacloudlogserviceexporter.Factory{},
+		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)

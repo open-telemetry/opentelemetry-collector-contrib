@@ -241,7 +241,7 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
-			name: "copy_metric_invalid",
+			name: "copy_metric_invalid_no_mapping",
 			trs: []Rule{
 				{
 					Action: ActionCopyMetrics,
@@ -249,6 +249,21 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantDimensionsMap: nil,
 			wantError:         "field \"mapping\" is required for \"copy_metrics\" translation rule",
+		},
+		{
+			name: "copy_metric_invalid_no_dimensions_filter",
+			trs: []Rule{
+				{
+					Action: ActionCopyMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					DimensionKey: "dim1",
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: "\"dimension_values_filer\" has to be provided if \"dimension_key\" is set " +
+				"for \"copy_metrics\" translation rule",
 		},
 		{
 			name: "split_metric_valid",
@@ -617,6 +632,133 @@ func TestTranslateDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "copy_with_dimension_filter",
+			trs: []Rule{
+				{
+					Action: ActionCopyMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					DimensionKey: "dim1",
+					DimensionValues: map[string]bool{
+						"val1": true,
+						"val2": true,
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+				// must not be copied
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val3",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val3",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "copy_and_rename",
 			trs: []Rule{
 				{
@@ -885,7 +1027,7 @@ func TestTranslateDataPoints(t *testing.T) {
 			},
 		},
 		{
-			name: "aggregate_metric",
+			name: "aggregate_metric_count",
 			trs: []Rule{
 				{
 					Action:            ActionAggregateMetric,
@@ -1039,6 +1181,160 @@ func TestTranslateDataPoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "aggregate_metric_sum_int",
+			trs: []Rule{
+				{
+					Action:            ActionAggregateMetric,
+					MetricName:        "metric1",
+					Dimensions:        []string{"dim1"},
+					AggregationMethod: "sum",
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(8),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(17),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "aggregate_metric_sum_float",
+			trs: []Rule{
+				{
+					Action:            ActionAggregateMetric,
+					MetricName:        "metric1",
+					AggregationMethod: "sum",
+					Dimensions:        []string{"dim1"},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(1.2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(3.4),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1048,7 +1344,7 @@ func TestTranslateDataPoints(t *testing.T) {
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
 
 			// Handle float values separately
-			for i, dp := range tt.dps {
+			for i, dp := range got {
 				if dp.GetValue().DoubleValue != nil {
 					assert.InDelta(t, *tt.want[i].GetValue().DoubleValue, *dp.GetValue().DoubleValue, 0.00000001)
 					*dp.GetValue().DoubleValue = *tt.want[i].GetValue().DoubleValue
@@ -1056,7 +1352,7 @@ func TestTranslateDataPoints(t *testing.T) {
 			}
 
 			// Sort metrics to handle not deterministic order from aggregation
-			if tt.name == "aggregate_metric" {
+			if tt.trs[0].Action == ActionAggregateMetric {
 				sort.Sort(byContent(tt.want))
 				sort.Sort(byContent(got))
 			}

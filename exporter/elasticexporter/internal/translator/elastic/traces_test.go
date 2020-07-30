@@ -356,11 +356,11 @@ func TestSpanHTTPStatusCode(t *testing.T) {
 
 func TestSpanDatabaseContext(t *testing.T) {
 	span := spanWithAttributes(t, map[string]pdata.AttributeValue{
-		"db.type":      pdata.NewAttributeValueString("sql"),
-		"db.instance":  pdata.NewAttributeValueString("customers"),
-		"db.statement": pdata.NewAttributeValueString("SELECT * FROM wuser_table"),
-		"db.user":      pdata.NewAttributeValueString("readonly_user"),
-		"db.url":       pdata.NewAttributeValueString("mysql://db.example.com:3306"),
+		"db.system":            pdata.NewAttributeValueString("sql"),
+		"db.name":              pdata.NewAttributeValueString("customers"),
+		"db.statement":         pdata.NewAttributeValueString("SELECT * FROM wuser_table"),
+		"db.user":              pdata.NewAttributeValueString("readonly_user"),
+		"db.connection_string": pdata.NewAttributeValueString("mysql://db.example.com:3306"),
 	})
 
 	assert.Equal(t, "db", span.Type)
@@ -375,7 +375,7 @@ func TestSpanDatabaseContext(t *testing.T) {
 	}, span.Context.Database)
 
 	assert.Equal(t, model.IfaceMap{
-		{Key: "db_url", Value: "mysql://db.example.com:3306"},
+		{Key: "db_connection_string", Value: "mysql://db.example.com:3306"},
 	}, span.Context.Tags)
 }
 
