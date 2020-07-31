@@ -53,8 +53,7 @@ func (*metricsExporter) Name() string {
 }
 
 func (te *traceExporter) Shutdown(context.Context) error {
-	// uncomment when flush is implemented in trace exporter
-	// te.texporter.Flush()
+	te.texporter.Flush()
 	return nil
 }
 
@@ -163,11 +162,7 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
-func (te *traceExporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
-	// NOTE: SDK Trace exporter exports data asynchronously via bundler,
-	// so we can't use the parent (synchronous) context, which gets cancelled
-	// immediately after this function is executed.
-	ctx := context.Background() // create a new context to avoid cancellation
+func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
