@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	typeStr = "aws_xray"
+	typeStr = "awsxray"
 )
 
 // Config defines the configurations for an AWS X-Ray receiver.
