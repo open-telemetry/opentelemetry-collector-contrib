@@ -368,6 +368,40 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantDimensionsMap: nil,
 			wantError:         "invalid \"aggregation_method\": \"invalid\" provided for \"aggregate_metric\" translation rule",
 		},
+		{
+			name: "divide_metrics_valid",
+			trs: []Rule{
+				{
+					Action:     ActionDivideMetrics,
+					MetricName: "metric",
+					Mapping:    map[string]string{"metric0": "metric1"},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
+			name: "divide_metrics_invalid_missing_mapping",
+			trs: []Rule{
+				{
+					Action:     ActionDivideMetrics,
+					MetricName: "metric",
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "one mapping is required for \"divide_metrics\", found 0",
+		},
+		{
+			name: "divide_metrics_invalid_missing_metric_name",
+			trs: []Rule{
+				{
+					Action:  ActionDivideMetrics,
+					Mapping: map[string]string{"metric0": "metric1"},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "field \"metric_name\" is required for \"divide_metrics\" translation rule",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1334,6 +1368,77 @@ func TestTranslateDataPoints(t *testing.T) {
 					},
 				},
 			},
+		}, {
+			name: "divide_metrics",
+			trs: []Rule{{
+				Action:     ActionDivideMetrics,
+				MetricName: "new_metric",
+				Mapping:    map[string]string{"metric0": "metric1"},
+			}},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric0",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(42),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(84),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim2",
+						Value: "val2",
+					}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric0",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(42),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(84),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim2",
+						Value: "val2",
+					}},
+				},
+				{
+					Metric:     "new_metric",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(0.5),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -1385,11 +1490,11 @@ func TestTestTranslateDimension(t *testing.T) {
 }
 
 func generateIntPtr(i int) *int64 {
-	var iPtr int64 = int64(i)
+	var iPtr = int64(i)
 	return &iPtr
 }
 
 func generateFloatPtr(i float64) *float64 {
-	var iPtr float64 = float64(i)
+	var iPtr = i
 	return &iPtr
 }

@@ -89,6 +89,8 @@ const (
 	//   machine_cpu_cores{host="host1"} 2
 	//   machine_cpu_cores{host="host2"} 1
 	ActionAggregateMetric Action = "aggregate_metric"
+
+	ActionDivideMetrics Action = "divide_metrics"
 )
 
 // MetricValueType is the enum to capture valid metric value types that can be converted
@@ -238,6 +240,13 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
+		case ActionDivideMetrics:
+			if len(tr.Mapping) != 1 {
+				return fmt.Errorf("one mapping is required for %q, found %d", tr.Action, len(tr.Mapping))
+			}
+			if tr.MetricName == "" {
+				return fmt.Errorf("field \"metric_name\" is required for %q translation rule", tr.Action)
+			}
 
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
@@ -327,6 +336,47 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					convertMetricValue(logger, dp, newType)
 				}
 			}
+		case ActionDivideMetrics:
+			var numerator, denominator *sfxpb.DataPoint
+			for _, dp := range processedDataPoints {
+				// there should only be one entry in tr.Mapping
+				for nName, dName := range tr.Mapping {
+					if dp.Metric == nName {
+						numerator = dp
+					} else if dp.Metric == dName {
+						denominator = dp
+					}
+				}
+			}
+
+			if numerator == nil {
+				logger.Warn("divideMetrics: numerator == nil")
+				continue
+			}
+			if numerator.Value.IntValue == nil {
+				logger.Warn("divideMetrics: numerator.Value.IntValue == nil")
+				continue
+			}
+
+			if denominator == nil {
+				logger.Warn("divideMetrics: denominator == nil")
+				continue
+			}
+			if denominator.Value.IntValue == nil {
+				logger.Warn("divideMetrics: denominator.Value.IntValue == nil")
+				continue
+			}
+			if *denominator.Value.IntValue == 0 {
+				logger.Warn("divideMetrics: *denominator.Value.IntValue == 0")
+				continue
+			}
+
+			qpt := proto.Clone(numerator).(*sfxpb.DataPoint)
+			qpt.Metric = tr.MetricName
+			quotient := float64(*numerator.Value.IntValue) / float64(*denominator.Value.IntValue)
+			qpt.Value = sfxpb.Datum{DoubleValue: &quotient}
+			processedDataPoints = append(processedDataPoints, qpt)
+
 		case ActionAggregateMetric:
 			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint
 			// represents only one metric and all the datapoints can be aggregated together.

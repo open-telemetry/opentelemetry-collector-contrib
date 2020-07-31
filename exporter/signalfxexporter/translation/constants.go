@@ -220,5 +220,12 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
+    used: memory.used
+
+# memory utilization
+- action: divide_metrics
+  metric_name: memory.utilization
+  mapping:
+    memory.used: memory.total
 `
 )
