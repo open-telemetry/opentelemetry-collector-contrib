@@ -203,3 +203,27 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
 }
+
+func TestAttributesToMap(t *testing.T) {
+	m := map[string]interface{}{
+		"str":    "a",
+		"int":    int64(5),
+		"double": float64(5.0),
+		"bool":   true,
+		"map": map[string]interface{}{
+			"inner": "val",
+		},
+	}
+	attr := pdata.NewAttributeMap()
+	attr.InsertString("str", "a")
+	attr.InsertInt("int", 5)
+	attr.InsertDouble("double", 5.0)
+	attr.InsertBool("bool", true)
+	avm := pdata.NewAttributeValueMap()
+	innerAttr := pdata.NewAttributeMap()
+	innerAttr.InsertString("inner", "val")
+	avm.SetMapVal(innerAttr)
+	attr.Insert("map", avm)
+
+	assert.Equal(t, m, AttributesToMap(attr))
+}
