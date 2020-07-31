@@ -19,6 +19,7 @@ import (
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -73,11 +74,14 @@ func TestContainerStatsMetadataNotFound(t *testing.T) {
 		m:        mds,
 		metadata: metadata,
 		logger:   logger,
+		metricGroupsToCollect: map[MetricGroup]bool{
+			ContainerMetricGroup: true,
+		},
 	}
 
 	acc.containerStats(podResource, containerStats)
 
 	assert.Equal(t, 0, len(mds))
-	assert.Equal(t, 1, logs.Len())
+	require.Equal(t, 1, logs.Len())
 	assert.Equal(t, "failed to fetch container metrics", logs.All()[0].Message)
 }

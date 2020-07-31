@@ -17,7 +17,10 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
@@ -119,5 +122,91 @@ func tlsConfig() *Config {
 				KeyFile:  "testdata/testkey.key",
 			},
 		},
+	}
+}
+
+func TestCustomUnmarshaller(t *testing.T) {
+	type args struct {
+		sourceViperSection *viper.Viper
+		intoCfg            interface{}
+	}
+	tests := []struct {
+		name                  string
+		args                  args
+		result                *Config
+		mockUnmarshallFailure bool
+		configOverride        map[string]interface{}
+		wantErr               bool
+	}{
+		{
+			name:    "No config",
+			wantErr: false,
+		},
+		{
+			name: "Fail initial unmarshal",
+			args: args{
+				sourceViperSection: viper.New(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "metric_group unset",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg:            &Config{},
+			},
+			result: &Config{
+				MetricGroupsToCollect: defaultMetricGroups,
+			},
+		},
+		{
+			name: "fail to unmarshall metric_groups",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg:            &Config{},
+			},
+			mockUnmarshallFailure: true,
+			wantErr:               true,
+		},
+		{
+			name: "successfully override metric_group",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg: &Config{
+					CollectionInterval: 10 * time.Second,
+				},
+			},
+			configOverride: map[string]interface{}{
+				"metric_groups":       []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+				"collection_interval": 20 * time.Second,
+			},
+			result: &Config{
+				CollectionInterval:    20 * time.Second,
+				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockUnmarshallFailure {
+				// some arbitrary failure.
+				tt.args.sourceViperSection.Set(metricGroupsConfig, map[string]string{})
+			}
+
+			// Mock some config overrides.
+			if tt.configOverride != nil {
+				for k, v := range tt.configOverride {
+					tt.args.sourceViperSection.Set(k, v)
+				}
+			}
+
+			if err := customUnmarshaller(tt.args.sourceViperSection, tt.args.intoCfg); (err != nil) != tt.wantErr {
+				t.Errorf("customUnmarshaller() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.result != nil {
+				assert.Equal(t, tt.result, tt.args.intoCfg)
+			}
+		})
 	}
 }
