@@ -183,6 +183,8 @@ func (p *poller) poll() {
 			bufPointer := &buffer
 			rlen, err := p.read(bufPointer)
 			if errors.As(err, &errIrrecv) {
+				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
+				// with the same address
 				p.logger.Error("irrecoverable socket read error. Exiting poller", zap.Error(err))
 				return
 			} else if errors.As(err, &errRecv) {
