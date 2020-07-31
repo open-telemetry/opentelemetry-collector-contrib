@@ -53,36 +53,45 @@ func TestDetector_Detect(t *testing.T) {
 		want    pdata.Resource
 		wantErr bool
 	}{
-		{"success", fields{provider: &mockMetadata{ec2metadata.EC2InstanceIdentityDocument{
-			Region:           "us-west-2",
-			AccountID:        "account1234",
-			AvailabilityZone: "us-west-2a",
-			InstanceID:       "i-abcd1234",
-			ImageID:          "abcdef",
-			InstanceType:     "c4.xlarge",
-		}, nil}}, args{ctx: context.Background()}, func() pdata.Resource {
-			res := pdata.NewResource()
-			res.InitEmpty()
-			attr := res.Attributes()
-			attr.InsertString("cloud.account.id", "account1234")
-			attr.InsertString("cloud.provider", "aws")
-			attr.InsertString("cloud.region", "us-west-2")
-			attr.InsertString("cloud.zone", "us-west-2a")
-			attr.InsertString("host.id", "i-abcd1234")
-			attr.InsertString("host.image.id", "abcdef")
-			attr.InsertString("host.type", "c4.xlarge")
-			return res
-		}(), false},
-		{"endpoint not available", fields{provider: &mockMetadata{
-			ret:       ec2metadata.EC2InstanceIdentityDocument{},
-			returnErr: errors.New("metadata lookup failed"),
-		}}, args{ctx: context.Background()}, func() pdata.Resource {
-			res := pdata.NewResource()
-			res.InitEmpty()
-			attr := res.Attributes()
-			attr.InsertString("cloud.provider", "aws")
-			return res
-		}(), true},
+		{
+			name: "success",
+			fields: fields{provider: &mockMetadata{ec2metadata.EC2InstanceIdentityDocument{
+				Region:           "us-west-2",
+				AccountID:        "account1234",
+				AvailabilityZone: "us-west-2a",
+				InstanceID:       "i-abcd1234",
+				ImageID:          "abcdef",
+				InstanceType:     "c4.xlarge",
+			}, nil}},
+			args: args{ctx: context.Background()},
+			want: func() pdata.Resource {
+				res := pdata.NewResource()
+				res.InitEmpty()
+				attr := res.Attributes()
+				attr.InsertString("cloud.account.id", "account1234")
+				attr.InsertString("cloud.provider", "aws")
+				attr.InsertString("cloud.region", "us-west-2")
+				attr.InsertString("cloud.zone", "us-west-2a")
+				attr.InsertString("host.id", "i-abcd1234")
+				attr.InsertString("host.image.id", "abcdef")
+				attr.InsertString("host.type", "c4.xlarge")
+				return res
+			}()},
+		{
+			name: "endpoint not available",
+			fields: fields{provider: &mockMetadata{
+				ret:       ec2metadata.EC2InstanceIdentityDocument{},
+				returnErr: errors.New("metadata lookup failed"),
+			}},
+			args: args{ctx: context.Background()},
+			want: func() pdata.Resource {
+				res := pdata.NewResource()
+				res.InitEmpty()
+				attr := res.Attributes()
+				attr.InsertString("cloud.provider", "aws")
+				return res
+			}(),
+			wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
