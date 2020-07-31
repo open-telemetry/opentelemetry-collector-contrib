@@ -2,10 +2,12 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/handler"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -15,7 +17,7 @@ import (
 
 const (
 	// this is the retry count, the total attempts would be retry count + 1 at most.
-	defaultRetryCount = 5
+	defaultRetryCount          = 5
 	ErrCodeThrottlingException = "ThrottlingException"
 )
 
@@ -35,14 +37,14 @@ type LogClient interface {
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
 type CloudWatchLogClient struct {
-	svc cloudwatchlogsiface.CloudWatchLogsAPI
+	svc    cloudwatchlogsiface.CloudWatchLogsAPI
 	logger *zap.Logger
 }
 
 //Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *CloudWatchLogClient {
 	logClient := &CloudWatchLogClient{svc: svc,
-									  logger: logger}
+		logger: logger}
 	return logClient
 }
 
@@ -165,7 +167,7 @@ func (client *CloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 		}
 	}
 	if err != nil {
-		client.logger.Error(fmt.Sprintf("E! All retries failed for PutLogEvents. Drop this request."))
+		client.logger.Error("E! All retries failed for PutLogEvents. Drop this request.")
 	}
 	return token
 }

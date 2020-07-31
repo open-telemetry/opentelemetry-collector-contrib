@@ -5,14 +5,16 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"sort"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapWithExpiry"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"go.opentelemetry.io/collector/translator/conventions"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
 )
 
 const (
@@ -25,16 +27,15 @@ const (
 	ServiceNameAndNamespace
 	ServiceNotDefined
 
-	OtlibDimensionKey = "OTLib"
-	defaultNameSpace = "default"
+	OtlibDimensionKey            = "OTLib"
+	defaultNameSpace             = "default"
 	noInstrumentationLibraryName = "Undefined"
 
 	// See: http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maximumLogEventsPerPut = 10000
 )
 
-var currentState = mapWithExpiry.NewMapWithExpiry(CleanInterval)
-
+var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
 
 type rateState struct {
 	value     interface{}
@@ -57,21 +58,21 @@ type CwMeasurement struct {
 
 // CWMetric stats defines
 type CWMetricStats struct {
-	Max 		 float64
-	Min 		 float64
-	Count    	 uint64
-	Sum			 float64
+	Max   float64
+	Min   float64
+	Count uint64
+	Sum   float64
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
 func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
-	cwMetricLists := []*CWMetrics{}
+	var cwMetricLists []*CWMetrics
 	namespace := defaultNameSpace
 	svcAttrMode := ServiceNotDefined
 
 	if !rm.Resource().IsNil() {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
-		serviceNamespace, svcNsOk:= rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
+		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 
 		if svcNameOk && serviceName.Type() == pdata.AttributeValueSTRING {
 			svcAttrMode = ServiceNameOnly
@@ -87,9 +88,9 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
 		case ServiceNameAndNamespace:
 			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
 		case ServiceNameOnly:
-			namespace = fmt.Sprintf("%s", serviceName.StringVal())
+			namespace = serviceName.StringVal()
 		case ServiceNamespaceOnly:
-			namespace = fmt.Sprintf("%s", serviceNamespace.StringVal())
+			namespace = serviceNamespace.StringVal()
 		case ServiceNotDefined:
 		default:
 		}
@@ -115,15 +116,13 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
 			if err != nil {
 				continue
 			}
-			for _, v := range cwMetricList {
-				cwMetricLists = append(cwMetricLists, v)
-			}
+			cwMetricLists = append(cwMetricLists, cwMetricList...)
 		}
 	}
 	return cwMetricLists, nil
 }
 
-func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) ([]*cloudwatchlogs.InputLogEvent) {
+func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*cloudwatchlogs.InputLogEvent {
 	// convert CWMetric into map format for compatible with PLE input
 	ples := make([]*cloudwatchlogs.InputLogEvent, 0, maximumLogEventsPerPut)
 	for _, met := range cwMetricLists {
@@ -141,7 +140,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) ([]*cloudwatchlogs.Input
 
 		LogEvent := &cloudwatchlogs.InputLogEvent{
 			Timestamp: aws.Int64(metricCreationTime),
-			Message: aws.String(string(pleMsg)),
+			Message:   aws.String(string(pleMsg)),
 		}
 		ples = append(ples, LogEvent)
 	}
@@ -256,7 +255,6 @@ func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescri
 	return cwMetric
 }
 
-
 func buildCWMetricFromIDP(metric pdata.Int64DataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
 
 	// fields contains metric and dimensions key/value pairs
@@ -325,10 +323,10 @@ func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescr
 
 	summaryValueAtPercentileSlice := metric.ValueAtPercentiles()
 	metricStats := &CWMetricStats{
-		Min: summaryValueAtPercentileSlice.At(0).Value(),
-		Max: summaryValueAtPercentileSlice.At(summaryValueAtPercentileSlice.Len() - 1).Value(),
+		Min:   summaryValueAtPercentileSlice.At(0).Value(),
+		Max:   summaryValueAtPercentileSlice.At(summaryValueAtPercentileSlice.Len() - 1).Value(),
 		Count: metric.Count(),
-		Sum: metric.Sum(),
+		Sum:   metric.Sum(),
 	}
 	fieldsPairs[mDesc.Name()] = metricStats
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
@@ -386,7 +384,8 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	bs := h.Sum(nil)
 	hashStr := string(bs)
 
-	// get previous Metric content from map
+	// get previous Metric content from map. Need to lock the map until set the new state
+	currentState.Lock()
 	if state, ok := currentState.Get(hashStr); ok {
 		prevStats := state.(*rateState)
 		deltaTime := timestamp - prevStats.timestamp
@@ -394,12 +393,12 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 		if _, ok := val.(float64); ok {
 			deltaVal = val.(float64) - prevStats.value.(float64)
 			if deltaTime > MinTimeDiff && deltaVal.(float64) >= 0 {
-				metricRate = deltaVal.(float64)*1e3 / float64(deltaTime)
+				metricRate = deltaVal.(float64) * 1e3 / float64(deltaTime)
 			}
 		} else {
 			deltaVal = val.(int64) - prevStats.value.(int64)
 			if deltaTime > MinTimeDiff && deltaVal.(int64) >= 0 {
-				metricRate = deltaVal.(int64)*1e3 / deltaTime
+				metricRate = deltaVal.(int64) * 1e3 / deltaTime
 			}
 		}
 	}
@@ -408,6 +407,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 		timestamp: timestamp,
 	}
 	currentState.Set(hashStr, content)
+	currentState.Unlock()
 	if metricRate == nil {
 		metricRate = 0
 	}

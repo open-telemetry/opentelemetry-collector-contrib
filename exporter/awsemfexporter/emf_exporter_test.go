@@ -2,6 +2,9 @@ package awsemfexporter
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -12,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
-	"testing"
-	"time"
 )
 
 func TestPushMetricsData(t *testing.T) {
@@ -100,7 +101,7 @@ func TestPushMetricsData(t *testing.T) {
 						Points: []*metricspb.Point{
 							{
 								Timestamp: &timestamp.Timestamp{
-									Seconds: 110,
+									Seconds: 101,
 								},
 								Value: &metricspb.Point_Int64Value{
 									Int64Value: 12,
@@ -115,7 +116,7 @@ func TestPushMetricsData(t *testing.T) {
 	md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{mdPrev})
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	md = pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{mdCur})
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 }

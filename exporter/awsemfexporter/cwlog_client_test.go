@@ -1,17 +1,15 @@
 package awsemfexporter
 
 import (
-"fmt"
-	"go.uber.org/zap"
+	"fmt"
 	"testing"
-"time"
 
-"github.com/aws/aws-sdk-go/aws"
-"github.com/aws/aws-sdk-go/aws/awserr"
-"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-"github.com/stretchr/testify/assert"
-"github.com/stretchr/testify/mock"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 type mockCloudWatchLogsClient struct {
@@ -138,36 +136,6 @@ func TestPutLogEvents_DataAlreadyAcceptedException(t *testing.T) {
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
 }
 
-func TestPutLogEvents_OperationAbortedException_ServiceUnavailableException_ThrottlingException_UnknownException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken}
-
-	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
-
-	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
-
-	throttlingException := awserr.New(ErrCodeThrottlingException, "", nil)
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Twice()
-
-	unknownException := awserr.New("unknownException", "", nil)
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Twice()
-
-	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
-}
-
 func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
@@ -227,43 +195,6 @@ func TestCreateStream_CreateLogStream_ResourceAlreadyExists(t *testing.T) {
 	assert.Equal(t, emptySequenceToken, token)
 }
 
-func TestCreateStream_CreateLogStream_ServiceUnavailable(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-
-	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
-		new(cloudwatchlogs.CreateLogStreamOutput), serviceUnavailableException).Times(defaultRetryCount + 1)
-
-	client := newCloudWatchLogClient(svc, logger)
-	_, err := client.CreateStream(&logGroup, &logStreamName)
-
-	svc.AssertExpectations(t)
-	assert.Equal(t, serviceUnavailableException, err)
-}
-
-func TestBackoffSleep(t *testing.T) {
-	for i := 0; i <= defaultRetryCount; i++ {
-		now := time.Now()
-		backoffSleep(i)
-		assert.True(
-			t,
-			(time.Now().Sub(now)-sleeps[i]).Seconds() < 1)
-	}
-
-	i := defaultRetryCount + 1
-	now := time.Now()
-	backoffSleep(i)
-	duration := time.Now().Sub(now)
-	assert.True(
-		t,
-		duration.Seconds() > 59)
-	assert.True(
-		t,
-		duration.Seconds() < 61)
-}
-
 type UnknownError struct {
 	otherField string
 }
@@ -285,13 +216,10 @@ func (err *UnknownError) OrigErr() error {
 }
 
 func TestLogUnknownError(t *testing.T) {
-	var err error
-	err = &UnknownError{
+	err := &UnknownError{
 		otherField: "otherFieldValue",
 	}
-	awsErr := err.(awserr.Error)
-	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", awsErr.Code(), awsErr.Message(), awsErr.OrigErr(), err)
+	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", err.Code(), err.Message(), err.OrigErr(), err)
 	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &awsemfexporter.UnknownError{otherField:\"otherFieldValue\"}"
 	assert.Equal(t, expectedLog, actualLog)
 }
-

@@ -15,17 +15,17 @@
 package awsemfexporter
 
 import (
-"errors"
-"os"
-"path"
-"strings"
-"testing"
+	"errors"
+	"os"
+	"path"
+	"strings"
+	"testing"
 
-"github.com/aws/aws-sdk-go/aws/session"
-"github.com/stretchr/testify/assert"
-"github.com/stretchr/testify/mock"
-"go.opentelemetry.io/collector/config"
-"go.uber.org/zap"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/config"
+	"go.uber.org/zap"
 )
 
 var ec2Region = "us-west-2"
@@ -111,4 +111,3 @@ func popEnv(env []string) {
 		os.Setenv(p[0], p[1])
 	}
 }
-

@@ -3,13 +3,15 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/translator"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.uber.org/zap"
 	"sync"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/translator"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -18,21 +20,19 @@ import (
 )
 
 const (
-	defaultForceFlushInterval = 60 * time.Second
+	defaultForceFlushInterval          = 60 * time.Second
 	defaultForceFlushIntervalInSeconds = 60
 )
 
 type emfExporter struct {
-
 	svcStructuredLog LogClient
-	config configmodels.Exporter
-	logger *zap.Logger
+	config           configmodels.Exporter
+	logger           *zap.Logger
 
-	pusherMapLock sync.Mutex
-	pusherWG         sync.WaitGroup
+	pusherWG           sync.WaitGroup
 	ForceFlushInterval time.Duration
-	shutdownChan chan bool
-	retryCnt int
+	shutdownChan       chan bool
+	retryCnt           int
 
 	token string
 }
@@ -57,11 +57,11 @@ func New(
 	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, session)
 
 	emfExporter := &emfExporter{
-		svcStructuredLog: svcStructuredLog,
-		config: config,
+		svcStructuredLog:   svcStructuredLog,
+		config:             config,
 		ForceFlushInterval: defaultForceFlushInterval,
-		retryCnt: *awsConfig.MaxRetries,
-		logger: logger,
+		retryCnt:           *awsConfig.MaxRetries,
+		logger:             logger,
 	}
 	if config.(*Config).ForceFlushInterval > 0 {
 		emfExporter.ForceFlushInterval = time.Duration(config.(*Config).ForceFlushInterval) * time.Second
@@ -123,8 +123,7 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-
-func generateLogEventFromMetric(metric pdata.Metrics) ([]*cloudwatchlogs.InputLogEvent) {
+func generateLogEventFromMetric(metric pdata.Metrics) []*cloudwatchlogs.InputLogEvent {
 	imd := pdatautil.MetricsToInternalMetrics(metric)
 	rms := imd.ResourceMetrics()
 	cwMetricLists := []*translator.CWMetrics{}
@@ -139,9 +138,7 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*cloudwatchlogs.InputLo
 			return nil
 		}
 		// append all datapoint metrics in the request into CWMetric list
-		for _, v := range cwm {
-			cwMetricLists = append(cwMetricLists, v)
-		}
+		cwMetricLists = append(cwMetricLists, cwm...)
 	}
 
 	return translator.TranslateCWMetricToEMF(cwMetricLists)

@@ -15,17 +15,17 @@
 package awsemfexporter
 
 import (
-"context"
-"path"
-"testing"
+	"context"
+	"path"
+	"testing"
 
-"github.com/stretchr/testify/assert"
-"github.com/stretchr/testify/require"
-"go.opentelemetry.io/collector/component"
-"go.opentelemetry.io/collector/config"
-"go.opentelemetry.io/collector/config/configcheck"
-"go.opentelemetry.io/collector/config/configmodels"
-"go.uber.org/zap"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -70,4 +70,3 @@ func TestCreateMetricsExporter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }
-

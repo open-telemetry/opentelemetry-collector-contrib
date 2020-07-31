@@ -16,11 +16,7 @@
 package awsemfexporter
 
 import (
-	"crypto/tls"
-	"net/http"
-	"net/url"
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -31,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"go.uber.org/zap"
-	"golang.org/x/net/http2"
 )
 
 type connAttr interface {
@@ -53,71 +48,11 @@ const (
 	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
 )
 
-// newHTTPClient returns new HTTP client instance with provided configuration.
-func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
-	proxyAddress string) (*http.Client, error) {
-	logger.Debug("Using proxy address: ",
-		zap.String("proxyAddr", proxyAddress),
-	)
-	tls := &tls.Config{
-		InsecureSkipVerify: false,
-	}
-
-	finalProxyAddress := getProxyAddress(proxyAddress)
-	proxyURL, err := getProxyURL(finalProxyAddress)
-	if err != nil {
-		logger.Error("unable to obtain proxy URL", zap.Error(err))
-		return nil, err
-	}
-	transport := &http.Transport{
-		MaxIdleConnsPerHost: maxIdle,
-		TLSClientConfig:     tls,
-		Proxy:               http.ProxyURL(proxyURL),
-	}
-
-	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
-	// http2.ConfigureTransport will setup transport layer to use HTTP2
-	http2.ConfigureTransport(transport)
-	http := &http.Client{
-		Transport: transport,
-		Timeout:   time.Second * time.Duration(requestTimeout),
-	}
-	return http, err
-}
-
-func getProxyAddress(proxyAddress string) string {
-	var finalProxyAddress string
-	if proxyAddress != "" {
-		finalProxyAddress = proxyAddress
-	} else if proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "" {
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
-	} else {
-		finalProxyAddress = ""
-	}
-	return finalProxyAddress
-}
-
-func getProxyURL(finalProxyAddress string) (*url.URL, error) {
-	var proxyURL *url.URL
-	var err error
-	if finalProxyAddress != "" {
-		proxyURL, err = url.Parse(finalProxyAddress)
-	} else {
-		proxyURL = nil
-		err = nil
-	}
-	return proxyURL, err
-}
-
 // GetAWSConfigSession returns AWS config and session instances.
 func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Config, *session.Session, error) {
 	var s *session.Session
 	var err error
 	var awsRegion string
-	if err != nil {
-		logger.Error("unable to obtain proxy URL", zap.Error(err))
-		return nil, nil, err
-	}
 	regionEnv := os.Getenv("AWS_REGION")
 	if cfg.Region == "" && regionEnv != "" {
 		awsRegion = regionEnv

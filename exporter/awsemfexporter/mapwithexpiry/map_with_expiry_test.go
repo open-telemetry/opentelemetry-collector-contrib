@@ -1,10 +1,11 @@
-package mapWithExpiry
+package mapwithexpiry
 
 import (
-	"github.com/docker/docker/pkg/testutil/assert"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/docker/docker/pkg/testutil/assert"
 )
 
 func TestMapWithExpiry_add(t *testing.T) {
@@ -45,21 +46,25 @@ func TestMapWithExpiry_concurrency(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		for add := 0; add < 100; add++ {
+			store.Lock()
 			v, _ := store.Get(key)
-			store.Set(key, v.(int) + 1)
+			store.Set(key, v.(int)+1)
+			store.Unlock()
 		}
 		wg.Done()
 	}()
 
 	go func() {
 		for minus := 0; minus < 100; minus++ {
+			store.Lock()
 			v, _ := store.Get(key)
-			store.Set(key, v.(int) - 1)
+			store.Set(key, v.(int)-1)
+			store.Unlock()
 		}
 		wg.Done()
 	}()
 
 	wg.Wait()
 	v, _ := store.Get(key)
-	assert.Equal(t, 0, v.(int))
+	assert.Equal(t, v.(int), 0)
 }
