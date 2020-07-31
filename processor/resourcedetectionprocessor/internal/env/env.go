@@ -27,12 +27,16 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const TypeStr = "env"
 
 // Environment variable used by "env" to decode a resource.
 const envVar = "OTEL_RESOURCE"
+
+var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 

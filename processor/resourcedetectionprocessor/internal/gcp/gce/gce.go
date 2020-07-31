@@ -22,12 +22,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (
 	TypeStr          = "gce"
 	cloudProviderGCP = "gcp"
 )
+
+var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	metadata gceMetadata

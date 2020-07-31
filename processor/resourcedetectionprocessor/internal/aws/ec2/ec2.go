@@ -19,12 +19,16 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (
 	TypeStr          = "ec2"
 	cloudProviderAWS = "aws"
 )
+
+var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
 	provider ec2MetadataProvider
