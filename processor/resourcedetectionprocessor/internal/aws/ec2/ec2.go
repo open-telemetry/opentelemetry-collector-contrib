@@ -37,14 +37,14 @@ func NewDetector() *Detector {
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	res.InitEmpty()
-	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderAWS)
 
 	meta, err := d.provider.get(ctx)
 	if err != nil {
 		return res, err
 	}
 
+	attr := res.Attributes()
+	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudZone, meta.AvailabilityZone)
