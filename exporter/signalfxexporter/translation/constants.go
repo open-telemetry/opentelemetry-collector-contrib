@@ -182,6 +182,21 @@ translation_rules:
     free: memory.free
     slab_reclaimable: memory.slab_recl
     slab_unreclaimable: memory.slab_unrecl
-    used: memory.used    
+    used: memory.used
+
+# convert filesystem metrics
+- action: split_metric
+  metric_name: system.filesystem.usage
+  dimension_key: state
+  mapping:
+    free: df_complex.free
+    reserved: df_complex.reserved
+    used: df_complex.used
+- action: split_metric
+  metric_name: system.filesystem.inodes.usage
+  dimension_key: state
+  mapping:
+    free: df_inodes.free
+    used: df_inodes.used
 `
 )
