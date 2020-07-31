@@ -29,9 +29,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
 
-const certPath = "../testdata/testcert.crt"
-const keyFile = "../testdata/testkey.key"
-const tokenPath = "../testdata/token"
+const certPath = "./testdata/testcert.crt"
+const keyFile = "./testdata/testkey.key"
+const tokenPath = "./testdata/token"
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}

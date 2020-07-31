@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	kubeletcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -51,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "1.2.3.4:5555",
 		},
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -71,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/sa",
 		},
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},
@@ -86,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 			TypeVal: "kubeletstats",
 			NameVal: "kubeletstats/metadata",
 		},
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "serviceAccount",
 			},

@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	kubeletcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -84,7 +85,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 func TestFactoryBadAuthType(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "foo",
 			},
@@ -97,7 +98,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 func TestRestClientErr(t *testing.T) {
 	f := &Factory{}
 	cfg := &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
@@ -109,7 +110,7 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},

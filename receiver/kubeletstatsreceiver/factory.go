@@ -25,6 +25,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	kubeletcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
@@ -44,7 +45,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
 		},
-		ClientConfig: kubelet.ClientConfig{
+		ClientConfig: kubeletcommon.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
@@ -90,7 +91,7 @@ func (f *Factory) CreateMetricsReceiver(
 }
 
 func (f *Factory) restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
-	clientProvider, err := kubelet.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
+	clientProvider, err := kubeletcommon.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
 	if err != nil {
 		return nil, err
 	}

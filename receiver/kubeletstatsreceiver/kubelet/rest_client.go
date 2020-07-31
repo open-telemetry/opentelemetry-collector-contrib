@@ -14,6 +14,8 @@
 
 package kubelet
 
+import kubeletcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubelet"
+
 // RestClient is swappable for testing.
 type RestClient interface {
 	StatsSummary() ([]byte, error)
@@ -25,10 +27,10 @@ type RestClient interface {
 // are excluded because they require cadvisor. The /metrics endpoint is excluded
 // because it returns Prometheus data.
 type HTTPRestClient struct {
-	client Client
+	client kubeletcommon.Client
 }
 
-func NewRestClient(client Client) *HTTPRestClient {
+func NewRestClient(client kubeletcommon.Client) *HTTPRestClient {
 	return &HTTPRestClient{client: client}
 }
 

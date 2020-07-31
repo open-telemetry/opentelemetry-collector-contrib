@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	kubeletcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/kubelet"
 )
 
 func TestRestClient(t *testing.T) {
@@ -28,7 +30,7 @@ func TestRestClient(t *testing.T) {
 	require.Equal(t, "/pods", string(resp))
 }
 
-var _ Client = (*fakeClient)(nil)
+var _ kubeletcommon.Client = (*fakeClient)(nil)
 
 type fakeClient struct{}
 
