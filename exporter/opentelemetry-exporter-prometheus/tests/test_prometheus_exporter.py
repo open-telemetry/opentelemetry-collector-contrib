@@ -32,15 +32,10 @@ class TestPrometheusMetricExporter(unittest.TestCase):
         set_meter_provider(metrics.MeterProvider())
         self._meter = get_meter_provider().get_meter(__name__)
         self._test_metric = self._meter.create_metric(
-            "testname",
-            "testdesc",
-            "unit",
-            int,
-            metrics.Counter,
-            ["environment"],
+            "testname", "testdesc", "unit", int, metrics.Counter,
         )
         labels = {"environment": "staging"}
-        self._labels_key = metrics.get_labels_as_key(labels)
+        self._labels_key = metrics.get_dict_as_key(labels)
 
         self._mock_registry_register = mock.Mock()
         self._registry_register_patch = mock.patch(
@@ -78,15 +73,10 @@ class TestPrometheusMetricExporter(unittest.TestCase):
     def test_counter_to_prometheus(self):
         meter = get_meter_provider().get_meter(__name__)
         metric = meter.create_metric(
-            "test@name",
-            "testdesc",
-            "unit",
-            int,
-            metrics.Counter,
-            ["environment@", "os"],
+            "test@name", "testdesc", "unit", int, metrics.Counter,
         )
         labels = {"environment@": "staging", "os": "Windows"}
-        key_labels = metrics.get_labels_as_key(labels)
+        key_labels = metrics.get_dict_as_key(labels)
         aggregator = SumAggregator()
         aggregator.update(123)
         aggregator.take_checkpoint()
@@ -117,7 +107,7 @@ class TestPrometheusMetricExporter(unittest.TestCase):
             "tesname", "testdesc", "unit", int, StubMetric
         )
         labels = {"environment": "staging"}
-        key_labels = metrics.get_labels_as_key(labels)
+        key_labels = metrics.get_dict_as_key(labels)
         record = MetricRecord(metric, key_labels, None)
         collector = CustomCollector("testprefix")
         collector.add_metrics_data([record])
@@ -143,15 +133,8 @@ class StubMetric(metrics.Metric):
         unit: str,
         value_type,
         meter,
-        label_keys,
         enabled: bool = True,
     ):
         super().__init__(
-            name,
-            description,
-            unit,
-            value_type,
-            meter,
-            label_keys=label_keys,
-            enabled=enabled,
+            name, description, unit, value_type, meter, enabled=enabled,
         )
