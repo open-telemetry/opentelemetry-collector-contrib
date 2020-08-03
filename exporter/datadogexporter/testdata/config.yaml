@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  datadog:
+    api_key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  datadog/2:
+    api_key: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    site: datadoghq.eu
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog, datadog/2]

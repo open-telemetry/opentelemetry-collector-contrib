@@ -1,0 +1,33 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  datadog:
+    ## @param api_key - string - required
+    ## The Datadog API key to associate your Agent's data with your organization.
+    ## Create a new API key here: https://app.datadoghq.com/account/settings
+    #
+    api_key: ""
+
+    ## @param site - string - optional - default: datadoghq.com
+    ## The site of the Datadog intake to send Agent data to.
+    ## Set to 'datadoghq.eu' to send data to the EU site.
+    #
+    # site: datadoghq.com
+
+    ## @param metrics_url - string - optional - default: https://api.datadoghq.com
+    ## The host of the Datadog intake server to send metrics to, only set this option
+    ## if you need the Agent to send metrics to a custom URL, it overrides the site
+    ## setting defined in "site".
+    #
+    # metrics_url: https://api.datadoghq.com
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog]
