@@ -45,6 +45,8 @@ translation_rules:
     k8s.replicationcontroller.uid: kubernetes_uid
     k8s.resourcequota.name: quota_name
     k8s.resourcequota.uid: kubernetes_uid
+    k8s.statefulset.name: kubernetes_name
+    k8s.statefulset.uid: kubernetes_uid
 
     # properties
     cronjob_uid: cronJob_uid
@@ -55,6 +57,8 @@ translation_rules:
     k8s.workload.name: kubernetes_workload_name
     replicaset_uid: replicaSet_uid
     replicaset: replicaSet
+    statefulset_uid: statefulSet_uid
+    statefulset: statefulSet
 
 - action: rename_metrics
   mapping:
