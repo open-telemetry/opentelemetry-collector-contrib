@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/otel v0.9.0
 	go.uber.org/zap v1.15.0
 	google.golang.org/api v0.29.0
-	google.golang.org/genproto v0.0.0-20200715011427-11fb19a81f2c
-	google.golang.org/grpc v1.30.0
+	google.golang.org/genproto v0.0.0-20200624020401-64a14ca9d1ad
+	google.golang.org/grpc v1.31.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )

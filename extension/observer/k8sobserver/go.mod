@@ -4,14 +4,14 @@ go 1.14
 
 require (
 	github.com/Azure/go-autorest/autorest/adal v0.9.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.7.0
 	go.uber.org/zap v1.15.0
-	k8s.io/api v0.18.3
-	k8s.io/apimachinery v0.18.3
-	k8s.io/client-go v0.18.3
+	k8s.io/api v0.18.6
+	k8s.io/apimachinery v0.18.6
+	k8s.io/client-go v0.18.6
 	k8s.io/utils v0.0.0-20200724153422-f32512634ab7
 )
 
