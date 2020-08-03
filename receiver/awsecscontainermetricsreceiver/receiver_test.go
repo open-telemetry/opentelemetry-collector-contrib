@@ -20,29 +20,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-<<<<<<< HEAD
 	"go.opentelemetry.io/collector/exporter/exportertest"
-=======
-	"go.opentelemetry.io/collector/testbed/testbed"
->>>>>>> Add skeleton for AWS ECS container metrics receiver
 	"go.uber.org/zap"
 )
 
 func TestReceiver(t *testing.T) {
-<<<<<<< HEAD
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
 		zap.NewNop(),
 		cfg,
 		exportertest.NewNopMetricsExporter(),
-=======
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-	metricsReceiver, err := New(
-		zap.NewNop(),
-		cfg,
-		&testbed.MockMetricConsumer{},
->>>>>>> Add skeleton for AWS ECS container metrics receiver
 	)
 
 	require.NoError(t, err)
@@ -57,7 +44,6 @@ func TestReceiver(t *testing.T) {
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
 }
-<<<<<<< HEAD
 
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
@@ -76,5 +62,3 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
 }
-=======
->>>>>>> Add skeleton for AWS ECS container metrics receiver

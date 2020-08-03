@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -85,6 +86,23 @@ func (f *Factory) CreateMetricsReceiver(
 	cfg configmodels.Receiver,
 	nextConsumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
+	rest, err := f.restClient(logger, "https://jsonplaceholder.typicode.com/todos/1")
+	if err != nil {
+		return nil, err
+	}
 	rCfg := cfg.(*Config)
-	return New(logger, rCfg, nextConsumer)
+	return New(logger, rCfg, nextConsumer, rest)
+}
+
+func (f *Factory) restClient(logger *zap.Logger, endpoint string) (awsecscontainermetrics.RestClient, error) {
+	clientProvider, err := awsecscontainermetrics.NewClientProvider(endpoint, logger)
+	if err != nil {
+		return nil, err
+	}
+	client, err := clientProvider.BuildClient()
+	if err != nil {
+		return nil, err
+	}
+	rest := awsecscontainermetrics.NewRestClient(client)
+	return rest, nil
 }

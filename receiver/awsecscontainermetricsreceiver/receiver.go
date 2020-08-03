@@ -36,13 +36,16 @@ type awsEcsContainerMetricsReceiver struct {
 	nextConsumer consumer.MetricsConsumerOld
 	config       *Config
 	cancel       context.CancelFunc
+	restClient   awsecscontainermetrics.RestClient
+	provider     *awsecscontainermetrics.StatsProvider
 }
 
 // New creates the aws ecs container metrics receiver with the given parameters.
 func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumerOld,
+	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -51,6 +54,7 @@ func New(
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
+		restClient:   rest,
 	}
 	return r, nil
 }
@@ -65,7 +69,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(ctx)
+				aecmr.collectDataFromEndpoint(ctx, typeStr)
 			case <-ctx.Done():
 				return
 			}
@@ -82,8 +86,20 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
 // TODO: Replace with acutal logic.
-func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
-	md := awsecscontainermetrics.GenerateDummyMetrics()
+func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
+	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
+	stats, err := aecmr.provider.TaskStats()
+	if err != nil {
+		aecmr.logger.Error("TaskStats failed", zap.Error(err))
+		return nil
+	}
+	mds := awsecscontainermetrics.MetricsData(stats, typeStr)
+	for _, md := range mds {
+		err := aecmr.nextConsumer.ConsumeMetricsData(ctx, *md)
+		if err != nil {
+			return err
+		}
+	}
 
 	err := aecmr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
 	return err
