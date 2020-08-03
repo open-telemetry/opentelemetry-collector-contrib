@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/go-redis/redis/v7 v7.2.0
+	github.com/go-redis/redis/v7 v7.4.0
 	github.com/golang/protobuf v1.4.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0
 	github.com/stretchr/testify v1.6.1
