@@ -32,11 +32,11 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_AGENT_URL = "http://localhost:8126"
 _INSTRUMENTATION_SPAN_TYPES = {
-    "opentelemetry.ext.aiohttp-client": DatadogSpanTypes.HTTP,
-    "opentelemetry.ext.asgi": DatadogSpanTypes.WEB,
+    "opentelemetry.instrumentation.aiohttp-client": DatadogSpanTypes.HTTP,
+    "opentelemetry.instrumentation.asgi": DatadogSpanTypes.WEB,
     "opentelemetry.ext.dbapi": DatadogSpanTypes.SQL,
-    "opentelemetry.ext.django": DatadogSpanTypes.WEB,
-    "opentelemetry.ext.flask": DatadogSpanTypes.WEB,
+    "opentelemetry.instrumentation.django": DatadogSpanTypes.WEB,
+    "opentelemetry.instrumentation.flask": DatadogSpanTypes.WEB,
     "opentelemetry.ext.grpc": DatadogSpanTypes.GRPC,
     "opentelemetry.ext.jinja2": DatadogSpanTypes.TEMPLATE,
     "opentelemetry.ext.mysql": DatadogSpanTypes.SQL,
@@ -45,9 +45,9 @@ _INSTRUMENTATION_SPAN_TYPES = {
     "opentelemetry.ext.pymongo": DatadogSpanTypes.MONGODB,
     "opentelemetry.ext.pymysql": DatadogSpanTypes.SQL,
     "opentelemetry.ext.redis": DatadogSpanTypes.REDIS,
-    "opentelemetry.ext.requests": DatadogSpanTypes.HTTP,
+    "opentelemetry.instrumentation.requests": DatadogSpanTypes.HTTP,
     "opentelemetry.ext.sqlalchemy": DatadogSpanTypes.SQL,
-    "opentelemetry.ext.wsgi": DatadogSpanTypes.WEB,
+    "opentelemetry.instrumentation.wsgi": DatadogSpanTypes.WEB,
 }
 
 

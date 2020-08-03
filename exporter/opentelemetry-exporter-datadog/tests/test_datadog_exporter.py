@@ -290,10 +290,10 @@ class TestDatadogSpanExporter(unittest.TestCase):
 
     def test_span_types(self):
         test_instrumentations = [
-            "opentelemetry.ext.aiohttp-client",
+            "opentelemetry.instrumentation.aiohttp-client",
             "opentelemetry.ext.dbapi",
-            "opentelemetry.ext.django",
-            "opentelemetry.ext.flask",
+            "opentelemetry.instrumentation.django",
+            "opentelemetry.instrumentation.flask",
             "opentelemetry.ext.grpc",
             "opentelemetry.ext.jinja2",
             "opentelemetry.ext.mysql",
@@ -301,9 +301,9 @@ class TestDatadogSpanExporter(unittest.TestCase):
             "opentelemetry.ext.pymongo",
             "opentelemetry.ext.pymysql",
             "opentelemetry.ext.redis",
-            "opentelemetry.ext.requests",
+            "opentelemetry.instrumentation.requests",
             "opentelemetry.ext.sqlalchemy",
-            "opentelemetry.ext.wsgi",
+            "opentelemetry.instrumentation.wsgi",
         ]
 
         for index, instrumentation in enumerate(test_instrumentations):
