@@ -678,8 +678,6 @@ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20200310182322-a
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/lightstep/lightstep-tracer-go v0.20.0 h1:Kwc+Vt7N2mxTyEdLuARDfx1nUAwHILcg1s8jBAxqSIg=
 github.com/lightstep/lightstep-tracer-go v0.20.0/go.mod h1:RnONwHKg89zYPmF+Uig5PpHMUcYCFgml8+r4SS53y7A=
-github.com/lightstep/opentelemetry-exporter-go v0.6.2 h1:8YBLHRyWbGieOGID1exBVWuBrzhA7mIZwdBgQh0fy5s=
-github.com/lightstep/opentelemetry-exporter-go v0.6.2/go.mod h1:rCCaopaotNNd3qCZ3a4lSNmEge6wRghqIyy6uhJlZlY=
 github.com/lightstep/opentelemetry-exporter-go v0.6.3 h1:NiovHfvq+X18LZL6A4mfxUyb6UhygmYLGtmCAya3BIk=
 github.com/lightstep/opentelemetry-exporter-go v0.6.3/go.mod h1:rCCaopaotNNd3qCZ3a4lSNmEge6wRghqIyy6uhJlZlY=
 github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
