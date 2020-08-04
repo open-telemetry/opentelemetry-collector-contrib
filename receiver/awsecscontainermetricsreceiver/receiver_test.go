@@ -16,10 +16,12 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
@@ -44,4 +46,40 @@ func TestReceiver(t *testing.T) {
 
 	err = r.Shutdown(ctx)
 	require.NoError(t, err)
+}
+
+func TestCollectDataFromEndpoint(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		&fakeConsumer{},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx)
+	require.NoError(t, err)
+
+}
+
+type fakeConsumer struct {
+	fail bool
+	mds  []consumerdata.MetricsData
+}
+
+func (c *fakeConsumer) ConsumeMetricsData(
+	ctx context.Context,
+	md consumerdata.MetricsData,
+) error {
+	if c.fail {
+		return errors.New("")
+	}
+	c.mds = append(c.mds, md)
+	return nil
 }
