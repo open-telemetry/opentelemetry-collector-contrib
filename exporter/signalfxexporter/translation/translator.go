@@ -90,7 +90,13 @@ const (
 	//   machine_cpu_cores{host="host2"} 1
 	ActionAggregateMetric Action = "aggregate_metric"
 
-	ActionDivideMetrics Action = "divide_metrics"
+	ActionCalculateNewMetric Action = "calculate_new_metric"
+)
+
+type MetricOperator string
+
+const (
+	MetricOperatorDivision MetricOperator = "/"
 )
 
 // MetricValueType is the enum to capture valid metric value types that can be converted
@@ -153,6 +159,10 @@ type Rule struct {
 	// that will be used to aggregate the metric across.
 	// Datapoints that don't have all the dimensions will be dropped.
 	Dimensions []string `mapstructure:"dimensions"`
+
+	Operand1Metric string         `mapstructure:"operand1_metric"`
+	Operand2Metric string         `mapstructure:"operand2_metric"`
+	Operator       MetricOperator `mapstructure:"operator"`
 }
 
 type MetricTranslator struct {
@@ -240,12 +250,13 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
-		case ActionDivideMetrics:
-			if len(tr.Mapping) != 1 {
-				return fmt.Errorf("one mapping is required for %q, found %d", tr.Action, len(tr.Mapping))
+		case ActionCalculateNewMetric:
+			if tr.MetricName == "" || tr.Operand1Metric == "" || tr.Operand2Metric == "" || tr.Operator == "" {
+				return fmt.Errorf(`fields "metric_name", "operand1_metric", "operand2_metric", and "operator" are `+
+					"required for %q translation rule", tr.Action)
 			}
-			if tr.MetricName == "" {
-				return fmt.Errorf("field \"metric_name\" is required for %q translation rule", tr.Action)
+			if tr.Operator != MetricOperatorDivision {
+				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
 			}
 
 		default:
@@ -336,46 +347,53 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					convertMetricValue(logger, dp, newType)
 				}
 			}
-		case ActionDivideMetrics:
-			var numerator, denominator *sfxpb.DataPoint
+		case ActionCalculateNewMetric:
+			var operand1, operand2 *sfxpb.DataPoint
 			for _, dp := range processedDataPoints {
-				// there should only be one entry in tr.Mapping
-				for nName, dName := range tr.Mapping {
-					if dp.Metric == nName {
-						numerator = dp
-					} else if dp.Metric == dName {
-						denominator = dp
-					}
+				if dp.Metric == tr.Operand1Metric {
+					operand1 = dp
+				} else if dp.Metric == tr.Operand2Metric {
+					operand2 = dp
 				}
 			}
 
-			if numerator == nil {
-				logger.Warn("divideMetrics: numerator == nil")
+			if operand1 == nil {
+				logger.Warn("calculate_new_metric: operand1 == nil")
 				continue
 			}
-			if numerator.Value.IntValue == nil {
-				logger.Warn("divideMetrics: numerator.Value.IntValue == nil")
-				continue
-			}
-
-			if denominator == nil {
-				logger.Warn("divideMetrics: denominator == nil")
-				continue
-			}
-			if denominator.Value.IntValue == nil {
-				logger.Warn("divideMetrics: denominator.Value.IntValue == nil")
-				continue
-			}
-			if *denominator.Value.IntValue == 0 {
-				logger.Warn("divideMetrics: *denominator.Value.IntValue == 0")
+			if operand1.Value.IntValue == nil {
+				logger.Warn("calculate_new_metric: operand1.Value.IntValue == nil")
 				continue
 			}
 
-			qpt := proto.Clone(numerator).(*sfxpb.DataPoint)
-			qpt.Metric = tr.MetricName
-			quotient := float64(*numerator.Value.IntValue) / float64(*denominator.Value.IntValue)
-			qpt.Value = sfxpb.Datum{DoubleValue: &quotient}
-			processedDataPoints = append(processedDataPoints, qpt)
+			if operand2 == nil {
+				logger.Warn("calculate_new_metric: operand2 == nil")
+				continue
+			}
+			if operand2.Value.IntValue == nil {
+				logger.Warn("calculate_new_metric: operand2.Value.IntValue == nil")
+				continue
+			}
+
+			if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+				logger.Warn("tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0")
+				continue
+			}
+
+			newPt := proto.Clone(operand1).(*sfxpb.DataPoint)
+			newPt.Metric = tr.MetricName
+			var newPtVal float64
+			switch tr.Operator {
+			// only supporting divide operator for now
+			case MetricOperatorDivision:
+				// only supporting int values for now
+				newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+			default:
+				logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
+				continue
+			}
+			newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
+			processedDataPoints = append(processedDataPoints, newPt)
 
 		case ActionAggregateMetric:
 			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint

@@ -369,38 +369,74 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "invalid \"aggregation_method\": \"invalid\" provided for \"aggregate_metric\" translation rule",
 		},
 		{
-			name: "divide_metrics_valid",
+			name: "calculate_new_metric_valid",
 			trs: []Rule{
 				{
-					Action:     ActionDivideMetrics,
-					MetricName: "metric",
-					Mapping:    map[string]string{"metric0": "metric1"},
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
 				},
 			},
 			wantDimensionsMap: nil,
 			wantError:         "",
 		},
 		{
-			name: "divide_metrics_invalid_missing_mapping",
-			trs: []Rule{
-				{
-					Action:     ActionDivideMetrics,
-					MetricName: "metric",
-				},
-			},
-			wantDimensionsMap: nil,
-			wantError:         "one mapping is required for \"divide_metrics\", found 0",
-		},
-		{
 			name: "divide_metrics_invalid_missing_metric_name",
 			trs: []Rule{
 				{
-					Action:  ActionDivideMetrics,
-					Mapping: map[string]string{"metric0": "metric1"},
+					Action:         ActionCalculateNewMetric,
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
 				},
 			},
 			wantDimensionsMap: nil,
-			wantError:         "field \"metric_name\" is required for \"divide_metrics\" translation rule",
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "divide_metrics_invalid_missing_op_1",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "divide_metrics_invalid_missing_op_2",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "calculate_new_metric_missing_operator",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
 		},
 	}
 
@@ -1371,9 +1407,11 @@ func TestTranslateDataPoints(t *testing.T) {
 		}, {
 			name: "divide_metrics",
 			trs: []Rule{{
-				Action:     ActionDivideMetrics,
-				MetricName: "new_metric",
-				Mapping:    map[string]string{"metric0": "metric1"},
+				Action:         ActionCalculateNewMetric,
+				MetricName:     "new_metric",
+				Operand1Metric: "metric0",
+				Operand2Metric: "metric1",
+				Operator:       MetricOperatorDivision,
 			}},
 			dps: []*sfxpb.DataPoint{
 				{

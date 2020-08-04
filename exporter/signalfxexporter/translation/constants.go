@@ -223,9 +223,10 @@ translation_rules:
     used: memory.used
 
 # memory utilization
-- action: divide_metrics
+- action: calculate_new_metric
   metric_name: memory.utilization
-  mapping:
-    memory.used: memory.total
+  operand1_metric: memory.used
+  operand2_metric: memory.total
+  operator: /
 `
 )
