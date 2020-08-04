@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.14
 
 require (
-	github.com/aws/aws-sdk-go v1.33.4
+	github.com/aws/aws-sdk-go v1.33.17
 	github.com/census-instrumentation/opencensus-proto v0.2.1
 	github.com/docker/docker v1.13.1
 	github.com/golang/protobuf v1.3.5

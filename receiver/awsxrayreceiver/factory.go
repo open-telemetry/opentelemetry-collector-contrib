@@ -46,11 +46,14 @@ func createDefaultConfig() configmodels.Receiver {
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
 			// the default in OT is 0.0.0.0.
 		},
-		TCPAddr: confignet.TCPAddr{
-			Endpoint: "0.0.0.0:2000",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "0.0.0.0:2000",
+			Transport: "udp",
 		},
 		ProxyServer: &proxyServer{
-			TCPEndpoint:  "0.0.0.0:2000",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "0.0.0.0:2000",
+			},
 			ProxyAddress: "",
 			TLSSetting: configtls.TLSClientSetting{
 				Insecure:   false,

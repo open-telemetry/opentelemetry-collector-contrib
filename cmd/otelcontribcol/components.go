@@ -17,7 +17,6 @@ package main
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -32,9 +31,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
@@ -51,15 +52,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 )
 
-func components() (config.Factories, error) {
-	errs := []error{}
+func components() (component.Factories, error) {
+	var errs []error
 	factories, err := defaultcomponents.Components()
 	if err != nil {
-		return config.Factories{}, err
+		return component.Factories{}, err
 	}
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
+		&hostobserver.Factory{},
 	}
 
 	for _, ext := range factories.Extensions {
@@ -95,18 +97,19 @@ func components() (config.Factories, error) {
 		&stackdriverexporter.Factory{},
 		&azuremonitorexporter.Factory{},
 		&signalfxexporter.Factory{},
-		&sapmexporter.Factory{},
-		&kinesisexporter.Factory{},
-		&awsxrayexporter.Factory{},
+		sapmexporter.NewFactory(),
+		kinesisexporter.NewFactory(),
+		awsxrayexporter.NewFactory(),
 		&carbonexporter.Factory{},
 		&honeycombexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
 		&newrelicexporter.Factory{},
 		&splunkhecexporter.Factory{},
-		&elasticexporter.Factory{},
+		elasticexporter.NewFactory(),
 		&alibabacloudlogserviceexporter.Factory{},
 		&awsemfexporter.Factory{},
+		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
 		exporters = append(exporters, exp)

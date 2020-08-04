@@ -32,13 +32,13 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -79,7 +79,9 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "happy_path",
 			args: args{
 				config: Config{
-					Endpoint: "localhost:1234",
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: "localhost:1234",
+					},
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
@@ -99,7 +101,8 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
+	port := testutil.GetAvailablePort(t)
+	addr := fmt.Sprintf("localhost:%d", port)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(exportertest.SinkMetricsExporterOld)
@@ -138,6 +141,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, testutil.WaitForPort(t, port))
 	defer exp.Shutdown(context.Background())
 	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
 	// Description, unit and start time are expected to be dropped during conversions.
@@ -242,7 +246,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/x-protobuf")
@@ -256,7 +260,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "msg_accepted_gzipped",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 
 				var buf bytes.Buffer
@@ -278,7 +282,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		{
 			name: "bad_gzipped_msg",
 			req: func() *http.Request {
-				msgBytes, err := proto.Marshal(sFxMsg)
+				msgBytes, err := sFxMsg.Marshal()
 				require.NoError(t, err)
 
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
@@ -319,9 +323,11 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.TLSCredentials = &configtls.TLSSetting{
-		CertFile: "./testdata/testcert.crt",
-		KeyFile:  "./testdata/testkey.key",
+	cfg.HTTPServerSettings.TLSSetting = &configtls.TLSServerSetting{
+		TLSSetting: configtls.TLSSetting{
+			CertFile: "./testdata/testcert.crt",
+			KeyFile:  "./testdata/testkey.key",
+		},
 	}
 	sink := new(exportertest.SinkMetricsExporterOld)
 	r, err := New(zap.NewNop(), *cfg, sink)
@@ -381,7 +387,8 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	t.Log("Sending SignalFx metric data Request")
 
-	body, err := proto.Marshal(buildSFxMsg(msec, 13, 3))
+	sfxMsg := buildSFxMsg(msec, 13, 3)
+	body, err := sfxMsg.Marshal()
 	require.NoError(t, err, fmt.Sprintf("failed to marshal SFx message: %v", err))
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
@@ -453,7 +460,7 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 
 			currentTime := time.Now().Unix() * 1e3
 			sFxMsg := buildSFxMsg(currentTime, 13, 3)
-			msgBytes, _ := proto.Marshal(sFxMsg)
+			msgBytes, _ := sFxMsg.Marshal()
 			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 			req.Header.Set("Content-Type", "application/x-protobuf")
 			if tt.token != "" {

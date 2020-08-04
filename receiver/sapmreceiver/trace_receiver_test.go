@@ -27,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
@@ -37,6 +36,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -143,7 +143,7 @@ func grpcFixture(t1 time.Time, d1, d2 time.Duration) *model.Batch {
 // sendSapm acts as a client for sending sapm to the receiver.  This could be replaced with a sapm exporter in the future.
 func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, tlsEnabled bool, token string) (*http.Response, error) {
 	// marshal the sapm
-	reqBytes, err := proto.Marshal(sapm)
+	reqBytes, err := sapm.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal sapm %v", err.Error())
 	}
@@ -253,7 +253,9 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					Endpoint: defaultEndpoint,
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: defaultEndpoint,
+					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: false,
@@ -265,7 +267,9 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					Endpoint: defaultEndpoint,
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: defaultEndpoint,
+					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
 				zipped: true,
@@ -277,10 +281,14 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS compressed sapm",
 			args: args{
 				config: &Config{
-					Endpoint: tlsAddress,
-					TLSCredentials: &configtls.TLSSetting{
-						CertFile: ("./testdata/testcert.crt"),
-						KeyFile:  ("./testdata/testkey.key"),
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: tlsAddress,
+						TLSSetting: &configtls.TLSServerSetting{
+							TLSSetting: configtls.TLSSetting{
+								CertFile: "./testdata/testcert.crt",
+								KeyFile:  "./testdata/testkey.key",
+							},
+						},
 					},
 				},
 				sapm:   &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now, time.Minute*10, time.Second*2)}},
@@ -345,7 +353,9 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				Endpoint: defaultEndpoint,
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: defaultEndpoint,
+				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},

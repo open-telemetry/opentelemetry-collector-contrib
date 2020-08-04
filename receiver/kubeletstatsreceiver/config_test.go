@@ -20,9 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -30,11 +31,11 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
 	factory := &Factory{}
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 	require.NoError(t, err)
@@ -78,4 +79,19 @@ func TestLoadConfig(t *testing.T) {
 		},
 		CollectionInterval: duration,
 	}, saCfg)
+
+	metadataCfg := cfg.Receivers["kubeletstats/metadata"].(*Config)
+	require.Equal(t, &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/metadata",
+		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "serviceAccount",
+			},
+		},
+		CollectionInterval:  duration,
+		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+	}, metadataCfg)
 }

@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -29,7 +28,7 @@ import (
 var _ component.MetricsReceiver = (*receiver)(nil)
 
 type receiver struct {
-	cfg      configmodels.Receiver
+	cfg      *Config
 	logger   *zap.Logger
 	consumer consumer.MetricsConsumerOld
 	runner   *interval.Runner
@@ -38,10 +37,8 @@ type receiver struct {
 
 // Creates and starts the kubelet stats runnable.
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	runnable := newRunnable(ctx, r.cfg.Name(), r.consumer, r.rest, r.logger)
-
-	cfg := r.cfg.(*Config)
-	r.runner = interval.NewRunner(cfg.CollectionInterval, runnable)
+	runnable := newRunnable(ctx, r.cfg.Name(), r.consumer, r.rest, r.cfg.ExtraMetadataLabels, r.logger)
+	r.runner = interval.NewRunner(r.cfg.CollectionInterval, runnable)
 
 	go func() {
 		if err := r.runner.Start(); err != nil {

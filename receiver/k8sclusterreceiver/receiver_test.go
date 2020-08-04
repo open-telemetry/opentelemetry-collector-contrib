@@ -127,7 +127,7 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) {
 				Namespace: "test",
 			},
 		}
-		_, err := client.CoreV1().Pods(p.Namespace).Create(p)
+		_, err := client.CoreV1().Pods(p.Namespace).Create(context.Background(), p, v1.CreateOptions{})
 
 		if err != nil {
 			t.Errorf("error creating pod: %v", err)
@@ -140,7 +140,7 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) {
 
 func deletePods(t *testing.T, client *fake.Clientset, numPods int) {
 	for i := 0; i < numPods; i++ {
-		err := client.CoreV1().Pods("test").Delete(strconv.Itoa(i), &v1.DeleteOptions{})
+		err := client.CoreV1().Pods("test").Delete(context.Background(), strconv.Itoa(i), v1.DeleteOptions{})
 
 		if err != nil {
 			t.Errorf("error deleting pod: %v", err)
@@ -159,7 +159,7 @@ func createNodes(t *testing.T, client *fake.Clientset, numNodes int) {
 				Name: strconv.Itoa(i),
 			},
 		}
-		_, err := client.CoreV1().Nodes().Create(n)
+		_, err := client.CoreV1().Nodes().Create(context.Background(), n, v1.CreateOptions{})
 
 		if err != nil {
 			t.Errorf("error creating node: %v", err)

@@ -16,11 +16,15 @@ package kubelet
 
 import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.uber.org/zap"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func MetricsData(summary *stats.Summary, typeStr string) []*consumerdata.MetricsData {
-	acc := &metricDataAccumulator{}
+func MetricsData(logger *zap.Logger, summary *stats.Summary, metadata Metadata, typeStr string) []*consumerdata.MetricsData {
+	acc := &metricDataAccumulator{
+		metadata: metadata,
+		logger:   logger,
+	}
 	acc.nodeStats(summary.Node)
 	for _, podStats := range summary.Pods {
 		// propagate the pod resource down to the container

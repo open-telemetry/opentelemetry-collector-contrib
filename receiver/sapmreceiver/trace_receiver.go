@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
@@ -72,7 +71,7 @@ func (sr *sapmReceiver) handleRequest(ctx context.Context, req *http.Request) er
 	}
 
 	transport := "http"
-	if sr.config.TLSCredentials != nil {
+	if sr.config.TLSSetting != nil {
 		transport = "https"
 	}
 	ctx = obsreport.ReceiverContext(ctx, sr.config.Name(), transport, "")
@@ -174,9 +173,9 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 		var ln net.Listener
 
 		// set up the listener
-		ln, err = net.Listen("tcp", sr.config.Endpoint)
+		ln, err = sr.config.HTTPServerSettings.ToListener()
 		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %v", sr.config.Endpoint, err)
+			err = fmt.Errorf("failed to bind to address %s: %w", sr.config.Endpoint, err)
 			return
 		}
 
@@ -185,14 +184,12 @@ func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
 		nr.HandleFunc(sapmprotocol.TraceEndpointV2, sr.HTTPHandlerFunc)
 
 		// create a server with the handler
-		sr.server = &http.Server{Handler: nr}
+		sr.server = sr.config.HTTPServerSettings.ToServer(nr)
 
 		// run the server on a routine
 		go func() {
-			if sr.config.TLSCredentials != nil {
-				host.ReportFatalError(sr.server.ServeTLS(ln, sr.config.TLSCredentials.CertFile, sr.config.TLSCredentials.KeyFile))
-			} else {
-				host.ReportFatalError(sr.server.Serve(ln))
+			if errHTTP := sr.server.Serve(ln); errHTTP != nil {
+				host.ReportFatalError(errHTTP)
 			}
 		}()
 	})
@@ -226,7 +223,8 @@ func New(
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// build the response message
-	defaultResponse, err := proto.Marshal(&splunksapm.PostSpansResponse{})
+	defaultResponse := &splunksapm.PostSpansResponse{}
+	defaultResponseBytes, err := defaultResponse.Marshal()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal default response body for %s receiver: %v", config.Name(), err)
 	}
@@ -234,6 +232,6 @@ func New(
 		logger:          params.Logger,
 		config:          config,
 		nextConsumer:    nextConsumer,
-		defaultResponse: defaultResponse,
+		defaultResponse: defaultResponseBytes,
 	}, nil
 }
