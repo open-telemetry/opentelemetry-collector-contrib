@@ -32,6 +32,7 @@ const (
 )
 
 func (acc *metricDataAccumulator) taskStats(containerStatsMap map[string]ContainerStats) {
+
 	for _, value := range containerStatsMap {
 		acc.accumulate(
 			timestampProto(time.Now()),
@@ -39,6 +40,7 @@ func (acc *metricDataAccumulator) taskStats(containerStatsMap map[string]Contain
 			memMetrics(prefix, &value.Memory),
 			networkRateMetrics(prefix, &value.NetworkRate),
 			diskMetrics(prefix, &value.Disk),
+			networkMetrics(prefix, value.Network),
 		)
 	}
 

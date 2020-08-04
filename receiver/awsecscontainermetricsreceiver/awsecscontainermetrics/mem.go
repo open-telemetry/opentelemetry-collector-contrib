@@ -20,11 +20,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func memMetrics(prefix string, s *MemoryStats) []*metricspb.Metric {
+func memMetrics(prefix string, stats *MemoryStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		memUsageMetric(prefix, s),
-		memMaxUsageMetric(prefix, s),
-		memLimitMetric(prefix, s),
+		memUsageMetric(prefix, stats),
+		memMaxUsageMetric(prefix, stats),
+		memLimitMetric(prefix, stats),
 	}, time.Now())
 }
 

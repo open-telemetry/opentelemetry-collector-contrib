@@ -135,6 +135,16 @@
           "tx_packets": 0,
           "tx_errors": 0,
           "tx_dropped": 0
+        },
+        "eth1": {
+          "rx_bytes": 100,
+          "rx_packets": 100,
+          "rx_errors": 0,
+          "rx_dropped": 0,
+          "tx_bytes": 0,
+          "tx_packets": 0,
+          "tx_errors": 0,
+          "tx_dropped": 0
         }
       },
       "network_rate_stats": {

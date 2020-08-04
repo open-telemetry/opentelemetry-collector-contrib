@@ -18,9 +18,10 @@ type ContainerStats struct {
 	Name string `json:"name"`
 	Id   string `json:"id"`
 
-	Memory      MemoryStats      `json:"memory_stats,omitempty"`
-	NetworkRate NetworkRateStats `json:"network_rate_stats,omitempty"`
-	Disk        DiskStats        `json:"blkio_stats,omitempty"`
+	Memory      MemoryStats             `json:"memory_stats,omitempty"`
+	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
+	Disk        DiskStats               `json:"blkio_stats,omitempty"`
+	Network     map[string]NetworkStats `json:"networks,omitempty"`
 }
 
 type MemoryStats struct {
@@ -48,4 +49,15 @@ type IoServiceBytesRecursive struct {
 	Minor *uint64 `json:"minor,omitempty"`
 	Op    string  `json:"op,omitempty"`
 	Value *uint64 `json:"value,omitempty"`
+}
+
+type NetworkStats struct {
+	RxBytes   *float64 `json:"rx_bytes,omitempty"`
+	RxPackets *float64 `json:"rx_packets,omitempty"`
+	RxErrors  *float64 `json:"rx_errors,omitempty"`
+	RxDropped *float64 `json:"rx_dropped,omitempty"`
+	TxBytes   *float64 `json:"tx_bytes,omitempty"`
+	TxPackets *float64 `json:"tx_packets,omitempty"`
+	TxErrors  *float64 `json:"tx_errors,omitempty"`
+	TxDropped *float64 `json:"tx_dropped,omitempty"`
 }

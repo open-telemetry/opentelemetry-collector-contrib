@@ -20,11 +20,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func diskMetrics(prefix string, s *DiskStats) []*metricspb.Metric {
+func diskMetrics(prefix string, stats *DiskStats) []*metricspb.Metric {
 	var readBytes *uint64
 	var writeBytes *uint64
 
-	for _, blockStat := range s.IoServiceBytesRecursives {
+	for _, blockStat := range stats.IoServiceBytesRecursives {
 		switch op := blockStat.Op; op {
 		case "Read":
 			readBytes = blockStat.Value

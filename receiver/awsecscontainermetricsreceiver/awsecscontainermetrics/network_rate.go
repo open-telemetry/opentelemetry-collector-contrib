@@ -20,10 +20,10 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func networkRateMetrics(prefix string, s *NetworkRateStats) []*metricspb.Metric {
+func networkRateMetrics(prefix string, stats *NetworkRateStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		rxBytesPerSecond(prefix, s),
-		txBytesPerSecond(prefix, s),
+		rxBytesPerSecond(prefix, stats),
+		txBytesPerSecond(prefix, stats),
 	}, time.Now())
 }
 
