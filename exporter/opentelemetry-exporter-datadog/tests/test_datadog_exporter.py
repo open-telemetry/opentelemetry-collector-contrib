@@ -291,18 +291,18 @@ class TestDatadogSpanExporter(unittest.TestCase):
     def test_span_types(self):
         test_instrumentations = [
             "opentelemetry.instrumentation.aiohttp-client",
-            "opentelemetry.ext.dbapi",
+            "opentelemetry.instrumentation.dbapi",
             "opentelemetry.instrumentation.django",
             "opentelemetry.instrumentation.flask",
             "opentelemetry.ext.grpc",
             "opentelemetry.ext.jinja2",
-            "opentelemetry.ext.mysql",
-            "opentelemetry.ext.psycopg2",
-            "opentelemetry.ext.pymongo",
-            "opentelemetry.ext.pymysql",
-            "opentelemetry.ext.redis",
+            "opentelemetry.instrumentation.mysql",
+            "opentelemetry.instrumentation.psycopg2",
+            "opentelemetry.instrumentation.pymongo",
+            "opentelemetry.instrumentation.pymysql",
+            "opentelemetry.instrumentation.redis",
             "opentelemetry.instrumentation.requests",
-            "opentelemetry.ext.sqlalchemy",
+            "opentelemetry.instrumentation.sqlalchemy",
             "opentelemetry.instrumentation.wsgi",
         ]
 
