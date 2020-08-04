@@ -22,15 +22,14 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/translator"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/translator"
 )
 
 const (
@@ -99,7 +98,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	if len(expConfig.LogStreamName) > 0 {
 		logStream = expConfig.LogStreamName
 	}
-	if emf.token == "" {
+	if emf.token == "" && !expConfig.LocalMode {
 		emf.token, _ = emf.svcStructuredLog.CreateStream(aws.String(logGroup), aws.String(logStream))
 	}
 	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{

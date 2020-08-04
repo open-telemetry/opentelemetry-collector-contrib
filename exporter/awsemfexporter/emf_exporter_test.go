@@ -16,6 +16,8 @@ package awsemfexporter
 
 import (
 	"context"
+	"testing"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -26,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestPushMetricsData(t *testing.T) {
@@ -36,6 +37,7 @@ func TestPushMetricsData(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
+	expCfg.LocalMode = true
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
