@@ -36,19 +36,23 @@ var (
 	errUnexpectedConfigurationType = errors.New("failed to cast configuration to Azure Monitor Config")
 )
 
-// Factory for Azure Monitor exporter.
+// NewFactory returns a factory for Azure Monitor exporter.
+func NewFactory() component.ExporterFactory {
+	return &factory{}
+}
+
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
-type Factory struct {
+type factory struct {
 	TransportChannel transportChannel
 }
 
 // Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
+func (f *factory) Type() configmodels.Type {
 	return configmodels.Type(typeStr)
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func (f *factory) CreateDefaultConfig() configmodels.Exporter {
 
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
@@ -62,7 +66,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
+func (f *factory) CreateTraceExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
@@ -78,7 +82,7 @@ func (f *Factory) CreateTraceExporter(
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
+func (f *factory) CreateMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
@@ -88,7 +92,7 @@ func (f *Factory) CreateMetricsExporter(
 
 // Configures the transport channel.
 // This method is not thread-safe
-func (f *Factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
+func (f *factory) getTransportChannel(exporterConfig *Config, logger *zap.Logger) transportChannel {
 
 	// The default transport channel uses the default send mechanism from the AppInsights telemetry client.
 	// This default channel handles batching, appropriate retries, and is backed by memory.
