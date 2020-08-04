@@ -49,7 +49,7 @@ func getGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	rType := strings.ToLower(resourceType)
 	metadata := utils.MergeStringMaps(map[string]string{}, om.Labels)
 
-	metadata[k8sKeyWorkLoadKind] = rType
+	metadata[k8sKeyWorkLoadKind] = resourceType
 	metadata[k8sKeyWorkLoadName] = om.Name
 	metadata[fmt.Sprintf("%s.creation_timestamp",
 		rType)] = om.GetCreationTimestamp().Format(time.RFC3339)
