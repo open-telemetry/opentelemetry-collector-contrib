@@ -356,43 +356,10 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					operand2 = dp
 				}
 			}
-
-			if operand1 == nil {
-				logger.Warn("calculate_new_metric: operand1 == nil")
+			newPt := calculateNewMetric(logger, operand1, operand2, tr)
+			if newPt == nil {
 				continue
 			}
-			if operand1.Value.IntValue == nil {
-				logger.Warn("calculate_new_metric: operand1.Value.IntValue == nil")
-				continue
-			}
-
-			if operand2 == nil {
-				logger.Warn("calculate_new_metric: operand2 == nil")
-				continue
-			}
-			if operand2.Value.IntValue == nil {
-				logger.Warn("calculate_new_metric: operand2.Value.IntValue == nil")
-				continue
-			}
-
-			if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
-				logger.Warn("tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0")
-				continue
-			}
-
-			newPt := proto.Clone(operand1).(*sfxpb.DataPoint)
-			newPt.Metric = tr.MetricName
-			var newPtVal float64
-			switch tr.Operator {
-			// only supporting divide operator for now
-			case MetricOperatorDivision:
-				// only supporting int values for now
-				newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
-			default:
-				logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
-				continue
-			}
-			newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
 			processedDataPoints = append(processedDataPoints, newPt)
 
 		case ActionAggregateMetric:
@@ -421,6 +388,71 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	}
 
 	return processedDataPoints
+}
+
+func calculateNewMetric(
+	logger *zap.Logger,
+	operand1 *sfxpb.DataPoint,
+	operand2 *sfxpb.DataPoint,
+	tr Rule,
+) *sfxpb.DataPoint {
+	if operand1 == nil {
+		logger.Warn(
+			"calculate_new_metric: no matching datapoint found for operand1 to calculate new metric",
+			zap.String("tr.Operand1Metric", tr.Operand1Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+	if operand1.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand1 has no IntValue",
+			zap.String("tr.Operand1Metric", tr.Operand1Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if operand2 == nil {
+		logger.Warn(
+			"calculate_new_metric: no matching datapoint found for operand2 to calculate new metric",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+	if operand2.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand2 has no IntValue",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+		logger.Warn(
+			"calculate_new_metric: attempt to divide by zero, skipping",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	newPt := proto.Clone(operand1).(*sfxpb.DataPoint)
+	newPt.Metric = tr.MetricName
+	var newPtVal float64
+	switch tr.Operator {
+	// only supporting divide operator for now
+	case MetricOperatorDivision:
+		// only supporting int values for now
+		newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+	default:
+		logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
+		return nil
+	}
+	newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
+	return newPt
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {
