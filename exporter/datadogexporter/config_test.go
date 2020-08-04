@@ -46,9 +46,9 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "datadog",
 			TypeVal: "datadog",
 		},
-		APIKey:          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		Site:            DefaultSite,
-		MetricsEndpoint: "https://api.datadoghq.com",
+		APIKey:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Site:       DefaultSite,
+		MetricsURL: "https://api.datadoghq.com",
 	})
 
 	e1 := cfg.Exporters["datadog/2"].(*Config)
@@ -61,27 +61,27 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "datadog/2",
 				TypeVal: "datadog",
 			},
-			APIKey:          "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-			Site:            "datadoghq.eu",
-			MetricsEndpoint: "https://api.datadoghq.eu",
+			APIKey:     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			Site:       "datadoghq.eu",
+			MetricsURL: "https://api.datadoghq.eu",
 		})
 }
 
-// TestOverrideMetricsEndpoint tests that the metrics endpoint is overridden
+// TestOverrideMetricsURL tests that the metrics URL is overridden
 // correctly when set manually.
-func TestOverrideMetricsEndpoint(t *testing.T) {
+func TestOverrideMetricsURL(t *testing.T) {
 
 	const DebugEndpoint string = "http://localhost:8080"
 
 	cfg := &Config{
-		APIKey:          "notnull",
-		Site:            DefaultSite,
-		MetricsEndpoint: DebugEndpoint,
+		APIKey:     "notnull",
+		Site:       DefaultSite,
+		MetricsURL: DebugEndpoint,
 	}
 
 	err := cfg.Sanitize()
 	require.NoError(t, err)
-	assert.Equal(t, cfg.MetricsEndpoint, DebugEndpoint)
+	assert.Equal(t, cfg.MetricsURL, DebugEndpoint)
 }
 
 // TestUnsetAPIKey tests that the config sanitizing throws an error
