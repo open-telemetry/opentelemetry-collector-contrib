@@ -313,6 +313,14 @@ class TestWsgiAttributes(unittest.TestCase):
             expected.items(),
         )
 
+    def test_http_user_agent_attribute(self):
+        self.environ["HTTP_USER_AGENT"] = "test-useragent"
+        expected = {"http.user_agent": "test-useragent"}
+        self.assertGreaterEqual(
+            otel_wsgi.collect_request_attributes(self.environ).items(),
+            expected.items(),
+        )
+
     def test_response_attributes(self):
         otel_wsgi.add_response_attributes(self.span, "404 Not Found", {})
         expected = (

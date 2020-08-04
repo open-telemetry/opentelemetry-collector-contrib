@@ -117,6 +117,10 @@ def collect_request_attributes(environ):
     if remote_host and remote_host != remote_addr:
         result["net.peer.name"] = remote_host
 
+    user_agent = environ.get("HTTP_USER_AGENT")
+    if user_agent is not None and len(user_agent) > 0:
+        result["http.user_agent"] = user_agent
+
     setifnotnone(result, "net.peer.port", environ.get("REMOTE_PORT"))
     flavor = environ.get("SERVER_PROTOCOL", "")
     if flavor.upper().startswith(_HTTP_VERSION_PREFIX):
