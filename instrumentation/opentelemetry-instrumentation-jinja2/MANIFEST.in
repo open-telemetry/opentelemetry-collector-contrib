@@ -1,0 +1,9 @@
+graft src
+graft tests
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__/*
+include CHANGELOG.md
+include MANIFEST.in
+include README.rst
+include LICENSE
