@@ -180,7 +180,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 16, len(config.TranslationRules))
+	assert.Equal(t, 27, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -216,90 +216,291 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
 }
 
-func TestMemoryUtilizationTranslationRules(t *testing.T) {
+func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules)
 	require.NoError(t, err)
 	data := md()
+
 	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
 	require.NotNil(t, translated)
-	metrics := make(map[string]*model.DataPoint)
+
+	metrics := make(map[string][]*model.DataPoint)
 	for _, pt := range translated {
-		metrics[pt.Metric] = pt
+		if _, ok := metrics[pt.Metric]; !ok {
+			metrics[pt.Metric] = make([]*model.DataPoint, 0, 1)
+		}
+		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
 	}
-	u, ok := metrics["memory.utilization"]
-	require.True(t, ok, "memory utilization missing")
-	require.Equal(t, 40.0, *u.Value.DoubleValue)
+
+	// memory.utilization new metric calculation
+	dps, ok := metrics["memory.utilization"]
+	require.True(t, ok, "memory.utilization metric not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
+
+	// system.disk.ops metric split and dimension rename
+	dps, ok = metrics["disk_ops.read"]
+	require.True(t, ok, "disk_ops.read metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
+	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
+	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
+	require.Equal(t, int64(6e3), *dps[1].Value.IntValue)
+	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
+	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+
+	dps, ok = metrics["disk_ops.write"]
+	require.True(t, ok, "disk_ops.write metrics not found")
+	require.Equal(t, 2, len(dps))
+	require.Equal(t, int64(1e3), *dps[0].Value.IntValue)
+	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
+	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
+	require.Equal(t, int64(5e3), *dps[1].Value.IntValue)
+	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
+	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+
+	// network.total new metric calculation
+	dps, ok = metrics["network.total"]
+	require.True(t, ok, "network.total metrics not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, 3, len(dps[0].Dimensions))
+	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
 func md() consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "system.memory.usage",
-				Description: "Bytes of memory in use",
-				Unit:        "bytes",
-				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "state"},
-					{Key: "host"},
-					{Key: "kubernetes_node"},
-					{Key: "kubernetes_cluster"},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.memory.usage",
+					Description: "Bytes of memory in use",
+					Unit:        "bytes",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "state"},
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "used",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 4e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "free",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 6e9,
+							},
+						}},
+					},
 				},
 			},
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					StartTimestamp: &timestamp.Timestamp{},
-					LabelValues: []*metricspb.LabelValue{{
-						Value:    "used",
-						HasValue: true,
-					}, {
-						Value:    "host0",
-						HasValue: true,
-					}, {
-						Value:    "node0",
-						HasValue: true,
-					}, {
-						Value:    "cluster0",
-						HasValue: true,
-					}},
-					Points: []*metricspb.Point{{
-						Timestamp: &timestamp.Timestamp{
-							Seconds: 1596000000,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 4e9,
-						},
-					}},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.disk.ops",
+					Description: "Disk operations count.",
+					Unit:        "bytes",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "direction"},
+						{Key: "device"},
+					},
 				},
-				{
-					StartTimestamp: &timestamp.Timestamp{},
-					LabelValues: []*metricspb.LabelValue{{
-						Value:    "free",
-						HasValue: true,
-					}, {
-						Value:    "host0",
-						HasValue: true,
-					}, {
-						Value:    "node0",
-						HasValue: true,
-					}, {
-						Value:    "cluster0",
-						HasValue: true,
-					}},
-					Points: []*metricspb.Point{{
-						Timestamp: &timestamp.Timestamp{
-							Seconds: 1596000000,
-						},
-						Value: &metricspb.Point_Int64Value{
-							Int64Value: 6e9,
-						},
-					}},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 4e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 6e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 5e3,
+							},
+						}},
+					},
 				},
 			},
-		}},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.network.io",
+					Description: "The number of bytes transmitted and received",
+					Unit:        "bytes",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "direction"},
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 4e9,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "transmit",
+							HasValue: true,
+						}, {
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+		},
 	}
 	return md
 }

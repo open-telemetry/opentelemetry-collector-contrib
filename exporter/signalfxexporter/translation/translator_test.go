@@ -97,7 +97,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				},
 			},
 			wantDimensionsMap: nil,
-			wantError:         "only one \"rename_dimension_keys\" translation rule can be specified",
+			wantError:         "only one \"rename_dimension_keys\" translation rule without \"metric_names\" can be specified",
 		},
 		{
 			name: "rename_metric_valid",
@@ -523,6 +523,81 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dimension",
 							Value: "value3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_dimension_keys_filtered_metric",
+			trs: []Rule{
+				{
+					Action: ActionRenameDimensionKeys,
+					Mapping: map[string]string{
+						"old.dimension": "new.dimension",
+					},
+					MetricNames: map[string]bool{
+						"metric1": true,
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "new.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				// This metric doesn't match provided metric_name filter, so dimension key is not changed
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
 						},
 					},
 				},
