@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 type byContent []*sfxpb.DataPoint
@@ -368,6 +369,76 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantDimensionsMap: nil,
 			wantError:         "invalid \"aggregation_method\": \"invalid\" provided for \"aggregate_metric\" translation rule",
 		},
+		{
+			name: "calculate_new_metric_valid",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
+			name: "divide_metrics_invalid_missing_metric_name",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "divide_metrics_invalid_missing_op_1",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand2Metric: "op2_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "divide_metrics_invalid_missing_op_2",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operator:       MetricOperatorDivision,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
+		{
+			name: "calculate_new_metric_missing_operator",
+			trs: []Rule{
+				{
+					Action:         ActionCalculateNewMetric,
+					MetricName:     "metric",
+					Operand1Metric: "op1_metric",
+					Operand2Metric: "op2_metric",
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
+				`are required for "calculate_new_metric" translation rule`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -387,10 +458,10 @@ func TestNewMetricTranslator(t *testing.T) {
 	}
 }
 
-func TestTranslateDataPoints(t *testing.T) {
-	msec := time.Now().Unix() * 1e3
-	gaugeType := sfxpb.MetricType_GAUGE
+var msec = time.Now().Unix() * 1e3
+var gaugeType = sfxpb.MetricType_GAUGE
 
+func TestTranslateDataPoints(t *testing.T) {
 	tests := []struct {
 		name string
 		trs  []Rule
@@ -1334,6 +1405,79 @@ func TestTranslateDataPoints(t *testing.T) {
 					},
 				},
 			},
+		}, {
+			name: "calculate_new_metric",
+			trs: []Rule{{
+				Action:         ActionCalculateNewMetric,
+				MetricName:     "new_metric",
+				Operand1Metric: "metric0",
+				Operand2Metric: "metric1",
+				Operator:       MetricOperatorDivision,
+			}},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric0",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(42),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(84),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim2",
+						Value: "val2",
+					}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric0",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(42),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(84),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim2",
+						Value: "val2",
+					}},
+				},
+				{
+					Metric:     "new_metric",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(0.5),
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -1384,12 +1528,123 @@ func TestTestTranslateDimension(t *testing.T) {
 	assert.Equal(t, "old_dimension", mt.TranslateDimension("old_dimension"))
 }
 
+func TestNewCalculateNewMetricErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		metric1 string
+		val1    *int64
+		metric2 string
+		val2    *int64
+		wantErr string
+	}{
+		{
+			name:    "operand1_nil",
+			metric1: "foo",
+			val1:    generateIntPtr(1),
+			metric2: "metric2",
+			val2:    generateIntPtr(1),
+			wantErr: "calculate_new_metric: no matching datapoint found for operand1 to calculate new metric",
+		},
+		{
+			name:    "operand1_value_nil",
+			metric1: "metric1",
+			val1:    nil,
+			metric2: "metric2",
+			val2:    generateIntPtr(1),
+			wantErr: "calculate_new_metric: operand1 has no IntValue",
+		},
+		{
+			name:    "operand2_nil",
+			metric1: "metric1",
+			val1:    generateIntPtr(1),
+			metric2: "foo",
+			val2:    generateIntPtr(1),
+			wantErr: "calculate_new_metric: no matching datapoint found for operand2 to calculate new metric",
+		},
+		{
+			name:    "operand2_value_nil",
+			metric1: "metric1",
+			val1:    generateIntPtr(1),
+			metric2: "metric2",
+			val2:    nil,
+			wantErr: "calculate_new_metric: operand2 has no IntValue",
+		},
+		{
+			name:    "divide_by_zero",
+			metric1: "metric1",
+			val1:    generateIntPtr(1),
+			metric2: "metric2",
+			val2:    generateIntPtr(0),
+			wantErr: "calculate_new_metric: attempt to divide by zero, skipping",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			core, observedLogs := observer.New(zap.WarnLevel)
+			logger := zap.New(core)
+			dps := []*sfxpb.DataPoint{
+				{
+					Metric:     test.metric1,
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: test.val1,
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim1",
+						Value: "val1",
+					}},
+				},
+				{
+					Metric:     test.metric2,
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						IntValue: test.val2,
+					},
+					Dimensions: []*sfxpb.Dimension{{
+						Key:   "dim2",
+						Value: "val2",
+					}},
+				},
+			}
+			mt, err := NewMetricTranslator([]Rule{{
+				Action:         ActionCalculateNewMetric,
+				MetricName:     "metric3",
+				Operand1Metric: "metric1",
+				Operand2Metric: "metric2",
+				Operator:       MetricOperatorDivision,
+			}})
+			require.NoError(t, err)
+			tr := mt.TranslateDataPoints(logger, dps)
+			require.Equal(t, 2, len(tr))
+			require.Equal(t, 1, observedLogs.Len())
+			require.Equal(t, test.wantErr, observedLogs.All()[0].Message)
+		})
+	}
+}
+
+func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
+	_, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "*",
+	}})
+	require.Errorf(
+		t,
+		err,
+		`invalid operator "*" for "calculate_new_metric" translation rule`,
+	)
+}
+
 func generateIntPtr(i int) *int64 {
-	var iPtr int64 = int64(i)
+	var iPtr = int64(i)
 	return &iPtr
 }
 
 func generateFloatPtr(i float64) *float64 {
-	var iPtr float64 = float64(i)
+	var iPtr = i
 	return &iPtr
 }
