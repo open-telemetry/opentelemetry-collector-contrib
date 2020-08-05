@@ -220,7 +220,6 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
-    used: memory.used
 
 # memory utilization
 - action: calculate_new_metric
@@ -228,5 +227,9 @@ translation_rules:
   operand1_metric: memory.used
   operand2_metric: memory.total
   operator: /
+
+- action: multiply_float
+  scale_factors_float:
+    memory.utilization: 100
 `
 )

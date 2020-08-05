@@ -90,6 +90,19 @@ const (
 	//   machine_cpu_cores{host="host2"} 1
 	ActionAggregateMetric Action = "aggregate_metric"
 
+	// ActionCalculateNewMetric calculates a new metric based on two existing metrics.
+	// It takes two operand metrics, an operator, and a metric name and produces a new metric with the given
+	// metric name, but with the attributes of the first operand metric.
+	// For example, for the following translation rule:
+	// - action: calculate_new_metric
+	//  metric_name: memory.utilization
+	//  operand1_metric: memory.used
+	//  operand2_metric: memory.total
+	//  operator: /
+	// the integer value of the 'memory.used' metric will be divided by the integer value of 'memory.total'. The
+	// result will be a new float metric with the name 'memory.utilization' and the value of the quotient. The
+	// new metric will also get any attributes of the 'memory.used' metric except for its value and metric name.
+	// Currently only integer inputs are handled and only division is supported.
 	ActionCalculateNewMetric Action = "calculate_new_metric"
 )
 

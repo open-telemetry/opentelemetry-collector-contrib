@@ -180,7 +180,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 15, len(config.TranslationRules))
+	assert.Equal(t, 16, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -231,7 +231,7 @@ func TestMemoryUtilizationTranslationRules(t *testing.T) {
 	}
 	u, ok := metrics["memory.utilization"]
 	require.True(t, ok, "memory utilization missing")
-	require.Equal(t, 0.4, *u.Value.DoubleValue)
+	require.Equal(t, 40.0, *u.Value.DoubleValue)
 }
 
 func md() consumerdata.MetricsData {
