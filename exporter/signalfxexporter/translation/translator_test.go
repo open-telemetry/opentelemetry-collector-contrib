@@ -1580,7 +1580,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			core, observedLogs := observer.New(zap.WarnLevel)
+			core, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(core)
 			dps := []*sfxpb.DataPoint{
 				{

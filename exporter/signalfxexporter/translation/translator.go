@@ -410,7 +410,7 @@ func calculateNewMetric(
 	tr Rule,
 ) *sfxpb.DataPoint {
 	if operand1 == nil {
-		logger.Warn(
+		logger.Debug(
 			"calculate_new_metric: no matching datapoint found for operand1 to calculate new metric",
 			zap.String("tr.Operand1Metric", tr.Operand1Metric),
 			zap.String("tr.MetricName", tr.MetricName),
@@ -427,7 +427,7 @@ func calculateNewMetric(
 	}
 
 	if operand2 == nil {
-		logger.Warn(
+		logger.Debug(
 			"calculate_new_metric: no matching datapoint found for operand2 to calculate new metric",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
 			zap.String("tr.MetricName", tr.MetricName),
