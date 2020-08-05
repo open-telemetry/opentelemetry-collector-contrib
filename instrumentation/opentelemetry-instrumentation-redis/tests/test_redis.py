@@ -17,9 +17,23 @@ import redis
 
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.test.test_base import TestBase
+from opentelemetry.trace import SpanKind
 
 
 class TestRedis(TestBase):
+    def test_span_properties(self):
+        redis_client = redis.Redis()
+        RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
+
+        with mock.patch.object(redis_client, "connection"):
+            redis_client.get("key")
+
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
+        span = spans[0]
+        self.assertEqual(span.name, "redis.command")
+        self.assertEqual(span.kind, SpanKind.CLIENT)
+
     def test_instrument_uninstrument(self):
         redis_client = redis.Redis()
         RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
