@@ -90,7 +90,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -101,7 +101,7 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}
 
   publish_docker_images:
     parameters:
