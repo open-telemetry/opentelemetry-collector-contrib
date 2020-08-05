@@ -159,7 +159,7 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression
 	return getReader(zippers, buf, disableCompression)
 }
 
-func encodeBody(zippers *sync.Pool, dps []*splunkMetric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers *sync.Pool, dps []*SplunkMetric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {

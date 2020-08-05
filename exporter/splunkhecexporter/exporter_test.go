@@ -92,7 +92,7 @@ func TestConsumeMetricsData(t *testing.T) {
 					t.Fatal("Small batch should not be compressed")
 				}
 				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
-				var metric splunkMetric
+				var metric SplunkMetric
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
 					t.Fatal(err)

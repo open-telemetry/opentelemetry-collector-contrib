@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -53,7 +54,8 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-type splunkMetric struct {
+// SplunkMetric represents a metric in Splunk HEC format
+type SplunkMetric struct {
 	Time       float64                `json:"time"`                 // epoch time
 	Host       string                 `json:"host"`                 // hostname
 	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
@@ -63,10 +65,20 @@ type splunkMetric struct {
 	Fields     map[string]interface{} `json:"fields"`               // metric data
 }
 
-func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunkMetric, int, error) {
+func (m SplunkMetric) GetValues() map[string]interface{} {
+	values := map[string]interface{}{}
+	for k, v := range m.Fields {
+		if strings.HasPrefix(k, "metric_name:") {
+			values[k[12:]] = v
+		}
+	}
+	return values
+}
+
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*SplunkMetric, int, error) {
 	ocmds := pdatautil.MetricsToMetricsData(data)
 	numDroppedTimeSeries := 0
-	splunkMetrics := make([]*splunkMetric, 0, pdatautil.MetricPointCount(data))
+	splunkMetrics := make([]*SplunkMetric, 0, pdatautil.MetricPointCount(data))
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {
@@ -105,7 +117,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
 							fields[desc.Key] = timeSeries.LabelValues[i].Value
 						}
-						sm := &splunkMetric{
+						sm := &SplunkMetric{
 							Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
 							Host:       host,
 							Source:     config.Source,

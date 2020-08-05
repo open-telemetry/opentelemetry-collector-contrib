@@ -21,6 +21,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -71,7 +73,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name                     string
 		metricsDataFn            func() consumerdata.MetricsData
-		wantSplunkMetrics        []*splunkMetric
+		wantSplunkMetrics        []*SplunkMetric
 		wantNumDroppedTimeseries int
 	}{
 		{
@@ -86,7 +88,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*SplunkMetric{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{}, []string{}, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
@@ -105,7 +107,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*SplunkMetric{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, keys, values, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, keys, values, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, keys, values, doubleVal),
@@ -134,7 +136,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*SplunkMetric{
 				commonSplunkMetric(
 					"gauge_double_with_dims",
 					tsMSecs,
@@ -192,7 +194,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 }
 
-func sortMetrics(metrics []*splunkMetric) {
+func sortMetrics(metrics []*SplunkMetric) {
 	sort.Slice(metrics, func(p, q int) bool {
 		firstField := getFieldValue(metrics[p])
 		secondField := getFieldValue(metrics[q])
@@ -200,7 +202,7 @@ func sortMetrics(metrics []*splunkMetric) {
 	})
 }
 
-func getFieldValue(metric *splunkMetric) string {
+func getFieldValue(metric *SplunkMetric) string {
 	for k := range metric.Fields {
 		if strings.HasPrefix(k, "metric_name:") {
 			return k
@@ -215,14 +217,14 @@ func commonSplunkMetric(
 	keys []string,
 	values []string,
 	val interface{},
-) *splunkMetric {
+) *SplunkMetric {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
 
 	for i, k := range keys {
 		fields[k] = values[i]
 	}
 
-	return &splunkMetric{
+	return &SplunkMetric{
 		Time:   ts,
 		Host:   "unknown",
 		Event:  "metric",
@@ -236,12 +238,12 @@ func expectedFromDistribution(
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
-) []*splunkMetric {
+) []*SplunkMetric {
 	distributionValue := distributionTimeSeries.Points[0].GetDistributionValue()
 
 	// Three additional data points: one for count, one for sum and one for sum of squared deviation.
 	const extraDataPoints = 3
-	dps := make([]*splunkMetric, 0, len(distributionValue.Buckets)+extraDataPoints)
+	dps := make([]*SplunkMetric, 0, len(distributionValue.Buckets)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName, ts, keys, values,
@@ -273,12 +275,12 @@ func expectedFromSummary(
 	keys []string,
 	values []string,
 	summaryTimeSeries *metricspb.TimeSeries,
-) []*splunkMetric {
+) []*SplunkMetric {
 	summaryValue := summaryTimeSeries.Points[0].GetSummaryValue()
 
 	// Two additional data points: one for count and one for sum.
 	const extraDataPoints = 2
-	dps := make([]*splunkMetric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
+	dps := make([]*SplunkMetric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName+".count", ts, keys, values,
@@ -306,4 +308,16 @@ func TestTimestampFormat(t *testing.T) {
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := timestamppb.Timestamp{Seconds: 32, Nanos: 1999345}
 	assert.Equal(t, 32.002, timestampToEpochMilliseconds(&ts))
+}
+
+func TestGetValues(t *testing.T) {
+	unixSecs := int64(1574092046)
+	unixNSecs := int64(11 * time.Millisecond)
+	tsMSecs := timestampToEpochMilliseconds(&timestamp.Timestamp{Seconds: unixSecs, Nanos: int32(unixNSecs)})
+	metric := commonSplunkMetric("foo", tsMSecs, []string{}, []string{}, 13)
+	metric.Fields["metric_name:bar"] = 14
+	metric.Fields["metric_name:foobar"] = 15
+	metric.Fields["metric_name:fubar"] = 16
+	assert.Equal(t, 4, len(metric.GetValues()))
+	assert.Equal(t, map[string]interface{}{"bar": 14, "foo": 13, "foobar": 15, "fubar": 16}, metric.GetValues())
 }
