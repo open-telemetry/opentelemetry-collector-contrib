@@ -12,20 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The below line is important to let the compiler know to build this function for non-Linux environments
+
+// +build !linux
+
 package subprocessmanager
 
-// SubprocessConfig is the config definition for the subprocess manager
-type SubprocessConfig struct {
-	// Command is the command to be run (binary + flags, separated by commas)
-	Command string `mapstructure:"exec"`
-	// Env is a list of env variables to pass to a specific command
-	Env []EnvConfig `mapstructure:"env"`
-}
+import "os/exec"
 
-// EnvConfig is the config definition of each key-value pair for environment variables
-type EnvConfig struct {
-	// Name is the name of the environment variable
-	Name string `mapstructure:"name"`
-	// Value is the value of the variable
-	Value string `mapstructure:"value"`
-}
+// handleParentProcessKill is empty since the intended behavior is not supported on other platforms than Linux
+func handleParentProcessKill(cmd *exec.Cmd) {}

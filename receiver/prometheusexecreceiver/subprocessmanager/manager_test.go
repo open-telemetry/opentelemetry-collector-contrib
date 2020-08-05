@@ -25,42 +25,56 @@ import (
 func TestGetDelay(t *testing.T) {
 	var (
 		getDelayTests = []struct {
-			name       string
-			elapsed    time.Duration
-			crashCount int
-			want       time.Duration
+			name               string
+			elapsed            time.Duration
+			healthyProcessTime time.Duration
+			crashCount         int
+			healthyCrashCount  int
+			want               time.Duration
 		}{
 			{
-				name:       "healthy process",
-				elapsed:    15 * time.Second,
-				crashCount: 2,
-				want:       1 * time.Second,
+				name:               "healthy process 1",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         2,
+				healthyCrashCount:  3,
+				want:               1 * time.Second,
 			},
 			{
-				name:       "healthy process",
-				elapsed:    15 * time.Hour,
-				crashCount: 6,
-				want:       1 * time.Second,
+				name:               "healthy process 2",
+				elapsed:            15 * time.Hour,
+				healthyProcessTime: 20 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  2,
+				want:               1 * time.Second,
 			},
 			{
-				name:       "unhealthy process 1",
-				elapsed:    15 * time.Second,
-				crashCount: 4,
+				name:               "unhealthy process 1",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 45 * time.Minute,
+				crashCount:         4,
+				healthyCrashCount:  3,
 			},
 			{
-				name:       "unhealthy process 2",
-				elapsed:    15 * time.Second,
-				crashCount: 5,
+				name:               "unhealthy process 2",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 75 * time.Second,
+				crashCount:         5,
+				healthyCrashCount:  3,
 			},
 			{
-				name:       "unhealthy process 3",
-				elapsed:    15 * time.Second,
-				crashCount: 6,
+				name:               "unhealthy process 3",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  3,
 			},
 			{
-				name:       "unhealthy process 4",
-				elapsed:    15 * time.Second,
-				crashCount: 7,
+				name:               "unhealthy process 4",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 10 * time.Minute,
+				crashCount:         7,
+				healthyCrashCount:  3,
 			},
 		}
 		previousResult time.Duration
@@ -68,7 +82,7 @@ func TestGetDelay(t *testing.T) {
 
 	for _, test := range getDelayTests {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetDelay(test.elapsed, test.crashCount)
+			got := GetDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
 			if test.name == "healthy process" {
 				if !reflect.DeepEqual(got, test.want) {
 					t.Errorf("GetDelay() got = %v, want %v", got, test.want)
@@ -151,15 +165,14 @@ func TestFormatEnvSlice(t *testing.T) {
 func TestRun(t *testing.T) {
 	var runTests = []struct {
 		name        string
-		process     *Process
+		process     *SubprocessConfig
 		wantElapsed time.Duration
 		wantErr     bool
 	}{
 		{
 			name: "normal process 1, error process exit",
-			process: &Process{
+			process: &SubprocessConfig{
 				Command: "go run ../testdata/test_crasher.go",
-				Port:    0,
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
@@ -172,9 +185,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "normal process 2, normal process exit",
-			process: &Process{
+			process: &SubprocessConfig{
 				Command: "go version",
-				Port:    0,
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
@@ -187,9 +199,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "shellquote error",
-			process: &Process{
+			process: &SubprocessConfig{
 				Command: "command flag='something",
-				Port:    0,
 				Env:     []EnvConfig{},
 			},
 			wantElapsed: 0,
