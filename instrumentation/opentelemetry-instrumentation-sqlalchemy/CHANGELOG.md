@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Change package name to opentelemetry-instrumentation-sqlalchemy
-  ([#999](https://github.com/open-telemetry/opentelemetry-python/pull/999))
+  ([#966](https://github.com/open-telemetry/opentelemetry-python/pull/966))
 
 ## 0.7b1
 
