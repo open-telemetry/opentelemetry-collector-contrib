@@ -76,7 +76,8 @@ func createTraceData(numberOfTraces int) consumerdata.TraceData {
 			SpanId:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
 			Name:      &tracepb.TruncatableString{Value: "root"},
 			Status:    &tracepb.Status{},
-			StartTime: &timestamp.Timestamp{Seconds: int64(i)},
+			StartTime: &timestamp.Timestamp{Seconds: int64(i + 6)},
+			EndTime:   &timestamp.Timestamp{Seconds: int64(i + 10)},
 		}
 
 		traces = append(traces, span)
@@ -191,11 +192,11 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
+	expected := `{"time":6,"host":"unknown","event":{"timestamp":6000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected += `{"time":7,"host":"unknown","event":{"timestamp":7000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":8,"host":"unknown","event":{"timestamp":8000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -203,11 +204,11 @@ func TestReceiveTraces(t *testing.T) {
 func TestReceiveMetrics(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
+	expected := `{"time":6,"host":"unknown","event":{"timestamp":6000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected += `{"time":7,"host":"unknown","event":{"timestamp":7000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":8,"host":"unknown","event":{"timestamp":8000000,"duration":4000000,"traceId":"01010101010101010101010101010101","id":"0100000000000000","parentId":"0000000000000000","name":"root","tags":{"ot.status_code":"\u0000"}}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }

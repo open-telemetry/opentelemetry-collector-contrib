@@ -15,6 +15,13 @@
 package splunkhecexporter
 
 import (
+	"encoding/binary"
+	"errors"
+	"fmt"
+	"time"
+
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
@@ -46,16 +53,141 @@ func traceDataToSplunk(logger *zap.Logger, data consumerdata.TraceData, config *
 			numDroppedSpans++
 			continue
 		}
+		zipkinSpan, err := convertToZipkinSpan(span)
+		if err != nil {
+			logger.Debug(
+				"Span dropped as it could not be converted to zipkin format",
+				zap.Any("span", span), zap.Error(err))
+			numDroppedSpans++
+			continue
+		}
+
 		se := &splunkEvent{
 			Time:       timestampToEpochMilliseconds(span.StartTime),
 			Host:       host,
 			Source:     config.Source,
 			SourceType: config.SourceType,
 			Index:      config.Index,
-			Event:      span,
+			Event:      zipkinSpan,
 		}
 		splunkEvents = append(splunkEvents, se)
 	}
 
 	return splunkEvents, numDroppedSpans
+}
+
+func convertKind(kind tracepb.Span_SpanKind) model.Kind {
+	switch kind {
+	case tracepb.Span_SERVER:
+		return model.Server
+	case tracepb.Span_CLIENT:
+		return model.Client
+	// TODO newer versions of the opencensus model supports those additional fields.
+	//case tracepb.Span_CONSUMER:
+	//	return model.Consumer
+	//case tracepb.Span_PRODUCER:
+	//	return model.Producer
+	//case tracepb.Span_INTERNAL:
+	case tracepb.Span_SPAN_KIND_UNSPECIFIED:
+	default:
+		return model.Undetermined
+	}
+	return model.Undetermined
+}
+
+func uint64frombytes(bytes []byte) uint64 {
+	if len(bytes) == 0 {
+		return 0
+	}
+	bits := binary.LittleEndian.Uint64(bytes)
+	return bits
+}
+
+func convertToZipkinSpan(span *tracepb.Span) (model.SpanModel, error) {
+	spanID := model.ID(uint64frombytes(span.GetSpanId()))
+	parentID := model.ID(uint64frombytes(span.GetParentSpanId()))
+	startTime := time.Unix(span.GetStartTime().GetSeconds(), int64(span.GetStartTime().GetNanos()))
+	endTime := time.Unix(span.GetEndTime().GetSeconds(), int64(span.GetEndTime().GetNanos()))
+	tags, err := convertTags(span.GetAttributes())
+	if err != nil {
+		return model.SpanModel{}, err
+	}
+	tags["ot.status_code"] = string(span.GetStatus().Code)
+	if span.GetStatus().GetMessage() != "" {
+		tags["ot.status_description"] = span.GetStatus().GetMessage()
+	}
+	annotations := convertAnnotations(span.GetTimeEvents())
+	zipkinSpan := model.SpanModel{
+		SpanContext: model.SpanContext{
+			TraceID: model.TraceID{
+				High: uint64frombytes(span.GetTraceId()[0:8]),
+				Low:  uint64frombytes(span.GetTraceId()[8:16]),
+			},
+			ID:       spanID,
+			ParentID: &parentID,
+			Debug:    false,
+			Sampled:  nil,
+			Err:      nil,
+		},
+		Name:           span.GetName().GetValue(),
+		Kind:           convertKind(span.GetKind()),
+		Timestamp:      startTime,
+		Duration:       endTime.Sub(startTime),
+		Shared:         false,
+		LocalEndpoint:  nil,
+		RemoteEndpoint: nil,
+		Annotations:    annotations,
+		Tags:           tags,
+	}
+	return zipkinSpan, nil
+}
+
+func convertAnnotations(events *tracepb.Span_TimeEvents) []model.Annotation {
+	var annotations []model.Annotation
+
+	for _, event := range events.GetTimeEvent() {
+		var value string
+		if event.GetMessageEvent() != nil {
+			value = fmt.Sprintf("%d", event.GetMessageEvent().GetId())
+		} else {
+			value = event.GetAnnotation().GetDescription().GetValue()
+		}
+
+		// TODO the specification asks to map key/value pairs, but the annotation model just has a Value field.
+		annotation := model.Annotation{
+			Timestamp: time.Unix(event.GetTime().GetSeconds(), int64(event.GetTime().GetNanos())),
+			Value:     value,
+		}
+		annotations = append(annotations, annotation)
+	}
+	return annotations
+}
+
+func convertValue(attrValue *tracepb.AttributeValue) (string, error) {
+	if attrValue.GetStringValue() != nil {
+		return attrValue.GetStringValue().GetValue(), nil
+	} else if _, ok := attrValue.GetValue().(*tracepb.AttributeValue_DoubleValue); ok {
+		return fmt.Sprintf("%f", attrValue.GetDoubleValue()), nil
+	} else if _, ok := attrValue.GetValue().(*tracepb.AttributeValue_BoolValue); ok {
+		if attrValue.GetBoolValue() {
+			return "true", nil
+		}
+		return "false", nil
+	} else if _, ok := attrValue.GetValue().(*tracepb.AttributeValue_IntValue); ok {
+		return fmt.Sprintf("%d", attrValue.GetIntValue()), nil
+	} else {
+		return "", errors.New("cannot convert tag value")
+	}
+}
+
+func convertTags(attributes *tracepb.Span_Attributes) (map[string]string, error) {
+	tags := map[string]string{}
+	for attrName, attr := range attributes.GetAttributeMap() {
+		value, err := convertValue(attr)
+		if err != nil {
+			return tags, err
+		}
+		tags[attrName] = value
+	}
+	return tags, nil
 }
