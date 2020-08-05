@@ -17,12 +17,12 @@ package splunkhecreceiver
 import (
 	"context"
 	"fmt"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"net"
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
