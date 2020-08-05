@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
@@ -35,13 +35,13 @@ import (
 // 2. An end-to-end test where metrics are scraped from a fake exporter that exposes Promtheus metrics, and makes sure that exporter subprocess is restarted correctly
 func TestEndToEnd(t *testing.T) {
 	// Load the config from the yaml file
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[factory.Type()] = factory
 
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)

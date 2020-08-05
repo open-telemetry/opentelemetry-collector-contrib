@@ -36,9 +36,12 @@ import (
 )
 
 const (
-	minPortRange int    = 10000      // Minimum of the port generation range
-	maxPortRange int    = 11000      // Maximum of the port generation range
-	portTemplate string = "{{port}}" // Template for port in strings
+	minPortRange       int           = 10000            // Minimum of the port generation range
+	maxPortRange       int           = 11000            // Maximum of the port generation range
+	portTemplate       string        = "{{port}}"       // Template for port in strings
+	healthyProcessTime time.Duration = 30 * time.Minute // healthyProcessTime is the default time a process needs to stay alive to be considered healthy
+	healthyCrashCount  int           = 3                // healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
+
 )
 
 // Local random seed to not override anything being used globally
@@ -53,9 +56,10 @@ type prometheusReceiverWrapper struct {
 	receiverConfig *prometheusreceiver.Config
 
 	// Subprocess data
-	subprocessConfig *subprocessmanager.Process
+	subprocessConfig *subprocessmanager.SubprocessConfig
 
 	// Receiver data
+	originalPort       int
 	prometheusReceiver component.MetricsReceiver
 	context            context.Context
 	host               component.Host
@@ -84,6 +88,7 @@ func (wrapper *prometheusReceiverWrapper) Start(ctx context.Context, host compon
 		return fmt.Errorf("unable to create Prometheus receiver: %w", ok)
 	}
 
+	wrapper.originalPort = wrapper.config.Port
 	wrapper.subprocessConfig = subprocessConfig
 	wrapper.receiverConfig = receiverConfig
 	wrapper.prometheusReceiver = receiver
@@ -116,7 +121,7 @@ func getReceiverConfig(cfg *Config, customName string) *prometheusreceiver.Confi
 		StaticConfigs: []*targetgroup.Group{
 			{
 				Targets: []model.LabelSet{
-					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.SubprocessConfig.Port))},
+					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.Port))},
 				},
 			},
 		},
@@ -130,15 +135,14 @@ func getReceiverConfig(cfg *Config, customName string) *prometheusreceiver.Confi
 }
 
 // getSubprocessConfig returns the subprocess config after the correct logic is made
-func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.Process, error) {
+func getSubprocessConfig(cfg *Config, customName string) (*subprocessmanager.SubprocessConfig, error) {
 	if cfg.SubprocessConfig.Command == "" {
 		return nil, fmt.Errorf("no command to execute entered in config file for %v", cfg.Name())
 	}
 
-	subprocessConfig := &subprocessmanager.Process{}
+	subprocessConfig := &subprocessmanager.SubprocessConfig{}
 
 	subprocessConfig.Command = cfg.SubprocessConfig.Command
-	subprocessConfig.Port = cfg.SubprocessConfig.Port
 	subprocessConfig.Env = cfg.SubprocessConfig.Env
 
 	return subprocessConfig, nil
@@ -173,7 +177,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 	for {
 
 		// Generate a port if none was specified and if process is unhealthy (Receiver has been stopped)
-		generatePort := wrapper.subprocessConfig.Port == 0 && elapsed <= subprocessmanager.HealthyProcessTime
+		generatePort := wrapper.originalPort == 0 && elapsed <= healthyProcessTime
 		if generatePort {
 			newPort, err = wrapper.assignNewRandomPort(newPort)
 			if err != nil {
@@ -187,7 +191,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 
 		// Start the receiver if it's the first pass, or if the process is unhealthy/a newport was generated meaning the Receiver was stopped last pass
 		firstRun := elapsed == 0
-		unhealthyProcess := elapsed <= subprocessmanager.HealthyProcessTime && crashCount > subprocessmanager.HealthyCrashCount
+		unhealthyProcess := elapsed <= healthyProcessTime && crashCount > healthyCrashCount
 
 		if firstRun || unhealthyProcess || generatePort {
 			err = wrapper.prometheusReceiver.Start(wrapper.context, wrapper.host)
@@ -208,7 +212,7 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 		}
 
 		// Compute how long this process will wait before restarting
-		sleepTime := subprocessmanager.GetDelay(elapsed, crashCount)
+		sleepTime := subprocessmanager.GetDelay(elapsed, healthyProcessTime, crashCount, healthyCrashCount)
 
 		// Now we can log the process error, no need to escalate the error, simply log and restart the subprocess
 		if subprocessErr != nil {
@@ -223,13 +227,13 @@ func (wrapper *prometheusReceiverWrapper) manageProcess() {
 // computeHealthAndCrashCount will decide whether the process is healthy, set the crashCount accordingly and shutdown the receiver if unhealthy
 func (wrapper *prometheusReceiverWrapper) computeHealthAndCrashCount(elapsed time.Duration, crashCount int) (int, error) {
 	// Reset crash count to 1 if the process seems to be healthy now, else increase crashCount
-	if elapsed > subprocessmanager.HealthyProcessTime {
+	if elapsed > healthyProcessTime {
 		return 1, nil
 	}
 	crashCount++
 
 	// Stop the associated receiver until process starts back up again since it is unhealthy (too little elapsed time and high crashCount) or if port is generated, to allow for new port
-	if wrapper.subprocessConfig.Port == 0 || crashCount > subprocessmanager.HealthyCrashCount {
+	if wrapper.originalPort == 0 || crashCount > healthyCrashCount {
 		err := wrapper.Shutdown(wrapper.context)
 		if err != nil {
 			return crashCount, fmt.Errorf("could not stop receiver associated to process, killing it")
@@ -260,12 +264,12 @@ func (wrapper *prometheusReceiverWrapper) assignNewRandomPort(oldPort int) (int,
 }
 
 // fillPortPlaceholders will check if any of the strings in the process data have the {{port}} placeholder, and replace it if necessary
-func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *subprocessmanager.Process {
+func (wrapper *prometheusReceiverWrapper) fillPortPlaceholders(newPort int) *subprocessmanager.SubprocessConfig {
 	var port string
-	if wrapper.subprocessConfig.Port == 0 {
+	if wrapper.originalPort == 0 {
 		port = strconv.Itoa(newPort)
 	} else {
-		port = strconv.Itoa(wrapper.subprocessConfig.Port)
+		port = strconv.Itoa(wrapper.originalPort)
 	}
 
 	newConfig := *wrapper.subprocessConfig

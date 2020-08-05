@@ -21,9 +21,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
 )
 
@@ -33,14 +34,14 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 		metricReceiver component.MetricsReceiver
 	)
 
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
 	receiverType := "prometheus_exec"
 	factories.Receivers[configmodels.Type(receiverType)] = factory
 
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, config)

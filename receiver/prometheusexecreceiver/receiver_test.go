@@ -28,13 +28,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
-var (
-	configTests = []struct {
+func TestGetReceiverConfig(t *testing.T) {
+	configTests := []struct {
 		name                 string
 		customName           string
 		config               *Config
 		wantReceiverConfig   *prometheusreceiver.Config
-		wantSubprocessConfig *subprocessmanager.Process
+		wantSubprocessConfig *subprocessmanager.SubprocessConfig
 		wantErr              bool
 	}{
 		{
@@ -42,9 +42,9 @@ var (
 			customName: "prometheus_exec",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "",
-					Port:    9104,
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
@@ -80,9 +80,9 @@ var (
 			customName: "mysqld",
 			config: &Config{
 				ScrapeInterval: 90 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
-					Port:    9104,
 					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
@@ -115,9 +115,8 @@ var (
 					},
 				},
 			},
-			wantSubprocessConfig: &subprocessmanager.Process{
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
 				Command: "mysqld_exporter",
-				Port:    9104,
 				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
@@ -166,9 +165,8 @@ var (
 					},
 				},
 			},
-			wantSubprocessConfig: &subprocessmanager.Process{
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
 				Command: "postgres_exporter",
-				Port:    0,
 				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
@@ -180,7 +178,182 @@ var (
 		},
 	}
 
-	customNameTests = []struct {
+	for _, test := range configTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := getReceiverConfig(test.config, test.customName)
+			if !reflect.DeepEqual(got, test.wantReceiverConfig) {
+				t.Errorf("getReceiverConfig() got = %v, want %v", got, test.wantReceiverConfig)
+			}
+		})
+	}
+}
+
+func TestGetSubprocessConfig(t *testing.T) {
+	configTests := []struct {
+		name                 string
+		customName           string
+		config               *Config
+		wantReceiverConfig   *prometheusreceiver.Config
+		wantSubprocessConfig *subprocessmanager.SubprocessConfig
+		wantErr              bool
+	}{
+		{
+			name:       "no command",
+			customName: "prometheus_exec",
+			config: &Config{
+				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "",
+					Env:     []subprocessmanager.EnvConfig{},
+				},
+			},
+			wantReceiverConfig: &prometheusreceiver.Config{
+				PrometheusConfig: &config.Config{
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							ScrapeInterval:  model.Duration(60 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							Scheme:          "http",
+							MetricsPath:     "/metrics",
+							JobName:         "prometheus_exec",
+							HonorLabels:     false,
+							HonorTimestamps: true,
+							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
+								StaticConfigs: []*targetgroup.Group{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:9104")},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantSubprocessConfig: nil,
+			wantErr:              true,
+		},
+		{
+			name:       "normal config",
+			customName: "mysqld",
+			config: &Config{
+				ScrapeInterval: 90 * time.Second,
+				Port:           9104,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "mysqld_exporter",
+					Env: []subprocessmanager.EnvConfig{
+						{
+							Name:  "DATA_SOURCE_NAME",
+							Value: "password:username@(url:port)/dbname",
+						},
+					},
+				},
+			},
+			wantReceiverConfig: &prometheusreceiver.Config{
+				PrometheusConfig: &config.Config{
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							ScrapeInterval:  model.Duration(90 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							Scheme:          "http",
+							MetricsPath:     "/metrics",
+							JobName:         "mysqld",
+							HonorLabels:     false,
+							HonorTimestamps: true,
+							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
+								StaticConfigs: []*targetgroup.Group{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:9104")},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
+				Command: "mysqld_exporter",
+				Env: []subprocessmanager.EnvConfig{
+					{
+						Name:  "DATA_SOURCE_NAME",
+						Value: "password:username@(url:port)/dbname",
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "lots of defaults",
+			customName: "postgres",
+			config: &Config{
+				ScrapeInterval: 60 * time.Second,
+				SubprocessConfig: subprocessmanager.SubprocessConfig{
+					Command: "postgres_exporter",
+					Env: []subprocessmanager.EnvConfig{
+						{
+							Name:  "DATA_SOURCE_NAME",
+							Value: "password:username@(url:port)/dbname",
+						},
+					},
+				},
+			},
+			wantReceiverConfig: &prometheusreceiver.Config{
+				PrometheusConfig: &config.Config{
+					ScrapeConfigs: []*config.ScrapeConfig{
+						{
+							ScrapeInterval:  model.Duration(60 * time.Second),
+							ScrapeTimeout:   model.Duration(10 * time.Second),
+							Scheme:          "http",
+							MetricsPath:     "/metrics",
+							JobName:         "postgres",
+							HonorLabels:     false,
+							HonorTimestamps: true,
+							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
+								StaticConfigs: []*targetgroup.Group{
+									{
+										Targets: []model.LabelSet{
+											{model.AddressLabel: model.LabelValue("localhost:0")},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
+				Command: "postgres_exporter",
+				Env: []subprocessmanager.EnvConfig{
+					{
+						Name:  "DATA_SOURCE_NAME",
+						Value: "password:username@(url:port)/dbname",
+					},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, test := range configTests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := getSubprocessConfig(test.config, test.customName)
+			if (err != nil) != test.wantErr {
+				t.Errorf("getSubprocessConfig() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, test.wantSubprocessConfig) {
+				t.Errorf("getSubprocessConfig() got = %v, want %v", got, test.wantSubprocessConfig)
+			}
+		})
+	}
+}
+
+func TestGetCustomName(t *testing.T) {
+	customNameTests := []struct {
 		name   string
 		config *Config
 		want   string
@@ -193,9 +366,9 @@ var (
 					NameVal: "prometheus_exec",
 				},
 				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
-					Port:    9104,
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
@@ -209,9 +382,9 @@ var (
 					NameVal: "prometheus_exec/",
 				},
 				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
-					Port:    9104,
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
@@ -225,9 +398,9 @@ var (
 					NameVal: "prometheus_exec/custom",
 				},
 				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
-					Port:    9104,
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
@@ -241,9 +414,9 @@ var (
 					NameVal: "prometheus_exec/custom/name",
 				},
 				ScrapeInterval: 60 * time.Second,
+				Port:           9104,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
 					Command: "mysqld_exporter",
-					Port:    9104,
 					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
@@ -251,7 +424,18 @@ var (
 		},
 	}
 
-	generateRandomPortTests = []struct {
+	for _, test := range customNameTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := getCustomName(test.config)
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("getCustomName() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestGenerateRandomPort(t *testing.T) {
+	generateRandomPortTests := []struct {
 		name     string
 		lastPort int
 		wantMin  int
@@ -277,19 +461,30 @@ var (
 		},
 	}
 
-	fillPortPlaceholdersTests = []struct {
+	for _, test := range generateRandomPortTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := generateRandomPort(test.lastPort)
+			if got < test.wantMin || got > test.wantMax {
+				t.Errorf("generateRandomPort() got = %v, want smaller than %v and larger than %v", got, test.wantMax, test.wantMin)
+			}
+		})
+	}
+}
+
+func TestFillPortPlaceholders(t *testing.T) {
+	fillPortPlaceholdersTests := []struct {
 		name    string
 		wrapper *prometheusReceiverWrapper
 		newPort int
-		want    *subprocessmanager.Process
+		want    *subprocessmanager.SubprocessConfig
 	}{
 		{
 			name: "port is defined by user",
 			wrapper: &prometheusReceiverWrapper{
+				originalPort: 10500,
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
 						Command: "apache_exporter --port:{{port}}",
-						Port:    10500,
 						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
@@ -302,9 +497,8 @@ var (
 						},
 					},
 				},
-				subprocessConfig: &subprocessmanager.Process{
+				subprocessConfig: &subprocessmanager.SubprocessConfig{
 					Command: "apache_exporter --port:{{port}}",
-					Port:    10500,
 					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
@@ -318,9 +512,8 @@ var (
 				},
 			},
 			newPort: 0,
-			want: &subprocessmanager.Process{
+			want: &subprocessmanager.SubprocessConfig{
 				Command: "apache_exporter --port:10500",
-				Port:    10500,
 				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
@@ -339,7 +532,6 @@ var (
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
 						Command: "apache_exporter",
-						Port:    10500,
 						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
@@ -352,9 +544,8 @@ var (
 						},
 					},
 				},
-				subprocessConfig: &subprocessmanager.Process{
+				subprocessConfig: &subprocessmanager.SubprocessConfig{
 					Command: "apache_exporter",
-					Port:    10500,
 					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
@@ -368,9 +559,8 @@ var (
 				},
 			},
 			newPort: 0,
-			want: &subprocessmanager.Process{
+			want: &subprocessmanager.SubprocessConfig{
 				Command: "apache_exporter",
-				Port:    10500,
 				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
@@ -389,7 +579,6 @@ var (
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
 						Command: "apache_exporter --port={{port}}",
-						Port:    0,
 						Env: []subprocessmanager.EnvConfig{
 							{
 								Name:  "DATA_SOURCE_NAME",
@@ -402,9 +591,8 @@ var (
 						},
 					},
 				},
-				subprocessConfig: &subprocessmanager.Process{
+				subprocessConfig: &subprocessmanager.SubprocessConfig{
 					Command: "apache_exporter --port={{port}}",
-					Port:    0,
 					Env: []subprocessmanager.EnvConfig{
 						{
 							Name:  "DATA_SOURCE_NAME",
@@ -418,9 +606,8 @@ var (
 				},
 			},
 			newPort: 10111,
-			want: &subprocessmanager.Process{
+			want: &subprocessmanager.SubprocessConfig{
 				Command: "apache_exporter --port=10111",
-				Port:    10111,
 				Env: []subprocessmanager.EnvConfig{
 					{
 						Name:  "DATA_SOURCE_NAME",
@@ -435,7 +622,18 @@ var (
 		},
 	}
 
-	assignNewRandomPortTests = []struct {
+	for _, test := range fillPortPlaceholdersTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.wrapper.fillPortPlaceholders(test.newPort)
+			if got.Command != test.want.Command || !reflect.DeepEqual(got.Env, test.want.Env) {
+				t.Errorf("fillPortPlaceholders() got = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestAssignNewRandomPort(t *testing.T) {
+	assignNewRandomPortTests := []struct {
 		name    string
 		wrapper *prometheusReceiverWrapper
 		oldPort int
@@ -469,68 +667,7 @@ var (
 			oldPort: 0,
 		},
 	}
-)
 
-func TestGetReceiverConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := getReceiverConfig(test.config, test.customName)
-			if !reflect.DeepEqual(got, test.wantReceiverConfig) {
-				t.Errorf("getReceiverConfig() got = %v, want %v", got, test.wantReceiverConfig)
-			}
-		})
-	}
-}
-
-func TestGetSubprocessConfig(t *testing.T) {
-	for _, test := range configTests {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := getSubprocessConfig(test.config, test.customName)
-			if (err != nil) != test.wantErr {
-				t.Errorf("getSubprocessConfig() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, test.wantSubprocessConfig) {
-				t.Errorf("getSubprocessConfig() got = %v, want %v", got, test.wantSubprocessConfig)
-			}
-		})
-	}
-}
-
-func TestGetCustomName(t *testing.T) {
-	for _, test := range customNameTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := getCustomName(test.config)
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("getCustomName() got = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestGenerateRandomPort(t *testing.T) {
-	for _, test := range generateRandomPortTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := generateRandomPort(test.lastPort)
-			if got < test.wantMin || got > test.wantMax {
-				t.Errorf("generateRandomPort() got = %v, want smaller than %v and larger than %v", got, test.wantMax, test.wantMin)
-			}
-		})
-	}
-}
-
-func TestFillPortPlaceholders(t *testing.T) {
-	for _, test := range fillPortPlaceholdersTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.wrapper.fillPortPlaceholders(test.newPort)
-			if got.Command != test.want.Command || !reflect.DeepEqual(got.Env, test.want.Env) {
-				t.Errorf("fillPortPlaceholders() got = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
-func TestAssignNewRandomPort(t *testing.T) {
 	for _, test := range assignNewRandomPortTests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := test.wrapper.assignNewRandomPort(test.oldPort)

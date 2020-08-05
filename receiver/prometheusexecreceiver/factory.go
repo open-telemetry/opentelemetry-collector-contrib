@@ -58,6 +58,7 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		ScrapeInterval: defaultCollectionInterval,
+		Port:           0,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "",
 			Env:     []subprocessmanager.EnvConfig{},
