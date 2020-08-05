@@ -19,9 +19,10 @@ type ContainerStats struct {
 	Id   string `json:"id"`
 
 	Memory      MemoryStats             `json:"memory_stats,omitempty"`
-	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
 	Disk        DiskStats               `json:"blkio_stats,omitempty"`
 	Network     map[string]NetworkStats `json:"networks,omitempty"`
+	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
+	CPU         CPUStats                `json:"cpu_stats,omitempty"`
 }
 
 type MemoryStats struct {
@@ -33,11 +34,6 @@ type MemoryStats struct {
 
 	// Memory limit.
 	Limit *uint64 `json:"limit,omitempty"`
-}
-
-type NetworkRateStats struct {
-	RxBytesPerSecond *float64 `json:"rx_bytes_per_sec,omitempty"`
-	TxBytesPerSecond *float64 `json:"tx_bytes_per_sec,omitempty"`
 }
 
 type DiskStats struct {
@@ -52,12 +48,30 @@ type IoServiceBytesRecursive struct {
 }
 
 type NetworkStats struct {
-	RxBytes   *float64 `json:"rx_bytes,omitempty"`
-	RxPackets *float64 `json:"rx_packets,omitempty"`
-	RxErrors  *float64 `json:"rx_errors,omitempty"`
-	RxDropped *float64 `json:"rx_dropped,omitempty"`
-	TxBytes   *float64 `json:"tx_bytes,omitempty"`
-	TxPackets *float64 `json:"tx_packets,omitempty"`
-	TxErrors  *float64 `json:"tx_errors,omitempty"`
-	TxDropped *float64 `json:"tx_dropped,omitempty"`
+	RxBytes   *uint64 `json:"rx_bytes,omitempty"`
+	RxPackets *uint64 `json:"rx_packets,omitempty"`
+	RxErrors  *uint64 `json:"rx_errors,omitempty"`
+	RxDropped *uint64 `json:"rx_dropped,omitempty"`
+	TxBytes   *uint64 `json:"tx_bytes,omitempty"`
+	TxPackets *uint64 `json:"tx_packets,omitempty"`
+	TxErrors  *uint64 `json:"tx_errors,omitempty"`
+	TxDropped *uint64 `json:"tx_dropped,omitempty"`
+}
+
+type NetworkRateStats struct {
+	RxBytesPerSecond *float64 `json:"rx_bytes_per_sec,omitempty"`
+	TxBytesPerSecond *float64 `json:"tx_bytes_per_sec,omitempty"`
+}
+
+type CPUUsage struct {
+	TotalUsage        *uint64   `json:"total_usage,omitempty"`
+	UsageInKernelmode *uint64   `json:"usage_in_kernelmode,omitempty"`
+	UsageInUserMode   *uint64   `json:"usage_in_usermode,omitempty"`
+	PerCpuUsage       []*uint64 `json:"percpu_usage,omitempty"`
+}
+
+type CPUStats struct {
+	CpuUsage       CPUUsage `json:"cpu_usage,omitempty"`
+	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
+	SystemCpuUsage *uint64  `json:"system_cpu_usage,omitempty"`
 }

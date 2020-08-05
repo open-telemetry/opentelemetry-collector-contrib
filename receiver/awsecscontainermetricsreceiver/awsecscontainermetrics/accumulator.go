@@ -38,9 +38,10 @@ func (acc *metricDataAccumulator) taskStats(containerStatsMap map[string]Contain
 			timestampProto(time.Now()),
 
 			memMetrics(prefix, &value.Memory),
-			networkRateMetrics(prefix, &value.NetworkRate),
 			diskMetrics(prefix, &value.Disk),
 			networkMetrics(prefix, value.Network),
+			networkRateMetrics(prefix, &value.NetworkRate),
+			cpuMetrics(prefix, &value.CPU),
 		)
 	}
 
