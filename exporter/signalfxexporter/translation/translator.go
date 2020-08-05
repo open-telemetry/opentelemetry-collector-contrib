@@ -27,6 +27,8 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
+	// The rule can be applied only to a particular metric if MetricName is provided,
+	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
 	// ActionRenameMetrics renames metrics using Rule.Mapping.
@@ -149,7 +151,8 @@ type Rule struct {
 	ScaleFactorsFloat map[string]float64 `mapstructure:"scale_factors_float"`
 
 	// MetricName is used by "split_metric" translation rule to specify a name
-	// of a metric that will be split.
+	// of a metric that will be split. Also it can be used by "rename_dimension_keys" rule to
+	// rename dimensions only for particular metric.
 	MetricName string `mapstructure:"metric_name"`
 	// DimensionKey is used by "split_metric" translation rule action to specify dimension key
 	// that will be used to translate the metric datapoints. Datapoints that don't have
@@ -300,6 +303,9 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
+				if tr.MetricName != "" && tr.MetricName != dp.Metric {
+					continue
+				}
 				for _, d := range dp.Dimensions {
 					if newKey, ok := tr.Mapping[d.Key]; ok {
 						d.Key = newKey

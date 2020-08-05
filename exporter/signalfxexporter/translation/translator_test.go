@@ -529,6 +529,79 @@ func TestTranslateDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "rename_dimension_keys_filtered_metric",
+			trs: []Rule{
+				{
+					Action:     ActionRenameDimensionKeys,
+					MetricName: "metric1",
+					Mapping: map[string]string{
+						"old.dimension": "new.dimension",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "new.dimension",
+							Value: "value1",
+						},
+					},
+				},
+				// This metric doesn't match provided metric_name filter, so dimension key is not changed
+				{
+					Metric:    "metric2",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "old.dimension",
+							Value: "value1",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "rename_metric",
 			trs: []Rule{
 				{
