@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const defaultSleepTime = 5 * time.Millisecond
+const defaultSleepTime = 2 * time.Millisecond
 
 // This program is simply a test program that does nothing but crash after a certain time, with a non-zero exit code, used in
 // subprocessmanager tests
