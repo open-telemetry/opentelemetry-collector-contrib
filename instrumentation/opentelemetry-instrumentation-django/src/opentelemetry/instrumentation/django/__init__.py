@@ -51,8 +51,12 @@ class DjangoInstrumentor(BaseInstrumentor):
         # https://docs.djangoproject.com/en/3.0/ref/middleware/#middleware-ordering
 
         settings_middleware = getattr(settings, "MIDDLEWARE", [])
-        settings_middleware.append(self._opentelemetry_middleware)
+        # Django allows to specify middlewares as a tuple, so we convert this tuple to a
+        # list, otherwise we wouldn't be able to call append/remove
+        if isinstance(settings_middleware, tuple):
+            settings_middleware = list(settings_middleware)
 
+        settings_middleware.append(self._opentelemetry_middleware)
         setattr(settings, "MIDDLEWARE", settings_middleware)
 
     def _uninstrument(self, **kwargs):
