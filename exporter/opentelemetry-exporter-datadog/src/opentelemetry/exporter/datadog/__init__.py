@@ -21,7 +21,7 @@ Installation
 
 ::
 
-    pip install opentelemetry-ext-datadog
+    pip install opentelemetry-exporter-datadog
 
 
 Usage
