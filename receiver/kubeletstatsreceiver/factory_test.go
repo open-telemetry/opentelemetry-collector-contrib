@@ -65,6 +65,22 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.NotNil(t, metricsReceiver)
 }
 
+func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
+	factory := &Factory{}
+	cfg := Config{
+		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
+	}
+	metricsReceiver, err := factory.CreateMetricsReceiver(
+		context.Background(),
+		zap.NewNop(),
+		&cfg,
+		&testbed.MockMetricConsumer{},
+	)
+	require.Error(t, err)
+	require.Equal(t, "label \"invalid-label\" is not supported", err.Error())
+	require.Nil(t, metricsReceiver)
+}
+
 func TestFactoryBadAuthType(t *testing.T) {
 	factory := &Factory{}
 	cfg := &Config{

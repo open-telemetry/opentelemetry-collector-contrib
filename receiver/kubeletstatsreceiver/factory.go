@@ -69,9 +69,14 @@ func (f *Factory) CreateTraceReceiver(
 func (f *Factory) CreateMetricsReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
-	cfg configmodels.Receiver,
+	baseCfg configmodels.Receiver,
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
+	cfg := baseCfg.(*Config)
+	err := kubelet.ValidateMetadataLabelsConfig(cfg.ExtraMetadataLabels)
+	if err != nil {
+		return nil, err
+	}
 	rest, err := f.restClient(logger, cfg)
 	if err != nil {
 		return nil, err
@@ -84,8 +89,7 @@ func (f *Factory) CreateMetricsReceiver(
 	}, nil
 }
 
-func (f *Factory) restClient(logger *zap.Logger, baseCfg configmodels.Receiver) (kubelet.RestClient, error) {
-	cfg := baseCfg.(*Config)
+func (f *Factory) restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
 	clientProvider, err := kubelet.NewClientProvider(cfg.Endpoint, &cfg.ClientConfig, logger)
 	if err != nil {
 		return nil, err

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 	// todo replace with scraping lib when it's ready
@@ -29,12 +30,14 @@ import (
 var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
-	ctx          context.Context
-	receiverName string
-	provider     *kubelet.StatsProvider
-	consumer     consumer.MetricsConsumerOld
-	logger       *zap.Logger
-	restClient   kubelet.RestClient
+	ctx                 context.Context
+	receiverName        string
+	statsProvider       *kubelet.StatsProvider
+	metadataProvider    *kubelet.MetadataProvider
+	consumer            consumer.MetricsConsumerOld
+	logger              *zap.Logger
+	restClient          kubelet.RestClient
+	extraMetadataLabels []kubelet.MetadataLabel
 }
 
 func newRunnable(
@@ -42,31 +45,46 @@ func newRunnable(
 	receiverName string,
 	consumer consumer.MetricsConsumerOld,
 	restClient kubelet.RestClient,
+	extraMetadataLabels []kubelet.MetadataLabel,
 	logger *zap.Logger,
 ) *runnable {
 	return &runnable{
-		ctx:          ctx,
-		receiverName: receiverName,
-		consumer:     consumer,
-		restClient:   restClient,
-		logger:       logger,
+		ctx:                 ctx,
+		receiverName:        receiverName,
+		consumer:            consumer,
+		restClient:          restClient,
+		logger:              logger,
+		extraMetadataLabels: extraMetadataLabels,
 	}
 }
 
 // Sets up the kubelet connection at startup time.
 func (r *runnable) Setup() error {
-	r.provider = kubelet.NewStatsProvider(r.restClient)
+	r.statsProvider = kubelet.NewStatsProvider(r.restClient)
+	r.metadataProvider = kubelet.NewMetadataProvider(r.restClient)
 	return nil
 }
 
 func (r *runnable) Run() error {
 	const transport = "http"
-	summary, err := r.provider.StatsSummary()
+	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
-		r.logger.Error("StatsSummary failed", zap.Error(err))
+		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
 		return nil
 	}
-	mds := kubelet.MetricsData(summary, typeStr)
+
+	var podsMetadata *v1.PodList
+	// fetch metadata only when extra metadata labels are needed
+	if len(r.extraMetadataLabels) > 0 {
+		podsMetadata, err = r.metadataProvider.Pods()
+		if err != nil {
+			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
+			return nil
+		}
+	}
+
+	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata)
+	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr)
 	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
 	for _, md := range mds {
 		ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
