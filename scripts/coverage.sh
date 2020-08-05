@@ -7,7 +7,7 @@ function cov {
     then
         pytest \
             --ignore-glob=*/setup.py \
-            --ignore-glob=ext/opentelemetry-ext-opentracing-shim/tests/testbed/* \
+            --ignore-glob=instrumentation/opentelemetry-instrumentation-opentracing-shim/tests/testbed/* \
             --cov ${1} \
             --cov-append \
             --cov-branch \
@@ -35,7 +35,7 @@ cov exporter/opentelemetry-exporter-datadog
 cov instrumentation/opentelemetry-instrumentation-flask
 cov instrumentation/opentelemetry-instrumentation-requests
 cov exporter/opentelemetry-exporter-jaeger
-cov ext/opentelemetry-ext-opentracing-shim
+cov instrumentation/opentelemetry-instrumentation-opentracing-shim
 cov instrumentation/opentelemetry-instrumentation-wsgi
 cov exporter/opentelemetry-exporter-zipkin
 cov docs/examples/opentelemetry-example-app
