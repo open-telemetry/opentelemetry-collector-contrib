@@ -58,3 +58,22 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 		Labels: labels,
 	}, nil
 }
+
+func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats) *resourcepb.Resource {
+	labels := map[string]string{
+		labelVolumeName: vs.Name,
+	}
+
+	// Collect relevant Pod labels to be able to associate the volume to it.
+	labels[conventions.AttributeK8sPodUID] = pod.Labels[conventions.AttributeK8sPodUID]
+	labels[conventions.AttributeK8sPod] = pod.Labels[conventions.AttributeK8sPod]
+	labels[conventions.AttributeK8sNamespace] = pod.Labels[conventions.AttributeK8sNamespace]
+
+	//TODO: Optionally add more labels through the /pods endpoint and
+	// the Kubernetes API. Will make PRs for those enhancements separately.
+
+	return &resourcepb.Resource{
+		Type:   "k8s",
+		Labels: labels,
+	}
+}
