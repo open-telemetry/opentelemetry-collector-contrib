@@ -1543,7 +1543,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    generateIntPtr(1),
 			metric2: "metric2",
 			val2:    generateIntPtr(1),
-			wantErr: "calculate_new_metric: no matching datapoint found for operand1 to calculate new metric",
+			wantErr: "",
 		},
 		{
 			name:    "operand1_value_nil",
@@ -1559,7 +1559,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    generateIntPtr(1),
 			metric2: "foo",
 			val2:    generateIntPtr(1),
-			wantErr: "calculate_new_metric: no matching datapoint found for operand2 to calculate new metric",
+			wantErr: "",
 		},
 		{
 			name:    "operand2_value_nil",
@@ -1580,7 +1580,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			core, observedLogs := observer.New(zap.WarnLevel)
+			core, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(core)
 			dps := []*sfxpb.DataPoint{
 				{
@@ -1618,8 +1618,12 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			require.NoError(t, err)
 			tr := mt.TranslateDataPoints(logger, dps)
 			require.Equal(t, 2, len(tr))
-			require.Equal(t, 1, observedLogs.Len())
-			require.Equal(t, test.wantErr, observedLogs.All()[0].Message)
+			if test.wantErr == "" {
+				require.Equal(t, 0, observedLogs.Len())
+			} else {
+				require.Equal(t, 1, observedLogs.Len())
+				require.Equal(t, test.wantErr, observedLogs.All()[0].Message)
+			}
 		})
 	}
 }

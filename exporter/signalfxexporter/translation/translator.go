@@ -369,6 +369,9 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					operand2 = dp
 				}
 			}
+			if operand1 == nil || operand2 == nil {
+				continue
+			}
 			newPt := calculateNewMetric(logger, operand1, operand2, tr)
 			if newPt == nil {
 				continue
@@ -409,14 +412,6 @@ func calculateNewMetric(
 	operand2 *sfxpb.DataPoint,
 	tr Rule,
 ) *sfxpb.DataPoint {
-	if operand1 == nil {
-		logger.Warn(
-			"calculate_new_metric: no matching datapoint found for operand1 to calculate new metric",
-			zap.String("tr.Operand1Metric", tr.Operand1Metric),
-			zap.String("tr.MetricName", tr.MetricName),
-		)
-		return nil
-	}
 	if operand1.Value.IntValue == nil {
 		logger.Warn(
 			"calculate_new_metric: operand1 has no IntValue",
@@ -426,14 +421,6 @@ func calculateNewMetric(
 		return nil
 	}
 
-	if operand2 == nil {
-		logger.Warn(
-			"calculate_new_metric: no matching datapoint found for operand2 to calculate new metric",
-			zap.String("tr.Operand2Metric", tr.Operand2Metric),
-			zap.String("tr.MetricName", tr.MetricName),
-		)
-		return nil
-	}
 	if operand2.Value.IntValue == nil {
 		logger.Warn(
 			"calculate_new_metric: operand2 has no IntValue",
