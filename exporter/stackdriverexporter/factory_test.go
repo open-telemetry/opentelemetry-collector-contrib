@@ -15,16 +15,18 @@
 package stackdriverexporter
 
 import (
+	"context"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -34,16 +36,21 @@ func TestCreateExporter(t *testing.T) {
 	if os.Getenv("GOOGLE_APPLICATION_CREDENTIALS") == "" {
 		t.Skip("Default credentials not set, skip creating Stackdriver exporter")
 	}
-	factory := Factory{}
+	ctx := context.Background()
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTraceExporter(zap.NewNop(), eCfg)
+	te, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}, eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(zap.NewNop(), eCfg)
+	me, err := factory.CreateMetricsExporter(ctx, component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}, eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }
