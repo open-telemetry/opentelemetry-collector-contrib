@@ -57,14 +57,12 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	// Test CreateMetricsReceiver
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), receiver, nil)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, &prometheusReceiverWrapper{
+	assert.Equal(t, &prometheusExecReceiver{
 		logger:             zap.NewNop(),
 		config:             receiver.(*Config),
 		consumer:           nil,
 		receiverConfig:     nil,
 		subprocessConfig:   nil,
 		prometheusReceiver: nil,
-		context:            nil,
-		host:               nil,
 	}, metricReceiver)
 }

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This file will be used in the end_to_end test for prometheus_exec receiver
+// It acts as a Prometheus exporter, exposing an endpoint to be scraped with metrics
 package main
 
 import (
@@ -23,8 +25,6 @@ import (
 	"time"
 )
 
-// This file will be used in the end_to_end test for prometheus_exec receiver
-// It acts as a Prometheus exporter, exposing an endpoint to be scraped with metrics
 func main() {
 	writeMetrics()
 	server()

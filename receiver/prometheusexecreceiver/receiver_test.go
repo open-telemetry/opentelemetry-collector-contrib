@@ -14,6 +14,9 @@
 package prometheusexecreceiver
 
 import (
+	"context"
+	"fmt"
+	"net"
 	"reflect"
 	"testing"
 	"time"
@@ -49,6 +52,10 @@ func TestGetReceiverConfig(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: "prometheus_exec",
+					NameVal: "prometheus_exec",
+				},
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
@@ -77,7 +84,7 @@ func TestGetReceiverConfig(t *testing.T) {
 		},
 		{
 			name:       "normal config",
-			customName: "mysqld",
+			customName: "prometheus_exec/mysqld",
 			config: &Config{
 				ScrapeInterval: 90 * time.Second,
 				Port:           9104,
@@ -92,6 +99,10 @@ func TestGetReceiverConfig(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: "prometheus_exec",
+					NameVal: "prometheus_exec/mysqld",
+				},
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
@@ -128,7 +139,7 @@ func TestGetReceiverConfig(t *testing.T) {
 		},
 		{
 			name:       "lots of defaults",
-			customName: "postgres",
+			customName: "prometheus_exec/postgres/test",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -142,6 +153,10 @@ func TestGetReceiverConfig(t *testing.T) {
 				},
 			},
 			wantReceiverConfig: &prometheusreceiver.Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					TypeVal: "prometheus_exec",
+					NameVal: "prometheus_exec/postgres/test",
+				},
 				PrometheusConfig: &config.Config{
 					ScrapeConfigs: []*config.ScrapeConfig{
 						{
@@ -149,7 +164,7 @@ func TestGetReceiverConfig(t *testing.T) {
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							Scheme:          "http",
 							MetricsPath:     "/metrics",
-							JobName:         "postgres",
+							JobName:         "postgres/test",
 							HonorLabels:     false,
 							HonorTimestamps: true,
 							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
@@ -180,9 +195,10 @@ func TestGetReceiverConfig(t *testing.T) {
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			got := getReceiverConfig(test.config, test.customName)
+			test.config.SetName(test.customName)
+			got := getReceiverConfig(test.config)
 			if !reflect.DeepEqual(got, test.wantReceiverConfig) {
-				t.Errorf("getReceiverConfig() got = %v, want %v", got, test.wantReceiverConfig)
+				t.Errorf("getReceiverConfig() got = %+v, want %+v", got, test.wantReceiverConfig)
 			}
 		})
 	}
@@ -198,8 +214,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 		wantErr              bool
 	}{
 		{
-			name:       "no command",
-			customName: "prometheus_exec",
+			name: "no command",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
 				Port:           9104,
@@ -236,8 +251,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 			wantErr:              true,
 		},
 		{
-			name:       "normal config",
-			customName: "mysqld",
+			name: "normal config",
 			config: &Config{
 				ScrapeInterval: 90 * time.Second,
 				Port:           9104,
@@ -287,8 +301,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:       "lots of defaults",
-			customName: "postgres",
+			name: "lots of defaults",
 			config: &Config{
 				ScrapeInterval: 60 * time.Second,
 				SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -340,7 +353,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := getSubprocessConfig(test.config, test.customName)
+			got, err := getSubprocessConfig(test.config)
 			if (err != nil) != test.wantErr {
 				t.Errorf("getSubprocessConfig() error = %v, wantErr %v", err, test.wantErr)
 				return
@@ -352,7 +365,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 	}
 }
 
-func TestGetCustomName(t *testing.T) {
+func TestExtractName(t *testing.T) {
 	customNameTests := []struct {
 		name   string
 		config *Config
@@ -426,7 +439,7 @@ func TestGetCustomName(t *testing.T) {
 
 	for _, test := range customNameTests {
 		t.Run(test.name, func(t *testing.T) {
-			got := getCustomName(test.config)
+			got := extractName(test.config)
 			if !reflect.DeepEqual(got, test.want) {
 				t.Errorf("getCustomName() got = %v, want %v", got, test.want)
 			}
@@ -435,52 +448,30 @@ func TestGetCustomName(t *testing.T) {
 }
 
 func TestGenerateRandomPort(t *testing.T) {
-	generateRandomPortTests := []struct {
-		name     string
-		lastPort int
-		wantMin  int
-		wantMax  int
-	}{
-		{
-			name:     "normal test 1",
-			lastPort: 10001,
-			wantMin:  10000,
-			wantMax:  11000,
-		},
-		{
-			name:     "normal test 2",
-			lastPort: 0,
-			wantMin:  10000,
-			wantMax:  11000,
-		},
-		{
-			name:     "normal test 3",
-			lastPort: 10500,
-			wantMin:  10000,
-			wantMax:  11000,
-		},
-	}
-
-	for _, test := range generateRandomPortTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := generateRandomPort(test.lastPort)
-			if got < test.wantMin || got > test.wantMax {
-				t.Errorf("generateRandomPort() got = %v, want smaller than %v and larger than %v", got, test.wantMax, test.wantMin)
-			}
-		})
-	}
+	t.Run("TestGenerateRandomPort", func(t *testing.T) {
+		testPort := 35000
+		holdPort, _ := net.Listen("tcp", fmt.Sprintf(":%v", testPort))
+		got, err := generateRandomPort()
+		if err != nil {
+			t.Errorf("generateRandomPort() returned an error: %w", err)
+		}
+		if got == testPort {
+			t.Errorf("generateRandomPort() got = %v, wanted something different since this port is in use", got)
+		}
+		holdPort.Close()
+	})
 }
 
 func TestFillPortPlaceholders(t *testing.T) {
 	fillPortPlaceholdersTests := []struct {
 		name    string
-		wrapper *prometheusReceiverWrapper
+		wrapper *prometheusExecReceiver
 		newPort int
 		want    *subprocessmanager.SubprocessConfig
 	}{
 		{
 			name: "port is defined by user",
-			wrapper: &prometheusReceiverWrapper{
+			wrapper: &prometheusExecReceiver{
 				originalPort: 10500,
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
@@ -511,7 +502,7 @@ func TestFillPortPlaceholders(t *testing.T) {
 					},
 				},
 			},
-			newPort: 0,
+			newPort: 10500,
 			want: &subprocessmanager.SubprocessConfig{
 				Command: "apache_exporter --port:10500",
 				Env: []subprocessmanager.EnvConfig{
@@ -528,7 +519,7 @@ func TestFillPortPlaceholders(t *testing.T) {
 		},
 		{
 			name: "no string templating",
-			wrapper: &prometheusReceiverWrapper{
+			wrapper: &prometheusExecReceiver{
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
 						Command: "apache_exporter",
@@ -575,7 +566,7 @@ func TestFillPortPlaceholders(t *testing.T) {
 		},
 		{
 			name: "no port defined",
-			wrapper: &prometheusReceiverWrapper{
+			wrapper: &prometheusExecReceiver{
 				config: &Config{
 					SubprocessConfig: subprocessmanager.SubprocessConfig{
 						Command: "apache_exporter --port={{port}}",
@@ -635,13 +626,13 @@ func TestFillPortPlaceholders(t *testing.T) {
 func TestAssignNewRandomPort(t *testing.T) {
 	assignNewRandomPortTests := []struct {
 		name    string
-		wrapper *prometheusReceiverWrapper
+		wrapper *prometheusExecReceiver
 		oldPort int
 		wantErr bool
 	}{
 		{
 			name: "port defined by user",
-			wrapper: &prometheusReceiverWrapper{
+			wrapper: &prometheusExecReceiver{
 				receiverConfig: &prometheusreceiver.Config{
 					PrometheusConfig: &config.Config{
 						ScrapeConfigs: []*config.ScrapeConfig{
@@ -670,7 +661,7 @@ func TestAssignNewRandomPort(t *testing.T) {
 
 	for _, test := range assignNewRandomPortTests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := test.wrapper.assignNewRandomPort(test.oldPort)
+			got, err := test.wrapper.assignNewRandomPort(context.Background())
 			if err != nil {
 				t.Errorf("assignNewRandomPort() threw an error: %v", err)
 			}

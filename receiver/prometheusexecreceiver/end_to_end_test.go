@@ -31,8 +31,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// TestEndToEnd loads the test config.yaml and tests two things:  1. makes sure the prometheus_exec config without an exec key throws an error
-// 2. An end-to-end test where metrics are scraped from a fake exporter that exposes Promtheus metrics, and makes sure that exporter subprocess is restarted correctly
+// TestEndToEnd loads the test config.yaml and tests two things:
+// 1. makes sure the prometheus_exec config without an exec key throws an error
+// 2. An end-to-end test where metrics are scraped from a fake exporter that exposes Promtheus metrics,
+// and makes sure that exporter subprocess is restarted correctly
 func TestEndToEnd(t *testing.T) {
 	// Load the config from the yaml file
 	factories, err := componenttest.ExampleComponents()
@@ -49,15 +51,14 @@ func TestEndToEnd(t *testing.T) {
 	// Receiver without exec key, error expected and checked within function
 	execErrorTest(t, config.Receivers["prometheus_exec"])
 
-	// Waitgroup to allow the goroutines to finish for the following end-to-end tests
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(2)
 
 	// Normal test with port defined, expose metrics from fake exporter and make sure they're scraped/received
-	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/1"], &waitGroup)
+	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/1"], &waitGroup, "end-to-end port defined")
 
 	// Normal test with port undefined by user, same as previous test
-	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/2"], &waitGroup)
+	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/2"], &waitGroup, "end-to-end port not defined")
 
 	waitGroup.Wait()
 }
@@ -66,7 +67,7 @@ func TestEndToEnd(t *testing.T) {
 func execErrorTest(t *testing.T, errorReceiverConfig configmodels.Receiver) {
 	wrapper := new(zap.NewNop(), errorReceiverConfig.(*Config), nil)
 
-	err := wrapper.Start(context.Background(), nil)
+	err := wrapper.Start(context.Background(), componenttest.NewNopHost())
 	if err == nil {
 		t.Errorf("end_to_end_test.go didn't get error, was expecting one since this config has no 'exec' key")
 	}
@@ -76,19 +77,18 @@ func execErrorTest(t *testing.T, errorReceiverConfig configmodels.Receiver) {
 // - wait time is about 1s - to fail and restart, meaning it verifies three things: the scrape is successful (twice), the process was restarted correctly when failed and the underlying
 // Prometheus receiver was correctly stopped and then restarted. For extra testing the metrics values are different every time the subprocess exporter is started
 // And the uniqueness of the metric scraped is verified
-func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, waitGroup *sync.WaitGroup) {
+func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, waitGroup *sync.WaitGroup, testName string) {
 	defer waitGroup.Done()
 
-	// Create the wrapper
 	sink := &exportertest.SinkMetricsExporterOld{}
 	wrapper := new(zap.NewNop(), receiverConfig.(*Config), sink)
 
-	// Initiate building the embedded configs and managing the subprocess with Start()
-	err := wrapper.Start(context.Background(), componenttest.NewNopHost())
+	ctx := context.Background()
+	err := wrapper.Start(ctx, componenttest.NewNopHost())
 	if err != nil {
 		t.Errorf("end_to_end_test.go got error = %w", err)
 	}
-	defer wrapper.Shutdown(context.Background())
+	defer wrapper.Shutdown(ctx)
 
 	var metrics []consumerdata.MetricsData
 
@@ -100,13 +100,11 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 		if len(got) == 0 {
 			return false
 		}
-		time.Sleep(1 * time.Second)
-		metrics = got
 		return true
 	}, waitFor, tick, "No metrics were collected after %v for the first scrape", waitFor)
 
 	// Wait for subprocess to restart - wait time is about 1s - and allow the other test to run in parallel
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(1000 * time.Millisecond)
 
 	metrics = sink.AllMetrics()
 
@@ -126,7 +124,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 }
 
 // validateMetrics iterates over the found metrics and returns true if it finds at least 2 unique metrics, meaning the endpoint
-// was successfully scraped twice AND it the subprocess being handled was stopped and restarted
+// was successfully scraped twice AND the subprocess being handled was stopped and restarted
 func validateMetrics(metricsSlice *[]consumerdata.MetricsData) bool {
 	var value float64
 	for i, val := range *metricsSlice {

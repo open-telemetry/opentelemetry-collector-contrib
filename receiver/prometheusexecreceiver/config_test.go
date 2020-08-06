@@ -58,7 +58,7 @@ var (
 			TypeVal: configmodels.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/end_to_end_test/1",
 		},
-		ScrapeInterval: 2 * time.Second,
+		ScrapeInterval: 100 * time.Millisecond,
 		Port:           9999,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go 9999",
@@ -80,7 +80,7 @@ var (
 			TypeVal: configmodels.Type("prometheus_exec"),
 			NameVal: "prometheus_exec/end_to_end_test/2",
 		},
-		ScrapeInterval: 2 * time.Second,
+		ScrapeInterval: 100 * time.Millisecond,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
 			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env:     []subprocessmanager.EnvConfig{},
