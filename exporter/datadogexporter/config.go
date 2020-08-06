@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	unsetAPIKey = errors.New("Datadog API key is unset")
+	errUnsetAPIKey = errors.New("the Datadog API key is unset")
 )
 
 // Config defines configuration for the Datadog exporter.
@@ -48,7 +48,7 @@ func (c *Config) Sanitize() error {
 
 	// Check API key is set
 	if c.APIKey == "" {
-		return unsetAPIKey
+		return errUnsetAPIKey
 	}
 
 	// Sanitize API key
