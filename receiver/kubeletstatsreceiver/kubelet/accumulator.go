@@ -15,6 +15,8 @@
 package kubelet
 
 import (
+	"time"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -42,6 +44,7 @@ type metricDataAccumulator struct {
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
+	time                  time.Time
 }
 
 const (
@@ -114,7 +117,7 @@ func (a *metricDataAccumulator) accumulate(
 ) {
 	var resourceMetrics []*metricspb.Metric
 	for _, metrics := range m {
-		for _, metric := range metrics {
+		for _, metric := range applyCurrentTime(metrics, a.time) {
 			if metric != nil {
 				metric.Timeseries[0].StartTimestamp = startTime
 				resourceMetrics = append(resourceMetrics, metric)
