@@ -105,3 +105,22 @@ receivers:
 
 If `extra_metadata_labels` is not set, no additional API calls is done to fetch extra metadata.
 
+### Metric Groups
+
+A list of metric groups from which metrics should be collected. By default, metrics from containers,
+pods and nodes will be collected. If `metric_groups` is set, only metrics from the listed groups
+will be collected. Valid groups are `container`, `pod` and `node`. For example, if you're looking to
+collect only `node` and `pod` metrics from the receiver use the following configuration.
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "${K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    metric_groups:
+      - node
+      - pod
+```
+

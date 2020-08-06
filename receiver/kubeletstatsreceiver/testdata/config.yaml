@@ -1,4 +1,5 @@
 receivers:
+  kubeletstats/default:
   kubeletstats/tls:
     collection_interval: 10s
     auth_type: "tls"
@@ -16,6 +17,10 @@ receivers:
     auth_type: "serviceAccount"
     extra_metadata_labels:
     - container.id
+  kubeletstats/metric_groups:
+    collection_interval: 20s
+    auth_type: "serviceAccount"
+    metric_groups: [pod, node]
 exporters:
   exampleexporter:
 service:

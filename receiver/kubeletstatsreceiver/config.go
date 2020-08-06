@@ -15,6 +15,7 @@
 package kubeletstatsreceiver
 
 import (
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -36,4 +37,43 @@ type Config struct {
 	// No additional metadata is fetched by default, so there are no extra calls to /pods endpoint.
 	// Only container.id label is supported at the moment.
 	ExtraMetadataLabels []kubelet.MetadataLabel `mapstructure:"extra_metadata_labels"`
+
+	// MetricGroupsToCollect provides a list of metrics groups to collect metrics from.
+	// "container", "pod" and "node" are the only valid groups.
+	MetricGroupsToCollect []kubelet.MetricGroup `mapstructure:"metric_groups"`
+}
+
+// getReceiverOptions returns receiverOptions is the config is valid,
+// otherwise it will return an error.
+func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
+	err := kubelet.ValidateMetadataLabelsConfig(cfg.ExtraMetadataLabels)
+	if err != nil {
+		return nil, err
+	}
+
+	mgs, err := getMapFromSlice(cfg.MetricGroupsToCollect)
+	if err != nil {
+		return nil, err
+	}
+
+	return &receiverOptions{
+		name:                  cfg.Name(),
+		collectionInterval:    cfg.CollectionInterval,
+		extraMetadataLabels:   cfg.ExtraMetadataLabels,
+		metricGroupsToCollect: mgs,
+	}, nil
+}
+
+// getMapFromSlice returns a set of kubelet.MetricGroup values from
+// the provided list. Returns an err if invalid entries are encountered.
+func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]bool, error) {
+	out := make(map[kubelet.MetricGroup]bool, len(collect))
+	for _, c := range collect {
+		if !kubelet.ValidMetricGroups[c] {
+			return nil, errors.New("invalid entry in metric_groups")
+		}
+		out[c] = true
+	}
+
+	return out, nil
 }
