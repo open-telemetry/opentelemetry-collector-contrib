@@ -23,10 +23,25 @@ import (
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
+type MetricGroup string
+
+const (
+	ContainerMetricGroup = MetricGroup("container")
+	PodMetricGroup       = MetricGroup("pod")
+	NodeMetricGroup      = MetricGroup("node")
+)
+
+var ValidMetricGroups = map[MetricGroup]bool{
+	ContainerMetricGroup: true,
+	PodMetricGroup:       true,
+	NodeMetricGroup:      true,
+}
+
 type metricDataAccumulator struct {
-	m        []*consumerdata.MetricsData
-	metadata Metadata
-	logger   *zap.Logger
+	m                     []*consumerdata.MetricsData
+	metadata              Metadata
+	logger                *zap.Logger
+	metricGroupsToCollect map[MetricGroup]bool
 }
 
 const (
@@ -37,6 +52,10 @@ const (
 )
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
+	if !a.metricGroupsToCollect[NodeMetricGroup] {
+		return
+	}
+
 	// todo s.Runtime.ImageFs
 	a.accumulate(
 		timestampProto(s.StartTime.Time),
@@ -50,6 +69,10 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 }
 
 func (a *metricDataAccumulator) podStats(podResource *resourcepb.Resource, s stats.PodStats) {
+	if !a.metricGroupsToCollect[PodMetricGroup] {
+		return
+	}
+
 	a.accumulate(
 		timestampProto(s.StartTime.Time),
 		podResource,
@@ -62,6 +85,10 @@ func (a *metricDataAccumulator) podStats(podResource *resourcepb.Resource, s sta
 }
 
 func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource, s stats.ContainerStats) {
+	if !a.metricGroupsToCollect[ContainerMetricGroup] {
+		return
+	}
+
 	resource, err := containerResource(podResource, s, a.metadata)
 	if err != nil {
 		a.logger.Warn("failed to fetch container metrics", zap.String("pod", podResource.Labels[labelPodName]),
