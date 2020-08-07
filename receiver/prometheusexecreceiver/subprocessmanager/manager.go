@@ -43,7 +43,7 @@ func GetDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 		return initialDelay
 	}
 
-	// Return initialDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
+	// Return initialDelay times 2 to the power of crashCount-healthyCrashCount (to offset for the allowed crashes) added to a random number
 	return initialDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
 }
 

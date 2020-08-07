@@ -18,14 +18,22 @@ import (
 	"context"
 	"path"
 	"testing"
+	"time"
 
+	"github.com/prometheus/common/model"
+	promconfig "github.com/prometheus/prometheus/config"
+	sdconfig "github.com/prometheus/prometheus/discovery/config"
+	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
 
 func TestCreateTraceAndMetricsReceiver(t *testing.T) {
@@ -57,12 +65,46 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	// Test CreateMetricsReceiver
 	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), receiver, nil)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, &prometheusExecReceiver{
-		logger:             zap.NewNop(),
-		config:             receiver.(*Config),
-		consumer:           nil,
-		receiverConfig:     nil,
-		subprocessConfig:   nil,
+
+	wantPer := &prometheusExecReceiver{
+		logger:   zap.NewNop(),
+		config:   receiver.(*Config),
+		consumer: nil,
+		promReceiverConfig: &prometheusreceiver.Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "prometheus_exec",
+				NameVal: "prometheus_exec",
+			},
+			PrometheusConfig: &promconfig.Config{
+				ScrapeConfigs: []*promconfig.ScrapeConfig{
+					{
+						ScrapeInterval:  model.Duration(60 * time.Second),
+						ScrapeTimeout:   model.Duration(10 * time.Second),
+						Scheme:          "http",
+						MetricsPath:     "/metrics",
+						JobName:         "prometheus_exec",
+						HonorLabels:     false,
+						HonorTimestamps: true,
+						ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
+							StaticConfigs: []*targetgroup.Group{
+								{
+									Targets: []model.LabelSet{
+										{model.AddressLabel: model.LabelValue("localhost:0")},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		subprocessConfig: &subprocessmanager.SubprocessConfig{
+			Command: "",
+			Env:     []subprocessmanager.EnvConfig{},
+		},
+		originalPort:       0,
 		prometheusReceiver: nil,
-	}, metricReceiver)
+	}
+
+	assert.Equal(t, wantPer, metricReceiver)
 }

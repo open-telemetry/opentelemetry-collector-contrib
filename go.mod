@@ -45,7 +45,6 @@ require (
 	go.opentelemetry.io/collector v0.7.0
 	go.opentelemetry.io/otel v0.9.0 // indirect
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
-	golang.org/x/tools v0.0.0-20200721220347-b42efcd11c08 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5
 )
 

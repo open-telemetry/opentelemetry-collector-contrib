@@ -97,10 +97,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, wait
 	const tick = 500 * time.Millisecond
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
-		if len(got) == 0 {
-			return false
-		}
-		return true
+		return len(got) != 0
 	}, waitFor, tick, "No metrics were collected after %v for the first scrape", waitFor)
 
 	// Wait for subprocess to restart - wait time is about 1s - and allow the other test to run in parallel

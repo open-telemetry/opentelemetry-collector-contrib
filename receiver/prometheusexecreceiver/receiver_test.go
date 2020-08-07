@@ -196,7 +196,7 @@ func TestGetReceiverConfig(t *testing.T) {
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
 			test.config.SetName(test.customName)
-			got := getReceiverConfig(test.config)
+			got := getPromReceiverConfig(test.config)
 			if !reflect.DeepEqual(got, test.wantReceiverConfig) {
 				t.Errorf("getReceiverConfig() got = %+v, want %+v", got, test.wantReceiverConfig)
 			}
@@ -211,7 +211,6 @@ func TestGetSubprocessConfig(t *testing.T) {
 		config               *Config
 		wantReceiverConfig   *prometheusreceiver.Config
 		wantSubprocessConfig *subprocessmanager.SubprocessConfig
-		wantErr              bool
 	}{
 		{
 			name: "no command",
@@ -247,8 +246,9 @@ func TestGetSubprocessConfig(t *testing.T) {
 					},
 				},
 			},
-			wantSubprocessConfig: nil,
-			wantErr:              true,
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
+				Env: []subprocessmanager.EnvConfig{},
+			},
 		},
 		{
 			name: "normal config",
@@ -298,7 +298,6 @@ func TestGetSubprocessConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "lots of defaults",
@@ -347,19 +346,14 @@ func TestGetSubprocessConfig(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 	}
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := getSubprocessConfig(test.config)
-			if (err != nil) != test.wantErr {
-				t.Errorf("getSubprocessConfig() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
+			got := getSubprocessConfig(test.config)
 			if !reflect.DeepEqual(got, test.wantSubprocessConfig) {
-				t.Errorf("getSubprocessConfig() got = %v, want %v", got, test.wantSubprocessConfig)
+				t.Errorf("getSubprocessConfig() got = %+v, want %+v", got, test.wantSubprocessConfig)
 			}
 		})
 	}
@@ -633,7 +627,7 @@ func TestAssignNewRandomPort(t *testing.T) {
 		{
 			name: "port defined by user",
 			wrapper: &prometheusExecReceiver{
-				receiverConfig: &prometheusreceiver.Config{
+				promReceiverConfig: &prometheusreceiver.Config{
 					PrometheusConfig: &config.Config{
 						ScrapeConfigs: []*config.ScrapeConfig{
 							{
