@@ -76,6 +76,8 @@ translation_rules:
     # k8s cluster receiver metrics
     k8s/container/cpu/limit: kubernetes.container_cpu_limit
     k8s/container/cpu/request: kubernetes.container_cpu_request
+    k8s/container/ephemeral-storage/limit: kubernetes.container_ephemeral_storage_limit
+    k8s/container/ephemeral-storage/request: kubernetes.container_ephemeral_storage_request
     k8s/container/memory/limit: kubernetes.container_memory_limit
     k8s/container/memory/request: kubernetes.container_memory_request
     k8s/container/ready: kubernetes.container_ready
