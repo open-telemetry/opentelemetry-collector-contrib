@@ -17,7 +17,6 @@ package prometheusexecreceiver
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"net"
 	"strconv"
 	"strings"
@@ -44,8 +43,6 @@ const (
 	// healthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
 	healthyCrashCount int = 3
 )
-
-var random *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type prometheusExecReceiver struct {
 	logger   *zap.Logger

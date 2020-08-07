@@ -17,7 +17,6 @@ package prometheusexecreceiver
 import (
 	"context"
 	"path"
-	"sync"
 	"testing"
 	"time"
 
@@ -51,16 +50,11 @@ func TestEndToEnd(t *testing.T) {
 	// Receiver without exec key, error expected and checked within function
 	execErrorTest(t, config.Receivers["prometheus_exec"])
 
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(2)
-
 	// Normal test with port defined, expose metrics from fake exporter and make sure they're scraped/received
-	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/1"], &waitGroup, "end-to-end port defined")
+	endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/1"], "end-to-end port defined")
 
 	// Normal test with port undefined by user, same as previous test
-	go endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/2"], &waitGroup, "end-to-end port not defined")
-
-	waitGroup.Wait()
+	endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/2"], "end-to-end port not defined")
 }
 
 // execErrorTest makes sure the config passed throws an error, since it's missing the exec key
@@ -77,9 +71,7 @@ func execErrorTest(t *testing.T, errorReceiverConfig configmodels.Receiver) {
 // - wait time is about 1s - to fail and restart, meaning it verifies three things: the scrape is successful (twice), the process was restarted correctly when failed and the underlying
 // Prometheus receiver was correctly stopped and then restarted. For extra testing the metrics values are different every time the subprocess exporter is started
 // And the uniqueness of the metric scraped is verified
-func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, waitGroup *sync.WaitGroup, testName string) {
-	defer waitGroup.Done()
-
+func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, testName string) {
 	sink := &exportertest.SinkMetricsExporterOld{}
 	wrapper := new(zap.NewNop(), receiverConfig.(*Config), sink)
 
