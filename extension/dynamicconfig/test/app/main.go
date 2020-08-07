@@ -21,8 +21,7 @@ import (
 	"log"
 	"time"
 
-	"go.opentelemetry.io/contrib/sdk/dynamicconfig/sdk/metric/controller/notifier"
-	"go.opentelemetry.io/contrib/sdk/dynamicconfig/sdk/metric/controller/push"
+	"go.opentelemetry.io/contrib/sdk/dynamicconfig/metric/controller/push"
 
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/api/kv"
@@ -43,19 +42,11 @@ func initProvider() (*otlp.Exporter, *push.Controller) {
 
 	resource := resource.New(kv.String("R", "V"))
 
-	ntf, err := notifier.NewNotifier(
-		notifier.GetDefaultConfig(10, []byte{'f', 'o', 'o'}),
-		notifier.WithCheckFrequency(5*time.Second),
-		notifier.WithConfigHost("localhost:55700"),
-		notifier.WithResource(resource),
-	)
-	handleErr(err, "failed to create notifier")
-	ntf.Start()
-
 	pusher := push.New(
 		simple.NewWithExactDistribution(),
 		exp,
-		push.WithNotifier(ntf),
+		"localhost:55700",
+		push.WithResource(resource),
 	)
 	global.SetMeterProvider(pusher.Provider())
 	pusher.Start()

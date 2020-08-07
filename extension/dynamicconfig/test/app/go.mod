@@ -11,6 +11,8 @@ require (
 // replace github.com/open-telemetry/opentelemetry-proto => github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200716191220-7eb25882f08b
 replace github.com/open-telemetry/opentelemetry-proto => github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200716191220-7eb25882f08b
 
-replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200717014637-f8d1d2438c26
+// replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200724190830-8b4f0692654b
+replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200806202511-205cb1ad8187
 
-replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200717014637-f8d1d2438c26
+// replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200724190830-8b4f0692654b
+replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200806202511-205cb1ad8187

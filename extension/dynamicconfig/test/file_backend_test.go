@@ -50,7 +50,7 @@ func testFileBackend(t *testing.T) {
 	t.Log("capturing logs for period=SEC_5")
 	avgDuration = timeLogs(t, stderr, 10, 10)
 	t.Log("avg duration:", avgDuration)
-	if !fuzzyEqualDuration(avgDuration, 5*time.Second, 2999*time.Millisecond) {
+	if !fuzzyEqualDuration(avgDuration, 5*time.Second, 999*time.Millisecond) {
 		t.Errorf("expected period=SEC_5, got: %v", avgDuration)
 	}
 }

@@ -105,7 +105,7 @@ func timeLogs(t *testing.T, stderr io.ReadCloser, numSamples, discard int) time.
 
 	var total time.Duration
 	var prevTime time.Time
-	for i := 0; i < numSamples; {
+	for i := 0; i <= numSamples; {
 		scanner.Scan()
 		nextLine := scanner.Text()
 

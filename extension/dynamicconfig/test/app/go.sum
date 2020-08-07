@@ -919,6 +919,7 @@ github.com/valyala/quicktemplate v1.2.0/go.mod h1:EH+4AkTd43SvgIbQHYu59/cJyxDoOV
 github.com/valyala/tcplisten v0.0.0-20161114210144-ceec8f93295a/go.mod h1:v3UYOV9WzVtRmSR+PDvWpU/qWl4Wa5LApYYX4ZtKbio=
 github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200708120024-373681bedf7c h1:/4p4SWTLTkwF2UTGVGQ1kB///ALV0rwf5JPvtB1DQGE=
 github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200708120024-373681bedf7c/go.mod h1:g4BXWOrb66AyXbXlSgfGWR7TQzXQX4Oq2NidBrSwZPM=
+github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200806202511-205cb1ad8187 h1:QpPdG9hAP8MaQvyIFH4eqF3rch86iFaXV2juiaH/9xA=
 github.com/vmingchen/opentelemetry-go-contrib/exporters/metric/dynamicconfig v0.0.0-20200708120024-373681bedf7c h1:XaCrarIW+ZEm/vxiHkHdBLOe8jMLk8Fjx+jlQLs9TAo=
 github.com/vmingchen/opentelemetry-go-contrib/exporters/metric/dynamicconfig v0.0.0-20200708120024-373681bedf7c/go.mod h1:qZxteriQyvQLoV9GjrMhWlE0PLh3glIyp9skY2mivUI=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200715143638-a63633cff63e h1:Yl4gw3rUs7wjNq9682msBSoqNkCrpzhIF+lzlZRxkWQ=
@@ -927,6 +928,10 @@ github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-202007152
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200715211136-6195eecdc418/go.mod h1:bEFxs5uIfxjvr9hQAu3+9WLJYLSpcsXVk9/iLBKXeUk=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200717014637-f8d1d2438c26 h1:4kr6aMgsgYjAY1zA63Ahc3LlihWVZVI7k6o6h6vhoxA=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200717014637-f8d1d2438c26/go.mod h1:sQls5iyYHbzGujen5BFjT3jKtw6ECB0xX05un0Ts1qA=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200724190830-8b4f0692654b h1:AQWQEO5CH7uKs9ecKc9Yu1YOiPTs8YI2RYeKMStlMJA=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200724190830-8b4f0692654b/go.mod h1:sQls5iyYHbzGujen5BFjT3jKtw6ECB0xX05un0Ts1qA=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200806202511-205cb1ad8187 h1:Xc4LIfJyMm6q4/2qNCwDgedyw0EIbrOCljou7ej3E9s=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200806202511-205cb1ad8187/go.mod h1:WMCn+Ye685+XuDzy41ZVHiF79nMzuvnJ4uX+nv3cgQ8=
 github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200707164106-b68642716098 h1:fC5uKIj6DXuCc1xxCLVzt5DRF68gGRMk/1IGiacy0jI=
 github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200707164106-b68642716098/go.mod h1:L2ZI0c8uiqieH8UtekYdPKK1B4MKAdplt46DUjTilK4=
 github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200716191220-7eb25882f08b h1:uvvdDsCGxD6tSJ58rgQ9nhivTQhKxI8y5354Y+4ZXrM=
@@ -947,6 +952,7 @@ go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.1/go.mod h1:Ap50jQcDJrx6rB6VgeeFPtuPIf3wMRvRfrfYDO6+BmA=
 go.opencensus.io v0.22.3/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
+go.opentelemetry.io v0.1.0 h1:EANZoRCOP+A3faIlw/iN6YEWoYb1vleZRKm1EvH8T48=
 go.opentelemetry.io/otel v0.7.0 h1:u43jukpwqR8EsyeJOMgrsUgZwVI1e1eVw7yuzRkD1l0=
 go.opentelemetry.io/otel v0.7.0/go.mod h1:aZMyHG5TqDOXEgH2tyLiXSUKly1jT3yqE9PmrzIeCdo=
 go.opentelemetry.io/otel/exporters/otlp v0.7.0 h1:uDxfCqueVUcjSvMfgBI7TCgoqwiEmDgKMoy1XYCHZGQ=
