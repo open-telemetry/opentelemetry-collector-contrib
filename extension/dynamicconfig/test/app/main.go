@@ -40,7 +40,10 @@ func initProvider() (*otlp.Exporter, *push.Controller) {
 	)
 	handleErr(err, "failed to create exporter")
 
-	resource := resource.New(kv.String("R", "V"))
+	resource := resource.New(
+		kv.String("name", "seuss"),
+		kv.String("profession", "doctor"),
+	)
 
 	pusher := push.New(
 		simple.NewWithExactDistribution(),
@@ -62,15 +65,16 @@ func main() {
 	meter := pusher.Provider().Meter("test-meter")
 	labels := []kv.KeyValue{kv.Bool("test", true)}
 
-	valuerecorder := metric.Must(meter).
-		NewFloat64Counter(
-			"an_important_metric",
-			metric.WithDescription("Measures the cumulative epicness of the app"),
-		).Bind(labels...)
-	defer valuerecorder.Unbind()
+	oneMetric := metric.Must(meter).NewFloat64Counter("one-fish").Bind(labels...)
+	twoMetric := metric.Must(meter).NewFloat64Counter("two-fish").Bind(labels...)
+	redMetric := metric.Must(meter).NewFloat64Counter("red-fish").Bind(labels...)
+	blueMetric := metric.Must(meter).NewFloat64Counter("blue-fish").Bind(labels...)
 
 	for {
-		valuerecorder.Add(context.Background(), 1.0)
+		oneMetric.Add(context.Background(), 1.0)
+		twoMetric.Add(context.Background(), 1.0)
+		redMetric.Add(context.Background(), 1.0)
+		blueMetric.Add(context.Background(), 1.0)
 		time.Sleep(time.Millisecond * 500)
 	}
 

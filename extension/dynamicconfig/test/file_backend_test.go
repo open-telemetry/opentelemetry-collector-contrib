@@ -53,4 +53,28 @@ func testFileBackend(t *testing.T) {
 	if !fuzzyEqualDuration(avgDuration, 5*time.Second, 999*time.Millisecond) {
 		t.Errorf("expected period=SEC_5, got: %v", avgDuration)
 	}
+
+	writeString(t, schedFile, multiSchedule)
+
+	t.Log("propogating per-metric periods")
+	time.Sleep(6 * time.Second)
+
+	t.Log("capturing logs for per-metric periods")
+	avgDuration = timeLogs(t, stderr, 12, 6)
+	t.Log("avg duration:", avgDuration)
+	if !fuzzyEqualDuration(avgDuration, 1500*time.Millisecond, 999*time.Millisecond) {
+		t.Errorf("expected average period=1.5s, got: %v", avgDuration)
+	}
+
+	writeString(t, schedFile, resSchedule)
+
+	t.Log("propogating per-metric periods")
+	time.Sleep(6 * time.Second)
+
+	t.Log("capturing logs for per-metric periods")
+	avgDuration = timeLogs(t, stderr, 10, 10)
+	t.Log("avg duration:", avgDuration)
+	if !fuzzyEqualDuration(avgDuration, 2*time.Second, 999*time.Millisecond) {
+		t.Errorf("expected average period=1.5s, got: %v", avgDuration)
+	}
 }

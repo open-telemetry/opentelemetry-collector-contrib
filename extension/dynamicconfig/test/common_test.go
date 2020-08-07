@@ -29,6 +29,7 @@ import (
 	"time"
 )
 
+// TODO: separate by resource blocks?
 var (
 	sec1Schedule = `ConfigBlocks:
     Schedules:
@@ -41,6 +42,32 @@ var (
     - InclusionPatterns:
         - StartsWith: "*"
       Period: SEC_5`
+
+	multiSchedule = `ConfigBlocks:
+    Schedules:
+    - InclusionPatterns:
+        - StartsWith: "one"
+      Period: "2"
+    - InclusionPatterns:
+        - StartsWith: "two"
+      Period: "3"
+    - InclusionPatterns:
+        - StartsWith: "red"
+      Period: "6"`
+
+	resSchedule = `ConfigBlocks:
+    - Resource:
+      - "name:seuss"
+      Schedules:
+      - InclusionPatterns:
+          - StartsWith: "*"
+        Period: "2"
+    - Resource:
+      - "profession:doctor"
+      Schedules:
+      - InclusionPatterns:
+          - StartsWith: "*"
+        Period: "4"`
 )
 
 func startCollector(t *testing.T, configPath string, metricsAddr string) (*exec.Cmd, io.ReadCloser) {
@@ -90,6 +117,14 @@ func waitForReady(stderr io.ReadCloser, done chan<- struct{}) error {
 
 func startSampleApp(t *testing.T) *exec.Cmd {
 	cmd := exec.Command("app/main")
+	// stderr, _ := cmd.StderrPipe()
+	// go func() {
+	// 	scanner := bufio.NewScanner(stderr)
+	// 	for {
+	// 		scanner.Scan()
+	// 		log.Println("[APP]", scanner.Text())
+	// 	}
+	// }()
 
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("fail to start app: %v", err)
