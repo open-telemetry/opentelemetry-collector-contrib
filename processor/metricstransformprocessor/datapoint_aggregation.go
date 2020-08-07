@@ -102,7 +102,9 @@ func (mtp *metricsTransformProcessor) mergePoints(timestampToPoints map[int64][]
 
 		}
 	}
-	sort.Sort(pointsByTimestamp(newPoints))
+	sort.SliceStable(newPoints, func(i, j int) bool {
+		return mtp.compareTimestamps(newPoints[i].Timestamp, newPoints[j].Timestamp)
+	})
 	return newPoints
 }
 
