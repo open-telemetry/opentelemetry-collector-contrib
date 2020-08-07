@@ -15,6 +15,8 @@
 package kubelet
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
@@ -30,6 +32,7 @@ func MetricsData(
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
+		time:                  time.Now(),
 	}
 
 	acc.nodeStats(summary.Node)
