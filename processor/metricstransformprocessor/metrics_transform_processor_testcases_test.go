@@ -378,13 +378,14 @@ var (
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).
+					addTimeseries(2, []string{"label1-value2", "label2-value2"}).
+					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).addDoublePoint(2, 3, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).
-					addDoublePoint(0, 1, 2).
+					addTimeseries(1, []string{"label1-value1"}).addTimeseries(2, []string{"label1-value2"}).
+					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).
 					build(),
 			},
 		},
