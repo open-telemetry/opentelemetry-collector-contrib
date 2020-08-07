@@ -54,9 +54,9 @@ type prometheusExecReceiver struct {
 
 	// Subprocess data
 	subprocessConfig *subprocessmanager.SubprocessConfig
+	originalPort     int
 
-	// Receiver data
-	originalPort       int
+	// Underlying receiver data
 	prometheusReceiver component.MetricsReceiver
 }
 
