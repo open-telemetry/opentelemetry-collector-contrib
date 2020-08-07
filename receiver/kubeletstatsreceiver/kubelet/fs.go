@@ -20,11 +20,11 @@ import (
 )
 
 func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		fsAvailableMetric(prefix, s),
 		fsCapacityMetric(prefix, s),
 		fsUsedMetric(prefix, s),
-	}, s.Time.Time)
+	}
 }
 
 func fsAvailableMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
