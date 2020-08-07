@@ -116,6 +116,11 @@ translation_rules:
     k8s/stateful_set/ready_pods: kubernetes.stateful_set.ready
     k8s/stateful_set/updated_pods: kubernetes.stateful_set.updated
 
+    # load metrics
+    system.cpu.load_average.15m: load.longterm
+    system.cpu.load_average.5m: load.midterm
+    system.cpu.load_average.1m: load.shortterm
+
 # container network metrics
 - action: split_metric
   metric_name: k8s.pod.network.io
