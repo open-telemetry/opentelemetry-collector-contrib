@@ -30,7 +30,7 @@ func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric
 	groupedTimeseries := mtp.groupTimeseriesByLabelSet(metric, labelIdxs)
 
 	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
-	sort.SliceStable(aggregatedTimeseries, func(i, j int) bool {
+	sort.Slice(aggregatedTimeseries, func(i, j int) bool {
 		return mtp.compareTimestamps(aggregatedTimeseries[i].StartTimestamp, aggregatedTimeseries[j].StartTimestamp)
 	})
 	metric.Timeseries = aggregatedTimeseries
