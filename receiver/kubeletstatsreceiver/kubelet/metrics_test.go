@@ -43,10 +43,10 @@ func TestMetricAccumulator(t *testing.T) {
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
 	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata)
-	requireMetricsDataOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
+	requireMetricsDataOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups, nil))
 
 	// Disable all groups
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{}, nil)))
 }
 
 func requireMetricsDataOk(t *testing.T, mds []consumerdata.MetricsData) {
@@ -170,5 +170,5 @@ func fakeMetrics() []consumerdata.MetricsData {
 		PodMetricGroup:       true,
 		NodeMetricGroup:      true,
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs)
+	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs, nil)
 }

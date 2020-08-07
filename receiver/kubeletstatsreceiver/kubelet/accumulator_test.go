@@ -15,6 +15,7 @@
 package kubelet
 
 import (
+	"errors"
 	"testing"
 
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
@@ -31,16 +32,17 @@ import (
 )
 
 // TestMetadataErrorCases walks through the error cases of collecting
-// metadata. Happy paths are covered in metadata_test.go.
+// metadata. Happy paths are covered in metadata_test.go and volume_test.go.
 func TestMetadataErrorCases(t *testing.T) {
 	tests := []struct {
-		name                  string
-		metricGroupsToCollect map[MetricGroup]bool
-		testScenario          func(acc metricDataAccumulator)
-		metadata              Metadata
-		numMDs                int
-		numLogs               int
-		logMessages           []string
+		name                    string
+		metricGroupsToCollect   map[MetricGroup]bool
+		testScenario            func(acc metricDataAccumulator)
+		metadata                Metadata
+		numMDs                  int
+		numLogs                 int
+		logMessages             []string
+		volumeClaimLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -116,7 +118,6 @@ func TestMetadataErrorCases(t *testing.T) {
 				"Failed to gather additional volume metadata. Skipping metric collection.",
 			},
 		},
-
 		{
 			name: "Fails to get volume metadata - volume not found",
 			metricGroupsToCollect: map[MetricGroup]bool{
@@ -162,6 +163,57 @@ func TestMetadataErrorCases(t *testing.T) {
 				"Failed to gather additional volume metadata. Skipping metric collection.",
 			},
 		},
+		{
+			name: "Fails to get volume metadata - metadata from PVC",
+			metricGroupsToCollect: map[MetricGroup]bool{
+				VolumeMetricGroup: true,
+			},
+			metadata: NewMetadata(
+				[]MetadataLabel{MetadataLabelVolumeType},
+				&v1.PodList{
+					Items: []v1.Pod{
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								UID: types.UID("pod-uid-123"),
+							},
+							Spec: v1.PodSpec{
+								Volumes: []v1.Volume{
+									{
+										Name: "volume-0",
+										VolumeSource: v1.VolumeSource{
+											PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+												ClaimName: "claim",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			),
+			volumeClaimLabelsSetter: func(volumeClaim, namespace string, labels map[string]string) error {
+				// Mock failure cases.
+				return errors.New("")
+			},
+			testScenario: func(acc metricDataAccumulator) {
+				podResource := &resourcepb.Resource{
+					Labels: map[string]string{
+						"k8s.pod.uid": "pod-uid-123",
+					},
+				}
+				volumeStats := stats.VolumeStats{
+					Name: "volume-0",
+				}
+
+				acc.volumeStats(podResource, volumeStats)
+			},
+			numMDs:  0,
+			numLogs: 1,
+			logMessages: []string{
+				"Failed to gather additional volume metadata. Skipping metric collection.",
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -171,10 +223,11 @@ func TestMetadataErrorCases(t *testing.T) {
 
 			var mds []consumerdata.MetricsData
 			acc := metricDataAccumulator{
-				m:                     mds,
-				metadata:              tt.metadata,
-				logger:                logger,
-				metricGroupsToCollect: tt.metricGroupsToCollect,
+				m:                       mds,
+				metadata:                tt.metadata,
+				logger:                  logger,
+				metricGroupsToCollect:   tt.metricGroupsToCollect,
+				volumeClaimLabelsSetter: tt.volumeClaimLabelsSetter,
 			}
 
 			tt.testScenario(acc)

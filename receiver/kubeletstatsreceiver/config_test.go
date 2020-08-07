@@ -151,12 +151,36 @@ func TestLoadConfig(t *testing.T) {
 			kubelet.VolumeMetricGroup,
 		},
 	}, metricGroupsCfg)
+
+	metadataWithK8sAPICfg := cfg.Receivers["kubeletstats/metadata_with_k8s_api"].(*Config)
+	require.Equal(t, &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/metadata_with_k8s_api",
+		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "serviceAccount",
+			},
+		},
+		CollectionInterval: duration,
+		ExtraMetadataLabels: []kubelet.MetadataLabel{
+			kubelet.MetadataLabelVolumeType,
+		},
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.ContainerMetricGroup,
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
+		K8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+	}, metadataWithK8sAPICfg)
 }
 
 func TestGetReceiverOptions(t *testing.T) {
 	type fields struct {
 		extraMetadataLabels   []kubelet.MetadataLabel
 		metricGroupsToCollect []kubelet.MetricGroup
+		k8sAPIConfig          *k8sconfig.APIConfig
 	}
 	tests := []struct {
 		name    string
@@ -207,6 +231,14 @@ func TestGetReceiverOptions(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Fails to create k8s API client",
+			fields: fields{
+				k8sAPIConfig: &k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -217,6 +249,7 @@ func TestGetReceiverOptions(t *testing.T) {
 				CollectionInterval:    10 * time.Second,
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
 				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,
+				K8sAPIConfig:          tt.fields.k8sAPIConfig,
 			}
 			got, err := cfg.getReceiverOptions()
 			if (err != nil) != tt.wantErr {

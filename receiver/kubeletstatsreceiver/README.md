@@ -110,6 +110,29 @@ receivers:
 
 If `extra_metadata_labels` is not set, no additional API calls is done to fetch extra metadata.
 
+#### Collecting Additional Volume Metadata
+
+When dealing with Persistent Volume Claims, it is possible to optionally sync metdadata from the underlying
+storage resource rather than just the volume claim. This is achieved by talking to the Kubernetes API. Below
+is an example, configuration to achieve this.
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "${K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    extra_metadata_labels:
+      - k8s.volume.type
+    k8s_api_config:
+      auth_type: serviceAccount
+```
+
+If `k8s_api_config` set, the receiver will attempt to collect metadata from underlying storage resources for
+Persistent Volume Claims. For example, if a Pod is using a PVC backed by an EBS instance on AWS, the receiver
+would set the `k8s.volume.type` label to be `awsElasticBlockStore` rather than `persistentVolumeClaim`.
+
 ### Metric Groups
 
 A list of metric groups from which metrics should be collected. By default, metrics from containers,

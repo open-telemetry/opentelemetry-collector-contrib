@@ -43,11 +43,12 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []consumerdata.MetricsData
-	metadata              Metadata
-	logger                *zap.Logger
-	metricGroupsToCollect map[MetricGroup]bool
-	time                  time.Time
+	m                       []consumerdata.MetricsData
+	metadata                Metadata
+	logger                  *zap.Logger
+	metricGroupsToCollect   map[MetricGroup]bool
+	time                    time.Time
+	volumeClaimLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error
 }
 
 const (
@@ -119,7 +120,7 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 		return
 	}
 
-	volume, err := volumeResource(podResource, s, a.metadata)
+	volume, err := volumeResource(podResource, s, a.metadata, a.volumeClaimLabelsSetter)
 	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",

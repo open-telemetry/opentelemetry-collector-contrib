@@ -247,11 +247,63 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 		{
 			name: "persistentVolumeClaim",
 			vs: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{},
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "claim-name",
+				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]string{
-				"k8s.volume.type": "persistentVolumeClaim",
+				"k8s.volume.type":                "persistentVolumeClaim",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+			},
+		},
+		{
+			name: "awsElasticBlockStore",
+			vs: v1.VolumeSource{
+				AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
+					VolumeID:  "volume_id",
+					FSType:    "fs_type",
+					Partition: 10,
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type": "awsElasticBlockStore",
+				"aws.volume.id":   "volume_id",
+				"fs.type":         "fs_type",
+				"partition":       "10",
+			},
+		},
+		{
+			name: "gcePersistentDisk",
+			vs: v1.VolumeSource{
+				GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
+					PDName:    "pd_name",
+					FSType:    "fs_type",
+					Partition: 10,
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type": "gcePersistentDisk",
+				"gce.pd.name":     "pd_name",
+				"fs.type":         "fs_type",
+				"partition":       "10",
+			},
+		},
+		{
+			name: "glusterfs",
+			vs: v1.VolumeSource{
+				Glusterfs: &v1.GlusterfsVolumeSource{
+					EndpointsName: "endspoints_name",
+					Path:          "path",
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type":          "glusterfs",
+				"glusterfs.endpoints.name": "endspoints_name",
+				"glusterfs.path":           "path",
 			},
 		},
 		{

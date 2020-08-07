@@ -62,15 +62,35 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 	}, nil
 }
 
-func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Metadata) (*resourcepb.Resource, error) {
+func volumeResource(
+	pod *resourcepb.Resource, vs stats.VolumeStats,
+	metadata Metadata,
+	pvcDetailedLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error) (*resourcepb.Resource, error) {
 	labels := map[string]string{
 		labelVolumeName: vs.Name,
 	}
 
-	err := metadata.setExtraLabels(labels, pod.Labels[conventions.AttributeK8sPodUID], MetadataLabelVolumeType, labels[labelVolumeName])
+	err := metadata.setExtraLabels(
+		labels, pod.Labels[conventions.AttributeK8sPodUID],
+		MetadataLabelVolumeType, labels[labelVolumeName],
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
 
+	}
+
+	// If pvcDetailedLabelsSetter is not nil and it's a PVC,
+	// attempt to collect labels from underlying persistent volume.
+	if pvcDetailedLabelsSetter != nil && labels[labelVolumeType] == labelValuePersistentVolumeClaim {
+		err := pvcDetailedLabelsSetter(
+			labels[labelPersistentVolumeClaimName],
+			pod.Labels[conventions.AttributeK8sNamespace],
+			labels,
+		)
+
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
+		}
 	}
 
 	// Collect relevant Pod labels to be able to associate the volume to it.
