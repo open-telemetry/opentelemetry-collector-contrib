@@ -16,6 +16,7 @@ package kubelet
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -83,4 +84,23 @@ func volumeInodesUsedMetric(prefix string, s stats.VolumeStats) *metricspb.Metri
 			" free because filesystem may share inodes with other filesystems.",
 		s.InodesUsed,
 	)
+}
+
+func getLabelsFromVolume(volume v1.Volume) map[string]string {
+	switch {
+	// TODO: Support more types
+	case volume.ConfigMap != nil:
+		return map[string]string{labelVolumeType: "configMap"}
+	case volume.DownwardAPI != nil:
+		return map[string]string{labelVolumeType: "downwardAPI"}
+	case volume.EmptyDir != nil:
+		return map[string]string{labelVolumeType: "emptyDir"}
+	case volume.Secret != nil:
+		return map[string]string{labelVolumeType: "secret"}
+	case volume.PersistentVolumeClaim != nil:
+		return map[string]string{labelVolumeType: "persistentVolumeClaim"}
+	case volume.HostPath != nil:
+		return map[string]string{labelVolumeType: "hostPath"}
+	}
+	return nil
 }

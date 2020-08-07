@@ -67,34 +67,67 @@ func TestRunnable(t *testing.T) {
 }
 
 func TestRunnableWithMetadata(t *testing.T) {
-	consumer := &exportertest.SinkMetricsExporter{}
-	options := &receiverOptions{
-		extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
-		metricGroupsToCollect: allMetricGroups,
+	tests := []struct {
+		name           string
+		metadataLabels []kubelet.MetadataLabel
+		metricGroups   map[kubelet.MetricGroup]bool
+		dataLen        int
+		metricPrefix   string
+		requiredLabel  string
+	}{
+		{
+			name:           "Container Metadata",
+			metadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+			metricGroups: map[kubelet.MetricGroup]bool{
+				kubelet.ContainerMetricGroup: true,
+			},
+			dataLen:       numContainers,
+			metricPrefix:  "container.",
+			requiredLabel: "container.id",
+		},
+		{
+			name:           "Volume Metadata",
+			metadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
+			metricGroups: map[kubelet.MetricGroup]bool{
+				kubelet.VolumeMetricGroup: true,
+			},
+			dataLen:       numVolumes,
+			metricPrefix:  "k8s.volume.",
+			requiredLabel: "k8s.volume.type",
+		},
 	}
-	r := newRunnable(
-		context.Background(),
-		consumer,
-		&fakeRestClient{},
-		zap.NewNop(),
-		options,
-	)
-	err := r.Setup()
-	require.NoError(t, err)
-	err = r.Run()
-	require.NoError(t, err)
-	require.Equal(t, dataLen, len(consumer.AllMetrics()))
 
-	// make sure container.id labels are set on all container metrics
-	for _, metrics := range consumer.AllMetrics() {
-		md := pdatautil.MetricsToMetricsData(metrics)[0]
-		for _, m := range md.Metrics {
-			if strings.HasPrefix(m.MetricDescriptor.GetName(), "container.") {
-				_, ok := md.Resource.Labels[string(kubelet.MetadataLabelContainerID)]
-				require.True(t, ok)
-				continue
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumer := &exportertest.SinkMetricsExporter{}
+			options := &receiverOptions{
+				extraMetadataLabels:   tt.metadataLabels,
+				metricGroupsToCollect: tt.metricGroups,
 			}
-		}
+			r := newRunnable(
+				context.Background(),
+				consumer,
+				&fakeRestClient{},
+				zap.NewNop(),
+				options,
+			)
+			err := r.Setup()
+			require.NoError(t, err)
+			err = r.Run()
+			require.NoError(t, err)
+			require.Equal(t, tt.dataLen, len(consumer.AllMetrics()))
+
+			for _, metrics := range consumer.AllMetrics() {
+				md := pdatautil.MetricsToMetricsData(metrics)[0]
+				for _, m := range md.Metrics {
+					if strings.HasPrefix(m.MetricDescriptor.GetName(), tt.metricPrefix) {
+						_, ok := md.Resource.Labels[tt.requiredLabel]
+						require.True(t, ok)
+						continue
+					}
+				}
+			}
+		})
 	}
 }
 
