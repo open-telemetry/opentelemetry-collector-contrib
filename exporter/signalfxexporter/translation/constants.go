@@ -223,6 +223,80 @@ translation_rules:
     free: df_inodes.free
     used: df_inodes.used
 
+# convert disk I/O metrics
+- action: rename_dimension_keys
+  metric_names:
+    system.disk.merged: true
+    system.disk.io: true
+    system.disk.ops: true
+    system.disk.time: true
+  mapping:
+    device: disk
+- action: split_metric
+  metric_name: system.disk.merged
+  dimension_key: direction
+  mapping:
+    read: disk_merged.read
+    write: disk_merged.write
+- action: split_metric
+  metric_name: system.disk.io
+  dimension_key: direction
+  mapping:
+    read: disk_octets.read
+    write: disk_octets.write
+- action: split_metric
+  metric_name: system.disk.ops
+  dimension_key: direction
+  mapping:
+    read: disk_ops.read
+    write: disk_ops.write
+- action: split_metric
+  metric_name: system.disk.time
+  dimension_key: direction
+  mapping:
+    read: disk_time.read
+    write: disk_time.write
+
+# convert network I/O metrics
+- action: copy_metrics
+  mapping:
+    system.network.io: network.total
+  dimension_key: direction
+  dimension_values:
+    receive: true
+    transmit: true
+- action: aggregate_metric
+  metric_name: network.total
+  aggregation_method: sum
+  dimensions:
+  - host
+  - kubernetes_node
+  - kubernetes_cluster
+- action: split_metric
+  metric_name: system.network.dropped_packets
+  dimension_key: direction
+  mapping:
+    receive: if_dropped.rx
+    transmit: if_dropped.tx
+- action: split_metric
+  metric_name: system.network.errors
+  dimension_key: direction
+  mapping:
+    receive: if_errors.rx
+    transmit: if_errors.tx
+- action: split_metric
+  metric_name: system.network.io
+  dimension_key: direction
+  mapping:
+    receive: if_octets.rx
+    transmit: if_octets.tx
+- action: split_metric
+  metric_name: system.network.packets
+  dimension_key: direction
+  mapping:
+    receive: if_packets.rx
+    transmit: if_packets.tx
+
 # memory utilization
 - action: calculate_new_metric
   metric_name: memory.utilization
