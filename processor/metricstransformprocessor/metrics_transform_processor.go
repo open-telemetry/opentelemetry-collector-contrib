@@ -18,6 +18,7 @@ import (
 	"context"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -163,4 +164,35 @@ func (mtp *metricsTransformProcessor) minInt64(num1, num2 int64) int64 {
 		return num1
 	}
 	return num2
+}
+
+// timeseriesByStartTimestamp implements sort.Interface based on the start timestamp field of the Timeseries
+type timeseriesByStartTimestamp []*metricspb.TimeSeries
+
+func (t timeseriesByStartTimestamp) Len() int {
+	return len(t)
+}
+func (t timeseriesByStartTimestamp) Less(i, j int) bool {
+	return compareTimestamps(t[i].StartTimestamp, t[j].StartTimestamp)
+}
+func (t timeseriesByStartTimestamp) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
+
+// pointsByTimestamp implements sort.Interface based on the timestamp field of the Points
+type pointsByTimestamp []*metricspb.Point
+
+func (p pointsByTimestamp) Len() int {
+	return len(p)
+}
+func (p pointsByTimestamp) Less(i, j int) bool {
+	return compareTimestamps(p[i].Timestamp, p[j].Timestamp)
+}
+func (p pointsByTimestamp) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
+}
+
+// compareTimestamps returns if t1 is a smaller timestamp than t2
+func compareTimestamps(t1 *timestamp.Timestamp, t2 *timestamp.Timestamp) bool {
+	return t1.Seconds < t2.Seconds || (t1.Seconds == t2.Seconds && t1.Nanos < t2.Nanos)
 }

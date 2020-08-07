@@ -16,6 +16,7 @@ package metricstransformprocessor
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -29,6 +30,7 @@ func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric
 	groupedTimeseries := mtp.groupTimeseriesByLabelSet(metric, labelIdxs)
 
 	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
+	sort.Sort(timeseriesByStartTimestamp(aggregatedTimeseries))
 	metric.Timeseries = aggregatedTimeseries
 	metric.MetricDescriptor.LabelKeys = labels
 }
