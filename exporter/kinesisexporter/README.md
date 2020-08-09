@@ -1,6 +1,6 @@
 # Kinesis Exporter
 
-This exporter can be used to send metrics to Kinesis.
+This exporter can be used to send traces to Kinesis.
 
 The following configuration options are supported:
 
