@@ -442,6 +442,36 @@ func TestSpanDatabaseContext(t *testing.T) {
 	}, span.Context.Destination)
 }
 
+func TestInstrumentationLibrary(t *testing.T) {
+	var w fastjson.Writer
+	var recorder transporttest.RecorderTransport
+
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("root_span")
+
+	library := pdata.NewInstrumentationLibrary()
+	library.InitEmpty()
+	library.SetName("library-name")
+	library.SetVersion("1.2.3")
+
+	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	err := elastic.EncodeSpan(span, library, &w)
+	assert.NoError(t, err)
+	sendStream(t, &w, &recorder)
+
+	payloads := recorder.Payloads()
+	require.Len(t, payloads.Transactions, 1)
+	assert.Equal(t, &model.Context{
+		Service: &model.Service{
+			Framework: &model.Framework{
+				Name:    "library-name",
+				Version: "1.2.3",
+			},
+		},
+	}, payloads.Transactions[0].Context)
+}
+
 func transactionWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) model.Transaction {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport

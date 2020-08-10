@@ -56,9 +56,15 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 
 			case conventions.AttributeK8sNamespace:
 				k8s.Namespace = truncate(v.StringVal())
+				system.Kubernetes = &k8s
 			case conventions.AttributeK8sPod:
 				k8sPod.Name = truncate(v.StringVal())
 				k8s.Pod = &k8sPod
+				system.Kubernetes = &k8s
+			case conventions.AttributeK8sPodUID:
+				k8sPod.UID = truncate(v.StringVal())
+				k8s.Pod = &k8sPod
+				system.Kubernetes = &k8s
 
 			case conventions.AttributeHostHostname:
 				system.Hostname = truncate(v.StringVal())

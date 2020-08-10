@@ -56,6 +56,16 @@ func TestMetadataServiceVersion(t *testing.T) {
 	assert.Equal(t, "1.2.3", out.service.Version)
 }
 
+func TestMetadataServiceInstance(t *testing.T) {
+	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
+		"service.instance.id": pdata.NewAttributeValueString("foo-1"),
+	})
+	out := metadataWithResource(t, resource)
+	assert.Equal(t, &model.ServiceNode{
+		ConfiguredName: "foo-1",
+	}, out.service.Node)
+}
+
 func TestMetadataSystemHostname(t *testing.T) {
 	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
 		"host.hostname": pdata.NewAttributeValueString("foo"),
@@ -101,6 +111,22 @@ func TestMetadataLabels(t *testing.T) {
 		{Key: "int", Value: 123.0},
 		{Key: "string", Value: "abc"},
 	}, out.labels)
+}
+
+func TestMetadataKubernetes(t *testing.T) {
+	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
+		"k8s.namespace.name": pdata.NewAttributeValueString("namespace_name"),
+		"k8s.pod.name":       pdata.NewAttributeValueString("pod_name"),
+		"k8s.pod.uid":        pdata.NewAttributeValueString("pod_uid"),
+	})
+	out := metadataWithResource(t, resource)
+	assert.Equal(t, &model.Kubernetes{
+		Namespace: "namespace_name",
+		Pod: &model.KubernetesPod{
+			Name: "pod_name",
+			UID:  "pod_uid",
+		},
+	}, out.system.Kubernetes)
 }
 
 func resourceFromAttributesMap(attrs map[string]pdata.AttributeValue) pdata.Resource {
