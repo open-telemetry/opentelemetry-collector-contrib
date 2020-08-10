@@ -50,7 +50,7 @@ func metricsData(
 	rlabels := mergeMaps(defaultLabels(), resourceLabels)
 	md := &consumerdata.MetricsData{
 		Resource: &resourcepb.Resource{
-			Type:   "docker",
+			Type:   "container",
 			Labels: rlabels,
 		},
 	}
@@ -103,10 +103,10 @@ func metricsData(
 
 func defaultLabels() map[string]string {
 	return map[string]string{
-		"container.hostname": "abcdef012345",
-		"container.id":       "a2596076ca048f02bcd16a8acd12a7ea2d3bc430d1cde095357239dd3925a4c3",
-		"container.image":    "myImage",
-		"container.name":     "my-container-name",
+		"container.hostname":   "abcdef012345",
+		"container.id":         "a2596076ca048f02bcd16a8acd12a7ea2d3bc430d1cde095357239dd3925a4c3",
+		"container.image.name": "myImage",
+		"container.name":       "my-container-name",
 	}
 }
 
