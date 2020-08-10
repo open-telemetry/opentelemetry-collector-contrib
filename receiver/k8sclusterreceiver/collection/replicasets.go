@@ -42,10 +42,10 @@ func getResourceForReplicaSet(rs *appsv1.ReplicaSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyReplicaSetUID:               string(rs.UID),
-			k8sKeyReplicaSetName:              rs.Name,
-			conventions.AttributeK8sNamespace: rs.Namespace,
-			conventions.AttributeK8sCluster:   rs.ClusterName,
+			conventions.AttributeK8sReplicaSetUID: string(rs.UID),
+			conventions.AttributeK8sReplicaSet:    rs.Name,
+			conventions.AttributeK8sNamespace:     rs.Namespace,
+			conventions.AttributeK8sCluster:       rs.ClusterName,
 		},
 	}
 }

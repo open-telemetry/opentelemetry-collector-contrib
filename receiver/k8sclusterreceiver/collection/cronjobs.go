@@ -58,10 +58,10 @@ func getResourceForCronJob(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyCronJobUID:                  string(cj.UID),
-			k8sKeyCronJobName:                 cj.Name,
-			conventions.AttributeK8sNamespace: cj.Namespace,
-			conventions.AttributeK8sCluster:   cj.ClusterName,
+			conventions.AttributeK8sCronJobUID: string(cj.UID),
+			conventions.AttributeK8sCronJob:    cj.Name,
+			conventions.AttributeK8sNamespace:  cj.Namespace,
+			conventions.AttributeK8sCluster:    cj.ClusterName,
 		},
 	}
 }
