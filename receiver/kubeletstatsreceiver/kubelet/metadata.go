@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/collector/translator/conventions"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -26,7 +27,7 @@ import (
 type MetadataLabel string
 
 const (
-	MetadataLabelContainerID MetadataLabel = labelContainerID
+	MetadataLabelContainerID MetadataLabel = conventions.AttributeContainerID
 )
 
 var supportedLabels = map[MetadataLabel]bool{
@@ -70,7 +71,7 @@ func (m *Metadata) setExtraLabels(labels map[string]string, podUID string, conta
 			if err != nil {
 				return err
 			}
-			labels[labelContainerID] = containerID
+			labels[conventions.AttributeContainerID] = containerID
 			return nil
 		}
 	}
