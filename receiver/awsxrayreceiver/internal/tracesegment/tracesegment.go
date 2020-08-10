@@ -12,8 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsxrayreceiver implements a receiver that can be used by the
-// Opentelemetry collector to receive traces in the AWS X-Ray segment format.
-// More details can be found on:
-// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-package awsxrayreceiver
+package tracesegment
+
+import (
+	"strings"
+)
+
+// Header stores header of trace segment.
+type Header struct {
+	Format  string `json:"format"`
+	Version int    `json:"version"`
+}
+
+// IsValid validates Header.
+func (t Header) IsValid() bool {
+	return strings.EqualFold(t.Format, "json") && t.Version == 1
+}

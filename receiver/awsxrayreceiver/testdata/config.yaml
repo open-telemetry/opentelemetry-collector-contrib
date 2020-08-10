@@ -1,13 +1,13 @@
 receivers:
-  aws_xray: # ensure the default configurations are correctly generated
+  awsxray: # ensure the default configurations are correctly generated
   
-  aws_xray/udp_endpoint:
+  awsxray/udp_endpoint:
     # ensure the UDP endpoint can be properly overwritten
     endpoint: "0.0.0.0:5678"
     # transport can only be "udp"
     transport: udp
   
-  aws_xray/proxy_server:
+  awsxray/proxy_server:
     # ensure the fields under proxy_server can be overwritten
     proxy_server:
       endpoint: "0.0.0.0:1234"
@@ -28,6 +28,6 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [aws_xray, aws_xray/udp_endpoint, aws_xray/proxy_server]
+      receivers: [awsxray, awsxray/udp_endpoint, awsxray/proxy_server]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
