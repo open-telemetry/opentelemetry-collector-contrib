@@ -27,6 +27,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const (
@@ -61,12 +62,12 @@ func ContainerStatsToMetrics(
 	md := &consumerdata.MetricsData{
 		Metrics: metrics,
 		Resource: &resourcepb.Resource{
-			Type: "docker",
+			Type: "container",
 			Labels: map[string]string{
-				"container.hostname": container.Config.Hostname,
-				"container.id":       container.ID,
-				"container.image":    container.Config.Image,
-				"container.name":     strings.TrimPrefix(container.Name, "/"),
+				"container.hostname":                container.Config.Hostname,
+				conventions.AttributeContainerID:    container.ID,
+				conventions.AttributeContainerImage: container.Config.Image,
+				conventions.AttributeContainerName:  strings.TrimPrefix(container.Name, "/"),
 			},
 		},
 	}
