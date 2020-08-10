@@ -41,6 +41,7 @@ type DockerClient struct {
 	client               *docker.Client
 	config               *Config
 	containers           map[string]DockerContainer
+	containersLock       sync.Mutex
 	excludedImageMatcher *StringMatcher
 	logger               *zap.Logger
 }
@@ -65,6 +66,7 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 		config:               config,
 		logger:               logger,
 		containers:           make(map[string]DockerContainer),
+		containersLock:       sync.Mutex{},
 		excludedImageMatcher: excludedImageMatcher,
 	}
 
@@ -73,6 +75,8 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 
 // Provides a slice of DockerContainers to use for individual FetchContainerStats calls.
 func (dc *DockerClient) Containers() []DockerContainer {
+	dc.containersLock.Lock()
+	defer dc.containersLock.Unlock()
 	containers := make([]DockerContainer, 0, len(dc.containers))
 	for _, container := range dc.containers {
 		containers = append(containers, container)
