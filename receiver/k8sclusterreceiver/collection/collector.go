@@ -40,34 +40,17 @@ const (
 	containerType = "container"
 
 	// Resource labels keys for UID.
-	k8sKeyPodUID                   = "k8s.pod.uid"
 	k8sKeyNodeUID                  = "k8s.node.uid"
-	k8sKeyCronJobUID               = "k8s.cronjob.uid"
-	k8sKeyDeploymentUID            = "k8s.deployment.uid"
-	k8sKeyJobUID                   = "k8s.job.uid"
 	k8sKeyNamespaceUID             = "k8s.namespace.uid"
-	k8sKeyReplicaSetUID            = "k8s.replicaset.uid"
 	k8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
-	k8sKeyStatefulSetUID           = "k8s.statefulset.uid"
-	k8sKeyDaemonSetUID             = "k8s.daemonset.uid"
 	k8sKeyHPAUID                   = "k8s.hpa.uid"
 	k8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
 
 	// Resource labels keys for Name.
-	k8sKeyCronJobName               = "k8s.cronjob.name"
 	k8sKeyNodeName                  = "k8s.node.name"
-	k8sKeyDeploymentName            = "k8s.deployment.name"
-	k8sKeyJobName                   = "k8s.job.name"
-	k8sKeyReplicaSetName            = "k8s.replicaset.name"
 	k8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
-	k8sKeyStatefulSetName           = "k8s.statefulset.name"
-	k8sKeyDaemonSetName             = "k8s.daemonset.name"
 	k8sKeyHPAName                   = "k8s.hpa.name"
 	k8sKeyResourceQuotaName         = "k8s.resourcequota.name"
-
-	// Resource labels for container.
-	containerKeyID       = "container.id"
-	containerKeySpecName = "container.spec.name"
 
 	// Kubernetes resource kinds
 	k8sKindCronJob               = "CronJob"

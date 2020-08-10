@@ -109,7 +109,7 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyPodUID:                      string(pod.UID),
+			conventions.AttributeK8sPodUID:    string(pod.UID),
 			conventions.AttributeK8sPod:       pod.Name,
 			k8sKeyNodeName:                    pod.Spec.NodeName,
 			conventions.AttributeK8sNamespace: pod.Namespace,
@@ -174,7 +174,7 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*Kuber
 	podID := ResourceID(pod.UID)
 	return mergeKubernetesMetadataMaps(map[ResourceID]*KubernetesMetadata{
 		podID: {
-			resourceIDKey: k8sKeyPodUID,
+			resourceIDKey: conventions.AttributeK8sPodUID,
 			resourceID:    podID,
 			metadata:      metadata,
 		},
@@ -190,9 +190,9 @@ func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store) map[string]s
 		if ok {
 			jobObj := job.(*batchv1.Job)
 			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
-				return getWorkloadProperties(cronJobRef, k8sKeyCronJobName)
+				return getWorkloadProperties(cronJobRef, conventions.AttributeK8sCronJob)
 			}
-			return getWorkloadProperties(jobRef, k8sKeyJobName)
+			return getWorkloadProperties(jobRef, conventions.AttributeK8sJob)
 
 		}
 	}
@@ -208,9 +208,9 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 		if ok {
 			replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
 			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
-				return getWorkloadProperties(deployRef, k8sKeyDeploymentName)
+				return getWorkloadProperties(deployRef, conventions.AttributeK8sDeployment)
 			}
-			return getWorkloadProperties(rsRef, k8sKeyReplicaSetName)
+			return getWorkloadProperties(rsRef, conventions.AttributeK8sReplicaSet)
 		}
 	}
 	return nil

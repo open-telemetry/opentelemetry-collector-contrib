@@ -104,8 +104,8 @@ func getResourceForJob(j *batchv1.Job) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyJobUID:                      string(j.UID),
-			k8sKeyJobName:                     j.Name,
+			conventions.AttributeK8sJobUID:    string(j.UID),
+			conventions.AttributeK8sJob:       j.Name,
 			conventions.AttributeK8sNamespace: j.Namespace,
 			conventions.AttributeK8sCluster:   j.ClusterName,
 		},
