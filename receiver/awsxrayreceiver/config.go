@@ -20,10 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-const (
-	typeStr = "awsxray"
-)
-
 // Config defines the configurations for an AWS X-Ray receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`

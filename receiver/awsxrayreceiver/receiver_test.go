@@ -18,15 +18,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"path"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -143,12 +151,18 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 // TODO: Update this test to assert on the format of traces
 // once the transformation from X-Ray segments -> OTLP is done.
 func TestSegmentsPassedToConsumer(t *testing.T) {
-	addr, rcvr, _ := createAndOptionallyStartReceiver(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+	const receiverName = "TestSegmentsPassedToConsumer"
+
+	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverName, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
-	// valid header with invalid body (for now this is ok because we haven't
-	// implemented the X-Ray segment -> OT format conversion)
-	err := writePacket(t, addr, `{"format": "json", "version": 1}`+"\nBody")
+	content, err := ioutil.ReadFile(path.Join(".", "testdata", "rawsegment", "ddbSample.txt"))
+	assert.NoError(t, err, "can not read raw segment")
+
+	err = writePacket(t, addr, string(content))
 	assert.NoError(t, err, "can not write packet in the happy case")
 
 	sink := rcvr.(*xrayReceiver).consumer.(*exportertest.SinkTraceExporter)
@@ -157,16 +171,97 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		got := sink.AllTraces()
 		return len(got) == 1
 	}, "consumer should eventually get the X-Ray span")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 18, 0)
 }
 
-func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
+func TestTranslatorErrorsOut(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestTranslatorErrorsOut"
+
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName, nil, true)
+	defer rcvr.Shutdown(context.Background())
+
+	err = writePacket(t, addr, `{"format": "json", "version": 1}`+"\ninvalidSegment")
+	assert.NoError(t, err, "can not write packet in the "+receiverName+" case")
+
+	testutil.WaitFor(t, func() bool {
+		logs := recordedLogs.All()
+		fmt.Println(logs)
+		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
+			"X-Ray segment to OT traces conversion failed")
+	}, "poller should log warning because consumer errored out")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+}
+
+func TestSegmentsConsumerErrorsOut(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestSegmentsConsumerErrorsOut"
+
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName,
+		&mockConsumer{consumeErr: errors.New("can't consume traces")},
+		true)
+	defer rcvr.Shutdown(context.Background())
+
+	content, err := ioutil.ReadFile(path.Join(".", "testdata", "rawsegment", "serverSample.txt"))
+	assert.NoError(t, err, "can not read raw segment")
+
+	err = writePacket(t, addr, string(content))
+	assert.NoError(t, err, "can not write packet")
+
+	testutil.WaitFor(t, func() bool {
+		logs := recordedLogs.All()
+		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
+			"Trace consumer errored out")
+	}, "poller should log warning because consumer errored out")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+}
+
+type mockConsumer struct {
+	mu         sync.Mutex
+	consumeErr error
+	traces     pdata.Traces
+}
+
+func (m *mockConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.consumeErr != nil {
+		return m.consumeErr
+	}
+	m.traces = td
+	return nil
+}
+
+func createAndOptionallyStartReceiver(
+	t *testing.T,
+	receiverName string,
+	csu consumer.TraceConsumer,
+	start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
 
-	sink := new(exportertest.SinkTraceExporter)
+	var sink consumer.TraceConsumer
+	if csu == nil {
+		sink = new(exportertest.SinkTraceExporter)
+	} else {
+		sink = csu
+	}
+
 	logger, recorded := logSetup()
 	rcvr, err := newReceiver(
 		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				NameVal: receiverName,
+			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,

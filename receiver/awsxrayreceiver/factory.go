@@ -25,13 +25,14 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 // NewFactory creates a factory for AWS receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
-		typeStr,
+		tracesegment.TypeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver))
 }
@@ -42,8 +43,8 @@ func createDefaultConfig() configmodels.Receiver {
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
+			TypeVal: configmodels.Type(tracesegment.TypeStr),
+			NameVal: tracesegment.TypeStr,
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
 			// the default in OT is 0.0.0.0.
 		},
