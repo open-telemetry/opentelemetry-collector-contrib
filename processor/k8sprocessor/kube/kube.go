@@ -30,13 +30,8 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	tagClusterName    = "k8s.cluster.name"
-	tagDeploymentName = "k8s.deployment.name"
-	tagNamespaceName  = "k8s.namespace.name"
-	tagNodeName       = "k8s.node.name"
-	tagPodName        = "k8s.pod.name"
-	tagPodUID         = "k8s.pod.uid"
-	tagStartTime      = "k8s.pod.startTime"
+	tagNodeName  = "k8s.node.name"
+	tagStartTime = "k8s.pod.startTime"
 )
 
 var (
