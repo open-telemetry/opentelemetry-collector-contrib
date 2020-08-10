@@ -69,8 +69,11 @@ translation_rules:
     container.filesystem.capacity: container_fs_capacity_bytes
     container.filesystem.usage: container_fs_usage_bytes
     container.memory.available: container_memory_available_bytes
+    container.memory.major_page_faults: container_memory_major_page_faults
+    container.memory.page_faults: container_memory_page_faults
     container.memory.rss: container_memory_rss_bytes
     container.memory.usage: container_memory_usage_bytes
+    container.memory.working_set: container_memory_working_set_bytes
     k8s.node.cpu.utilization: cpu.utilization
 
     # k8s cluster receiver metrics
