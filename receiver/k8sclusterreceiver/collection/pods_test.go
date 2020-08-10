@@ -57,7 +57,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 	testutils.AssertResource(t, rm.resource, "container",
 		map[string]string{
 			"container.id":         "container-id",
-			"container.spec.name":  "container-name",
+			"k8s.container.name":   "container-name",
 			"container.image.name": "container-image-name",
 			"k8s.pod.uid":          "test-pod-1-uid",
 			"k8s.pod.name":         "test-pod-1",
