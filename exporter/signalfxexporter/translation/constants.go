@@ -26,7 +26,7 @@ translation_rules:
 
     # dimensions
     container.image.name: container_image
-    container.name: container_spec_name
+    k8s.container.name: container_spec_name
     k8s.cluster.name: kubernetes_cluster
     k8s.daemonset.name: kubernetes_name
     k8s.daemonset.uid: kubernetes_uid
