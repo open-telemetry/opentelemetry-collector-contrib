@@ -15,16 +15,26 @@
 package kubelet
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
-func MetricsData(logger *zap.Logger, summary *stats.Summary, metadata Metadata, typeStr string) []*consumerdata.MetricsData {
+func MetricsData(
+	logger *zap.Logger,
+	summary *stats.Summary,
+	metadata Metadata,
+	typeStr string,
+	metricGroupsToCollect map[MetricGroup]bool) []*consumerdata.MetricsData {
 	acc := &metricDataAccumulator{
-		metadata: metadata,
-		logger:   logger,
+		metadata:              metadata,
+		logger:                logger,
+		metricGroupsToCollect: metricGroupsToCollect,
+		time:                  time.Now(),
 	}
+
 	acc.nodeStats(summary.Node)
 	for _, podStats := range summary.Pods {
 		// propagate the pod resource down to the container
@@ -39,5 +49,4 @@ func MetricsData(logger *zap.Logger, summary *stats.Summary, metadata Metadata, 
 		md.Resource.Labels["receiver"] = typeStr
 	}
 	return acc.m
-
 }

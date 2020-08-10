@@ -20,11 +20,11 @@ import (
 )
 
 func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		memAvailableMetric(prefix, s),
 		memUsageMetric(prefix, s),
 		memRssMetric(prefix, s),
-	}, s.Time.Time)
+	}
 }
 
 func memAvailableMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {

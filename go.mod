@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/golangci/golangci-lint v1.29.0
+	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
@@ -40,7 +40,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.7.0
+	go.opentelemetry.io/collector v0.7.1-0.20200807172154-11198b124dae
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae
 	honnef.co/go/tools v0.0.1-2020.1.5
 )

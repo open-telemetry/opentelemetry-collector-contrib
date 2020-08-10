@@ -18,6 +18,7 @@ import (
 	"context"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -163,4 +164,9 @@ func (mtp *metricsTransformProcessor) minInt64(num1, num2 int64) int64 {
 		return num1
 	}
 	return num2
+}
+
+// compareTimestamps returns if t1 is a smaller timestamp than t2
+func (mtp *metricsTransformProcessor) compareTimestamps(t1 *timestamp.Timestamp, t2 *timestamp.Timestamp) bool {
+	return t1.Seconds < t2.Seconds || (t1.Seconds == t2.Seconds && t1.Nanos < t2.Nanos)
 }

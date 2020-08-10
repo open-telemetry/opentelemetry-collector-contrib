@@ -16,6 +16,7 @@ package kubeletstatsreceiver
 
 import (
 	"path"
+	"reflect"
 	"testing"
 	"time"
 
@@ -41,8 +42,27 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	tlsCfg := cfg.Receivers["kubeletstats/tls"].(*Config)
 	duration := 10 * time.Second
+	defaultCfg := cfg.Receivers["kubeletstats/default"].(*Config)
+	require.Equal(t, &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/default",
+		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "tls",
+			},
+		},
+		CollectionInterval: duration,
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.ContainerMetricGroup,
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
+	}, defaultCfg)
+
+	tlsCfg := cfg.Receivers["kubeletstats/tls"].(*Config)
 	require.Equal(t, &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: "kubeletstats",
@@ -63,6 +83,11 @@ func TestLoadConfig(t *testing.T) {
 			InsecureSkipVerify: true,
 		},
 		CollectionInterval: duration,
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.ContainerMetricGroup,
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
 	}, tlsCfg)
 
 	saCfg := cfg.Receivers["kubeletstats/sa"].(*Config)
@@ -78,6 +103,11 @@ func TestLoadConfig(t *testing.T) {
 			InsecureSkipVerify: true,
 		},
 		CollectionInterval: duration,
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.ContainerMetricGroup,
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
 	}, saCfg)
 
 	metadataCfg := cfg.Receivers["kubeletstats/metadata"].(*Config)
@@ -93,5 +123,105 @@ func TestLoadConfig(t *testing.T) {
 		},
 		CollectionInterval:  duration,
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.ContainerMetricGroup,
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
 	}, metadataCfg)
+
+	metricGroupsCfg := cfg.Receivers["kubeletstats/metric_groups"].(*Config)
+	require.Equal(t, &Config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: "kubeletstats",
+			NameVal: "kubeletstats/metric_groups",
+		},
+		ClientConfig: kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: "serviceAccount",
+			},
+		},
+		CollectionInterval: 20 * time.Second,
+		MetricGroupsToCollect: []kubelet.MetricGroup{
+			kubelet.PodMetricGroup,
+			kubelet.NodeMetricGroup,
+		},
+	}, metricGroupsCfg)
+}
+
+func TestGetReceiverOptions(t *testing.T) {
+	type fields struct {
+		extraMetadataLabels   []kubelet.MetadataLabel
+		metricGroupsToCollect []kubelet.MetricGroup
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		want    *receiverOptions
+		wantErr bool
+	}{
+		{
+			name: "Valid config",
+			fields: fields{
+				extraMetadataLabels: []kubelet.MetadataLabel{
+					kubelet.MetadataLabelContainerID,
+				},
+				metricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.NodeMetricGroup,
+					kubelet.PodMetricGroup,
+				},
+			},
+			want: &receiverOptions{
+				name: typeStr,
+				extraMetadataLabels: []kubelet.MetadataLabel{
+					kubelet.MetadataLabelContainerID,
+				},
+				metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+					kubelet.NodeMetricGroup: true,
+					kubelet.PodMetricGroup:  true,
+				},
+				collectionInterval: 10 * time.Second,
+			},
+		},
+		{
+			name: "Invalid metric group",
+			fields: fields{
+				extraMetadataLabels: []kubelet.MetadataLabel{
+					"unsupported",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name: "Invalid extra metadata",
+			fields: fields{
+				metricGroupsToCollect: []kubelet.MetricGroup{
+					"unsupported",
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				ReceiverSettings: configmodels.ReceiverSettings{
+					NameVal: typeStr,
+				},
+				CollectionInterval:    10 * time.Second,
+				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
+				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,
+			}
+			got, err := cfg.getReceiverOptions()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getReceiverOptions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getReceiverOptions() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
