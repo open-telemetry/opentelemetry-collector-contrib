@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -66,8 +66,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 		factory.CreateDefaultConfig().(*Config),
 		&mockTraceConsumer{},
 	)
-	assert.NotNil(t, err, "not implemented yet")
-	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
+	assert.Nil(t, err, "trace receiver can be created")
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

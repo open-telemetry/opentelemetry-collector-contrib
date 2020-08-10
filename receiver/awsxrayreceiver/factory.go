@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,12 +19,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 // NewFactory creates a factory for AWS receiver.
@@ -48,7 +49,7 @@ func createDefaultConfig() configmodels.Receiver {
 		},
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "0.0.0.0:2000",
-			Transport: "udp",
+			Transport: udppoller.Transport,
 		},
 		ProxyServer: &proxyServer{
 			TCPAddr: confignet.TCPAddr{
@@ -71,7 +72,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer) (component.TraceReceiver, error) {
-	// TODO: Finish the implementation
-	return nil, configerror.ErrDataTypeIsNotSupported
+	consumer consumer.TraceConsumer) (component.TraceReceiver, error) {
+	rcfg := cfg.(*Config)
+	return newReceiver(rcfg, consumer, params.Logger)
 }

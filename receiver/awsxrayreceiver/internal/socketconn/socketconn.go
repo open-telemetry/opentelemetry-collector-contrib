@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package awsxrayreceiver implements a receiver that can be used by the
-// Opentelemetry collector to receive traces in the AWS X-Ray segment format.
-// More details can be found on:
-// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-package awsxrayreceiver
+package socketconn
+
+// SocketConn is an interface for socket connection.
+type SocketConn interface {
+	// Reads a packet from the connection, copying the payload into b. It returns number of bytes copied.
+	Read(b []byte) (int, error)
+
+	// Closes the connection.
+	Close() error
+}
