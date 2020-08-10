@@ -15,10 +15,5 @@
 package kubelet
 
 const (
-	labelContainerID   = "container.id"
-	labelContainerName = "container.name"
-	labelNamespaceName = "k8s.namespace.name"
-	labelNodeName      = "k8s.node.name"
-	labelPodName       = "k8s.pod.name"
-	labelPodUID        = "k8s.pod.uid"
+	labelNodeName = "k8s.node.name"
 )
