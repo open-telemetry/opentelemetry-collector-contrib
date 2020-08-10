@@ -27,7 +27,8 @@ func MetricsData(
 	summary *stats.Summary,
 	metadata Metadata,
 	typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool) []*consumerdata.MetricsData {
+	metricGroupsToCollect map[MetricGroup]bool,
+) []*consumerdata.MetricsData {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
