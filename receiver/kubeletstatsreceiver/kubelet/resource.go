@@ -17,6 +17,7 @@ package kubelet
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/collector/translator/conventions"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -33,9 +34,9 @@ func podResource(s stats.PodStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/pod
 		Labels: map[string]string{
-			labelPodUID:        s.PodRef.UID,
-			labelPodName:       s.PodRef.Name,
-			labelNamespaceName: s.PodRef.Namespace,
+			conventions.AttributeK8sPodUID:    s.PodRef.UID,
+			conventions.AttributeK8sPod:       s.PodRef.Name,
+			conventions.AttributeK8sNamespace: s.PodRef.Namespace,
 		},
 	}
 }
@@ -46,8 +47,8 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 		labels[k] = v
 	}
 	// augment the container resource with pod labels
-	labels[labelContainerName] = s.Name
-	err := metadata.setExtraLabels(labels, labels[labelPodUID], labels[labelContainerName])
+	labels[conventions.AttributeK8sContainer] = s.Name
+	err := metadata.setExtraLabels(labels, labels[conventions.AttributeK8sPodUID], labels[conventions.AttributeK8sContainer])
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
 
