@@ -268,6 +268,14 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, 1, len(dps))
 	require.Equal(t, 3, len(dps[0].Dimensions))
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
+
+	// memory page faults and working set renames
+	_, ok = metrics["container_memory_working_set_bytes"]
+	require.True(t, ok, "container_memory_working_set_bytes not found")
+	_, ok = metrics["container_memory_page_faults"]
+	require.True(t, ok, "container_memory_page_faults not found")
+	_, ok = metrics["container_memory_major_page_faults"]
+	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
 func md() consumerdata.MetricsData {
@@ -495,6 +503,111 @@ func md() consumerdata.MetricsData {
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 6e9,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "container.memory.working_set",
+					Unit: "bytes",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1000,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "container.memory.page_faults",
+					Unit: "",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1000,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "container.memory.major_page_faults",
+					Unit: "",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "kubernetes_node"},
+						{Key: "kubernetes_cluster"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamp.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "node0",
+							HasValue: true,
+						}, {
+							Value:    "cluster0",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamp.Timestamp{
+								Seconds: 1596000000,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 1000,
 							},
 						}},
 					},
