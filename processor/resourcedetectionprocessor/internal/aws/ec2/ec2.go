@@ -17,6 +17,7 @@ package ec2
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -34,13 +35,21 @@ type Detector struct {
 	provider ec2MetadataProvider
 }
 
-func NewDetector() *Detector {
-	return &Detector{provider: ec2MetadataImpl{}}
+func NewDetector() (internal.Detector, error) {
+	sess, err := session.NewSession()
+	if err != nil {
+		return nil, err
+	}
+	return &Detector{provider: &ec2MetadataImpl{sess: sess}}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	res.InitEmpty()
+
+	if !d.provider.available(ctx) {
+		return res, nil
+	}
 
 	meta, err := d.provider.get(ctx)
 	if err != nil {

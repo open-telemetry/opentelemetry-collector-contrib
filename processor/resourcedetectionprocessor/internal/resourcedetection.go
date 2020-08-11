@@ -32,12 +32,14 @@ type Detector interface {
 	Detect(ctx context.Context) (pdata.Resource, error)
 }
 
+type DetectorFactory func() (Detector, error)
+
 type ResourceProviderFactory struct {
 	// detectors holds all possible detector types.
-	detectors map[DetectorType]Detector
+	detectors map[DetectorType]DetectorFactory
 }
 
-func NewProviderFactory(detectors map[DetectorType]Detector) *ResourceProviderFactory {
+func NewProviderFactory(detectors map[DetectorType]DetectorFactory) *ResourceProviderFactory {
 	return &ResourceProviderFactory{detectors: detectors}
 }
 
@@ -54,9 +56,14 @@ func (f *ResourceProviderFactory) CreateResourceProvider(logger *zap.Logger, tim
 func (f *ResourceProviderFactory) getDetectors(detectorTypes []DetectorType) ([]Detector, error) {
 	detectors := make([]Detector, 0, len(detectorTypes))
 	for _, detectorType := range detectorTypes {
-		detector, ok := f.detectors[detectorType]
+		detectorFactory, ok := f.detectors[detectorType]
 		if !ok {
 			return nil, fmt.Errorf("invalid detector key: %v", detectorType)
+		}
+
+		detector, err := detectorFactory()
+		if err != nil {
+			return nil, fmt.Errorf("failed creating detector type %q: %w", detectorType, err)
 		}
 
 		detectors = append(detectors, detector)

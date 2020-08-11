@@ -40,6 +40,10 @@ var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct{}
 
+func NewDetector() (internal.Detector, error) {
+	return &Detector{}, nil
+}
+
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	res.InitEmpty()

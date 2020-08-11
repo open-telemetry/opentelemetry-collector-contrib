@@ -22,4 +22,5 @@ import (
 
 type ec2MetadataProvider interface {
 	get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
+	available(ctx context.Context) bool
 }

@@ -37,8 +37,8 @@ type Detector struct {
 	metadata gceMetadata
 }
 
-func NewDetector() *Detector {
-	return &Detector{metadata: &gceMetadataImpl{}}
+func NewDetector() (internal.Detector, error) {
+	return &Detector{metadata: &gceMetadataImpl{}}, nil
 }
 
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {

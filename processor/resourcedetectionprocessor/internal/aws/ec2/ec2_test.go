@@ -28,8 +28,15 @@ import (
 )
 
 type mockMetadata struct {
-	ret       ec2metadata.EC2InstanceIdentityDocument
-	returnErr error
+	ret         ec2metadata.EC2InstanceIdentityDocument
+	returnErr   error
+	isAvailable bool
+}
+
+var _ ec2MetadataProvider = (*mockMetadata)(nil)
+
+func (mm mockMetadata) available(ctx context.Context) bool {
+	return mm.isAvailable
 }
 
 func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
@@ -37,6 +44,12 @@ func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentity
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.returnErr
 	}
 	return mm.ret, nil
+}
+
+func TestNewDetector(t *testing.T) {
+	detector, err := NewDetector()
+	assert.NotNil(t, detector)
+	assert.NoError(t, err)
 }
 
 func TestDetector_Detect(t *testing.T) {
@@ -55,14 +68,15 @@ func TestDetector_Detect(t *testing.T) {
 	}{
 		{
 			name: "success",
-			fields: fields{provider: &mockMetadata{ec2metadata.EC2InstanceIdentityDocument{
+			fields: fields{provider: &mockMetadata{ret: ec2metadata.EC2InstanceIdentityDocument{
 				Region:           "us-west-2",
 				AccountID:        "account1234",
 				AvailabilityZone: "us-west-2a",
 				InstanceID:       "i-abcd1234",
 				ImageID:          "abcdef",
 				InstanceType:     "c4.xlarge",
-			}, nil}},
+			},
+				isAvailable: true}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
 				res := pdata.NewResource()
@@ -80,15 +94,28 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "endpoint not available",
 			fields: fields{provider: &mockMetadata{
-				ret:       ec2metadata.EC2InstanceIdentityDocument{},
-				returnErr: errors.New("metadata lookup failed"),
+				ret:         ec2metadata.EC2InstanceIdentityDocument{},
+				returnErr:   errors.New("should not be called"),
+				isAvailable: false,
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
 				res := pdata.NewResource()
 				res.InitEmpty()
-				attr := res.Attributes()
-				attr.InsertString("cloud.provider", "aws")
+				return res
+			}(),
+			wantErr: false},
+		{
+			name: "get fails",
+			fields: fields{provider: &mockMetadata{
+				ret:         ec2metadata.EC2InstanceIdentityDocument{},
+				returnErr:   errors.New("get failed"),
+				isAvailable: true,
+			}},
+			args: args{ctx: context.Background()},
+			want: func() pdata.Resource {
+				res := pdata.NewResource()
+				res.InitEmpty()
 				return res
 			}(),
 			wantErr: true},

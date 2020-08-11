@@ -16,26 +16,23 @@ package ec2
 
 import (
 	"context"
-	"errors"
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-type ec2MetadataImpl struct{}
+type ec2MetadataImpl struct {
+	sess *session.Session
+}
 
-func (ec2MetadataImpl) get(ctx context.Context) (doc ec2metadata.EC2InstanceIdentityDocument, err error) {
-	sess, err := session.NewSession()
-	if err != nil {
-		return
-	}
-	meta := ec2metadata.New(sess)
+var _ ec2MetadataProvider = (*ec2MetadataImpl)(nil)
 
-	if !meta.AvailableWithContext(ctx) {
-		err = errors.New("EC2 metadata endpoint is not available")
-		return
-	}
+func (md *ec2MetadataImpl) available(ctx context.Context) bool {
+	return ec2metadata.New(md.sess).AvailableWithContext(ctx)
+}
 
+func (md *ec2MetadataImpl) get(ctx context.Context) (doc ec2metadata.EC2InstanceIdentityDocument, err error) {
+	meta := ec2metadata.New(md.sess)
 	doc, err = meta.GetInstanceIdentityDocumentWithContext(ctx)
 	return
 }

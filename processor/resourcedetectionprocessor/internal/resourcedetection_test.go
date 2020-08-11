@@ -73,7 +73,7 @@ func TestDetect(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockDetectors := make(map[DetectorType]Detector, len(tt.detectedResources))
+			mockDetectors := make(map[DetectorType]DetectorFactory, len(tt.detectedResources))
 			mockDetectorTypes := make([]DetectorType, 0, len(tt.detectedResources))
 
 			for i, res := range tt.detectedResources {
@@ -81,7 +81,9 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = md
+				mockDetectors[mockDetectorType] = func() (Detector, error) {
+					return md, nil
+				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
@@ -101,9 +103,20 @@ func TestDetect(t *testing.T) {
 
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
-	p := NewProviderFactory(map[DetectorType]Detector{})
+	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
 	_, err := p.CreateResourceProvider(zap.NewNop(), time.Second, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
+}
+
+func TestDetectResource_DetectoryFactoryError(t *testing.T) {
+	mockDetectorKey := DetectorType("mock")
+	p := NewProviderFactory(map[DetectorType]DetectorFactory{
+		mockDetectorKey: func() (Detector, error) {
+			return nil, errors.New("creation failed")
+		},
+	})
+	_, err := p.CreateResourceProvider(zap.NewNop(), time.Second, mockDetectorKey)
+	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
 func TestDetectResource_Error(t *testing.T) {
@@ -127,15 +140,15 @@ func TestMergeResource(t *testing.T) {
 		expected   pdata.Resource
 	}{
 		{
-			"override non-empty resources",
-			NewResource(map[string]interface{}{"a": "11", "b": "2"}),
-			NewResource(map[string]interface{}{"a": "1", "c": "3"}), true,
-			NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+			name: "override non-empty resources",
+			res1: NewResource(map[string]interface{}{"a": "11", "b": "2"}),
+			res2: NewResource(map[string]interface{}{"a": "1", "c": "3"}), overrideTo: true,
+			expected: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
 		}, {
-			"empty resource",
-			pdata.NewResource(),
-			NewResource(map[string]interface{}{"a": "1", "c": "3"}), false,
-			NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+			name:     "empty resource",
+			res1:     pdata.NewResource(),
+			res2:     NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+			expected: NewResource(map[string]interface{}{"a": "1", "c": "3"}),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
