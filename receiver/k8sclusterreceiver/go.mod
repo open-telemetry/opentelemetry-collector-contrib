@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
+	github.com/golang/protobuf v1.4.2
 	github.com/iancoleman/strcase v0.0.0-20171129010253-3de563c3dc08
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.6.1
