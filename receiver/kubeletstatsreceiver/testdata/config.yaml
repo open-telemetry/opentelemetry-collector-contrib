@@ -20,7 +20,7 @@ receivers:
   kubeletstats/metric_groups:
     collection_interval: 20s
     auth_type: "serviceAccount"
-    metric_groups: [pod, node]
+    metric_groups: [pod, node, volume]
 exporters:
   exampleexporter:
 service:

@@ -39,7 +39,7 @@ type Config struct {
 	ExtraMetadataLabels []kubelet.MetadataLabel `mapstructure:"extra_metadata_labels"`
 
 	// MetricGroupsToCollect provides a list of metrics groups to collect metrics from.
-	// "container", "pod" and "node" are the only valid groups.
+	// "container", "pod", "node" and "volume" are the only valid groups.
 	MetricGroupsToCollect []kubelet.MetricGroup `mapstructure:"metric_groups"`
 }
 
