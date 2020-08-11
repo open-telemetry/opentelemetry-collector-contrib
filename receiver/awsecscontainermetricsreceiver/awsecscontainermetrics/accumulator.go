@@ -28,23 +28,28 @@ type metricDataAccumulator struct {
 }
 
 const (
-	prefix = "task."
+	task_prefix      = "task."
+	container_prefix = "container."
 )
 
-func (acc *metricDataAccumulator) taskStats(containerStatsMap map[string]ContainerStats) {
-
+func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]ContainerStats) {
 	for _, value := range containerStatsMap {
 		acc.accumulate(
 			timestampProto(time.Now()),
 
-			memMetrics(prefix, &value.Memory),
-			diskMetrics(prefix, &value.Disk),
-			networkMetrics(prefix, value.Network),
-			networkRateMetrics(prefix, &value.NetworkRate),
-			cpuMetrics(prefix, &value.CPU),
+			memMetrics(container_prefix, &value.Memory),
+			diskMetrics(container_prefix, &value.Disk),
+			networkMetrics(container_prefix, value.Network),
+			networkRateMetrics(container_prefix, &value.NetworkRate),
+			cpuMetrics(container_prefix, &value.CPU),
 		)
 	}
 
+	taskStat := aggregateTaskStats(containerStatsMap)
+	acc.accumulate(
+		timestampProto(time.Now()),
+		taskMetrics(task_prefix, taskStat),
+	)
 }
 
 func (acc *metricDataAccumulator) accumulate(
@@ -68,4 +73,17 @@ func (acc *metricDataAccumulator) accumulate(
 			Labels: map[string]string{"receiver": "awsecscontainermetrics"},
 		},
 	})
+}
+
+func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
+	var memUsage, memMaxUsage, memLimit uint64
+	for _, value := range containerStatsMap {
+		memUsage += *value.Memory.Usage
+		memMaxUsage += *value.Memory.MaxUsage
+		memLimit += *value.Memory.Limit
+	}
+	taskStat := TaskStats{
+		MemoryUsage
+	}
+	return taskStat
 }

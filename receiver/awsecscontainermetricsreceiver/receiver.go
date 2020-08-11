@@ -88,9 +88,9 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 // TODO: Replace with acutal logic.
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
-	stats, err := aecmr.provider.TaskStats()
+	stats, err := aecmr.provider.GetStats()
 	if err != nil {
-		aecmr.logger.Error("TaskStats failed", zap.Error(err))
+		aecmr.logger.Error("GetStats failed", zap.Error(err))
 		return nil
 	}
 	mds := awsecscontainermetrics.MetricsData(stats, typeStr)

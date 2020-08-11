@@ -29,7 +29,7 @@ func TestMetricSampleFile(t *testing.T) {
 
 func TestMetricAccumulator(t *testing.T) {
 	provider := NewStatsProvider(&fakeRestClient{})
-	statsMap, _ := provider.TaskStats()
+	statsMap, _ := provider.GetStats()
 	//fmt.Printf("%v\n", stats)
 
 	fmt.Println("map size", len(statsMap))

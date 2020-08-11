@@ -75,3 +75,9 @@ type CPUStats struct {
 	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
 	SystemCpuUsage *uint64  `json:"system_cpu_usage,omitempty"`
 }
+
+type TaskStats struct {
+	MemoryUsage    *uint64
+	MemoryMaxUsage *uint64
+	MemoryLimit    *uint64
+}

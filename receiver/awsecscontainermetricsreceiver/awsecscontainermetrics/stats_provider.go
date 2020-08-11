@@ -29,9 +29,9 @@ func NewStatsProvider(rc RestClient) *StatsProvider {
 	return &StatsProvider{rc: rc}
 }
 
-// TaskStats calls the ecs task metadata endpoint and unmarshals the
+// GetStats calls the ecs task metadata endpoint and unmarshals the
 // results into a stats.TaskStats struct.
-func (p *StatsProvider) TaskStats() (map[string]ContainerStats, error) {
+func (p *StatsProvider) GetStats() (map[string]ContainerStats, error) {
 	response, err := p.rc.EndpointResponse()
 	// fmt.Println(string(response))
 	if err != nil {
