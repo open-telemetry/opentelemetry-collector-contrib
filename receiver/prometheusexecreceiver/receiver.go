@@ -243,7 +243,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 			cancel()
 			continue
 
-		case _ = <-per.s:
+		case <-per.s:
 			cancel()
 			return
 		}
