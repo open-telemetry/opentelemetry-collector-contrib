@@ -109,8 +109,8 @@ If `extra_metadata_labels` is not set, no additional API calls is done to fetch 
 
 A list of metric groups from which metrics should be collected. By default, metrics from containers,
 pods and nodes will be collected. If `metric_groups` is set, only metrics from the listed groups
-will be collected. Valid groups are `container`, `pod` and `node`. For example, if you're looking to
-collect only `node` and `pod` metrics from the receiver use the following configuration.
+will be collected. Valid groups are `container`, `pod`, `node` and `volume`. For example, if you're
+looking to collect only `node` and `pod` metrics from the receiver use the following configuration.
 
 ```yaml
 receivers:

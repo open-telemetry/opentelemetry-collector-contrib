@@ -32,12 +32,14 @@ const (
 	ContainerMetricGroup = MetricGroup("container")
 	PodMetricGroup       = MetricGroup("pod")
 	NodeMetricGroup      = MetricGroup("node")
+	VolumeMetricGroup    = MetricGroup("volume")
 )
 
 var ValidMetricGroups = map[MetricGroup]bool{
 	ContainerMetricGroup: true,
 	PodMetricGroup:       true,
 	NodeMetricGroup:      true,
+	VolumeMetricGroup:    true,
 }
 
 type metricDataAccumulator struct {
@@ -53,6 +55,7 @@ const (
 	nodePrefix      = k8sPrefix + "node."
 	podPrefix       = k8sPrefix + "pod."
 	containerPrefix = "container."
+	volumePrefix    = k8sPrefix + "volume."
 )
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -108,6 +111,20 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 		cpuMetrics(containerPrefix, s.CPU),
 		memMetrics(containerPrefix, s.Memory),
 		fsMetrics(containerPrefix, s.Rootfs),
+	)
+}
+
+func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s stats.VolumeStats) {
+	if !a.metricGroupsToCollect[VolumeMetricGroup] {
+		return
+	}
+
+	volume := volumeResource(podResource, s)
+
+	a.accumulate(
+		nil,
+		volume,
+		volumeMetrics(volumePrefix, s),
 	)
 }
 

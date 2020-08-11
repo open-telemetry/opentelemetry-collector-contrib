@@ -44,6 +44,10 @@ func MetricsData(
 		for _, containerStats := range podStats.Containers {
 			acc.containerStats(podResource, containerStats)
 		}
+
+		for _, volumeStats := range podStats.VolumeStats {
+			acc.volumeStats(podResource, volumeStats)
+		}
 	}
 	for _, md := range acc.m {
 		// TODO this should prob go in core
