@@ -1,5 +1,3 @@
-// +build xraysegmentdump
-
 package main
 
 import (

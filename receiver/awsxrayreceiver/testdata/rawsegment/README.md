@@ -14,7 +14,7 @@ You can safely interrupt the process after getting enough samples.
 
 You can run the sample app by:
 ```
-go run -tags=xraysegmentdump sampleapp/sample.go
+go run sampleapp/sample.go
 ```
 Provide AWS credentials via environment variables and run the sample app.
 
@@ -29,5 +29,5 @@ $ sudo tcpdump -i any -A -c100 -v -nn udp port 2000 > xray_instrumented_server.t
 
 You can run the sample server by:
 ```
-go run -tags=xraysegmentdump sampleserver/sample.go
+go run sampleserver/sample.go
 ```
