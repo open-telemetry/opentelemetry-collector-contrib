@@ -28,8 +28,8 @@ import (
 
 // CauseData provides the shape for unmarshalling data that records exception.
 type CauseData struct {
-	WorkingDirectory string      `json:"working_directory,omitempty"`
-	Paths            []string    `json:"paths,omitempty"`
+	WorkingDirectory string       `json:"working_directory,omitempty"`
+	Paths            []string     `json:"paths,omitempty"`
 	Exceptions       []*Exception `json:"exceptions,omitempty"`
 }
 
