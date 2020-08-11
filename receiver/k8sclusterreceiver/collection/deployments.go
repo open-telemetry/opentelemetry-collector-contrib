@@ -41,16 +41,16 @@ func getResourceForDeployment(dep *appsv1.Deployment) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyDeploymentUID:               string(dep.UID),
-			k8sKeyDeploymentName:              dep.Name,
-			conventions.AttributeK8sNamespace: dep.Namespace,
-			conventions.AttributeK8sCluster:   dep.ClusterName,
+			conventions.AttributeK8sDeploymentUID: string(dep.UID),
+			conventions.AttributeK8sDeployment:    dep.Name,
+			conventions.AttributeK8sNamespace:     dep.Namespace,
+			conventions.AttributeK8sCluster:       dep.ClusterName,
 		},
 	}
 }
 
 func getMetadataForDeployment(dep *appsv1.Deployment) map[ResourceID]*KubernetesMetadata {
 	rm := getGenericMetadata(&dep.ObjectMeta, k8sKindDeployment)
-	rm.metadata[k8sKeyDeploymentName] = dep.Name
+	rm.metadata[conventions.AttributeK8sDeployment] = dep.Name
 	return map[ResourceID]*KubernetesMetadata{ResourceID(dep.UID): rm}
 }

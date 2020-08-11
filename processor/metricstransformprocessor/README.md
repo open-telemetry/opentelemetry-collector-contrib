@@ -1,4 +1,4 @@
-# Metrics Transform Processor **(UNDER DEVELOPMENT - NOT READY FOR USE)**
+# Metrics Transform Processor
 Supported pipeline types: metrics
 - This ONLY supports renames/aggregations **within individual metrics**. It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
 - Rename Collisions will result in a no operation on the metrics data
@@ -61,11 +61,19 @@ transforms:
 ### Insert New Metric
 ```yaml
 # create host.cpu.utilization from host.cpu.usage
-metric_name: host/cpu/usage
+metric_name: host.cpu.usage
 action: insert
-new_name: host/cpu/utilization
+new_name: host.cpu.utilization
 operations:
   ...
+```
+
+### Rename Metric
+```yaml
+# rename system.cpu.usage to cpu/usage_time
+metric_name: system.cpu.usage
+action: update
+new_name: cpu/usage_time
 ```
 
 ### Rename Labels
@@ -119,8 +127,16 @@ transforms:
 # The following will append label {Key: `mylabel`, Description: `myvalue`} to the metric `some_name`.
   - metric_name: some_name
       action: update
-      operation:
+      operations:
         - action: add_label
           new_label: mylabel
           new_value: myvalue
+```
+
+### Toggle Datatype
+```yaml
+# toggle the datatype for the metric system.cpu.usage
+...
+operation:
+  - action: toggle_scalar_data_type
 ```

@@ -27,6 +27,8 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
+	// The rule can be applied only to a particular metric if MetricName is provided,
+	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
 	// ActionRenameMetrics renames metrics using Rule.Mapping.
@@ -89,6 +91,27 @@ const (
 	//   machine_cpu_cores{host="host1"} 2
 	//   machine_cpu_cores{host="host2"} 1
 	ActionAggregateMetric Action = "aggregate_metric"
+
+	// ActionCalculateNewMetric calculates a new metric based on two existing metrics.
+	// It takes two operand metrics, an operator, and a metric name and produces a new metric with the given
+	// metric name, but with the attributes of the first operand metric.
+	// For example, for the following translation rule:
+	// - action: calculate_new_metric
+	//  metric_name: memory.utilization
+	//  operand1_metric: memory.used
+	//  operand2_metric: memory.total
+	//  operator: /
+	// the integer value of the 'memory.used' metric will be divided by the integer value of 'memory.total'. The
+	// result will be a new float metric with the name 'memory.utilization' and the value of the quotient. The
+	// new metric will also get any attributes of the 'memory.used' metric except for its value and metric name.
+	// Currently only integer inputs are handled and only division is supported.
+	ActionCalculateNewMetric Action = "calculate_new_metric"
+)
+
+type MetricOperator string
+
+const (
+	MetricOperatorDivision MetricOperator = "/"
 )
 
 // MetricValueType is the enum to capture valid metric value types that can be converted
@@ -151,6 +174,14 @@ type Rule struct {
 	// that will be used to aggregate the metric across.
 	// Datapoints that don't have all the dimensions will be dropped.
 	Dimensions []string `mapstructure:"dimensions"`
+
+	// MetricName is used by "split_metric" translation rule to specify a name
+	// of a metric that will be split.
+	MetricNames map[string]bool `mapstructure:"metric_names"`
+
+	Operand1Metric string         `mapstructure:"operand1_metric"`
+	Operand2Metric string         `mapstructure:"operand2_metric"`
+	Operator       MetricOperator `mapstructure:"operator"`
 }
 
 type MetricTranslator struct {
@@ -173,17 +204,19 @@ func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
 }
 
 func validateTranslationRules(rules []Rule) error {
-	var renameDimentionKeysFound bool
+	var renameDimensionKeysFound bool
 	for _, tr := range rules {
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
 			}
-			if renameDimentionKeysFound {
-				return fmt.Errorf("only one %q translation rule can be specified", tr.Action)
+			if len(tr.MetricNames) == 0 {
+				if renameDimensionKeysFound {
+					return fmt.Errorf("only one %q translation rule without \"metric_names\" can be specified", tr.Action)
+				}
+				renameDimensionKeysFound = true
 			}
-			renameDimentionKeysFound = true
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
@@ -238,6 +271,14 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
+		case ActionCalculateNewMetric:
+			if tr.MetricName == "" || tr.Operand1Metric == "" || tr.Operand2Metric == "" || tr.Operator == "" {
+				return fmt.Errorf(`fields "metric_name", "operand1_metric", "operand2_metric", and "operator" are `+
+					"required for %q translation rule", tr.Action)
+			}
+			if tr.Operator != MetricOperatorDivision {
+				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
+			}
 
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
@@ -267,6 +308,9 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
+				if len(tr.MetricNames) > 0 && !tr.MetricNames[dp.Metric] {
+					continue
+				}
 				for _, d := range dp.Dimensions {
 					if newKey, ok := tr.Mapping[d.Key]; ok {
 						d.Key = newKey
@@ -327,6 +371,24 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					convertMetricValue(logger, dp, newType)
 				}
 			}
+		case ActionCalculateNewMetric:
+			var operand1, operand2 *sfxpb.DataPoint
+			for _, dp := range processedDataPoints {
+				if dp.Metric == tr.Operand1Metric {
+					operand1 = dp
+				} else if dp.Metric == tr.Operand2Metric {
+					operand2 = dp
+				}
+			}
+			if operand1 == nil || operand2 == nil {
+				continue
+			}
+			newPt := calculateNewMetric(logger, operand1, operand2, tr)
+			if newPt == nil {
+				continue
+			}
+			processedDataPoints = append(processedDataPoints, newPt)
+
 		case ActionAggregateMetric:
 			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint
 			// represents only one metric and all the datapoints can be aggregated together.
@@ -353,6 +415,55 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	}
 
 	return processedDataPoints
+}
+
+func calculateNewMetric(
+	logger *zap.Logger,
+	operand1 *sfxpb.DataPoint,
+	operand2 *sfxpb.DataPoint,
+	tr Rule,
+) *sfxpb.DataPoint {
+	if operand1.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand1 has no IntValue",
+			zap.String("tr.Operand1Metric", tr.Operand1Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if operand2.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand2 has no IntValue",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+		logger.Warn(
+			"calculate_new_metric: attempt to divide by zero, skipping",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	newPt := proto.Clone(operand1).(*sfxpb.DataPoint)
+	newPt.Metric = tr.MetricName
+	var newPtVal float64
+	switch tr.Operator {
+	// only supporting divide operator for now
+	case MetricOperatorDivision:
+		// only supporting int values for now
+		newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+	default:
+		logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
+		return nil
+	}
+	newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
+	return newPt
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {

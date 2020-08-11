@@ -204,7 +204,8 @@ func spanToRemoteDependencyData(span pdata.Span, incomingSpanType spanType) *con
 }
 
 func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, success bool) {
-	return strconv.FormatInt(statusCode, 10), statusCode >= 200 && statusCode <= 299
+	// see https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#status
+	return strconv.FormatInt(statusCode, 10), statusCode >= 100 && statusCode <= 399
 }
 
 // Maps HTTP Server Span to AppInsights RequestData

@@ -16,19 +16,31 @@ package kubeletstatsreceiver
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
 
-const typeStr = "kubeletstats"
+const (
+	typeStr            = "kubeletstats"
+	metricGroupsConfig = "metric_groups"
+)
+
+var defaultMetricGroups = []kubelet.MetricGroup{
+	kubelet.ContainerMetricGroup,
+	kubelet.PodMetricGroup,
+	kubelet.NodeMetricGroup,
+}
 
 var _ component.ReceiverFactoryBase = (*Factory)(nil)
 
@@ -54,6 +66,39 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
+	return customUnmarshaller
+}
+
+func customUnmarshaller(sourceViperSection *viper.Viper, intoCfg interface{}) error {
+	if sourceViperSection == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err := sourceViperSection.Unmarshal(intoCfg); err != nil {
+		return err
+	}
+
+	config := intoCfg.(*Config)
+
+	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
+	// unmarshaller only supports string slices.
+	if !sourceViperSection.IsSet(metricGroupsConfig) {
+		config.MetricGroupsToCollect = defaultMetricGroups
+		return nil
+	}
+	mgs := sourceViperSection.Get(metricGroupsConfig)
+
+	out, err := yaml.Marshal(mgs)
+	if err != nil {
+		return fmt.Errorf("failed to marshal %s to yaml: %w", metricGroupsConfig, err)
+	}
+
+	err = yaml.UnmarshalStrict(out, &config.MetricGroupsToCollect)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve %s: %w", metricGroupsConfig, err)
+	}
+
 	return nil
 }
 
@@ -73,7 +118,7 @@ func (f *Factory) CreateMetricsReceiver(
 	consumer consumer.MetricsConsumerOld,
 ) (component.MetricsReceiver, error) {
 	cfg := baseCfg.(*Config)
-	err := kubelet.ValidateMetadataLabelsConfig(cfg.ExtraMetadataLabels)
+	rOptions, err := cfg.getReceiverOptions()
 	if err != nil {
 		return nil, err
 	}
@@ -81,12 +126,8 @@ func (f *Factory) CreateMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-	return &receiver{
-		logger:   logger,
-		cfg:      cfg,
-		consumer: consumer,
-		rest:     rest,
-	}, nil
+
+	return newReceiver(rOptions, logger, rest, consumer)
 }
 
 func (f *Factory) restClient(logger *zap.Logger, cfg *Config) (kubelet.RestClient, error) {
