@@ -14,7 +14,6 @@
 package prometheusexecreceiver
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"reflect"
@@ -655,13 +654,88 @@ func TestAssignNewRandomPort(t *testing.T) {
 
 	for _, test := range assignNewRandomPortTests {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := test.wrapper.assignNewRandomPort(context.Background())
+			got, err := test.wrapper.assignNewRandomPort()
 			if err != nil {
 				t.Errorf("assignNewRandomPort() threw an error: %v", err)
 			}
 			if got == test.oldPort {
 				t.Errorf("assignNewRandomPort() got = %v, want different than %v", got, test.oldPort)
 			}
+		})
+	}
+}
+
+func TestGetDelay(t *testing.T) {
+	var (
+		getDelayTests = []struct {
+			name               string
+			elapsed            time.Duration
+			healthyProcessTime time.Duration
+			crashCount         int
+			healthyCrashCount  int
+			want               time.Duration
+		}{
+			{
+				name:               "healthy process 1",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         2,
+				healthyCrashCount:  3,
+				want:               1 * time.Second,
+			},
+			{
+				name:               "healthy process 2",
+				elapsed:            15 * time.Hour,
+				healthyProcessTime: 20 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  2,
+				want:               1 * time.Second,
+			},
+			{
+				name:               "unhealthy process 1",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 45 * time.Minute,
+				crashCount:         4,
+				healthyCrashCount:  3,
+			},
+			{
+				name:               "unhealthy process 2",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 75 * time.Second,
+				crashCount:         5,
+				healthyCrashCount:  3,
+			},
+			{
+				name:               "unhealthy process 3",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  3,
+			},
+			{
+				name:               "unhealthy process 4",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 10 * time.Minute,
+				crashCount:         7,
+				healthyCrashCount:  3,
+			},
+		}
+		previousResult time.Duration
+	)
+
+	for _, test := range getDelayTests {
+		t.Run(test.name, func(t *testing.T) {
+			got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
+			if test.name == "healthy process" {
+				if !reflect.DeepEqual(got, test.want) {
+					t.Errorf("getDelay() got = %v, want %v", got, test.want)
+					return
+				}
+			}
+			if previousResult > got {
+				t.Errorf("getDelay() got = %v, want something larger than the previous result %v", got, previousResult)
+			}
+			previousResult = got
 		})
 	}
 }

@@ -15,87 +15,13 @@
 package subprocessmanager
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
 	"go.uber.org/zap"
 )
-
-func TestGetDelay(t *testing.T) {
-	var (
-		getDelayTests = []struct {
-			name               string
-			elapsed            time.Duration
-			healthyProcessTime time.Duration
-			crashCount         int
-			healthyCrashCount  int
-			want               time.Duration
-		}{
-			{
-				name:               "healthy process 1",
-				elapsed:            15 * time.Second,
-				healthyProcessTime: 30 * time.Minute,
-				crashCount:         2,
-				healthyCrashCount:  3,
-				want:               1 * time.Second,
-			},
-			{
-				name:               "healthy process 2",
-				elapsed:            15 * time.Hour,
-				healthyProcessTime: 20 * time.Minute,
-				crashCount:         6,
-				healthyCrashCount:  2,
-				want:               1 * time.Second,
-			},
-			{
-				name:               "unhealthy process 1",
-				elapsed:            15 * time.Second,
-				healthyProcessTime: 45 * time.Minute,
-				crashCount:         4,
-				healthyCrashCount:  3,
-			},
-			{
-				name:               "unhealthy process 2",
-				elapsed:            15 * time.Second,
-				healthyProcessTime: 75 * time.Second,
-				crashCount:         5,
-				healthyCrashCount:  3,
-			},
-			{
-				name:               "unhealthy process 3",
-				elapsed:            15 * time.Second,
-				healthyProcessTime: 30 * time.Minute,
-				crashCount:         6,
-				healthyCrashCount:  3,
-			},
-			{
-				name:               "unhealthy process 4",
-				elapsed:            15 * time.Second,
-				healthyProcessTime: 10 * time.Minute,
-				crashCount:         7,
-				healthyCrashCount:  3,
-			},
-		}
-		previousResult time.Duration
-	)
-
-	for _, test := range getDelayTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := GetDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
-			if test.name == "healthy process" {
-				if !reflect.DeepEqual(got, test.want) {
-					t.Errorf("GetDelay() got = %v, want %v", got, test.want)
-					return
-				}
-			}
-			if previousResult > got {
-				t.Errorf("GetDelay() got = %v, want something larger than the previous result %v", got, previousResult)
-			}
-			previousResult = got
-		})
-	}
-}
 
 func TestFormatEnvSlice(t *testing.T) {
 	var formatEnvSliceTests = []struct {
@@ -211,7 +137,7 @@ func TestRun(t *testing.T) {
 	for _, test := range runTests {
 		t.Run(test.name, func(t *testing.T) {
 			logger, _ := zap.NewProduction()
-			got, err := test.process.Run(logger)
+			got, err := test.process.Run(context.Background(), logger)
 			if test.wantErr && err == nil {
 				t.Errorf("Run() got = %v, wantErr %v", got, test.wantErr)
 				return

@@ -16,10 +16,9 @@ package subprocessmanager
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -29,26 +28,8 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// delayMutiplier is the factor by which the delay scales
-	delayMultiplier float64 = 2.0
-	// initialDelay is the initial delay before a process is restarted
-	initialDelay time.Duration = 1 * time.Second
-)
-
-// GetDelay will compute the delay for a given process according to its crash count and time alive using an exponential backoff algorithm
-func GetDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crashCount int, healthyCrashCount int) time.Duration {
-	// Return the initialDelay if the process is healthy (lasted longer than health duration) or has less or equal the allowed amount of crashes
-	if elapsed > healthyProcessDuration || crashCount <= healthyCrashCount {
-		return initialDelay
-	}
-
-	// Return initialDelay times 2 to the power of crashCount-healthyCrashCount (to offset for the allowed crashes) added to a random number
-	return initialDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-healthyCrashCount)+rand.Float64()))
-}
-
 // Run will start the process and keep track of running time
-func (proc *SubprocessConfig) Run(logger *zap.Logger) (time.Duration, error) {
+func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time.Duration, error) {
 
 	var argsSlice []string
 
@@ -83,19 +64,36 @@ func (proc *SubprocessConfig) Run(logger *zap.Logger) (time.Duration, error) {
 	go proc.pipeSubprocessOutput(bufio.NewReader(stderrReader), logger, false)
 
 	// Start and stop timer (elapsed) right before and after executing the command
+	done := make(chan error, 1)
 	start := time.Now()
+
 	errProcess := childProcess.Start()
 	if errProcess != nil {
 		return 0, fmt.Errorf("process could not start: %w", errProcess)
 	}
 
-	errProcess = childProcess.Wait()
-	elapsed := time.Since(start)
-	if errProcess != nil {
-		return elapsed, fmt.Errorf("process error: %w", errProcess)
-	}
+	go func() {
+		done <- childProcess.Wait()
+	}()
 
-	return elapsed, nil
+	// Handle normal process exiting or parent logic triggering a shutdown
+	select {
+	case errProcess := <-done:
+		elapsed := time.Since(start)
+
+		// The subprocess will most likely exit due to an error (which is logged), but in any case we'll continue as usual with the health/delay computation
+		if errProcess != nil {
+			return elapsed, fmt.Errorf("process error: %w", errProcess)
+		}
+		return elapsed, nil
+
+	case <-ctx.Done():
+		err := childProcess.Process.Kill()
+		if err != nil {
+			logger.Error("couldn't kill subprocess", zap.String("error", err.Error()))
+		}
+		return 0, nil
+	}
 }
 
 // Log every line of the subprocesse's output using zap, until pipe is closed (EOF)

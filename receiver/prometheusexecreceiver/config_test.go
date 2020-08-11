@@ -61,7 +61,7 @@ var (
 		ScrapeInterval: 100 * time.Millisecond,
 		Port:           9999,
 		SubprocessConfig: subprocessmanager.SubprocessConfig{
-			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go 9999",
+			Command: "go run ./testdata/end_to_end_metrics_test/test_prometheus_exporter.go {{port}}",
 			Env: []subprocessmanager.EnvConfig{
 				{
 					Name:  "DATA_SOURCE_NAME",
