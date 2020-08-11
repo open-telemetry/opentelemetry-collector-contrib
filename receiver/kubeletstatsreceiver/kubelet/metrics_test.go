@@ -95,3 +95,65 @@ func TestLabels(t *testing.T) {
 	require.Equal(t, labelValue.Value, "myval")
 	require.True(t, labelValue.HasValue)
 }
+
+func TestWorkingSetMem(t *testing.T) {
+	metrics := indexedFakeMetrics()
+	nodeWsMetrics := metrics["k8s.node.memory.working_set"]
+	wsMetric := nodeWsMetrics[0]
+	value := wsMetric.Timeseries[0].Points[0].Value
+	ptv := value.(*metricspb.Point_Int64Value)
+	require.Equal(t, int64(1234567890), ptv.Int64Value)
+	requireContains(t, metrics, "k8s.pod.memory.working_set")
+	requireContains(t, metrics, "container.memory.working_set")
+}
+
+func TestPageFaults(t *testing.T) {
+	metrics := indexedFakeMetrics()
+	nodePageFaults := metrics["k8s.node.memory.page_faults"]
+	value := nodePageFaults[0].Timeseries[0].Points[0].Value
+	ptv := value.(*metricspb.Point_Int64Value)
+	require.Equal(t, int64(12345), ptv.Int64Value)
+	requireContains(t, metrics, "k8s.pod.memory.page_faults")
+	requireContains(t, metrics, "container.memory.page_faults")
+}
+
+func TestMajorPageFaults(t *testing.T) {
+	metrics := indexedFakeMetrics()
+	nodePageFaults := metrics["k8s.node.memory.major_page_faults"]
+	value := nodePageFaults[0].Timeseries[0].Points[0].Value
+	ptv := value.(*metricspb.Point_Int64Value)
+	require.Equal(t, int64(12), ptv.Int64Value)
+	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
+	requireContains(t, metrics, "container.memory.major_page_faults")
+}
+
+func requireContains(t *testing.T, metrics map[string][]*metricspb.Metric, metricName string) {
+	_, found := metrics[metricName]
+	require.True(t, found)
+}
+
+func indexedFakeMetrics() map[string][]*metricspb.Metric {
+	mds := fakeMetrics()
+	metrics := make(map[string][]*metricspb.Metric)
+	for _, md := range mds {
+		for _, metric := range md.Metrics {
+			metricName := metric.MetricDescriptor.Name
+			list := metrics[metricName]
+			list = append(list, metric)
+			metrics[metricName] = list
+		}
+	}
+	return metrics
+}
+
+func fakeMetrics() []*consumerdata.MetricsData {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	mgs := map[MetricGroup]bool{
+		ContainerMetricGroup: true,
+		PodMetricGroup:       true,
+		NodeMetricGroup:      true,
+	}
+	return MetricsData(zap.NewNop(), summary, Metadata{}, "foo", mgs)
+}

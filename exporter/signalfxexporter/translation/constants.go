@@ -26,7 +26,7 @@ translation_rules:
 
     # dimensions
     container.image.name: container_image
-    container.name: container_spec_name
+    k8s.container.name: container_spec_name
     k8s.cluster.name: kubernetes_cluster
     k8s.daemonset.name: kubernetes_name
     k8s.daemonset.uid: kubernetes_uid
@@ -76,6 +76,8 @@ translation_rules:
     # k8s cluster receiver metrics
     k8s/container/cpu/limit: kubernetes.container_cpu_limit
     k8s/container/cpu/request: kubernetes.container_cpu_request
+    k8s/container/ephemeral-storage/limit: kubernetes.container_ephemeral_storage_limit
+    k8s/container/ephemeral-storage/request: kubernetes.container_ephemeral_storage_request
     k8s/container/memory/limit: kubernetes.container_memory_limit
     k8s/container/memory/request: kubernetes.container_memory_request
     k8s/container/ready: kubernetes.container_ready
@@ -113,6 +115,11 @@ translation_rules:
     k8s/stateful_set/desired_pods: kubernetes.stateful_set.desired
     k8s/stateful_set/ready_pods: kubernetes.stateful_set.ready
     k8s/stateful_set/updated_pods: kubernetes.stateful_set.updated
+
+    # load metrics
+    system.cpu.load_average.15m: load.longterm
+    system.cpu.load_average.5m: load.midterm
+    system.cpu.load_average.1m: load.shortterm
 
 # container network metrics
 - action: split_metric
@@ -220,6 +227,80 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
+
+# convert disk I/O metrics
+- action: rename_dimension_keys
+  metric_names:
+    system.disk.merged: true
+    system.disk.io: true
+    system.disk.ops: true
+    system.disk.time: true
+  mapping:
+    device: disk
+- action: split_metric
+  metric_name: system.disk.merged
+  dimension_key: direction
+  mapping:
+    read: disk_merged.read
+    write: disk_merged.write
+- action: split_metric
+  metric_name: system.disk.io
+  dimension_key: direction
+  mapping:
+    read: disk_octets.read
+    write: disk_octets.write
+- action: split_metric
+  metric_name: system.disk.ops
+  dimension_key: direction
+  mapping:
+    read: disk_ops.read
+    write: disk_ops.write
+- action: split_metric
+  metric_name: system.disk.time
+  dimension_key: direction
+  mapping:
+    read: disk_time.read
+    write: disk_time.write
+
+# convert network I/O metrics
+- action: copy_metrics
+  mapping:
+    system.network.io: network.total
+  dimension_key: direction
+  dimension_values:
+    receive: true
+    transmit: true
+- action: aggregate_metric
+  metric_name: network.total
+  aggregation_method: sum
+  dimensions:
+  - host
+  - kubernetes_node
+  - kubernetes_cluster
+- action: split_metric
+  metric_name: system.network.dropped_packets
+  dimension_key: direction
+  mapping:
+    receive: if_dropped.rx
+    transmit: if_dropped.tx
+- action: split_metric
+  metric_name: system.network.errors
+  dimension_key: direction
+  mapping:
+    receive: if_errors.rx
+    transmit: if_errors.tx
+- action: split_metric
+  metric_name: system.network.io
+  dimension_key: direction
+  mapping:
+    receive: if_octets.rx
+    transmit: if_octets.tx
+- action: split_metric
+  metric_name: system.network.packets
+  dimension_key: direction
+  mapping:
+    receive: if_packets.rx
+    transmit: if_packets.tx
 
 # memory utilization
 - action: calculate_new_metric

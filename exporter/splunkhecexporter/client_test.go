@@ -42,11 +42,11 @@ func createMetricsData(numberOfDataPoints int) consumerdata.MetricsData {
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
 	doubleVal := 1234.5678
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 	var metrics []*metricspb.Metric
 	for i := 0; i < numberOfDataPoints; i++ {
+		tsUnix := time.Unix(unixSecs+int64(i), unixNSecs)
+		doublePt := metricstestutil.Double(tsUnix, doubleVal)
 		metric := metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt))
 		metrics = append(metrics, metric)
 	}
@@ -201,13 +201,13 @@ func TestReceiveTraces(t *testing.T) {
 }
 
 func TestReceiveMetrics(t *testing.T) {
-	actual, err := runTraceExport(true, 3, t)
+	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
+	expected := `{"time":1574092046.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected += `{"time":1574092047.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":1574092048.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }

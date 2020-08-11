@@ -36,8 +36,8 @@ func TestContainerStatsMetadataNotFound(t *testing.T) {
 	now := metav1.Now()
 	podResource := &resourcepb.Resource{
 		Labels: map[string]string{
-			labelPodUID:        "pod-uid-123",
-			labelContainerName: "container1",
+			"k8s.pod.uid":        "pod-uid-123",
+			"k8s.container.name": "container1",
 		},
 	}
 	containerStats := stats.ContainerStats{

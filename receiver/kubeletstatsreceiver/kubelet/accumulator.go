@@ -15,10 +15,13 @@
 package kubelet
 
 import (
+	"time"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
@@ -42,6 +45,7 @@ type metricDataAccumulator struct {
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
+	time                  time.Time
 }
 
 const (
@@ -91,8 +95,8 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 
 	resource, err := containerResource(podResource, s, a.metadata)
 	if err != nil {
-		a.logger.Warn("failed to fetch container metrics", zap.String("pod", podResource.Labels[labelPodName]),
-			zap.String("container", podResource.Labels[labelContainerName]), zap.Error(err))
+		a.logger.Warn("failed to fetch container metrics", zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
+			zap.String("container", podResource.Labels[conventions.AttributeK8sContainer]), zap.Error(err))
 		return
 	}
 
@@ -114,7 +118,7 @@ func (a *metricDataAccumulator) accumulate(
 ) {
 	var resourceMetrics []*metricspb.Metric
 	for _, metrics := range m {
-		for _, metric := range metrics {
+		for _, metric := range applyCurrentTime(metrics, a.time) {
 			if metric != nil {
 				metric.Timeseries[0].StartTimestamp = startTime
 				resourceMetrics = append(resourceMetrics, metric)

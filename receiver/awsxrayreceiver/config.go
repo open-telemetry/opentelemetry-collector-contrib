@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,8 +21,7 @@ import (
 )
 
 const (
-	typeStr = "aws_xray"
-	version = "1.0.0"
+	typeStr = "awsxray"
 )
 
 // Config defines the configurations for an AWS X-Ray receiver.

@@ -101,10 +101,10 @@ func getResourceForStatefulSet(ss *appsv1.StatefulSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyStatefulSetUID:              string(ss.UID),
-			k8sKeyStatefulSetName:             ss.Name,
-			conventions.AttributeK8sNamespace: ss.Namespace,
-			conventions.AttributeK8sCluster:   ss.ClusterName,
+			conventions.AttributeK8sStatefulSetUID: string(ss.UID),
+			conventions.AttributeK8sStatefulSet:    ss.Name,
+			conventions.AttributeK8sNamespace:      ss.Namespace,
+			conventions.AttributeK8sCluster:        ss.ClusterName,
 		},
 	}
 }

@@ -17,6 +17,7 @@ package metricstransformprocessor
 import (
 	"math"
 	"math/rand"
+	"sort"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
@@ -101,6 +102,9 @@ func (mtp *metricsTransformProcessor) mergePoints(timestampToPoints map[int64][]
 
 		}
 	}
+	sort.Slice(newPoints, func(i, j int) bool {
+		return mtp.compareTimestamps(newPoints[i].Timestamp, newPoints[j].Timestamp)
+	})
 	return newPoints
 }
 

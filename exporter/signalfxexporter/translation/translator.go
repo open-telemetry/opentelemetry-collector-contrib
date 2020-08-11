@@ -27,6 +27,8 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
+	// The rule can be applied only to a particular metric if MetricName is provided,
+	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
 	// ActionRenameMetrics renames metrics using Rule.Mapping.
@@ -173,6 +175,10 @@ type Rule struct {
 	// Datapoints that don't have all the dimensions will be dropped.
 	Dimensions []string `mapstructure:"dimensions"`
 
+	// MetricName is used by "split_metric" translation rule to specify a name
+	// of a metric that will be split.
+	MetricNames map[string]bool `mapstructure:"metric_names"`
+
 	Operand1Metric string         `mapstructure:"operand1_metric"`
 	Operand2Metric string         `mapstructure:"operand2_metric"`
 	Operator       MetricOperator `mapstructure:"operator"`
@@ -198,17 +204,19 @@ func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
 }
 
 func validateTranslationRules(rules []Rule) error {
-	var renameDimentionKeysFound bool
+	var renameDimensionKeysFound bool
 	for _, tr := range rules {
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
 			}
-			if renameDimentionKeysFound {
-				return fmt.Errorf("only one %q translation rule can be specified", tr.Action)
+			if len(tr.MetricNames) == 0 {
+				if renameDimensionKeysFound {
+					return fmt.Errorf("only one %q translation rule without \"metric_names\" can be specified", tr.Action)
+				}
+				renameDimensionKeysFound = true
 			}
-			renameDimentionKeysFound = true
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
@@ -300,6 +308,9 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
+				if len(tr.MetricNames) > 0 && !tr.MetricNames[dp.Metric] {
+					continue
+				}
 				for _, d := range dp.Dimensions {
 					if newKey, ok := tr.Mapping[d.Key]; ok {
 						d.Key = newKey
