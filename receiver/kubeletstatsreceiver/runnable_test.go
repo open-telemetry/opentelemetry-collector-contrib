@@ -30,18 +30,20 @@ import (
 )
 
 const (
-	dataLen = 19
+	dataLen = numContainers + numPods + numNodes + numVolumes
 
 	// Number of resources by type in testdata/stats-summary.json
 	numContainers = 9
 	numPods       = 9
 	numNodes      = 1
+	numVolumes    = 9
 )
 
 var allMetricGroups = map[kubelet.MetricGroup]bool{
 	kubelet.ContainerMetricGroup: true,
 	kubelet.PodMetricGroup:       true,
 	kubelet.NodeMetricGroup:      true,
+	kubelet.VolumeMetricGroup:    true,
 }
 
 func TestRunnable(t *testing.T) {
@@ -125,6 +127,13 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 				kubelet.NodeMetricGroup: true,
 			},
 			dataLen: numNodes,
+		},
+		{
+			name: "only volume group",
+			metricGroups: map[kubelet.MetricGroup]bool{
+				kubelet.VolumeMetricGroup: true,
+			},
+			dataLen: numVolumes,
 		},
 		{
 			name: "pod and node groups",

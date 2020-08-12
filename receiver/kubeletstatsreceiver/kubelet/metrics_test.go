@@ -54,22 +54,31 @@ func requireMetricsDataOk(t *testing.T, mds []*consumerdata.MetricsData) {
 		requireResourceOk(t, md.Resource)
 		for _, metric := range md.Metrics {
 			requireDescriptorOk(t, metric.MetricDescriptor)
+			isCumulativeType := isCumulativeType(metric.GetMetricDescriptor().Type)
 			for _, ts := range metric.Timeseries {
-				requireTimeSeriesOk(t, ts)
+				// Start time is required for cumulative metrics. Make assertions
+				// around start time only when dealing with one or when it is set.
+				shouldCheckStartTime := isCumulativeType || ts.StartTimestamp != nil
+				requireTimeSeriesOk(t, ts, shouldCheckStartTime)
 			}
 		}
 	}
 }
 
-func requireTimeSeriesOk(t *testing.T, ts *metricspb.TimeSeries) {
-	require.True(t, ts.StartTimestamp.Seconds > 0)
+func requireTimeSeriesOk(t *testing.T, ts *metricspb.TimeSeries, shouldCheckStartTime bool) {
+	if shouldCheckStartTime {
+		require.True(t, ts.StartTimestamp.Seconds > 0)
+	}
+
 	for _, point := range ts.Points {
-		requirePointOk(t, point, ts)
+		requirePointOk(t, point, ts, shouldCheckStartTime)
 	}
 }
 
-func requirePointOk(t *testing.T, point *metricspb.Point, ts *metricspb.TimeSeries) {
-	require.True(t, point.Timestamp.Seconds > ts.StartTimestamp.Seconds)
+func requirePointOk(t *testing.T, point *metricspb.Point, ts *metricspb.TimeSeries, shouldCheckStartTime bool) {
+	if shouldCheckStartTime {
+		require.True(t, point.Timestamp.Seconds > ts.StartTimestamp.Seconds)
+	}
 	require.NotNil(t, point.Value)
 }
 
@@ -81,6 +90,12 @@ func requireDescriptorOk(t *testing.T, desc *metricspb.MetricDescriptor) {
 func requireResourceOk(t *testing.T, resource *resourcepb.Resource) {
 	require.True(t, resource.Type != "")
 	require.NotNil(t, resource.Labels)
+}
+
+func isCumulativeType(typ metricspb.MetricDescriptor_Type) bool {
+	return typ == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE ||
+		typ == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
+		typ == metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION
 }
 
 func TestLabels(t *testing.T) {

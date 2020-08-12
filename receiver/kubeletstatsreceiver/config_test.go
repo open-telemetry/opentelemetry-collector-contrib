@@ -145,6 +145,7 @@ func TestLoadConfig(t *testing.T) {
 		MetricGroupsToCollect: []kubelet.MetricGroup{
 			kubelet.PodMetricGroup,
 			kubelet.NodeMetricGroup,
+			kubelet.VolumeMetricGroup,
 		},
 	}, metricGroupsCfg)
 }
