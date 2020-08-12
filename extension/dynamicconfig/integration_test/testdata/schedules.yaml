@@ -1,0 +1,13 @@
+ConfigBlocks:
+    - Resource:
+      - "name:seuss"
+      Schedules:
+      - InclusionPatterns:
+          - StartsWith: "*"
+        Period: "2"
+    - Resource:
+      - "profession:doctor"
+      Schedules:
+      - InclusionPatterns:
+          - StartsWith: "*"
+        Period: "4"

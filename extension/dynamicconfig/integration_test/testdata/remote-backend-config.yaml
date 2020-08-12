@@ -1,0 +1,21 @@
+extensions:
+    dynamicconfig:
+        endpoint: 0.0.0.0:55700
+        remote_config_address: 0.0.0.0:55701
+
+receivers:
+    otlp:
+        protocols:
+            grpc:
+                endpoint: 0.0.0.0:55680
+
+exporters:
+    logging:
+
+service:
+    pipelines:
+        metrics:
+            receivers: [otlp]
+            exporters: [logging]
+
+    extensions: [dynamicconfig]

@@ -1,0 +1,22 @@
+extensions:
+    dynamicconfig:
+        endpoint: 0.0.0.0:55701
+        local_config_file: 'testdata/schedules.yaml'
+        wait_time: 5
+
+receivers:
+    otlp:
+        protocols:
+            grpc:
+                endpoint: 0.0.0.0:55681
+
+exporters:
+    logging:
+
+service:
+    pipelines:
+        metrics:
+            receivers: [otlp]
+            exporters: [logging]
+
+    extensions: [dynamicconfig]
