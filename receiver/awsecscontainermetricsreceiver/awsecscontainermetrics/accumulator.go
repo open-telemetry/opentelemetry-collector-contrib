@@ -81,6 +81,7 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 	var rBytes, rPackets, rErrors, rDropped uint64
 	var tBytes, tPackets, tErrors, tDropped uint64
 	var cpuTotal, cpuKernel, cpuUser, cpuSystem, cpuCores, cpuOnline uint64
+	var storageRead, storageWrite uint64
 
 	for _, value := range containerStatsMap {
 		memUsage += *value.Memory.Usage
@@ -101,6 +102,7 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 			tErrors += *netStat.TxErrors
 			tDropped += *netStat.TxDropped
 		}
+
 		cpuTotal += *value.CPU.CpuUsage.TotalUsage
 		cpuKernel += *value.CPU.CpuUsage.UsageInKernelmode
 		cpuUser += *value.CPU.CpuUsage.UsageInUserMode
@@ -108,6 +110,14 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		cpuOnline += *value.CPU.OnlineCpus
 		numOfCores := (uint64)(len(value.CPU.CpuUsage.PerCpuUsage))
 		cpuCores += numOfCores
+
+		read, write := extractStorageUsage(&value.Disk)
+		if read != nil {
+			storageRead += *read
+		}
+		if write != nil {
+			storageWrite += *write
+		}
 	}
 	taskStat := TaskStats{
 		MemoryUsage:                 &memUsage,
@@ -129,6 +139,8 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		SystemCPUUsage:              &cpuSystem,
 		CPUOnlineCpus:               &cpuOnline,
 		NumOfCPUCores:               &cpuCores,
+		StorageReadBytes:            &storageRead,
+		StorageWriteBytes:           &storageWrite,
 	}
 	return taskStat
 }

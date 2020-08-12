@@ -41,5 +41,7 @@ func taskMetrics(prefix string, stats *TaskStats) []*metricspb.Metric {
 		numberOfCores(prefix, stats.NumOfCPUCores),
 		onlineCpus(prefix, stats.CPUOnlineCpus),
 		systemCpuUsage(prefix, stats.SystemCPUUsage),
+		storageReadBytes(prefix, stats.StorageReadBytes),
+		storageWriteBytes(prefix, stats.StorageWriteBytes),
 	}, time.Now())
 }

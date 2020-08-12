@@ -99,4 +99,7 @@ type TaskStats struct {
 	CPUOnlineCpus        *uint64
 	SystemCPUUsage       *uint64
 	NumOfCPUCores        *uint64
+
+	StorageReadBytes  *uint64
+	StorageWriteBytes *uint64
 }
