@@ -140,21 +140,23 @@ func TestMergeResource(t *testing.T) {
 		expected   pdata.Resource
 	}{
 		{
-			name: "override non-empty resources",
-			res1: NewResource(map[string]interface{}{"a": "11", "b": "2"}),
-			res2: NewResource(map[string]interface{}{"a": "1", "c": "3"}), overrideTo: true,
-			expected: NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
+			name:       "override non-empty resources",
+			res1:       NewResource(map[string]interface{}{"a": "11", "b": "2"}),
+			res2:       NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+			overrideTo: true,
+			expected:   NewResource(map[string]interface{}{"a": "1", "b": "2", "c": "3"}),
 		}, {
-			name:     "empty resource",
-			res1:     pdata.NewResource(),
-			res2:     NewResource(map[string]interface{}{"a": "1", "c": "3"}),
-			expected: NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+			name:       "empty resource",
+			res1:       pdata.NewResource(),
+			res2:       NewResource(map[string]interface{}{"a": "1", "c": "3"}),
+			overrideTo: false,
+			expected:   NewResource(map[string]interface{}{"a": "1", "c": "3"}),
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			out := pdata.NewResource()
 			tt.res1.CopyTo(out)
-			MergeResource(out, tt.res2, true)
+			MergeResource(out, tt.res2, tt.overrideTo)
 			tt.expected.Attributes().Sort()
 			out.Attributes().Sort()
 			assert.Equal(t, tt.expected, out)
