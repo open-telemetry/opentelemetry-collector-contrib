@@ -90,7 +90,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 	User:      aws.String("xraysegmentdump"),
 	Cause: &CauseData{
 		Type: CauseTypeObject,
-		causeObject: causeObject{
+		CauseObject: CauseObject{
 			WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 			Exceptions: []Exception{
 				{
@@ -133,7 +133,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 			Fault:     aws.Bool(true),
 			Cause: &CauseData{
 				Type: CauseTypeObject,
-				causeObject: causeObject{
+				CauseObject: CauseObject{
 					WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 					Exceptions: []Exception{
 						{
@@ -189,8 +189,8 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					Namespace: aws.String("aws"),
 					HTTP: &HTTPData{
 						Response: &ResponseData{
-							Status:        aws.Int(200),
-							ContentLength: aws.Int(713),
+							Status:        aws.Int64(200),
+							ContentLength: aws.Int64(713),
 						},
 					},
 					AWS: &AWSData{
@@ -307,7 +307,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					Fault:     aws.Bool(true),
 					Cause: &CauseData{
 						Type: CauseTypeObject,
-						causeObject: causeObject{
+						CauseObject: CauseObject{
 							WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 							Exceptions: []Exception{
 								{
@@ -374,8 +374,8 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 					Namespace: aws.String("aws"),
 					HTTP: &HTTPData{
 						Response: &ResponseData{
-							Status:        aws.Int(400),
-							ContentLength: aws.Int(112),
+							Status:        aws.Int64(400),
+							ContentLength: aws.Int64(112),
 						},
 					},
 					AWS: &AWSData{
@@ -400,7 +400,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 							Fault:     aws.Bool(true),
 							Cause: &CauseData{
 								Type: CauseTypeObject,
-								causeObject: causeObject{
+								CauseObject: CauseObject{
 									WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 									Exceptions: []Exception{
 										{
@@ -487,7 +487,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 							Fault:     aws.Bool(true),
 							Cause: &CauseData{
 								Type: CauseTypeObject,
-								causeObject: causeObject{
+								CauseObject: CauseObject{
 									WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 									Exceptions: []Exception{
 										{
@@ -574,7 +574,7 @@ var rawExpectedSegmentForInstrumentedServer = Segment{
 			XForwardedFor: aws.Bool(true),
 		},
 		Response: &ResponseData{
-			Status: aws.Int(200),
+			Status: aws.Int64(200),
 		},
 	},
 	AWS: &AWSData{
@@ -597,7 +597,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 	}{
 		{
 			testCase:   "TestTraceBodyCorrectlyUnmarshalledForInstrumentedApp",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "ddbSample.txt"),
+			samplePath: path.Join("testdata", "ddbSample.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -607,7 +607,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyInProgressUnmarshalled",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "minInProgress.txt"),
+			samplePath: path.Join("testdata", "minInProgress.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -622,7 +622,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyOtherTopLevelFieldsUnmarshalled",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "minOtherFields.txt"),
+			samplePath: path.Join("testdata", "minOtherFields.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -643,7 +643,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyCauseIsExceptionIdUnmarshalled",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "minCauseIsExceptionId.txt"),
+			samplePath: path.Join("testdata", "minCauseIsExceptionId.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
@@ -664,7 +664,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyInvalidCauseUnmarshalled",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "minCauseIsInvalid.txt"),
+			samplePath: path.Join("testdata", "minCauseIsInvalid.txt"),
 			verification: func(testCase string, _ Segment, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
@@ -676,7 +676,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		},
 		{
 			testCase:   "TestTraceBodyCorrectlyUnmarshalledForInstrumentedServer",
-			samplePath: path.Join("../../", "testdata", "rawsegment", "serverSample.txt"),
+			samplePath: path.Join("testdata", "serverSample.txt"),
 			verification: func(testCase string, actualSeg Segment, err error) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
