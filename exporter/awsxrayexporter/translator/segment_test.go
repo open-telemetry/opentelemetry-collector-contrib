@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 var (
@@ -42,17 +44,17 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	attributes[semconventions.AttributeHTTPScheme] = "https"
 	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[semconventions.AttributeHTTPTarget] = "/"
-	attributes[AWSServiceAttribute] = "DynamoDB"
-	attributes[AWSOperationAttribute] = "GetItem"
-	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
-	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
+	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
+	attributes[awsxray.AWSOperationAttribute] = "GetItem"
+	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
 	segment := MakeSegment(span, resource)
-	assert.Equal(t, "DynamoDB", segment.Name)
-	assert.Equal(t, "aws", segment.Namespace)
-	assert.Equal(t, "subsegment", segment.Type)
+	assert.Equal(t, "DynamoDB", *segment.Name)
+	assert.Equal(t, "aws", *segment.Namespace)
+	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource)
 
@@ -73,15 +75,15 @@ func TestClientSpanWithPeerService(t *testing.T) {
 	attributes[semconventions.AttributeHTTPHost] = "dynamodb.us-east-1.amazonaws.com"
 	attributes[semconventions.AttributeHTTPTarget] = "/"
 	attributes[semconventions.AttributePeerService] = "cats-table"
-	attributes[AWSServiceAttribute] = "DynamoDB"
-	attributes[AWSOperationAttribute] = "GetItem"
-	attributes[AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
-	attributes[AWSTableNameAttribute] = "otel-dev-Testing"
+	attributes[awsxray.AWSServiceAttribute] = "DynamoDB"
+	attributes[awsxray.AWSOperationAttribute] = "GetItem"
+	attributes[awsxray.AWSRequestIDAttribute] = "18BO1FEPJSSAOGNJEDPTPCMIU7VV4KQNSO5AEMVJF66Q9ASUAAJG"
+	attributes[awsxray.AWSTableNameAttribute] = "otel-dev-Testing"
 	resource := constructDefaultResource()
 	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
 
 	segment := MakeSegment(span, resource)
-	assert.Equal(t, "cats-table", segment.Name)
+	assert.Equal(t, "cats-table", *segment.Name)
 }
 
 func TestServerSpanWithInternalServerError(t *testing.T) {
@@ -108,8 +110,8 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
-	assert.Equal(t, "signup_aggregator", segment.Name)
-	assert.True(t, segment.Fault)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+	assert.True(t, *segment.Fault)
 	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
 		assert.Fail(t, "invalid json")
@@ -172,10 +174,10 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	assert.NotNil(t, segment.Annotations)
 	assert.Nil(t, segment.Cause)
 	assert.Nil(t, segment.HTTP)
-	assert.Equal(t, "customers@db.dev.example.com", segment.Name)
-	assert.False(t, segment.Fault)
-	assert.False(t, segment.Error)
-	assert.Equal(t, "remote", segment.Namespace)
+	assert.Equal(t, "customers@db.dev.example.com", *segment.Name)
+	assert.False(t, *segment.Fault)
+	assert.False(t, *segment.Error)
+	assert.Equal(t, "remote", *segment.Namespace)
 
 	w := testWriters.borrow()
 	if err := w.Encode(segment); err != nil {
@@ -204,7 +206,7 @@ func TestClientSpanWithHttpHost(t *testing.T) {
 	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "foo.com", segment.Name)
+	assert.Equal(t, "foo.com", *segment.Name)
 }
 
 func TestClientSpanWithoutHttpHost(t *testing.T) {
@@ -223,7 +225,7 @@ func TestClientSpanWithoutHttpHost(t *testing.T) {
 	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "bar.com", segment.Name)
+	assert.Equal(t, "bar.com", *segment.Name)
 }
 
 func TestClientSpanWithRpcHost(t *testing.T) {
@@ -243,7 +245,7 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	segment := MakeSegment(span, resource)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "com.foo.AnimalService", segment.Name)
+	assert.Equal(t, "com.foo.AnimalService", *segment.Name)
 }
 
 func TestSpanWithInvalidTraceId(t *testing.T) {
@@ -326,8 +328,8 @@ func TestServerSpanWithNilAttributes(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.NotNil(t, segment.Cause)
-	assert.Equal(t, "signup_aggregator", segment.Name)
-	assert.True(t, segment.Fault)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+	assert.True(t, *segment.Fault)
 }
 
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
