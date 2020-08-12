@@ -25,7 +25,7 @@ import (
 )
 
 func TestMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	o, err := cfg.getReceiverOptions()
 	require.NoError(t, err)

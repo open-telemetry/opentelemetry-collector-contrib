@@ -36,7 +36,7 @@ type runner interface {
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
 	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 	idNamespace  string
 	ctx          context.Context
 	host         component.Host
@@ -52,7 +52,7 @@ func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userC
 		return nil, fmt.Errorf("unable to lookup factory for receiver %q", receiver.typeStr)
 	}
 
-	receiverFactory := factory.(component.ReceiverFactoryOld)
+	receiverFactory := factory.(component.ReceiverFactory)
 
 	cfg, err := run.loadRuntimeReceiverConfig(receiverFactory, receiver, discoveredConfig)
 	if err != nil {
@@ -78,7 +78,7 @@ func (run *receiverRunner) shutdown(rcvr component.Receiver) error {
 // loadRuntimeReceiverConfig loads the given receiverTemplate merged with config values
 // that may have been discovered at runtime.
 func (run *receiverRunner) loadRuntimeReceiverConfig(
-	factory component.ReceiverFactoryOld,
+	factory component.ReceiverFactory,
 	receiver receiverConfig,
 	discoveredConfig userConfigMap,
 ) (configmodels.Receiver, error) {
@@ -105,6 +105,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (run *receiverRunner) createRuntimeReceiver(factory component.ReceiverFactoryOld, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.logger, cfg, run.nextConsumer)
+func (run *receiverRunner) createRuntimeReceiver(factory component.ReceiverFactory, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	return factory.CreateMetricsReceiver(context.Background(), params, cfg, run.nextConsumer)
 }

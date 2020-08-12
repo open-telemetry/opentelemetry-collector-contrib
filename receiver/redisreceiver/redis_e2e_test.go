@@ -46,14 +46,14 @@ func TestIntegration(t *testing.T) {
 	d := container.New(t)
 	c := d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
 
-	f := Factory{}
+	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*config)
 	cfg.Endpoint = c.AddrForPort(6379)
 
-	consumer := &exportertest.SinkMetricsExporterOld{}
-	logger := zaptest.NewLogger(t)
+	consumer := &exportertest.SinkMetricsExporter{}
+	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), logger, cfg, consumer)
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{
 		t: t,
