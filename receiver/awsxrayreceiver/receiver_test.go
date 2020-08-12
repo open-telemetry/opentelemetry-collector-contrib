@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,13 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
+)
+
+const (
+	defaultRegionEnvName = "AWS_DEFAULT_REGION"
+	mockRegion           = "us-west-2"
 )
 
 func TestConsumerCantBeNil(t *testing.T) {
@@ -57,7 +64,31 @@ func TestConsumerCantBeNil(t *testing.T) {
 	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
 }
 
+func TestProxyCreationFailed(t *testing.T) {
+	addr, err := findAvailableUDPAddress()
+	assert.NoError(t, err, "there should be address available")
+
+	sink := new(exportertest.SinkTraceExporter)
+	_, err = newReceiver(
+		&Config{
+			NetAddr: confignet.NetAddr{
+				Endpoint:  addr,
+				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "invalidEndpoint",
+				},
+			},
+		},
+		sink,
+		zap.NewNop(),
+	)
+	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
+}
+
 func TestPollerCreationFailed(t *testing.T) {
+	sink := new(exportertest.SinkTraceExporter)
 	_, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -65,17 +96,20 @@ func TestPollerCreationFailed(t *testing.T) {
 				Transport: "tcp",
 			},
 		},
-		new(exportertest.SinkTraceExporter),
+		sink,
 		zap.NewNop(),
 	)
-	assert.EqualError(t, err,
-		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp",
-		"receiver should not be created")
+	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
 
 func TestCantStartAnInstanceTwice(t *testing.T) {
-	addr, err := findAvailableAddress()
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	sink := new(exportertest.SinkTraceExporter)
 	rcvr, err := newReceiver(
@@ -83,6 +117,11 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -100,8 +139,13 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 }
 
 func TestCantStopAnInstanceTwice(t *testing.T) {
-	addr, err := findAvailableAddress()
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	sink := new(exportertest.SinkTraceExporter)
 	rcvr, err := newReceiver(
@@ -109,6 +153,11 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -143,6 +192,10 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 // TODO: Update this test to assert on the format of traces
 // once the transformation from X-Ray segments -> OTLP is done.
 func TestSegmentsPassedToConsumer(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, true)
 	defer rcvr.Shutdown(context.Background())
 
@@ -159,9 +212,85 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	}, "consumer should eventually get the X-Ray span")
 }
 
+func TestPollerCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, false)
+	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
+	rcvr.(*xrayReceiver).poller = mPoller
+	rcvr.(*xrayReceiver).server = &mockProxy{}
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err, mPoller.closeErr.Error(), "expected error")
+}
+
+func TestProxyCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, false)
+	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
+	rcvr.(*xrayReceiver).poller = &mockPoller{}
+	rcvr.(*xrayReceiver).server = mProxy
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err, mProxy.closeErr.Error(), "expected error")
+}
+
+func TestBothPollerAndProxyCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, false)
+	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
+	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
+	rcvr.(*xrayReceiver).poller = mPoller
+	rcvr.(*xrayReceiver).server = mProxy
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err,
+		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
+			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
+		"expected error")
+}
+
+type mockPoller struct {
+	closeErr error
+}
+
+func (m *mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
+	return make(chan udppoller.RawSegment, 1)
+}
+
+func (m *mockPoller) Start(ctx context.Context) {}
+
+func (m *mockPoller) Close() error {
+	if m.closeErr != nil {
+		return m.closeErr
+	}
+	return nil
+}
+
+type mockProxy struct {
+	closeErr error
+}
+
+func (m *mockProxy) ListenAndServe() error {
+	return errors.New("returning from ListenAndServe() always errors out")
+}
+
+func (m *mockProxy) Close() error {
+	if m.closeErr != nil {
+		return m.closeErr
+	}
+	return nil
+}
+
 func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
-	addr, err := findAvailableAddress()
+	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	sink := new(exportertest.SinkTraceExporter)
 	logger, recorded := logSetup()
@@ -170,6 +299,11 @@ func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, compone
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -184,10 +318,10 @@ func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, compone
 	return addr, rcvr, recorded
 }
 
-// findAvailableAddress finds an available local address+port and returns it.
+// findAvailableUDPAddress finds an available local address+port and returns it.
 // There might be race condition on the address returned by this function if
 // there's some other code that grab the address before we can listen on it.
-func findAvailableAddress() (string, error) {
+func findAvailableUDPAddress() (string, error) {
 	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
 	if err != nil {
 		return "", err
