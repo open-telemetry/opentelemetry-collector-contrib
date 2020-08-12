@@ -15,10 +15,10 @@
 package kube
 
 import (
-	"go.opentelemetry.io/collector/translator/conventions"
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
