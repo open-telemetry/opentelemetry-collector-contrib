@@ -65,6 +65,12 @@ func (m *mockMetadata) Get(suffix string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func TestNewDetector(t *testing.T) {
+	d, err := NewDetector()
+	assert.NotNil(t, d)
+	assert.NoError(t, err)
+}
+
 func TestDetectTrue(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("OnGCE").Return(true)
