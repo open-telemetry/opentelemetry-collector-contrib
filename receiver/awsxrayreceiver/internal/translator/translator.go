@@ -29,6 +29,9 @@ const (
 	initAttrCapacity = 15
 )
 
+// TODO: It might be nice to consolidate the `fromPdata` in x-ray exporter and
+// `toPdata` in this receiver to a common package later
+
 // ToTraces converts X-Ray segment (and its subsegments) to an OT ResourceSpans.
 func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 	var seg tracesegment.Segment
@@ -170,6 +173,7 @@ func populateResource(seg *tracesegment.Segment, rs *pdata.Resource) {
 	attrs.InitEmptyWithCapacity(initAttrCapacity)
 
 	addAWSToResource(seg.AWS, &attrs)
+	addSdkToResource(seg, &attrs)
 	if seg.Service != nil {
 		addString(
 			seg.Service.Version,

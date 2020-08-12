@@ -93,6 +93,11 @@ func TestTranslation(t *testing.T) {
 			expectedResourceAttrs: func(seg *tracesegment.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("aws")
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDKVersion)
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDK)
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *tracesegment.Segment) []perSpanProperties {
@@ -128,6 +133,11 @@ func TestTranslation(t *testing.T) {
 			expectedResourceAttrs: func(seg *tracesegment.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("aws")
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDKVersion)
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDK)
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("java")
 
 				return attrs
 			},
@@ -559,6 +569,11 @@ func TestTranslation(t *testing.T) {
 					"32")
 				attrs[conventions.AttributeServiceVersion] = pdata.NewAttributeValueString(
 					*seg.AWS.Beanstalk.VersionLabel)
+				attrs[conventions.AttributeTelemetrySDKVersion] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDKVersion)
+				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
+					*seg.AWS.XRay.SDK)
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *tracesegment.Segment) []perSpanProperties {
