@@ -48,13 +48,13 @@ func Test_getGenericMetadata(t *testing.T) {
 		},
 	}
 
-	rm := getGenericMetadata(om, "resourcetype")
+	rm := getGenericMetadata(om, "ResourceType")
 
 	assert.Equal(t, "k8s.resourcetype.uid", rm.resourceIDKey)
 	assert.Equal(t, ResourceID("test-uid"), rm.resourceID)
 	assert.Equal(t, map[string]string{
 		"k8s.workload.name":               "test-name",
-		"k8s.workload.kind":               "resourcetype",
+		"k8s.workload.kind":               "ResourceType",
 		"resourcetype.creation_timestamp": now.Format(time.RFC3339),
 		"owner-kind-1":                    "owner1",
 		"owner-kind-1_uid":                "owner1",

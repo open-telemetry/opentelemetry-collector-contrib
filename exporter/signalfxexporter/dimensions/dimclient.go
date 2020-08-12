@@ -30,6 +30,8 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
 
 // DimensionClient sends updates to dimensions to the SignalFx API
@@ -70,6 +72,7 @@ type DimensionClient struct {
 	TotalSuccessfulUpdates       int64
 	logUpdates                   bool
 	logger                       *zap.Logger
+	metricTranslator             *translation.MetricTranslator
 }
 
 type queuedDimension struct {
@@ -84,6 +87,7 @@ type DimensionClientOptions struct {
 	Logger                *zap.Logger
 	SendDelay             int
 	PropertiesMaxBuffered int
+	MetricTranslator      *translation.MetricTranslator
 }
 
 // NewDimensionClient returns a new client
@@ -107,17 +111,18 @@ func NewDimensionClient(ctx context.Context, options DimensionClientOptions) *Di
 	sender := NewReqSender(ctx, client, 20, map[string]string{"client": "dimension"})
 
 	return &DimensionClient{
-		ctx:           ctx,
-		Token:         options.Token,
-		APIURL:        options.APIURL,
-		sendDelay:     time.Duration(options.SendDelay) * time.Second,
-		delayedSet:    make(map[DimensionKey]*DimensionUpdate),
-		delayedQueue:  make(chan *queuedDimension, options.PropertiesMaxBuffered),
-		requestSender: sender,
-		client:        client,
-		now:           time.Now,
-		logger:        options.Logger,
-		logUpdates:    options.LogUpdates,
+		ctx:              ctx,
+		Token:            options.Token,
+		APIURL:           options.APIURL,
+		sendDelay:        time.Duration(options.SendDelay) * time.Second,
+		delayedSet:       make(map[DimensionKey]*DimensionUpdate),
+		delayedQueue:     make(chan *queuedDimension, options.PropertiesMaxBuffered),
+		requestSender:    sender,
+		client:           client,
+		now:              time.Now,
+		logger:           options.Logger,
+		logUpdates:       options.LogUpdates,
+		metricTranslator: options.MetricTranslator,
 	}
 }
 

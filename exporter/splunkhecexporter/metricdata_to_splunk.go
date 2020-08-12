@@ -213,7 +213,7 @@ func mapSummaryValue(metric *metricspb.Metric, summaryValue *metricspb.SummaryVa
 	if percentiles == nil {
 		return values, fmt.Errorf(
 			"unknown percentiles values for summary metric %q",
-			*metric)
+			metricName)
 	}
 	quantileMetricName := metricName + separator + quantileSuffix + separator
 	for _, quantile := range percentiles {

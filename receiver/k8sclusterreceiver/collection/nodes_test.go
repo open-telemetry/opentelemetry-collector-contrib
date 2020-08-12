@@ -34,7 +34,7 @@ func TestNodeMetrics(t *testing.T) {
 	require.Equal(t, 1, len(actualResourceMetrics))
 
 	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *actualResourceMetrics[0].resource, k8sType,
+	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
 			"k8s.node.uid":     "test-node-1-uid",
 			"k8s.node.name":    "test-node-1",
@@ -42,10 +42,10 @@ func TestNodeMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "k8s/node/condition_ready",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s/node/condition_ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[1], "k8s/node/condition_memory_pressure",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s/node/condition_memory_pressure",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 }
 

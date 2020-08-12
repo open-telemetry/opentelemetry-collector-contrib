@@ -19,16 +19,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestReceiverMap(t *testing.T) {
 	rm := receiverMap{}
 	assert.Equal(t, 0, rm.Size())
 
-	r1 := &config.ExampleReceiverProducer{}
-	r2 := &config.ExampleReceiverProducer{}
-	r3 := &config.ExampleReceiverProducer{}
+	r1 := &componenttest.ExampleReceiverProducer{}
+	r2 := &componenttest.ExampleReceiverProducer{}
+	r3 := &componenttest.ExampleReceiverProducer{}
 
 	rm.Put("a", r1)
 	assert.Equal(t, 1, rm.Size())

@@ -220,6 +220,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	if c.Rules.PodUID {
+		uid := pod.GetUID()
+		tags[c.Rules.Tags.PodUID] = string(uid)
+	}
+
 	if c.Rules.DeploymentName {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
@@ -298,8 +303,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.PodID {
-		tags[c.Rules.Tags.PodID] = string(pod.UID)
+	if c.Rules.PodUID {
+		tags[c.Rules.Tags.PodUID] = string(pod.UID)
 	}
 
 	for _, r := range c.Rules.Labels {

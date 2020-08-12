@@ -1,8 +1,10 @@
-# Elastic APM Exporter
+# Elastic Exporter
 
-This exporter supports sending OpenTelemetry data to [Elastic APM](https://www.elastic.co/apm)
+This exporter supports sending OpenTelemetry data to the [Elastic Stack](https://www.elastic.co/observability).
 
-Configuration options:
+Complete documentation is available on [Elastic.co](https://www.elastic.co/guide/en/apm/get-started/current/open-telemetry-elastic.html).
+
+### Configuration options
 
 - `apm_server_url` (required): Elastic APM Server URL.
 - `api_key` (optional): credential for API Key authorization, if enabled in Elastic APM Server.
@@ -12,7 +14,7 @@ Configuration options:
 - `key_file` (optional): client TLS key.
 - `insecure` (optional): disable verification of the server's identity, if TLS is enabled.
 
-Example:
+### Example
 
 ```yaml
 exporters:

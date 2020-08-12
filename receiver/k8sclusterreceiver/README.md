@@ -97,7 +97,7 @@ Follow the below sections to setup various Kubernetes resources required for the
 
 #### Config
 
-Create a ConfigMap with the config for `otelcontribcol`. Replace `SIGNALFX_TOKEN` and `SIGNAL_INGEST_URL` 
+Create a ConfigMap with the config for `otelcontribcol`. Replace `SIGNALFX_TOKEN` and `SIGNALFX_REALM`
 with valid values.
 
 ```bash
@@ -116,7 +116,7 @@ data:
     exporters:
       signalfx:
         access_token: <SIGNALFX_TOKEN>
-        ingest_url: <SIGNALFX_INGEST_URL>
+        realm: <SIGNALFX_REALM>
 
     service:
       pipelines:

@@ -20,6 +20,8 @@ import (
 	"strings"
 
 	"github.com/antonmedv/expr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 // evalBackticksInConfigValue expands any expressions within backticks inside configValue
@@ -34,7 +36,7 @@ import (
 // of the expression. For instance:
 //
 //   `"secure" in pod.labels` -> true (boolean)
-func evalBackticksInConfigValue(configValue string, env endpointEnv) (interface{}, error) {
+func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (interface{}, error) {
 	// Tracks index into configValue where an expression (backtick) begins. -1 is unset.
 	exprStartIndex := -1
 	// Accumulate expanded string.
@@ -99,7 +101,7 @@ func evalBackticksInConfigValue(configValue string, env endpointEnv) (interface{
 
 // expandMap recursively expands any expressions in backticks inside values of cfg using
 // env as variables available within the expression, returning a copy of the map.
-func expandMap(cfg map[string]interface{}, env endpointEnv) (map[string]interface{}, error) {
+func expandMap(cfg map[string]interface{}, env observer.EndpointEnv) (map[string]interface{}, error) {
 	resolved := map[string]interface{}{}
 	for k, v := range cfg {
 		if v == nil {

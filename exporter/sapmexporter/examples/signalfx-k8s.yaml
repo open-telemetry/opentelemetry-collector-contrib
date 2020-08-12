@@ -12,7 +12,6 @@ data:
       health_check:
       zpages:
     receivers:
-      otlp:
       sapm:
       signalfx:
       # This section is used to collect OpenTelemetry metrics
@@ -78,11 +77,11 @@ data:
     service:
       pipelines:
         traces:
-          receivers: [sapm, otlp, zipkin]
+          receivers: [sapm, zipkin]
           processors: [memory_limiter, batch, queued_retry]
           exporters: [sapm]
         metrics:
-          receivers: [signalfx, prometheus, otlp]
+          receivers: [signalfx, prometheus]
           processors: [memory_limiter, batch]
           exporters: [signalfx]
 ---
@@ -95,10 +94,6 @@ metadata:
     component: otel-collector
 spec:
   ports:
-  - name: otlp # Default endpoint for OpenTelemetry receiver.
-    port: 55680
-    protocol: TCP
-    targetPort: 55680
   - name: sapm # Default endpoint for SignalFx APM receiver.
     port: 7276
   - name: zipkin # Default endpoint for Zipkin trace receiver.

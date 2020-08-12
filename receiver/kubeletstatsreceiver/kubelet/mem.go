@@ -20,21 +20,36 @@ import (
 )
 
 func memMetrics(prefix string, s *stats.MemoryStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		memAvailableMetric(prefix, s),
 		memUsageMetric(prefix, s),
 		memRssMetric(prefix, s),
-	}, s.Time.Time)
+		memWorkingSetMetric(prefix, s),
+		memPageFaultsMetric(prefix, s),
+		memMajorPageFaultsMetric(prefix, s),
+	}
 }
 
 func memAvailableMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/available", "By", s.AvailableBytes)
+	return intGauge(prefix+"memory.available", "By", s.AvailableBytes)
 }
 
 func memUsageMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/usage", "By", s.UsageBytes)
+	return intGauge(prefix+"memory.usage", "By", s.UsageBytes)
 }
 
 func memRssMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"mem/rss", "By", s.RSSBytes)
+	return intGauge(prefix+"memory.rss", "By", s.RSSBytes)
+}
+
+func memWorkingSetMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"memory.working_set", "By", s.WorkingSetBytes)
+}
+
+func memPageFaultsMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"memory.page_faults", "1", s.PageFaults)
+}
+
+func memMajorPageFaultsMetric(prefix string, s *stats.MemoryStats) *metricspb.Metric {
+	return intGauge(prefix+"memory.major_page_faults", "1", s.MajorPageFaults)
 }

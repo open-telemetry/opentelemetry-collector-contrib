@@ -17,7 +17,7 @@
 package azuremonitorexporter
 
 import (
-	contracts "github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	contracts "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	mock "github.com/stretchr/testify/mock"
 )
 

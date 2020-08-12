@@ -12,6 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metricstransformprocessor implements a processor for transforming metrics including renaming metric name, labels and label values.
-// This processor can also aggregate metrics based on labels or label values.
+// Package metricstransformprocessor implements a processor for transforming metrics.
+// The supported transformations are included in the README
 package metricstransformprocessor

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package signalfxexporter
+package translation
 
 import (
 	"fmt"
@@ -76,14 +76,23 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func metricDataToSignalFxV2(
+func MetricDataToSignalFxV2(
 	logger *zap.Logger,
+	metricTranslator *MetricTranslator,
 	md consumerdata.MetricsData,
-) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int, err error) {
+) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
+	sfxDataPoints, numDroppedTimeSeries = metricDataToSfxDataPoints(logger, metricTranslator, md)
 
-	// The final number of data points is likely larger than len(md.Metrics)
-	// but at least that is expected.
-	sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics))
+	sanitizeDataPointDimensions(sfxDataPoints)
+	return
+}
+
+func metricDataToSfxDataPoints(
+	logger *zap.Logger,
+	metricTranslator *MetricTranslator,
+	md consumerdata.MetricsData,
+) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
+	var err error
 
 	// Labels from Node and Resource.
 	// TODO: Options to add lib, service name, etc as dimensions?
@@ -105,23 +114,26 @@ func metricDataToSignalFxV2(
 			continue
 		}
 
+		if sfxDataPoints == nil {
+			// Suppose all metrics has roughly similar number of timeseries
+			sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics)*len(metric.Timeseries))
+		}
+
+		metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
+
 		// Build the fixed parts for this metrics from the descriptor.
 		descriptor := metric.MetricDescriptor
 		metricName := descriptor.Name
 
 		metricType := fromOCMetricDescriptorToMetricType(descriptor.Type)
 		numLabels := len(descriptor.LabelKeys)
-		filteredLabelKeys := make([]string, numLabels)
-		for i := 0; i < numLabels; i++ {
-			filteredLabelKeys[i] = filterKeyChars(descriptor.LabelKeys[i].Key)
-		}
 
 		for _, series := range metric.Timeseries {
 			dimensions := make([]*sfxpb.Dimension, numLabels+numExtraDimensions)
 			copy(dimensions, extraDimensions)
 			for i := 0; i < numLabels; i++ {
 				dimension := &sfxpb.Dimension{
-					Key:   filteredLabelKeys[i],
+					Key:   descriptor.LabelKeys[i].Key,
 					Value: series.LabelValues[i].Value,
 				}
 				dimensions[numExtraDimensions+i] = dimension
@@ -146,15 +158,15 @@ func metricDataToSignalFxV2(
 				switch pv := dp.Value.(type) {
 				case *metricspb.Point_Int64Value:
 					sfxDataPoint.Value = sfxpb.Datum{IntValue: &pv.Int64Value}
-					sfxDataPoints = append(sfxDataPoints, sfxDataPoint)
+					metricDataPoints = append(metricDataPoints, sfxDataPoint)
 
 				case *metricspb.Point_DoubleValue:
 					sfxDataPoint.Value = sfxpb.Datum{DoubleValue: &pv.DoubleValue}
-					sfxDataPoints = append(sfxDataPoints, sfxDataPoint)
+					metricDataPoints = append(metricDataPoints, sfxDataPoint)
 
 				case *metricspb.Point_DistributionValue:
-					sfxDataPoints, err = appendDistributionValues(
-						sfxDataPoints,
+					metricDataPoints, err = appendDistributionValues(
+						metricDataPoints,
 						sfxDataPoint,
 						pv.DistributionValue)
 					if err != nil {
@@ -165,8 +177,8 @@ func metricDataToSignalFxV2(
 							zap.String("metric", sfxDataPoint.Metric))
 					}
 				case *metricspb.Point_SummaryValue:
-					sfxDataPoints, err = appendSummaryValues(
-						sfxDataPoints,
+					metricDataPoints, err = appendSummaryValues(
+						metricDataPoints,
 						sfxDataPoint,
 						pv.SummaryValue)
 					if err != nil {
@@ -185,9 +197,15 @@ func metricDataToSignalFxV2(
 
 			}
 		}
+
+		if metricTranslator != nil {
+			metricDataPoints = metricTranslator.TranslateDataPoints(logger, metricDataPoints)
+		}
+
+		sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
 	}
 
-	return sfxDataPoints, numDroppedTimeSeries, nil
+	return sfxDataPoints, numDroppedTimeSeries
 }
 
 func appendAttributesToDimensions(
@@ -197,7 +215,7 @@ func appendAttributesToDimensions(
 
 	for k, v := range attribs {
 		dim := &sfxpb.Dimension{
-			Key:   filterKeyChars(k),
+			Key:   k,
 			Value: v,
 		}
 		dimensions = append(dimensions, dim)
@@ -368,6 +386,16 @@ func buildSumDataPoint(
 	sumDP.Value = sfxpb.Datum{DoubleValue: sum}
 
 	return &sumDP
+}
+
+// sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
+// in metric label keys and with "_"
+func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
+	for _, dp := range dps {
+		for _, d := range dp.Dimensions {
+			d.Key = filterKeyChars(d.Key)
+		}
+	}
 }
 
 func filterKeyChars(str string) string {

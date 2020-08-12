@@ -35,7 +35,7 @@ func TestHPAMetrics(t *testing.T) {
 	require.Equal(t, 4, len(actualResourceMetrics[0].metrics))
 
 	rm := actualResourceMetrics[0]
-	testutils.AssertResource(t, *rm.resource, k8sType,
+	testutils.AssertResource(t, rm.resource, k8sType,
 		map[string]string{
 			"k8s.hpa.uid":        "test-hpa-1-uid",
 			"k8s.hpa.name":       "test-hpa-1",
@@ -44,16 +44,16 @@ func TestHPAMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *rm.metrics[0], "k8s/hpa/max_replicas",
+	testutils.AssertMetrics(t, rm.metrics[0], "k8s/hpa/max_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10)
 
-	testutils.AssertMetrics(t, *rm.metrics[1], "k8s/hpa/min_replicas",
+	testutils.AssertMetrics(t, rm.metrics[1], "k8s/hpa/min_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 
-	testutils.AssertMetrics(t, *rm.metrics[2], "k8s/hpa/current_replicas",
+	testutils.AssertMetrics(t, rm.metrics[2], "k8s/hpa/current_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 5)
 
-	testutils.AssertMetrics(t, *rm.metrics[3], "k8s/hpa/desired_replicas",
+	testutils.AssertMetrics(t, rm.metrics[3], "k8s/hpa/desired_replicas",
 		metricspb.MetricDescriptor_GAUGE_INT64, 7)
 }
 

@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
@@ -42,6 +43,7 @@ type sfxDPClient struct {
 	logger                 *zap.Logger
 	zippers                sync.Pool
 	accessTokenPassthrough bool
+	metricTranslator       *translation.MetricTranslator
 }
 
 func (s *sfxDPClient) pushMetricsData(
@@ -49,10 +51,7 @@ func (s *sfxDPClient) pushMetricsData(
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
 	accessToken := s.retrieveAccessToken(md)
-	sfxDataPoints, numDroppedTimeseries, err := metricDataToSignalFxV2(s.logger, md)
-	if err != nil {
-		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
-	}
+	sfxDataPoints, numDroppedTimeseries := translation.MetricDataToSignalFxV2(s.logger, s.metricTranslator, md)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {

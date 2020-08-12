@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
 func Test_expandConfigValue(t *testing.T) {
@@ -54,12 +56,12 @@ func Test_expandConfigValue(t *testing.T) {
 		{"extra whitespace should not impact returned type", args{nil, "`       true ==           true`"}, true, false},
 
 		// Error cases.
-		{"only backticks", args{endpointEnv{}, "``"}, nil, true},
-		{"whitespace between backticks", args{endpointEnv{}, "`   `"}, nil, true},
+		{"only backticks", args{observer.EndpointEnv{}, "``"}, nil, true},
+		{"whitespace between backticks", args{observer.EndpointEnv{}, "`   `"}, nil, true},
 		{"unbalanced backticks", args{nil, "foo ` bar"}, nil, true},
-		{"invalid expression", args{endpointEnv{}, "`(`"}, nil, true},
+		{"invalid expression", args{observer.EndpointEnv{}, "`(`"}, nil, true},
 		{"escape at end without value", args{localhostEnv, "foo \\"}, nil, true},
-		{"missing variables", args{endpointEnv{}, "`missing + vars`"}, nil, true},
+		{"missing variables", args{observer.EndpointEnv{}, "`missing + vars`"}, nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,7 +77,7 @@ func Test_expandConfigValue(t *testing.T) {
 
 func Test_userConfigMap_resolve(t *testing.T) {
 	type args struct {
-		env endpointEnv
+		env observer.EndpointEnv
 	}
 	tests := []struct {
 		name    string
@@ -89,7 +91,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 			"one": map[string]interface{}{
 				"two": "`endpoint`",
 			},
-		}, args{endpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
 			"one": map[string]interface{}{
 				"two": "localhost",
 			},
@@ -97,7 +99,7 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		{
 			"single level map", userConfigMap{
 				"endpoint": "`endpoint`:6379",
-			}, args{endpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
+			}, args{observer.EndpointEnv{"endpoint": "localhost"}}, map[string]interface{}{
 				"endpoint": "localhost:6379",
 			}, false,
 		},

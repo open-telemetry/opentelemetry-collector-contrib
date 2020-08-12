@@ -2,6 +2,76 @@
 
 ## Unreleased
 
+## v0.8.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.8.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.8.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- Receivers
+  - `prometheusexec` subprocess manager (##499)
+
+## 💡 Enhancements 💡
+
+- `signalfx` exporter
+  - Add/Update metric translations (#579, #584, #639, #640, #652, #662)
+  - Add support for calculate new metric translator (#644)
+  - Add renaming rules for load metrics (#664)
+  - Update `container.name` to `k8s.container.name` in default translation rule (#683)
+  - Rename working-set and page-fault metrics (#679)
+- `awsxray` exporter
+  - Translate exception event into xray exception (#577)
+  - Add ingestion of X-Ray segments via UDP (#502)
+  - Parse Java stacktrace and populate in xray cause (#687)
+- `kubeletstats` receiver
+  - Add metric_groups option (#648)
+  - Set datapoint timestamp in receiver (#661)
+  - Change `container.name` label to `k8s.container.name` (#680)
+  - Add working-set and page-fault metrics (#666)
+  - Add basic support for volume metrics (#667)
+- `stackdriver` trace exporter: Move to new interface and pdata (#486)
+- `metricstranform` processor: Keep timeseries and points in order after aggregation (#663)
+- `k8scluster` receiver: Change `container.spec.name` label to `k8s.container.name` (#681)
+
+## 🧰 Bug fixes 🧰
+
+- `azuremonitor` exporter: Correct HTTP status code success mapping (#588)
+- `k8scluster` receiver: Fix owner reference in metadata updates (#649)
+
+## v0.7.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.7.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.7.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+
+- `awsxray` receiver updated to support udp: `tcp_endpoint` config option renamed to `endpoint` (#497)
+- TLS config changed for `sapmreceiver` (#488) and `signalfxreceiver` receivers (#488)
+
+## 🚀 New components 🚀
+
+- Exporters
+  - `sentry` adds tracing exporter for [Sentry](https://sentry.io/) (#565)
+- Extensions
+  - `endpoints` observer: adds generic endpoint watcher (#427)
+  - `host` observer: looks for listening network endpoints on host (#432)
+
+## 💡 Enhancements 💡
+
+- Update `honeycomb` exporter for v0.8.0 compatibility
+- Extend `metricstransform` processor to be able to add a label to an existing metric (#441)
+- Update `kubeletstats` metrics according to semantic conventions (#475)
+- Updated `awsxray` receiver config to use udp (#497)
+- Add `/pods` endpoint support in `kubeletstats` receiver to add extra labels (#569)
+- Add metric translation options to `signalfx` exporter (#477, #501, #571, #573)
+
+## 🧰 Bug fixes 🧰
+
+- `azuremonitor` exporter: Mark spanToEnvelope errors as permanent (#500)
+
 ## v0.6.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.6.0 (Beta) 🎉

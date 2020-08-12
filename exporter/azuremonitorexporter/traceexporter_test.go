@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	mock "github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
@@ -99,6 +100,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	droppedSpans, err := exporter.onTraceData(context.Background(), traces)
 	assert.NotNil(t, err)
+	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 	assert.Equal(t, 1, droppedSpans)
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)

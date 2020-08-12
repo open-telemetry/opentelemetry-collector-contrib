@@ -20,16 +20,21 @@ import (
 )
 
 func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		fsAvailableMetric(prefix, s),
 		fsCapacityMetric(prefix, s),
-	}, s.Time.Time)
+		fsUsedMetric(prefix, s),
+	}
 }
 
 func fsAvailableMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
-	return intGauge(prefix+"fs/available", "By", s.AvailableBytes)
+	return intGauge(prefix+"filesystem.available", "By", s.AvailableBytes)
 }
 
 func fsCapacityMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
-	return intGauge(prefix+"fs/capacity", "By", s.CapacityBytes)
+	return intGauge(prefix+"filesystem.capacity", "By", s.CapacityBytes)
+}
+
+func fsUsedMetric(prefix string, s *stats.FsStats) *metricspb.Metric {
+	return intGauge(prefix+"filesystem.usage", "By", s.UsedBytes)
 }

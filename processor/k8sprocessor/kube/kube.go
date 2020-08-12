@@ -15,6 +15,7 @@
 package kube
 
 import (
+	"go.opentelemetry.io/collector/translator/conventions"
 	"regexp"
 	"time"
 
@@ -30,17 +31,13 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	defaultTagClusterName     = "k8s.cluster.name"
 	defaultTagContainerID     = "k8s.container.id"
 	defaultTagContainerImage  = "k8s.container.image"
 	defaultTagContainerName   = "k8s.container.name"
 	defaultTagDaemonSetName   = "k8s.daemonset.name"
-	defaultTagDeploymentName  = "k8s.deployment.name"
 	defaultTagHostName        = "k8s.pod.hostname"
-	defaultTagNamespaceName   = "k8s.namespace.name"
 	defaultTagNodeName        = "k8s.node.name"
-	defaultTagPodID           = "k8s.pod.id"
-	defaultTagPodName         = "k8s.pod.name"
+	defaultTagPodUID          = "k8s.pod.id"
 	defaultTagReplicaSetName  = "k8s.replicaset.name"
 	defaultTagServiceName     = "k8s.service.name"
 	defaultTagStatefulSetName = "k8s.statefulset.name"
@@ -126,7 +123,7 @@ type ExtractionRules struct {
 	DaemonSetName   bool
 	DeploymentName  bool
 	HostName        bool
-	PodID           bool
+	PodUID          bool
 	PodName         bool
 	ReplicaSetName  bool
 	ServiceName     bool
@@ -152,7 +149,7 @@ type ExtractionFieldTags struct {
 	DaemonSetName   string
 	DeploymentName  string
 	HostName        string
-	PodID           string
+	PodUID          string
 	PodName         string
 	Namespace       string
 	NodeName        string
@@ -165,16 +162,16 @@ type ExtractionFieldTags struct {
 // NewExtractionFieldTags builds a new instance of tags with default values
 func NewExtractionFieldTags() ExtractionFieldTags {
 	tags := ExtractionFieldTags{}
-	tags.ClusterName = defaultTagClusterName
+	tags.ClusterName = conventions.AttributeK8sCluster
 	tags.ContainerID = defaultTagContainerID
 	tags.ContainerImage = defaultTagContainerImage
 	tags.ContainerName = defaultTagContainerName
 	tags.DaemonSetName = defaultTagDaemonSetName
-	tags.DeploymentName = defaultTagDeploymentName
+	tags.DeploymentName = conventions.AttributeK8sDeployment
 	tags.HostName = defaultTagHostName
-	tags.PodID = defaultTagPodID
-	tags.PodName = defaultTagPodName
-	tags.Namespace = defaultTagNamespaceName
+	tags.PodUID = defaultTagPodUID
+	tags.PodName = conventions.AttributeK8sPod
+	tags.Namespace = conventions.AttributeK8sNamespace
 	tags.NodeName = defaultTagNodeName
 	tags.ReplicaSetName = defaultTagReplicaSetName
 	tags.ServiceName = defaultTagServiceName

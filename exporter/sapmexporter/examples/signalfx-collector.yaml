@@ -2,7 +2,6 @@ extensions:
   health_check:
   zpages:
 receivers:
-  otlp:
   sapm:
   signalfx:
   # This section is used to collect the OpenTelemetry Collector metrics
@@ -68,11 +67,11 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [sapm, otlp, zipkin]
+      receivers: [sapm, zipkin]
       processors: [memory_limiter, batch, queued_retry]
       exporters: [sapm]
     metrics:
-      receivers: [signalfx, prometheus, otlp]
+      receivers: [signalfx, prometheus]
       processors: [memory_limiter, batch]
       exporters: [signalfx]
   extensions: [health_check, zpages]

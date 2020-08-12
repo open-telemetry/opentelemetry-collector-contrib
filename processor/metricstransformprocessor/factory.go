@@ -69,12 +69,11 @@ func (f *Factory) CreateMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return newMetricsTransformProcessor(nextConsumer, oCfg), nil
+	return newMetricsTransformProcessor(nextConsumer, params.Logger, buildHelperConfig(oCfg)), nil
 
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
-// and returns a list of valid actions to configure the processor.
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
@@ -94,8 +93,61 @@ func validateConfiguration(config *Config) error {
 			if op.Action == UpdateLabel && op.Label == "" {
 				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, i)
 			}
+			if op.Action == AddLabel && op.NewLabel == "" {
+				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewLabelFieldName, ActionFieldName, AddLabel, i)
+			}
+			if op.Action == AddLabel && op.NewValue == "" {
+				return fmt.Errorf("missing required field %q while %q is %v in the %vth operation", NewValueFieldName, ActionFieldName, AddLabel, i)
+			}
 		}
 	}
-
 	return nil
+}
+
+// buildHelperConfig constructs the maps that will be useful for the operations
+func buildHelperConfig(config *Config) []internalTransform {
+	helperDataTransforms := make([]internalTransform, len(config.Transforms))
+	for i, t := range config.Transforms {
+		helperT := internalTransform{
+			MetricName: t.MetricName,
+			Action:     t.Action,
+			NewName:    t.NewName,
+			Operations: make([]internalOperation, len(t.Operations)),
+		}
+		for j, op := range t.Operations {
+			mtpOp := internalOperation{
+				configOperation: op,
+			}
+			if len(op.ValueActions) > 0 {
+				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions)
+			}
+			if op.Action == AggregateLabels {
+				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
+			} else if op.Action == AggregateLabelValues {
+				mtpOp.aggregatedValuesSet = sliceToSet(op.AggregatedValues)
+			}
+			helperT.Operations[j] = mtpOp
+		}
+		helperDataTransforms[i] = helperT
+	}
+	return helperDataTransforms
+}
+
+// createLabelValueMapping creates the labelValue rename mappings based on the valueActions
+func createLabelValueMapping(valueActions []ValueAction) map[string]string {
+	mapping := make(map[string]string)
+	for _, valueAction := range valueActions {
+		mapping[valueAction.Value] = valueAction.NewValue
+	}
+	return mapping
+}
+
+// sliceToSet converts slice of strings to set of strings
+// Returns the set of strings
+func sliceToSet(slice []string) map[string]bool {
+	set := make(map[string]bool, len(slice))
+	for _, label := range slice {
+		set[label] = true
+	}
+	return set
 }

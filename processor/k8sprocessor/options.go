@@ -123,7 +123,7 @@ func WithExtractMetadata(fields ...string) Option {
 			case metadataNodeName:
 				p.rules.NodeName = true
 			case metadataPodID:
-				p.rules.PodID = true
+				p.rules.PodUID = true
 			case metadataPodName:
 				p.rules.PodName = true
 			case metadataReplicaSetName:
@@ -167,7 +167,7 @@ func WithExtractTags(tagsMap map[string]string) Option {
 			case strings.ToLower(metadataNodeName):
 				tags.NodeName = tag
 			case strings.ToLower(metadataPodID):
-				tags.PodID = tag
+				tags.PodUID = tag
 			case strings.ToLower(metadataPodName):
 				tags.PodName = tag
 			case strings.ToLower(metadataReplicaSetName):

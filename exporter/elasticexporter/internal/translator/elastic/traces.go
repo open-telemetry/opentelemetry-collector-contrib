@@ -256,9 +256,9 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 			netPeerPort = int(v.IntVal())
 
 		// db.*
-		case conventions.AttributeDBType:
+		case conventions.AttributeDBSystem:
 			context.setDatabaseType(v.StringVal())
-		case conventions.AttributeDBInstance:
+		case conventions.AttributeDBName:
 			context.setDatabaseInstance(v.StringVal())
 		case conventions.AttributeDBStatement:
 			context.setDatabaseStatement(v.StringVal())

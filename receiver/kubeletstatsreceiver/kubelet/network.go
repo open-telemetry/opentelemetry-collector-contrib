@@ -21,22 +21,36 @@ import (
 
 func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
 	// todo s.RxErrors s.TxErrors?
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		rxBytesMetric(prefix, s),
 		txBytesMetric(prefix, s),
-	}, s.Time.Time)
+		rxErrorsMetric(prefix, s),
+		txErrorsMetric(prefix, s),
+	}
 }
 
 const directionLabel = "direction"
 
 func rxBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network", "By", s.RxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "received"})
+	metric := cumulativeInt(prefix+"network.io", "By", s.RxBytes)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
 	return metric
 }
 
 func txBytesMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
-	metric := cumulativeInt(prefix+"network", "By", s.TxBytes)
-	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmitted"})
+	metric := cumulativeInt(prefix+"network.io", "By", s.TxBytes)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
+	return metric
+}
+
+func rxErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
+	metric := cumulativeInt(prefix+"network.errors", "By", s.RxErrors)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "receive"})
+	return metric
+}
+
+func txErrorsMetric(prefix string, s *stats.NetworkStats) *metricspb.Metric {
+	metric := cumulativeInt(prefix+"network.errors", "By", s.TxErrors)
+	applyLabels(metric, map[string]string{"interface": s.Name, directionLabel: "transmit"})
 	return metric
 }

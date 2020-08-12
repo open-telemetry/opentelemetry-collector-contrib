@@ -43,11 +43,11 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 
 	for key, value := range attributes {
 		switch key {
-		case semconventions.AttributeDBURL:
+		case semconventions.AttributeDBConnectionString:
 			dbURL = value
-		case semconventions.AttributeDBType:
+		case semconventions.AttributeDBSystem:
 			dbType = value
-		case semconventions.AttributeDBInstance:
+		case semconventions.AttributeDBName:
 			dbInstance = value
 		case semconventions.AttributeDBStatement:
 			dbStatement = value

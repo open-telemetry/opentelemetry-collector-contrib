@@ -20,8 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 var (
@@ -78,17 +79,39 @@ var (
 				},
 			},
 		},
+		{
+			filterName: "metricstransform/addlabel",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "metricstransform/addlabel",
+					TypeVal: typeStr,
+				},
+				Transforms: []Transform{
+					{
+						MetricName: "some_name",
+						Action:     Update,
+						Operations: []Operation{
+							{
+								Action:   AddLabel,
+								NewLabel: "mylabel",
+								NewValue: "myvalue",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 )
 
 // TestLoadingFullConfig tests loading testdata/config_full.yaml.
 func TestLoadingFullConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Processors[configmodels.Type(typeStr)] = factory
-	config, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
+	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
 
 	assert.NoError(t, err)
 	require.NotNil(t, config)

@@ -1,4 +1,4 @@
-# Metrics Transform Processor **(UNDER DEVELOPMENT - NOT READY FOR USE)**
+# Metrics Transform Processor
 Supported pipeline types: metrics
 - This ONLY supports renames/aggregations **within individual metrics**. It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
 - Rename Collisions will result in a no operation on the metrics data
@@ -12,9 +12,10 @@ The metrics transform processor can be used to rename metrics, labels, or label 
 - Rename labels (e.g. rename `cpu` to `core`)
 - Rename label values (e.g. rename `done` to `complete`)
 - Aggregate across label sets (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
-  - Aggregation_type: sum, average, max
+  - Aggregation_type: sum, mean, max
 - Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
-  - Aggregation_type: sum, average, max
+  - Aggregation_type: sum, mean, max
+- Add label to an existing metric
 
 ## Configuration
 ```yaml
@@ -44,7 +45,7 @@ transforms:
     - action: aggregate_labels
     # label_set contains a list of labels that will remain after the aggregation. The excluded labels will be aggregated by the way specified by aggregation_type.
       label_set: [labels...]
-      aggregation_type: {sum, average, max}
+      aggregation_type: {sum, mean, max}
 
     # aggregate_label_values action aggregates labels across label values (e.g. want memory{slab}, but don’t care about memory{slab_reclaimable} & memory{slab_unreclaimable})
     - action: aggregate_label_values
@@ -52,7 +53,7 @@ transforms:
     # aggregated_values contains a list of label values that will be aggregated by the way specified by aggregation_type into new_value. The excluded label values will remain.
       aggregated_values: [values...]
       new_value: <new_value> 
-      aggregation_type: {sum, average, max}
+      aggregation_type: {sum, mean, max}
 ```
 
 ## Examples
@@ -60,11 +61,19 @@ transforms:
 ### Insert New Metric
 ```yaml
 # create host.cpu.utilization from host.cpu.usage
-metric_name: host/cpu/usage
+metric_name: host.cpu.usage
 action: insert
-new_name: host/cpu/utilization
+new_name: host.cpu.utilization
 operations:
   ...
+```
+
+### Rename Metric
+```yaml
+# rename system.cpu.usage to cpu/usage_time
+metric_name: system.cpu.usage
+action: update
+new_name: cpu/usage_time
 ```
 
 ### Rename Labels
@@ -74,6 +83,19 @@ operations:
   - action: update_label
     label: cpu
     new_label: core
+```
+
+### Rename Label Values
+```yaml
+# rename the label value slab_reclaimable to sreclaimable, slab_unreclaimable to sunreclaimable
+operations:
+  - action: update_label
+    label: state
+    value_actions:
+      - value: slab_reclaimable
+        new_value: sreclaimable
+      - value: slab_unreclaimable
+        new_value: sunreclaimable
 ```
 
 ### Aggregate Labels
@@ -96,4 +118,25 @@ operations:
    aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
    new_value: slab 
    aggregation_type: sum
+```
+
+### Add a label to an existing metric
+```yaml
+transforms:
+...
+# The following will append label {Key: `mylabel`, Description: `myvalue`} to the metric `some_name`.
+  - metric_name: some_name
+      action: update
+      operations:
+        - action: add_label
+          new_label: mylabel
+          new_value: myvalue
+```
+
+### Toggle Datatype
+```yaml
+# toggle the datatype for the metric system.cpu.usage
+...
+operation:
+  - action: toggle_scalar_data_type
 ```

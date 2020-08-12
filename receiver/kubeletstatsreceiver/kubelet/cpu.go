@@ -20,10 +20,10 @@ import (
 )
 
 func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		cpuUsageMetric(prefix, s),
 		cpuCumulativeUsageMetric(prefix, s),
-	}, s.Time.Time)
+	}
 }
 
 func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
@@ -31,10 +31,11 @@ func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
 	if nanoCores == nil {
 		return nil
 	}
-	value := float64(*nanoCores) / 1_000_000
-	return doubleGauge(prefix+"cpu/usage", "%", &value)
+	value := float64(*nanoCores) / 1_000_000_000
+	return doubleGauge(prefix+"cpu.utilization", "1", &value)
 }
 
 func cpuCumulativeUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {
-	return cumulativeInt(prefix+"cpu/cumulative", "ns", s.UsageCoreNanoSeconds)
+	value := float64(*s.UsageCoreNanoSeconds) / 1_000_000_000
+	return cumulativeDouble(prefix+"cpu.time", "s", &value)
 }

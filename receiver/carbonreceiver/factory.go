@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -92,8 +93,10 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Endpoint:       "localhost:2003",
-		Transport:      "tcp",
+		NetAddr: confignet.NetAddr{
+			Endpoint:  "localhost:2003",
+			Transport: "tcp",
+		},
 		TCPIdleTimeout: transport.TCPIdleTimeoutDefault,
 		Parser: &protocol.Config{
 			Type:   "plaintext",

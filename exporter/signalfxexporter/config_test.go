@@ -22,20 +22,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
 	factory := &Factory{}
 	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -65,6 +67,15 @@ func TestLoadConfig(t *testing.T) {
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
+		SendCompatibleMetrics: true,
+		TranslationRules: []translation.Rule{
+			{
+				Action: translation.ActionRenameDimensionKeys,
+				Mapping: map[string]string{
+					"k8s.cluster.name": "kubernetes_cluster",
+				},
+			},
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
@@ -75,13 +86,15 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfig_getOptionsFromConfig(t *testing.T) {
 	type fields struct {
-		ExporterSettings configmodels.ExporterSettings
-		AccessToken      string
-		Realm            string
-		IngestURL        string
-		APIURL           string
-		Timeout          time.Duration
-		Headers          map[string]string
+		ExporterSettings      configmodels.ExporterSettings
+		AccessToken           string
+		Realm                 string
+		IngestURL             string
+		APIURL                string
+		Timeout               time.Duration
+		Headers               map[string]string
+		SendCompatibleMetrics bool
+		TranslationRules      []translation.Rule
 	}
 	tests := []struct {
 		name    string
@@ -171,17 +184,34 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "Test invalid translation rules",
+			fields: fields{
+				Realm:                 "us0",
+				AccessToken:           "access_token",
+				SendCompatibleMetrics: true,
+				TranslationRules: []translation.Rule{
+					{
+						Action: translation.ActionRenameDimensionKeys,
+					},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings: tt.fields.ExporterSettings,
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				APIURL:           tt.fields.APIURL,
-				Timeout:          tt.fields.Timeout,
-				Headers:          tt.fields.Headers,
+				ExporterSettings:      tt.fields.ExporterSettings,
+				AccessToken:           tt.fields.AccessToken,
+				Realm:                 tt.fields.Realm,
+				IngestURL:             tt.fields.IngestURL,
+				APIURL:                tt.fields.APIURL,
+				Timeout:               tt.fields.Timeout,
+				Headers:               tt.fields.Headers,
+				SendCompatibleMetrics: tt.fields.SendCompatibleMetrics,
+				TranslationRules:      tt.fields.TranslationRules,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {

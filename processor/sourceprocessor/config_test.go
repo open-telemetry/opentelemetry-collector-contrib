@@ -19,19 +19,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
 	factory := &Factory{}
 	factories.Processors[typeStr] = factory
 
 	cfgPath := path.Join(".", "testdata", "config.yaml")
-	cfg, err := config.LoadConfigFile(t, cfgPath, factories)
+	cfg, err := configtest.LoadConfigFile(t, cfgPath, factories)
 	assert.NoError(t, err)
 	assert.NotNil(t, cfg)
 

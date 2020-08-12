@@ -21,57 +21,89 @@ import (
 	"fmt"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
-	"go.opencensus.io/trace"
+	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 )
 
-// stackdriverExporter is a wrapper struct of Stackdriver exporter
-type stackdriverExporter struct {
-	exporter *stackdriver.Exporter
+const name = "stackdriver"
+
+// traceExporter is a wrapper struct of OT cloud trace exporter
+type traceExporter struct {
+	texporter *cloudtrace.Exporter
 }
 
-func (*stackdriverExporter) Name() string {
-	return "stackdriver"
+// metricsExporter is a wrapper struct of OC stackdriver exporter
+type metricsExporter struct {
+	mexporter *stackdriver.Exporter
 }
 
-func (se *stackdriverExporter) Shutdown(context.Context) error {
-	se.exporter.Flush()
-	se.exporter.StopMetricsExporter()
+func (*traceExporter) Name() string {
+	return name
+}
+
+func (*metricsExporter) Name() string {
+	return name
+}
+
+func (te *traceExporter) Shutdown(context.Context) error {
+	te.texporter.Flush()
 	return nil
 }
 
-func newStackdriverTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
-	sde, serr := newStackdriverExporter(cfg)
-	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver Trace exporter: %v", serr)
-	}
-	tExp := &stackdriverExporter{exporter: sde}
+func (me *metricsExporter) Shutdown(context.Context) error {
+	me.mexporter.Flush()
+	me.mexporter.StopMetricsExporter()
+	return nil
+}
 
-	return exporterhelper.NewTraceExporterOld(
+func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
+	var copts []option.ClientOption
+	if cfg.UseInsecure {
+		conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
+		if err != nil {
+			return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
+		}
+		copts = append(copts, option.WithGRPCConn(conn))
+	} else {
+		copts = append(copts, option.WithEndpoint(cfg.Endpoint))
+	}
+	return copts, nil
+}
+
+func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
+	topts := []cloudtrace.Option{
+		cloudtrace.WithProjectID(cfg.ProjectID),
+	}
+	if cfg.Endpoint != "" {
+		copts, err := generateClientOptions(cfg)
+		if err != nil {
+			return nil, err
+		}
+		topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
+	}
+	if cfg.NumOfWorkers > 0 {
+		topts = append(topts, cloudtrace.WithMaxNumberOfWorkers(cfg.NumOfWorkers))
+	}
+	exp, err := cloudtrace.NewExporter(topts...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %w", err)
+	}
+	tExp := &traceExporter{texporter: exp}
+
+	return exporterhelper.NewTraceExporter(
 		cfg,
-		tExp.pushTraceData,
+		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown))
 }
 
-func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporterOld, error) {
-	sde, serr := newStackdriverExporter(cfg)
-	if serr != nil {
-		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %v", serr)
-	}
-	mExp := &stackdriverExporter{exporter: sde}
-
-	return exporterhelper.NewMetricsExporterOld(
-		cfg,
-		mExp.pushMetricsData,
-		exporterhelper.WithShutdown(mExp.Shutdown))
-}
-
-func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
+func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -85,17 +117,11 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 	}
 	if cfg.Endpoint != "" {
-		if cfg.UseInsecure {
-			conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
-			if err != nil {
-				return nil, fmt.Errorf("cannot configure grpc conn: %v", err)
-			}
-			options.TraceClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
-			options.MonitoringClientOptions = []option.ClientOption{option.WithGRPCConn(conn)}
-		} else {
-			options.TraceClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
-			options.MonitoringClientOptions = []option.ClientOption{option.WithEndpoint(cfg.Endpoint)}
+		copts, err := generateClientOptions(cfg)
+		if err != nil {
+			return nil, err
 		}
+		options.MonitoringClientOptions = copts
 	}
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
@@ -109,35 +135,53 @@ func newStackdriverExporter(cfg *Config) (*stackdriver.Exporter, error) {
 		}
 		options.MapResource = rm.mapResource
 	}
-	return stackdriver.NewExporter(options)
+	sde, serr := stackdriver.NewExporter(options)
+	if serr != nil {
+		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %w", serr)
+	}
+	mExp := &metricsExporter{mexporter: sde}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		mExp.pushMetrics,
+		exporterhelper.WithShutdown(mExp.Shutdown))
 }
 
-// pushMetricsData is a wrapper method on StackdriverExporter.PushMetricsProto
-func (se *stackdriverExporter) pushMetricsData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
-	return se.exporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+// pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
+func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+	mds := pdatautil.MetricsToMetricsData(m)
+	dropped := 0
+	for _, md := range mds {
+		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+		dropped += d
+		if err != nil {
+			return dropped, err
+		}
+	}
+	return dropped, nil
 }
 
-// pushTraceData is a wrapper method on StackdriverExporter.PushTraceSpans
-func (se *stackdriverExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+// pushTraces calls texporter.ExportSpan for each span in the given traces
+func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
+	resourceSpans := td.ResourceSpans()
+	numSpans := td.SpanCount()
 	goodSpans := 0
-	spans := make([]*trace.SpanData, 0, len(td.Spans))
+	spans := make([]*traceexport.SpanData, 0, numSpans)
 
-	for _, span := range td.Spans {
-		sd, err := protoSpanToOCSpanData(span, td.Resource)
+	for i := 0; i < resourceSpans.Len(); i++ {
+		sd, err := pdataResourceSpansToOTSpanData(resourceSpans.At(i))
 		if err == nil {
-			spans = append(spans, sd)
-			goodSpans++
+			spans = append(spans, sd...)
 		} else {
 			errs = append(errs, err)
 		}
 	}
 
-	_, err := se.exporter.PushTraceSpans(ctx, td.Node, td.Resource, spans)
-	if err != nil {
-		goodSpans = 0
-		errs = append(errs, err)
+	for _, span := range spans {
+		te.texporter.ExportSpan(ctx, span)
+		goodSpans++
 	}
 
-	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
+	return numSpans - goodSpans, componenterror.CombineErrors(errs)
 }
