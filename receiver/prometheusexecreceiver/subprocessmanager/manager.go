@@ -64,7 +64,7 @@ func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time
 	go proc.pipeSubprocessOutput(bufio.NewReader(stderrReader), logger, false)
 
 	// Start and stop timer (elapsed) right before and after executing the command
-	done := make(chan error, 1)
+	processErrCh := make(chan error, 1)
 	start := time.Now()
 
 	errProcess := childProcess.Start()
@@ -73,26 +73,27 @@ func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time
 	}
 
 	go func() {
-		done <- childProcess.Wait()
+		processErrCh <- childProcess.Wait()
 	}()
 
 	// Handle normal process exiting or parent logic triggering a shutdown
 	select {
-	case errProcess := <-done:
+	case errProcess = <-processErrCh:
 		elapsed := time.Since(start)
 
-		// The subprocess will most likely exit due to an error (which is logged), but in any case we'll continue as usual with the health/delay computation
 		if errProcess != nil {
-			return elapsed, fmt.Errorf("process error: %w", errProcess)
+			return elapsed, fmt.Errorf("%w", errProcess)
 		}
 		return elapsed, nil
 
 	case <-ctx.Done():
+		elapsed := time.Since(start)
+
 		err := childProcess.Process.Kill()
 		if err != nil {
-			logger.Error("couldn't kill subprocess", zap.String("error", err.Error()))
+			return elapsed, fmt.Errorf("couldn't kill subprocess: %w", errProcess)
 		}
-		return 0, nil
+		return elapsed, nil
 	}
 }
 

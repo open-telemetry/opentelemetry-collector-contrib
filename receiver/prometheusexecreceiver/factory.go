@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver/subprocessmanager"
 )
@@ -69,9 +68,9 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 // CreateTraceReceiver creates a trace receiver based on provided Config, BUT in this case it returns nil since this receiver only support metrics
 func (f *Factory) CreateTraceReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
@@ -79,10 +78,10 @@ func (f *Factory) CreateTraceReceiver(
 // CreateMetricsReceiver creates a metrics receiver based on provided Config.
 func (f *Factory) CreateMetricsReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	return new(logger, rCfg, consumer), nil
+	return new(params, rCfg, nextConsumer)
 }

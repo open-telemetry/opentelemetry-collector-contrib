@@ -51,22 +51,22 @@ const (
 )
 
 type prometheusExecReceiver struct {
-	logger   *zap.Logger
+	params   component.ReceiverCreateParams
 	config   *Config
-	consumer consumer.MetricsConsumerOld
+	consumer consumer.MetricsConsumer
 
 	// Prometheus receiver config
 	promReceiverConfig *prometheusreceiver.Config
 
 	// Subprocess data
 	subprocessConfig *subprocessmanager.SubprocessConfig
-	originalPort     int
+	port             int
 
 	// Underlying receiver data
 	prometheusReceiver component.MetricsReceiver
 
 	// Shutdown channel
-	s chan bool
+	shutdownCh chan struct{}
 }
 
 type runResult struct {
@@ -75,31 +75,30 @@ type runResult struct {
 }
 
 // new returns a prometheusExecReceiver
-func new(logger *zap.Logger, config *Config, consumer consumer.MetricsConsumerOld) *prometheusExecReceiver {
+func new(params component.ReceiverCreateParams, config *Config, consumer consumer.MetricsConsumer) (*prometheusExecReceiver, error) {
+	if config.SubprocessConfig.Command == "" {
+		return nil, fmt.Errorf("no command to execute entered in config file for %v", config.Name())
+	}
 	subprocessConfig := getSubprocessConfig(config)
 	promReceiverConfig := getPromReceiverConfig(config)
 
 	return &prometheusExecReceiver{
-		logger:             logger,
+		params:             params,
 		config:             config,
 		consumer:           consumer,
 		subprocessConfig:   subprocessConfig,
 		promReceiverConfig: promReceiverConfig,
-		originalPort:       config.Port,
-	}
+		port:               config.Port,
+	}, nil
 }
 
 // Start creates the configs and calls the function that handles the prometheus_exec receiver
 func (per *prometheusExecReceiver) Start(ctx context.Context, host component.Host) error {
-	if per.subprocessConfig.Command == "" {
-		return fmt.Errorf("no command to execute entered in config file for %v", per.config.Name())
-	}
-
-	// Channel to shutdown the manageProcess loop early
-	per.s = make(chan bool, 1)
+	// Shutdown channel
+	per.shutdownCh = make(chan struct{})
 
 	// Start the process with the built config
-	go per.manageProcess(ctx, host)
+	go per.manageProcess(context.Background(), host)
 
 	return nil
 }
@@ -165,95 +164,109 @@ func extractName(cfg *Config) string {
 // Start the receiver and then the subprocess and get its runtime, then shutdown receiver since it crashed
 // Finally, the wait time before the subprocess is restarted is computed and this goroutine sleeps for that amount of time, before restarting the loop from the start
 func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host component.Host) {
-	var (
-		newPort int = per.originalPort
-
-		elapsed    time.Duration
-		crashCount int
-	)
+	var crashCount int
 
 	for {
 
-		// Generate a port if none was specified
-		if per.originalPort == 0 {
-			var err error
-			newPort, err = per.assignNewRandomPort()
-			if err != nil {
-				per.logger.Error("assignNewRandomPort() error - killing this single process/receiver", zap.String("error", err.Error()))
-				return
-			}
-		}
-		per.subprocessConfig = per.fillPortPlaceholders(newPort)
-
-		// Create and start the underlying Prometheus receiver
-		factory := &prometheusreceiver.Factory{}
-		receiver, ok := factory.CreateMetricsReceiver(ctx, per.logger, per.promReceiverConfig, per.consumer)
-		if ok != nil {
-			per.logger.Error("unable to create Prometheus receiver - killing this single process/receiver", zap.String("error", ok.Error()))
-			return
-		}
-
-		per.prometheusReceiver = receiver
-
-		err := per.prometheusReceiver.Start(ctx, host)
+		receiver, currentPort, err := per.createReceiver(ctx, per.port)
 		if err != nil {
-			per.logger.Error("could not start receiver - killing this single process/receiver", zap.String("error", err.Error()))
+			per.params.Logger.Error("createReceiver() error", zap.String("error", err.Error()))
 			return
 		}
 
-		// Start the process
-		var subprocessErr error
-		childCtx, cancel := context.WithCancel(ctx)
-		run := make(chan runResult, 1)
+		per.subprocessConfig = per.fillPortPlaceholders(currentPort)
 
-		go per.runProcess(childCtx, run)
+		err = receiver.Start(ctx, host)
+		if err != nil {
+			per.params.Logger.Error("could not start receiver - killing this single process/receiver", zap.String("error", err.Error()))
+			return
+		}
 
-		// Handle run result or shutdown triggered
-		select {
-		case result := <-run:
-			elapsed = result.elapsed
-			subprocessErr = result.subprocessErr
-			if subprocessErr != nil {
-				per.logger.Info("Subprocess error", zap.String("error", subprocessErr.Error()))
-			}
-
-		case shutdown := <-per.s:
-			if shutdown {
-				cancel()
-				return
-			}
+		elapsed, shutdown := per.startProcess(ctx)
+		if shutdown {
+			receiver.Shutdown(ctx)
+			return
 		}
 
 		crashCount = per.computeCrashCount(ctx, elapsed, crashCount)
 
-		// Shutdown receiver since process has crashed
-		err = per.prometheusReceiver.Shutdown(ctx)
+		err = receiver.Shutdown(ctx)
 		if err != nil {
-			per.logger.Error("could not stop receiver associated to process, killing it", zap.String("error", err.Error()))
-			cancel()
+			per.params.Logger.Error("could not stop receiver associated to process, killing it", zap.String("error", err.Error()))
 			return
 		}
 
-		// Compute delay and sleep
-		sleepTime := getDelay(elapsed, healthyProcessTime, crashCount, healthyCrashCount)
-		per.logger.Info("Subprocess start delay", zap.String("time until process restarts", sleepTime.String()))
-
-		select {
-		case <-time.After(sleepTime):
-			cancel()
-			continue
-
-		case <-per.s:
-			cancel()
+		shutdown = per.computeDelayAndSleep(elapsed, crashCount)
+		if shutdown {
 			return
 		}
 	}
 }
 
+// createReceiver will create the underlying Prometheus receiver and generate a random port if one is needed
+func (per *prometheusExecReceiver) createReceiver(ctx context.Context, currentPort int) (component.MetricsReceiver, int, error) {
+	// Generate a port if none was specified
+	if per.port == 0 {
+		var err error
+		currentPort, err = generateRandomPort()
+		if err != nil {
+			return nil, 0, fmt.Errorf("generateRandomPort() error - killing this single process/receiver: %w", err)
+		}
+
+		per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
+			{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", currentPort))},
+		}
+	}
+
+	// Create and start the underlying Prometheus receiver
+	factory := prometheusreceiver.NewFactory()
+	receiver, err := factory.CreateMetricsReceiver(ctx, per.params, per.promReceiverConfig, per.consumer)
+	if err != nil {
+		return nil, 0, fmt.Errorf("unable to create Prometheus receiver - killing this single process/receiver: %w", err)
+	}
+	return receiver, currentPort, nil
+}
+
+// startProcess will run the process and return runtime, or handle a shutdown if one is triggered while the subprocess is running
+func (per *prometheusExecReceiver) startProcess(ctx context.Context) (time.Duration, bool) {
+	childCtx, cancel := context.WithCancel(ctx)
+	run := make(chan runResult, 1)
+
+	go per.runProcess(childCtx, run)
+
+	select {
+	case result := <-run:
+		// Log the error from the subprocess without returning it since we want to restart the process if it exited
+		if result.subprocessErr != nil {
+			per.params.Logger.Info("Subprocess error", zap.String("error", result.subprocessErr.Error()))
+		}
+		cancel()
+		return result.elapsed, false
+
+	case <-per.shutdownCh:
+		cancel()
+		return 0, true
+	}
+}
+
 // runProcess calls the process manager's run function and pipes the return value into the channel
 func (per *prometheusExecReceiver) runProcess(childCtx context.Context, run chan<- runResult) {
-	elapsed, subprocessErr := per.subprocessConfig.Run(childCtx, per.logger)
+	elapsed, subprocessErr := per.subprocessConfig.Run(childCtx, per.params.Logger)
 	run <- runResult{elapsed, subprocessErr}
+}
+
+// computeDelayAndSleep will compute how long the process should delay before restarting and handle a shutdown while this goroutine waits
+func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, crashCount int) bool {
+	sleepTime := getDelay(elapsed, healthyProcessTime, crashCount, healthyCrashCount)
+	per.params.Logger.Info("Subprocess start delay", zap.String("time until process restarts", sleepTime.String()))
+
+	select {
+	case <-time.After(sleepTime):
+		return false
+
+	case <-per.shutdownCh:
+		return true
+	}
 }
 
 // computeCrashCount will compute crashCount according to runtime
@@ -264,21 +277,6 @@ func (per *prometheusExecReceiver) computeCrashCount(ctx context.Context, elapse
 	crashCount++
 
 	return crashCount
-}
-
-// assignNewRandomPort generates a new port and updates the receiver config
-func (per *prometheusExecReceiver) assignNewRandomPort() (int, error) {
-	var err error
-	newPort, err := generateRandomPort()
-	if err != nil {
-		return 0, err
-	}
-
-	per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
-		{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", newPort))},
-	}
-
-	return newPort, nil
 }
 
 // fillPortPlaceholders will check if any of the strings in the process data have the {{port}} placeholder, and replace it if necessary
@@ -319,9 +317,6 @@ func getDelay(elapsed time.Duration, healthyProcessDuration time.Duration, crash
 
 // Shutdown stops the underlying Prometheus receiver.
 func (per *prometheusExecReceiver) Shutdown(ctx context.Context) error {
-	per.s <- true // Send shutdown signal to manageProcess loop
-	if per.prometheusReceiver != nil {
-		return per.prometheusReceiver.Shutdown(ctx)
-	}
+	close(per.shutdownCh)
 	return nil
 }

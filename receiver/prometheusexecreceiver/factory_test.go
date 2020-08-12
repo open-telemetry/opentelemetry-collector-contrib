@@ -57,23 +57,28 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	receiver := config.Receivers[receiverType]
 
 	// Test CreateTraceReceiver
-	traceReceiver, err = factory.CreateTraceReceiver(context.Background(), zap.NewNop(), receiver, nil)
+	traceReceiver, err = factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
 	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 
+	// Test CreateMetricsReceiver error because of lack of command
+	_, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
+	assert.NotNil(t, err)
+
 	// Test CreateMetricsReceiver
-	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), receiver, nil)
+	receiver = config.Receivers["prometheus_exec/test"]
+	metricReceiver, err = factory.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, receiver, nil)
 	assert.Equal(t, nil, err)
 
 	wantPer := &prometheusExecReceiver{
-		logger:   zap.NewNop(),
+		params:   component.ReceiverCreateParams{Logger: zap.NewNop()},
 		config:   receiver.(*Config),
 		consumer: nil,
 		promReceiverConfig: &prometheusreceiver.Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "prometheus_exec",
-				NameVal: "prometheus_exec",
+				NameVal: "prometheus_exec/test",
 			},
 			PrometheusConfig: &promconfig.Config{
 				ScrapeConfigs: []*promconfig.ScrapeConfig{
@@ -82,14 +87,14 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 						ScrapeTimeout:   model.Duration(10 * time.Second),
 						Scheme:          "http",
 						MetricsPath:     "/metrics",
-						JobName:         "prometheus_exec",
+						JobName:         "test",
 						HonorLabels:     false,
 						HonorTimestamps: true,
 						ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
 							StaticConfigs: []*targetgroup.Group{
 								{
 									Targets: []model.LabelSet{
-										{model.AddressLabel: model.LabelValue("localhost:0")},
+										{model.AddressLabel: model.LabelValue("localhost:9104")},
 									},
 								},
 							},
@@ -99,10 +104,10 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 			},
 		},
 		subprocessConfig: &subprocessmanager.SubprocessConfig{
-			Command: "",
+			Command: "mysqld_exporter",
 			Env:     []subprocessmanager.EnvConfig{},
 		},
-		originalPort:       0,
+		port:               9104,
 		prometheusReceiver: nil,
 	}
 
