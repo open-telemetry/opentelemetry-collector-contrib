@@ -4,10 +4,10 @@ This exporter can be used to send metrics and traces to Google Cloud Monitoring 
 
 The following configuration options are supported:
 
-- `project` (required): ProjectID is the identifier of the Stackdriver.
-- `endpoint` (required): Endpoint where data is going to be sent to.
+- `project` (optional): ProjectID is the identifier of the Stackdriver.
+- `endpoint` (optional): Endpoint where data is going to be sent to.
 - `metric_prefix` (optional): MetricPrefix overrides the prefix of a Stackdriver metric names.
-- `number_of_workers` (required): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
+- `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `skip_create_metric_descriptor` (optional): Whether to skip creating the metric descriptor.
 - `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
