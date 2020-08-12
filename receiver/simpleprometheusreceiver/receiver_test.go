@@ -15,6 +15,7 @@
 package simpleprometheusreceiver
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -24,11 +25,58 @@ import (
 	"github.com/prometheus/prometheus/config"
 	sdconfig "github.com/prometheus/prometheus/discovery/config"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
+	"go.opentelemetry.io/collector/testbed/testbed"
+	"go.uber.org/zap"
 )
 
-func Test_getPrometheusConfig(t *testing.T) {
+func TestReceiver(t *testing.T) {
+	f := &Factory{}
+	tests := []struct {
+		name              string
+		useServiceAccount bool
+		wantError         bool
+	}{
+		{
+			name: "success",
+		},
+		{
+			name:              "fails to get prometheus config",
+			useServiceAccount: true,
+			wantError:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := (f.CreateDefaultConfig()).(*Config)
+			cfg.UseServiceAccount = tt.useServiceAccount
+
+			r, err := f.CreateMetricsReceiver(
+				context.Background(),
+				component.ReceiverCreateParams{Logger: zap.NewNop()},
+				cfg,
+				&testbed.MockMetricConsumer{},
+			)
+
+			if !tt.wantError {
+				require.NoError(t, err)
+				require.NotNil(t, r)
+
+				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(context.Background()))
+				return
+			}
+
+			require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		})
+	}
+}
+
+func TestGetPrometheusConfig(t *testing.T) {
 	tests := []struct {
 		name    string
 		config  *Config

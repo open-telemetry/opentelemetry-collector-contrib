@@ -19,7 +19,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"

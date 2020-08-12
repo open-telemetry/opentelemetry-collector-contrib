@@ -179,10 +179,17 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 			c.logger.Warn("failed to close response body", zap.Error(closeErr))
 		}
 	}()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to read Kubelet response body")
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("kubelet request GET %s failed - %q, response: %q",
+			req.URL.String(), resp.Status, string(body))
+	}
+
 	return body, nil
 }
 

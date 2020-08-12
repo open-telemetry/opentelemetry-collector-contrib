@@ -21,43 +21,38 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
-func TestFactoryType(t *testing.T) {
-	f := &Factory{}
-	assert.Equal(t, f.Type(), configmodels.Type("k8s_tagger"))
-}
-
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateProcessor(t *testing.T) {
-	factory := Factory{KubeClient: newFakeClient}
+	factory := NewFactory()
+	kubeClientProvider = newFakeClient
 	cfg := factory.CreateDefaultConfig()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
 	tp, err := factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, tp)
-	assert.NoError(t, err, "cannot create trace processor")
+	assert.NoError(t, err)
 
 	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, mp)
-	assert.NoError(t, err, "cannot create metrics processor")
+	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
 	tp, err = factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, tp)
-	assert.NoError(t, err, "cannot create trace processor")
+	assert.NoError(t, err)
 
 	mp, err = factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
 	assert.NotNil(t, mp)
-	assert.NoError(t, err, "cannot create metrics processor")
+	assert.NoError(t, err)
 }

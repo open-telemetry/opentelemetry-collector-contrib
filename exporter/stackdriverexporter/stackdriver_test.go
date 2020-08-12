@@ -16,18 +16,17 @@ package stackdriverexporter
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"testing"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	"google.golang.org/grpc"
 )
@@ -82,20 +81,23 @@ func TestStackdriverExport(t *testing.T) {
 	require.NoError(t, err)
 
 	testTime := time.Now()
+	spanName := "foobar"
 
-	td := consumerdata.TraceData{
-		Resource: &resourcepb.Resource{},
-		Spans: []*tracepb.Span{
-			{
-				Name: &tracepb.TruncatableString{
-					Value: "foobar",
-				},
-				StartTime: mustTS(testTime),
-			},
-		},
-	}
-
-	err = sde.ConsumeTraceData(ctx, td)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rspans := traces.ResourceSpans().At(0)
+	resource.CopyTo(rspans.Resource())
+	rspans.InstrumentationLibrarySpans().Resize(1)
+	ispans := rspans.InstrumentationLibrarySpans().At(0)
+	ispans.Spans().Resize(1)
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName(spanName)
+	span.SetStartTime(pdata.TimestampUnixNano(testTime.UnixNano()))
+	span.CopyTo(ispans.Spans().At(0))
+	err = sde.ConsumeTraces(ctx, traces)
 	assert.NoError(t, err)
 
 	select {
@@ -103,7 +105,7 @@ func TestStackdriverExport(t *testing.T) {
 		t.Errorf("test timed out")
 	case r := <-reqCh:
 		assert.Len(t, r.Spans, 1)
-		assert.Equal(t, "foobar", r.Spans[0].GetDisplayName().GetValue())
+		assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
 		assert.Equal(t, mustTS(testTime), r.Spans[0].StartTime)
 	}
 }

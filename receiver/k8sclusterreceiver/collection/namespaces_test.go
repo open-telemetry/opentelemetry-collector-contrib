@@ -34,7 +34,7 @@ func TestNamespaceMetrics(t *testing.T) {
 	require.Equal(t, 1, len(actualResourceMetrics))
 
 	require.Equal(t, 1, len(actualResourceMetrics[0].metrics))
-	testutils.AssertResource(t, *actualResourceMetrics[0].resource, k8sType,
+	testutils.AssertResource(t, actualResourceMetrics[0].resource, k8sType,
 		map[string]string{
 			"k8s.namespace.uid":  "test-namespace-1-uid",
 			"k8s.namespace.name": "test-namespace",
@@ -42,7 +42,7 @@ func TestNamespaceMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, *actualResourceMetrics[0].metrics[0], "k8s/namespace/phase",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s/namespace/phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 }
 

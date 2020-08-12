@@ -65,10 +65,10 @@
       "time": "2020-04-20T22:52:27Z",
       "availableBytes": 2620624896,
       "usageBytes": 3608727552,
-      "workingSetBytes": 1410809856,
+      "workingSetBytes": 1234567890,
       "rssBytes": 607125504,
-      "pageFaults": 24915,
-      "majorPageFaults": 0
+      "pageFaults": 12345,
+      "majorPageFaults": 12
     },
     "network": {
       "time": "2020-04-20T22:52:27Z",
@@ -303,6 +303,10 @@
           "inodes": 492118,
           "inodesUsed": 9,
           "name": "default-token-wgfsl"
+        },
+        {
+          "time": "2020-04-20T22:51:40Z",
+          "name": "test-missing-metrics"
         }
       ],
       "ephemeral-storage": {

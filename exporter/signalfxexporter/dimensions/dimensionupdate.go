@@ -14,7 +14,10 @@
 
 package dimensions
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type DimensionUpdate struct {
 	Name       string
@@ -24,7 +27,16 @@ type DimensionUpdate struct {
 }
 
 func (d *DimensionUpdate) String() string {
-	return fmt.Sprintf("{name: %q; value: %q; props: %v; tags: %v}", d.Name, d.Value, d.Properties, d.Tags)
+	props := "{"
+	for k, v := range d.Properties {
+		var val string
+		if v != nil {
+			val = *v
+		}
+		props += fmt.Sprintf("%v: %q, ", k, val)
+	}
+	props = strings.Trim(props, ", ") + "}"
+	return fmt.Sprintf("{name: %q; value: %q; props: %v; tags: %v}", d.Name, d.Value, props, d.Tags)
 }
 
 func (d *DimensionUpdate) Key() DimensionKey {

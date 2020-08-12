@@ -26,15 +26,17 @@ import (
 
 func TestMetricsReceiver(t *testing.T) {
 	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig()
-	metricsReceiver := receiver{
-		cfg:      cfg,
-		logger:   zap.NewNop(),
-		consumer: &testbed.MockMetricConsumer{},
-		rest:     &fakeRestClient{},
-	}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	o, err := cfg.getReceiverOptions()
+	require.NoError(t, err)
+
+	metricsReceiver, err := newReceiver(
+		o, zap.NewNop(), &fakeRestClient{},
+		&testbed.MockMetricConsumer{},
+	)
+	require.NoError(t, err)
 	ctx := context.Background()
-	err := metricsReceiver.Start(ctx, componenttest.NewNopHost())
+	err = metricsReceiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 	err = metricsReceiver.Shutdown(ctx)
 	require.NoError(t, err)

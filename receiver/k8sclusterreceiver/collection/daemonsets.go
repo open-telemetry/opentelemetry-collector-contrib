@@ -91,10 +91,10 @@ func getResourceForDaemonSet(ds *appsv1.DaemonSet) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: k8sType,
 		Labels: map[string]string{
-			k8sKeyDaemonSetUID:                string(ds.UID),
-			k8sKeyDaemonSetName:               ds.Name,
-			conventions.AttributeK8sNamespace: ds.Namespace,
-			conventions.AttributeK8sCluster:   ds.ClusterName,
+			conventions.AttributeK8sDaemonSetUID: string(ds.UID),
+			conventions.AttributeK8sDaemonSet:    ds.Name,
+			conventions.AttributeK8sNamespace:    ds.Namespace,
+			conventions.AttributeK8sCluster:      ds.ClusterName,
 		},
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -27,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	etest "go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestMetricsTransformProcessor(t *testing.T) {
@@ -67,7 +69,9 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			for idx, out := range test.out {
 				actualOut := actualOutMetrics[idx]
-				assert.Equal(t, out, actualOut)
+				if diff := cmp.Diff(actualOut, out, protocmp.Transform()); diff != "" {
+					t.Errorf("Unexpected difference:\n%v", diff)
+				}
 			}
 
 			assert.NoError(t, mtp.Shutdown(ctx))

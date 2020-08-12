@@ -14,7 +14,7 @@
 
 package azuremonitorexporter
 
-import "github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+import "github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 
 type transportChannel interface {
 	Send(*contracts.Envelope)

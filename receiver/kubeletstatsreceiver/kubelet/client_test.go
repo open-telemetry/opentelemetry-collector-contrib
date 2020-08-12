@@ -248,6 +248,19 @@ func TestErrOnRead(t *testing.T) {
 	require.Nil(t, resp)
 }
 
+func TestErrCode(t *testing.T) {
+	tr := &fakeRoundTripper{errCode: true}
+	baseURL := "http://localhost:9876"
+	client := &clientImpl{
+		baseURL:    baseURL,
+		httpClient: http.Client{Transport: tr},
+		logger:     zap.NewNop(),
+	}
+	resp, err := client.Get("/foo")
+	require.Error(t, err)
+	require.Nil(t, resp)
+}
+
 var _ http.RoundTripper = (*fakeRoundTripper)(nil)
 
 type fakeRoundTripper struct {
@@ -258,6 +271,7 @@ type fakeRoundTripper struct {
 	failOnRT   bool
 	errOnClose bool
 	errOnRead  bool
+	errCode    bool
 }
 
 func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -273,7 +287,12 @@ func (f *fakeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) 
 	} else {
 		reader = strings.NewReader("hello")
 	}
+	statusCode := 200
+	if f.errCode {
+		statusCode = 503
+	}
 	return &http.Response{
+		StatusCode: statusCode,
 		Body: &fakeReadCloser{
 			Reader: reader,
 			onClose: func() error {

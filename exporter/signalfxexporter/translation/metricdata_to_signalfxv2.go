@@ -81,23 +81,17 @@ func MetricDataToSignalFxV2(
 	metricTranslator *MetricTranslator,
 	md consumerdata.MetricsData,
 ) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
-	sfxDataPoints, numDroppedTimeSeries = metricDataToSfxDataPoints(logger, md)
-	if metricTranslator != nil {
-		sfxDataPoints = metricTranslator.TranslateDataPoints(logger, sfxDataPoints)
-	}
+	sfxDataPoints, numDroppedTimeSeries = metricDataToSfxDataPoints(logger, metricTranslator, md)
+
 	sanitizeDataPointDimensions(sfxDataPoints)
 	return
 }
 
 func metricDataToSfxDataPoints(
 	logger *zap.Logger,
+	metricTranslator *MetricTranslator,
 	md consumerdata.MetricsData,
 ) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
-
-	// The final number of data points is likely larger than len(md.Metrics)
-	// but at least that is expected.
-	sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics))
-
 	var err error
 
 	// Labels from Node and Resource.
@@ -119,6 +113,13 @@ func metricDataToSfxDataPoints(
 			numDroppedTimeSeries += len(metric.GetTimeseries())
 			continue
 		}
+
+		if sfxDataPoints == nil {
+			// Suppose all metrics has roughly similar number of timeseries
+			sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics)*len(metric.Timeseries))
+		}
+
+		metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
 
 		// Build the fixed parts for this metrics from the descriptor.
 		descriptor := metric.MetricDescriptor
@@ -157,15 +158,15 @@ func metricDataToSfxDataPoints(
 				switch pv := dp.Value.(type) {
 				case *metricspb.Point_Int64Value:
 					sfxDataPoint.Value = sfxpb.Datum{IntValue: &pv.Int64Value}
-					sfxDataPoints = append(sfxDataPoints, sfxDataPoint)
+					metricDataPoints = append(metricDataPoints, sfxDataPoint)
 
 				case *metricspb.Point_DoubleValue:
 					sfxDataPoint.Value = sfxpb.Datum{DoubleValue: &pv.DoubleValue}
-					sfxDataPoints = append(sfxDataPoints, sfxDataPoint)
+					metricDataPoints = append(metricDataPoints, sfxDataPoint)
 
 				case *metricspb.Point_DistributionValue:
-					sfxDataPoints, err = appendDistributionValues(
-						sfxDataPoints,
+					metricDataPoints, err = appendDistributionValues(
+						metricDataPoints,
 						sfxDataPoint,
 						pv.DistributionValue)
 					if err != nil {
@@ -176,8 +177,8 @@ func metricDataToSfxDataPoints(
 							zap.String("metric", sfxDataPoint.Metric))
 					}
 				case *metricspb.Point_SummaryValue:
-					sfxDataPoints, err = appendSummaryValues(
-						sfxDataPoints,
+					metricDataPoints, err = appendSummaryValues(
+						metricDataPoints,
 						sfxDataPoint,
 						pv.SummaryValue)
 					if err != nil {
@@ -196,6 +197,12 @@ func metricDataToSfxDataPoints(
 
 			}
 		}
+
+		if metricTranslator != nil {
+			metricDataPoints = metricTranslator.TranslateDataPoints(logger, metricDataPoints)
+		}
+
+		sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
 	}
 
 	return sfxDataPoints, numDroppedTimeSeries

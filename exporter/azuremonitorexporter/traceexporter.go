@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -43,7 +44,7 @@ func (v *traceVisitor) visit(
 	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
-		v.err = err
+		v.err = consumererror.Permanent(err)
 		return false
 	}
 

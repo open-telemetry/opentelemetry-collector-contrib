@@ -13,7 +13,7 @@ coverage:
     project:
       default:
         enabled: yes
-        target: 79%  # This needs to be updated to 85 or higher.
+        target: 85%  # This needs to be updated to 90 or higher.
     patch:
       default:
         enabled: yes

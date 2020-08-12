@@ -22,13 +22,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
 )
 
 type mockHostFactories struct {
 	componenttest.NopHost
-	factories  config.Factories
+	factories  component.Factories
 	extensions map[configmodels.Extension]component.ServiceExtension
 }
 
@@ -52,12 +52,12 @@ func (mh *mockHostFactories) GetExtensions() map[configmodels.Extension]componen
 }
 
 func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Config) {
-	factories, err := config.ExampleComponents()
+	factories, err := componenttest.ExampleComponents()
 	require.Nil(t, err)
 
 	factory := &Factory{}
 	factories.Receivers[configmodels.Type(typeStr)] = factory
-	cfg, err := config.LoadConfigFile(
+	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
 

@@ -17,8 +17,9 @@ Example:
 receivers:
   aws_xray:
     endpoint: 0.0.0.0:2000
+    transport: udp
     proxy_server:
-      tcp_endpoint: 0.0.0.0:2000
+      endpoint: 0.0.0.0:2000
       proxy_address: ""
       insecure: false
       server_name_override: ""
@@ -35,11 +36,16 @@ The UDP address and port on which this receiver listens for X-Ray segment docume
 
 Default: `0.0.0.0:2000`
 
+### transport (Optional)
+This should always be "udp" as X-Ray SDKs only send segments using UDP.
+
+Default: `udp`
+
 ### proxy_server (Optional)
 Defines configurations related to the local TCP proxy server.
 
-### tcp_endpoint (Optional)
-The address and port on which this receiver listens for calls from the X-Ray SDK and relays them to the AWS X-Ray backend to get sampling rules and report sampling statistics.
+### endpoint (Optional)
+The TCP address and port on which this receiver listens for calls from the X-Ray SDK and relays them to the AWS X-Ray backend to get sampling rules and report sampling statistics.
 
 Default: `0.0.0.0:2000`
 

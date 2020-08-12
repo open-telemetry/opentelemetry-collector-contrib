@@ -26,14 +26,14 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
@@ -47,7 +47,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -58,7 +58,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 }
 
 func TestCreateNoPort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 
@@ -69,7 +69,7 @@ func TestCreateNoPort(t *testing.T) {
 }
 
 func TestCreateLargePort(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	rCfg := cfg.(*Config)
 

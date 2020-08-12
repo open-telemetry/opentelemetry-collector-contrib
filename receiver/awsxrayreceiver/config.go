@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,30 +21,26 @@ import (
 )
 
 const (
-	typeStr = "aws_xray"
-	version = "1.0.0"
+	typeStr = "awsxray"
 )
 
 // Config defines the configurations for an AWS X-Ray receiver.
 type Config struct {
-	// The Endpoint field in ReceiverSettings represents the UDP address
+	configmodels.ReceiverSettings `mapstructure:",squash"`
+	// The `NetAddr` represents the UDP address
 	// and port on which this receiver listens for X-Ray segment documents
 	// emitted by the X-Ray SDK.
-	configmodels.ReceiverSettings `mapstructure:",squash"`
-	confignet.TCPAddr             `mapstructure:",squash"`
-
-	// squash ensures fields are correctly decoded in embedded struct
-	// https://godoc.org/github.com/mitchellh/mapstructure#hdr-Embedded_Structs_and_Squashing
+	confignet.NetAddr `mapstructure:",squash"`
 
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyServer *proxyServer `mapstructure:"proxy_server"`
 }
 
 type proxyServer struct {
-	// TCPEndpoint is the address and port on which this receiver listens for
+	// endpoint is the TCP address and port on which this receiver listens for
 	// calls from the X-Ray SDK and relays them to the AWS X-Ray backend to
 	// get sampling rules and report sampling statistics.
-	TCPEndpoint string `mapstructure:"tcp_endpoint"`
+	confignet.TCPAddr `mapstructure:",squash"`
 
 	// ProxyAddress defines the proxy address that the local TCP server
 	// forwards HTTP requests to AWS X-Ray backend through.
