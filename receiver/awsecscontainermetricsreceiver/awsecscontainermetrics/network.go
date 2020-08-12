@@ -15,7 +15,6 @@
 package awsecscontainermetrics
 
 import (
-	"fmt"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -24,7 +23,6 @@ import (
 func networkMetrics(prefix string, stats map[string]NetworkStats) []*metricspb.Metric {
 	var rBytes, rPackets, rErrors, rDropped uint64
 	var tBytes, tPackets, tErrors, tDropped uint64
-	fmt.Println("################### Network Stats Map Size:", len(stats))
 	for _, netStat := range stats {
 		rBytes += *netStat.RxBytes
 		rPackets += *netStat.RxPackets

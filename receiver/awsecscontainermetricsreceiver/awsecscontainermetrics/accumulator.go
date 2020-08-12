@@ -48,7 +48,7 @@ func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]Containe
 	taskStat := aggregateTaskStats(containerStatsMap)
 	acc.accumulate(
 		timestampProto(time.Now()),
-		taskMetrics(task_prefix, taskStat),
+		taskMetrics(task_prefix, &taskStat),
 	)
 }
 
@@ -77,13 +77,58 @@ func (acc *metricDataAccumulator) accumulate(
 
 func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 	var memUsage, memMaxUsage, memLimit uint64
+	var netRateRx, netRateTx float64
+	var rBytes, rPackets, rErrors, rDropped uint64
+	var tBytes, tPackets, tErrors, tDropped uint64
+	var cpuTotal, cpuKernel, cpuUser, cpuSystem, cpuCores, cpuOnline uint64
+
 	for _, value := range containerStatsMap {
 		memUsage += *value.Memory.Usage
 		memMaxUsage += *value.Memory.MaxUsage
 		memLimit += *value.Memory.Limit
+
+		netRateRx += *value.NetworkRate.RxBytesPerSecond
+		netRateTx += *value.NetworkRate.TxBytesPerSecond
+
+		for _, netStat := range value.Network {
+			rBytes += *netStat.RxBytes
+			rPackets += *netStat.RxPackets
+			rErrors += *netStat.RxErrors
+			rDropped += *netStat.RxDropped
+
+			tBytes += *netStat.TxBytes
+			tPackets += *netStat.TxPackets
+			tErrors += *netStat.TxErrors
+			tDropped += *netStat.TxDropped
+		}
+		cpuTotal += *value.CPU.CpuUsage.TotalUsage
+		cpuKernel += *value.CPU.CpuUsage.UsageInKernelmode
+		cpuUser += *value.CPU.CpuUsage.UsageInUserMode
+		cpuSystem += *value.CPU.SystemCpuUsage
+		cpuOnline += *value.CPU.OnlineCpus
+		numOfCores := (uint64)(len(value.CPU.CpuUsage.PerCpuUsage))
+		cpuCores += numOfCores
 	}
 	taskStat := TaskStats{
-		MemoryUsage
+		MemoryUsage:                 &memUsage,
+		MemoryMaxUsage:              &memMaxUsage,
+		MemoryLimit:                 &memLimit,
+		NetworkRateRxBytesPerSecond: &netRateRx,
+		NetworkRateTxBytesPerSecond: &netRateTx,
+		NetworkRxBytes:              &rBytes,
+		NetworkRxPackets:            &rPackets,
+		NetworkRxErrors:             &rErrors,
+		NetworkRxDropped:            &rDropped,
+		NetworkTxBytes:              &tBytes,
+		NetworkTxPackets:            &tPackets,
+		NetworkTxErrors:             &tErrors,
+		NetworkTxDropped:            &tDropped,
+		CPUTotalUsage:               &cpuTotal,
+		CPUUsageInKernelmode:        &cpuKernel,
+		CPUUsageInUserMode:          &cpuUser,
+		SystemCPUUsage:              &cpuSystem,
+		CPUOnlineCpus:               &cpuOnline,
+		NumOfCPUCores:               &cpuCores,
 	}
 	return taskStat
 }

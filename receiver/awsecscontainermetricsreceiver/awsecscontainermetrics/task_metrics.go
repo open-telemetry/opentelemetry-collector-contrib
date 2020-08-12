@@ -25,17 +25,21 @@ func taskMetrics(prefix string, stats *TaskStats) []*metricspb.Metric {
 		memUsageMetric(prefix, stats.MemoryUsage),
 		memMaxUsageMetric(prefix, stats.MemoryMaxUsage),
 		memLimitMetric(prefix, stats.MemoryLimit),
+		rxBytesPerSecond(prefix, stats.NetworkRateRxBytesPerSecond),
+		txBytesPerSecond(prefix, stats.NetworkRateTxBytesPerSecond),
+		rxBytes(prefix, stats.NetworkRxBytes),
+		rxPackets(prefix, stats.NetworkRxPackets),
+		rxErrors(prefix, stats.NetworkRxErrors),
+		rxDropped(prefix, stats.NetworkRxDropped),
+		txBytes(prefix, stats.NetworkTxBytes),
+		txPackets(prefix, stats.NetworkTxPackets),
+		txErrors(prefix, stats.NetworkTxErrors),
+		txDropped(prefix, stats.NetworkTxDropped),
+		totalUsageMetric(prefix, stats.CPUTotalUsage),
+		usageInKernelMode(prefix, stats.CPUUsageInKernelmode),
+		usageInUserMode(prefix, stats.CPUUsageInUserMode),
+		numberOfCores(prefix, stats.NumOfCPUCores),
+		onlineCpus(prefix, stats.CPUOnlineCpus),
+		systemCpuUsage(prefix, stats.SystemCPUUsage),
 	}, time.Now())
-}
-
-func memUsageMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.usage", "Bytes", value)
-}
-
-func memMaxUsageMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.maxusage", "Bytes", value)
-}
-
-func memLimitMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.limit", "Bytes", value)
 }

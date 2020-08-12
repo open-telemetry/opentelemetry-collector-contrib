@@ -21,37 +21,37 @@ import (
 )
 
 func cpuMetrics(prefix string, stats *CPUStats) []*metricspb.Metric {
+	numOfCores := (uint64)(len(stats.CpuUsage.PerCpuUsage))
 	return applyCurrentTime([]*metricspb.Metric{
-		totalUsageMetric(prefix, stats),
-		usageInKernelMode(prefix, stats),
-		usageInUserMode(prefix, stats),
-		numberOfCores(prefix, stats),
-		onlineCpus(prefix, stats),
-		systemCpuUsage(prefix, stats),
+		totalUsageMetric(prefix, stats.CpuUsage.TotalUsage),
+		usageInKernelMode(prefix, stats.CpuUsage.UsageInKernelmode),
+		usageInUserMode(prefix, stats.CpuUsage.UsageInUserMode),
+		numberOfCores(prefix, &numOfCores),
+		onlineCpus(prefix, stats.OnlineCpus),
+		systemCpuUsage(prefix, stats.SystemCpuUsage),
 	}, time.Now())
 }
 
-func totalUsageMetric(prefix string, s *CPUStats) *metricspb.Metric {
-	return intGauge(prefix+"cpu.total_usage", "Count", s.CpuUsage.TotalUsage)
+func totalUsageMetric(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.total_usage", "Count", value)
 }
 
-func usageInKernelMode(prefix string, s *CPUStats) *metricspb.Metric {
-	return intGauge(prefix+"cpu.usage_in_kernelmode", "Count", s.CpuUsage.UsageInKernelmode)
+func usageInKernelMode(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.usage_in_kernelmode", "Count", value)
 }
 
-func usageInUserMode(prefix string, s *CPUStats) *metricspb.Metric {
-	return intGauge(prefix+"cpu.usage_in_usermode", "Count", s.CpuUsage.UsageInUserMode)
+func usageInUserMode(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.usage_in_usermode", "Count", value)
 }
 
-func numberOfCores(prefix string, s *CPUStats) *metricspb.Metric {
-	numOfCores := (uint64)(len(s.CpuUsage.PerCpuUsage))
-	return intGauge(prefix+"cpu.number_of_cores", "Count", &numOfCores)
+func numberOfCores(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.number_of_cores", "Count", value)
 }
 
-func onlineCpus(prefix string, s *CPUStats) *metricspb.Metric {
-	return intGauge(prefix+"cpu.online_cpus", "Count", s.OnlineCpus)
+func onlineCpus(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.online_cpus", "Count", value)
 }
 
-func systemCpuUsage(prefix string, s *CPUStats) *metricspb.Metric {
-	return intGauge(prefix+"cpu.system_cpu_usage", "Count", s.SystemCpuUsage)
+func systemCpuUsage(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.system_cpu_usage", "Count", value)
 }

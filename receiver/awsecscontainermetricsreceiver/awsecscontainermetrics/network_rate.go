@@ -22,15 +22,15 @@ import (
 
 func networkRateMetrics(prefix string, stats *NetworkRateStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		rxBytesPerSecond(prefix, stats),
-		txBytesPerSecond(prefix, stats),
+		rxBytesPerSecond(prefix, stats.RxBytesPerSecond),
+		txBytesPerSecond(prefix, stats.TxBytesPerSecond),
 	}, time.Now())
 }
 
-func rxBytesPerSecond(prefix string, s *NetworkRateStats) *metricspb.Metric {
-	return doubleGauge(prefix+"network_rate.rx_bytes_per_sec", "Bytes", s.RxBytesPerSecond)
+func rxBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
+	return doubleGauge(prefix+"network_rate.rx_bytes_per_sec", "Bytes/Sec", value)
 }
 
-func txBytesPerSecond(prefix string, s *NetworkRateStats) *metricspb.Metric {
-	return doubleGauge(prefix+"network_rate.tx_bytes_per_sec", "Bytes", s.TxBytesPerSecond)
+func txBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
+	return doubleGauge(prefix+"network_rate.tx_bytes_per_sec", "Bytes/Sec", value)
 }

@@ -22,20 +22,20 @@ import (
 
 func memMetrics(prefix string, stats *MemoryStats) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		memUsageMetric(prefix, stats),
-		memMaxUsageMetric(prefix, stats),
-		memLimitMetric(prefix, stats),
+		memUsageMetric(prefix, stats.Usage),
+		memMaxUsageMetric(prefix, stats.MaxUsage),
+		memLimitMetric(prefix, stats.Limit),
 	}, time.Now())
 }
 
-func memUsageMetric(prefix string, s *MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.usage", "Bytes", s.Usage)
+func memUsageMetric(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"memory.usage", "Bytes", value)
 }
 
-func memMaxUsageMetric(prefix string, s *MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.maxusage", "Bytes", s.MaxUsage)
+func memMaxUsageMetric(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"memory.maxusage", "Bytes", value)
 }
 
-func memLimitMetric(prefix string, s *MemoryStats) *metricspb.Metric {
-	return intGauge(prefix+"memory.limit", "Bytes", s.Limit)
+func memLimitMetric(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"memory.limit", "Bytes", value)
 }
