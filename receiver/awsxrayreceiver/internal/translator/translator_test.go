@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	expTrans "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
