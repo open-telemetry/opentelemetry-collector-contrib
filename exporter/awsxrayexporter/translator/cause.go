@@ -139,28 +139,28 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 
 	// Skip first line containing top level exception / message
 	r.ReadLine()
-	exception := &awsxray.Exception{
+	exceptions := make([]awsxray.Exception, 0, 1)
+	exceptions = append(exceptions, awsxray.Exception{
 		ID:      aws.String(hex.EncodeToString(newSegmentID())),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
-	}
+	})
+	exception := &exceptions[0]
 
 	if language != "java" {
 		// Only support Java stack traces right now.
-		return []awsxray.Exception{*exception}
+		return exceptions
 	}
 
 	if stacktrace == "" {
-		return []awsxray.Exception{*exception}
+		return exceptions
 	}
 
 	var line string
 	line, err := r.ReadLine()
 	if err != nil {
-		return []awsxray.Exception{*exception}
+		return exceptions
 	}
-
-	exceptions := make([]awsxray.Exception, 0, 1)
 
 	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
@@ -216,14 +216,15 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 					causeMessage += line
 				}
 			}
-			newException := &awsxray.Exception{
+			exceptions = append(exceptions, awsxray.Exception{
 				ID:      aws.String(hex.EncodeToString(newSegmentID())),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
 				Stack:   make([]awsxray.StackFrame, 0),
-			}
+			})
+
+			newException := &exceptions[len(exceptions)-1]
 			exception.Cause = newException.ID
-			exceptions = append(exceptions, *exception)
 			exception = newException
 			// We peeked to a line starting with "\tat", a stack frame, so continue straight to processing.
 			continue
@@ -231,16 +232,6 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 		// We skip "..." (common frames) and Suppressed By exceptions.
 		line, err = r.ReadLine()
 		if err != nil {
-			if len(exceptions) == 0 || *exceptions[len(exceptions)-1].ID != *exception.ID {
-				// either:
-				// 1) we never run into an "Caused by: " line to append the exception
-				//    we were processing to the `exceptions` slice
-				// 2) In the `TestParseExceptionWithJavaStacktraceAndCauseWithStacktrace` case,
-				//    we were processing the stack frames of the last
-				//    `java.lang.IllegalArgumentException` but has not appended it to the
-				//    `exceptions` slice
-				exceptions = append(exceptions, *exception)
-			}
 			break
 		}
 	}

@@ -31,8 +31,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	internalErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
 func TestNonUDPTransport(t *testing.T) {
@@ -211,7 +211,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(
 				lastEntry.Context[0].Interface.(error)).Error() == fmt.Sprintf(
-				"invalid header %+v", awsxray.Header{
+				"invalid header %+v", tracesegment.Header{
 					Format:  randString.String(),
 					Version: 1,
 				},

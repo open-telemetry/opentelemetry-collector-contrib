@@ -20,8 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
 func TestSplitHeaderBodyWithSeparatorExists(t *testing.T) {
@@ -30,7 +30,7 @@ func TestSplitHeaderBodyWithSeparatorExists(t *testing.T) {
 	header, body, err := SplitHeaderBody(buf)
 	assert.NoError(t, err, "should split correctly")
 
-	assert.Equal(t, &awsxray.Header{
+	assert.Equal(t, &tracesegment.Header{
 		Format:  "json",
 		Version: 1,
 	}, header, "actual header is different from the expected")
@@ -74,7 +74,7 @@ func TestSplitHeaderBodyEmptyBody(t *testing.T) {
 	header, body, err := SplitHeaderBody(buf)
 	assert.NoError(t, err, "should split correctly")
 
-	assert.Equal(t, &awsxray.Header{
+	assert.Equal(t, &tracesegment.Header{
 		Format:  "json",
 		Version: 1,
 	}, header, "actual header is different from the expected")
@@ -90,7 +90,7 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 	var errRecv *recvErr.ErrRecoverable
 	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
 	assert.Contains(t, err.Error(),
-		fmt.Sprintf("invalid header %+v", awsxray.Header{
+		fmt.Sprintf("invalid header %+v", tracesegment.Header{
 			Format:  "json",
 			Version: 20,
 		}),

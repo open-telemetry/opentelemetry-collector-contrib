@@ -15,100 +15,45 @@
 package awsxray
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
+
+	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray/util"
 )
 
-func TestTraceSegmentHeaderIsValid(t *testing.T) {
-	header := Header{
-		Format:  "json",
-		Version: 1,
-	}
-
-	valid := header.IsValid()
-
-	assert.True(t, valid)
-}
-
-func TestTraceSegmentHeaderIsValidCaseInsensitive(t *testing.T) {
-	header := Header{
-		Format:  "jSoN",
-		Version: 1,
-	}
-
-	valid := header.IsValid()
-
-	assert.True(t, valid)
-}
-
-func TestTraceSegmentHeaderIsValidWrongVersion(t *testing.T) {
-	header := Header{
-		Format:  "json",
-		Version: 2,
-	}
-
-	valid := header.IsValid()
-
-	assert.False(t, valid)
-}
-
-func TestTraceSegmentHeaderIsValidWrongFormat(t *testing.T) {
-	header := Header{
-		Format:  "xml",
-		Version: 1,
-	}
-
-	valid := header.IsValid()
-
-	assert.False(t, valid)
-}
-
-func TestTraceSegmentHeaderIsValidWrongFormatVersion(t *testing.T) {
-	header := Header{
-		Format:  "xml",
-		Version: 2,
-	}
-
-	valid := header.IsValid()
-
-	assert.False(t, valid)
-}
-
 var rawExpectedSegmentForInstrumentedApp = Segment{
-	Name:      aws.String("DDB"),
-	ID:        aws.String("88ad1df59cd7a7be"),
-	StartTime: aws.Float64(1596566305.535414),
-	TraceID:   aws.String("1-5f29ab21-d4ebf299219a65bd5c31d6da"),
-	EndTime:   aws.Float64(1596566305.5928545),
-	Fault:     aws.Bool(true),
-	User:      aws.String("xraysegmentdump"),
+	Name:      String("DDB"),
+	ID:        String("88ad1df59cd7a7be"),
+	StartTime: Float64(1596566305.535414),
+	TraceID:   String("1-5f29ab21-d4ebf299219a65bd5c31d6da"),
+	EndTime:   Float64(1596566305.5928545),
+	Fault:     Bool(true),
+	User:      String("xraysegmentdump"),
 	Cause: &CauseData{
 		Type: CauseTypeObject,
 		CauseObject: CauseObject{
-			WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
+			WorkingDirectory: String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 			Exceptions: []Exception{
 				{
-					ID:      aws.String("3e9e11e3ab3fba60"),
-					Message: aws.String("ResourceNotFoundException: Requested resource not found"),
-					Type:    aws.String("dynamodb.ResourceNotFoundException"),
-					Remote:  aws.Bool(true),
+					ID:      String("3e9e11e3ab3fba60"),
+					Message: String("ResourceNotFoundException: Requested resource not found"),
+					Type:    String("dynamodb.ResourceNotFoundException"),
+					Remote:  Bool(true),
 					Stack: []StackFrame{
 						{
-							Path:  aws.String("runtime/proc.go"),
-							Line:  aws.Int(203),
-							Label: aws.String("main"),
+							Path:  String("runtime/proc.go"),
+							Line:  Int(203),
+							Label: String("main"),
 						},
 						{
-							Path:  aws.String("runtime/asm_amd64.s"),
-							Line:  aws.Int(1373),
-							Label: aws.String("goexit"),
+							Path:  String("runtime/asm_amd64.s"),
+							Line:  Int(1373),
+							Label: String("goexit"),
 						},
 					},
 				},
@@ -117,56 +62,56 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 	},
 	AWS: &AWSData{
 		XRay: &XRayMetaData{
-			SDKVersion: aws.String("1.1.0"),
-			SDK:        aws.String("X-Ray for Go"),
+			SDKVersion: String("1.1.0"),
+			SDK:        String("X-Ray for Go"),
 		},
 	},
 	Service: &ServiceData{
-		CompilerVersion: aws.String("go1.14.6"),
-		Compiler:        aws.String("gc"),
+		CompilerVersion: String("go1.14.6"),
+		Compiler:        String("gc"),
 	},
 	Subsegments: []Segment{
 		{
-			Name:      aws.String("DDB.DescribeExistingTableAndPutToMissingTable"),
-			ID:        aws.String("7df694142c905d8d"),
-			StartTime: aws.Float64(1596566305.5354965),
-			EndTime:   aws.Float64(1596566305.5928457),
-			Fault:     aws.Bool(true),
+			Name:      String("DDB.DescribeExistingTableAndPutToMissingTable"),
+			ID:        String("7df694142c905d8d"),
+			StartTime: Float64(1596566305.5354965),
+			EndTime:   Float64(1596566305.5928457),
+			Fault:     Bool(true),
 			Cause: &CauseData{
 				Type: CauseTypeObject,
 				CauseObject: CauseObject{
-					WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
+					WorkingDirectory: String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 					Exceptions: []Exception{
 						{
-							ID:      aws.String("e2ba8a2109451f5b"),
-							Message: aws.String("ResourceNotFoundException: Requested resource not found"),
-							Type:    aws.String("dynamodb.ResourceNotFoundException"),
-							Remote:  aws.Bool(true),
+							ID:      String("e2ba8a2109451f5b"),
+							Message: String("ResourceNotFoundException: Requested resource not found"),
+							Type:    String("dynamodb.ResourceNotFoundException"),
+							Remote:  Bool(true),
 							Stack: []StackFrame{
 								{
-									Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
-									Line:  aws.Int(48),
-									Label: aws.String("Capture"),
+									Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
+									Line:  Int(48),
+									Label: String("Capture"),
 								},
 								{
-									Path:  aws.String("sampleapp/sample.go"),
-									Line:  aws.Int(41),
-									Label: aws.String("ddbExpectedFailure"),
+									Path:  String("sampleapp/sample.go"),
+									Line:  Int(41),
+									Label: String("ddbExpectedFailure"),
 								},
 								{
-									Path:  aws.String("sampleapp/sample.go"),
-									Line:  aws.Int(36),
-									Label: aws.String("main"),
+									Path:  String("sampleapp/sample.go"),
+									Line:  Int(36),
+									Label: String("main"),
 								},
 								{
-									Path:  aws.String("runtime/proc.go"),
-									Line:  aws.Int(203),
-									Label: aws.String("main"),
+									Path:  String("runtime/proc.go"),
+									Line:  Int(203),
+									Label: String("main"),
 								},
 								{
-									Path:  aws.String("runtime/asm_amd64.s"),
-									Line:  aws.Int(1373),
-									Label: aws.String("goexit"),
+									Path:  String("runtime/asm_amd64.s"),
+									Line:  Int(1373),
+									Label: String("goexit"),
 								},
 							},
 						},
@@ -183,42 +128,42 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 			},
 			Subsegments: []Segment{
 				{
-					Name:      aws.String("dynamodb"),
-					ID:        aws.String("7318c46a385557f5"),
-					StartTime: aws.Float64(1596566305.5355225),
-					EndTime:   aws.Float64(1596566305.5873947),
-					Namespace: aws.String("aws"),
+					Name:      String("dynamodb"),
+					ID:        String("7318c46a385557f5"),
+					StartTime: Float64(1596566305.5355225),
+					EndTime:   Float64(1596566305.5873947),
+					Namespace: String("aws"),
 					HTTP: &HTTPData{
 						Response: &ResponseData{
-							Status:        aws.Int64(200),
-							ContentLength: aws.Int64(713),
+							Status:        Int64(200),
+							ContentLength: Int64(713),
 						},
 					},
 					AWS: &AWSData{
-						Operation:    aws.String("DescribeTable"),
-						RemoteRegion: aws.String("us-west-2"),
-						RequestID:    aws.String("29P5V7QSAKHS4LNL56ECAJFF3BVV4KQNSO5AEMVJF66Q9ASUAAJG"),
-						Retries:      aws.Int(0),
-						TableName:    aws.String("xray_sample_table"),
+						Operation:    String("DescribeTable"),
+						RemoteRegion: String("us-west-2"),
+						RequestID:    String("29P5V7QSAKHS4LNL56ECAJFF3BVV4KQNSO5AEMVJF66Q9ASUAAJG"),
+						Retries:      Int(0),
+						TableName:    String("xray_sample_table"),
 					},
 					Subsegments: []Segment{
 						{
-							ID:        aws.String("0239834271dbee25"),
-							Name:      aws.String("marshal"),
-							StartTime: aws.Float64(1596566305.5355248),
-							EndTime:   aws.Float64(1596566305.5355635),
+							ID:        String("0239834271dbee25"),
+							Name:      String("marshal"),
+							StartTime: Float64(1596566305.5355248),
+							EndTime:   Float64(1596566305.5355635),
 						},
 						{
-							ID:        aws.String("23cf5bb60e4f66b1"),
-							Name:      aws.String("attempt"),
-							StartTime: aws.Float64(1596566305.5355663),
-							EndTime:   aws.Float64(1596566305.5873196),
+							ID:        String("23cf5bb60e4f66b1"),
+							Name:      String("attempt"),
+							StartTime: Float64(1596566305.5355663),
+							EndTime:   Float64(1596566305.5873196),
 							Subsegments: []Segment{
 								{
-									ID:        aws.String("417b81b977b9563b"),
-									Name:      aws.String("connect"),
-									StartTime: aws.Float64(1596566305.5357504),
-									EndTime:   aws.Float64(1596566305.575329),
+									ID:        String("417b81b977b9563b"),
+									Name:      String("connect"),
+									StartTime: Float64(1596566305.5357504),
+									EndTime:   Float64(1596566305.575329),
 									Metadata: map[string]map[string]interface{}{
 										"http": {
 											"connection": map[string]interface{}{
@@ -229,10 +174,10 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 									},
 									Subsegments: []Segment{
 										{
-											ID:        aws.String("0cab02b318413eb1"),
-											Name:      aws.String("dns"),
-											StartTime: aws.Float64(1596566305.5357957),
-											EndTime:   aws.Float64(1596566305.5373216),
+											ID:        String("0cab02b318413eb1"),
+											Name:      String("dns"),
+											StartTime: Float64(1596566305.5357957),
+											EndTime:   Float64(1596566305.5373216),
 											Metadata: map[string]map[string]interface{}{
 												"http": {
 													"dns": map[string]interface{}{
@@ -248,10 +193,10 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											},
 										},
 										{
-											ID:        aws.String("f8dbc5c6b291017e"),
-											Name:      aws.String("dial"),
-											StartTime: aws.Float64(1596566305.5373297),
-											EndTime:   aws.Float64(1596566305.537964),
+											ID:        String("f8dbc5c6b291017e"),
+											Name:      String("dial"),
+											StartTime: Float64(1596566305.5373297),
+											EndTime:   Float64(1596566305.537964),
 											Metadata: map[string]map[string]interface{}{
 												"http": {
 													"connect": map[string]interface{}{
@@ -261,10 +206,10 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											},
 										},
 										{
-											ID:        aws.String("e2deb66ecaa769a5"),
-											Name:      aws.String("tls"),
-											StartTime: aws.Float64(1596566305.5380135),
-											EndTime:   aws.Float64(1596566305.5753162),
+											ID:        String("e2deb66ecaa769a5"),
+											Name:      String("tls"),
+											StartTime: Float64(1596566305.5380135),
+											EndTime:   Float64(1596566305.5753162),
 											Metadata: map[string]map[string]interface{}{
 												"http": {
 													"tls": map[string]interface{}{
@@ -279,186 +224,186 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 									},
 								},
 								{
-									ID:        aws.String("a70bfab91597c7a2"),
-									Name:      aws.String("request"),
-									StartTime: aws.Float64(1596566305.5753367),
-									EndTime:   aws.Float64(1596566305.5754144),
+									ID:        String("a70bfab91597c7a2"),
+									Name:      String("request"),
+									StartTime: Float64(1596566305.5753367),
+									EndTime:   Float64(1596566305.5754144),
 								},
 								{
-									ID:        aws.String("c05331c26d3e8a7f"),
-									Name:      aws.String("response"),
-									StartTime: aws.Float64(1596566305.5754204),
-									EndTime:   aws.Float64(1596566305.5872962),
+									ID:        String("c05331c26d3e8a7f"),
+									Name:      String("response"),
+									StartTime: Float64(1596566305.5754204),
+									EndTime:   Float64(1596566305.5872962),
 								},
 							},
 						},
 						{
-							ID:        aws.String("5fca2dfc9de81f4c"),
-							Name:      aws.String("unmarshal"),
-							StartTime: aws.Float64(1596566305.5873249),
-							EndTime:   aws.Float64(1596566305.587389),
+							ID:        String("5fca2dfc9de81f4c"),
+							Name:      String("unmarshal"),
+							StartTime: Float64(1596566305.5873249),
+							EndTime:   Float64(1596566305.587389),
 						},
 					},
 				},
 				{
-					Name:      aws.String("dynamodb"),
-					ID:        aws.String("71631df3f58bdfc5"),
-					StartTime: aws.Float64(1596566305.5874245),
-					EndTime:   aws.Float64(1596566305.5928326),
-					Fault:     aws.Bool(true),
+					Name:      String("dynamodb"),
+					ID:        String("71631df3f58bdfc5"),
+					StartTime: Float64(1596566305.5874245),
+					EndTime:   Float64(1596566305.5928326),
+					Fault:     Bool(true),
 					Cause: &CauseData{
 						Type: CauseTypeObject,
 						CauseObject: CauseObject{
-							WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
+							WorkingDirectory: String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 							Exceptions: []Exception{
 								{
-									ID:      aws.String("7121b882a0ef44da"),
-									Message: aws.String("ResourceNotFoundException: Requested resource not found"),
-									Type:    aws.String("dynamodb.ResourceNotFoundException"),
-									Remote:  aws.Bool(true),
+									ID:      String("7121b882a0ef44da"),
+									Message: String("ResourceNotFoundException: Requested resource not found"),
+									Type:    String("dynamodb.ResourceNotFoundException"),
+									Remote:  Bool(true),
 									Stack: []StackFrame{
 										{
-											Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
-											Line:  aws.Int(267),
-											Label: aws.String("(*HandlerList).Run"),
+											Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
+											Line:  Int(267),
+											Label: String("(*HandlerList).Run"),
 										},
 										{
-											Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
-											Line:  aws.Int(515),
-											Label: aws.String("(*Request).Send.func1"),
+											Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
+											Line:  Int(515),
+											Label: String("(*Request).Send.func1"),
 										},
 										{
-											Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
-											Line:  aws.Int(538),
-											Label: aws.String("(*Request).Send"),
+											Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
+											Line:  Int(538),
+											Label: String("(*Request).Send"),
 										},
 										{
-											Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
-											Line:  aws.Int(3414),
-											Label: aws.String("(*DynamoDB).PutItemWithContext"),
+											Path:  String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
+											Line:  Int(3414),
+											Label: String("(*DynamoDB).PutItemWithContext"),
 										},
 										{
-											Path:  aws.String("sampleapp/sample.go"),
-											Line:  aws.Int(62),
-											Label: aws.String("ddbExpectedFailure.func1"),
+											Path:  String("sampleapp/sample.go"),
+											Line:  Int(62),
+											Label: String("ddbExpectedFailure.func1"),
 										},
 										{
-											Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
-											Line:  aws.Int(45),
-											Label: aws.String("Capture"),
+											Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
+											Line:  Int(45),
+											Label: String("Capture"),
 										},
 										{
-											Path:  aws.String("sampleapp/sample.go"),
-											Line:  aws.Int(41),
-											Label: aws.String("ddbExpectedFailure"),
+											Path:  String("sampleapp/sample.go"),
+											Line:  Int(41),
+											Label: String("ddbExpectedFailure"),
 										},
 										{
-											Path:  aws.String("sampleapp/sample.go"),
-											Line:  aws.Int(36),
-											Label: aws.String("main"),
+											Path:  String("sampleapp/sample.go"),
+											Line:  Int(36),
+											Label: String("main"),
 										},
 										{
-											Path:  aws.String("runtime/proc.go"),
-											Line:  aws.Int(203),
-											Label: aws.String("main"),
+											Path:  String("runtime/proc.go"),
+											Line:  Int(203),
+											Label: String("main"),
 										},
 										{
-											Path:  aws.String("runtime/asm_amd64.s"),
-											Line:  aws.Int(1373),
-											Label: aws.String("goexit"),
+											Path:  String("runtime/asm_amd64.s"),
+											Line:  Int(1373),
+											Label: String("goexit"),
 										},
 									},
 								},
 							},
 						},
 					},
-					Namespace: aws.String("aws"),
+					Namespace: String("aws"),
 					HTTP: &HTTPData{
 						Response: &ResponseData{
-							Status:        aws.Int64(400),
-							ContentLength: aws.Int64(112),
+							Status:        Int64(400),
+							ContentLength: Int64(112),
 						},
 					},
 					AWS: &AWSData{
-						Operation:    aws.String("PutItem"),
-						RemoteRegion: aws.String("us-west-2"),
-						RequestID:    aws.String("TJUJNR0JV84CFHJL93D3GIA0LBVV4KQNSO5AEMVJF66Q9ASUAAJG"),
-						TableName:    aws.String("does_not_exist"),
-						Retries:      aws.Int(0),
+						Operation:    String("PutItem"),
+						RemoteRegion: String("us-west-2"),
+						RequestID:    String("TJUJNR0JV84CFHJL93D3GIA0LBVV4KQNSO5AEMVJF66Q9ASUAAJG"),
+						TableName:    String("does_not_exist"),
+						Retries:      Int(0),
 					},
 					Subsegments: []Segment{
 						{
-							Name:      aws.String("marshal"),
-							ID:        aws.String("9da02fcbb9711b47"),
-							StartTime: aws.Float64(1596566305.5874267),
-							EndTime:   aws.Float64(1596566305.58745),
+							Name:      String("marshal"),
+							ID:        String("9da02fcbb9711b47"),
+							StartTime: Float64(1596566305.5874267),
+							EndTime:   Float64(1596566305.58745),
 						},
 						{
-							Name:      aws.String("attempt"),
-							ID:        aws.String("56b1cb185cbdb378"),
-							StartTime: aws.Float64(1596566305.587453),
-							EndTime:   aws.Float64(1596566305.592767),
-							Fault:     aws.Bool(true),
+							Name:      String("attempt"),
+							ID:        String("56b1cb185cbdb378"),
+							StartTime: Float64(1596566305.587453),
+							EndTime:   Float64(1596566305.592767),
+							Fault:     Bool(true),
 							Cause: &CauseData{
 								Type: CauseTypeObject,
 								CauseObject: CauseObject{
-									WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
+									WorkingDirectory: String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 									Exceptions: []Exception{
 										{
-											ID:      aws.String("59de8ae27660d21d"),
-											Message: aws.String("ResourceNotFoundException: Requested resource not found"),
-											Type:    aws.String("dynamodb.ResourceNotFoundException"),
-											Remote:  aws.Bool(true),
+											ID:      String("59de8ae27660d21d"),
+											Message: String("ResourceNotFoundException: Requested resource not found"),
+											Type:    String("dynamodb.ResourceNotFoundException"),
+											Remote:  Bool(true),
 											Stack: []StackFrame{
 												{
-													Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/aws.go"),
-													Line:  aws.Int(139),
-													Label: aws.String("glob..func7"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/go"),
+													Line:  Int(139),
+													Label: String("glob..func7"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
-													Line:  aws.Int(267),
-													Label: aws.String("(*HandlerList).Run"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
+													Line:  Int(267),
+													Label: String("(*HandlerList).Run"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
-													Line:  aws.Int(534),
-													Label: aws.String("(*Request).Send"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
+													Line:  Int(534),
+													Label: String("(*Request).Send"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
-													Line:  aws.Int(3414),
-													Label: aws.String("(*DynamoDB).PutItemWithContext"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
+													Line:  Int(3414),
+													Label: String("(*DynamoDB).PutItemWithContext"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(62),
-													Label: aws.String("ddbExpectedFailure.func1"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(62),
+													Label: String("ddbExpectedFailure.func1"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
-													Line:  aws.Int(45),
-													Label: aws.String("Capture"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
+													Line:  Int(45),
+													Label: String("Capture"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(41),
-													Label: aws.String("ddbExpectedFailure"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(41),
+													Label: String("ddbExpectedFailure"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(36),
-													Label: aws.String("main"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(36),
+													Label: String("main"),
 												},
 												{
-													Path:  aws.String("runtime/proc.go"),
-													Line:  aws.Int(203),
-													Label: aws.String("main"),
+													Path:  String("runtime/proc.go"),
+													Line:  Int(203),
+													Label: String("main"),
 												},
 												{
-													Path:  aws.String("runtime/asm_amd64.s"),
-													Line:  aws.Int(1373),
-													Label: aws.String("goexit"),
+													Path:  String("runtime/asm_amd64.s"),
+													Line:  Int(1373),
+													Label: String("goexit"),
 												},
 											},
 										},
@@ -467,85 +412,85 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 							},
 							Subsegments: []Segment{
 								{
-									Name:      aws.String("request"),
-									ID:        aws.String("6f908a1d3ec70abe"),
-									StartTime: aws.Float64(1596566305.5875077),
-									EndTime:   aws.Float64(1596566305.587543),
+									Name:      String("request"),
+									ID:        String("6f908a1d3ec70abe"),
+									StartTime: Float64(1596566305.5875077),
+									EndTime:   Float64(1596566305.587543),
 								},
 								{
-									Name:      aws.String("response"),
-									ID:        aws.String("acfaa7e3fe3aab03"),
-									StartTime: aws.Float64(1596566305.5875454),
-									EndTime:   aws.Float64(1596566305.592695),
+									Name:      String("response"),
+									ID:        String("acfaa7e3fe3aab03"),
+									StartTime: Float64(1596566305.5875454),
+									EndTime:   Float64(1596566305.592695),
 								},
 							},
 						},
 						{
-							Name:      aws.String("wait"),
-							ID:        aws.String("ba8d350c0e8cdc4b"),
-							StartTime: aws.Float64(1596566305.592807),
-							EndTime:   aws.Float64(1596566305.5928102),
-							Fault:     aws.Bool(true),
+							Name:      String("wait"),
+							ID:        String("ba8d350c0e8cdc4b"),
+							StartTime: Float64(1596566305.592807),
+							EndTime:   Float64(1596566305.5928102),
+							Fault:     Bool(true),
 							Cause: &CauseData{
 								Type: CauseTypeObject,
 								CauseObject: CauseObject{
-									WorkingDirectory: aws.String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
+									WorkingDirectory: String("/home/ubuntu/opentelemetry-collector-contrib/receiver/awsxrayreceiver/testdata/rawsegment/sampleapp"),
 									Exceptions: []Exception{
 										{
-											ID:      aws.String("5a07f08a8c260405"),
-											Message: aws.String("ResourceNotFoundException: Requested resource not found"),
-											Type:    aws.String("dynamodb.ResourceNotFoundException"),
-											Remote:  aws.Bool(true),
+											ID:      String("5a07f08a8c260405"),
+											Message: String("ResourceNotFoundException: Requested resource not found"),
+											Type:    String("dynamodb.ResourceNotFoundException"),
+											Remote:  Bool(true),
 											Stack: []StackFrame{
 												{
-													Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/aws.go"),
-													Line:  aws.Int(149),
-													Label: aws.String("glob..func8"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/go"),
+													Line:  Int(149),
+													Label: String("glob..func8"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
-													Line:  aws.Int(267),
-													Label: aws.String("(*HandlerList).Run"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/handlers.go"),
+													Line:  Int(267),
+													Label: String("(*HandlerList).Run"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
-													Line:  aws.Int(535),
-													Label: aws.String("(*Request).Send"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/aws/request/request.go"),
+													Line:  Int(535),
+													Label: String("(*Request).Send"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
-													Line:  aws.Int(3414),
-													Label: aws.String("(*DynamoDB).PutItemWithContext"),
+													Path:  String("github.com/aws/aws-sdk-go@v1.33.9/service/dynamodb/api.go"),
+													Line:  Int(3414),
+													Label: String("(*DynamoDB).PutItemWithContext"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(62),
-													Label: aws.String("ddbExpectedFailure.func1"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(62),
+													Label: String("ddbExpectedFailure.func1"),
 												},
 												{
-													Path:  aws.String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
-													Line:  aws.Int(45),
-													Label: aws.String("Capture"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/capture.go"),
+													Line:  Int(45),
+													Label: String("Capture"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(41),
-													Label: aws.String("ddbExpectedFailure"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(41),
+													Label: String("ddbExpectedFailure"),
 												},
 												{
-													Path:  aws.String("sampleapp/sample.go"),
-													Line:  aws.Int(36),
-													Label: aws.String("main"),
+													Path:  String("sampleapp/sample.go"),
+													Line:  Int(36),
+													Label: String("main"),
 												},
 												{
-													Path:  aws.String("runtime/proc.go"),
-													Line:  aws.Int(203),
-													Label: aws.String("main"),
+													Path:  String("runtime/proc.go"),
+													Line:  Int(203),
+													Label: String("main"),
 												},
 												{
-													Path:  aws.String("runtime/asm_amd64.s"),
-													Line:  aws.Int(1373),
-													Label: aws.String("goexit"),
+													Path:  String("runtime/asm_amd64.s"),
+													Line:  Int(1373),
+													Label: String("goexit"),
 												},
 											},
 										},
@@ -561,32 +506,32 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 }
 
 var rawExpectedSegmentForInstrumentedServer = Segment{
-	Name:      aws.String("SampleServer"),
-	ID:        aws.String("bda182a644eee9b3"),
-	StartTime: aws.Float64(1596648396.6399446),
-	TraceID:   aws.String("1-5f2aebcc-b475d14618c51eaa28753d37"),
-	EndTime:   aws.Float64(1596648396.6401389),
+	Name:      String("SampleServer"),
+	ID:        String("bda182a644eee9b3"),
+	StartTime: Float64(1596648396.6399446),
+	TraceID:   String("1-5f2aebcc-b475d14618c51eaa28753d37"),
+	EndTime:   Float64(1596648396.6401389),
 	HTTP: &HTTPData{
 		Request: &RequestData{
-			Method:        aws.String("GET"),
-			URL:           aws.String("http://localhost:8000/"),
-			ClientIP:      aws.String("127.0.0.1"),
-			UserAgent:     aws.String("Go-http-client/1.1"),
-			XForwardedFor: aws.Bool(true),
+			Method:        String("GET"),
+			URL:           String("http://localhost:8000/"),
+			ClientIP:      String("127.0.0.1"),
+			UserAgent:     String("Go-http-client/1.1"),
+			XForwardedFor: Bool(true),
 		},
 		Response: &ResponseData{
-			Status: aws.Int64(200),
+			Status: Int64(200),
 		},
 	},
 	AWS: &AWSData{
 		XRay: &XRayMetaData{
-			SDKVersion: aws.String("1.1.0"),
-			SDK:        aws.String("X-Ray for Go"),
+			SDKVersion: String("1.1.0"),
+			SDK:        String("X-Ray for Go"),
 		},
 	},
 	Service: &ServiceData{
-		CompilerVersion: aws.String("go1.14.6"),
-		Compiler:        aws.String("gc"),
+		CompilerVersion: String("go1.14.6"),
+		Compiler:        String("gc"),
 	},
 }
 
@@ -613,11 +558,11 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
 				assert.Equal(t, Segment{
-					Name:       aws.String("LongOperation"),
-					ID:         aws.String("5cc4a447f5d4d696"),
-					StartTime:  aws.Float64(1595437651.680097),
-					TraceID:    aws.String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
-					InProgress: aws.Bool(true),
+					Name:       String("LongOperation"),
+					ID:         String("5cc4a447f5d4d696"),
+					StartTime:  Float64(1595437651.680097),
+					TraceID:    String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
+					InProgress: Bool(true),
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
 			},
 		},
@@ -628,17 +573,17 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
 				assert.Equal(t, Segment{
-					Name:        aws.String("OtherTopLevelFields"),
-					ID:          aws.String("5cc4a447f5d4d696"),
-					StartTime:   aws.Float64(1595437651.680097),
-					EndTime:     aws.Float64(1595437652.197392),
-					TraceID:     aws.String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
-					Error:       aws.Bool(false),
-					Throttle:    aws.Bool(true),
-					ResourceARN: aws.String("chicken"),
-					Origin:      aws.String("AWS::EC2::Instance"),
-					ParentID:    aws.String("defdfd9912dc5a56"),
-					Type:        aws.String("subsegment"),
+					Name:        String("OtherTopLevelFields"),
+					ID:          String("5cc4a447f5d4d696"),
+					StartTime:   Float64(1595437651.680097),
+					EndTime:     Float64(1595437652.197392),
+					TraceID:     String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
+					Error:       Bool(false),
+					Throttle:    Bool(true),
+					ResourceARN: String("chicken"),
+					Origin:      String("AWS::EC2::Instance"),
+					ParentID:    String("defdfd9912dc5a56"),
+					Type:        String("subsegment"),
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
 			},
 		},
@@ -649,15 +594,15 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 				assert.NoError(t, err, testCase+": JSON Unmarshalling should've succeeded")
 
 				assert.Equal(t, Segment{
-					Name:      aws.String("CauseIsExceptionID"),
-					ID:        aws.String("5cc4a447f5d4d696"),
-					StartTime: aws.Float64(1595437651.680097),
-					EndTime:   aws.Float64(1595437652.197392),
-					TraceID:   aws.String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
-					Fault:     aws.Bool(true),
+					Name:      String("CauseIsExceptionID"),
+					ID:        String("5cc4a447f5d4d696"),
+					StartTime: Float64(1595437651.680097),
+					EndTime:   Float64(1595437652.197392),
+					TraceID:   String("1-5f187253-6a106696d56b1f4ef9eba2ed"),
+					Fault:     Bool(true),
 					Cause: &CauseData{
 						Type:        CauseTypeExceptionID,
-						ExceptionID: aws.String("abcdefghijklmnop"),
+						ExceptionID: String("abcdefghijklmnop"),
 					},
 				}, actualSeg, testCase+": unmarshalled segment is different from the expected")
 
@@ -691,12 +636,10 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		content, err := ioutil.ReadFile(tc.samplePath)
 		assert.NoError(t, err, fmt.Sprintf("[%s] can not read raw segment", tc.testCase))
 
-		body, err := splitContent(content)
-		assert.NoError(t, err, fmt.Sprintf("[%s] can split body", tc.testCase))
-		assert.True(t, len(body) > 0, fmt.Sprintf("[%s] body length is 0", tc.testCase))
+		assert.True(t, len(content) > 0, fmt.Sprintf("[%s] content length is 0", tc.testCase))
 
 		var actualSeg Segment
-		err = json.Unmarshal(body, &actualSeg)
+		err = json.Unmarshal(content, &actualSeg)
 
 		tc.verification(tc.testCase, actualSeg, err)
 	}
@@ -716,34 +659,34 @@ func TestValidate(t *testing.T) {
 		{
 			testCase: "missing segment id",
 			input: &Segment{
-				Name: aws.String("a name"),
+				Name: String("a name"),
 			},
 			expectedErrorStr: `segment "id" can not be nil`,
 		},
 		{
 			testCase: "missing segment start_time",
 			input: &Segment{
-				Name: aws.String("a name"),
-				ID:   aws.String("an ID"),
+				Name: String("a name"),
+				ID:   String("an ID"),
 			},
 			expectedErrorStr: `segment "start_time" can not be nil`,
 		},
 		{
 			testCase: "missing segment trace_id",
 			input: &Segment{
-				Name:      aws.String("a name"),
-				ID:        aws.String("an ID"),
-				StartTime: aws.Float64(10),
+				Name:      String("a name"),
+				ID:        String("an ID"),
+				StartTime: Float64(10),
 			},
 			expectedErrorStr: `segment "trace_id" can not be nil`,
 		},
 		{
 			testCase: "happy case",
 			input: &Segment{
-				Name:      aws.String("a name"),
-				ID:        aws.String("an ID"),
-				StartTime: aws.Float64(10),
-				TraceID:   aws.String("a traceID"),
+				Name:      String("a name"),
+				ID:        String("an ID"),
+				StartTime: Float64(10),
+				TraceID:   String("a traceID"),
 			},
 		},
 	}
@@ -757,12 +700,4 @@ func TestValidate(t *testing.T) {
 			assert.NoError(t, err, "Validate should not fail")
 		}
 	}
-}
-
-func splitContent(buf []byte) ([]byte, error) {
-	loc := bytes.IndexByte(buf, byte('\n'))
-	if loc == -1 {
-		return nil, fmt.Errorf("unable to split incoming data as header and segment, incoming bytes: %v", buf)
-	}
-	return buf[loc+1:], nil
 }
