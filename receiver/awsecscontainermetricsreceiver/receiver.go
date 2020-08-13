@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -32,16 +34,16 @@ var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 	config       *Config
 	cancel       context.CancelFunc
 }
 
-// New creates the aws ecs container metrics receiver with the given parameters.
-func New(
+// newAwsEcsContainerMetricsReceiver creates the aws ecs container metrics receiver with the given parameters.
+func newAwsEcsContainerMetricsReceiver(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -84,6 +86,6 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
 	md := awsecscontainermetrics.GenerateDummyMetrics()
 
-	err := aecmr.nextConsumer.ConsumeMetricsData(ctx, md)
+	err := aecmr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
 	return err
 }

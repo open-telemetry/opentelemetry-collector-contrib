@@ -19,43 +19,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
-func TestType(t *testing.T) {
-	factory := &Factory{}
-	ft := factory.Type()
-	require.EqualValues(t, "awsecscontainermetrics", ft)
-}
-
 func TestValidConfig(t *testing.T) {
-	factory := &Factory{}
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err := configcheck.ValidateConfig(createDefaultConfig())
 	require.NoError(t, err)
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
-	factory := &Factory{}
-	traceReceiver, err := factory.CreateTraceReceiver(
-		context.Background(),
-		zap.NewNop(),
-		factory.CreateDefaultConfig(),
-		nil,
-	)
-	require.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-	require.Nil(t, traceReceiver)
-}
-
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
-		factory.CreateDefaultConfig(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
 	require.NoError(t, err)
@@ -63,11 +43,10 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
-	factory := &Factory{}
-	metricsReceiver, err := factory.CreateMetricsReceiver(
+	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
-		factory.CreateDefaultConfig(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
 		nil,
 	)
 	require.Nil(t, metricsReceiver)
