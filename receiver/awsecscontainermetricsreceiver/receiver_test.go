@@ -21,17 +21,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
 func TestReceiver(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
 		zap.NewNop(),
 		cfg,
-		&testbed.MockMetricConsumer{},
+		exportertest.NewNopMetricsExporter(),
 	)
 
 	require.NoError(t, err)
@@ -48,12 +46,11 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestCollectDataFromEndpoint(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
-	metricsReceiver, err := New(
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
 		zap.NewNop(),
 		cfg,
-		new(exportertest.SinkMetricsExporterOld),
+		new(exportertest.SinkMetricsExporter),
 	)
 
 	require.NoError(t, err)
