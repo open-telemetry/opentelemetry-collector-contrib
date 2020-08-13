@@ -4,7 +4,7 @@ This exporter can be used to send metrics and traces to Google Cloud Monitoring 
 
 The following configuration options are supported:
 
-- `project` (optional): ProjectID is the identifier of the Stackdriver.
+- `project` (optional): ProjectID is the identifier of the GCP project.
 - `endpoint` (optional): Endpoint where data is going to be sent to.
 - `metric_prefix` (optional): MetricPrefix overrides the prefix of a Stackdriver metric names.
 - `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
