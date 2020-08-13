@@ -17,8 +17,8 @@ package model
 import (
 	"testing"
 
-	com "github.com/open-telemetry/opentelemetry-proto/gen/go/common/v1"
-	res "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
+	com "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/common/v1"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
 
 var config = Config{

@@ -22,8 +22,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
-	res "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
 
 // A Backend is a ConfigBackend that communicates with an upstream config

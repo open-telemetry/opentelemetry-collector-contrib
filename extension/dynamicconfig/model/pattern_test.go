@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"testing"
 
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 )
 
 func TestPatternProto(t *testing.T) {

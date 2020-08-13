@@ -24,8 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/model"
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
-	res "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
 
 // A Backend is a ConfigBackend that uses a local file to determine what

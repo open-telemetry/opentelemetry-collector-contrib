@@ -29,7 +29,6 @@ import (
 	"time"
 )
 
-// TODO: separate by resource blocks?
 var (
 	sec1Schedule = `ConfigBlocks:
     Schedules:

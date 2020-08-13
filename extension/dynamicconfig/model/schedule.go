@@ -21,7 +21,7 @@ package model
 import (
 	"hash/fnv"
 
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 )
 
 // A Schedules combines the inclusion and exclusion patterns matching a set

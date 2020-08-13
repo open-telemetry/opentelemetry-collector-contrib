@@ -22,8 +22,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service"
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
 )
 
 type dynamicConfigExtension struct {

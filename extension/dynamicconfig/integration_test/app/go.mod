@@ -4,15 +4,11 @@ go 1.14
 
 require (
 	go.opentelemetry.io/contrib/sdk/dynamicconfig v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/otel v0.7.0
-	go.opentelemetry.io/otel/exporters/otlp v0.7.0
+	go.opentelemetry.io/otel v0.10.0
+	go.opentelemetry.io/otel/exporters/otlp v0.10.0
+	go.opentelemetry.io/otel/sdk v0.10.0
 )
 
-// replace github.com/open-telemetry/opentelemetry-proto => github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200716191220-7eb25882f08b
-replace github.com/open-telemetry/opentelemetry-proto => github.com/vmingchen/opentelemetry-proto v0.3.1-0.20200716191220-7eb25882f08b
+replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200812154717-3419b5dbcca6
 
-// replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200724190830-8b4f0692654b
-replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200806202511-205cb1ad8187
-
-// replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200724190830-8b4f0692654b
-replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200806202511-205cb1ad8187
+replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200812154717-3419b5dbcca6

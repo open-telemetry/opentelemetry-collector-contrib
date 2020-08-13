@@ -15,8 +15,8 @@
 package mock
 
 import (
-	res "github.com/open-telemetry/opentelemetry-proto/gen/go/resource/v1"
-	pb "github.com/open-telemetry/opentelemetry-proto/gen/go/experimental/metricconfigservice"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 )
 
 var GlobalFingerprint = []byte("There once was a cat named Gretchen")
