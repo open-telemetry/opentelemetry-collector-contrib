@@ -19,10 +19,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -32,24 +31,15 @@ const (
 	defaultCollectionInterval = 20 * time.Second
 )
 
-var _ component.ReceiverFactoryBase = (*Factory)(nil)
-
-// Factory creates an aws ecs container metrics receiver.
-type Factory struct {
+// NewFactory creates a factory for Aws ECS Container Metrics receiver.
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-// Type returns the type of this factory, "awsecscontainermetrics".
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
-// CreateDefaultConfig creates a default config.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -59,24 +49,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver returns error as trace receiver is not applicable to aws ecs container metrics receiver.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
-	// Amazon ECS Task Metadata Endpoint does not support traces.
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates an aws ecs container metrics receiver.
-func (f *Factory) CreateMetricsReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumerOld,
+	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
-	return New(logger, rCfg, nextConsumer)
+	return newAwsEcsContainerMetricsReceiver(params.Logger, rCfg, nextConsumer)
 }
