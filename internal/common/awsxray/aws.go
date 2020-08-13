@@ -40,4 +40,9 @@ const (
 
 	// AWSXRayTracedAttribute is the `traced` field in an X-Ray subsegment
 	AWSXRayTracedAttribute = "aws.xray.traced"
+
+	// AWSXraySegmentMetadataAttributePrefix is the prefix of the attribute that
+	// will be treated by the X-Ray exporter as metadata. The key of a metadata
+	// will be AWSXraySegmentMetadataAttributePrefix + <metadata_key>.
+	AWSXraySegmentMetadataAttributePrefix = "aws.xray.metadata."
 )

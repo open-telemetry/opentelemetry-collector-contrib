@@ -166,7 +166,13 @@ func TestTranslation(t *testing.T) {
 					childSpan7df6Attrs[k] = pdata.NewAttributeValueString(
 						v.(string))
 				}
-				assert.Len(t, childSpan7df6Attrs, 1, testCase+": childSpan7df6Attrs has incorrect size")
+				for k, v := range subseg7df6.Metadata {
+					m, err := json.Marshal(v)
+					assert.NoError(t, err, "metadata marshaling failed")
+					childSpan7df6Attrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+						string(m))
+				}
+				assert.Len(t, childSpan7df6Attrs, 2, testCase+": childSpan7df6Attrs has incorrect size")
 				childSpan7df6Evts := initExceptionEvents(&subseg7df6)
 				assert.Len(t, childSpan7df6Evts, 1, testCase+": childSpan7df6Evts has incorrect size")
 				childSpan7df6 := perSpanProperties{
@@ -249,6 +255,13 @@ func TestTranslation(t *testing.T) {
 				}
 
 				subseg417b := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0]
+				childSpan417bAttrs := make(map[string]pdata.AttributeValue)
+				for k, v := range subseg417b.Metadata {
+					m, err := json.Marshal(v)
+					assert.NoError(t, err, "metadata marshaling failed")
+					childSpan417bAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+						string(m))
+				}
 				childSpan417b := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *subseg417b.ID,
@@ -261,10 +274,17 @@ func TestTranslation(t *testing.T) {
 						code: otlptrace.Status_Ok,
 					},
 					eventsProps: nil,
-					attrs:       nil,
+					attrs:       childSpan417bAttrs,
 				}
 
 				subseg0cab := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[0]
+				childSpan0cabAttrs := make(map[string]pdata.AttributeValue)
+				for k, v := range subseg0cab.Metadata {
+					m, err := json.Marshal(v)
+					assert.NoError(t, err, "metadata marshaling failed")
+					childSpan0cabAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+						string(m))
+				}
 				childSpan0cab := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *subseg0cab.ID,
@@ -277,10 +297,17 @@ func TestTranslation(t *testing.T) {
 						code: otlptrace.Status_Ok,
 					},
 					eventsProps: nil,
-					attrs:       nil,
+					attrs:       childSpan0cabAttrs,
 				}
 
 				subsegF8db := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[1]
+				childSpanF8dbAttrs := make(map[string]pdata.AttributeValue)
+				for k, v := range subsegF8db.Metadata {
+					m, err := json.Marshal(v)
+					assert.NoError(t, err, "metadata marshaling failed")
+					childSpanF8dbAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+						string(m))
+				}
 				childSpanF8db := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *subsegF8db.ID,
@@ -293,10 +320,17 @@ func TestTranslation(t *testing.T) {
 						code: otlptrace.Status_Ok,
 					},
 					eventsProps: nil,
-					attrs:       nil,
+					attrs:       childSpanF8dbAttrs,
 				}
 
 				subsegE2de := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[0].Subsegments[2]
+				childSpanE2deAttrs := make(map[string]pdata.AttributeValue)
+				for k, v := range subsegE2de.Metadata {
+					m, err := json.Marshal(v)
+					assert.NoError(t, err, "metadata marshaling failed")
+					childSpanE2deAttrs[awsxray.AWSXraySegmentMetadataAttributePrefix+k] = pdata.NewAttributeValueString(
+						string(m))
+				}
 				childSpanE2de := perSpanProperties{
 					traceID:      *seg.TraceID,
 					spanID:       *subsegE2de.ID,
@@ -309,7 +343,7 @@ func TestTranslation(t *testing.T) {
 						code: otlptrace.Status_Ok,
 					},
 					eventsProps: nil,
-					attrs:       nil,
+					attrs:       childSpanE2deAttrs,
 				}
 
 				subsegA70b := seg.Subsegments[0].Subsegments[0].Subsegments[1].Subsegments[1]

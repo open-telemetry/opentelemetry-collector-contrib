@@ -159,10 +159,8 @@ func populateSpan(
 
 	addBool(seg.Traced, awsxray.AWSXRayTracedAttribute, &attrs)
 
-	// TODO: transform the `metadata` field once X-Ray exporter
-	// figures out how they are going to unmarshal it from otlp
-	// back to X-Ray segment format
 	addAnnotations(seg.Annotations, &attrs)
+	addMetadata(seg.Metadata, &attrs)
 
 	return nil
 }
