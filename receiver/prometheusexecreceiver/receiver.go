@@ -158,37 +158,19 @@ func extractName(cfg *Config) string {
 	return splitName[0]
 }
 
-// manageProcess will put the process in an infinite starting loop which goes through the following steps
-// If the port is not defined by the user, one is generated and a new metrics receiver is built with the new port
-// All instances of {{port}} are replaced with the actual port (either defined by the user or generated)
-// Start the receiver and then the subprocess and get its runtime, then shutdown receiver since it crashed
-// Finally, the wait time before the subprocess is restarted is computed and this goroutine sleeps for that amount of time, before restarting the loop from the start
+// manageProcess is an infinite loop that handles starting and restarting Prometheus-receiver/subprocess pairs
 func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host component.Host) {
 	var crashCount int
 
 	for {
 
-		receiver, currentPort, err := per.createReceiver(ctx, per.port)
+		receiver, err := per.createAndStartReceiver(ctx, host)
 		if err != nil {
 			per.params.Logger.Error("createReceiver() error", zap.String("error", err.Error()))
 			return
 		}
 
-		per.subprocessConfig = per.fillPortPlaceholders(currentPort)
-
-		err = receiver.Start(ctx, host)
-		if err != nil {
-			per.params.Logger.Error("could not start receiver - killing this single process/receiver", zap.String("error", err.Error()))
-			return
-		}
-
-		elapsed, shutdown := per.startProcess(ctx)
-		if shutdown {
-			receiver.Shutdown(ctx)
-			return
-		}
-
-		crashCount = per.computeCrashCount(ctx, elapsed, crashCount)
+		elapsed := per.runProcess(ctx)
 
 		err = receiver.Shutdown(ctx)
 		if err != nil {
@@ -196,21 +178,28 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 			return
 		}
 
-		shutdown = per.computeDelayAndSleep(elapsed, crashCount)
-		if shutdown {
+		crashCount = per.computeCrashCount(ctx, elapsed, crashCount)
+		per.computeDelayAndSleep(elapsed, crashCount)
+
+		// Exit loop if shutdown was signaled
+		select {
+		case <-per.shutdownCh:
 			return
+		default:
 		}
 	}
 }
 
-// createReceiver will create the underlying Prometheus receiver and generate a random port if one is needed
-func (per *prometheusExecReceiver) createReceiver(ctx context.Context, currentPort int) (component.MetricsReceiver, int, error) {
+// createAndStartReceiver will create the underlying Prometheus receiver and generate a random port if one is needed, then start it
+func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, host component.Host) (component.MetricsReceiver, error) {
+	currentPort := per.port
+
 	// Generate a port if none was specified
-	if per.port == 0 {
+	if currentPort == 0 {
 		var err error
 		currentPort, err = generateRandomPort()
 		if err != nil {
-			return nil, 0, fmt.Errorf("generateRandomPort() error - killing this single process/receiver: %w", err)
+			return nil, fmt.Errorf("generateRandomPort() error - killing this single process/receiver: %w", err)
 		}
 
 		per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
@@ -222,17 +211,25 @@ func (per *prometheusExecReceiver) createReceiver(ctx context.Context, currentPo
 	factory := prometheusreceiver.NewFactory()
 	receiver, err := factory.CreateMetricsReceiver(ctx, per.params, per.promReceiverConfig, per.consumer)
 	if err != nil {
-		return nil, 0, fmt.Errorf("unable to create Prometheus receiver - killing this single process/receiver: %w", err)
+		return nil, fmt.Errorf("unable to create Prometheus receiver - killing this single process/receiver: %w", err)
 	}
-	return receiver, currentPort, nil
+
+	per.subprocessConfig = per.fillPortPlaceholders(currentPort)
+
+	err = receiver.Start(ctx, host)
+	if err != nil {
+		return nil, fmt.Errorf("could not start receiver - killing this single process/receiver: %w", err)
+	}
+
+	return receiver, nil
 }
 
-// startProcess will run the process and return runtime, or handle a shutdown if one is triggered while the subprocess is running
-func (per *prometheusExecReceiver) startProcess(ctx context.Context) (time.Duration, bool) {
+// runProcess will run the process and return runtime, or handle a shutdown if one is triggered while the subprocess is running
+func (per *prometheusExecReceiver) runProcess(ctx context.Context) time.Duration {
 	childCtx, cancel := context.WithCancel(ctx)
 	run := make(chan runResult, 1)
 
-	go per.runProcess(childCtx, run)
+	go per.handleProcessResult(childCtx, run)
 
 	select {
 	case result := <-run:
@@ -241,31 +238,31 @@ func (per *prometheusExecReceiver) startProcess(ctx context.Context) (time.Durat
 			per.params.Logger.Info("Subprocess error", zap.String("error", result.subprocessErr.Error()))
 		}
 		cancel()
-		return result.elapsed, false
+		return result.elapsed
 
 	case <-per.shutdownCh:
 		cancel()
-		return 0, true
+		return 0
 	}
 }
 
-// runProcess calls the process manager's run function and pipes the return value into the channel
-func (per *prometheusExecReceiver) runProcess(childCtx context.Context, run chan<- runResult) {
+// handleProcessResult calls the process manager's run function and pipes the return value into the channel
+func (per *prometheusExecReceiver) handleProcessResult(childCtx context.Context, run chan<- runResult) {
 	elapsed, subprocessErr := per.subprocessConfig.Run(childCtx, per.params.Logger)
 	run <- runResult{elapsed, subprocessErr}
 }
 
 // computeDelayAndSleep will compute how long the process should delay before restarting and handle a shutdown while this goroutine waits
-func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, crashCount int) bool {
+func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, crashCount int) {
 	sleepTime := getDelay(elapsed, healthyProcessTime, crashCount, healthyCrashCount)
 	per.params.Logger.Info("Subprocess start delay", zap.String("time until process restarts", sleepTime.String()))
 
 	select {
 	case <-time.After(sleepTime):
-		return false
+		return
 
 	case <-per.shutdownCh:
-		return true
+		return
 	}
 }
 

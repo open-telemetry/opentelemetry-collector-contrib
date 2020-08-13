@@ -98,7 +98,7 @@ func TestRun(t *testing.T) {
 		{
 			name: "normal process 1, error process exit",
 			process: &SubprocessConfig{
-				Command: "go run ../testdata/test_crasher.go",
+				Command: "go run testdata/test_crasher.go",
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
