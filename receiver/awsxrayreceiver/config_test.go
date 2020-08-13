@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(tracesegment.TypeStr)] = factory
+	factories.Receivers[configmodels.Type(awsxray.TypeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -47,16 +47,16 @@ func TestLoadConfig(t *testing.T) {
 
 	// ensure default configurations are generated when users provide
 	// nothing.
-	r0 := cfg.Receivers[tracesegment.TypeStr]
+	r0 := cfg.Receivers[awsxray.TypeStr]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	// ensure the UDP endpoint can be properly overwritten
-	r1 := cfg.Receivers[tracesegment.TypeStr+"/udp_endpoint"].(*Config)
+	r1 := cfg.Receivers[awsxray.TypeStr+"/udp_endpoint"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(tracesegment.TypeStr),
-				NameVal: tracesegment.TypeStr + "/udp_endpoint",
+				TypeVal: configmodels.Type(awsxray.TypeStr),
+				NameVal: awsxray.TypeStr + "/udp_endpoint",
 			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:5678",
@@ -80,12 +80,12 @@ func TestLoadConfig(t *testing.T) {
 		r1)
 
 	// ensure the fields under proxy_server are properly overwritten
-	r2 := cfg.Receivers[tracesegment.TypeStr+"/proxy_server"].(*Config)
+	r2 := cfg.Receivers[awsxray.TypeStr+"/proxy_server"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(tracesegment.TypeStr),
-				NameVal: tracesegment.TypeStr + "/proxy_server",
+				TypeVal: configmodels.Type(awsxray.TypeStr),
+				NameVal: awsxray.TypeStr + "/proxy_server",
 			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:2000",

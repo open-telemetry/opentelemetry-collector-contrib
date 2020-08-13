@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/socketconn"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
@@ -178,11 +179,11 @@ func (p *poller) poll() {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
 				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, tracesegment.TypeStr, 1, err)
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
 				p.logger.Error("Recoverable socket read error", zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, tracesegment.TypeStr, 1, err)
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -194,7 +195,7 @@ func (p *poller) poll() {
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
-				obsreport.EndTraceDataReceiveOp(ctx, tracesegment.TypeStr, 1, err)
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
@@ -203,7 +204,7 @@ func (p *poller) poll() {
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				obsreport.EndTraceDataReceiveOp(ctx, tracesegment.TypeStr, 1,
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1,
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}

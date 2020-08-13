@@ -2,8 +2,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxra
 
 go 1.14
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
 require (
-	github.com/aws/aws-sdk-go v1.34.1
+	github.com/aws/aws-sdk-go v1.34.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.8.0

@@ -33,6 +33,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	internalErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
@@ -135,7 +136,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 	testutil.WaitFor(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, tracesegment.TypeStr, 1, nil)
+			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false

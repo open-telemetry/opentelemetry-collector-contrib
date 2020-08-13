@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 type mockMetricsConsumer struct {
@@ -54,7 +54,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 
-	assert.Equal(t, configmodels.Type(tracesegment.TypeStr), factory.Type())
+	assert.Equal(t, configmodels.Type(awsxray.TypeStr), factory.Type())
 }
 
 func TestCreateTraceReceiver(t *testing.T) {

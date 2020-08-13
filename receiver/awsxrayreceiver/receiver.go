@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
@@ -104,16 +104,16 @@ func (x *xrayReceiver) start() {
 		traces, totalSpansCount, err := translator.ToTraces(seg.Payload)
 		if err != nil {
 			x.logger.Warn("X-Ray segment to OT traces conversion failed", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, tracesegment.TypeStr, totalSpansCount, err)
+			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
 
 		err = x.consumer.ConsumeTraces(seg.Ctx, *traces)
 		if err != nil {
 			x.logger.Warn("Trace consumer errored out", zap.Error(err))
-			obsreport.EndTraceDataReceiveOp(seg.Ctx, tracesegment.TypeStr, totalSpansCount, err)
+			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, err)
 			continue
 		}
-		obsreport.EndTraceDataReceiveOp(seg.Ctx, tracesegment.TypeStr, totalSpansCount, nil)
+		obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, totalSpansCount, nil)
 	}
 }
