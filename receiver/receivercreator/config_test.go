@@ -21,13 +21,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+	corecomponenttest "go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/componenttest"
 )
 
 type mockHostFactories struct {
-	componenttest.NopHost
+	corecomponenttest.NopHost
 	factories  component.Factories
 	extensions map[configmodels.Extension]component.ServiceExtension
 }
@@ -55,7 +57,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Conf
 	factories, err := componenttest.ExampleComponents()
 	require.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -71,7 +73,7 @@ func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *configmodels.Conf
 
 func TestLoadConfig(t *testing.T) {
 	_, cfg := exampleCreatorFactory(t)
-	factory := &Factory{}
+	factory := NewFactory()
 
 	r0 := cfg.Receivers["receiver_creator"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
