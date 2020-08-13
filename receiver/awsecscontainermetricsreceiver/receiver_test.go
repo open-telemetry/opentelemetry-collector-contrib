@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package kubeletstatsreceiver
+package awsecscontainermetricsreceiver
 
 import (
 	"context"
@@ -20,24 +20,48 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
-func TestMetricsReceiver(t *testing.T) {
-	factory := NewFactory()
+func TestReceiver(t *testing.T) {
+	factory := &Factory{}
 	cfg := factory.CreateDefaultConfig().(*Config)
-	o, err := cfg.getReceiverOptions()
-	require.NoError(t, err)
-
-	metricsReceiver, err := newReceiver(
-		o, zap.NewNop(), &fakeRestClient{},
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
 		&testbed.MockMetricConsumer{},
 	)
+
 	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
-	err = metricsReceiver.Start(ctx, componenttest.NewNopHost())
+
+	err = r.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	err = metricsReceiver.Shutdown(ctx)
+
+	err = r.Shutdown(ctx)
+	require.NoError(t, err)
+}
+
+func TestCollectDataFromEndpoint(t *testing.T) {
+	factory := &Factory{}
+	cfg := factory.CreateDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		new(exportertest.SinkMetricsExporterOld),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx)
 	require.NoError(t, err)
 }

@@ -12,25 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package redisreceiver
+package awsecscontainermetrics
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.uber.org/zap"
 )
 
-func TestRedisRunnable(t *testing.T) {
-	consumer := &exportertest.SinkMetricsExporter{}
-	logger, _ := zap.NewDevelopment()
-	runner := newRedisRunnable(context.Background(), newFakeClient(), "", consumer, logger)
-	err := runner.Setup()
-	require.Nil(t, err)
-	err = runner.Run()
-	require.Nil(t, err)
-	// + 6 because there are two keyspace entries each of which has three metrics
-	require.Equal(t, len(getDefaultRedisMetrics())+6, consumer.MetricsCount())
+func TestGenerateDummyMetrics(t *testing.T) {
+	data := GenerateDummyMetrics()
+
+	require.NotNil(t, data)
 }

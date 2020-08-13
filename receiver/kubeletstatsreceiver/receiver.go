@@ -31,7 +31,7 @@ var _ component.MetricsReceiver = (*receiver)(nil)
 type receiver struct {
 	options  *receiverOptions
 	logger   *zap.Logger
-	consumer consumer.MetricsConsumerOld
+	consumer consumer.MetricsConsumer
 	runner   *interval.Runner
 	rest     kubelet.RestClient
 }
@@ -45,7 +45,7 @@ type receiverOptions struct {
 
 func newReceiver(rOptions *receiverOptions,
 	logger *zap.Logger, rest kubelet.RestClient,
-	next consumer.MetricsConsumerOld) (*receiver, error) {
+	next consumer.MetricsConsumer) (*receiver, error) {
 	return &receiver{
 		options:  rOptions,
 		logger:   logger,

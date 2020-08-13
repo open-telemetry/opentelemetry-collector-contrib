@@ -35,14 +35,14 @@ var _ component.MetricsReceiver = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.MetricsConsumer.
 type receiverCreator struct {
-	nextConsumer    consumer.MetricsConsumerOld
+	nextConsumer    consumer.MetricsConsumer
 	logger          *zap.Logger
 	cfg             *Config
 	observerHandler observerHandler
 }
 
 // newReceiverCreator creates the receiver_creator with the given parameters.
-func newReceiverCreator(logger *zap.Logger, nextConsumer consumer.MetricsConsumerOld, cfg *Config) (component.MetricsReceiver, error) {
+func newReceiverCreator(logger *zap.Logger, nextConsumer consumer.MetricsConsumer, cfg *Config) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}

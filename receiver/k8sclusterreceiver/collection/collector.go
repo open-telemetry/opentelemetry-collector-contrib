@@ -16,6 +16,7 @@ package collection
 
 import (
 	"reflect"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
@@ -111,8 +112,8 @@ func (dc *DataCollector) UpdateMetricsStore(obj interface{}, rm []*resourceMetri
 	}
 }
 
-func (dc *DataCollector) CollectMetricData() []consumerdata.MetricsData {
-	return dc.metricsStore.getMetricData()
+func (dc *DataCollector) CollectMetricData(currentTime time.Time) []consumerdata.MetricsData {
+	return dc.metricsStore.getMetricData(currentTime)
 }
 
 // SyncMetrics updates the metric store with latest metrics from the kubernetes object.
