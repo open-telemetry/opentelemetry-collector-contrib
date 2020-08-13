@@ -222,8 +222,14 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 				Message: aws.String(causeMessage),
 				Stack:   make([]awsxray.StackFrame, 0),
 			})
-
+			// when append causes `exceptions` to outgrow its existing
+			// capacity, re-allocation will happen so the place
+			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
+			// consequently, we can not write `exception.Cause = newException.ID`
+			// below.
 			newException := &exceptions[len(exceptions)-1]
+			exceptions[len(exceptions)-2].Cause = newException.ID
+
 			exception.Cause = newException.ID
 			exception = newException
 			// We peeked to a line starting with "\tat", a stack frame, so continue straight to processing.

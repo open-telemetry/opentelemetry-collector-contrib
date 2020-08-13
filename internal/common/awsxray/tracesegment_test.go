@@ -356,7 +356,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Remote:  Bool(true),
 											Stack: []StackFrame{
 												{
-													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/go"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/aws.go"),
 													Line:  Int(139),
 													Label: String("glob..func7"),
 												},
@@ -443,7 +443,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 											Remote:  Bool(true),
 											Stack: []StackFrame{
 												{
-													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/go"),
+													Path:  String("github.com/aws/aws-xray-sdk-go@v1.1.0/xray/aws.go"),
 													Line:  Int(149),
 													Label: String("glob..func8"),
 												},
