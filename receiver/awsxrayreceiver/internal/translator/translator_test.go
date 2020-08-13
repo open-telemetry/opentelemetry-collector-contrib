@@ -848,7 +848,7 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 		attrs[conventions.AttributeExceptionMessage] = pdata.NewAttributeValueString(
 			*excp.Message)
 		attrs[conventions.AttributeExceptionStacktrace] = pdata.NewAttributeValueString(
-			convertStackFramesToStackTraceStr(excp.Stack))
+			convertStackFramesToStackTraceStr(excp))
 		res = append(res, eventProps{
 			name:  conventions.AttributeExceptionEventName,
 			attrs: attrs,
