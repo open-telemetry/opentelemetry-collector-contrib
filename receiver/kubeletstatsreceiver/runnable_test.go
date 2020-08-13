@@ -22,7 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -47,7 +48,7 @@ var allMetricGroups = map[kubelet.MetricGroup]bool{
 }
 
 func TestRunnable(t *testing.T) {
-	consumer := &fakeConsumer{}
+	consumer := &exportertest.SinkMetricsExporter{}
 	options := &receiverOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -62,11 +63,11 @@ func TestRunnable(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Run()
 	require.NoError(t, err)
-	require.Equal(t, dataLen, len(consumer.mds))
+	require.Equal(t, dataLen, len(consumer.AllMetrics()))
 }
 
 func TestRunnableWithMetadata(t *testing.T) {
-	consumer := &fakeConsumer{}
+	consumer := &exportertest.SinkMetricsExporter{}
 	options := &receiverOptions{
 		extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 		metricGroupsToCollect: allMetricGroups,
@@ -82,10 +83,11 @@ func TestRunnableWithMetadata(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Run()
 	require.NoError(t, err)
-	require.Equal(t, dataLen, len(consumer.mds))
+	require.Equal(t, dataLen, len(consumer.AllMetrics()))
 
 	// make sure container.id labels are set on all container metrics
-	for _, md := range consumer.mds {
+	for _, metrics := range consumer.AllMetrics() {
+		md := pdatautil.MetricsToMetricsData(metrics)[0]
 		for _, m := range md.Metrics {
 			if strings.HasPrefix(m.MetricDescriptor.GetName(), "container.") {
 				_, ok := md.Resource.Labels[string(kubelet.MetadataLabelContainerID)]
@@ -146,7 +148,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			consumer := &fakeConsumer{}
+			consumer := &exportertest.SinkMetricsExporter{}
 			r := newRunnable(
 				context.Background(),
 				consumer,
@@ -164,7 +166,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 			err = r.Run()
 			require.NoError(t, err)
 
-			require.Equal(t, test.dataLen, len(consumer.mds))
+			require.Equal(t, test.dataLen, len(consumer.AllMetrics()))
 		})
 	}
 }
@@ -220,7 +222,7 @@ func TestClientErrors(t *testing.T) {
 			}
 			r := newRunnable(
 				context.Background(),
-				&fakeConsumer{},
+				&exportertest.SinkMetricsExporter{},
 				&fakeRestClient{
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
@@ -253,9 +255,13 @@ func TestConsumerErrors(t *testing.T) {
 				extraMetadataLabels:   nil,
 				metricGroupsToCollect: allMetricGroups,
 			}
+			sink := &exportertest.SinkMetricsExporter{}
+			if test.fail {
+				sink.SetConsumeMetricsError(errors.New("failed"))
+			}
 			r := newRunnable(
 				context.Background(),
-				&fakeConsumer{fail: test.fail},
+				sink,
 				&fakeRestClient{},
 				zap.New(core),
 				options,
@@ -267,22 +273,6 @@ func TestConsumerErrors(t *testing.T) {
 			require.Equal(t, test.numLogs, observedLogs.Len())
 		})
 	}
-}
-
-type fakeConsumer struct {
-	fail bool
-	mds  []consumerdata.MetricsData
-}
-
-func (c *fakeConsumer) ConsumeMetricsData(
-	ctx context.Context,
-	md consumerdata.MetricsData,
-) error {
-	if c.fail {
-		return errors.New("")
-	}
-	c.mds = append(c.mds, md)
-	return nil
 }
 
 var _ kubelet.RestClient = (*fakeRestClient)(nil)
