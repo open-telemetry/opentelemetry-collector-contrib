@@ -28,11 +28,11 @@ type ec2MetadataImpl struct {
 var _ ec2MetadataProvider = (*ec2MetadataImpl)(nil)
 
 func (md *ec2MetadataImpl) available(ctx context.Context) bool {
-	return ec2metadata.New(md.sess).AvailableWithContext(ctx)
+	meta := ec2metadata.New(md.sess)
+	return meta.AvailableWithContext(ctx)
 }
 
-func (md *ec2MetadataImpl) get(ctx context.Context) (doc ec2metadata.EC2InstanceIdentityDocument, err error) {
+func (md *ec2MetadataImpl) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	meta := ec2metadata.New(md.sess)
-	doc, err = meta.GetInstanceIdentityDocumentWithContext(ctx)
-	return
+	return meta.GetInstanceIdentityDocumentWithContext(ctx)
 }
