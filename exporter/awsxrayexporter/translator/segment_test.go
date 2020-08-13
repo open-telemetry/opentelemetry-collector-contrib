@@ -152,7 +152,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	parentSpanID := newSegmentID()
 	enterpriseAppID := "25F2E73B-4769-4C79-9DF3-7EBE85D571EA"
 	attributes := make(map[string]interface{})
-	attributes[semconventions.AttributeDBSystem] = "sql"
+	attributes[semconventions.AttributeDBSystem] = "mysql"
 	attributes[semconventions.AttributeDBName] = "customers"
 	attributes[semconventions.AttributeDBStatement] = spanName
 	attributes[semconventions.AttributeDBUser] = "userprefsvc"
