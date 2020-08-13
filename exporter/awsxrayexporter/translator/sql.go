@@ -26,7 +26,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 		filtered    = make(map[string]string)
 		sqlData     awsxray.SQLData
 		dbURL       string
-		dbType      string
+		dbSystem    string
 		dbInstance  string
 		dbStatement string
 		dbUser      string
@@ -37,7 +37,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 		case semconventions.AttributeDBConnectionString:
 			dbURL = value
 		case semconventions.AttributeDBSystem:
-			dbType = value
+			dbSystem = value
 		case semconventions.AttributeDBName:
 			dbInstance = value
 		case semconventions.AttributeDBStatement:
@@ -49,7 +49,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 		}
 	}
 
-	if dbType != "sql" {
+	if !isSQL(dbSystem) {
 		// Either no DB attributes or this is not an SQL DB.
 		return attributes, nil
 	}
@@ -60,9 +60,38 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 	url := dbURL + "/" + dbInstance
 	sqlData = awsxray.SQLData{
 		URL:            aws.String(url),
-		DatabaseType:   aws.String(dbType),
+		DatabaseType:   aws.String(dbSystem),
 		User:           aws.String(dbUser),
 		SanitizedQuery: aws.String(dbStatement),
 	}
 	return filtered, &sqlData
+}
+
+func isSQL(system string) bool {
+	switch system {
+	case "db2":
+		fallthrough
+	case "derby":
+		fallthrough
+	case "hive":
+		fallthrough
+	case "mariadb":
+		fallthrough
+	case "mssql":
+		fallthrough
+	case "mysql":
+		fallthrough
+	case "oracle":
+		fallthrough
+	case "postgresql":
+		fallthrough
+	case "sqlite":
+		fallthrough
+	case "teradata":
+		fallthrough
+	case "other_sql":
+		return true
+	default:
+	}
+	return false
 }
