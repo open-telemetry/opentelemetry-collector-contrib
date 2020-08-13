@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 const (
@@ -30,7 +30,7 @@ const (
 	separator = ":"
 )
 
-func addCause(seg *tracesegment.Segment, span *pdata.Span) {
+func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	if seg.Cause == nil {
 		return
 	}
@@ -51,13 +51,13 @@ func addCause(seg *tracesegment.Segment, span *pdata.Span) {
 	}
 
 	switch seg.Cause.Type {
-	case tracesegment.CauseTypeExceptionID:
+	case awsxray.CauseTypeExceptionID:
 		// Right now the X-Ray exporter always genearates a new ID:
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/cause.go#L74
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/cause.go#L112
 		// so we can only pass this as part of the status message as a fallback mechanism
 		span.Status().SetMessage(*seg.Cause.ExceptionID)
-	case tracesegment.CauseTypeObject:
+	case awsxray.CauseTypeObject:
 		evts := span.Events()
 		// not sure whether there are existing events, so
 		// append new empty events instead
@@ -84,7 +84,7 @@ func addCause(seg *tracesegment.Segment, span *pdata.Span) {
 	}
 }
 
-func convertStackFramesToStackTraceStr(stack []tracesegment.StackFrame) string {
+func convertStackFramesToStackTraceStr(stack []awsxray.StackFrame) string {
 	var b strings.Builder
 	for _, frame := range stack {
 		line := strconv.Itoa(*frame.Line)

@@ -20,10 +20,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-func populateInstrumentationLibrary(seg *tracesegment.Segment, ils *pdata.InstrumentationLibrarySpans) {
+func populateInstrumentationLibrary(seg *awsxray.Segment, ils *pdata.InstrumentationLibrarySpans) {
 	if seg.AWS != nil && seg.AWS.XRay != nil {
 		xr := seg.AWS.XRay
 		il := ils.InstrumentationLibrary()
@@ -33,7 +33,7 @@ func populateInstrumentationLibrary(seg *tracesegment.Segment, ils *pdata.Instru
 	}
 }
 
-func addSdkToResource(seg *tracesegment.Segment, attrs *pdata.AttributeMap) {
+func addSdkToResource(seg *awsxray.Segment, attrs *pdata.AttributeMap) {
 	if seg.AWS != nil && seg.AWS.XRay != nil {
 		xr := seg.AWS.XRay
 		addString(xr.SDKVersion, conventions.AttributeTelemetrySDKVersion, attrs)

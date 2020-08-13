@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 
 // ToTraces converts X-Ray segment (and its subsegments) to an OT ResourceSpans.
 func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
-	var seg tracesegment.Segment
+	var seg awsxray.Segment
 	err := json.Unmarshal(rawSeg, &seg)
 	if err != nil {
 		// return 1 as total segment (&subsegments) count
@@ -83,7 +83,7 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 	return &traceData, count, nil
 }
 
-func segToSpans(seg tracesegment.Segment,
+func segToSpans(seg awsxray.Segment,
 	traceID, parentID *string,
 	spans *pdata.SpanSlice, startingIndex int) (int, *pdata.Span, error) {
 
@@ -123,7 +123,7 @@ func segToSpans(seg tracesegment.Segment,
 }
 
 func populateSpan(
-	seg *tracesegment.Segment,
+	seg *awsxray.Segment,
 	traceID, parentID *string,
 	span *pdata.Span) error {
 
@@ -146,7 +146,7 @@ func populateSpan(
 	addStartTime(seg.StartTime, span)
 
 	addEndTime(seg.EndTime, span)
-	addBool(seg.InProgress, AWSXRayInProgressAttribute, &attrs)
+	addBool(seg.InProgress, awsxray.AWSXRayInProgressAttribute, &attrs)
 	addString(seg.User, conventions.AttributeEnduserID, &attrs)
 
 	addHTTP(seg, span)
@@ -157,7 +157,7 @@ func populateSpan(
 		return err
 	}
 
-	addBool(seg.Traced, AWSXRayTracedAttribute, &attrs)
+	addBool(seg.Traced, awsxray.AWSXRayTracedAttribute, &attrs)
 
 	// TODO: transform the `metadata` field once X-Ray exporter
 	// figures out how they are going to unmarshal it from otlp
@@ -167,7 +167,7 @@ func populateSpan(
 	return nil
 }
 
-func populateResource(seg *tracesegment.Segment, rs *pdata.Resource) {
+func populateResource(seg *awsxray.Segment, rs *pdata.Resource) {
 	// allocate a new attribute map within the Resource in the pdata.ResourceSpans allocated above
 	attrs := rs.Attributes()
 	attrs.InitEmptyWithCapacity(initAttrCapacity)
@@ -181,10 +181,10 @@ func populateResource(seg *tracesegment.Segment, rs *pdata.Resource) {
 			&attrs)
 	}
 
-	addString(seg.ResourceARN, AWSXRayResourceARNAttribute, &attrs)
+	addString(seg.ResourceARN, awsxray.AWSXRayResourceARNAttribute, &attrs)
 }
 
-func totalSegmentsCount(seg tracesegment.Segment) int {
+func totalSegmentsCount(seg awsxray.Segment) int {
 	subsegmentCount := 0
 	for _, s := range seg.Subsegments {
 		subsegmentCount += totalSegmentsCount(s)

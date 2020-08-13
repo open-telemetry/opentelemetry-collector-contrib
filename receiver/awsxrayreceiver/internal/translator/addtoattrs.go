@@ -18,20 +18,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-const (
-	// AWSXRayInProgressAttribute is the `in_progress` flag in an X-Ray segment
-	AWSXRayInProgressAttribute = "aws.xray.inprogress"
-
-	// AWSXRayXForwardedForAttribute is the `x_forwarded_for` flag in an X-Ray segment
-	AWSXRayXForwardedForAttribute = "aws.xray.x_forwarded_for"
-
-	// AWSXRayResourceARNAttribute is the `resource_arn` field in an X-Ray segment
-	AWSXRayResourceARNAttribute = "aws.xray.resource_arn"
-
-	// AWSXRayTracedAttribute is the `traced` field in an X-Ray subsegment
-	AWSXRayTracedAttribute = "aws.xray.traced"
-)
-
 func addBool(val *bool, attrKey string, attrs *pdata.AttributeMap) {
 	if val != nil {
 		attrs.UpsertBool(attrKey, *val)
@@ -44,8 +30,8 @@ func addString(val *string, attrKey string, attrs *pdata.AttributeMap) {
 	}
 }
 
-func addInt(val *int, attrKey string, attrs *pdata.AttributeMap) {
+func addInt64(val *int64, attrKey string, attrs *pdata.AttributeMap) {
 	if val != nil {
-		attrs.UpsertInt(attrKey, int64(*val))
+		attrs.UpsertInt(attrKey, *val)
 	}
 }

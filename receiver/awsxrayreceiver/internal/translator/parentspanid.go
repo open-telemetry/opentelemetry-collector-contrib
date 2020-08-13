@@ -17,10 +17,10 @@ package translator
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-func addParentSpanID(seg *tracesegment.Segment, parentID *string, span *pdata.Span) {
+func addParentSpanID(seg *awsxray.Segment, parentID *string, span *pdata.Span) {
 	if parentID != nil {
 		// `seg` is an embedded subsegment. Please refer to:
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-subsegments

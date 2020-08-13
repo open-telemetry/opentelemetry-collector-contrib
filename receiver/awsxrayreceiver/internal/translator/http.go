@@ -19,10 +19,10 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-func addHTTP(seg *tracesegment.Segment, span *pdata.Span) {
+func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
 	span.Status().InitEmpty() // by default this sets the code to `Status_Ok`
 	if seg.HTTP == nil {
 		return
@@ -44,7 +44,7 @@ func addHTTP(seg *tracesegment.Segment, span *pdata.Span) {
 
 		addString(req.UserAgent, conventions.AttributeHTTPUserAgent, &attrs)
 		addString(req.URL, conventions.AttributeHTTPURL, &attrs)
-		addBool(req.XForwardedFor, AWSXRayXForwardedForAttribute, &attrs)
+		addBool(req.XForwardedFor, awsxray.AWSXRayXForwardedForAttribute, &attrs)
 	}
 
 	if resp := seg.HTTP.Response; resp != nil {
@@ -55,10 +55,10 @@ func addHTTP(seg *tracesegment.Segment, span *pdata.Span) {
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
 			span.Status().SetCode(pdata.StatusCode(otStatus))
-			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, int64(*resp.Status))
+			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 
-		addInt(resp.ContentLength, conventions.AttributeHTTPResponseContentLength, &attrs)
+		addInt64(resp.ContentLength, conventions.AttributeHTTPResponseContentLength, &attrs)
 	}
 
 }

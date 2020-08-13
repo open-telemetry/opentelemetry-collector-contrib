@@ -20,11 +20,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	expTrans "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-func addAWSToResource(aws *tracesegment.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	if aws == nil {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/aws.go#L153
 		// this implies that the current segment being processed is not generated
@@ -58,14 +57,14 @@ func addAWSToResource(aws *tracesegment.AWSData, attrs *pdata.AttributeMap) {
 	}
 }
 
-func addAWSToSpan(aws *tracesegment.AWSData, attrs *pdata.AttributeMap) {
+func addAWSToSpan(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	if aws != nil {
-		addString(aws.AccountID, expTrans.AWSAccountAttribute, attrs)
-		addString(aws.Operation, expTrans.AWSOperationAttribute, attrs)
-		addString(aws.RemoteRegion, expTrans.AWSRegionAttribute, attrs)
-		addString(aws.RequestID, expTrans.AWSRequestIDAttribute, attrs)
-		addString(aws.QueueURL, expTrans.AWSQueueURLAttribute, attrs)
-		addString(aws.TableName, expTrans.AWSTableNameAttribute, attrs)
+		addString(aws.AccountID, awsxray.AWSAccountAttribute, attrs)
+		addString(aws.Operation, awsxray.AWSOperationAttribute, attrs)
+		addString(aws.RemoteRegion, awsxray.AWSRegionAttribute, attrs)
+		addString(aws.RequestID, awsxray.AWSRequestIDAttribute, attrs)
+		addString(aws.QueueURL, awsxray.AWSQueueURLAttribute, attrs)
+		addString(aws.TableName, awsxray.AWSTableNameAttribute, attrs)
 		// the "retries" field is dropped
 	}
 }

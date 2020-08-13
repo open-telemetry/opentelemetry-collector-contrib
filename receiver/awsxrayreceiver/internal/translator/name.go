@@ -19,8 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 
-	expTrans "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/translator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 const (
@@ -28,7 +27,7 @@ const (
 	validRemoteNamespace = "remote"
 )
 
-func addNameAndNamespace(seg *tracesegment.Segment, span *pdata.Span) error {
+func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L193
 	span.SetName(*seg.Name)
 	if seg.Namespace == nil {
@@ -44,7 +43,7 @@ func addNameAndNamespace(seg *tracesegment.Segment, span *pdata.Span) error {
 	switch *seg.Namespace {
 	case validAWSNamespace:
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L144
-		attrs.UpsertString(expTrans.AWSServiceAttribute, *seg.Name)
+		attrs.UpsertString(awsxray.AWSServiceAttribute, *seg.Name)
 
 	case validRemoteNamespace:
 		// no op

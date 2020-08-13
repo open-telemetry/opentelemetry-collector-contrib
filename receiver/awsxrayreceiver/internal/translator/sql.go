@@ -21,10 +21,10 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-func addSQLToSpan(sql *tracesegment.SQLData, attrs *pdata.AttributeMap) error {
+func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
 	if sql == nil {
 		return nil
 	}

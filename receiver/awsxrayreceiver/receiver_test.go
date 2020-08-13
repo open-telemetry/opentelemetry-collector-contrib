@@ -43,6 +43,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
+const (
+	segmentHeader = "{\"format\": \"json\", \"version\": 1}\n"
+)
+
 func TestConsumerCantBeNil(t *testing.T) {
 	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
 	assert.NoError(t, err, "should resolve UDP address")
@@ -159,10 +163,10 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverName, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join(".", "testdata", "rawsegment", "ddbSample.txt"))
+	content, err := ioutil.ReadFile(path.Join("../../internal/common/awsxray", "testdata", "ddbSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
-	err = writePacket(t, addr, string(content))
+	err = writePacket(t, addr, segmentHeader+string(content))
 	assert.NoError(t, err, "can not write packet in the happy case")
 
 	sink := rcvr.(*xrayReceiver).consumer.(*exportertest.SinkTraceExporter)
@@ -185,7 +189,7 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
-	err = writePacket(t, addr, `{"format": "json", "version": 1}`+"\ninvalidSegment")
+	err = writePacket(t, addr, segmentHeader+"invalidSegment")
 	assert.NoError(t, err, "can not write packet in the "+receiverName+" case")
 
 	testutil.WaitFor(t, func() bool {
@@ -210,10 +214,10 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 		true)
 	defer rcvr.Shutdown(context.Background())
 
-	content, err := ioutil.ReadFile(path.Join(".", "testdata", "rawsegment", "serverSample.txt"))
+	content, err := ioutil.ReadFile(path.Join("../../internal/common/awsxray", "testdata", "serverSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
-	err = writePacket(t, addr, string(content))
+	err = writePacket(t, addr, segmentHeader+string(content))
 	assert.NoError(t, err, "can not write packet")
 
 	testutil.WaitFor(t, func() bool {
