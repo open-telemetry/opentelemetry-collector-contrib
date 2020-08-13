@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -31,7 +33,7 @@ var _ interval.Runnable = (*redisRunnable)(nil)
 // and feeding them to a metricsConsumer.
 type redisRunnable struct {
 	ctx             context.Context
-	metricsConsumer consumer.MetricsConsumerOld
+	metricsConsumer consumer.MetricsConsumer
 	redisSvc        *redisSvc
 	redisMetrics    []*redisMetric
 	logger          *zap.Logger
@@ -43,7 +45,7 @@ func newRedisRunnable(
 	ctx context.Context,
 	client client,
 	serviceName string,
-	metricsConsumer consumer.MetricsConsumerOld,
+	metricsConsumer consumer.MetricsConsumer,
 	logger *zap.Logger,
 ) *redisRunnable {
 	return &redisRunnable{
@@ -109,7 +111,7 @@ func (r *redisRunnable) Run() error {
 
 	md := newMetricsData(metrics, r.serviceName)
 
-	err = r.metricsConsumer.ConsumeMetricsData(r.ctx, *md)
+	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md}))
 	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
 	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, numTimeSeries, err)
 
