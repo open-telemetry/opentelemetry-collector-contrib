@@ -47,9 +47,6 @@ func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time
 	childProcess := exec.Command(args[0], argsSlice...)
 	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
-	// Handle the parent process being killed
-	handleParentProcessKill(childProcess)
-
 	// Handle the subprocess standard and error outputs in goroutines
 	stdoutReader, stdoutErr := childProcess.StdoutPipe()
 	if stdoutErr != nil {

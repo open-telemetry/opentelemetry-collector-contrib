@@ -48,6 +48,10 @@ const (
 	delayMultiplier float64 = 2.0
 	// initialDelay is the initial delay before a process is restarted
 	initialDelay time.Duration = 1 * time.Second
+	// default path to scrape metrics at endpoint
+	defaultMetricsPath = "/metrics"
+	// defaul timeout for a scrape
+	defaultScrapeTimeout = 10 * time.Second
 )
 
 type prometheusExecReceiver struct {
@@ -90,17 +94,6 @@ func new(params component.ReceiverCreateParams, config *Config, consumer consume
 		promReceiverConfig: promReceiverConfig,
 		port:               config.Port,
 	}, nil
-}
-
-// Start creates the configs and calls the function that handles the prometheus_exec receiver
-func (per *prometheusExecReceiver) Start(ctx context.Context, host component.Host) error {
-	// Shutdown channel
-	per.shutdownCh = make(chan struct{})
-
-	// Start the process with the built config
-	go per.manageProcess(context.Background(), host)
-
-	return nil
 }
 
 // getPromReceiverConfig returns the Prometheus receiver config
@@ -156,6 +149,16 @@ func extractName(cfg *Config) string {
 	}
 	// fall back to the first part of the string, prometheus_exec
 	return splitName[0]
+}
+
+// Start creates the configs and calls the function that handles the prometheus_exec receiver
+func (per *prometheusExecReceiver) Start(ctx context.Context, host component.Host) error {
+	// Shutdown channel
+	per.shutdownCh = make(chan struct{})
+
+	go per.manageProcess(context.Background(), host)
+
+	return nil
 }
 
 // manageProcess is an infinite loop that handles starting and restarting Prometheus-receiver/subprocess pairs

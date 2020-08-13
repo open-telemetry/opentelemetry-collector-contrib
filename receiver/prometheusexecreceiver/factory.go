@@ -31,9 +31,7 @@ const (
 	// Key to invoke this receiver (prometheus_exec)
 	typeStr = "prometheus_exec"
 
-	defaultMetricsPath        = "/metrics"
 	defaultCollectionInterval = 60 * time.Second
-	defaultScrapeTimeout      = 10 * time.Second
 )
 
 // Factory is the factory struct for prometheusexec

@@ -32,12 +32,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// TestEndToEnd loads the test config.yaml and tests two things:
-// 1. makes sure the prometheus_exec config without an exec key throws an error
-// 2. An end-to-end test where metrics are scraped from a fake exporter that exposes Promtheus metrics,
-// and makes sure that exporter subprocess is restarted correctly
-func TestEndToEnd(t *testing.T) {
-	// Load the config from the yaml file
+// loadConfigAssertNoError loads the test config and asserts there are no errors, and returns the receiver wanted
+func loadConfigAssertNoError(t *testing.T, receiverConfigName string) configmodels.Receiver {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -49,11 +45,14 @@ func TestEndToEnd(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, config)
 
-	// Receiver without exec key, error expected and checked within function
-	assertErrorWhenExecKeyMissing(t, config.Receivers["prometheus_exec"])
+	return config.Receivers[receiverConfigName]
+}
 
-	// Normal test with port undefined by user
-	endToEndScrapeTest(t, config.Receivers["prometheus_exec/end_to_end_test/2"], "end-to-end port not defined")
+// TestExecKeyMissing loads config and asserts there is an error with that config
+func TestExecKeyMissing(t *testing.T) {
+	receiverConfig := loadConfigAssertNoError(t, "prometheus_exec")
+
+	assertErrorWhenExecKeyMissing(t, receiverConfig)
 }
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
@@ -62,10 +61,15 @@ func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig configmodel
 	assert.Error(t, err, "new() didn't return an error")
 }
 
-// endToEndScrapeTest scrapes a test endpoint (test_prometheus_exporter.go) twice, and between each scrape yields the execution with Sleep() to wait for the subprocess (exporter) to restar
-// - wait time is about 1s - to fail and restart, meaning it verifies three things: the scrape is successful (twice), the process was restarted correctly when failed and the underlying
-// Prometheus receiver was correctly stopped and then restarted. For extra testing the metrics values are different every time the subprocess exporter is started
-// And the uniqueness of the metric scraped is verified
+// TestEndToEnd loads the test config and completes an 2e2 test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
+func TestEndToEnd(t *testing.T) {
+	receiverConfig := loadConfigAssertNoError(t, "prometheus_exec/end_to_end_test/2")
+
+	// e2e test with port undefined by user
+	endToEndScrapeTest(t, receiverConfig, "end-to-end port not defined")
+}
+
+// endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, testName string) {
 	sink := &exportertest.SinkMetricsExporter{}
 	wrapper, err := new(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
@@ -78,36 +82,26 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, test
 
 	var metrics []pdata.Metrics
 
-	// Make sure a first scrape works by checking for metrics in the test metrics exporter "sink", only return true when there are metrics
-	const waitFor = 15 * time.Second
+	// Make sure two scrapes have been completed (this implies the process was started, scraped, restarted and finally scraped a second time)
+	const waitFor = 20 * time.Second
 	const tick = 100 * time.Millisecond
 	require.Eventuallyf(t, func() bool {
 		got := sink.AllMetrics()
-		if len(got) != 0 {
-			metrics = got
-			return true
-		}
-		return false
-	}, waitFor, tick, "No metrics were collected after %v for the first scrape (%v)", waitFor, testName)
-
-	// Make sure the second scrape is successful, and validate that the metrics are different in the second scrape
-	require.Eventuallyf(t, func() bool {
-		got := sink.AllMetrics()
-		if len(got) <= len(metrics) {
+		if len(got) < 2 {
 			return false
 		}
 		metrics = got
 		return true
-	}, waitFor, tick, "No metrics were collected after %v for the second scrape (%v)", waitFor, testName)
+	}, waitFor, tick, "Two scrapes not completed after %v (%v)", waitFor, testName)
 
-	assertTwoUniqueValuesScraped(t, &metrics)
+	assertTwoUniqueValuesScraped(t, metrics)
 }
 
 // assertTwoUniqueValuesScraped iterates over the found metrics and returns true if it finds at least 2 unique metrics, meaning the endpoint
 // was successfully scraped twice AND the subprocess being handled was stopped and restarted
-func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice *[]pdata.Metrics) {
+func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 	var value float64
-	for i, val := range *metricsSlice {
+	for i, val := range metricsSlice {
 		temp := pdatautil.MetricsToMetricsData(val)[0].Metrics[0].Timeseries[0].Points[0].GetDoubleValue()
 		if i != 0 && temp != value {
 			return
@@ -117,5 +111,5 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice *[]pdata.Metrics) {
 		}
 	}
 
-	assert.Fail(t, "All %v scraped values were non-unique", len(*metricsSlice))
+	assert.Fail(t, "All %v scraped values were non-unique", len(metricsSlice))
 }
