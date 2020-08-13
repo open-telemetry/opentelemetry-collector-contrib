@@ -15,6 +15,7 @@
 package awsxray
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -690,7 +691,7 @@ func TestTraceBodyUnMarshalling(t *testing.T) {
 		content, err := ioutil.ReadFile(tc.samplePath)
 		assert.NoError(t, err, fmt.Sprintf("[%s] can not read raw segment", tc.testCase))
 
-		_, body, err := SplitHeaderBody(content)
+		body, err := splitContent(content)
 		assert.NoError(t, err, fmt.Sprintf("[%s] can split body", tc.testCase))
 		assert.True(t, len(body) > 0, fmt.Sprintf("[%s] body length is 0", tc.testCase))
 
@@ -756,4 +757,12 @@ func TestValidate(t *testing.T) {
 			assert.NoError(t, err, "Validate should not fail")
 		}
 	}
+}
+
+func splitContent(buf []byte) ([]byte, error) {
+	loc := bytes.IndexByte(buf, byte('\n'))
+	if loc == -1 {
+		return nil, fmt.Errorf("unable to split incoming data as header and segment, incoming bytes: %v", buf)
+	}
+	return buf[loc+1:], nil
 }
