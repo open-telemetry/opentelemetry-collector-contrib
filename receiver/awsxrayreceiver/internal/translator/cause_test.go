@@ -17,26 +17,26 @@ package translator
 import (
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray/util"
 )
 
 func TestConvertStackFramesToStackTraceStr(t *testing.T) {
 	excp := awsxray.Exception{
-		Type:    util.String("exceptionType"),
-		Message: util.String("exceptionMessage"),
+		Type:    aws.String("exceptionType"),
+		Message: aws.String("exceptionMessage"),
 		Stack: []awsxray.StackFrame{
 			{
-				Path:  util.String("path0"),
-				Line:  util.Int(10),
-				Label: util.String("label0"),
+				Path:  aws.String("path0"),
+				Line:  aws.Int(10),
+				Label: aws.String("label0"),
 			},
 			{
-				Path:  util.String("path1"),
-				Line:  util.Int(11),
-				Label: util.String("label1"),
+				Path:  aws.String("path1"),
+				Line:  aws.Int(11),
+				Label: aws.String("label1"),
 			},
 		},
 	}

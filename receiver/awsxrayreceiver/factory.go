@@ -17,6 +17,7 @@ package awsxrayreceiver
 import (
 	"context"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -25,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -64,7 +64,7 @@ func createDefaultConfig() configmodels.Receiver {
 			Region:      "",
 			RoleARN:     "",
 			AWSEndpoint: "",
-			LocalMode:   util.Bool(false),
+			LocalMode:   aws.Bool(false),
 		},
 	}
 }
