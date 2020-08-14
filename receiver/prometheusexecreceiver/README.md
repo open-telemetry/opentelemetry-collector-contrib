@@ -1,7 +1,7 @@
 # prometheus_exec Receiver
 
 ### Why?
-This receiver makes it easy for a user to collect metrics from third-party services **via Prometheus exporters**. It's meant for people who want a plug-and-play solution to getting metrics from those third-party services that sometimes simply don't natively export metrics or speak any instrumentation protocols (MySQL, Apache, Nginx, etc.) while taking advantage of the large [Prometheus exporters]((https://prometheus.io/docs/instrumenting/exporters/)) ecosystem. 
+This receiver makes it easy for a user to collect metrics from third-party services **via Prometheus exporters**. It's meant for people who want a plug-and-play solution to getting metrics from those third-party services that sometimes simply don't natively export metrics or speak any instrumentation protocols (MySQL, Apache, Nginx, JVM, etc.) while taking advantage of the large [Prometheus exporters]((https://prometheus.io/docs/instrumenting/exporters/)) ecosystem. 
 
 ### How?
 Through the configuration file, you can indicate which binaries to run (usually [Prometheus exporters](https://prometheus.io/docs/instrumenting/exporters/), which are custom binaries that expose the third-party services' metrics using the Prometheus protocol) and `prometheus_exec` will take care of starting the specified binaries with their equivalent Prometheus receiver. This receiver also supports starting binaries with flags and environment variables, retrying them with exponentional backoff if they crash, string templating, and random port assignments.
