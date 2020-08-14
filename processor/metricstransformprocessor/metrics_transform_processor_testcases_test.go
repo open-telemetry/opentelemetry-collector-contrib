@@ -904,5 +904,34 @@ var (
 					build(),
 			},
 		},
+		// delete label value
+		{
+			name: "delete a label value",
+			transforms: []internalTransform{
+				{
+					MetricName: "metric",
+					Action:     Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:     DeleteLabelValue,
+								Label:      "label1",
+								LabelValue: "label1value1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"label1value1", "label2value"}).addTimeseries(1, []string{"label1value2", "label2value"}).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"label1value2", "label2value"}).
+					build(),
+			},
+		},
 	}
 )

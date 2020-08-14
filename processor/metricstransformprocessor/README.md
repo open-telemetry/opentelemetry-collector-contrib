@@ -140,3 +140,13 @@ transforms:
 operation:
   - action: toggle_scalar_data_type
 ```
+
+### Delete Label Value
+```yaml
+# delete the label value 'value' of the label 'label'
+...
+operation:
+  - action: delete_label_value
+    label: label
+    label_value: value
+```
