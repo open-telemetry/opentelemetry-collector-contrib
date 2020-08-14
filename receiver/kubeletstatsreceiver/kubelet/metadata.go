@@ -72,7 +72,7 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 	return out
 }
 
-// setExtraLabels sets extra labels in `lables` map based on provided metadata label.
+// setExtraLabels sets extra labels in `labels` map based on provided metadata label.
 func (m *Metadata) setExtraLabels(
 	labels map[string]string, podUID string,
 	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
