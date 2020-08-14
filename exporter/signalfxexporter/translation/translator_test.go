@@ -1936,3 +1936,78 @@ func generateFloatPtr(i float64) *float64 {
 	var iPtr = i
 	return &iPtr
 }
+
+func TestDimensionsEqual(t *testing.T) {
+	tests := []struct {
+		name   string
+		d1, d2 []*sfxpb.Dimension
+		want   bool
+	}{
+		{
+			name: "eq_both_nil",
+			d1:   nil,
+			d2:   nil,
+			want: true,
+		},
+		{
+			name: "ne_one_nil",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   nil,
+			want: false,
+		},
+		{
+			name: "eq_one_dim",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			want: true,
+		},
+		{
+			name: "ne_one_dim_val_mismatch",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "x"}},
+			want: false,
+		},
+		{
+			name: "ne_one_dim_key_mismatch",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "x", Value: "v0"}},
+			want: false,
+		},
+		{
+			name: "eq_two_dims",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: true,
+		},
+		{
+			name: "eq_two_dims_different_order",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k1", Value: "v1"}, {Key: "k0", Value: "v0"}},
+			want: true,
+		},
+		{
+			name: "eq_three_dims_different_order",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			d2:   []*sfxpb.Dimension{{Key: "k2", Value: "v2"}, {Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: true,
+		},
+		{
+			name: "ne_first_two_dims_match",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			want: false,
+		},
+		{
+			name: "ne_first_two_dims_match_reversed",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			b := dimensionsEqual(test.d1, test.d2)
+			require.Equal(t, test.want, b)
+		})
+	}
+}

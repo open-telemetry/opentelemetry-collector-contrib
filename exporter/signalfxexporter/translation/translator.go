@@ -16,7 +16,6 @@ package translation
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -422,13 +421,36 @@ func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) []
 	var out [][2]*sfxpb.DataPoint
 	for _, o1 := range operand1Pts {
 		for _, o2 := range operand2Pts {
-			if reflect.DeepEqual(o1.Dimensions, o2.Dimensions) {
+			if dimensionsEqual(o1.Dimensions, o2.Dimensions) {
 				pair := [2]*sfxpb.DataPoint{o1, o2}
 				out = append(out, pair)
 			}
 		}
 	}
 	return out
+}
+
+func dimensionsEqual(d1 []*sfxpb.Dimension, d2 []*sfxpb.Dimension) bool {
+	if d1 == nil && d2 == nil {
+		return true
+	}
+	if len(d1) != len(d2) {
+		return false
+	}
+	// avoid allocating a map
+	for _, dim1 := range d1 {
+		matched := false
+		for _, dim2 := range d2 {
+			if dim1.Key == dim2.Key && dim1.Value == dim2.Value {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
 }
 
 func calculateNewMetric(
