@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
@@ -82,6 +83,7 @@ func components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
+		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
