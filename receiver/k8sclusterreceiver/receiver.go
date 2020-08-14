@@ -77,7 +77,8 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 }
 
 func (kr *kubernetesReceiver) dispatchMetricData(ctx context.Context) {
-	for _, m := range kr.resourceWatcher.dataCollector.CollectMetricData() {
+	now := time.Now()
+	for _, m := range kr.resourceWatcher.dataCollector.CollectMetricData(now) {
 		c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 
 		numTimeseries, numPoints := obsreport.CountMetricPoints(m)

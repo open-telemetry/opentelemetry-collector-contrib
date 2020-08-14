@@ -1,0 +1,20 @@
+extensions:
+  host_observer:
+  host_observer/all_settings:
+    refresh_interval: 20s
+
+service:
+  extensions: [host_observer, host_observer/all_settings]
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
+
+# Data pipeline is required to load the config.
+receivers:
+  examplereceiver:
+processors:
+  exampleprocessor:
+exporters:
+  exampleexporter:

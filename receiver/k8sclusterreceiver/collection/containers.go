@@ -144,8 +144,8 @@ func getAllContainerLabels(cs corev1.ContainerStatus,
 
 	out := utils.CloneStringMap(dims)
 
-	out[containerKeyID] = utils.StripContainerID(cs.ContainerID)
-	out[containerKeySpecName] = cs.Name
+	out[conventions.AttributeContainerID] = utils.StripContainerID(cs.ContainerID)
+	out[conventions.AttributeK8sContainer] = cs.Name
 	out[conventions.AttributeContainerImage] = cs.Image
 
 	return out
@@ -169,7 +169,7 @@ func getMetadataForContainer(cs corev1.ContainerStatus) *KubernetesMetadata {
 	}
 
 	return &KubernetesMetadata{
-		resourceIDKey: containerKeyID,
+		resourceIDKey: conventions.AttributeContainerID,
 		resourceID:    ResourceID(utils.StripContainerID(cs.ContainerID)),
 		metadata:      metadata,
 	}

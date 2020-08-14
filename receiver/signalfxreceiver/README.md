@@ -20,7 +20,7 @@ The following settings are optional:
   tandem with identical configuration option for [SignalFx
   exporter](../../exporter/signalfxexporter/README.md) to preserve datapoint
   origin.
-* `tls` (no default): This is an optional object used to specify if TLS should be used for
+* `tls_settings` (no default): This is an optional object used to specify if TLS should be used for
   incoming connections.
     * `cert_file`: Specifies the certificate file to use for TLS connection.
       Note: Both `key_file` and `cert_file` are required for TLS connection.

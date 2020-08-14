@@ -25,7 +25,7 @@ import (
 // use of EndpointsWatcher to poll for endpoints by embedding this struct
 // in the observer struct.
 type EndpointsWatcher struct {
-	ListEndpoints     func() []Endpoint
+	Endpointslister   EndpointsLister
 	RefreshInterval   time.Duration
 	existingEndpoints map[EndpointID]Endpoint
 	stop              chan struct{}
@@ -57,7 +57,7 @@ func (ew *EndpointsWatcher) ListAndWatch(listener Notify) {
 // refreshEndpoints updates the listener with the latest list
 // of active endpoints.
 func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
-	latestEndpoints := ew.ListEndpoints()
+	latestEndpoints := ew.Endpointslister.ListEndpoints()
 
 	// Create map from ID to endpoint for lookup.
 	latestEndpointsMap := make(map[EndpointID]bool, len(latestEndpoints))
@@ -106,4 +106,11 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 // StopListAndWatch polling the ListEndpoints.
 func (ew *EndpointsWatcher) StopListAndWatch() {
 	close(ew.stop)
+}
+
+// EndpointsLister that provides a list of endpoints.
+type EndpointsLister interface {
+	// ListEndpoints provides a list of endpoints and is expected to be
+	// implemented by an observer looking for endpoints.
+	ListEndpoints() []Endpoint
 }

@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -50,7 +51,9 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: defaultEndpoint,
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: defaultEndpoint,
+		},
 	}
 }
 

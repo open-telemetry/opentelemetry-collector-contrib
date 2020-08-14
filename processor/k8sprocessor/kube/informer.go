@@ -15,6 +15,8 @@
 package kube
 
 import (
+	"context"
+
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -55,7 +57,7 @@ func informerListFuncWithSelectors(client kubernetes.Interface, namespace string
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		opts.LabelSelector = ls.String()
 		opts.FieldSelector = fs.String()
-		return client.CoreV1().Pods(namespace).List(opts)
+		return client.CoreV1().Pods(namespace).List(context.Background(), opts)
 	}
 
 }
@@ -64,6 +66,6 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		opts.LabelSelector = ls.String()
 		opts.FieldSelector = fs.String()
-		return client.CoreV1().Pods(namespace).Watch(opts)
+		return client.CoreV1().Pods(namespace).Watch(context.Background(), opts)
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -53,7 +54,9 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "signalfx/allsettings",
 			},
-			Endpoint: "localhost:9943",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: "localhost:9943",
+			},
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: true,
 			},
@@ -66,10 +69,14 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: typeStr,
 				NameVal: "signalfx/tls",
 			},
-			Endpoint: ":9943",
-			TLSCredentials: &configtls.TLSSetting{
-				CertFile: "/test.crt",
-				KeyFile:  "/test.key",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: ":9943",
+				TLSSetting: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "/test.crt",
+						KeyFile:  "/test.key",
+					},
+				},
 			},
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: false,

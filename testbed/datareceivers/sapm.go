@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -40,7 +41,9 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 // Start the receiver.
 func (sr *SapmDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
 	sapmCfg := sapmreceiver.Config{
-		Endpoint:                     fmt.Sprintf("localhost:%d", sr.Port),
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
+		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{AccessTokenPassthrough: true},
 	}
 	var err error

@@ -35,7 +35,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		filtered    = make(map[string]string)
 		sqlData     SQLData
 		dbURL       string
-		dbType      string
+		dbSystem    string
 		dbInstance  string
 		dbStatement string
 		dbUser      string
@@ -43,11 +43,11 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 
 	for key, value := range attributes {
 		switch key {
-		case semconventions.AttributeDBURL:
+		case semconventions.AttributeDBConnectionString:
 			dbURL = value
-		case semconventions.AttributeDBType:
-			dbType = value
-		case semconventions.AttributeDBInstance:
+		case semconventions.AttributeDBSystem:
+			dbSystem = value
+		case semconventions.AttributeDBName:
 			dbInstance = value
 		case semconventions.AttributeDBStatement:
 			dbStatement = value
@@ -58,7 +58,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		}
 	}
 
-	if dbType != "sql" {
+	if !isSQL(dbSystem) {
 		// Either no DB attributes or this is not an SQL DB.
 		return attributes, nil
 	}
@@ -69,9 +69,38 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 	url := dbURL + "/" + dbInstance
 	sqlData = SQLData{
 		URL:            url,
-		DatabaseType:   dbType,
+		DatabaseType:   dbSystem,
 		User:           dbUser,
 		SanitizedQuery: dbStatement,
 	}
 	return filtered, &sqlData
+}
+
+func isSQL(system string) bool {
+	switch system {
+	case "db2":
+		fallthrough
+	case "derby":
+		fallthrough
+	case "hive":
+		fallthrough
+	case "mariadb":
+		fallthrough
+	case "mssql":
+		fallthrough
+	case "mysql":
+		fallthrough
+	case "oracle":
+		fallthrough
+	case "postgresql":
+		fallthrough
+	case "sqlite":
+		fallthrough
+	case "teradata":
+		fallthrough
+	case "other_sql":
+		return true
+	default:
+	}
+	return false
 }

@@ -20,10 +20,10 @@ import (
 )
 
 func cpuMetrics(prefix string, s *stats.CPUStats) []*metricspb.Metric {
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		cpuUsageMetric(prefix, s),
 		cpuCumulativeUsageMetric(prefix, s),
-	}, s.Time.Time)
+	}
 }
 
 func cpuUsageMetric(prefix string, s *stats.CPUStats) *metricspb.Metric {

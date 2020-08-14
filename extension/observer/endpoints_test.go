@@ -99,6 +99,33 @@ func TestEndpointToEnv(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Host port",
+			endpoint: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "127.0.0.1",
+				Details: HostPort{
+					Name:      "process_name",
+					Command:   "./cmd --config config.yaml",
+					Port:      2379,
+					Transport: ProtocolUDP,
+					IsIPv6:    true,
+				},
+			},
+			want: EndpointEnv{
+				"type": map[string]interface{}{
+					"port": true,
+					"pod":  false,
+				},
+				"endpoint":  "127.0.0.1",
+				"name":      "process_name",
+				"command":   "./cmd --config config.yaml",
+				"is_ipv6":   true,
+				"port":      uint16(2379),
+				"transport": ProtocolUDP,
+			},
+			wantErr: false,
+		},
+		{
 			name: "Unsupported endpoint",
 			endpoint: Endpoint{
 				ID:      EndpointID("port_id"),
