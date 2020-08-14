@@ -25,6 +25,7 @@ func taskMetrics(prefix string, stats *TaskStats) []*metricspb.Metric {
 		memUsageMetric(prefix, stats.MemoryUsage),
 		memMaxUsageMetric(prefix, stats.MemoryMaxUsage),
 		memLimitMetric(prefix, stats.MemoryLimit),
+		memUtilizedMetric(prefix, stats.MemoryUtilized),
 		rxBytesPerSecond(prefix, stats.NetworkRateRxBytesPerSecond),
 		txBytesPerSecond(prefix, stats.NetworkRateTxBytesPerSecond),
 		rxBytes(prefix, stats.NetworkRxBytes),

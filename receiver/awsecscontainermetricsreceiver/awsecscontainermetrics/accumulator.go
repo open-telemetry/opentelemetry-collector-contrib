@@ -76,7 +76,7 @@ func (acc *metricDataAccumulator) accumulate(
 }
 
 func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
-	var memUsage, memMaxUsage, memLimit uint64
+	var memUsage, memMaxUsage, memLimit, memUtilized uint64
 	var netRateRx, netRateTx float64
 	var rBytes, rPackets, rErrors, rDropped uint64
 	var tBytes, tPackets, tErrors, tDropped uint64
@@ -87,6 +87,8 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		memUsage += *value.Memory.Usage
 		memMaxUsage += *value.Memory.MaxUsage
 		memLimit += *value.Memory.Limit
+		memoryUtilizedInMb := (*value.Memory.Usage - value.Memory.Stats["cache"]) / BytesInMiB
+		memUtilized += memoryUtilizedInMb
 
 		netRateRx += *value.NetworkRate.RxBytesPerSecond
 		netRateTx += *value.NetworkRate.TxBytesPerSecond
@@ -123,6 +125,7 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		MemoryUsage:                 &memUsage,
 		MemoryMaxUsage:              &memMaxUsage,
 		MemoryLimit:                 &memLimit,
+		MemoryUtilized:              &memUtilized,
 		NetworkRateRxBytesPerSecond: &netRateRx,
 		NetworkRateTxBytesPerSecond: &netRateTx,
 		NetworkRxBytes:              &rBytes,

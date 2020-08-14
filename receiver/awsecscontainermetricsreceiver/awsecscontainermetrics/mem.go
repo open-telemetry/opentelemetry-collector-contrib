@@ -20,11 +20,19 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
+const (
+	// BytesInMiB is the number of bytes in a MebiByte.
+	BytesInMiB = 1024 * 1024
+)
+
 func memMetrics(prefix string, stats *MemoryStats) []*metricspb.Metric {
+	memoryUtilizedInMb := (*stats.Usage - stats.Stats["cache"]) / BytesInMiB
+	stats.MemoryUtilized = &memoryUtilizedInMb
 	return applyCurrentTime([]*metricspb.Metric{
 		memUsageMetric(prefix, stats.Usage),
 		memMaxUsageMetric(prefix, stats.MaxUsage),
 		memLimitMetric(prefix, stats.Limit),
+		memUtilizedMetric(prefix, stats.MemoryUtilized),
 	}, time.Now())
 }
 
@@ -38,4 +46,8 @@ func memMaxUsageMetric(prefix string, value *uint64) *metricspb.Metric {
 
 func memLimitMetric(prefix string, value *uint64) *metricspb.Metric {
 	return intGauge(prefix+"memory.limit", "Bytes", value)
+}
+
+func memUtilizedMetric(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"memory.utilized", "Bytes", value)
 }

@@ -34,6 +34,10 @@ type MemoryStats struct {
 
 	// Memory limit.
 	Limit *uint64 `json:"limit,omitempty"`
+
+	Stats map[string]uint64 `json:"stats,omitempty"`
+
+	MemoryUtilized *uint64
 }
 
 type DiskStats struct {
@@ -80,6 +84,7 @@ type TaskStats struct {
 	MemoryUsage    *uint64
 	MemoryMaxUsage *uint64
 	MemoryLimit    *uint64
+	MemoryUtilized *uint64
 
 	NetworkRateRxBytesPerSecond *float64
 	NetworkRateTxBytesPerSecond *float64
