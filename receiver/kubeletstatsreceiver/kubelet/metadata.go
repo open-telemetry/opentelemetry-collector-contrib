@@ -94,7 +94,7 @@ func (m *Metadata) setExtraLabels(
 		}
 		labels[conventions.AttributeContainerID] = containerID
 	case MetadataLabelVolumeType:
-		err := m.getExtraVolumeMetadata(podUID, extraMetadataFrom, labels)
+		err := m.setExtraVolumeMetadata(podUID, extraMetadataFrom, labels)
 		if err != nil {
 			return err
 		}
@@ -126,7 +126,7 @@ func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
 }
 
-func (m *Metadata) getExtraVolumeMetadata(podUID string, volumeName string, labels map[string]string) error {
+func (m *Metadata) setExtraVolumeMetadata(podUID string, volumeName string, labels map[string]string) error {
 	uid := types.UID(podUID)
 	for _, pod := range m.PodsMetadata.Items {
 		if pod.UID == uid {
