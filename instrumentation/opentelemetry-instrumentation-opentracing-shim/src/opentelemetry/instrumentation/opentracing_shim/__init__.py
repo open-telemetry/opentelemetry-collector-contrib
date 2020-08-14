@@ -570,6 +570,11 @@ class TracerShim(opentracing.Tracer):
             :class:`ScopeManagerShim`.
         """
 
+        current_span = get_current_span()
+
+        if child_of is None and current_span is not INVALID_SPAN_CONTEXT:
+            child_of = SpanShim(None, None, current_span)
+
         span = self.start_span(
             operation_name=operation_name,
             child_of=child_of,
