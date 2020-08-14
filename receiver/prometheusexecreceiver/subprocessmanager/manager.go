@@ -43,7 +43,7 @@ func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time
 		argsSlice = args[1:]
 	}
 
-	// Create the command object and attach current os environment + environment variables defined by user
+	// Create the command object and attach current os environment + environment variables defined by the user
 	childProcess := exec.Command(args[0], argsSlice...)
 	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
