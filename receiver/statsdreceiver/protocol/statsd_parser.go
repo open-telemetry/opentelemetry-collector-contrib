@@ -90,6 +90,7 @@ func buildPoint(metricType, metricValue string) (*metricspb.Point, error) {
 
 	switch metricType {
 	case "c":
+		// TODO: support both Int64 and Double values.
 		i, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
 			f, err := strconv.ParseFloat(metricValue, 64)

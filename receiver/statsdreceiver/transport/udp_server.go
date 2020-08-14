@@ -68,6 +68,7 @@ func (u *udpServer) ListenAndServe(
 			u.wg.Add(1)
 			bufCopy := make([]byte, n)
 			copy(bufCopy, buf)
+			// TODO: remove this goroutine spawning
 			go func() {
 				u.handlePacket(parser, nextConsumer, bufCopy)
 				u.wg.Done()

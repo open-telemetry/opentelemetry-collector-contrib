@@ -32,15 +32,15 @@ General format is:
 
 ### Counter
 
-`<name>:<value>|c`
+`<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 <!-- ### Gauge
 
-`<name>:<value>|g`
+`<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
 ### Timer/Histogram
 
-`<name>:<value>|<ms/h>|@<sample-rate>` -->
+`<name>:<value>|<ms/h>|@<sample-rate>|#<tag1-key>:<tag1-value>` -->
 
 ## Testing
 
