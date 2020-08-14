@@ -916,7 +916,7 @@ var (
 							configOperation: Operation{
 								Action:     DeleteLabelValue,
 								Label:      "label1",
-								LabelValue: "value1",
+								LabelValue: "label1value1",
 							},
 						},
 					},
@@ -929,7 +929,7 @@ var (
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
-					addTimeseries(1, []string{"value2", "label2value"}).
+					addTimeseries(1, []string{"label1value2", "label2value"}).
 					build(),
 			},
 		},
