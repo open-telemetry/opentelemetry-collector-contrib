@@ -51,7 +51,8 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "statsd/receiver_settings",
 		},
 		NetAddr: confignet.NetAddr{
-			Endpoint: "localhost:12345",
+			Endpoint:  "localhost:12345",
+			Transport: "custom_transport",
 		},
 	}, r1)
 }

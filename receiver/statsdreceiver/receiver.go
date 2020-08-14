@@ -16,6 +16,8 @@ package statsdreceiver
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -57,7 +59,7 @@ func New(
 		config.NetAddr.Endpoint = "localhost:8125"
 	}
 
-	server, err := transport.NewUDPServer(config.NetAddr.Endpoint)
+	server, err := buildTransportServer(config)
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +73,16 @@ func New(
 		parser:       &protocol.StatsDParser{},
 	}
 	return r, nil
+}
+
+func buildTransportServer(config Config) (transport.Server, error) {
+	// TODO: Add TCP/unix socket transport implementations
+	switch strings.ToLower(config.NetAddr.Transport) {
+	case "", "udp":
+		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	}
+
+	return nil, fmt.Errorf("unsupported transport %q for receiver %q", config.NetAddr.Transport, config.Name())
 }
 
 // StartMetricsReception starts a UDP server that can process StatsD messages.

@@ -29,6 +29,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr             = "statsd"
 	defaultBindEndpoint = "localhost:8125"
+	defaultTransport    = "udp"
 )
 
 // Factory is the factory for StatsD receiver.
@@ -55,7 +56,8 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 			NameVal: typeStr,
 		},
 		NetAddr: confignet.NetAddr{
-			Endpoint: defaultBindEndpoint,
+			Endpoint:  defaultBindEndpoint,
+			Transport: defaultTransport,
 		},
 	}
 }

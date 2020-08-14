@@ -2,6 +2,7 @@ receivers:
   statsd:
   statsd/receiver_settings:
     endpoint: "localhost:12345"
+    transport: "custom_transport"
 
 processors:
   exampleprocessor:

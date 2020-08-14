@@ -16,6 +16,7 @@ package statsdreceiver
 
 import (
 	"context"
+	"errors"
 	"net"
 	"runtime"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
@@ -67,6 +69,20 @@ func Test_statsdreceiver_New(t *testing.T) {
 				},
 				nextConsumer: new(exportertest.SinkMetricsExporterOld),
 			},
+		},
+		{
+			name: "unsupported transport",
+			args: args{
+				config: Config{
+					ReceiverSettings: defaultConfig.ReceiverSettings,
+					NetAddr: confignet.NetAddr{
+						Endpoint:  "localhost:8125",
+						Transport: "unknown",
+					},
+				},
+				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+			},
+			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
 		},
 	}
 	for _, tt := range tests {
