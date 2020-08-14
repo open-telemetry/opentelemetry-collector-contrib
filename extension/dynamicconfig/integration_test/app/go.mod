@@ -9,6 +9,6 @@ require (
 	go.opentelemetry.io/otel/sdk v0.10.0
 )
 
-replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200812154717-3419b5dbcca6
+replace go.opentelemetry.io/contrib => github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200814193941-35b1c89fca24
 
-replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200812154717-3419b5dbcca6
+replace go.opentelemetry.io/contrib/sdk/dynamicconfig => github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200814193941-35b1c89fca24

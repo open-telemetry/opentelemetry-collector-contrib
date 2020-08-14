@@ -49,7 +49,6 @@ type CollectionPeriod string
 // to an unusable value (e.g. arbitrary strings, negative values)
 func (period CollectionPeriod) Proto() (int32, error) {
 	// TODO: check for library to parse time duration
-	// TODO: consider how to open up the list of recommended periods for extension
 	switch period {
 	case "SEC_1":
 		return 1, nil
