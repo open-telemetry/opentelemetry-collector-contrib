@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -55,16 +54,6 @@ func createDefaultConfig() configmodels.Receiver {
 			Env: []subprocessmanager.EnvConfig{},
 		},
 	}
-}
-
-// createTraceReceiver creates a trace receiver based on provided Config, BUT in this case it returns nil since this receiver only support metrics
-func createTraceReceiver(
-	ctx context.Context,
-	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided Config.
