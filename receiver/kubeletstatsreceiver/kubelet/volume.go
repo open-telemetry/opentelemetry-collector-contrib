@@ -86,21 +86,20 @@ func volumeInodesUsedMetric(prefix string, s stats.VolumeStats) *metricspb.Metri
 	)
 }
 
-func getLabelsFromVolume(volume v1.Volume) map[string]string {
+func getLabelsFromVolume(volume v1.Volume, labels map[string]string) {
 	switch {
 	// TODO: Support more types
 	case volume.ConfigMap != nil:
-		return map[string]string{labelVolumeType: "configMap"}
+		labels[labelVolumeType] = "configMap"
 	case volume.DownwardAPI != nil:
-		return map[string]string{labelVolumeType: "downwardAPI"}
+		labels[labelVolumeType] = "downwardAPI"
 	case volume.EmptyDir != nil:
-		return map[string]string{labelVolumeType: "emptyDir"}
+		labels[labelVolumeType] = "emptyDir"
 	case volume.Secret != nil:
-		return map[string]string{labelVolumeType: "secret"}
+		labels[labelVolumeType] = "secret"
 	case volume.PersistentVolumeClaim != nil:
-		return map[string]string{labelVolumeType: "persistentVolumeClaim"}
+		labels[labelVolumeType] = "persistentVolumeClaim"
 	case volume.HostPath != nil:
-		return map[string]string{labelVolumeType: "hostPath"}
+		labels[labelVolumeType] = "hostPath"
 	}
-	return nil
 }

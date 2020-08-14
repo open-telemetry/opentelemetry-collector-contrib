@@ -33,7 +33,7 @@ const (
 
 var supportedLabels = map[MetadataLabel]bool{
 	MetadataLabelContainerID: true,
-	labelVolumeType:          true,
+	MetadataLabelVolumeType:  true,
 }
 
 // ValidateMetadataLabelsConfig validates that provided list of metadata labels is supported
@@ -94,13 +94,9 @@ func (m *Metadata) setExtraLabels(
 		}
 		labels[conventions.AttributeContainerID] = containerID
 	case MetadataLabelVolumeType:
-		extraLabels, err := m.getExtraVolumeMetadata(podUID, extraMetadataFrom)
+		err := m.getExtraVolumeMetadata(podUID, extraMetadataFrom, labels)
 		if err != nil {
 			return err
-		}
-
-		for k, v := range extraLabels {
-			labels[k] = v
 		}
 	}
 	return nil
@@ -130,17 +126,18 @@ func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
 }
 
-func (m *Metadata) getExtraVolumeMetadata(podUID string, volumeName string) (map[string]string, error) {
+func (m *Metadata) getExtraVolumeMetadata(podUID string, volumeName string, labels map[string]string) error {
 	uid := types.UID(podUID)
 	for _, pod := range m.PodsMetadata.Items {
 		if pod.UID == uid {
 			for _, volume := range pod.Spec.Volumes {
 				if volumeName == volume.Name {
-					return getLabelsFromVolume(volume), nil
+					getLabelsFromVolume(volume, labels)
+					return nil
 				}
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
+	return fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }
