@@ -924,7 +924,7 @@ var (
 			},
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
-					addTimeseries(1, []string{"value1", "label2value"}).addTimeseries(1, []string{"value2", "label2value"}).
+					addTimeseries(1, []string{"label1value1", "label2value"}).addTimeseries(1, []string{"label1value2", "label2value"}).
 					build(),
 			},
 			out: []*metricspb.Metric{
