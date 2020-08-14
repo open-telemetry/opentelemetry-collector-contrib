@@ -83,7 +83,7 @@ func components() (component.Factories, error) {
 		kubeletstatsreceiver.NewFactory(),
 		&simpleprometheusreceiver.Factory{},
 		&k8sclusterreceiver.Factory{},
-		&prometheusexecreceiver.Factory{},
+		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {

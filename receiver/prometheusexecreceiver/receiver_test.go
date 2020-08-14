@@ -37,7 +37,7 @@ func loadConfigAssertNoError(t *testing.T, receiverConfigName string) configmode
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[factory.Type()] = factory
 
 	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
