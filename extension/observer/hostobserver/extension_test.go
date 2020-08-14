@@ -167,7 +167,7 @@ func startAndStopObserver(
 		logger:                zap.NewNop(),
 		observerName:          "host_observer/1",
 		getConnections:        getConnections,
-		newProcess:            process.NewProcess,
+		getProcess:            process.NewProcess,
 		collectProcessDetails: collectProcessDetails,
 	}
 
@@ -176,7 +176,7 @@ func startAndStopObserver(
 	}
 
 	require.NotNil(t, ml.getConnections)
-	require.NotNil(t, ml.newProcess)
+	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
 	h := &hostObserver{
@@ -404,6 +404,24 @@ func TestCollectConnectionDetails(t *testing.T) {
 				transport: observer.ProtocolUDP,
 			},
 		},
+		{
+			name: "Listening on all interfaces (Darwin)",
+			conn: psnet.ConnectionStat{
+				Family: syscall.AF_INET,
+				Type:   syscall.SOCK_DGRAM,
+				Laddr: psnet.Addr{
+					IP:   "*",
+					Port: 8080,
+				},
+			},
+			want: connectionDetails{
+				ip:        "127.0.0.1",
+				isIPv6:    false,
+				port:      uint16(8080),
+				target:    "127.0.0.1:8080",
+				transport: observer.ProtocolUDP,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -511,7 +529,7 @@ func TestCollectEndpoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := endpointsLister{
 				logger:                zap.NewNop(),
-				newProcess:            process.NewProcess,
+				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
 			}
 
@@ -520,11 +538,11 @@ func TestCollectEndpoints(t *testing.T) {
 			}
 
 			if tt.newProc != nil {
-				e.newProcess = tt.newProc
+				e.getProcess = tt.newProc
 			}
 
 			require.NotNil(t, e.collectProcessDetails)
-			require.NotNil(t, e.newProcess)
+			require.NotNil(t, e.getProcess)
 
 			if got := e.collectEndpoints(tt.conns); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("collectEndpoints() = %v, want %v", got, tt.want)

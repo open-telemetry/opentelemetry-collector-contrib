@@ -38,7 +38,7 @@ type endpointsLister struct {
 
 	// For testing
 	getConnections        func() ([]net.ConnectionStat, error)
-	newProcess            func(pid int32) (*process.Process, error)
+	getProcess            func(pid int32) (*process.Process, error)
 	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
@@ -52,7 +52,7 @@ func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension
 				logger:                logger,
 				observerName:          config.Name(),
 				getConnections:        getConnections,
-				newProcess:            process.NewProcess,
+				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
 			},
 		},
@@ -139,7 +139,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 	}
 
 	for pid, conns := range connsByPID {
-		proc, err := e.newProcess(pid)
+		proc, err := e.getProcess(pid)
 		if err != nil {
 			e.logger.Warn("Could not examine process (it might have terminated already)")
 			continue
