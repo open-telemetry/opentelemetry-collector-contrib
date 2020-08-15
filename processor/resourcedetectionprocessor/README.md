@@ -25,7 +25,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
 
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
-    * cloud.provider (ec2)
+    * cloud.provider (aws)
     * cloud.account.id
     * cloud.region
     * cloud.zone
