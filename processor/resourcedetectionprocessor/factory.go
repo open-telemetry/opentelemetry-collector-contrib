@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
 )
@@ -47,9 +48,10 @@ type Factory struct {
 
 // NewFactory creates a new factory for resourcedetection processor.
 func NewFactory() *Factory {
-	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.Detector{
-		env.TypeStr: &env.Detector{},
-		gce.TypeStr: gce.NewDetector(),
+	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
+		env.TypeStr: env.NewDetector,
+		gce.TypeStr: gce.NewDetector,
+		ec2.TypeStr: ec2.NewDetector,
 	})
 
 	return &Factory{
