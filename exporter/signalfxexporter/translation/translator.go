@@ -372,22 +372,14 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 		case ActionCalculateNewMetric:
-			var operand1, operand2 *sfxpb.DataPoint
-			for _, dp := range processedDataPoints {
-				if dp.Metric == tr.Operand1Metric {
-					operand1 = dp
-				} else if dp.Metric == tr.Operand2Metric {
-					operand2 = dp
+			pairs := calcNewMetricInputPairs(processedDataPoints, tr)
+			for _, pair := range pairs {
+				newPt := calculateNewMetric(logger, pair[0], pair[1], tr)
+				if newPt == nil {
+					continue
 				}
+				processedDataPoints = append(processedDataPoints, newPt)
 			}
-			if operand1 == nil || operand2 == nil {
-				continue
-			}
-			newPt := calculateNewMetric(logger, operand1, operand2, tr)
-			if newPt == nil {
-				continue
-			}
-			processedDataPoints = append(processedDataPoints, newPt)
 
 		case ActionAggregateMetric:
 			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint
@@ -415,6 +407,50 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 	}
 
 	return processedDataPoints
+}
+
+func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
+	var operand1Pts, operand2Pts []*sfxpb.DataPoint
+	for _, dp := range processedDataPoints {
+		if dp.Metric == tr.Operand1Metric {
+			operand1Pts = append(operand1Pts, dp)
+		} else if dp.Metric == tr.Operand2Metric {
+			operand2Pts = append(operand2Pts, dp)
+		}
+	}
+	var out [][2]*sfxpb.DataPoint
+	for _, o1 := range operand1Pts {
+		for _, o2 := range operand2Pts {
+			if dimensionsEqual(o1.Dimensions, o2.Dimensions) {
+				pair := [2]*sfxpb.DataPoint{o1, o2}
+				out = append(out, pair)
+			}
+		}
+	}
+	return out
+}
+
+func dimensionsEqual(d1 []*sfxpb.Dimension, d2 []*sfxpb.Dimension) bool {
+	if d1 == nil && d2 == nil {
+		return true
+	}
+	if len(d1) != len(d2) {
+		return false
+	}
+	// avoid allocating a map
+	for _, dim1 := range d1 {
+		matched := false
+		for _, dim2 := range d2 {
+			if dim1.Key == dim2.Key && dim1.Value == dim2.Value {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
 }
 
 func calculateNewMetric(
