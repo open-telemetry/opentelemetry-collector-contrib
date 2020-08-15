@@ -452,6 +452,7 @@ func md() consumerdata.MetricsData {
 					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "direction"},
+						{Key: "interface"},
 						{Key: "host"},
 						{Key: "kubernetes_node"},
 						{Key: "kubernetes_cluster"},
@@ -462,6 +463,9 @@ func md() consumerdata.MetricsData {
 						StartTimestamp: &timestamp.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
 							HasValue: true,
 						}, {
 							Value:    "host0",
@@ -486,6 +490,9 @@ func md() consumerdata.MetricsData {
 						StartTimestamp: &timestamp.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
 							HasValue: true,
 						}, {
 							Value:    "host0",

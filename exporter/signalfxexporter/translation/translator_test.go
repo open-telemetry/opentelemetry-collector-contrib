@@ -336,7 +336,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric",
-					Dimensions:        []string{"dim"},
+					WithoutDimensions: []string{"dim"},
 					AggregationMethod: AggregationMethodCount,
 				},
 			},
@@ -344,7 +344,7 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
-			name: "aggregate_metric_invalid_no_dimensions",
+			name: "aggregate_metric_invalid_no_dimension_key",
 			trs: []Rule{
 				{
 					Action:            ActionAggregateMetric,
@@ -353,7 +353,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				},
 			},
 			wantDimensionsMap: nil,
-			wantError: "fields \"metric_name\", \"dimensions\", and \"aggregation_method\" " +
+			wantError: "fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" " +
 				"are required for \"aggregate_metric\" translation rule",
 		},
 		{
@@ -362,7 +362,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric",
-					Dimensions:        []string{"dim"},
+					WithoutDimensions: []string{"dim"},
 					AggregationMethod: AggregationMethod("invalid"),
 				},
 			},
@@ -1178,7 +1178,7 @@ func TestTranslateDataPoints(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
-					Dimensions:        []string{"dim1", "dim2"},
+					WithoutDimensions: []string{"dim3"},
 					AggregationMethod: "count",
 				},
 			},
@@ -1201,10 +1201,6 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dim3",
 							Value: "different",
-						},
-						{
-							Key:   "dim4",
-							Value: "just-one",
 						},
 					},
 				},
@@ -1244,6 +1240,10 @@ func TestTranslateDataPoints(t *testing.T) {
 							Key:   "dim2",
 							Value: "val2",
 						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
 					},
 				},
 				{
@@ -1256,21 +1256,6 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dim1",
 							Value: "val1",
-						},
-					},
-				},
-
-				// invalid datapoint without required dimension, must be dropped
-				{
-					Metric:    "metric1",
-					Timestamp: msec,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(2),
-					},
-					Dimensions: []*sfxpb.Dimension{
-						{
-							Key:   "dim2",
-							Value: "val2",
 						},
 					},
 				},
@@ -1333,7 +1318,7 @@ func TestTranslateDataPoints(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
-					Dimensions:        []string{"dim1"},
+					WithoutDimensions: []string{"dim2"},
 					AggregationMethod: "sum",
 				},
 			},
@@ -1431,7 +1416,7 @@ func TestTranslateDataPoints(t *testing.T) {
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
 					AggregationMethod: "sum",
-					Dimensions:        []string{"dim1"},
+					WithoutDimensions: []string{"dim2"},
 				},
 			},
 			dps: []*sfxpb.DataPoint{
@@ -1447,6 +1432,10 @@ func TestTranslateDataPoints(t *testing.T) {
 							Key:   "dim1",
 							Value: "val1",
 						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
 					},
 				},
 				{
@@ -1459,6 +1448,10 @@ func TestTranslateDataPoints(t *testing.T) {
 					Dimensions: []*sfxpb.Dimension{
 						{
 							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
 							Value: "val1",
 						},
 					},
