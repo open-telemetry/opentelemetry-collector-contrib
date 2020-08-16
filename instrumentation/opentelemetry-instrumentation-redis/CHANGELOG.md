@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.12b0
+
+Released 2020-08-14
+
 - Update default SpanKind to `SpanKind.CLIENT` ([#965](https://github.com/open-telemetry/opentelemetry-python/pull/965))
 - Change package name to opentelemetry-instrumentation-redis
   ([#966](https://github.com/open-telemetry/opentelemetry-python/pull/966))
