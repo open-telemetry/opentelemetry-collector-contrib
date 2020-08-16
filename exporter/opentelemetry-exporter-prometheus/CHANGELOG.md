@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.12b0
+
+Released 2020-08-14
+
 - Change package name to opentelemetry-exporter-prometheus
   ([#953](https://github.com/open-telemetry/opentelemetry-python/pull/953))
 
