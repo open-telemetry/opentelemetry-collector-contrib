@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.12b0
+
+Released 2020-08-14
+
 - Change reference names to opentelemetry-instrumentation-opentracing-shim
   ([#969](https://github.com/open-telemetry/opentelemetry-python/pull/969))
 
