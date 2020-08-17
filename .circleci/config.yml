@@ -128,7 +128,6 @@ commands:
             docker push otel/<< parameters.repo >>:<< parameters.tag >>
             docker push otel/<< parameters.repo >>:latest
 
-<<<<<<< HEAD
   github_issue_generator:
     steps:
       - when:
@@ -139,7 +138,7 @@ commands:
                 name: Generate GitHub Issue
                 command: issuegenerator ${TEST_RESULTS}
                 when: on_fail
-=======
+
   publish_gpu_docker_images:
     parameters:
       repo:
@@ -157,7 +156,6 @@ commands:
           name: Push image
           command: |
             docker push otel/<< parameters.repo >>:gpu
->>>>>>> Add Make target and Circle CI task for GPU Docker image
 
 workflows:
   version: 2
@@ -218,6 +216,12 @@ workflows:
       - windows-msi:
           requires:
             - cross-compile
+          filters:
+            tags:
+              only: /.*/
+      - cudareceiver:
+          requires:
+            - setup
           filters:
             tags:
               only: /.*/

@@ -43,7 +43,7 @@ type CUDAMetricsCollector struct {
 	scrapeInterval time.Duration
 	metricPrefix   string
 	done           chan struct{}
-	logger *zap.Logger
+	logger         *zap.Logger
 }
 
 var NewCUDAMetricsCollector func(d time.Duration, prefix string, logger *zap.Logger, con consumer.MetricsConsumerOld) (*CUDAMetricsCollector, error)
@@ -64,14 +64,8 @@ func newCUDAMetricsCollector(d time.Duration, prefix string, logger *zap.Logger,
 		done:           make(chan struct{}),
 		logger:         logger,
 	}
-				Type:   res.Type,
-				Labels: make(map[string]string, len(res.Labels)),
-			}
-			for k, v := range res.Labels {
-				rsc.Labels[k] = v
-			}
-		}
-	})
+
+	return c, nil
 }
 
 // StartCollection starts a ticker'd goroutine that will scrape and export CUDA metrics periodically.
@@ -81,6 +75,19 @@ func (c *CUDAMetricsCollector) StartCollection() {
 		// TODO: handle inappropriate GPU state
 		return
 	}
+
+	go func() {
+		ticker := time.NewTicker(c.scrapeInterval)
+		for {
+			select {
+			case <-ticker.C:
+				c.scrapeAndExport()
+
+			case <-c.done:
+				return
+			}
+		}
+	}()
 }
 
 // StopCollection stops the collection of metric information

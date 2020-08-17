@@ -86,6 +86,7 @@ func components() (component.Factories, error) {
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 	}
+	receivers = append(receivers, additionalReceivers()...)
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
