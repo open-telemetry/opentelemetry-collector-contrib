@@ -38,7 +38,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200603094226-e3079894b1e8 // indirect
 	gotest.tools v1.4.0 // indirect
-	k8s.io/client-go v0.18.6
+	k8s.io/client-go v0.18.8
 	k8s.io/utils v0.0.0-20200724153422-f32512634ab7 // indirect
 )
 
