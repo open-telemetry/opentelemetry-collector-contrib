@@ -795,7 +795,6 @@ func TestGetDelay(t *testing.T) {
 
 func TestComputeCrashCount(t *testing.T) {
 	per := &prometheusExecReceiver{}
-
 	for _, test := range getDelayAndComputeCrashCountTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := per.computeCrashCount(test.elapsed, test.crashCount)
