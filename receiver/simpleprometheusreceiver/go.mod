@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector v0.8.1-0.20200815205113-8e5c6065eb0e
 	go.uber.org/zap v1.15.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
-	k8s.io/client-go v0.18.3
+	k8s.io/client-go v0.18.8
 )
 
 // Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
