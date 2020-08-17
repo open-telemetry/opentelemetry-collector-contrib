@@ -36,12 +36,14 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
@@ -138,12 +140,16 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		APIURL:      "http://localhost",
 		AccessToken: "access_token",
 	}
-	exp, err := signalfxexporter.New(expCfg, zap.NewNop())
+	exp, err := signalfxexporter.NewFactory().CreateMetricsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, testutil.WaitForPort(t, port))
 	defer exp.Shutdown(context.Background())
-	require.NoError(t, exp.ConsumeMetricsData(context.Background(), want))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(),
+		pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{want})))
 	// Description, unit and start time are expected to be dropped during conversions.
 	for _, metric := range want.Metrics {
 		metric.MetricDescriptor.Description = ""

@@ -42,7 +42,7 @@ func NewSFxMetricsDataReceiver(port int) *SFxMetricsDataReceiver {
 }
 
 // Start the receiver.
-func (sr *SFxMetricsDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
+func (sr *SFxMetricsDataReceiver) Start(tc testbed.TraceDualConsumer, mc testbed.MetricsDualConsumer) error {
 	config := signalfxreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),

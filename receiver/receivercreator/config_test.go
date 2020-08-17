@@ -21,15 +21,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	corecomponenttest "go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/componenttest"
 )
 
 type mockHostFactories struct {
-	corecomponenttest.NopHost
+	componenttest.NopHost
 	factories  component.Factories
 	extensions map[configmodels.Extension]component.ServiceExtension
 }

@@ -16,6 +16,7 @@ package collection
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -59,7 +60,7 @@ func TestMetricsStoreOperations(t *testing.T) {
 		require.True(t, len(ms.metricsCache[u.id]) == len(u.rm))
 		expectedMetricData += len(u.rm)
 	}
-	require.Equal(t, expectedMetricData, len(ms.getMetricData()))
+	require.Equal(t, expectedMetricData, len(ms.getMetricData(time.Now())))
 
 	// Remove non existent item
 	ms.remove(&corev1.Pod{
@@ -77,6 +78,6 @@ func TestMetricsStoreOperations(t *testing.T) {
 	})
 	expectedMetricData -= len(updates[1].rm)
 	require.Equal(t, len(updates)-1, len(ms.metricsCache))
-	require.Equal(t, expectedMetricData, len(ms.getMetricData()))
+	require.Equal(t, expectedMetricData, len(ms.getMetricData(time.Now())))
 
 }

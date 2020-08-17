@@ -24,8 +24,8 @@ import (
 	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
@@ -34,33 +34,23 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	c := cfg.(*Config)
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
 	c := cfg.(*Config)
@@ -68,7 +58,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	c.Realm = "us0"
 
 	exp, err := factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -78,7 +69,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.AccessToken = "testToken"
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -86,8 +78,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateMetricsExporter(t *testing.T) {
-	f := &Factory{}
+func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -102,7 +93,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -154,8 +145,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Factory{}
-			te, err := f.CreateMetricsExporter(zap.NewNop(), tt.config)
+			te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})
@@ -163,7 +153,6 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 }
 
 func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
-	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -174,7 +163,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 		SendCompatibleMetrics: true,
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 
@@ -186,7 +175,6 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
-	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -205,7 +193,7 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 		},
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 
@@ -452,6 +440,7 @@ func md() consumerdata.MetricsData {
 					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "direction"},
+						{Key: "interface"},
 						{Key: "host"},
 						{Key: "kubernetes_node"},
 						{Key: "kubernetes_cluster"},
@@ -462,6 +451,9 @@ func md() consumerdata.MetricsData {
 						StartTimestamp: &timestamp.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
 							HasValue: true,
 						}, {
 							Value:    "host0",
@@ -486,6 +478,9 @@ func md() consumerdata.MetricsData {
 						StartTimestamp: &timestamp.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
+							HasValue: true,
+						}, {
+							Value:    "eth0",
 							HasValue: true,
 						}, {
 							Value:    "host0",

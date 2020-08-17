@@ -15,73 +15,13 @@
 package subprocessmanager
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
 
 	"go.uber.org/zap"
 )
-
-func TestGetDelay(t *testing.T) {
-	var (
-		getDelayTests = []struct {
-			name       string
-			elapsed    time.Duration
-			crashCount int
-			want       time.Duration
-		}{
-			{
-				name:       "healthy process",
-				elapsed:    15 * time.Second,
-				crashCount: 2,
-				want:       1 * time.Second,
-			},
-			{
-				name:       "healthy process",
-				elapsed:    15 * time.Hour,
-				crashCount: 6,
-				want:       1 * time.Second,
-			},
-			{
-				name:       "unhealthy process 1",
-				elapsed:    15 * time.Second,
-				crashCount: 4,
-			},
-			{
-				name:       "unhealthy process 2",
-				elapsed:    15 * time.Second,
-				crashCount: 5,
-			},
-			{
-				name:       "unhealthy process 3",
-				elapsed:    15 * time.Second,
-				crashCount: 6,
-			},
-			{
-				name:       "unhealthy process 4",
-				elapsed:    15 * time.Second,
-				crashCount: 7,
-			},
-		}
-		previousResult time.Duration
-	)
-
-	for _, test := range getDelayTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := GetDelay(test.elapsed, test.crashCount)
-			if test.name == "healthy process" {
-				if !reflect.DeepEqual(got, test.want) {
-					t.Errorf("GetDelay() got = %v, want %v", got, test.want)
-					return
-				}
-			}
-			if previousResult > got {
-				t.Errorf("GetDelay() got = %v, want something larger than the previous result %v", got, previousResult)
-			}
-			previousResult = got
-		})
-	}
-}
 
 func TestFormatEnvSlice(t *testing.T) {
 	var formatEnvSliceTests = []struct {
@@ -151,15 +91,14 @@ func TestFormatEnvSlice(t *testing.T) {
 func TestRun(t *testing.T) {
 	var runTests = []struct {
 		name        string
-		process     *Process
+		process     *SubprocessConfig
 		wantElapsed time.Duration
 		wantErr     bool
 	}{
 		{
 			name: "normal process 1, error process exit",
-			process: &Process{
-				Command: "go run ../testdata/test_crasher.go",
-				Port:    0,
+			process: &SubprocessConfig{
+				Command: "go run testdata/test_crasher.go",
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
@@ -172,9 +111,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "normal process 2, normal process exit",
-			process: &Process{
+			process: &SubprocessConfig{
 				Command: "go version",
-				Port:    0,
 				Env: []EnvConfig{
 					{
 						Name:  "DATA_SOURCE",
@@ -187,9 +125,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			name: "shellquote error",
-			process: &Process{
+			process: &SubprocessConfig{
 				Command: "command flag='something",
-				Port:    0,
 				Env:     []EnvConfig{},
 			},
 			wantElapsed: 0,
@@ -200,7 +137,7 @@ func TestRun(t *testing.T) {
 	for _, test := range runTests {
 		t.Run(test.name, func(t *testing.T) {
 			logger, _ := zap.NewProduction()
-			got, err := test.process.Run(logger)
+			got, err := test.process.Run(context.Background(), logger)
 			if test.wantErr && err == nil {
 				t.Errorf("Run() got = %v, wantErr %v", got, test.wantErr)
 				return
