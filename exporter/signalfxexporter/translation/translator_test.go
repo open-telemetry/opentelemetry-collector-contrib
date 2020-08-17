@@ -336,7 +336,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric",
-					Dimensions:        []string{"dim"},
+					WithoutDimensions: []string{"dim"},
 					AggregationMethod: AggregationMethodCount,
 				},
 			},
@@ -344,7 +344,7 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
-			name: "aggregate_metric_invalid_no_dimensions",
+			name: "aggregate_metric_invalid_no_dimension_key",
 			trs: []Rule{
 				{
 					Action:            ActionAggregateMetric,
@@ -353,7 +353,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				},
 			},
 			wantDimensionsMap: nil,
-			wantError: "fields \"metric_name\", \"dimensions\", and \"aggregation_method\" " +
+			wantError: "fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" " +
 				"are required for \"aggregate_metric\" translation rule",
 		},
 		{
@@ -362,7 +362,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric",
-					Dimensions:        []string{"dim"},
+					WithoutDimensions: []string{"dim"},
 					AggregationMethod: AggregationMethod("invalid"),
 				},
 			},
@@ -1178,7 +1178,7 @@ func TestTranslateDataPoints(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
-					Dimensions:        []string{"dim1", "dim2"},
+					WithoutDimensions: []string{"dim3"},
 					AggregationMethod: "count",
 				},
 			},
@@ -1201,10 +1201,6 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dim3",
 							Value: "different",
-						},
-						{
-							Key:   "dim4",
-							Value: "just-one",
 						},
 					},
 				},
@@ -1244,6 +1240,10 @@ func TestTranslateDataPoints(t *testing.T) {
 							Key:   "dim2",
 							Value: "val2",
 						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
 					},
 				},
 				{
@@ -1256,21 +1256,6 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dim1",
 							Value: "val1",
-						},
-					},
-				},
-
-				// invalid datapoint without required dimension, must be dropped
-				{
-					Metric:    "metric1",
-					Timestamp: msec,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(2),
-					},
-					Dimensions: []*sfxpb.Dimension{
-						{
-							Key:   "dim2",
-							Value: "val2",
 						},
 					},
 				},
@@ -1333,7 +1318,7 @@ func TestTranslateDataPoints(t *testing.T) {
 				{
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
-					Dimensions:        []string{"dim1"},
+					WithoutDimensions: []string{"dim2"},
 					AggregationMethod: "sum",
 				},
 			},
@@ -1431,7 +1416,7 @@ func TestTranslateDataPoints(t *testing.T) {
 					Action:            ActionAggregateMetric,
 					MetricName:        "metric1",
 					AggregationMethod: "sum",
-					Dimensions:        []string{"dim1"},
+					WithoutDimensions: []string{"dim2"},
 				},
 			},
 			dps: []*sfxpb.DataPoint{
@@ -1447,6 +1432,10 @@ func TestTranslateDataPoints(t *testing.T) {
 							Key:   "dim1",
 							Value: "val1",
 						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
 					},
 				},
 				{
@@ -1459,6 +1448,10 @@ func TestTranslateDataPoints(t *testing.T) {
 					Dimensions: []*sfxpb.Dimension{
 						{
 							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
 							Value: "val1",
 						},
 					},
@@ -1480,79 +1473,6 @@ func TestTranslateDataPoints(t *testing.T) {
 					},
 				},
 			},
-		}, {
-			name: "calculate_new_metric",
-			trs: []Rule{{
-				Action:         ActionCalculateNewMetric,
-				MetricName:     "new_metric",
-				Operand1Metric: "metric0",
-				Operand2Metric: "metric1",
-				Operator:       MetricOperatorDivision,
-			}},
-			dps: []*sfxpb.DataPoint{
-				{
-					Metric:     "metric0",
-					Timestamp:  msec,
-					MetricType: &gaugeType,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(42),
-					},
-					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim1",
-						Value: "val1",
-					}},
-				},
-				{
-					Metric:     "metric1",
-					Timestamp:  msec,
-					MetricType: &gaugeType,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(84),
-					},
-					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim2",
-						Value: "val2",
-					}},
-				},
-			},
-			want: []*sfxpb.DataPoint{
-				{
-					Metric:     "metric0",
-					Timestamp:  msec,
-					MetricType: &gaugeType,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(42),
-					},
-					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim1",
-						Value: "val1",
-					}},
-				},
-				{
-					Metric:     "metric1",
-					Timestamp:  msec,
-					MetricType: &gaugeType,
-					Value: sfxpb.Datum{
-						IntValue: generateIntPtr(84),
-					},
-					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim2",
-						Value: "val2",
-					}},
-				},
-				{
-					Metric:     "new_metric",
-					Timestamp:  msec,
-					MetricType: &gaugeType,
-					Value: sfxpb.Datum{
-						DoubleValue: generateFloatPtr(0.5),
-					},
-					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim1",
-						Value: "val1",
-					}},
-				},
-			},
 		},
 	}
 	for _, tt := range tests {
@@ -1561,24 +1481,27 @@ func TestTranslateDataPoints(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotEqualValues(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
-
-			// Handle float values separately
-			for i, dp := range got {
-				if dp.GetValue().DoubleValue != nil {
-					assert.InDelta(t, *tt.want[i].GetValue().DoubleValue, *dp.GetValue().DoubleValue, 0.00000001)
-					*dp.GetValue().DoubleValue = *tt.want[i].GetValue().DoubleValue
-				}
-			}
-
-			// Sort metrics to handle not deterministic order from aggregation
-			if tt.trs[0].Action == ActionAggregateMetric {
-				sort.Sort(byContent(tt.want))
-				sort.Sort(byContent(got))
-			}
-
-			assert.EqualValues(t, tt.want, got)
+			assertEqualPoints(t, got, tt.want, tt.trs[0].Action)
 		})
 	}
+}
+
+func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataPoint, action Action) {
+	// Handle float values separately
+	for i, dp := range got {
+		if dp.GetValue().DoubleValue != nil {
+			assert.InDelta(t, *want[i].GetValue().DoubleValue, *dp.GetValue().DoubleValue, 0.00000001)
+			*dp.GetValue().DoubleValue = *want[i].GetValue().DoubleValue
+		}
+	}
+
+	// Sort metrics to handle not deterministic order from aggregation
+	if action == ActionAggregateMetric {
+		sort.Sort(byContent(want))
+		sort.Sort(byContent(got))
+	}
+
+	assert.EqualValues(t, want, got)
 }
 
 func TestTestTranslateDimension(t *testing.T) {
@@ -1678,8 +1601,8 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 						IntValue: test.val2,
 					},
 					Dimensions: []*sfxpb.Dimension{{
-						Key:   "dim2",
-						Value: "val2",
+						Key:   "dim1",
+						Value: "val1",
 					}},
 				},
 			}
@@ -1696,8 +1619,8 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			if test.wantErr == "" {
 				require.Equal(t, 0, observedLogs.Len())
 			} else {
+				require.Equal(t, test.wantErr, observedLogs.All()[0].Message, "expected error: "+test.wantErr)
 				require.Equal(t, 1, observedLogs.Len())
-				require.Equal(t, test.wantErr, observedLogs.All()[0].Message)
 			}
 		})
 	}
@@ -1718,6 +1641,285 @@ func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
 	)
 }
 
+func TestCalcNewMetricInputPairs_SameDims(t *testing.T) {
+	rule := Rule{
+		Operand1Metric: "m1",
+		Operand2Metric: "m2",
+		Operator:       "/",
+	}
+	pts := []*sfxpb.DataPoint{
+		{
+			Metric:     "m1",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(84),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val1",
+			}},
+		},
+		{
+			Metric:     "m2",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(48),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val1",
+			}},
+		},
+	}
+	pairs := calcNewMetricInputPairs(pts, rule)
+	require.Equal(t, 1, len(pairs))
+	pair := pairs[0]
+	require.Equal(t, "m1", pair[0].Metric)
+	require.Equal(t, "m2", pair[1].Metric)
+}
+
+func TestNewMetricInputPairs_MultiPairs(t *testing.T) {
+	rule := Rule{
+		Operand1Metric: "m1",
+		Operand2Metric: "m2",
+		Operator:       "/",
+	}
+	pts := []*sfxpb.DataPoint{
+		{
+			Metric:     "m1",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(1),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val1",
+			}},
+		},
+		{
+			Metric:     "m2",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(2),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val1",
+			}},
+		},
+		{
+			Metric:     "m1",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(3),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val2",
+			}},
+		},
+		{
+			Metric:     "m2",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(4),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val2",
+			}},
+		},
+	}
+	pairs := calcNewMetricInputPairs(pts, rule)
+	require.Equal(t, 2, len(pairs))
+	pair1 := pairs[0]
+	require.EqualValues(t, 1, *pair1[0].Value.IntValue)
+	require.EqualValues(t, 2, *pair1[1].Value.IntValue)
+	pair2 := pairs[1]
+	require.EqualValues(t, 3, *pair2[0].Value.IntValue)
+	require.EqualValues(t, 4, *pair2[1].Value.IntValue)
+}
+
+func TestCalcNewMetricInputPairs_DiffDims(t *testing.T) {
+	rule := Rule{
+		Operand1Metric: "m1",
+		Operand2Metric: "m2",
+		Operator:       "/",
+	}
+	pts := []*sfxpb.DataPoint{
+		{
+			Metric:     "m1",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(84),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val1",
+			}},
+		},
+		{
+			Metric:     "m2",
+			Timestamp:  msec,
+			MetricType: &gaugeType,
+			Value: sfxpb.Datum{
+				IntValue: generateIntPtr(84),
+			},
+			Dimensions: []*sfxpb.Dimension{{
+				Key:   "dim1",
+				Value: "val2",
+			}},
+		},
+	}
+	pairs := calcNewMetricInputPairs(pts, rule)
+	require.Nil(t, pairs)
+}
+
+func TestCalculateNewMetric_MatchingDims_Single(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "/",
+	}})
+	require.NoError(t, err)
+	m1 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	dps := []*sfxpb.DataPoint{m1, m2}
+	translated := mt.TranslateDataPoints(zap.NewNop(), dps)
+	m3 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	want := []*sfxpb.DataPoint{m1, m2, m3}
+	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
+}
+
+func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "/",
+	}})
+	require.NoError(t, err)
+	m1 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m1v2 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val2",
+		}},
+	}
+	m2v2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			IntValue: generateIntPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val2",
+		}},
+	}
+	dps := []*sfxpb.DataPoint{m1, m2, m1v2, m2v2}
+	translated := mt.TranslateDataPoints(zap.NewNop(), dps)
+	m3 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m3v2 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val2",
+		}},
+	}
+	want := []*sfxpb.DataPoint{m1, m2, m1v2, m2v2, m3, m3v2}
+	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
+}
+
 func generateIntPtr(i int) *int64 {
 	var iPtr = int64(i)
 	return &iPtr
@@ -1726,4 +1928,79 @@ func generateIntPtr(i int) *int64 {
 func generateFloatPtr(i float64) *float64 {
 	var iPtr = i
 	return &iPtr
+}
+
+func TestDimensionsEqual(t *testing.T) {
+	tests := []struct {
+		name   string
+		d1, d2 []*sfxpb.Dimension
+		want   bool
+	}{
+		{
+			name: "eq_both_nil",
+			d1:   nil,
+			d2:   nil,
+			want: true,
+		},
+		{
+			name: "ne_one_nil",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   nil,
+			want: false,
+		},
+		{
+			name: "eq_one_dim",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			want: true,
+		},
+		{
+			name: "ne_one_dim_val_mismatch",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "x"}},
+			want: false,
+		},
+		{
+			name: "ne_one_dim_key_mismatch",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}},
+			d2:   []*sfxpb.Dimension{{Key: "x", Value: "v0"}},
+			want: false,
+		},
+		{
+			name: "eq_two_dims",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: true,
+		},
+		{
+			name: "eq_two_dims_different_order",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k1", Value: "v1"}, {Key: "k0", Value: "v0"}},
+			want: true,
+		},
+		{
+			name: "eq_three_dims_different_order",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			d2:   []*sfxpb.Dimension{{Key: "k2", Value: "v2"}, {Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: true,
+		},
+		{
+			name: "ne_first_two_dims_match",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			want: false,
+		},
+		{
+			name: "ne_first_two_dims_match_reversed",
+			d1:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}, {Key: "k2", Value: "v2"}},
+			d2:   []*sfxpb.Dimension{{Key: "k0", Value: "v0"}, {Key: "k1", Value: "v1"}},
+			want: false,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			b := dimensionsEqual(test.d1, test.d2)
+			require.Equal(t, test.want, b)
+		})
+	}
 }

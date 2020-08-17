@@ -96,8 +96,8 @@ func components() (component.Factories, error) {
 
 	exporters := []component.ExporterFactoryBase{
 		stackdriverexporter.NewFactory(),
-		&azuremonitorexporter.Factory{},
-		&signalfxexporter.Factory{},
+		azuremonitorexporter.NewFactory(),
+		signalfxexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),

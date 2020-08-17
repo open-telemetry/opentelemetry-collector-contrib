@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	defaultFactory = &Factory{}
+	defaultFactory = &factory{}
 	defaultConfig  = defaultFactory.CreateDefaultConfig().(*Config)
 )
 
