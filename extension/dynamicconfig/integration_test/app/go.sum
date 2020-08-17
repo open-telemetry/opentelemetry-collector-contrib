@@ -63,12 +63,16 @@ github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200814171258-0dfca92f88bd
 github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200814171258-0dfca92f88bd/go.mod h1:AxX71gLxnwhhuf80VCjYBImsg6jOHBKDSB7stPc5Nkk=
 github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200814193941-35b1c89fca24 h1:ODwBUX2V4vRlsrDCb3p++td3rffxd/3gebdn6nQe4eg=
 github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200814193941-35b1c89fca24/go.mod h1:AxX71gLxnwhhuf80VCjYBImsg6jOHBKDSB7stPc5Nkk=
+github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200817145759-3a8369b82d81 h1:s4E4XveCnMEula9gdvVZgFt+d5Vr7FQodh8oO4QRJ0c=
+github.com/vmingchen/opentelemetry-go-contrib v0.0.0-20200817145759-3a8369b82d81/go.mod h1:AxX71gLxnwhhuf80VCjYBImsg6jOHBKDSB7stPc5Nkk=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200812154717-3419b5dbcca6 h1:T/dU+OrpdAVl8BuoMEwNBQBt6ZGyz844rdu5fcUYqus=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200812154717-3419b5dbcca6/go.mod h1:p0UiiC4hKCR4jXNCr2jXcf4eLwhJPEx5ddn8rBnlZFQ=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200814171258-0dfca92f88bd h1:8pQJQwq3P6E0QVnDL56JVxkLH5nwLJd4REqz4Avr9o8=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200814171258-0dfca92f88bd/go.mod h1:M0TIqCnbXFKgAuXY7R0X6yhX3ju8xggJNeNpFD2j4rQ=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200814193941-35b1c89fca24 h1:TNz16Y/yf5L/cP4TODmkBRtIRFYNklv75xzaymPps4U=
 github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200814193941-35b1c89fca24/go.mod h1:M0TIqCnbXFKgAuXY7R0X6yhX3ju8xggJNeNpFD2j4rQ=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200817145759-3a8369b82d81 h1:p2L0JNkQquxnwzYBZcqqRHs4TcTpDxhKfrf5mMO4BGY=
+github.com/vmingchen/opentelemetry-go-contrib/sdk/dynamicconfig v0.0.0-20200817145759-3a8369b82d81/go.mod h1:M0TIqCnbXFKgAuXY7R0X6yhX3ju8xggJNeNpFD2j4rQ=
 go.opentelemetry.io/otel v0.10.0 h1:2y/HYj1dIfG1nPh0Z15X4se8WwYWuTyKHLSgRb/mbQ0=
 go.opentelemetry.io/otel v0.10.0/go.mod h1:n3v1JGUBpn5DafiF1UeoDs5fr5XZMG+43kigDtFB8Vk=
 go.opentelemetry.io/otel/exporters/otlp v0.10.0 h1:lg0T1pZ/ROLIZBW/OUMtzpVcyTPniSLj63T+5AD0L5U=
