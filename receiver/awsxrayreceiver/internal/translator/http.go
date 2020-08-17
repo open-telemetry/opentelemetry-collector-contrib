@@ -39,7 +39,6 @@ func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
 			// since the ClientIP is not nil, this means that this segment is generated
 			// by a server serving an incoming request
 			attrs.UpsertString(conventions.AttributeHTTPClientIP, *req.ClientIP)
-			span.SetKind(pdata.SpanKindSERVER)
 		}
 
 		addString(req.UserAgent, conventions.AttributeHTTPUserAgent, &attrs)

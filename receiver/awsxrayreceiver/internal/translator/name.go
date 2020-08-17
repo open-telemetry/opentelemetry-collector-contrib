@@ -30,10 +30,23 @@ const (
 func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L193
 	span.SetName(*seg.Name)
+
+	if seg.HTTP != nil && seg.HTTP.Request != nil && seg.HTTP.Request.ClientIP != nil {
+		// `ClientIP` is an optional field, we only attempt to use it to set
+		// a more specific spanKind if it exists.
+
+		// The `ClientIP` is not nil, it implies that this segment is generated
+		// by a server serving an incoming request
+		span.SetKind(pdata.SpanKindSERVER)
+	}
+
 	if seg.Namespace == nil {
-		span.SetKind(pdata.SpanKindINTERNAL)
+		if span.Kind() == pdata.SpanKindUNSPECIFIED {
+			span.SetKind(pdata.SpanKindINTERNAL)
+		}
 		return nil
 	}
+
 	// seg is a subsegment
 
 	attrs := span.Attributes()
