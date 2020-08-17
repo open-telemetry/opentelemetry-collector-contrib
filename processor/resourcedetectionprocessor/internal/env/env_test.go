@@ -26,6 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
+func TestNewDetector(t *testing.T) {
+	d, err := NewDetector()
+	assert.NotNil(t, d)
+	assert.NoError(t, err)
+}
+
 func TestDetectTrue(t *testing.T) {
 	os.Setenv(envVar, "key=value")
 

@@ -43,7 +43,7 @@ func NewCarbonDataReceiver(port int) *CarbonDataReceiver {
 }
 
 // Start the receiver.
-func (cr *CarbonDataReceiver) Start(tc *testbed.MockTraceConsumer, mc *testbed.MockMetricConsumer) error {
+func (cr *CarbonDataReceiver) Start(tc testbed.TraceDualConsumer, mc testbed.MetricsDualConsumer) error {
 	addr := fmt.Sprintf("localhost:%d", cr.Port)
 	config := carbonreceiver.Config{
 		NetAddr: confignet.NetAddr{

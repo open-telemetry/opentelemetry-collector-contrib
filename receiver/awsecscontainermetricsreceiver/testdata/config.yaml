@@ -1,0 +1,13 @@
+receivers:
+  awsecscontainermetrics:
+  awsecscontainermetrics/collection_interval_settings:
+    collection_interval: 10s
+  
+exporters:
+  exampleexporter:
+  
+service:
+  pipelines:
+    metrics:
+      receivers: [awsecscontainermetrics]
+      exporters: [exampleexporter]

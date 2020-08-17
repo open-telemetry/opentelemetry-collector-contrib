@@ -181,10 +181,8 @@ translation_rules:
 - action: aggregate_metric
   metric_name: cpu.num_processors
   aggregation_method: count
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - cpu
 
 # compute memory.total
 - action: copy_metrics
@@ -199,10 +197,8 @@ translation_rules:
 - action: aggregate_metric
   metric_name: memory.total
   aggregation_method: sum
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - state
 
 # convert memory metrics
 - action: split_metric
@@ -276,10 +272,9 @@ translation_rules:
 - action: aggregate_metric
   metric_name: network.total
   aggregation_method: sum
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - direction
+  - interface
 - action: split_metric
   metric_name: system.network.dropped_packets
   dimension_key: direction

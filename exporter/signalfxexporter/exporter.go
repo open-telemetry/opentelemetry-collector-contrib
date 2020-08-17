@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -50,11 +51,11 @@ type exporterOptions struct {
 	metricTranslator *translation.MetricTranslator
 }
 
-// New returns a new SignalFx exporter.
-func New(
+// newSignalFxExporter returns a new SignalFx exporter.
+func newSignalFxExporter(
 	config *Config,
 	logger *zap.Logger,
-) (component.MetricsExporterOld, error) {
+) (component.MetricsExporter, error) {
 
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -120,11 +121,19 @@ func (se signalfxExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (se signalfxExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+	numDroppedTimeSeries := 0
+	var err error
+	for _, md := range pdatautil.MetricsToMetricsData(md) {
+		ndts, cErr := se.pushMetricsData(ctx, md)
+		if cErr != nil {
+			err = cErr
+		}
+		numDroppedTimeSeries += ndts
+	}
 
-	numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
+	numReceivedTimeSeries, numPoints := pdatautil.MetricAndDataPointCount(md)
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 	return err

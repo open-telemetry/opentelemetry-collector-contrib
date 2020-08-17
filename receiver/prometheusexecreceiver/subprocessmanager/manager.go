@@ -16,10 +16,9 @@ package subprocessmanager
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
-	"math"
-	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -29,40 +28,22 @@ import (
 	"go.uber.org/zap"
 )
 
-// Process struct holds all the info needed to instantiate a subprocess
-type Process struct {
-	Command string
-	Port    int
-	Env     []EnvConfig
-}
-
-const (
-	// HealthyProcessTime is the default time a process needs to stay alive to be considered healthy
-	HealthyProcessTime time.Duration = 30 * time.Minute
-	// HealthyCrashCount is the amount of times a process can crash (within the healthyProcessTime) before being considered unstable - it may be trying to find a port
-	HealthyCrashCount int = 3
-	// delayMutiplier is the factor by which the delay scales
-	delayMultiplier float64 = 2.0
-	// initialDelay is the initial delay before a process is restarted
-	initialDelay time.Duration = 1 * time.Second
-)
-
 // Run will start the process and keep track of running time
-func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
+func (proc *SubprocessConfig) Run(ctx context.Context, logger *zap.Logger) (time.Duration, error) {
 
 	var argsSlice []string
 
 	// Parse the command line string into arguments
 	args, err := shellquote.Split(proc.Command)
 	if err != nil {
-		return 0, fmt.Errorf("could not parse command error: %w", err)
+		return 0, fmt.Errorf("could not parse command, error: %w", err)
 	}
 	// Separate the executable from the flags for the Command object
 	if len(args) > 1 {
 		argsSlice = args[1:]
 	}
 
-	// Create the command object and attach current os environment + environment variables defined by user
+	// Create the command object and attach current os environment + environment variables defined by the user
 	childProcess := exec.Command(args[0], argsSlice...)
 	childProcess.Env = append(os.Environ(), formatEnvSlice(&proc.Env)...)
 
@@ -80,23 +61,41 @@ func (proc *Process) Run(logger *zap.Logger) (time.Duration, error) {
 	go proc.pipeSubprocessOutput(bufio.NewReader(stderrReader), logger, false)
 
 	// Start and stop timer (elapsed) right before and after executing the command
+	processErrCh := make(chan error, 1)
 	start := time.Now()
+
 	errProcess := childProcess.Start()
 	if errProcess != nil {
 		return 0, fmt.Errorf("process could not start: %w", errProcess)
 	}
 
-	errProcess = childProcess.Wait()
-	elapsed := time.Since(start)
-	if errProcess != nil {
-		return elapsed, fmt.Errorf("process error: %w", errProcess)
-	}
+	go func() {
+		processErrCh <- childProcess.Wait()
+	}()
 
-	return elapsed, nil
+	// Handle normal process exiting or parent logic triggering a shutdown
+	select {
+	case errProcess = <-processErrCh:
+		elapsed := time.Since(start)
+
+		if errProcess != nil {
+			return elapsed, fmt.Errorf("%w", errProcess)
+		}
+		return elapsed, nil
+
+	case <-ctx.Done():
+		elapsed := time.Since(start)
+
+		err := childProcess.Process.Kill()
+		if err != nil {
+			return elapsed, fmt.Errorf("couldn't kill subprocess: %w", errProcess)
+		}
+		return elapsed, nil
+	}
 }
 
 // Log every line of the subprocesse's output using zap, until pipe is closed (EOF)
-func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
+func (proc *SubprocessConfig) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logger, isStdout bool) {
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil && err != io.EOF {
@@ -105,7 +104,7 @@ func (proc *Process) pipeSubprocessOutput(reader *bufio.Reader, logger *zap.Logg
 		}
 
 		line = strings.TrimSpace(line)
-		if line != "" {
+		if line != "" && line != "\n" {
 			if isStdout {
 				logger.Info("subprocess output line", zap.String("output", line))
 			} else {
@@ -132,15 +131,4 @@ func formatEnvSlice(envs *[]EnvConfig) []string {
 	}
 
 	return envSlice
-}
-
-// GetDelay will compute the delay for a given process according to its crash count and time alive using an exponential backoff algorithm
-func GetDelay(elapsed time.Duration, crashCount int) time.Duration {
-	// Return initialDelay if the process is healthy (lasted longer than health duration) or has less or equal than 3 crashes - it could be trying to find a port
-	if elapsed > HealthyProcessTime || crashCount <= HealthyCrashCount {
-		return initialDelay
-	}
-
-	// Return initialDelay times 2 to the power of crashCount-3 (to offset for the 3 allowed crashes) added to a random number
-	return initialDelay * time.Duration(math.Pow(delayMultiplier, float64(crashCount-HealthyCrashCount)+rand.Float64()))
 }
