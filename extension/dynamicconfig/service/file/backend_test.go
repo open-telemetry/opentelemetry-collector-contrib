@@ -65,6 +65,9 @@ func TestUpdateConfig(t *testing.T) {
 
 	select {
 	case <-backend.updateCh:
+		backend.mu.Lock()
+		defer backend.mu.Unlock()
+
 		if backend.configModel.ConfigBlocks[0].Schedules[0].Period != "MIN_1" {
 			t.Errorf("update incorrect: wanted Period=MIN_1, got Schedules: %v",
 				backend.configModel.ConfigBlocks[0])
