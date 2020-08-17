@@ -99,7 +99,11 @@ func components() (component.Factories, error) {
 	exporters := []component.ExporterFactoryBase{
 		stackdriverexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
+<<<<<<< HEAD
 		signalfxexporter.NewFactory(),
+=======
+		&signalfxexporter.Factory{},
+>>>>>>> remove unused variables
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),

@@ -12,7 +12,11 @@ require (
 	go.uber.org/zap v1.15.0
 	k8s.io/api v0.18.8
 	k8s.io/apimachinery v0.18.8
+<<<<<<< HEAD
 	k8s.io/client-go v0.18.8
+=======
+	k8s.io/client-go v0.18.6
+>>>>>>> remove unused variables
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

@@ -47,9 +47,6 @@ var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
-	// reInvalidAnnotationCharacters defines the invalid letters in an annotation key as per
-	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidAnnotationCharacters = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
 
 const (
