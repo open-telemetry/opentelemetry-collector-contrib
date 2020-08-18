@@ -36,18 +36,18 @@ var (
 	errSFxNoDatumValue               = errors.New("no datum value present for data-point")
 )
 
-// SignalFxV2ToMetricsData converts SignalFx proto data points to
+// signalFxV2ToMetricsData converts SignalFx proto data points to
 // consumerdata.MetricsData. Returning the converted data and the number of
 // dropped time series.
-func SignalFxV2ToMetricsData(
+func signalFxV2ToMetricsData(
 	logger *zap.Logger,
 	sfxDataPoints []*sfxpb.DataPoint,
-) (*consumerdata.MetricsData, int) {
+) (consumerdata.MetricsData, int) {
 
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
 	numDroppedTimeSeries := 0
-	md := &consumerdata.MetricsData{}
+	md := consumerdata.MetricsData{}
 	metrics := make([]*metricspb.Metric, 0, len(sfxDataPoints))
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {

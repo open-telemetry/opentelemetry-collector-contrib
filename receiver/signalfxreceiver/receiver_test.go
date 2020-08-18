@@ -53,10 +53,10 @@ import (
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
-	defaultConfig := (&Factory{}).CreateDefaultConfig().(*Config)
+	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumerOld
+		nextConsumer consumer.MetricsConsumer
 	}
 	tests := []struct {
 		name    string
@@ -74,7 +74,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 		},
 	}
@@ -105,9 +105,9 @@ func Test_signalfxeceiver_New(t *testing.T) {
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	addr := fmt.Sprintf("localhost:%d", port)
-	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporterOld)
+	sink := new(exportertest.SinkMetricsExporter)
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 
@@ -159,8 +159,10 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		}
 	}
 
-	got := sink.AllMetrics()
-	require.Equal(t, 1, len(got))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := pdatautil.MetricsToMetricsData(mds[0])
+	require.Len(t, got, 1)
 	assert.Equal(t, want, got[0])
 
 	assert.NoError(t, r.Shutdown(context.Background()))
@@ -168,7 +170,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 }
 
 func Test_sfxReceiver_handleReq(t *testing.T) {
-	config := (&Factory{}).CreateDefaultConfig().(*Config)
+	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
 	currentTime := time.Now().Unix() * 1e3
@@ -305,8 +307,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporterOld)
-			rcv, err := New(zap.NewNop(), *config, sink)
+			rcv, err := New(zap.NewNop(), *config, exportertest.NewNopMetricsExporter())
 			assert.NoError(t, err)
 
 			r := rcv.(*sfxReceiver)
@@ -327,7 +328,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
-	cfg := (&Factory{}).CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	cfg.HTTPServerSettings.TLSSetting = &configtls.TLSServerSetting{
 		TLSSetting: configtls.TLSSetting{
@@ -335,7 +336,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
-	sink := new(exportertest.SinkMetricsExporterOld)
+	sink := new(exportertest.SinkMetricsExporter)
 	r, err := New(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
@@ -421,8 +422,10 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	assert.Equal(t, http.StatusAccepted, resp.StatusCode)
 	t.Log("SignalFx Request Received")
 
-	got := sink.AllMetrics()
-	require.Equal(t, 1, len(got))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	got := pdatautil.MetricsToMetricsData(mds[0])
+	require.Len(t, got, 1)
 	assert.Equal(t, want, got[0])
 }
 
@@ -456,11 +459,11 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config := (&Factory{}).CreateDefaultConfig().(*Config)
+			config := createDefaultConfig().(*Config)
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkMetricsExporterOld)
+			sink := new(exportertest.SinkMetricsExporter)
 			rcv, err := New(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
@@ -487,9 +490,10 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
 			assert.Equal(t, responseOK, bodyStr)
 
-			got := sink.AllMetrics()
-			require.Equal(t, 1, len(got))
-
+			mds := sink.AllMetrics()
+			require.Len(t, mds, 1)
+			got := pdatautil.MetricsToMetricsData(mds[0])
+			require.Len(t, got, 1)
 			tokenLabel := ""
 			if got[0].Resource != nil && got[0].Resource.Labels != nil {
 				tokenLabel = got[0].Resource.Labels["com.splunk.signalfx.access_token"]
