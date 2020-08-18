@@ -19,10 +19,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements factory for prometheus_simple receiver
@@ -36,19 +36,15 @@ const (
 
 var defaultCollectionInterval = 10 * time.Second
 
-// Factory is the factory for SignalFx receiver.
-type Factory struct {
+// NewFactory creates a factory for "Simple" Prometheus receiver.
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-var _ component.ReceiverFactory = (*Factory)(nil)
-
-// Type gets the type of the Receiver Config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for Jaeger receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -62,17 +58,12 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided Config.
-func (f Factory) CreateTraceReceiver(
-	ctx context.Context, params component.ReceiverCreateParams,
-	cfg configmodels.Receiver, nextConsumer consumer.TraceConsumer) (component.TraceReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided Config.
-func (f Factory) CreateMetricsReceiver(
-	ctx context.Context, params component.ReceiverCreateParams,
-	cfg configmodels.Receiver, nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 	return new(params, rCfg, nextConsumer), nil
 }
