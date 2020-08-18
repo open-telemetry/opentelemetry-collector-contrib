@@ -1,0 +1,35 @@
+receivers:
+  jmx_metrics:
+  jmx_metrics/all:
+    service_url: myserviceurl
+    groovy_script: mygroovyscriptpath
+    collector_endpoint: mycollectorendpoint:55680
+    interval: 15s
+    keystore_path: mykeystorepath
+    keystore_password: mykeystorepassword
+    keystore_type: mykeystoretype
+    truststore_path: mytruststorepath
+    truststore_password: mytruststorepassword
+    remote_profile: myremoteprofile
+    realm: myrealm
+  jmx_metrics/missingservice:
+    groovy_script: mygroovyscriptpath
+  jmx_metrics/missinggroovy:
+    service_url: myserviceurl
+  jmx_metrics/invalidinterval:
+    service_url: myserviceurl
+    groovy_script: mygroovyscriptpath
+    interval: -100ms
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [jmx_metrics]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
