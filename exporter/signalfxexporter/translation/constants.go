@@ -212,6 +212,27 @@ translation_rules:
     slab_unreclaimable: memory.slab_unrecl
     used: memory.used
 
+# calculate disk.total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.total
+- action: aggregate_metric
+  metric_name: disk.total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+
+# calculate disk.summary_total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.summary_total
+- action: aggregate_metric
+  metric_name: disk.summary_total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+    - device
+
 # convert filesystem metrics
 - action: split_metric
   metric_name: system.filesystem.usage
@@ -226,6 +247,16 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
+
+# df_complex.used_total
+- action: copy_metrics
+  mapping:
+    df_complex.used: df_complex.used_total 
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: sum
+  without_dimensions:
+  - device
 
 # convert disk I/O metrics
 - action: rename_dimension_keys
