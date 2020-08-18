@@ -311,7 +311,7 @@ func writePacket(t *testing.T, addr, toWrite string) error {
 	if err != nil {
 		return err
 	}
-	assert.Equal(t, len(toWrite), n, "exunpected number of bytes written")
+	assert.Equal(t, len(toWrite), n, "unexpected number of bytes written")
 	return nil
 }
 
