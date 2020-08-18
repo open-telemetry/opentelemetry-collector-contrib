@@ -779,15 +779,18 @@ func TestGetDelay(t *testing.T) {
 	for _, test := range getDelayAndComputeCrashCountTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
+
 			if test.name == "healthy process" {
 				if !reflect.DeepEqual(got, test.wantDelay) {
 					t.Errorf("getDelay() got = %v, want %v", got, test.wantDelay)
 					return
 				}
 			}
+
 			if previousResult > got {
 				t.Errorf("getDelay() got = %v, want something larger than the previous result %v", got, previousResult)
 			}
+
 			previousResult = got
 		})
 	}
