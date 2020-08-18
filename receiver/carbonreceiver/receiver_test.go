@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
@@ -40,10 +41,10 @@ import (
 )
 
 func Test_carbonreceiver_New(t *testing.T) {
-	defaultConfig := (&Factory{}).CreateDefaultConfig().(*Config)
+	defaultConfig := createDefaultConfig().(*Config)
 	type args struct {
 		config       Config
-		nextConsumer consumer.MetricsConsumerOld
+		nextConsumer consumer.MetricsConsumer
 	}
 	tests := []struct {
 		name    string
@@ -54,7 +55,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 		},
 		{
@@ -68,7 +69,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					},
 					TCPIdleTimeout: defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 		},
 		{
@@ -84,7 +85,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -104,7 +105,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -130,7 +131,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 		},
 		{
@@ -150,7 +151,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: new(exportertest.SinkMetricsExporterOld),
+				nextConsumer: exportertest.NewNopMetricsExporter(),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
@@ -184,7 +185,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		{
 			name: "default_config",
 			configFn: func() *Config {
-				return (&Factory{}).CreateDefaultConfig().(*Config)
+				return createDefaultConfig().(*Config)
 			},
 			clientFn: func(t *testing.T) *client.Graphite {
 				c, err := client.NewGraphite(client.TCP, host, port)
@@ -195,7 +196,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		{
 			name: "default_config_udp",
 			configFn: func() *Config {
-				cfg := (&Factory{}).CreateDefaultConfig().(*Config)
+				cfg := createDefaultConfig().(*Config)
 				cfg.Transport = "udp"
 				return cfg
 			},
@@ -210,7 +211,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
-			sink := new(exportertest.SinkMetricsExporterOld)
+			sink := new(exportertest.SinkMetricsExporter)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)
@@ -237,9 +238,11 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			mr.WaitAllOnMetricsProcessedCalls()
 
 			mdd := sink.AllMetrics()
-			require.Equal(t, 1, len(mdd))
-			require.Equal(t, 1, len(mdd[0].Metrics))
-			metric := mdd[0].Metrics[0]
+			require.Len(t, mdd, 1)
+			ocmd := pdatautil.MetricsToMetricsData(mdd[0])
+			require.Len(t, ocmd, 1)
+			require.Len(t, ocmd[0].Metrics, 1)
+			metric := ocmd[0].Metrics[0]
 			assert.Equal(t, carbonMetric.Name, metric.GetMetricDescriptor().GetName())
 			tss := metric.GetTimeseries()
 			require.Equal(t, 1, len(tss))

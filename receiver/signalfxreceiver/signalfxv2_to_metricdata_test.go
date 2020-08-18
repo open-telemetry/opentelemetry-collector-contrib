@@ -43,8 +43,8 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		}
 	}
 
-	buildDefaultMetricsData := func() *consumerdata.MetricsData {
-		return &consumerdata.MetricsData{
+	buildDefaultMetricsData := func() consumerdata.MetricsData {
+		return consumerdata.MetricsData{
 			Metrics: []*metricspb.Metric{{
 				MetricDescriptor: &metricspb.MetricDescriptor{
 					Name: "single",
@@ -85,7 +85,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 	tests := []struct {
 		name                  string
 		sfxDataPoints         []*sfxpb.DataPoint
-		wantMetricsData       *consumerdata.MetricsData
+		wantMetricsData       consumerdata.MetricsData
 		wantDroppedTimeseries int
 	}{
 		{
@@ -103,7 +103,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
+			wantMetricsData: func() consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_DOUBLE
 				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
@@ -117,7 +117,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
+			wantMetricsData: func() consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
 				return md
@@ -133,7 +133,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
+			wantMetricsData: func() consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
 				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
@@ -147,7 +147,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Timestamp = 0
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
+			wantMetricsData: func() consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].Timeseries[0].Points[0].Timestamp = nil
 				return md
@@ -160,7 +160,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions[0].Value = ""
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
+			wantMetricsData: func() consumerdata.MetricsData {
 				md := buildDefaultMetricsData()
 				md.Metrics[0].Timeseries[0].LabelValues[0].Value = ""
 				md.Metrics[0].Timeseries[0].LabelValues[0].HasValue = true
@@ -215,7 +215,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := SignalFxV2ToMetricsData(zap.NewNop(), tt.sfxDataPoints)
+			md, numDroppedTimeseries := signalFxV2ToMetricsData(zap.NewNop(), tt.sfxDataPoints)
 			assert.Equal(t, tt.wantMetricsData, md)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
 		})
