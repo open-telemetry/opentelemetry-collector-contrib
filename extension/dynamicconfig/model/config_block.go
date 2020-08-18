@@ -28,7 +28,7 @@ type ConfigBlock struct {
 }
 
 // Proto converts the ConfigBlock into a slice of MetricConfigResponse_Schedule
-// pointers. There is no guarenteed order to the schedules in this slice, and
+// pointers. There is no guaranteed order to the schedules in this slice, and
 // conflicting schedules may occur.
 func (block *ConfigBlock) Proto() ([]*pb.MetricConfigResponse_Schedule, error) {
 	scheduleSlice := make([]*pb.MetricConfigResponse_Schedule, len(block.Schedules))

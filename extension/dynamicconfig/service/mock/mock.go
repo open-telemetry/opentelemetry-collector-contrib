@@ -15,8 +15,8 @@
 package mock
 
 import (
-	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
 
 var GlobalFingerprint = []byte("There once was a cat named Gretchen")
@@ -31,14 +31,14 @@ func AlterFingerprint(newFingerprint []byte) {
 
 type Backend struct{}
 
-func (_ *Backend) GetFingerprint(_ *res.Resource) ([]byte, error) {
+func (*Backend) GetFingerprint(*res.Resource) ([]byte, error) {
 	return []byte(GlobalFingerprint), nil
 }
 
-func (_ *Backend) BuildConfigResponse(_ *res.Resource) (*pb.MetricConfigResponse, error) {
+func (*Backend) BuildConfigResponse(*res.Resource) (*pb.MetricConfigResponse, error) {
 	return GlobalResponse, nil
 }
 
-func (_ *Backend) Close() error {
+func (*Backend) Close() error {
 	return nil
 }

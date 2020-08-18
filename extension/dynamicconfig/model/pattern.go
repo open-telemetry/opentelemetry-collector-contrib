@@ -14,7 +14,7 @@
 //
 // Contains common models for the dynamic config service. The corresponding
 // Proto() methods convert the model representation to a usable struct for
-// protobuf marshalling.
+// protobuf marshaling.
 
 package model
 
@@ -49,13 +49,13 @@ func (p *Pattern) Proto() (*pb.MetricConfigResponse_Schedule_Pattern, error) {
 				Equals: p.Equals,
 			},
 		}, nil
-	} else {
-		return &pb.MetricConfigResponse_Schedule_Pattern{
-			Match: &pb.MetricConfigResponse_Schedule_Pattern_StartsWith{
-				StartsWith: p.StartsWith,
-			},
-		}, nil
 	}
+
+	return &pb.MetricConfigResponse_Schedule_Pattern{
+		Match: &pb.MetricConfigResponse_Schedule_Pattern_StartsWith{
+			StartsWith: p.StartsWith,
+		},
+	}, nil
 }
 
 // Hash computes an FNVa 64 bit hash of the Pattern. Two Patterns with the

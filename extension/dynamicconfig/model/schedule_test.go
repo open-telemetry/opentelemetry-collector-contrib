@@ -23,8 +23,8 @@ import (
 
 func TestScheduleProto(t *testing.T) {
 	schedule := Schedule{
-		InclusionPatterns: []Pattern{Pattern{Equals: "one"}, Pattern{StartsWith: "two"}},
-		ExclusionPatterns: []Pattern{Pattern{StartsWith: "three"}, Pattern{Equals: "four"}},
+		InclusionPatterns: []Pattern{{Equals: "one"}, {StartsWith: "two"}},
+		ExclusionPatterns: []Pattern{{StartsWith: "three"}, {Equals: "four"}},
 		Period:            "MIN_5",
 	}
 
@@ -47,22 +47,22 @@ func TestScheduleProto(t *testing.T) {
 func TestScheduleHash(t *testing.T) {
 	configA := Schedule{
 		InclusionPatterns: []Pattern{
-			Pattern{Equals: "woot"},
-			Pattern{StartsWith: "yay"},
+			{Equals: "woot"},
+			{StartsWith: "yay"},
 		},
 	}
 
 	configB := Schedule{
 		InclusionPatterns: []Pattern{
-			Pattern{StartsWith: "yay"},
-			Pattern{Equals: "woot"},
+			{StartsWith: "yay"},
+			{Equals: "woot"},
 		},
 	}
 
 	configC := Schedule{
 		ExclusionPatterns: []Pattern{
-			Pattern{Equals: "woot"},
-			Pattern{StartsWith: "yay"},
+			{Equals: "woot"},
+			{StartsWith: "yay"},
 		},
 	}
 

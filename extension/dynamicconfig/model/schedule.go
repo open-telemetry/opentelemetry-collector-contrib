@@ -14,7 +14,7 @@
 //
 // Contains common models for the dynamic config service. The corresponding
 // Proto() methods convert the model representation to a usable struct for
-// protobuf marshalling.
+// protobuf marshaling.
 
 package model
 

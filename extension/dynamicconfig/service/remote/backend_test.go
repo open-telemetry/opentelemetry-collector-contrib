@@ -19,11 +19,12 @@ import (
 	"net"
 	"testing"
 
+	"google.golang.org/grpc"
+
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/mock"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/remote"
-	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
-	"google.golang.org/grpc"
 )
 
 // startServer is a test utility to start a quick-n-dirty gRPC server using the

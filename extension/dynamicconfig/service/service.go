@@ -22,11 +22,11 @@ import (
 	"errors"
 	"fmt"
 
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
+	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/mock"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/remote"
-	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
-	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
 
 // ConfigBackend defines a general backend that the service can read
@@ -39,7 +39,7 @@ type ConfigBackend interface {
 // ConfigService implements the server side of the gRPC service for config
 // updates.
 type ConfigService struct {
-	pb.UnimplementedMetricConfigServer // for forward compatability
+	pb.UnimplementedMetricConfigServer // for forward compatibility
 	backend                            ConfigBackend
 }
 

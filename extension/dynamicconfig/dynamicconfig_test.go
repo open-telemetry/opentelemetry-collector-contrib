@@ -25,9 +25,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/testutil"
+
+	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 )
 
 func TestDyconfigExtensionUsage(t *testing.T) {
@@ -51,7 +52,14 @@ func TestDyconfigExtensionUsage(t *testing.T) {
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
-	defer conn.Close()
+	if err != nil {
+		t.Errorf("fail to open connection: %v", err)
+	}
+	defer func() {
+		if e := conn.Close(); e != nil {
+			t.Errorf("fail to close connection: %v", err)
+		}
+	}()
 
 	client := pb.NewMetricConfigClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
