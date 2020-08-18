@@ -80,11 +80,7 @@ def _instrument(tracer_provider=None, span_callback=None):
 
         # See
         # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-client
-        try:
-            parsed_url = urlparse(url)
-            span_name = parsed_url.path
-        except ValueError as exc:  # Invalid URL
-            span_name = "<Unparsable URL: {}>".format(exc)
+        span_name = "HTTP {}".format(method)
 
         exception = None
 
@@ -111,6 +107,7 @@ def _instrument(tracer_provider=None, span_callback=None):
                 span.set_status(
                     Status(_exception_to_canonical_code(exception))
                 )
+                span.record_exception(exception)
 
             if result is not None:
                 span.set_attribute("http.status_code", result.status_code)

@@ -51,7 +51,7 @@ class TestRequestsIntegration(TestBase):
         span = span_list[0]
 
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
-        self.assertEqual(span.name, "/status/200")
+        self.assertEqual(span.name, "HTTP get")
 
         self.assertEqual(
             span.attributes,
@@ -102,7 +102,7 @@ class TestRequestsIntegration(TestBase):
         self.assertEqual(len(span_list), 1)
         span = span_list[0]
 
-        self.assertTrue(span.name.startswith("<Unparsable URL"))
+        self.assertEqual(span.name, "HTTP post")
         self.assertEqual(
             span.attributes,
             {"component": "http", "http.method": "POST", "http.url": url},
