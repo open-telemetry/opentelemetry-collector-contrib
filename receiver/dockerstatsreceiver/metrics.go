@@ -50,10 +50,10 @@ func ContainerStatsToMetrics(
 	now, _ := ptypes.TimestampProto(time.Now())
 
 	var metrics []*metricspb.Metric
-	metrics = append(metrics, blockioMetrics(&containerStats.BlkioStats, now, config.ProvideAllBlockIOMetrics)...)
-	metrics = append(metrics, cpuMetrics(&containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvideAllCPUMetrics)...)
-	metrics = append(metrics, memoryMetrics(&containerStats.MemoryStats, now, config.ProvideAllMemoryMetrics)...)
-	metrics = append(metrics, networkMetrics(&containerStats.Networks, now, config.ProvideAllNetworkMetrics)...)
+	metrics = append(metrics, blockioMetrics(&containerStats.BlkioStats, now)...)
+	metrics = append(metrics, cpuMetrics(&containerStats.CPUStats, &containerStats.PreCPUStats, now, config.ProvidePerCoreCPUMetrics)...)
+	metrics = append(metrics, memoryMetrics(&containerStats.MemoryStats, now)...)
+	metrics = append(metrics, networkMetrics(&containerStats.Networks, now)...)
 
 	if len(metrics) == 0 {
 		return nil, nil
@@ -91,11 +91,6 @@ func updateConfiguredResourceLabels(md *consumerdata.MetricsData, container *Doc
 	}
 }
 
-var defaultBlockIOStats = map[string]bool{
-	"io_service_bytes_recursive.read":  true,
-	"io_service_bytes_recursive.write": true,
-}
-
 type blkioStat struct {
 	name    string
 	unit    string
@@ -106,7 +101,6 @@ type blkioStat struct {
 func blockioMetrics(
 	blkioStats *dtypes.BlkioStats,
 	ts *timestamp.Timestamp,
-	provideEnhancedMetrics bool,
 ) []*metricspb.Metric {
 	var metrics []*metricspb.Metric
 
@@ -127,11 +121,9 @@ func blockioMetrics(
 			}
 
 			statName := fmt.Sprintf("%s.%s", blkiostat.name, strings.ToLower(stat.Op))
-			if _, exists := defaultBlockIOStats[statName]; provideEnhancedMetrics || exists {
-				metricName := fmt.Sprintf("blockio.%s", statName)
-				labelValues := [][]string{{strconv.FormatUint(stat.Major, 10), strconv.FormatUint(stat.Minor, 10)}}
-				metrics = append(metrics, Cumulative(metricName, []int64{int64(stat.Value)}, ts, blkiostat.unit, labelKeys, labelValues))
-			}
+			metricName := fmt.Sprintf("blockio.%s", statName)
+			labelValues := [][]string{{strconv.FormatUint(stat.Major, 10), strconv.FormatUint(stat.Minor, 10)}}
+			metrics = append(metrics, Cumulative(metricName, []int64{int64(stat.Value)}, ts, blkiostat.unit, labelKeys, labelValues))
 		}
 	}
 
@@ -142,7 +134,7 @@ func cpuMetrics(
 	cpuStats *dtypes.CPUStats,
 	previousCPUStats *dtypes.CPUStats,
 	ts *timestamp.Timestamp,
-	provideEnhancedMetrics bool,
+	providePerCoreMetrics bool,
 ) []*metricspb.Metric {
 	var metrics []*metricspb.Metric
 
@@ -151,23 +143,10 @@ func cpuMetrics(
 		Cumulative("cpu.usage.total", []int64{int64(cpuStats.CPUUsage.TotalUsage)}, ts, "ns", nil, nil),
 	}...)
 
-	if !provideEnhancedMetrics {
-		return metrics
-	}
-
 	metrics = append(metrics, []*metricspb.Metric{
 		Cumulative("cpu.usage.kernelmode", []int64{int64(cpuStats.CPUUsage.UsageInKernelmode)}, ts, "ns", nil, nil),
 		Cumulative("cpu.usage.usermode", []int64{int64(cpuStats.CPUUsage.UsageInUsermode)}, ts, "ns", nil, nil),
 	}...)
-
-	percpuValues := make([]int64, 0, len(cpuStats.CPUUsage.PercpuUsage))
-	percpuLabelKeys := []string{"core"}
-	percpuLabelValues := make([][]string, 0, len(cpuStats.CPUUsage.PercpuUsage))
-	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
-		percpuValues = append(percpuValues, int64(v))
-		percpuLabelValues = append(percpuLabelValues, []string{fmt.Sprintf("cpu%s", strconv.Itoa(coreNum))})
-	}
-	metrics = append(metrics, Cumulative("cpu.usage.percpu", percpuValues, ts, "ns", percpuLabelKeys, percpuLabelValues))
 
 	metrics = append(metrics, []*metricspb.Metric{
 		Cumulative("cpu.throttling_data.periods", []int64{int64(cpuStats.ThrottlingData.Periods)}, ts, "1", nil, nil),
@@ -177,6 +156,18 @@ func cpuMetrics(
 
 	metrics = append(metrics, GaugeF("cpu.percent", []float64{calculateCPUPercent(previousCPUStats, cpuStats)}, ts, "1", nil, nil))
 
+	if !providePerCoreMetrics {
+		return metrics
+	}
+
+	percpuValues := make([]int64, 0, len(cpuStats.CPUUsage.PercpuUsage))
+	percpuLabelKeys := []string{"core"}
+	percpuLabelValues := make([][]string, 0, len(cpuStats.CPUUsage.PercpuUsage))
+	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
+		percpuValues = append(percpuValues, int64(v))
+		percpuLabelValues = append(percpuLabelValues, []string{fmt.Sprintf("cpu%s", strconv.Itoa(coreNum))})
+	}
+	metrics = append(metrics, Cumulative("cpu.usage.percpu", percpuValues, ts, "ns", percpuLabelKeys, percpuLabelValues))
 	return metrics
 }
 
@@ -224,7 +215,6 @@ var memoryStatsThatAreCumulative = map[string]bool{
 func memoryMetrics(
 	memoryStats *dtypes.MemoryStats,
 	ts *timestamp.Timestamp,
-	provideEnhancedMetrics bool,
 ) []*metricspb.Metric {
 	var metrics []*metricspb.Metric
 
@@ -234,11 +224,13 @@ func memoryMetrics(
 		Gauge("memory.usage.total", []int64{totalUsage}, ts, "By", nil, nil),
 	}...)
 
-	if !provideEnhancedMetrics {
-		return metrics
+	var pctUsed float64
+	if float64(memoryStats.Limit) == 0 {
+		pctUsed = 0
+	} else {
+		pctUsed = 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
 	}
 
-	pctUsed := 100.0 * (float64(memoryStats.Usage) - float64(memoryStats.Stats["cache"])) / float64(memoryStats.Limit)
 	metrics = append(metrics, []*metricspb.Metric{
 		GaugeF("memory.percent", []float64{pctUsed}, ts, "1", nil, nil),
 		Gauge("memory.usage.max", []int64{int64(memoryStats.MaxUsage)}, ts, "By", nil, nil),
@@ -267,7 +259,6 @@ func memoryMetrics(
 func networkMetrics(
 	networks *map[string]dtypes.NetworkStats,
 	ts *timestamp.Timestamp,
-	provideEnhancedMetrics bool,
 ) []*metricspb.Metric {
 	if networks == nil || *networks == nil {
 		return nil
@@ -283,10 +274,6 @@ func networkMetrics(
 			Cumulative("network.io.usage.rx_bytes", []int64{int64(stats.RxBytes)}, ts, "By", labelKeys, labelValues),
 			Cumulative("network.io.usage.tx_bytes", []int64{int64(stats.TxBytes)}, ts, "By", labelKeys, labelValues),
 		}...)
-
-		if !provideEnhancedMetrics {
-			continue
-		}
 
 		metrics = append(metrics, []*metricspb.Metric{
 			Cumulative("network.io.usage.rx_dropped", []int64{int64(stats.RxDropped)}, ts, "1", labelKeys, labelValues),
