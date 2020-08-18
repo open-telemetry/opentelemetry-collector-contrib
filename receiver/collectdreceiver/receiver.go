@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
 )
 
@@ -46,19 +47,19 @@ type collectdReceiver struct {
 	addr               string
 	server             *http.Server
 	defaultAttrsPrefix string
-	nextConsumer       consumer.MetricsConsumerOld
+	nextConsumer       consumer.MetricsConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
 }
 
-// New creates the CollectD receiver with the given parameters.
-func New(
+// newCollectdReceiver creates the CollectD receiver with the given parameters.
+func newCollectdReceiver(
 	logger *zap.Logger,
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, errNilNextConsumer
 	}
@@ -144,7 +145,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = cdr.nextConsumer.ConsumeMetricsData(ctx, md)
+	err = cdr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
 	if err != nil {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
@@ -35,4 +36,25 @@ type Config struct {
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
+
+	// For mocking.
+	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
+}
+
+func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
+	if cfg.makeClient == nil {
+		cfg.makeClient = k8sconfig.MakeClient
+	}
+	client, err := cfg.makeClient(cfg.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return &receiverOptions{
+		name:                       cfg.Name(),
+		client:                     client,
+		collectionInterval:         cfg.CollectionInterval,
+		nodeConditionTypesToReport: cfg.NodeConditionTypesToReport,
+		metadataExporters:          cfg.MetadataExporters,
+	}, nil
 }

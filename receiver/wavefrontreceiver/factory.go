@@ -18,11 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -36,25 +35,15 @@ const (
 	typeStr = "wavefront"
 )
 
-// Factory is the factory for the Wavefront receiver.
-type Factory struct {
+// NewFactory creates a factory for WaveFront receiver.
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-var _ component.ReceiverFactoryOld = (*Factory)(nil)
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CustomUnmarshaler returns the custom function to handle any special settings
-// used by the receiver.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
-// CreateDefaultConfig creates the default configuration for the Wavefront receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -67,23 +56,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
+func createMetricsReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
-
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 
 	rCfg := cfg.(*Config)
@@ -108,5 +85,5 @@ func (f *Factory) CreateMetricsReceiver(
 			},
 		},
 	}
-	return carbonreceiver.New(logger, carbonCfg, consumer)
+	return carbonreceiver.New(params.Logger, carbonCfg, consumer)
 }

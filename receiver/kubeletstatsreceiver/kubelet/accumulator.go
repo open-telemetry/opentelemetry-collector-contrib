@@ -119,7 +119,16 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 		return
 	}
 
-	volume := volumeResource(podResource, s)
+	volume, err := volumeResource(podResource, s, a.metadata)
+	if err != nil {
+		a.logger.Warn(
+			"Failed to gather additional volume metadata. Skipping metric collection.",
+			zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
+			zap.String("volume", podResource.Labels[labelVolumeName]),
+			zap.Error(err),
+		)
+		return
+	}
 
 	a.accumulate(
 		nil,
