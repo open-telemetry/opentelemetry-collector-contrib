@@ -81,7 +81,7 @@ func components() (component.Factories, error) {
 		&wavefrontreceiver.Factory{},
 		redisreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
-		&simpleprometheusreceiver.Factory{},
+		simpleprometheusreceiver.NewFactory(),
 		&k8sclusterreceiver.Factory{},
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
