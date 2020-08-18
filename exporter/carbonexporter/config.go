@@ -39,35 +39,3 @@ type Config struct {
 	// The default value is defined by the DefaultSendTimeout constant.
 	Timeout time.Duration `mapstructure:"timeout"`
 }
-
-// convenience function so the default can be created without instantiating the
-// factory.
-func defaultConfig() *Config {
-	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
-		},
-		Endpoint: DefaultEndpoint,
-		Timeout:  DefaultSendTimeout,
-	}
-}
-
-// ensures that all defaults are set in the case of zero values.
-func setDefaults(cfg Config) Config {
-	defaultCfg := defaultConfig()
-
-	if cfg.ExporterSettings.TypeVal == "" {
-		cfg.ExporterSettings.TypeVal = defaultCfg.ExporterSettings.TypeVal
-	}
-	if cfg.ExporterSettings.NameVal == "" {
-		cfg.ExporterSettings.NameVal = defaultCfg.ExporterSettings.NameVal
-	}
-	if cfg.Endpoint == "" {
-		cfg.Endpoint = defaultCfg.Endpoint
-	}
-	if cfg.Timeout == 0 {
-		cfg.Timeout = defaultCfg.Timeout
-	}
-	return cfg
-}

@@ -15,10 +15,11 @@
 package carbonexporter
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -26,37 +27,31 @@ const (
 	typeStr = "carbon"
 )
 
-// Factory is the factory for Carbon exporter.
-type Factory struct {
+// NewFactory creates a factory for Carbon exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+func createDefaultConfig() configmodels.Exporter {
+	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		Endpoint: DefaultEndpoint,
+		Timeout:  DefaultSendTimeout,
+	}
 }
 
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
-	return defaultConfig()
-}
-
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
-	logger *zap.Logger,
+func createMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
-	logger *zap.Logger,
-	config configmodels.Exporter,
-) (component.MetricsExporterOld, error) {
-
-	expCfg := config.(*Config)
-
-	exp, err := New(*expCfg)
+) (component.MetricsExporter, error) {
+	exp, err := newCarbonExporter(config.(*Config))
 
 	if err != nil {
 		return nil, err
