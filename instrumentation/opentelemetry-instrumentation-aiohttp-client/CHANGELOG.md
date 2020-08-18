@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Updating span name to match semantic conventions
+  ([#972](https://github.com/open-telemetry/opentelemetry-python/pull/972))
+
 ## Version 0.12b0
 
 Released 2020-08-14

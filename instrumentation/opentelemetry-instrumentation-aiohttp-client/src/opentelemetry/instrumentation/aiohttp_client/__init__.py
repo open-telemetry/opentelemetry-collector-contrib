@@ -126,7 +126,7 @@ def create_trace_config(
     ):
         http_method = params.method.upper()
         if trace_config_ctx.span_name is None:
-            request_span_name = http_method
+            request_span_name = "HTTP {}".format(http_method)
         elif callable(trace_config_ctx.span_name):
             request_span_name = str(trace_config_ctx.span_name(params))
         else:

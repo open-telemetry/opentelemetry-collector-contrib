@@ -118,7 +118,7 @@ class TestAioHttpIntegration(TestBase):
                 self.assert_spans(
                     [
                         (
-                            "GET",
+                            "HTTP GET",
                             (span_status, None),
                             {
                                 "component": "http",
@@ -192,7 +192,7 @@ class TestAioHttpIntegration(TestBase):
         self.assert_spans(
             [
                 (
-                    "GET",
+                    "HTTP GET",
                     (StatusCanonicalCode.OK, None),
                     {
                         "component": "http",
@@ -232,7 +232,7 @@ class TestAioHttpIntegration(TestBase):
             self.assert_spans(
                 [
                     (
-                        "GET",
+                        "HTTP GET",
                         (expected_status, None),
                         {
                             "component": "http",
@@ -260,7 +260,7 @@ class TestAioHttpIntegration(TestBase):
         self.assert_spans(
             [
                 (
-                    "GET",
+                    "HTTP GET",
                     (StatusCanonicalCode.DEADLINE_EXCEEDED, None),
                     {
                         "component": "http",
@@ -290,7 +290,7 @@ class TestAioHttpIntegration(TestBase):
         self.assert_spans(
             [
                 (
-                    "GET",
+                    "HTTP GET",
                     (StatusCanonicalCode.DEADLINE_EXCEEDED, None),
                     {
                         "component": "http",
