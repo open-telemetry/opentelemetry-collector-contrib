@@ -51,14 +51,8 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Whether to report all block IO metrics.  Default is false.
-	ProvideAllBlockIOMetrics bool `mapstructure:"provide_all_block_io_metrics"`
 	// Whether to report all CPU metrics.  Default is false
-	ProvideAllCPUMetrics bool `mapstructure:"provide_all_cpu_metrics"`
-	// Whether to report all memory metrics.  Default is false
-	ProvideAllMemoryMetrics bool `mapstructure:"provide_all_memory_metrics"`
-	// Whether to report all network metrics.  Default is false
-	ProvideAllNetworkMetrics bool `mapstructure:"provide_all_network_metrics"`
+	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
 }
 
 func (config Config) Validate() error {

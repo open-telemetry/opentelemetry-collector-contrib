@@ -83,10 +83,7 @@ func TestAllMetricsIntegration(t *testing.T) {
 	consumer := &exportertest.SinkMetricsExporterOld{}
 	f, config := factory()
 
-	config.ProvideAllBlockIOMetrics = true
-	config.ProvideAllCPUMetrics = true
-	config.ProvideAllMemoryMetrics = true
-	config.ProvideAllNetworkMetrics = true
+	config.ProvidePerCoreCPUMetrics = true
 
 	receiver, err := f.CreateMetricsReceiver(context.Background(), logger, config, consumer)
 	r := receiver.(*Receiver)

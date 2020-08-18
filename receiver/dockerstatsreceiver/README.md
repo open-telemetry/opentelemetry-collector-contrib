@@ -29,15 +29,7 @@ only unmatched container image names should be monitored.
     `!/my?egex/` will monitor all containers whose name doesn't match the compiled regex `my?egex`.
     * Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
     `!my*container` will monitor all containers whose image name doesn't match the blob `my*container`.
-* `provide_all_block_io_metrics` (default = `false`): Whether to report metrics for all available blkio controller stats.
-    * By default only `container.blockio.io_service_bytes_recursive.read` and `container.blockio.io_service_bytes_recursive.write`
-    will be reported.
-* `provide_all_cpu_metrics` (default = `false`): Whether to report metrics for all available cpu stats.
-    * By default only `container.cpu.usage.system` and `container.cpu.usage.total` will be reported.
-* `provide_all_memory_metrics` (default = `false`): Whether to report metrics for all available memory stats.
-    * By default only `container.memory.usage.limit` and `container.memory.usage.total` will be reported.
-* `provide_all_network_metrics` (default = `false`): Whether to report metrics for all available network stats.
-    * By default only `container.network.io.usage.rx_bytes` and `container.network.io.usage.tx_bytes` will be reported.
+* `provide_per_core_cpu_metrics` (default = `false`): Whether to report `cpu.usage.percpu` metrics.
 
 Example:
 
@@ -57,8 +49,5 @@ receivers:
       - undesired-container
       - /.*undesired.*/
       - another-*-container
-    provide_all_block_io_metrics: true
-    provide_all_cpu_metrics: true
-    provide_all_memory_metrics: true
-    provide_all_network_metrics: true
+    provide_per_core_cpu_metrics: true
 ```

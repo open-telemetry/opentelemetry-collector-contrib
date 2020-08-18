@@ -53,10 +53,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, dcfg.ContainerLabelsToMetricLabels)
 	assert.Nil(t, dcfg.EnvVarsToMetricLabels)
 
-	assert.False(t, dcfg.ProvideAllBlockIOMetrics)
-	assert.False(t, dcfg.ProvideAllCPUMetrics)
-	assert.False(t, dcfg.ProvideAllMemoryMetrics)
-	assert.False(t, dcfg.ProvideAllNetworkMetrics)
+	assert.False(t, dcfg.ProvidePerCoreCPUMetrics)
 
 	ascfg := config.Receivers["docker_stats/allsettings"].(*Config)
 	assert.Equal(t, "docker_stats/allsettings", ascfg.Name())
@@ -79,8 +76,5 @@ func TestLoadConfig(t *testing.T) {
 		"my_other_environment_variable": "my-other-metric-label",
 	}, ascfg.EnvVarsToMetricLabels)
 
-	assert.True(t, ascfg.ProvideAllBlockIOMetrics)
-	assert.True(t, ascfg.ProvideAllCPUMetrics)
-	assert.True(t, ascfg.ProvideAllMemoryMetrics)
-	assert.True(t, ascfg.ProvideAllNetworkMetrics)
+	assert.True(t, ascfg.ProvidePerCoreCPUMetrics)
 }
