@@ -65,6 +65,7 @@ disable=missing-docstring,
       too-few-public-methods, # Might be good to re-enable this later.
       too-many-instance-attributes,
       too-many-arguments,
+      duplicate-code,
       ungrouped-imports, # Leave this up to isort
       wrong-import-order, # Leave this up to isort
       bad-continuation, # Leave this up to black
