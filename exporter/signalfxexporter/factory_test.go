@@ -16,12 +16,15 @@ package signalfxexporter
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -169,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 27, len(config.TranslationRules))
+	assert.Equal(t, 33, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -215,10 +218,10 @@ func TestDefaultTranslationRules(t *testing.T) {
 	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
 	require.NotNil(t, translated)
 
-	metrics := make(map[string][]*model.DataPoint)
+	metrics := make(map[string][]*sfxpb.DataPoint)
 	for _, pt := range translated {
 		if _, ok := metrics[pt.Metric]; !ok {
-			metrics[pt.Metric] = make([]*model.DataPoint, 0, 1)
+			metrics[pt.Metric] = make([]*sfxpb.DataPoint, 0, 1)
 		}
 		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
 	}
@@ -611,4 +614,44 @@ func md() consumerdata.MetricsData {
 		},
 	}
 	return md
+}
+
+func TestDefaultDiskTranslations(t *testing.T) {
+	file, err := os.Open("testdata/json/system.filesystem.usage.json")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, file.Close()) }()
+	bytes, err := ioutil.ReadAll(file)
+	require.NoError(t, err)
+	var pts []*sfxpb.DataPoint
+	err = json.Unmarshal(bytes, &pts)
+	require.NoError(t, err)
+
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(t, err)
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules)
+	require.NoError(t, err)
+
+	translated := tr.TranslateDataPoints(zap.NewNop(), pts)
+	require.NotNil(t, translated)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated {
+		l := m[pt.Metric]
+		l = append(l, pt)
+		m[pt.Metric] = l
+	}
+
+	dtPts := m["disk.total"]
+	require.Equal(t, 4, len(dtPts))
+	require.Equal(t, 4, len(dtPts[0].Dimensions))
+
+	dstPts := m["disk.summary_total"]
+	require.Equal(t, 1, len(dstPts))
+	require.Equal(t, 3, len(dstPts[0].Dimensions))
+
+	utPts, ok := m["df_complex.used_total"]
+	require.True(t, ok)
+	require.Equal(t, 1, len(utPts))
+	require.Equal(t, 3, len(utPts[0].Dimensions))
 }

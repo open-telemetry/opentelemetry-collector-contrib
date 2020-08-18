@@ -74,15 +74,15 @@ func components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactoryBase{
-		&collectdreceiver.Factory{},
+		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
-		&signalfxreceiver.Factory{},
-		&carbonreceiver.Factory{},
-		&wavefrontreceiver.Factory{},
+		signalfxreceiver.NewFactory(),
+		carbonreceiver.NewFactory(),
+		wavefrontreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
-		&simpleprometheusreceiver.Factory{},
-		&k8sclusterreceiver.Factory{},
+		simpleprometheusreceiver.NewFactory(),
+		k8sclusterreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 	}

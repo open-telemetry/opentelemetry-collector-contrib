@@ -17,12 +17,14 @@ package sapmexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
@@ -55,6 +57,20 @@ func TestLoadConfig(t *testing.T) {
 			MaxConnections:   45,
 			AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 				AccessTokenPassthrough: false,
+			},
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 10 * time.Second,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         true,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			QueueSettings: exporterhelper.QueueSettings{
+				Enabled:      true,
+				NumConsumers: 2,
+				QueueSize:    10,
 			},
 		})
 }

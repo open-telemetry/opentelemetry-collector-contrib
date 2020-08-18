@@ -18,19 +18,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
 func TestFactory(t *testing.T) {
-	f := &Factory{}
-	assert.Equal(t, configmodels.Type("prometheus_simple"), f.Type())
-
+	f := NewFactory()
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
 
@@ -42,12 +37,4 @@ func TestFactory(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-
-	_, err = f.CreateTraceReceiver(
-		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
-		cfg,
-		&testbed.MockTraceConsumer{},
-	)
-	require.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
 }
