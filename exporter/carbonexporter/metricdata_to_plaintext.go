@@ -81,70 +81,72 @@ const (
 // 	  a single Carbon metric.
 //  - number of time series successfully converted to carbon.
 // 	- number of time series that could not be converted to Carbon.
-func metricDataToPlaintext(md consumerdata.MetricsData) (string, int, int) {
-	if len(md.Metrics) == 0 {
+func metricDataToPlaintext(mds []consumerdata.MetricsData) (string, int, int) {
+	if len(mds) == 0 {
 		return "", 0, 0
 	}
-
 	var sb strings.Builder
 	numTimeseriesDropped := 0
 	totalTimeseries := 0
-	for _, metric := range md.Metrics {
-		totalTimeseries++
-		descriptor := metric.MetricDescriptor
-		name := descriptor.GetName()
-		if name == "" {
-			numTimeseriesDropped += len(metric.Timeseries)
-			// TODO: observability for this, debug logging.
-			continue
-		}
 
-		tagKeys := buildSanitizedTagKeys(metric.MetricDescriptor.LabelKeys)
-
-		for _, ts := range metric.Timeseries {
-			if len(tagKeys) != len(ts.LabelValues) {
-				numTimeseriesDropped++
-				// TODO: observability with debug, something like the message below:
-				//	"inconsistent number of labelKeys(%d) and labelValues(%d) for metric %q",
-				//	len(tagKeys),
-				//	len(labelValues),
-				//	name)
-
+	for _, md := range mds {
+		for _, metric := range md.Metrics {
+			totalTimeseries++
+			descriptor := metric.MetricDescriptor
+			name := descriptor.GetName()
+			if name == "" {
+				numTimeseriesDropped += len(metric.Timeseries)
+				// TODO: observability for this, debug logging.
 				continue
 			}
 
-			// From this point on all code below is safe to assume that
-			// len(tagKeys) is equal to len(labelValues).
+			tagKeys := buildSanitizedTagKeys(metric.MetricDescriptor.LabelKeys)
 
-			for _, point := range ts.Points {
-				timestampStr := formatInt64(point.GetTimestamp().GetSeconds())
+			for _, ts := range metric.Timeseries {
+				if len(tagKeys) != len(ts.LabelValues) {
+					numTimeseriesDropped++
+					// TODO: observability with debug, something like the message below:
+					//	"inconsistent number of labelKeys(%d) and labelValues(%d) for metric %q",
+					//	len(tagKeys),
+					//	len(labelValues),
+					//	name)
 
-				switch pv := point.Value.(type) {
+					continue
+				}
 
-				case *metricspb.Point_Int64Value:
-					path := buildPath(name, tagKeys, ts.LabelValues)
-					valueStr := formatInt64(pv.Int64Value)
-					sb.WriteString(buildLine(path, valueStr, timestampStr))
+				// From this point on all code below is safe to assume that
+				// len(tagKeys) is equal to len(labelValues).
 
-				case *metricspb.Point_DoubleValue:
-					path := buildPath(name, tagKeys, ts.LabelValues)
-					valueStr := formatFloatForValue(pv.DoubleValue)
-					sb.WriteString(buildLine(path, valueStr, timestampStr))
+				for _, point := range ts.Points {
+					timestampStr := formatInt64(point.GetTimestamp().GetSeconds())
 
-				case *metricspb.Point_DistributionValue:
-					err := buildDistributionIntoBuilder(
-						&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.DistributionValue)
-					if err != nil {
-						// TODO: log error info
-						numTimeseriesDropped++
-					}
+					switch pv := point.Value.(type) {
 
-				case *metricspb.Point_SummaryValue:
-					err := buildSummaryIntoBuilder(
-						&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.SummaryValue)
-					if err != nil {
-						// TODO: log error info
-						numTimeseriesDropped++
+					case *metricspb.Point_Int64Value:
+						path := buildPath(name, tagKeys, ts.LabelValues)
+						valueStr := formatInt64(pv.Int64Value)
+						sb.WriteString(buildLine(path, valueStr, timestampStr))
+
+					case *metricspb.Point_DoubleValue:
+						path := buildPath(name, tagKeys, ts.LabelValues)
+						valueStr := formatFloatForValue(pv.DoubleValue)
+						sb.WriteString(buildLine(path, valueStr, timestampStr))
+
+					case *metricspb.Point_DistributionValue:
+						err := buildDistributionIntoBuilder(
+							&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.DistributionValue)
+						if err != nil {
+							// TODO: log error info
+							numTimeseriesDropped++
+						}
+
+					case *metricspb.Point_SummaryValue:
+						err := buildSummaryIntoBuilder(
+							&sb, name, tagKeys, ts.LabelValues, timestampStr, pv.SummaryValue)
+						if err != nil {
+							// TODO: log error info
+							numTimeseriesDropped++
+						}
 					}
 				}
 			}
