@@ -169,7 +169,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			observedLogger, logs := observer.New(zapcore.WarnLevel)
 			logger := zap.New(observedLogger)
 
-			var mds []*consumerdata.MetricsData
+			var mds []consumerdata.MetricsData
 			acc := metricDataAccumulator{
 				m:                     mds,
 				metadata:              tt.metadata,

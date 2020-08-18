@@ -31,13 +31,19 @@ import (
 )
 
 const (
-	dataLen = numContainers + numPods + numNodes + numVolumes
+	dataLen = numContainers*containerMetrics + numPods*podMetrics + numNodes*nodeMetrics + numVolumes*volumeMetrics
 
 	// Number of resources by type in testdata/stats-summary.json
 	numContainers = 9
 	numPods       = 9
 	numNodes      = 1
-	numVolumes    = 9
+	numVolumes    = 8
+
+	// Number of metrics by resource
+	nodeMetrics      = 15
+	podMetrics       = 15
+	containerMetrics = 11
+	volumeMetrics    = 5
 )
 
 var allMetricGroups = map[kubelet.MetricGroup]bool{
@@ -63,7 +69,7 @@ func TestRunnable(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Run()
 	require.NoError(t, err)
-	require.Equal(t, dataLen, len(consumer.AllMetrics()))
+	require.Equal(t, dataLen, consumer.MetricsCount())
 }
 
 func TestRunnableWithMetadata(t *testing.T) {
@@ -81,7 +87,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.ContainerMetricGroup: true,
 			},
-			dataLen:       numContainers,
+			dataLen:       numContainers * containerMetrics,
 			metricPrefix:  "container.",
 			requiredLabel: "container.id",
 		},
@@ -91,7 +97,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.VolumeMetricGroup: true,
 			},
-			dataLen:       numVolumes,
+			dataLen:       numVolumes * volumeMetrics,
 			metricPrefix:  "k8s.volume.",
 			requiredLabel: "k8s.volume.type",
 		},
@@ -115,7 +121,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 			require.NoError(t, err)
 			err = r.Run()
 			require.NoError(t, err)
-			require.Equal(t, tt.dataLen, len(consumer.AllMetrics()))
+			require.Equal(t, tt.dataLen, consumer.MetricsCount())
 
 			for _, metrics := range consumer.AllMetrics() {
 				md := pdatautil.MetricsToMetricsData(metrics)[0]
@@ -147,28 +153,28 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.ContainerMetricGroup: true,
 			},
-			dataLen: numContainers,
+			dataLen: numContainers * containerMetrics,
 		},
 		{
 			name: "only pod group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.PodMetricGroup: true,
 			},
-			dataLen: numPods,
+			dataLen: numPods * podMetrics,
 		},
 		{
 			name: "only node group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.NodeMetricGroup: true,
 			},
-			dataLen: numNodes,
+			dataLen: numNodes * nodeMetrics,
 		},
 		{
 			name: "only volume group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.VolumeMetricGroup: true,
 			},
-			dataLen: numVolumes,
+			dataLen: numVolumes * volumeMetrics,
 		},
 		{
 			name: "pod and node groups",
@@ -176,7 +182,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 				kubelet.PodMetricGroup:  true,
 				kubelet.NodeMetricGroup: true,
 			},
-			dataLen: numNodes + numPods,
+			dataLen: numNodes*nodeMetrics + numPods*podMetrics,
 		},
 	}
 	for _, test := range tests {
@@ -199,7 +205,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 			err = r.Run()
 			require.NoError(t, err)
 
-			require.Equal(t, test.dataLen, len(consumer.AllMetrics()))
+			require.Equal(t, test.dataLen, consumer.MetricsCount())
 		})
 	}
 }
@@ -279,7 +285,7 @@ func TestConsumerErrors(t *testing.T) {
 		numLogs int
 	}{
 		{"no error", false, 0},
-		{"consume error", true, dataLen},
+		{"consume error", true, 1},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
