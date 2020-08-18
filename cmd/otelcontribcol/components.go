@@ -74,7 +74,7 @@ func components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactoryBase{
-		&collectdreceiver.Factory{},
+		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
 		signalfxreceiver.NewFactory(),
 		&carbonreceiver.Factory{},
