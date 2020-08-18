@@ -36,7 +36,7 @@ type Server interface {
 	// the Parser and passed to the next consumer.
 	ListenAndServe(
 		p protocol.Parser,
-		mc consumer.MetricsConsumerOld,
+		mc consumer.MetricsConsumer,
 		r Reporter,
 	) error
 
