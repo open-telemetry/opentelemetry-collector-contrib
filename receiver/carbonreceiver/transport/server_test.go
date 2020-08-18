@@ -15,7 +15,6 @@
 package transport
 
 import (
-	"context"
 	"net"
 	"runtime"
 	"strconv"
@@ -25,7 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
@@ -69,7 +69,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			port, err := strconv.Atoi(portStr)
 			require.NoError(t, err)
 
-			mc := &mockMetricsConsumer{}
+			mc := new(exportertest.SinkMetricsExporter)
 			p, err := (&protocol.PlaintextConfig{}).BuildParser()
 			require.NoError(t, err)
 			mr := NewMockReporter(1)
@@ -103,21 +103,13 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			wgListenAndServe.Wait()
 
-			require.Equal(t, 1, len(mc.md))
-			assert.Equal(t, "test.metric", mc.md[0].Metrics[0].GetMetricDescriptor().GetName())
+			mdd := mc.AllMetrics()
+			require.Len(t, mdd, 1)
+			ocmd := pdatautil.MetricsToMetricsData(mdd[0])
+			require.Len(t, ocmd, 1)
+			require.Len(t, ocmd[0].Metrics, 1)
+			metric := ocmd[0].Metrics[0]
+			assert.Equal(t, "test.metric", metric.GetMetricDescriptor().GetName())
 		})
 	}
-}
-
-type mockMetricsConsumer struct {
-	sync.Mutex
-	md []consumerdata.MetricsData
-}
-
-func (m *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, td consumerdata.MetricsData) error {
-	m.Lock()
-	m.md = append(m.md, td)
-	m.Unlock()
-
-	return nil
 }
