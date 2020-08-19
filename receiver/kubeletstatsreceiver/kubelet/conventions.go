@@ -17,4 +17,5 @@ package kubelet
 const (
 	labelNodeName   = "k8s.node.name"
 	labelVolumeName = "k8s.volume.name"
+	labelVolumeType = "k8s.volume.type"
 )

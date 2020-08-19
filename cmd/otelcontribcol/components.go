@@ -61,7 +61,7 @@ func components() (component.Factories, error) {
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
-		&hostobserver.Factory{},
+		hostobserver.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -73,16 +73,16 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := []component.ReceiverFactoryBase{
-		&collectdreceiver.Factory{},
+	receivers := []component.ReceiverFactory{
+		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
-		&signalfxreceiver.Factory{},
-		&carbonreceiver.Factory{},
-		&wavefrontreceiver.Factory{},
+		signalfxreceiver.NewFactory(),
+		carbonreceiver.NewFactory(),
+		wavefrontreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
-		&simpleprometheusreceiver.Factory{},
-		&k8sclusterreceiver.Factory{},
+		simpleprometheusreceiver.NewFactory(),
+		k8sclusterreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 	}
@@ -101,7 +101,7 @@ func components() (component.Factories, error) {
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
-		&carbonexporter.Factory{},
+		carbonexporter.NewFactory(),
 		&honeycombexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
@@ -122,7 +122,7 @@ func components() (component.Factories, error) {
 	processors := []component.ProcessorFactoryBase{
 		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
-		&metricstransformprocessor.Factory{},
+		metricstransformprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

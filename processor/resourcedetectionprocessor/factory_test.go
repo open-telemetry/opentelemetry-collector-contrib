@@ -24,8 +24,7 @@ import (
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	var factory Factory
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.NotNil(t, cfg)
 }

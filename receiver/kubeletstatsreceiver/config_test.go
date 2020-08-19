@@ -121,8 +121,11 @@ func TestLoadConfig(t *testing.T) {
 				AuthType: "serviceAccount",
 			},
 		},
-		CollectionInterval:  duration,
-		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+		CollectionInterval: duration,
+		ExtraMetadataLabels: []kubelet.MetadataLabel{
+			kubelet.MetadataLabelContainerID,
+			kubelet.MetadataLabelVolumeType,
+		},
 		MetricGroupsToCollect: []kubelet.MetricGroup{
 			kubelet.ContainerMetricGroup,
 			kubelet.PodMetricGroup,

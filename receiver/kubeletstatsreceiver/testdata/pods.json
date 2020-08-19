@@ -19,6 +19,21 @@
         "name": "go-hello-world-5456b4b8cd-99vxc",
         "uid": "42ad382b-ed0b-446d-9aab-3fdce8b4f9e2"
       },
+      "spec": {
+        "volumes": [
+          {
+            "name": "default-token-wgfsl",
+            "secret": {
+              "secretName": "default-token-ndwz2",
+              "defaultMode": 420
+            }
+          },
+          {
+            "name": "test-missing-metrics",
+            "secret": {}
+          }
+        ]
+      },
       "status": {
         "containerStatuses": [
           {
@@ -47,6 +62,30 @@
         "name": "coredns-66bff467f8-szddj",
         "uid": "0adffe8e-9849-4e05-b4cd-92d2d1e1f1c3"
       },
+      "spec": {
+        "volumes": [
+          {
+            "name": "config-volume",
+            "configMap": {
+              "name": "coredns",
+              "items": [
+                {
+                  "key": "Corefile",
+                  "path": "Corefile"
+                }
+              ],
+              "defaultMode": 420
+            }
+          },
+          {
+            "name": "coredns-token-dzc5t",
+            "secret": {
+              "secretName": "coredns-token-hwxlx",
+              "defaultMode": 420
+            }
+          }
+        ]
+      },
       "status": {
         "containerStatuses": [
           {
@@ -60,6 +99,30 @@
       "metadata": {
         "name": "coredns-66bff467f8-58qvv",
         "uid": "eb632b33-62c6-4a80-9575-a97ab363ad7f"
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "config-volume",
+            "configMap": {
+              "name": "coredns",
+              "items": [
+                {
+                  "key": "Corefile",
+                  "path": "Corefile"
+                }
+              ],
+              "defaultMode": 420
+            }
+          },
+          {
+            "name": "coredns-token-dzc5t",
+            "secret": {
+              "secretName": "coredns-token-dzc5t",
+              "defaultMode": 420
+            }
+          }
+        ]
       },
       "status": {
         "containerStatuses": [
@@ -89,6 +152,24 @@
         "name": "kube-proxy-v48tf",
         "uid": "0a6d6b05-0e8d-4920-8a38-926a33164d45"
       },
+      "spec": {
+        "volumes": [
+          {
+            "name": "kube-proxy",
+            "configMap": {
+              "name": "kube-proxy",
+              "defaultMode": 420
+            }
+          },
+          {
+            "name": "kube-proxy-token-2z27z",
+            "secret": {
+              "secretName": "kube-proxy-token-2z27z",
+              "defaultMode": 420
+            }
+          }
+        ]
+      },
       "status": {
         "containerStatuses": [
           {
@@ -102,6 +183,24 @@
       "metadata": {
         "name": "storage-provisioner",
         "uid": "14bf95e0-9451-4192-b111-807b03163670"
+      },
+      "spec": {
+        "volumes": [
+          {
+            "name": "tmp",
+            "hostPath": {
+              "path": "/tmp",
+              "type": "Directory"
+            }
+          },
+          {
+            "name": "storage-provisioner-token-qzlx6",
+            "secret": {
+              "secretName": "storage-provisioner-token-qzlx6",
+              "defaultMode": 420
+            }
+          }
+        ]
       },
       "status": {
         "containerStatuses": [

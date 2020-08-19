@@ -17,60 +17,14 @@ package translator
 import (
 	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-// AWS-specific OpenTelemetry attribute names
-const (
-	AWSOperationAttribute = "aws.operation"
-	AWSAccountAttribute   = "aws.account_id"
-	AWSRegionAttribute    = "aws.region"
-	AWSRequestIDAttribute = "aws.request_id"
-	// Currently different instrumentation uses different tag formats.
-	// TODO(anuraaga): Find current instrumentation and consolidate.
-	AWSRequestIDAttribute2 = "aws.requestId"
-	AWSQueueURLAttribute   = "aws.queue_url"
-	AWSQueueURLAttribute2  = "aws.queue.url"
-	AWSServiceAttribute    = "aws.service"
-	AWSTableNameAttribute  = "aws.table_name"
-	AWSTableNameAttribute2 = "aws.table.name"
-)
-
-// AWSData provides the shape for unmarshalling AWS resource data.
-type AWSData struct {
-	AccountID         string             `json:"account_id,omitempty"`
-	BeanstalkMetadata *BeanstalkMetadata `json:"elastic_beanstalk,omitempty"`
-	ECSMetadata       *ECSMetadata       `json:"ecs,omitempty"`
-	EC2Metadata       *EC2Metadata       `json:"ec2,omitempty"`
-	Operation         string             `json:"operation,omitempty"`
-	RemoteRegion      string             `json:"region,omitempty"`
-	RequestID         string             `json:"request_id,omitempty"`
-	QueueURL          string             `json:"queue_url,omitempty"`
-	TableName         string             `json:"table_name,omitempty"`
-}
-
-// EC2Metadata provides the shape for unmarshalling EC2 metadata.
-type EC2Metadata struct {
-	InstanceID       string `json:"instance_id"`
-	AvailabilityZone string `json:"availability_zone"`
-	InstanceSize     string `json:"instance_size"`
-	AmiID            string `json:"ami_id"`
-}
-
-// ECSMetadata provides the shape for unmarshalling ECS metadata.
-type ECSMetadata struct {
-	ContainerName string `json:"container"`
-}
-
-// BeanstalkMetadata provides the shape for unmarshalling Elastic Beanstalk environment metadata.
-type BeanstalkMetadata struct {
-	Environment  string `json:"environment_name"`
-	VersionLabel string `json:"version_label"`
-	DeploymentID int64  `json:"deployment_id"`
-}
-
-func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *AWSData) {
+func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *awsxray.AWSData) {
 	var (
 		cloud        string
 		account      string
@@ -87,9 +41,14 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		requestID    string
 		queueURL     string
 		tableName    string
-		ec2          *EC2Metadata
-		ecs          *ECSMetadata
-		ebs          *BeanstalkMetadata
+		sdk          string
+		sdkName      string
+		sdkLanguage  string
+		sdkVersion   string
+		autoVersion  string
+		ec2          *awsxray.EC2Metadata
+		ecs          *awsxray.ECSMetadata
+		ebs          *awsxray.BeanstalkMetadata
 	)
 
 	filtered := make(map[string]string)
@@ -120,31 +79,39 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				deployID = value.StringVal()
 			case semconventions.AttributeServiceVersion:
 				versionLabel = value.StringVal()
+			case semconventions.AttributeTelemetrySDKName:
+				sdkName = value.StringVal()
+			case semconventions.AttributeTelemetrySDKLanguage:
+				sdkLanguage = value.StringVal()
+			case semconventions.AttributeTelemetrySDKVersion:
+				sdkVersion = value.StringVal()
+			case semconventions.AttributeTelemetryAutoVersion:
+				autoVersion = value.StringVal()
 			}
 		})
 	}
 
 	for key, value := range attributes {
 		switch key {
-		case AWSOperationAttribute:
+		case awsxray.AWSOperationAttribute:
 			operation = value
-		case AWSAccountAttribute:
+		case awsxray.AWSAccountAttribute:
 			if value != "" {
 				account = value
 			}
-		case AWSRegionAttribute:
+		case awsxray.AWSRegionAttribute:
 			remoteRegion = value
-		case AWSRequestIDAttribute:
+		case awsxray.AWSRequestIDAttribute:
 			fallthrough
-		case AWSRequestIDAttribute2:
+		case awsxray.AWSRequestIDAttribute2:
 			requestID = value
-		case AWSQueueURLAttribute:
+		case awsxray.AWSQueueURLAttribute:
 			fallthrough
-		case AWSQueueURLAttribute2:
+		case awsxray.AWSQueueURLAttribute2:
 			queueURL = value
-		case AWSTableNameAttribute:
+		case awsxray.AWSTableNameAttribute:
 			fallthrough
-		case AWSTableNameAttribute2:
+		case awsxray.AWSTableNameAttribute2:
 			tableName = value
 		default:
 			filtered[key] = value
@@ -156,16 +123,16 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	// progress from least specific to most specific origin so most specific ends up as origin
 	// as per X-Ray docs
 	if hostID != "" {
-		ec2 = &EC2Metadata{
-			InstanceID:       hostID,
-			AvailabilityZone: zone,
-			InstanceSize:     hostType,
-			AmiID:            amiID,
+		ec2 = &awsxray.EC2Metadata{
+			InstanceID:       aws.String(hostID),
+			AvailabilityZone: aws.String(zone),
+			InstanceSize:     aws.String(hostType),
+			AmiID:            aws.String(amiID),
 		}
 	}
 	if container != "" {
-		ecs = &ECSMetadata{
-			ContainerName: container,
+		ecs = &awsxray.ECSMetadata{
+			ContainerName: aws.String(container),
 		}
 	}
 	if deployID != "" {
@@ -173,22 +140,38 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		if err != nil {
 			deployNum = 0
 		}
-		ebs = &BeanstalkMetadata{
-			Environment:  namespace,
-			DeploymentID: deployNum,
-			VersionLabel: versionLabel,
+		ebs = &awsxray.BeanstalkMetadata{
+			Environment:  aws.String(namespace),
+			DeploymentID: aws.Int64(deployNum),
+			VersionLabel: aws.String(versionLabel),
 		}
 	}
-	awsData := &AWSData{
-		AccountID:         account,
-		BeanstalkMetadata: ebs,
-		ECSMetadata:       ecs,
-		EC2Metadata:       ec2,
-		Operation:         operation,
-		RemoteRegion:      remoteRegion,
-		RequestID:         requestID,
-		QueueURL:          queueURL,
-		TableName:         tableName,
+
+	if sdkName != "" && sdkLanguage != "" {
+		// Convention for SDK name for xray SDK information is e.g., `X-Ray SDK for Java`, `X-Ray for Go`.
+		// We fill in with e.g, `opentelemetry for java` by using the conventions
+		sdk = sdkName + " for " + sdkLanguage
+	} else {
+		sdk = sdkName
+	}
+
+	xray := &awsxray.XRayMetaData{
+		SDK:                 aws.String(sdk),
+		SDKVersion:          aws.String(sdkVersion),
+		AutoInstrumentation: aws.Bool(autoVersion != ""),
+	}
+
+	awsData := &awsxray.AWSData{
+		AccountID:    aws.String(account),
+		Beanstalk:    ebs,
+		ECS:          ecs,
+		EC2:          ec2,
+		XRay:         xray,
+		Operation:    aws.String(operation),
+		RemoteRegion: aws.String(remoteRegion),
+		RequestID:    aws.String(requestID),
+		QueueURL:     aws.String(queueURL),
+		TableName:    aws.String(tableName),
 	}
 	return filtered, awsData
 }
