@@ -86,7 +86,7 @@ func components() (component.Factories, error) {
 		k8sclusterreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
-		&statsdreceiver.Factory{},
+		statsdreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)

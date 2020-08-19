@@ -40,7 +40,7 @@ type statsdReceiver struct {
 	server       transport.Server
 	reporter     transport.Reporter
 	parser       protocol.Parser
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 
 	startOnce sync.Once
 	stopOnce  sync.Once
@@ -50,7 +50,8 @@ type statsdReceiver struct {
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumerOld) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
