@@ -23,21 +23,13 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 )
 
-func TestType(t *testing.T) {
-	factory := &Factory{}
-	typ := factory.Type()
-	require.EqualValues(t, "host_observer", typ)
-}
-
 func TestValidConfig(t *testing.T) {
-	factory := &Factory{}
-	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
+	err := configcheck.ValidateConfig(createDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
-	hostObserver, err := factory.CreateExtension(
+	hostObserver, err := createExtension(
 		context.Background(),
 		component.ExtensionCreateParams{},
 		&Config{},
