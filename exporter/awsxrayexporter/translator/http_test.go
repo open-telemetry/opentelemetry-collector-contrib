@@ -83,7 +83,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 
-	assert.Equal(t, "10.8.17.36", httpData.Request.ClientIP)
+	assert.Equal(t, "10.8.17.36", *httpData.Request.ClientIP)
 
 	w := testWriters.borrow()
 	if err := w.Encode(httpData); err != nil {
@@ -105,7 +105,7 @@ func TestClientSpanWithHttpPeerAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 
-	assert.Equal(t, "1.2.3.4", httpData.Request.ClientIP)
+	assert.Equal(t, "1.2.3.4", *httpData.Request.ClientIP)
 }
 
 func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
