@@ -43,7 +43,7 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []*consumerdata.MetricsData
+	m                     []consumerdata.MetricsData
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -119,7 +119,16 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 		return
 	}
 
-	volume := volumeResource(podResource, s)
+	volume, err := volumeResource(podResource, s, a.metadata)
+	if err != nil {
+		a.logger.Warn(
+			"Failed to gather additional volume metadata. Skipping metric collection.",
+			zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
+			zap.String("volume", podResource.Labels[labelVolumeName]),
+			zap.Error(err),
+		)
+		return
+	}
 
 	a.accumulate(
 		nil,
@@ -142,7 +151,7 @@ func (a *metricDataAccumulator) accumulate(
 			}
 		}
 	}
-	a.m = append(a.m, &consumerdata.MetricsData{
+	a.m = append(a.m, consumerdata.MetricsData{
 		Resource: r,
 		Metrics:  resourceMetrics,
 	})

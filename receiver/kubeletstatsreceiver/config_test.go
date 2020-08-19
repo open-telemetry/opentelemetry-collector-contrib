@@ -34,7 +34,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	require.NoError(t, err)
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -121,8 +121,11 @@ func TestLoadConfig(t *testing.T) {
 				AuthType: "serviceAccount",
 			},
 		},
-		CollectionInterval:  duration,
-		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
+		CollectionInterval: duration,
+		ExtraMetadataLabels: []kubelet.MetadataLabel{
+			kubelet.MetadataLabelContainerID,
+			kubelet.MetadataLabelVolumeType,
+		},
 		MetricGroupsToCollect: []kubelet.MetricGroup{
 			kubelet.ContainerMetricGroup,
 			kubelet.PodMetricGroup,

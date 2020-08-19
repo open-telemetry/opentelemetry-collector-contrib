@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	receiverType := "prometheus_simple"
 	factories.Receivers[configmodels.Type(receiverType)] = factory
 	cfg, err := configtest.LoadConfigFile(

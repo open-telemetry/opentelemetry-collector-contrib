@@ -88,6 +88,9 @@ type Operation struct {
 
 	// ValueActions is a list of renaming actions for label values.
 	ValueActions []ValueAction `mapstructure:"value_actions"`
+
+	// LabelValue identifies the exact label value to operate on
+	LabelValue string `mapstructure:"label_value"`
 }
 
 // ValueAction renames label values.
@@ -131,6 +134,9 @@ const (
 	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
+
+	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
+	DeleteLabelValue OperationAction = "delete_label_value"
 
 	// Mean indicates taking the mean of the aggregated data.
 	Mean AggregationType = "mean"

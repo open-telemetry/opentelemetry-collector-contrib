@@ -17,36 +17,20 @@ package translator
 import (
 	"strconv"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-// HTTPData provides the shape for unmarshalling request and response data.
-type HTTPData struct {
-	Request  RequestData  `json:"request,omitempty"`
-	Response ResponseData `json:"response,omitempty"`
-}
-
-// RequestData provides the shape for unmarshalling request data.
-type RequestData struct {
-	Method        string `json:"method,omitempty"`
-	URL           string `json:"url,omitempty"` // http(s)://host/path
-	ClientIP      string `json:"client_ip,omitempty"`
-	UserAgent     string `json:"user_agent,omitempty"`
-	XForwardedFor bool   `json:"x_forwarded_for,omitempty"`
-	Traced        bool   `json:"traced,omitempty"`
-}
-
-// ResponseData provides the shape for unmarshalling response data.
-type ResponseData struct {
-	Status        int64 `json:"status,omitempty"`
-	ContentLength int64 `json:"content_length,omitempty"`
-}
-
-func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
+func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 	var (
-		info     HTTPData
+		info = awsxray.HTTPData{
+			Request:  &awsxray.RequestData{},
+			Response: &awsxray.ResponseData{},
+		}
 		filtered = make(map[string]string)
 		urlParts = make(map[string]string)
 	)
@@ -60,17 +44,17 @@ func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
 	span.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
-			info.Request.Method = value.StringVal()
+			info.Request.Method = aws.String(value.StringVal())
 			hasHTTP = true
 		case semconventions.AttributeHTTPClientIP:
-			info.Request.ClientIP = value.StringVal()
-			info.Request.XForwardedFor = true
+			info.Request.ClientIP = aws.String(value.StringVal())
+			info.Request.XForwardedFor = aws.Bool(true)
 			hasHTTP = true
 		case semconventions.AttributeHTTPUserAgent:
-			info.Request.UserAgent = value.StringVal()
+			info.Request.UserAgent = aws.String(value.StringVal())
 			hasHTTP = true
 		case semconventions.AttributeHTTPStatusCode:
-			info.Response.Status = value.IntVal()
+			info.Response.Status = aws.Int64(value.IntVal())
 			hasHTTP = true
 		case semconventions.AttributeHTTPURL:
 			urlParts[key] = value.StringVal()
@@ -104,8 +88,8 @@ func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
 			}
 		case semconventions.AttributeNetPeerIP:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
-			if info.Request.ClientIP == "" {
-				info.Request.ClientIP = value.StringVal()
+			if info.Request.ClientIP == nil {
+				info.Request.ClientIP = aws.String(value.StringVal())
 			}
 			urlParts[key] = value.StringVal()
 		default:
@@ -119,17 +103,17 @@ func makeHTTP(span pdata.Span) (map[string]string, *HTTPData) {
 	}
 
 	if span.Kind() == pdata.SpanKindSERVER {
-		info.Request.URL = constructServerURL(urlParts)
+		info.Request.URL = aws.String(constructServerURL(urlParts))
 	} else {
-		info.Request.URL = constructClientURL(urlParts)
+		info.Request.URL = aws.String(constructClientURL(urlParts))
 	}
 
-	if !span.Status().IsNil() && info.Response.Status == 0 {
+	if !span.Status().IsNil() && info.Response.Status == nil {
 		// TODO(anuraaga): Replace with direct translator of StatusCode without casting to int
-		info.Response.Status = int64(tracetranslator.HTTPStatusCodeFromOCStatus(int32(span.Status().Code())))
+		info.Response.Status = aws.Int64(int64(tracetranslator.HTTPStatusCodeFromOCStatus(int32(span.Status().Code()))))
 	}
 
-	info.Response.ContentLength = extractResponseSizeFromEvents(span)
+	info.Response.ContentLength = aws.Int64(extractResponseSizeFromEvents(span))
 
 	return filtered, &info
 }

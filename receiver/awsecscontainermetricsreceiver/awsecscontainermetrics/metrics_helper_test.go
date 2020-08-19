@@ -12,18 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package awsecscontainermetrics
 
 import (
-	"os"
-	"time"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-const defaultSleepTime = 5 * time.Millisecond
+func TestGenerateDummyMetrics(t *testing.T) {
+	data := GenerateDummyMetrics()
 
-// This program is simply a test program that does nothing but crash after a certain time, with a non-zero exit code, used in
-// subprocessmanager tests
-func main() {
-	time.Sleep(defaultSleepTime)
-	os.Exit(2)
+	require.NotNil(t, data)
 }

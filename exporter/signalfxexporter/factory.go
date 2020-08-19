@@ -15,15 +15,15 @@
 package signalfxexporter
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	otelconfig "go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -36,17 +36,15 @@ const (
 	defaultHTTPTimeout = time.Second * 5
 )
 
-// Factory is the factory for SignalFx exporter.
-type Factory struct {
+// NewFactory creates a factory for SignalFx exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -61,19 +59,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
-	logger *zap.Logger,
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
-	logger *zap.Logger,
-	config configmodels.Exporter,
-) (exp component.MetricsExporterOld, err error) {
+) (exp component.MetricsExporter, err error) {
 
 	expCfg := config.(*Config)
 	if expCfg.SendCompatibleMetrics && expCfg.TranslationRules == nil {
@@ -83,7 +73,7 @@ func (f *Factory) CreateMetricsExporter(
 		}
 	}
 
-	exp, err = New(expCfg, logger)
+	exp, err = newSignalFxExporter(expCfg, params.Logger)
 
 	if err != nil {
 		return nil, err

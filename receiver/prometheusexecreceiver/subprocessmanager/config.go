@@ -18,8 +18,6 @@ package subprocessmanager
 type SubprocessConfig struct {
 	// Command is the command to be run (binary + flags, separated by commas)
 	Command string `mapstructure:"exec"`
-	// Port is the port assigned to the Receiver, and to the {{port}} template variables
-	Port int `mapstructure:"port"`
 	// Env is a list of env variables to pass to a specific command
 	Env []EnvConfig `mapstructure:"env"`
 }

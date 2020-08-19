@@ -23,9 +23,12 @@ import (
 	"regexp"
 	"time"
 
+	awsP "github.com/aws/aws-sdk-go/aws"
 	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -60,43 +63,6 @@ const (
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
-// Segment provides the shape for unmarshalling segment data.
-type Segment struct {
-	// Required
-	TraceID   string  `json:"trace_id,omitempty"`
-	ID        string  `json:"id"`
-	Name      string  `json:"name"`
-	StartTime float64 `json:"start_time"`
-	EndTime   float64 `json:"end_time,omitempty"`
-
-	// Optional
-	InProgress  bool       `json:"in_progress,omitempty"`
-	ParentID    string     `json:"parent_id,omitempty"`
-	Fault       bool       `json:"fault,omitempty"`
-	Error       bool       `json:"error,omitempty"`
-	Throttle    bool       `json:"throttle,omitempty"`
-	Cause       *CauseData `json:"cause,omitempty"`
-	ResourceARN string     `json:"resource_arn,omitempty"`
-	Origin      string     `json:"origin,omitempty"`
-
-	Type         string   `json:"type,omitempty"`
-	Namespace    string   `json:"namespace,omitempty"`
-	User         string   `json:"user,omitempty"`
-	PrecursorIDs []string `json:"precursor_ids,omitempty"`
-
-	HTTP *HTTPData `json:"http,omitempty"`
-	AWS  *AWSData  `json:"aws,omitempty"`
-
-	Service *ServiceData `json:"service,omitempty"`
-
-	// SQL
-	SQL *SQLData `json:"sql,omitempty"`
-
-	// Metadata
-	Annotations map[string]interface{}            `json:"annotations,omitempty"`
-	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
-}
-
 var (
 	writers = newWriterPool(2048)
 )
@@ -114,7 +80,7 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource) (string
 }
 
 // MakeSegment converts an OpenCensus Span to an X-Ray Segment
-func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
+func MakeSegment(span pdata.Span, resource pdata.Resource) awsxray.Segment {
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceID())
 		startTime                              = timestampToFloatSeconds(span.StartTime())
@@ -142,7 +108,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	}
 
 	if name == "" {
-		if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
+		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
 			name = awsService.StringVal()
@@ -202,27 +168,27 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 		segmentType = "subsegment"
 	}
 
-	return Segment{
-		ID:          convertToAmazonSpanID(span.SpanID()),
-		TraceID:     traceID,
-		Name:        name,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		ParentID:    convertToAmazonSpanID(span.ParentSpanID()),
-		Fault:       isFault,
-		Error:       isError,
-		Throttle:    isThrottled,
+	return awsxray.Segment{
+		ID:          awsP.String(convertToAmazonSpanID(span.SpanID())),
+		TraceID:     awsP.String(traceID),
+		Name:        awsP.String(name),
+		StartTime:   awsP.Float64(startTime),
+		EndTime:     awsP.Float64(endTime),
+		ParentID:    awsP.String(convertToAmazonSpanID(span.ParentSpanID())),
+		Fault:       awsP.Bool(isFault),
+		Error:       awsP.Bool(isError),
+		Throttle:    awsP.Bool(isThrottled),
 		Cause:       cause,
-		Origin:      origin,
-		Namespace:   namespace,
-		User:        user,
+		Origin:      awsP.String(origin),
+		Namespace:   awsP.String(namespace),
+		User:        awsP.String(user),
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
 		SQL:         sql,
 		Annotations: annotations,
 		Metadata:    nil,
-		Type:        segmentType,
+		Type:        awsP.String(segmentType),
 	}
 }
 

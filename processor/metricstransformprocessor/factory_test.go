@@ -27,17 +27,18 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	pType := factory.Type()
 	assert.Equal(t, pType, configmodels.Type("metricstransform"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -80,19 +81,17 @@ func TestCreateProcessors(t *testing.T) {
 		factories, err := componenttest.ExampleComponents()
 		assert.NoError(t, err)
 
-		factory := &Factory{}
+		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				factory := &Factory{}
-
 				tp, tErr := factory.CreateTraceProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
+					exportertest.NewNopTraceExporter(),
 					cfg)
 				// Not implemented error
 				assert.Error(t, tErr)
@@ -101,7 +100,7 @@ func TestCreateProcessors(t *testing.T) {
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
+					exportertest.NewNopMetricsExporter(),
 					cfg)
 				if test.succeed {
 					assert.NotNil(t, mp)
@@ -152,7 +151,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
