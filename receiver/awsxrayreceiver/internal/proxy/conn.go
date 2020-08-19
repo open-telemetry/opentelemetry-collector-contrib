@@ -38,11 +38,7 @@ import (
 )
 
 const (
-	// these are not configurable by customers in the X-Ray daemon
-	// so keep them hardcoded:
-	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L118
-	idleConnTimeout = 30 * time.Second
-	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L119
+	idleConnTimeout                = 30 * time.Second
 	remoteProxyMaxIdleConnsPerHost = 2
 
 	awsRegionEnvVar                   = "AWS_REGION"
