@@ -94,10 +94,10 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 
 	if c.Region == "" && regionEnv != "" {
 		awsRegion = regionEnv
-		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
+		logger.Debug("Fetched region from environment variables", zap.String("region", awsRegion))
 	} else if c.Region != "" {
 		awsRegion = c.Region
-		logger.Debug("Fetch region from config file", zap.String("region", awsRegion))
+		logger.Debug("Fetched region from config file", zap.String("region", awsRegion))
 	} else if !c.LocalMode {
 		awsRegion, err = getRegionFromECSMetadata()
 		if err != nil {
@@ -109,16 +109,16 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 				if err != nil {
 					logger.Debug("Unable to fetch region from EC2 metadata", zap.Error(err))
 				} else {
-					logger.Debug("Fetch region from EC2 metadata", zap.String("region", awsRegion))
+					logger.Debug("Fetched region from EC2 metadata", zap.String("region", awsRegion))
 				}
 			}
 		} else {
-			logger.Debug("Fetch region from ECS metadata file", zap.String("region", awsRegion))
+			logger.Debug("Fetched region from ECS metadata file", zap.String("region", awsRegion))
 		}
 
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("cannot fetch region variable from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
+		return nil, nil, fmt.Errorf("could not fetch region from config file, environment variables, ecs metadata, or ec2 metadata: %w", err)
 	}
 
 	sess, err := newAWSSession(c.RoleARN, awsRegion, logger)
@@ -136,29 +136,27 @@ func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.S
 }
 
 func getProxyAddress(proxyAddress string) string {
-	var finalProxyAddress string
 	if proxyAddress != "" {
-		finalProxyAddress = proxyAddress
-	} else if proxyAddress == "" && os.Getenv(httpsProxyEnvVar) != "" {
-		finalProxyAddress = os.Getenv(httpsProxyEnvVar)
-	} else {
-		finalProxyAddress = ""
+		return proxyAddress
 	}
-	return finalProxyAddress
+	if os.Getenv(httpsProxyEnvVar) != "" {
+		return os.Getenv(httpsProxyEnvVar)
+	} 
+	return ""
 }
 
-func getProxyURL(finalProxyAddress string) (*url.URL, error) {
+func getProxyURL(proxyAddress string) (*url.URL, error) {
 	var proxyURL *url.URL
 	var err error
-	if finalProxyAddress != "" {
-		proxyURL, err = url.Parse(finalProxyAddress)
+	if proxyAddress != "" {
+		proxyURL, err = url.Parse(proxyAddress)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse proxy URL: %w", err)
 		}
+		return proxyURL, nil
 	} else {
-		proxyURL = nil
+		return nil, nil
 	}
-	return proxyURL, nil
 }
 
 func getRegionFromECSMetadata() (string, error) {
@@ -168,14 +166,14 @@ func getRegionFromECSMetadata() (string, error) {
 	ecsMetadataEnabled = strings.ToLower(ecsMetadataEnabled)
 	if ecsMetadataEnabled == "true" {
 		metadataFilePath := os.Getenv(ecsMetadataFileEnvVar)
-		metadataFile, err := ioutil.ReadFile(metadataFilePath)
+		metadata, err := ioutil.ReadFile(metadataFilePath)
 		if err != nil {
 			return "", fmt.Errorf("unable to open ECS metadata file, path: %s, error: %w",
 				metadataFilePath, err)
 		}
 		var dat map[string]interface{}
 		if err := json.Unmarshal(metadataFile, &dat); err != nil {
-			return "", fmt.Errorf("unable to read ECS metadata file content, path: %s, error: %w",
+			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",
 				metadataFilePath, err)
 		}
 		taskArn := strings.Split(dat["TaskARN"].(string), ":")
@@ -217,7 +215,7 @@ type stsCalls struct {
 	getSTSCredsFromRegionEndpoint func(log *zap.Logger, sess *session.Session, region, roleArn string) *credentials.Credentials
 }
 
-// getSTSCreds gets STS credentials fist from the regional endpoint, then from the primary
+// getSTSCreds gets STS credentials first from the regional endpoint, then from the primary
 // region in the respective AWS partition if the regional endpoint is disabled.
 func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credentials, error) {
 	sess, err := session.NewSession()
@@ -250,7 +248,7 @@ var getSTSCredsFromRegionEndpoint = func(log *zap.Logger, sess *session.Session,
 	regionalEndpoint := getSTSRegionalEndpoint(region)
 	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
 	// for other opt-in regions, region value will create STS regional endpoint.
-	// This will be only in the case, if provided region is not present in aws_regions.go
+	// This will only be the case if the provided region is not present in aws_regions.go
 	c := &aws.Config{Region: aws.String(region), Endpoint: &regionalEndpoint}
 	st := sts.New(sess, c)
 	log.Info("STS endpoint to use", zap.String("endpoint", st.Endpoint))
@@ -285,7 +283,7 @@ func getSTSRegionalEndpoint(r string) string {
 	return e
 }
 
-// getPartition return AWS Partition for the provided region.
+// getPartition returns the AWS Partition for the provided region.
 func getPartition(region string) string {
 	p, _ := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
 	return p.ID()
