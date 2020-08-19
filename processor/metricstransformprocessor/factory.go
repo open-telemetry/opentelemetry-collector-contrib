@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -29,16 +29,17 @@ const (
 	typeStr = "metricstransform"
 )
 
-// Factory is the factory for metrics transform processor.
-type Factory struct{}
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
 
-// Type gets the type of the Option config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
+// NewFactory returns a new factory for the Metrics Transform processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -47,30 +48,24 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
+func createMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
 	nextConsumer consumer.MetricsConsumer,
-	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	oCfg := c.(*Config)
-	err := validateConfiguration(oCfg)
-	if err != nil {
+	oCfg := cfg.(*Config)
+	if err := validateConfiguration(oCfg); err != nil {
 		return nil, err
 	}
-	return newMetricsTransformProcessor(nextConsumer, params.Logger, buildHelperConfig(oCfg)), nil
 
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg))
+
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		metricsProcessor,
+		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
