@@ -32,7 +32,7 @@ type resourceTraceProcessor struct {
 	next     consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
+func newResourceTraceProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
 	return &resourceTraceProcessor{
 		provider: provider,
 		override: override,
@@ -79,7 +79,7 @@ type resourceMetricProcessor struct {
 	next     consumer.MetricsConsumer
 }
 
-func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
+func newResourceMetricProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
 	return &resourceMetricProcessor{
 		provider: provider,
 		override: override,
