@@ -184,20 +184,26 @@ func Test_metricDataToPlaintext(t *testing.T) {
 
 	tests := []struct {
 		name                       string
-		metricsDataFn              func() consumerdata.MetricsData
+		metricsDataFn              func() []consumerdata.MetricsData
 		wantLines                  []string
 		wantNumConvertedTimeseries int
 		wantNumDroppedTimeseries   int
 	}{
 		{
 			name: "no_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							metricstestutil.GaugeInt("gauge_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+						},
+					},
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Cumulative("cumulative_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							metricstestutil.CumulativeInt("cumulative_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+						},
 					},
 				}
 			},
@@ -211,13 +217,15 @@ func Test_metricDataToPlaintext(t *testing.T) {
 		},
 		{
 			name: "with_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+							metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+							metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+							metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						},
 					},
 				}
 			},
@@ -231,10 +239,12 @@ func Test_metricDataToPlaintext(t *testing.T) {
 		},
 		{
 			name: "distributions",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
+						},
 					},
 				}
 			},
@@ -248,10 +258,12 @@ func Test_metricDataToPlaintext(t *testing.T) {
 		},
 		{
 			name: "summary",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Summary("summary", keys, summaryTimeSeries),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Summary("summary", keys, summaryTimeSeries),
+						},
 					},
 				}
 			},

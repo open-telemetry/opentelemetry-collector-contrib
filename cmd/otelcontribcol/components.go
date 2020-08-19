@@ -61,7 +61,7 @@ func components() (component.Factories, error) {
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
-		&hostobserver.Factory{},
+		hostobserver.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -101,7 +101,7 @@ func components() (component.Factories, error) {
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
-		&carbonexporter.Factory{},
+		carbonexporter.NewFactory(),
 		&honeycombexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
@@ -122,7 +122,7 @@ func components() (component.Factories, error) {
 	processors := []component.ProcessorFactoryBase{
 		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
-		&metricstransformprocessor.Factory{},
+		metricstransformprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

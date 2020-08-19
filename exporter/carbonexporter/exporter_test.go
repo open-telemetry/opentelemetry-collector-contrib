@@ -33,7 +33,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
@@ -41,22 +42,23 @@ import (
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name    string
-		config  Config
+		config  *Config
 		wantErr bool
 	}{
 		{
-			name: "zero_value_config",
+			name:   "default_config",
+			config: createDefaultConfig().(*Config),
 		},
 		{
 			name: "invalid_tcp_addr",
-			config: Config{
+			config: &Config{
 				Endpoint: "http://localhost:2003",
 			},
 			wantErr: true,
 		},
 		{
 			name: "invalid_timeout",
-			config: Config{
+			config: &Config{
 				Timeout: -5 * time.Second,
 			},
 			wantErr: true,
@@ -64,7 +66,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.config)
+			got, err := newCarbonExporter(tt.config)
 			if tt.wantErr {
 				assert.Nil(t, got)
 				assert.Error(t, err)
@@ -80,23 +82,25 @@ func TestNew(t *testing.T) {
 func TestConsumeMetricsData(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	smallBatch := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge(
-				"test_gauge",
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					metricstestutil.Double(time.Now(), 123))),
+	smallBatch := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge(
+					"test_gauge",
+					[]string{"k0", "k1"},
+					metricstestutil.Timeseries(
+						time.Now(),
+						[]string{"v0", "v1"},
+						metricstestutil.Double(time.Now(), 123))),
+			},
 		},
-	}
+	})
 
-	largeBatch := generateLargeBatch(t)
+	largeBatch := generateLargeBatch()
 
 	tests := []struct {
 		name         string
-		md           consumerdata.MetricsData
+		md           pdata.Metrics
 		acceptClient bool
 		createServer bool
 	}{
@@ -144,14 +148,14 @@ func TestConsumeMetricsData(t *testing.T) {
 				defer ln.Close()
 			}
 
-			config := Config{Endpoint: addr, Timeout: 500 * time.Millisecond}
-			exp, err := New(config)
+			config := &Config{Endpoint: addr, Timeout: 500 * time.Millisecond}
+			exp, err := newCarbonExporter(config)
 			require.NoError(t, err)
 
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 
 			if !tt.createServer {
-				require.Error(t, exp.ConsumeMetricsData(context.Background(), tt.md))
+				require.Error(t, exp.ConsumeMetrics(context.Background(), tt.md))
 				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
 			}
@@ -161,15 +165,16 @@ func TestConsumeMetricsData(t *testing.T) {
 				// call to ConsumeMetricsData below will produce error or not.
 				// See comment about recvfrom at connPool.Write for detailed
 				// information.
-				exp.ConsumeMetricsData(context.Background(), tt.md)
+				exp.ConsumeMetrics(context.Background(), tt.md)
 				assert.NoError(t, exp.Shutdown(context.Background()))
 				return
 			}
 
-			// Each time series will generate one Carbon line, set up the wait
+			// Each metric point will generate one Carbon line, set up the wait
 			// for all of them.
 			var wg sync.WaitGroup
-			wg.Add(exporterhelper.NumTimeSeries(tt.md))
+			_, mpc := pdatautil.MetricAndDataPointCount(tt.md)
+			wg.Add(mpc)
 			go func() {
 				ln.SetDeadline(time.Now().Add(time.Second))
 				conn, err := ln.AcceptTCP()
@@ -192,7 +197,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				}
 			}()
 
-			require.NoError(t, exp.ConsumeMetricsData(context.Background(), tt.md))
+			require.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
 			assert.NoError(t, exp.Shutdown(context.Background()))
 
 			wg.Wait()
@@ -215,7 +220,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	cp := newTCPConnPool(addr, 500*time.Millisecond)
 	sender := carbonSender{connPool: cp}
 	ctx := context.Background()
-	md := generateLargeBatch(t)
+	md := generateLargeBatch()
 	concurrentWriters := 3
 	writesPerRoutine := 3
 
@@ -225,7 +230,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	}(&doneFlag)
 
 	var recvWG sync.WaitGroup
-	recvWG.Add(concurrentWriters * writesPerRoutine * len(md.Metrics))
+	recvWG.Add(concurrentWriters * writesPerRoutine * pdatautil.MetricCount(md))
 	go func() {
 		for {
 			conn, err := ln.AcceptTCP()
@@ -275,7 +280,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	recvWG.Wait()
 }
 
-func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
+func generateLargeBatch() pdata.Metrics {
 	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_carbon"},
@@ -301,5 +306,5 @@ func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
 		)
 	}
 
-	return md
+	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
 }

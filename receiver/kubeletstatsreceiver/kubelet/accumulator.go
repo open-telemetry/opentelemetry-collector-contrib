@@ -43,7 +43,7 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []*consumerdata.MetricsData
+	m                     []consumerdata.MetricsData
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -151,7 +151,7 @@ func (a *metricDataAccumulator) accumulate(
 			}
 		}
 	}
-	a.m = append(a.m, &consumerdata.MetricsData{
+	a.m = append(a.m, consumerdata.MetricsData{
 		Resource: r,
 		Metrics:  resourceMetrics,
 	})
