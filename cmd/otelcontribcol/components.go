@@ -62,7 +62,7 @@ func components() (component.Factories, error) {
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
-		&hostobserver.Factory{},
+		hostobserver.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -74,7 +74,7 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := []component.ReceiverFactoryBase{
+	receivers := []component.ReceiverFactory{
 		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
 		signalfxreceiver.NewFactory(),
