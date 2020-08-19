@@ -41,6 +41,11 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		requestID    string
 		queueURL     string
 		tableName    string
+		sdk          string
+		sdkName      string
+		sdkLanguage  string
+		sdkVersion   string
+		autoVersion  string
 		ec2          *awsxray.EC2Metadata
 		ecs          *awsxray.ECSMetadata
 		ebs          *awsxray.BeanstalkMetadata
@@ -74,6 +79,14 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				deployID = value.StringVal()
 			case semconventions.AttributeServiceVersion:
 				versionLabel = value.StringVal()
+			case semconventions.AttributeTelemetrySDKName:
+				sdkName = value.StringVal()
+			case semconventions.AttributeTelemetrySDKLanguage:
+				sdkLanguage = value.StringVal()
+			case semconventions.AttributeTelemetrySDKVersion:
+				sdkVersion = value.StringVal()
+			case semconventions.AttributeTelemetryAutoVersion:
+				autoVersion = value.StringVal()
 			}
 		})
 	}
@@ -133,11 +146,27 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			VersionLabel: aws.String(versionLabel),
 		}
 	}
+
+	if sdkName != "" && sdkLanguage != "" {
+		// Convention for SDK name for xray SDK information is e.g., `X-Ray SDK for Java`, `X-Ray for Go`.
+		// We fill in with e.g, `opentelemetry for java` by using the conventions
+		sdk = sdkName + " for " + sdkLanguage
+	} else {
+		sdk = sdkName
+	}
+
+	xray := &awsxray.XRayMetaData{
+		SDK:                 aws.String(sdk),
+		SDKVersion:          aws.String(sdkVersion),
+		AutoInstrumentation: aws.Bool(autoVersion != ""),
+	}
+
 	awsData := &awsxray.AWSData{
 		AccountID:    aws.String(account),
 		Beanstalk:    ebs,
 		ECS:          ecs,
 		EC2:          ec2,
+		XRay:         xray,
 		Operation:    aws.String(operation),
 		RemoteRegion: aws.String(remoteRegion),
 		RequestID:    aws.String(requestID),

@@ -234,8 +234,9 @@ type ElasticBeanstalkData struct {
 
 // XRayMetaData provides the shape for unmarshalling the xray field
 type XRayMetaData struct {
-	SDKVersion *string `json:"sdk_version,omitempty"`
-	SDK        *string `json:"sdk,omitempty"`
+	SDK                 *string `json:"sdk,omitempty"`
+	SDKVersion          *string `json:"sdk_version,omitempty"`
+	AutoInstrumentation *bool   `json:"auto_instrumentation"`
 }
 
 // SQLData provides the shape for unmarshalling the sql field.
