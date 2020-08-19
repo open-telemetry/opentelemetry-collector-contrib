@@ -77,5 +77,5 @@ func TestClientSpanWithoutDBurlAttribute(t *testing.T) {
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, sqlData)
 
-	assert.Equal(t, "localhost/customers", sqlData.URL)
+	assert.Equal(t, "localhost/customers", *sqlData.URL)
 }
