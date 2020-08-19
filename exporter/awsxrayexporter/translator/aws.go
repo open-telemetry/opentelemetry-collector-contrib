@@ -43,6 +43,7 @@ type AWSData struct {
 	BeanstalkMetadata *BeanstalkMetadata `json:"elastic_beanstalk,omitempty"`
 	ECSMetadata       *ECSMetadata       `json:"ecs,omitempty"`
 	EC2Metadata       *EC2Metadata       `json:"ec2,omitempty"`
+	XRayMetadata      *XRayMetadata      `json:"xray,omitempty"`
 	Operation         string             `json:"operation,omitempty"`
 	RemoteRegion      string             `json:"region,omitempty"`
 	RequestID         string             `json:"request_id,omitempty"`
@@ -70,6 +71,13 @@ type BeanstalkMetadata struct {
 	DeploymentID int64  `json:"deployment_id"`
 }
 
+// XRayMetadata provides the shape for unmarshalling X-Ray support information.
+type XRayMetadata struct {
+	SDK                 string `json:"sdk"`
+	SDKVersion          string `json:"sdk_version"`
+	AutoInstrumentation bool   `json:"auto_instrumentation"`
+}
+
 func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *AWSData) {
 	var (
 		cloud        string
@@ -87,6 +95,10 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		requestID    string
 		queueURL     string
 		tableName    string
+		sdk          string
+		sdkName      string
+		sdkLanguage  string
+		sdkVersion   string
 		ec2          *EC2Metadata
 		ecs          *ECSMetadata
 		ebs          *BeanstalkMetadata
@@ -120,6 +132,12 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				deployID = value.StringVal()
 			case semconventions.AttributeServiceVersion:
 				versionLabel = value.StringVal()
+			case semconventions.AttributeTelemetrySDKName:
+				sdkName = value.StringVal()
+			case semconventions.AttributeTelemetrySDKLanguage:
+				sdkLanguage = value.StringVal()
+			case semconventions.AttributeTelemetrySDKVersion:
+				sdkVersion = value.StringVal()
 			}
 		})
 	}
@@ -179,11 +197,25 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			VersionLabel: versionLabel,
 		}
 	}
+
+	if sdkName != "" && sdkLanguage != "" {
+		// Convention for SDK name for xray SDK information is e.g., `X-Ray SDK for Java`, `X-Ray for Go`.
+		// We fill in with e.g, `opentelemetry for java` by using the conventions
+		sdk = sdkName + " for " + sdkLanguage
+	} else {
+		sdk = sdkName
+	}
+	xray := &XRayMetadata{
+		SDK:        sdk,
+		SDKVersion: sdkVersion,
+	}
+
 	awsData := &AWSData{
 		AccountID:         account,
 		BeanstalkMetadata: ebs,
 		ECSMetadata:       ecs,
 		EC2Metadata:       ec2,
+		XRayMetadata:      xray,
 		Operation:         operation,
 		RemoteRegion:      remoteRegion,
 		RequestID:         requestID,

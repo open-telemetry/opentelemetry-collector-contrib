@@ -223,3 +223,51 @@ func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 	assert.NotNil(t, awsData)
 	assert.Equal(t, requestid, awsData.RequestID)
 }
+
+func TestJavaSDK(t *testing.T) {
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "1.2.3")
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentelemetry for java", awsData.XRayMetadata.SDK)
+	assert.Equal(t, "1.2.3", awsData.XRayMetadata.SDKVersion)
+}
+
+func TestGoSDK(t *testing.T) {
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "go")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "2.0.3")
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentelemetry for go", awsData.XRayMetadata.SDK)
+	assert.Equal(t, "2.0.3", awsData.XRayMetadata.SDKVersion)
+}
+
+func TestCustomSDK(t *testing.T) {
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentracing")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "2.0.3")
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentracing for java", awsData.XRayMetadata.SDK)
+	assert.Equal(t, "2.0.3", awsData.XRayMetadata.SDKVersion)
+}
