@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.1
 	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.8.1-0.20200818003535-ed65294c9886
+	go.opentelemetry.io/collector v0.8.1-0.20200818152037-30c3c343c558
 	go.uber.org/zap v1.15.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )

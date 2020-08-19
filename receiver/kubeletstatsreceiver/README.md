@@ -86,11 +86,16 @@ service:
 
 ### Extra metadata labels
 
-By default all produced metrics get resource labels based on what kubelet /stats/summary endpoint provides.
+By default, all produced metrics get resource labels based on what kubelet /stats/summary endpoint provides.
 For some use cases it might be not enough. So it's possible to leverage other endpoints to fetch
-additional metadata entities and set them as extra labels on metric resource.
-The only additional label supported at the moment is `container.id`. If you want to have that label
-added to your metrics, use `extra_metadata_labels` field to enable it, for example:
+additional metadata entities and set them as extra labels on metric resource. Currently supported metadata
+include the following - 
+
+- `container.id` - to augment metrics with Container ID label obtained from container statuses exposed via `/pods`.
+- `k8s.volume.type` - to collect volume type from the Pod spec exposed via `/pods` and have it as a label on volume metrics.
+
+If you want to have `container.id` label added to your metrics, use `extra_metadata_labels` field to enable
+it, for example:
 
 ```yaml
 receivers:

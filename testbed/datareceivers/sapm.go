@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -39,7 +40,7 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 }
 
 // Start the receiver.
-func (sr *SapmDataReceiver) Start(tc testbed.TraceDualConsumer, mc testbed.MetricsDualConsumer) error {
+func (sr *SapmDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer) error {
 	sapmCfg := sapmreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
