@@ -73,7 +73,7 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := []component.ReceiverFactoryBase{
+	receivers := []component.ReceiverFactory{
 		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
 		signalfxreceiver.NewFactory(),
