@@ -35,7 +35,7 @@ type Config struct {
 	// ExtraMetadataLabels contains list of extra metadata that should be taken from /pods endpoint
 	// and put as extra labels on metrics resource.
 	// No additional metadata is fetched by default, so there are no extra calls to /pods endpoint.
-	// Only container.id label is supported at the moment.
+	// Supported values include container.id and k8s.volume.type.
 	ExtraMetadataLabels []kubelet.MetadataLabel `mapstructure:"extra_metadata_labels"`
 
 	// MetricGroupsToCollect provides a list of metrics groups to collect metrics from.

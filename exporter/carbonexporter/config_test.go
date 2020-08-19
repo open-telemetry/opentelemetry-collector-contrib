@@ -15,12 +15,14 @@
 package carbonexporter
 
 import (
+	"context"
 	"path"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -31,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -42,7 +44,6 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, e0)
-	assert.Equal(t, defaultCfg, defaultConfig())
 
 	expectedName := "carbon/allsettings"
 
@@ -57,14 +58,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateMetricsExporter(zap.NewNop(), e1)
+	te, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
-}
-
-func Test_setDefaults(t *testing.T) {
-	// Zero-value Config must match default config createcd via factory.
-	cfg := setDefaults(Config{})
-	factoryDefaultCfg := (&Factory{}).CreateDefaultConfig()
-	assert.Equal(t, factoryDefaultCfg, &cfg)
 }

@@ -20,41 +20,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	cfg := createDefaultConfig()
+	_, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
 	exp, err := factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -63,7 +52,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	// expCfg := cfg.(*Config)
 
 	exp, err = factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)

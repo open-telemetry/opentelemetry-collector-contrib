@@ -12,6 +12,7 @@
         },
         "memory": {
           "time": "2020-04-20T22:52:23Z",
+          "availableBytes": 171589632,
           "usageBytes": 33259520,
           "workingSetBytes": 28827648,
           "rssBytes": 29151232,
@@ -29,6 +30,7 @@
         },
         "memory": {
           "time": "2020-04-20T22:52:27Z",
+          "availableBytes": 171589632,
           "usageBytes": 1186713600,
           "workingSetBytes": 300175360,
           "rssBytes": 86695936,
@@ -139,6 +141,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:26Z",
+            "availableBytes": 171589632,
             "usageBytes": 13701120,
             "workingSetBytes": 11640832,
             "rssBytes": 12660736,
@@ -172,6 +175,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:18Z",
+        "availableBytes": 171589632,
         "usageBytes": 14290944,
         "workingSetBytes": 12230656,
         "rssBytes": 12660736,
@@ -230,6 +234,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:23Z",
+            "availableBytes": 171589632,
             "usageBytes": 25088000,
             "workingSetBytes": 25083904,
             "rssBytes": 23523328,
@@ -263,6 +268,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:25Z",
+        "availableBytes": 171589632,
         "usageBytes": 25726976,
         "workingSetBytes": 25722880,
         "rssBytes": 23523328,
@@ -337,6 +343,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:20Z",
+            "availableBytes": 171589632,
             "usageBytes": 268869632,
             "workingSetBytes": 243318784,
             "rssBytes": 266645504,
@@ -370,6 +377,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:24Z",
+        "availableBytes": 171589632,
         "usageBytes": 269459456,
         "workingSetBytes": 243908608,
         "rssBytes": 266645504,
@@ -658,6 +666,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:24Z",
+            "availableBytes": 171589632,
             "usageBytes": 38068224,
             "workingSetBytes": 37040128,
             "rssBytes": 36741120,
@@ -691,6 +700,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:21Z",
+        "availableBytes": 171589632,
         "usageBytes": 38703104,
         "workingSetBytes": 37675008,
         "rssBytes": 36741120,
@@ -749,6 +759,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:22Z",
+            "availableBytes": 171589632,
             "usageBytes": 9715712,
             "workingSetBytes": 8736768,
             "rssBytes": 8065024,
@@ -782,6 +793,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:14Z",
+        "availableBytes": 171589632,
         "usageBytes": 10280960,
         "workingSetBytes": 9302016,
         "rssBytes": 8081408,
@@ -862,6 +874,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:23Z",
+            "availableBytes": 171589632,
             "usageBytes": 13877248,
             "workingSetBytes": 13877248,
             "rssBytes": 12865536,
@@ -895,6 +908,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:15Z",
+        "availableBytes": 171589632,
         "usageBytes": 14356480,
         "workingSetBytes": 14356480,
         "rssBytes": 12865536,
@@ -965,6 +979,7 @@
           },
           "memory": {
             "time": "2020-04-20T22:52:17Z",
+            "availableBytes": 171589632,
             "usageBytes": 38199296,
             "workingSetBytes": 33415168,
             "rssBytes": 31907840,
@@ -998,6 +1013,7 @@
       },
       "memory": {
         "time": "2020-04-20T22:52:17Z",
+        "availableBytes": 171589632,
         "usageBytes": 38768640,
         "workingSetBytes": 33984512,
         "rssBytes": 31907840,
