@@ -157,7 +157,7 @@ func TestResourceProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{providers: map[string]*internal.ResourceProvider{}}
+			factory := &factory{providers: map[string]*internal.ResourceProvider{}}
 
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
@@ -174,7 +174,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test trace consuner
 			ttn := &exportertest.SinkTraceExporter{}
-			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, ttn, cfg)
+			rtp, err := factory.createTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -208,7 +208,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &exportertest.SinkMetricsExporter{}
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, tmn, cfg)
+			rmp, err := factory.createMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tmn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
