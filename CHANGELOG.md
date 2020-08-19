@@ -35,12 +35,19 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 - `metricstranform` processor: Keep timeseries and points in order after aggregation (#663)
 - `k8scluster` receiver: Change `container.spec.name` label to `k8s.container.name` (#681)
 - Migrate receiver creator to internal data model (#701)
+- Add ec2 support to `resourcedetection` processor (#587)
+- Enable timeout, sending queue and retry for SAPM exporter (#707)
 
 ## 🧰 Bug fixes 🧰
 
 - `azuremonitor` exporter: Correct HTTP status code success mapping (#588)
 - `k8scluster` receiver: Fix owner reference in metadata updates (#649)
 - `awsxray` exporter: Fix handling of db system (#697)
+
+## 🚀 New components 🚀
+
+- Skeleton for AWS ECS container metrics receiver (#463)
+- `prometheus_exec` receiver (#655)
 
 ## v0.7.0
 

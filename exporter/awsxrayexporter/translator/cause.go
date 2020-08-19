@@ -21,37 +21,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-// CauseData provides the shape for unmarshalling data that records exception.
-type CauseData struct {
-	WorkingDirectory string       `json:"working_directory,omitempty"`
-	Paths            []string     `json:"paths,omitempty"`
-	Exceptions       []*Exception `json:"exceptions,omitempty"`
-}
-
-// Exception provides the shape for unmarshalling an exception.
-type Exception struct {
-	ID      string  `json:"id,omitempty"`
-	Type    string  `json:"type,omitempty"`
-	Message string  `json:"message,omitempty"`
-	Cause   string  `json:"cause,omitempty"`
-	Stack   []Stack `json:"stack,omitempty"`
-	Remote  bool    `json:"remote,omitempty"`
-}
-
-// Stack provides the shape for unmarshalling an stack.
-type Stack struct {
-	Path  string `json:"path,omitempty"`
-	Line  int    `json:"line,omitempty"`
-	Label string `json:"label,omitempty"`
-}
-
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
-	filtered map[string]string, cause *CauseData) {
+	filtered map[string]string, cause *awsxray.CauseData) {
 	status := span.Status()
 	if status.IsNil() || status.Code() == 0 {
 		return false, false, attributes, nil
@@ -78,7 +57,7 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 			language = val.StringVal()
 		}
 
-		exceptions := make([]*Exception, 0)
+		exceptions := make([]awsxray.Exception, 0)
 		for i := 0; i < span.Events().Len(); i++ {
 			event := span.Events().At(i)
 			if event.Name() == semconventions.AttributeExceptionEventName {
@@ -102,7 +81,10 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 				exceptions = append(exceptions, parsed...)
 			}
 		}
-		cause = &CauseData{Exceptions: exceptions}
+		cause = &awsxray.CauseData{
+			Type: awsxray.CauseTypeObject,
+			CauseObject: awsxray.CauseObject{
+				Exceptions: exceptions}}
 	} else {
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
@@ -122,12 +104,15 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 			id := newSegmentID()
 			hexID := hex.EncodeToString(id)
 
-			cause = &CauseData{
-				Exceptions: []*Exception{
-					{
-						ID:      hexID,
-						Type:    errorKind,
-						Message: message,
+			cause = &awsxray.CauseData{
+				Type: awsxray.CauseTypeObject,
+				CauseObject: awsxray.CauseObject{
+					Exceptions: []awsxray.Exception{
+						{
+							ID:      aws.String(hexID),
+							Type:    aws.String(errorKind),
+							Message: aws.String(message),
+						},
 					},
 				},
 			}
@@ -149,36 +134,35 @@ func isClientError(code pdata.StatusCode) bool {
 	return httpStatus >= 400 && httpStatus < 500
 }
 
-func parseException(exceptionType string, message string, stacktrace string, language string) []*Exception {
+func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
 	// Skip first line containing top level exception / message
 	r.ReadLine()
-	exception := &Exception{
-		ID:      hex.EncodeToString(newSegmentID()),
-		Type:    exceptionType,
-		Message: message,
-	}
+	exceptions := make([]awsxray.Exception, 0, 1)
+	exceptions = append(exceptions, awsxray.Exception{
+		ID:      aws.String(hex.EncodeToString(newSegmentID())),
+		Type:    aws.String(exceptionType),
+		Message: aws.String(message),
+	})
+	exception := &exceptions[0]
 
 	if language != "java" {
 		// Only support Java stack traces right now.
-		return []*Exception{exception}
+		return exceptions
 	}
 
 	if stacktrace == "" {
-		return []*Exception{exception}
+		return exceptions
 	}
 
 	var line string
 	line, err := r.ReadLine()
 	if err != nil {
-		return []*Exception{exception}
+		return exceptions
 	}
 
-	exceptions := make([]*Exception, 1)
-	exceptions[0] = exception
-
-	exception.Stack = make([]Stack, 0)
+	exception.Stack = make([]awsxray.StackFrame, 0)
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -200,10 +184,10 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 					line, _ = strconv.Atoi(lineStr)
 				}
 
-				stack := Stack{
-					Path:  path,
-					Label: label,
-					Line:  line,
+				stack := awsxray.StackFrame{
+					Path:  aws.String(path),
+					Label: aws.String(label),
+					Line:  aws.Int(line),
 				}
 
 				exception.Stack = append(exception.Stack, stack)
@@ -232,15 +216,22 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 					causeMessage += line
 				}
 			}
-			newException := &Exception{
-				ID:      hex.EncodeToString(newSegmentID()),
-				Type:    causeType,
-				Message: causeMessage,
-				Stack:   make([]Stack, 0),
-			}
+			exceptions = append(exceptions, awsxray.Exception{
+				ID:      aws.String(hex.EncodeToString(newSegmentID())),
+				Type:    aws.String(causeType),
+				Message: aws.String(causeMessage),
+				Stack:   make([]awsxray.StackFrame, 0),
+			})
+			// when append causes `exceptions` to outgrow its existing
+			// capacity, re-allocation will happen so the place
+			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
+			// consequently, we can not write `exception.Cause = newException.ID`
+			// below.
+			newException := &exceptions[len(exceptions)-1]
+			exceptions[len(exceptions)-2].Cause = newException.ID
+
 			exception.Cause = newException.ID
 			exception = newException
-			exceptions = append(exceptions, newException)
 			// We peeked to a line starting with "\tat", a stack frame, so continue straight to processing.
 			continue
 		}

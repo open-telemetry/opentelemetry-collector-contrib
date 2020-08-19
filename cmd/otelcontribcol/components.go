@@ -43,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
@@ -74,15 +75,16 @@ func components() (component.Factories, error) {
 	}
 
 	receivers := []component.ReceiverFactoryBase{
-		&collectdreceiver.Factory{},
+		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
-		&signalfxreceiver.Factory{},
-		&carbonreceiver.Factory{},
-		&wavefrontreceiver.Factory{},
+		signalfxreceiver.NewFactory(),
+		carbonreceiver.NewFactory(),
+		wavefrontreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
-		&simpleprometheusreceiver.Factory{},
-		&k8sclusterreceiver.Factory{},
+		simpleprometheusreceiver.NewFactory(),
+		k8sclusterreceiver.NewFactory(),
+		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		&statsdreceiver.Factory{},
 	}
@@ -96,12 +98,12 @@ func components() (component.Factories, error) {
 
 	exporters := []component.ExporterFactoryBase{
 		stackdriverexporter.NewFactory(),
-		&azuremonitorexporter.Factory{},
-		&signalfxexporter.Factory{},
+		azuremonitorexporter.NewFactory(),
+		signalfxexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
-		&carbonexporter.Factory{},
+		carbonexporter.NewFactory(),
 		&honeycombexporter.Factory{},
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
@@ -122,7 +124,7 @@ func components() (component.Factories, error) {
 	processors := []component.ProcessorFactoryBase{
 		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
-		&metricstransformprocessor.Factory{},
+		metricstransformprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)

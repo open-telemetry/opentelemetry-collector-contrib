@@ -35,6 +35,11 @@ type hostObserver struct {
 type endpointsLister struct {
 	logger       *zap.Logger
 	observerName string
+
+	// For testing
+	getConnections        func() ([]net.ConnectionStat, error)
+	getProcess            func(pid int32) (*process.Process, error)
+	collectProcessDetails func(proc *process.Process) (*processDetails, error)
 }
 
 var _ component.ServiceExtension = (*hostObserver)(nil)
@@ -44,8 +49,11 @@ func newObserver(logger *zap.Logger, config *Config) (component.ServiceExtension
 		EndpointsWatcher: observer.EndpointsWatcher{
 			RefreshInterval: config.RefreshInterval,
 			Endpointslister: endpointsLister{
-				logger:       logger,
-				observerName: config.Name(),
+				logger:                logger,
+				observerName:          config.Name(),
+				getConnections:        getConnections,
+				getProcess:            process.NewProcess,
+				collectProcessDetails: collectProcessDetails,
 			},
 		},
 	}
@@ -63,7 +71,7 @@ func (h *hostObserver) Shutdown(context.Context) error {
 }
 
 func (e endpointsLister) ListEndpoints() []observer.Endpoint {
-	conns, err := getConnections()
+	conns, err := e.getConnections()
 	if err != nil {
 		e.logger.Error("Could not get local network listeners", zap.Error(err))
 		return nil
@@ -72,7 +80,7 @@ func (e endpointsLister) ListEndpoints() []observer.Endpoint {
 	return e.collectEndpoints(conns)
 }
 
-var getConnections = func() (conns []net.ConnectionStat, err error) {
+func getConnections() (conns []net.ConnectionStat, err error) {
 	// Skip UID lookup since it's not used by the observer, the method
 	// is available only on linux. See https://github.com/shirou/gopsutil/pull/783
 	// for details.
@@ -109,7 +117,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			cd := collectConnectionDetails(&c)
 			id := observer.EndpointID(
 				fmt.Sprintf(
-					"(%s)%s-%d-%s", e.observerName, c.Laddr.IP, cd.port, cd.transport,
+					"(%s)%s-%d-%s", e.observerName, cd.ip, cd.port, cd.transport,
 				),
 			)
 
@@ -131,15 +139,15 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 	}
 
 	for pid, conns := range connsByPID {
-		proc, err := process.NewProcess(pid)
+		proc, err := e.getProcess(pid)
 		if err != nil {
 			e.logger.Warn("Could not examine process (it might have terminated already)")
 			continue
 		}
 
-		pd, err := collectProcessDetails(proc)
+		pd, err := e.collectProcessDetails(proc)
 		if err != nil {
-			e.logger.Error("failed collecting process details (skipping)",
+			e.logger.Error("Failed collecting process details (skipping)",
 				zap.Int32("pid", pid), zap.Error(err),
 			)
 			continue
@@ -151,7 +159,7 @@ func (e endpointsLister) collectEndpoints(conns []net.ConnectionStat) []observer
 			id := observer.EndpointID(
 				fmt.Sprintf(
 					"(%s)%s-%d-%s-%d",
-					e.observerName, c.Laddr.IP, cd.port, cd.transport, pid,
+					e.observerName, cd.ip, cd.port, cd.transport, pid,
 				),
 			)
 
@@ -185,9 +193,10 @@ type connectionDetails struct {
 
 func collectConnectionDetails(c *net.ConnectionStat) connectionDetails {
 	ip := c.Laddr.IP
-	// An IP addr of 0.0.0.0 means it listens on all interfaces, including
-	// localhost, so use that since we can't actually connect to 0.0.0.0.
-	if ip == "0.0.0.0" {
+	// An IP addr of 0.0.0.0 (or "*" on darwin) means it listens on all
+	// interfaces, including localhost, so use that since we can't
+	// actually connect to 0.0.0.0.
+	if ip == "0.0.0.0" || ip == "*" {
 		ip = "127.0.0.1"
 	}
 
@@ -217,12 +226,12 @@ type processDetails struct {
 }
 
 func collectProcessDetails(proc *process.Process) (*processDetails, error) {
-	name, err := getProcessName(proc)
+	name, err := proc.Name()
 	if err != nil {
 		return nil, fmt.Errorf("could not get process name: %v", err)
 	}
 
-	args, err := getProcessArgs(proc)
+	args, err := proc.Cmdline()
 	if err != nil {
 		return nil, fmt.Errorf("could not get process args: %v", err)
 	}
@@ -231,14 +240,6 @@ func collectProcessDetails(proc *process.Process) (*processDetails, error) {
 		name: name,
 		args: args,
 	}, nil
-}
-
-var getProcessName = func(proc *process.Process) (string, error) {
-	return proc.Name()
-}
-
-var getProcessArgs = func(proc *process.Process) (string, error) {
-	return proc.Cmdline()
 }
 
 func portTypeToProtocol(t uint32) observer.Transport {

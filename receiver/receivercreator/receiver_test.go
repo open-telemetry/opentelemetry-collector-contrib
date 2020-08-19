@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	corecomponenttest "go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,7 +38,6 @@ import (
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/componenttest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -156,7 +155,7 @@ func TestMockedEndToEnd(t *testing.T) {
 func TestLoggingHost(t *testing.T) {
 	core, obs := zapObserver.New(zap.ErrorLevel)
 	host := &loggingHost{
-		Host:   corecomponenttest.NewNopHost(),
+		Host:   componenttest.NewNopHost(),
 		logger: zap.New(core),
 	}
 	host.ReportFatalError(errors.New("runtime error"))

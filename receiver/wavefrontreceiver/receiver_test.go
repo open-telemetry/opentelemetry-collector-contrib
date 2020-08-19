@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -27,23 +26,24 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
 
 func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
-	factory := &Factory{}
-	rCfg := factory.CreateDefaultConfig().(*Config)
+	rCfg := createDefaultConfig().(*Config)
 	rCfg.ExtractCollectdTags = true
 	rCfg.TCPIdleTimeout = time.Second
 
 	addr := testutil.GetAvailableLocalAddress(t)
 	rCfg.Endpoint = addr
-	waitableConsumer := waitableMetricsConsumer{}
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), rCfg, &waitableConsumer)
+	sink := new(exportertest.SinkMetricsExporter)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	rcvr, err := createMetricsReceiver(context.Background(), params, rCfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -131,39 +131,24 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 		if numMetrics == 0 {
 			numMetrics = 1
 		}
-		waitableConsumer.Add(numMetrics)
 		n, err := fmt.Fprint(conn, tt.msg)
 		assert.Equal(t, len(tt.msg), n)
 		assert.NoError(t, err)
 
 		require.NoError(t, conn.Close())
-		waitableConsumer.Wait()
+		testutil.WaitFor(t, func() bool {
+			return sink.MetricsCount() == numMetrics
+		})
 
-		got := waitableConsumer.PullReceivedMetrics()
-		assert.Equal(t, tt.want, got)
+		metrics := sink.AllMetrics()
+		var gotOldMetrics []*metricspb.Metric
+		for _, md := range metrics {
+			ocmds := pdatautil.MetricsToMetricsData(md)
+			for _, ocmd := range ocmds {
+				gotOldMetrics = append(gotOldMetrics, ocmd.Metrics...)
+			}
+		}
+		assert.Equal(t, tt.want, gotOldMetrics)
+		sink.Reset()
 	}
-}
-
-type waitableMetricsConsumer struct {
-	sync.WaitGroup
-	mtx     sync.Mutex
-	metrics []*metricspb.Metric
-}
-
-var _ (consumer.MetricsConsumerOld) = (*waitableMetricsConsumer)(nil)
-
-func (w *waitableMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	w.mtx.Lock()
-	w.metrics = append(w.metrics, md.Metrics...)
-	w.mtx.Unlock()
-	w.Done()
-	return nil
-}
-
-func (w *waitableMetricsConsumer) PullReceivedMetrics() []*metricspb.Metric {
-	w.mtx.Lock()
-	defer w.mtx.Unlock()
-	metrics := w.metrics
-	w.metrics = nil
-	return metrics
 }

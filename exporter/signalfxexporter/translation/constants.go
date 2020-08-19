@@ -181,10 +181,8 @@ translation_rules:
 - action: aggregate_metric
   metric_name: cpu.num_processors
   aggregation_method: count
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - cpu
 
 # compute memory.total
 - action: copy_metrics
@@ -199,10 +197,8 @@ translation_rules:
 - action: aggregate_metric
   metric_name: memory.total
   aggregation_method: sum
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - state
 
 # convert memory metrics
 - action: split_metric
@@ -215,6 +211,27 @@ translation_rules:
     slab_reclaimable: memory.slab_recl
     slab_unreclaimable: memory.slab_unrecl
     used: memory.used
+
+# calculate disk.total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.total
+- action: aggregate_metric
+  metric_name: disk.total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+
+# calculate disk.summary_total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.summary_total
+- action: aggregate_metric
+  metric_name: disk.summary_total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+    - device
 
 # convert filesystem metrics
 - action: split_metric
@@ -230,6 +247,16 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
+
+# df_complex.used_total
+- action: copy_metrics
+  mapping:
+    df_complex.used: df_complex.used_total 
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: sum
+  without_dimensions:
+  - device
 
 # convert disk I/O metrics
 - action: rename_dimension_keys
@@ -276,10 +303,9 @@ translation_rules:
 - action: aggregate_metric
   metric_name: network.total
   aggregation_method: sum
-  dimensions:
-  - host
-  - kubernetes_node
-  - kubernetes_cluster
+  without_dimensions: 
+  - direction
+  - interface
 - action: split_metric
   metric_name: system.network.dropped_packets
   dimension_key: direction

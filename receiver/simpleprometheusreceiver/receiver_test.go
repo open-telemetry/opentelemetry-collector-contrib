@@ -35,7 +35,7 @@ import (
 )
 
 func TestReceiver(t *testing.T) {
-	f := &Factory{}
+	f := NewFactory()
 	tests := []struct {
 		name              string
 		useServiceAccount bool

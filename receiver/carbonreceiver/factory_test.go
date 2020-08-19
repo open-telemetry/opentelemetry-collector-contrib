@@ -19,43 +19,25 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-type mockMetricsConsumer struct {
-}
-
-var _ (consumer.MetricsConsumerOld) = (*mockMetricsConsumer)(nil)
-
-func (m *mockMetricsConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return nil
-}
-
 func TestCreateReceiver(t *testing.T) {
-	factory := &Factory{}
-	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
-	assert.Nil(t, err, "receiver creation failed")
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")
-
-	tReceiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &mockMetricsConsumer{})
-	assert.Nil(t, err, "receiver creation failed")
-	assert.NotNil(t, tReceiver, "receiver creation failed")
-
-	mReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), cfg, nil)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-	assert.Nil(t, mReceiver)
 }

@@ -15,25 +15,16 @@
 package translator
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-// SQLData provides the shape for unmarshalling sql data.
-type SQLData struct {
-	ConnectionString string `json:"connection_string,omitempty"`
-	URL              string `json:"url,omitempty"` // host:port/database
-	DatabaseType     string `json:"database_type,omitempty"`
-	DatabaseVersion  string `json:"database_version,omitempty"`
-	DriverVersion    string `json:"driver_version,omitempty"`
-	User             string `json:"user,omitempty"`
-	Preparation      string `json:"preparation,omitempty"` // "statement" / "call"
-	SanitizedQuery   string `json:"sanitized_query,omitempty"`
-}
-
-func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
+func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData) {
 	var (
 		filtered    = make(map[string]string)
-		sqlData     SQLData
+		sqlData     awsxray.SQLData
 		dbURL       string
 		dbSystem    string
 		dbInstance  string
@@ -67,11 +58,11 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbURL = "localhost"
 	}
 	url := dbURL + "/" + dbInstance
-	sqlData = SQLData{
-		URL:            url,
-		DatabaseType:   dbSystem,
-		User:           dbUser,
-		SanitizedQuery: dbStatement,
+	sqlData = awsxray.SQLData{
+		URL:            aws.String(url),
+		DatabaseType:   aws.String(dbSystem),
+		User:           aws.String(dbUser),
+		SanitizedQuery: aws.String(dbStatement),
 	}
 	return filtered, &sqlData
 }

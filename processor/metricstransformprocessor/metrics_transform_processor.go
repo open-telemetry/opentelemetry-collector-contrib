@@ -19,10 +19,9 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
@@ -42,43 +41,21 @@ type internalOperation struct {
 }
 
 type metricsTransformProcessor struct {
-	next       consumer.MetricsConsumer
 	transforms []internalTransform
 	logger     *zap.Logger
 }
 
-var _ component.MetricsProcessor = (*metricsTransformProcessor)(nil)
+var _ processorhelper.MProcessor = (*metricsTransformProcessor)(nil)
 
-func newMetricsTransformProcessor(next consumer.MetricsConsumer, logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
+func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
-		next:       next,
 		transforms: internalTransforms,
 		logger:     logger,
 	}
 }
 
-// GetCapabilities returns the Capabilities associated with the metrics transform processor.
-func (mtp *metricsTransformProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (*metricsTransformProcessor) Start(ctx context.Context, host component.Host) error {
-	return nil
-}
-
-// Shutdown is invoked during service shutdown.
-func (*metricsTransformProcessor) Shutdown(ctx context.Context) error {
-	return nil
-}
-
-// ConsumeMetrics implements the MetricsProcessor interface.
-func (mtp *metricsTransformProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	return mtp.next.ConsumeMetrics(ctx, mtp.transform(md))
-}
-
-// transform transforms the metrics based on the information specified in the config.
-func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics {
+// ProcessMetrics implements the MProcessor interface.
+func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	mds := pdatautil.MetricsToMetricsData(md)
 
 	for i := range mds {
@@ -110,7 +87,7 @@ func (mtp *metricsTransformProcessor) transform(md pdata.Metrics) pdata.Metrics 
 		}
 	}
 
-	return pdatautil.MetricsFromMetricsData(mds)
+	return pdatautil.MetricsFromMetricsData(mds), nil
 }
 
 // update updates the metric content based on operations indicated in transform.
