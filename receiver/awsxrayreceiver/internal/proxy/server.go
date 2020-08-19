@@ -29,7 +29,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
-	signer "github.com/aws/aws-sdk-go/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/zap"
 )
 
@@ -64,8 +64,6 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	logger.Info("HTTP proxy server using remote X-Ray endpoint", zap.String("value", awsEndPoint))
 
 	// Parse url from endpoint
 	awsURL, err := url.Parse(awsEndPoint)
@@ -129,14 +127,18 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 // It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
 // Currently the caller takes care of it.
 func getServiceEndpoint(awsCfg *aws.Config) (string, error) {
-	if awsCfg.Endpoint == nil || *awsCfg.Endpoint == "" {
-		if awsCfg.Region == nil || *awsCfg.Region == "" {
+	if isEmpty(awsCfg.Endpoint) {
+		if isEmpty(awsCfg.Region) {
 			return "", errors.New("unable to generate endpoint from region with nil value")
 		}
 		resolved, err := endpoints.DefaultResolver().EndpointFor(service, *awsCfg.Region, setResolverConfig())
 		return resolved.URL, err
 	}
 	return *awsCfg.Endpoint, nil
+}
+
+func isEmpty(val *string) bool {
+	return val == nil || *val == ""
 }
 
 // consume readsAll() the body and creates a new io.ReadSeeker from the content. v4.Signer

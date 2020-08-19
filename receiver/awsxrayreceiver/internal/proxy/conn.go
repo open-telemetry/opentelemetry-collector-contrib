@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -141,7 +142,7 @@ func getProxyAddress(proxyAddress string) string {
 	}
 	if os.Getenv(httpsProxyEnvVar) != "" {
 		return os.Getenv(httpsProxyEnvVar)
-	} 
+	}
 	return ""
 }
 
@@ -154,14 +155,11 @@ func getProxyURL(proxyAddress string) (*url.URL, error) {
 			return nil, fmt.Errorf("failed to parse proxy URL: %w", err)
 		}
 		return proxyURL, nil
-	} else {
-		return nil, nil
 	}
+	return nil, nil
 }
 
 func getRegionFromECSMetadata() (string, error) {
-	var region string
-
 	ecsMetadataEnabled := os.Getenv(ecsContainerMetadataEnabledEnvVar)
 	ecsMetadataEnabled = strings.ToLower(ecsMetadataEnabled)
 	if ecsMetadataEnabled == "true" {
@@ -172,14 +170,17 @@ func getRegionFromECSMetadata() (string, error) {
 				metadataFilePath, err)
 		}
 		var dat map[string]interface{}
-		if err := json.Unmarshal(metadataFile, &dat); err != nil {
+		err = json.Unmarshal(metadata, &dat)
+		if err != nil {
 			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",
 				metadataFilePath, err)
 		}
-		taskArn := strings.Split(dat["TaskARN"].(string), ":")
-		region = taskArn[3]
+		taskArn, err := arn.Parse(dat["TaskARN"].(string))
+		if err != nil {
+			return "", err
+		}
 
-		return region, nil
+		return taskArn.Region, nil
 	}
 	return "", errors.New("ECS metadata endpoint is inaccessible")
 }
@@ -230,8 +231,8 @@ func (s *stsCalls) getCreds(region string, roleArn string) (*credentials.Credent
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case sts.ErrCodeRegionDisabledException:
-				s.log.Warn("STS regional endpoint disabled", zap.String("region", region), zap.Error(aerr))
-				s.log.Warn("Credentials for provided RoleARN will be fetched from STS primary region endpoint instead of regional endpoint.")
+				s.log.Warn("STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
+					zap.String("region", region), zap.Error(aerr))
 				stsCred, err = s.getSTSCredsFromPrimaryRegionEndpoint(sess, roleArn, region)
 			default:
 				return nil, fmt.Errorf("unable to handle AWS error: %w", aerr)

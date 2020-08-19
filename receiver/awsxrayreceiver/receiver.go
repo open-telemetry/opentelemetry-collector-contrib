@@ -94,6 +94,7 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 		x.poller.Start(x.longLivedCtx)
 		go x.start()
 		go x.server.ListenAndServe()
+		x.logger.Info("X-Ray TCP proxy server started")
 		err = nil
 	})
 	return err

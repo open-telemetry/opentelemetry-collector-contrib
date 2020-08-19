@@ -110,7 +110,7 @@ func TestRegionFromEnv(t *testing.T) {
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Fetch region from environment variables", "expected log message")
+	assert.Contains(t, lastEntry.Message, "Fetched region from environment variables", "expected log message")
 	assert.Equal(t, "region", lastEntry.Context[0].Key, "expected log key")
 	assert.Equal(t, region, lastEntry.Context[0].String)
 }
@@ -134,7 +134,7 @@ func TestRegionFromConfig(t *testing.T) {
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Fetch region from config file", "expected log message")
+	assert.Contains(t, lastEntry.Message, "Fetched region from config file", "expected log message")
 	assert.Equal(t, "region", lastEntry.Context[0].Key, "expected log key")
 	assert.Equal(t, cfgWithRegion.Region, lastEntry.Context[0].String)
 }
@@ -160,9 +160,38 @@ func TestRegionFromECS(t *testing.T) {
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Fetch region from ECS metadata file", "expected log message")
+	assert.Contains(t, lastEntry.Message, "Fetched region from ECS metadata file", "expected log message")
 	assert.Equal(t, "region", lastEntry.Context[0].Key, "expected log key")
 	assert.Equal(t, "us-west-50", lastEntry.Context[0].String)
+}
+
+func TestRegionFromECSInvalidArn(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+
+	os.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
+	os.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileInvalidArn.txt")
+
+	logger, recordedLogs := logSetup()
+
+	expectedSession, err := session.NewSession()
+	assert.NoError(t, err, "expectedSession should be created")
+	f1, f2 := setupMock(expectedSession)
+	defer tearDownMock(f1, f2)
+
+	_, s, err := getAWSConfigSession(DefaultConfig(), logger)
+	assert.NoError(t, err, "getAWSConfigSession should not error out")
+	assert.Equal(t, expectedSession, s, "mock session is not overridden")
+
+	logs := recordedLogs.All()
+	// assert fetching from ECS metadata failed
+	sndToLastEntry := logs[len(logs)-2]
+	assert.Contains(t, sndToLastEntry.Message, "Unable to fetch region from ECS metadata", "expected log message")
+	assert.Error(t, sndToLastEntry.Context[0].Interface.(error), "expected error")
+
+	// fall back to use EC2 meta data service
+	lastEntry := logs[len(logs)-1]
+	assert.Contains(t, lastEntry.Message, "Fetched region from EC2 metadata", "expected log message")
 }
 
 // fetch region value from ec2 meta data service
@@ -181,7 +210,7 @@ func TestRegionFromEC2(t *testing.T) {
 
 	logs := recordedLogs.All()
 	lastEntry := logs[len(logs)-1]
-	assert.Contains(t, lastEntry.Message, "Fetch region from EC2 metadata", "expected log message")
+	assert.Contains(t, lastEntry.Message, "Fetched region from EC2 metadata", "expected log message")
 	assert.Equal(t, lastEntry.Context[0].Key, "region", "expected log key")
 	assert.Equal(t, lastEntry.Context[0].String, ec2Region)
 }
@@ -226,7 +255,7 @@ func TestInvalidECSMetadata(t *testing.T) {
 
 	_, err := getRegionFromECSMetadata()
 	assert.EqualError(t, err,
-		"unable to read ECS metadata file content, path: testdata/ecsmetadatafileinvalid.txt, error: invalid character 'i' looking for beginning of value",
+		"invalid json in read ECS metadata file content, path: testdata/ecsmetadatafileinvalid.txt, error: invalid character 'i' looking for beginning of value",
 		"expected error")
 }
 
@@ -489,18 +518,14 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	assert.NoError(t, err, "no expected error")
 
 	logs := recordedLogs.All()
-	sndToLastEntry := logs[len(logs)-2]
 	lastEntry := logs[len(logs)-1]
 	assert.Contains(t, lastEntry.Message,
-		"Credentials for provided RoleARN will be fetched from STS primary region endpoint instead of regional endpoint.",
-		"expected log message")
-	assert.Contains(t, sndToLastEntry.Message,
-		"STS regional endpoint disabled",
+		"STS regional endpoint disabled. Credentials for provided RoleARN will be fetched from STS primary region endpoint instead",
 		"expected log message")
 	assert.Equal(t,
-		sndToLastEntry.Context[0].String,
+		lastEntry.Context[0].String,
 		expectedRegion, "expected error")
 	assert.EqualError(t,
-		sndToLastEntry.Context[1].Interface.(error),
+		lastEntry.Context[1].Interface.(error),
 		expectedErr.Error(), "expected error")
 }
