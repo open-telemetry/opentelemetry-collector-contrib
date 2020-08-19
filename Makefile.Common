@@ -3,6 +3,7 @@ SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
 ALL_SRC := $(shell find . -name '*.go' \
                                 -type f | sort)
+ALL_SRC_WITHOUT_PROTO := $(shell find . -name '*.go' -type f | grep -v "/proto/")
 
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) \
@@ -10,10 +11,11 @@ ALL_SRC_AND_DOC := $(shell find . \( -name "*.md" -o -name "*.go" -o -name "*.ya
 
 # ALL_PKGS is used with 'go cover'
 ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
+ALL_PKG_WITHOUT_PROTO := $(shell go list ./... | grep -v proto)
 # ALL_MODULES includes ./* dirs (excludes . dir)
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
-GOTEST_OPT?= -race -timeout 1200s
+GOTEST_OPT?= -race -timeout 30s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOTEST=go test
@@ -78,7 +80,7 @@ addlicense:
 
 .PHONY: checklicense
 checklicense:
-	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC) 2>&1`; \
+	@ADDLICENCESEOUT=`$(ADDLICENCESE) -check $(ALL_SRC_WITHOUT_PROTO) 2>&1`; \
 		if [ "$$ADDLICENCESEOUT" ]; then \
 			echo "$(ADDLICENCESE) FAILED => add License errors:\n"; \
 			echo "$$ADDLICENCESEOUT\n"; \
@@ -119,8 +121,8 @@ misspell-correction:
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKG_WITHOUT_PROTO)
 
-.PHONY: dep 
+.PHONY: dep
 dep:
 	go mod download
