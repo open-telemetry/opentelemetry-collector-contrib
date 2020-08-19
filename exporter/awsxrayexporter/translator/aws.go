@@ -166,10 +166,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		Beanstalk:    ebs,
 		ECS:          ecs,
 		EC2:          ec2,
-<<<<<<< HEAD
-=======
 		XRay:         xray,
->>>>>>> f7360eeba4792aadbc571815f4f8132e5e0fab1c
 		Operation:    aws.String(operation),
 		RemoteRegion: aws.String(remoteRegion),
 		RequestID:    aws.String(requestID),
