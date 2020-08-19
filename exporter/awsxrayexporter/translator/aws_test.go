@@ -240,6 +240,24 @@ func TestJavaSDK(t *testing.T) {
 	assert.Equal(t, "1.2.3", awsData.XRayMetadata.SDKVersion)
 }
 
+func TestJavaAutoInstrumentation(t *testing.T) {
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "1.2.3")
+	resource.Attributes().InsertString(semconventions.AttributeTelemetryAutoVersion, "3.4.5")
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, "opentelemetry for java", awsData.XRayMetadata.SDK)
+	assert.Equal(t, "1.2.3", awsData.XRayMetadata.SDKVersion)
+	assert.True(t, awsData.XRayMetadata.AutoInstrumentation)
+}
+
 func TestGoSDK(t *testing.T) {
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()

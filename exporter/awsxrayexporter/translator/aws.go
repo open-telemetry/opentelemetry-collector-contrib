@@ -99,6 +99,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		sdkName      string
 		sdkLanguage  string
 		sdkVersion   string
+		autoVersion  string
 		ec2          *EC2Metadata
 		ecs          *ECSMetadata
 		ebs          *BeanstalkMetadata
@@ -138,6 +139,8 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				sdkLanguage = value.StringVal()
 			case semconventions.AttributeTelemetrySDKVersion:
 				sdkVersion = value.StringVal()
+			case semconventions.AttributeTelemetryAutoVersion:
+				autoVersion = value.StringVal()
 			}
 		})
 	}
@@ -206,8 +209,9 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		sdk = sdkName
 	}
 	xray := &XRayMetadata{
-		SDK:        sdk,
-		SDKVersion: sdkVersion,
+		SDK:                 sdk,
+		SDKVersion:          sdkVersion,
+		AutoInstrumentation: autoVersion != "",
 	}
 
 	awsData := &AWSData{
