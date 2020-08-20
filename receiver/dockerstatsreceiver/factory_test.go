@@ -19,13 +19,15 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	assert.Equal(t, "docker_stats", string(factory.Type()))
 
 	config := factory.CreateDefaultConfig()
@@ -34,31 +36,35 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateReceiver(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 
-	traceReceiver, err := factory.CreateTraceReceiver(context.Background(), zap.NewNop(), config, nil)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	traceReceiver, err := factory.CreateTraceReceiver(context.Background(), params, config, &testbed.MockTraceConsumer{})
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, traceReceiver)
 
-	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), config, nil)
+	metricReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, config, &testbed.MockMetricConsumer{})
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "Receiver creation failed")
 }
 
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	config := factory.CreateDefaultConfig()
 	receiverCfg := config.(*Config)
 
 	receiverCfg.Endpoint = ""
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), receiverCfg, nil)
+
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	consumer := &testbed.MockMetricConsumer{}
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumer)
 	assert.Nil(t, receiver)
 	assert.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
 	receiverCfg.Endpoint = "\a"
-	receiver, err = factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), receiverCfg, nil)
+	receiver, err = factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumer)
 	assert.Nil(t, receiver)
 	assert.Error(t, err)
 	assert.Equal(

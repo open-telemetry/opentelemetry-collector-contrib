@@ -19,26 +19,12 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
-
-type mockConsumer struct{}
-
-var _ (consumer.MetricsConsumerOld) = (*mockConsumer)(nil)
-
-func (mc *mockConsumer) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
-	return nil
-}
-
-func (mc *mockConsumer) PullReceivedMetrics() []*metricspb.Metric {
-	return nil
-}
 
 func TestNewReceiver(t *testing.T) {
 	config := &Config{
@@ -46,8 +32,8 @@ func TestNewReceiver(t *testing.T) {
 		CollectionInterval: 1 * time.Second,
 	}
 	logger := zap.NewNop()
-	nextConsumer := &mockConsumer{}
-	mr, err := NewReceiver(context.Background(), config, logger, nextConsumer)
+	nextConsumer := &testbed.MockMetricConsumer{}
+	mr, err := NewReceiver(context.Background(), logger, config, nextConsumer)
 	assert.NotNil(t, mr)
 	assert.Nil(t, err)
 
@@ -60,14 +46,13 @@ func TestNewReceiver(t *testing.T) {
 
 func TestNewReceiverErrors(t *testing.T) {
 	logger := zap.NewNop()
-	nextConsumer := &mockConsumer{}
 
-	r, err := NewReceiver(context.Background(), &Config{}, logger, nextConsumer)
+	r, err := NewReceiver(context.Background(), logger, &Config{}, &testbed.MockMetricConsumer{})
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = NewReceiver(context.Background(), &Config{Endpoint: "someEndpoint"}, logger, nextConsumer)
+	r, err = NewReceiver(context.Background(), logger, &Config{Endpoint: "someEndpoint"}, &testbed.MockMetricConsumer{})
 	assert.Nil(t, r)
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
@@ -80,8 +65,7 @@ func TestErrorsInStart(t *testing.T) {
 		CollectionInterval: 1 * time.Second,
 	}
 	logger := zap.NewNop()
-	nextConsumer := &mockConsumer{}
-	receiver, err := NewReceiver(context.Background(), config, logger, nextConsumer)
+	receiver, err := NewReceiver(context.Background(), logger, config, &testbed.MockMetricConsumer{})
 	assert.NotNil(t, receiver)
 	assert.Nil(t, err)
 

@@ -19,29 +19,23 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
 	typeStr = "docker_stats"
 )
 
-var _ component.ReceiverFactoryOld = (*Factory)(nil)
-
-type Factory struct{}
-
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -53,24 +47,15 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 	}
 }
 
-func (f *Factory) CreateTraceReceiver(
+func createMetricsReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	config configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-func (f *Factory) CreateMetricsReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	config configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	cfg := config.(*Config)
+	dockerConfig := config.(*Config)
 
-	dsr, err := NewReceiver(ctx, cfg, logger, nextConsumer)
+	dsr, err := NewReceiver(ctx, params.Logger, dockerConfig, consumer)
 	if err != nil {
 		return nil, err
 	}

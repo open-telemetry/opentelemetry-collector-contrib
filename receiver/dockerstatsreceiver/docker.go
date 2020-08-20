@@ -230,6 +230,8 @@ func (dc *DockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
 }
 
 func (dc *DockerClient) removeContainer(cid string) {
+	dc.containersLock.Lock()
+	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)
 	dc.logger.Debug("Removed container from stores.", zap.String("id", cid))
 }

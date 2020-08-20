@@ -44,22 +44,26 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func factory() (Factory, *Config) {
-	f := Factory{}
+func factory() (component.ReceiverFactory, *Config) {
+	f := NewFactory()
 	config := f.CreateDefaultConfig().(*Config)
 	config.CollectionInterval = 1 * time.Second
 	return f, config
 }
 
-func TestDefaultMetricsIntegration(t *testing.T) {
+func params(t *testing.T) component.ReceiverCreateParams {
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
+	return component.ReceiverCreateParams{Logger: logger}
+}
 
+func TestDefaultMetricsIntegration(t *testing.T) {
+	params := params(t)
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
-	consumer := &exportertest.SinkMetricsExporterOld{}
+	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), logger, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -75,17 +79,16 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 }
 
 func TestAllMetricsIntegration(t *testing.T) {
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-
+	params := params(t)
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
-	consumer := &exportertest.SinkMetricsExporterOld{}
+	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
 
 	config.ProvidePerCoreCPUMetrics = true
 
-	receiver, err := f.CreateMetricsReceiver(context.Background(), logger, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -101,16 +104,15 @@ func TestAllMetricsIntegration(t *testing.T) {
 }
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-
+	params := params(t)
 	d := container.New(t)
 	d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
 
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
 
-	consumer := &exportertest.SinkMetricsExporterOld{}
-	receiver, err := f.CreateMetricsReceiver(context.Background(), logger, config, consumer)
+	consumer := &exportertest.SinkMetricsExporter{}
+	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
@@ -126,11 +128,10 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 }
 
 func TestFetchMissingContainerIntegration(t *testing.T) {
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-
-	consumer := &exportertest.SinkMetricsExporterOld{}
+	params := params(t)
+	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), logger, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
 	require.NoError(t, err, "failed creating metrics Receiver")
 	r := receiver.(*Receiver)
 	require.NoError(t, r.Start(context.Background(), &testHost{
