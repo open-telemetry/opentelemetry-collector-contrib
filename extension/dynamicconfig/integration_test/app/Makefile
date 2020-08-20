@@ -4,7 +4,7 @@ do-unit-tests-with-cover:
 
 .PHONY: lint
 lint:
-	@echo "skipping lint for dynamic config integration tests"
+	@echo "skipping lint for integration test sample app"
 
 %: force
 	@$(MAKE) -f ../../../../Makefile.Common $@

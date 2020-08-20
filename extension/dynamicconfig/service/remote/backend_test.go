@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package remote_test
+package remote
 
 import (
 	"bytes"
@@ -22,9 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/mock"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/remote"
 )
 
 // startServer is a test utility to start a quick-n-dirty gRPC server using the
@@ -38,7 +36,7 @@ func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) strin
 	}
 
 	server := grpc.NewServer()
-	configService, _ := service.NewConfigService(service.WithMockBackend())
+	configService := &mock.Service{}
 	pb.RegisterMetricConfigServer(server, configService)
 
 	go func() {
@@ -50,7 +48,6 @@ func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) strin
 
 	go func() {
 		<-quit
-		configService.Stop()
 		server.Stop()
 
 		done <- struct{}{}
@@ -59,7 +56,7 @@ func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) strin
 	return address.String()
 }
 
-func SetUpServer(t *testing.T) (*remote.Backend, chan struct{}, chan struct{}) {
+func SetUpServer(t *testing.T) (*Backend, chan struct{}, chan struct{}) {
 	quit := make(chan struct{})
 	done := make(chan struct{})
 
@@ -68,7 +65,7 @@ func SetUpServer(t *testing.T) (*remote.Backend, chan struct{}, chan struct{}) {
 	<-done
 
 	// making remote backend
-	backend, err := remote.NewBackend(address)
+	backend, err := NewBackend(address)
 	if err != nil {
 		t.Fatalf("fail to init remote config backend")
 	}
@@ -76,7 +73,7 @@ func SetUpServer(t *testing.T) (*remote.Backend, chan struct{}, chan struct{}) {
 	return backend, quit, done
 }
 
-func TearDownServer(t *testing.T, backend *remote.Backend, quit chan struct{}, done chan struct{}) {
+func TearDownServer(t *testing.T, backend *Backend, quit chan struct{}, done chan struct{}) {
 	quit <- struct{}{}
 	if err := backend.Close(); err != nil {
 		t.Errorf("fail to close backend: %v", err)
@@ -86,7 +83,7 @@ func TearDownServer(t *testing.T, backend *remote.Backend, quit chan struct{}, d
 }
 
 func TestNewBackend(t *testing.T) {
-	if _, err := remote.NewBackend(":0"); err != nil {
+	if _, err := NewBackend(":0"); err != nil {
 		t.Errorf("fail to initialize a new remote backend: %v", err)
 	}
 }
@@ -109,7 +106,7 @@ func TestBuildConfigResponseRemote(t *testing.T) {
 	}
 }
 
-func buildResp(t *testing.T, backend *remote.Backend) *pb.MetricConfigResponse {
+func buildResp(t *testing.T, backend *Backend) *pb.MetricConfigResponse {
 	resp, err := backend.BuildConfigResponse(nil)
 	if err != nil {
 		t.Errorf("fail to build config response: %v", err)

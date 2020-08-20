@@ -18,7 +18,7 @@ OTEL_VERSION=master
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
 	receiver/redisreceiver \
-	extension/dynamicconfig/integration_test \
+	extension/dynamicconfig \
 	internal/common
 
 .DEFAULT_GOAL := all

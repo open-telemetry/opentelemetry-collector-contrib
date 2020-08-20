@@ -15,6 +15,8 @@
 package mock
 
 import (
+	"context"
+
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
 )
@@ -41,4 +43,12 @@ func (*Backend) BuildConfigResponse(*res.Resource) (*pb.MetricConfigResponse, er
 
 func (*Backend) Close() error {
 	return nil
+}
+
+type Service struct {
+	pb.UnimplementedMetricConfigServer
+}
+
+func (*Service) GetMetricConfig(context.Context, *pb.MetricConfigRequest) (*pb.MetricConfigResponse, error) {
+	return GlobalResponse, nil
 }
