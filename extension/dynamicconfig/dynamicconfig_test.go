@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -31,7 +32,7 @@ import (
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 )
 
-func TestDyconfigExtensionUsage(t *testing.T) {
+func TestDynamicConfigExtensionUsage(t *testing.T) {
 	config := Config{
 		Endpoint:        testutil.GetAvailableLocalAddress(t),
 		LocalConfigFile: "testdata/schedules.yaml",
@@ -69,7 +70,7 @@ func TestDyconfigExtensionUsage(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestDyconfigExtensionPortAlreadyInUse(t *testing.T) {
+func TestDynamicConfigExtensionPortAlreadyInUse(t *testing.T) {
 	endpoint := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", endpoint)
 	require.NoError(t, err)
@@ -86,7 +87,7 @@ func TestDyconfigExtensionPortAlreadyInUse(t *testing.T) {
 	require.Error(t, dynamicconfigExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestDyconfigMultipleStarts(t *testing.T) {
+func TestDynamicConfigMultipleStarts(t *testing.T) {
 	config := Config{
 		Endpoint:        testutil.GetAvailableLocalAddress(t),
 		LocalConfigFile: "testdata/schedules.yaml",
@@ -103,7 +104,7 @@ func TestDyconfigMultipleStarts(t *testing.T) {
 	require.Error(t, dynamicconfigExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestDyconfigMultipleShutdowns(t *testing.T) {
+func TestDynamicConfigMultipleShutdowns(t *testing.T) {
 	config := Config{
 		Endpoint:        testutil.GetAvailableLocalAddress(t),
 		LocalConfigFile: "testdata/schedules.yaml",
@@ -118,7 +119,7 @@ func TestDyconfigMultipleShutdowns(t *testing.T) {
 	require.NoError(t, dynamicconfigExt.Shutdown(context.Background()))
 }
 
-func TestDyconfigShutdownWithoutStart(t *testing.T) {
+func TestDynamicConfigShutdownWithoutStart(t *testing.T) {
 	config := Config{
 		Endpoint:        testutil.GetAvailableLocalAddress(t),
 		LocalConfigFile: "testdata/schedules.yaml",
@@ -129,4 +130,48 @@ func TestDyconfigShutdownWithoutStart(t *testing.T) {
 	require.NotNil(t, dynamicconfigExt)
 
 	require.NoError(t, dynamicconfigExt.Shutdown(context.Background()))
+}
+
+func TestDynamicConfigRemoteConnection(t *testing.T) {
+	quit := make(chan struct{})
+	done := make(chan struct{})
+
+	servAddr := mock.StartServer(t, quit, done)
+	config := Config{
+		Endpoint:            testutil.GetAvailableLocalAddress(t),
+		RemoteConfigAddress: servAddr,
+	}
+
+	dynamicconfigExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, dynamicconfigExt)
+
+	require.NoError(t, dynamicconfigExt.Start(context.Background(), componenttest.NewNopHost()))
+	defer dynamicconfigExt.Shutdown(context.Background())
+
+	// Give a chance for the server goroutine to run.
+	runtime.Gosched()
+
+	conn, err := grpc.Dial(
+		config.Endpoint,
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
+	if err != nil {
+		t.Errorf("fail to open connection: %v", err)
+	}
+	defer func() {
+		if e := conn.Close(); e != nil {
+			t.Errorf("fail to close connection: %v", err)
+		}
+	}()
+
+	client := pb.NewMetricConfigClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = client.GetMetricConfig(ctx, &pb.MetricConfigRequest{})
+	require.NoError(t, err)
+
+	quit <- struct{}{}
 }

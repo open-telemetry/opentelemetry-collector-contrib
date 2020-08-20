@@ -44,52 +44,46 @@ import (
 // For example, CollectionPeriod = "60" is equivalent to CollectionPeriod = "MIN_1"
 type CollectionPeriod string
 
+var PeriodToInt32 = map[CollectionPeriod]int32{
+	"SEC_1":  1,
+	"SEC_5":  5,
+	"SEC_10": 10,
+	"SEC_30": 30,
+	"MIN_1":  60,
+	"MIN_5":  300,
+	"MIN_10": 600,
+	"MIN_30": 1800,
+	"HR_1":   3600,
+	"HR_2":   7200,
+	"HR_4":   14400,
+	"HR_12":  43200,
+	"DAY_1":  86400,
+	"DAY_7":  604800,
+}
+
 // Proto converts the CollectionPeriod into an int32, for use in the protobuf
 // message. It will return an error if the CollectionPeriod has been initialized
 // to an unusable value (e.g. arbitrary strings, negative values)
 func (period CollectionPeriod) Proto() (int32, error) {
-	// TODO: check for library to parse time duration
-	switch period {
-	case "SEC_1":
-		return 1, nil
-	case "SEC_5":
-		return 5, nil
-	case "SEC_10":
-		return 10, nil
-	case "SEC_30":
-		return 30, nil
-	case "MIN_1":
-		return 60, nil
-	case "MIN_5":
-		return 300, nil
-	case "MIN_10":
-		return 600, nil
-	case "MIN_30":
-		return 1800, nil
-	case "HR_1":
-		return 3600, nil
-	case "HR_2":
-		return 7200, nil
-	case "HR_4":
-		return 14400, nil
-	case "HR_12":
-		return 43200, nil
-	case "DAY_1":
-		return 86400, nil
-	case "DAY_7":
-		return 604800, nil
-	default:
-		value, err := strconv.ParseInt(string(period), 10, 32)
-		if err != nil {
-			return 0, fmt.Errorf("fail to parse period: %v", err)
-		}
-
-		if value < 0 {
-			return 0, fmt.Errorf("cannot process negative period: %v", value)
-		}
-
-		return int32(value), nil
+	time, ok := PeriodToInt32[period]
+	if !ok {
+		return parsePeriod(string(period))
 	}
+
+	return time, nil
+}
+
+func parsePeriod(periodStr string) (int32, error) {
+	value, err := strconv.ParseInt(periodStr, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("fail to parse period: %v", err)
+	}
+
+	if value < 0 {
+		return 0, fmt.Errorf("cannot process negative period: %v", value)
+	}
+
+	return int32(value), nil
 }
 
 // Hash generates an FNVa 64 bit hash of the int32 (little endian) value of

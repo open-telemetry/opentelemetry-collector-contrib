@@ -66,6 +66,16 @@ func TestConfigBlockProto(t *testing.T) {
 	}
 }
 
+func TestConfigBlockBadProto(t *testing.T) {
+	config := ConfigBlock{
+		Schedules: []*Schedule{{Period: "MIN_1"}, {Period: "MIN_2"}},
+	}
+
+	if _, err := config.Proto(); err == nil {
+		t.Errorf("expected proto conversion to fail with schedules=%v", config.Schedules)
+	}
+}
+
 func TestConfigBlockHash(t *testing.T) {
 	configA := ConfigBlock{
 		Schedules: []*Schedule{

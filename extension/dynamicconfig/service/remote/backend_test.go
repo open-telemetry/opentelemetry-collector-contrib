@@ -16,53 +16,18 @@ package remote
 
 import (
 	"bytes"
-	"net"
 	"testing"
-
-	"google.golang.org/grpc"
 
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/service/mock"
 )
-
-// startServer is a test utility to start a quick-n-dirty gRPC server using the
-// mock backend.
-func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) string {
-	listen, err := net.Listen("tcp", ":0")
-	address := listen.Addr()
-
-	if err != nil || listen == nil {
-		t.Fatalf("fail to listen: %v", err)
-	}
-
-	server := grpc.NewServer()
-	configService := &mock.Service{}
-	pb.RegisterMetricConfigServer(server, configService)
-
-	go func() {
-		done <- struct{}{}
-		if err := server.Serve(listen); err != nil {
-			t.Errorf("fail to serve: %v", err)
-		}
-	}()
-
-	go func() {
-		<-quit
-		server.Stop()
-
-		done <- struct{}{}
-	}()
-
-	return address.String()
-}
 
 func SetUpServer(t *testing.T) (*Backend, chan struct{}, chan struct{}) {
 	quit := make(chan struct{})
 	done := make(chan struct{})
 
 	// making mock third-party
-	address := StartServer(t, quit, done)
-	<-done
+	address := mock.StartServer(t, quit, done)
 
 	// making remote backend
 	backend, err := NewBackend(address)

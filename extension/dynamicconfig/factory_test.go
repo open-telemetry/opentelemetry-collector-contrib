@@ -86,3 +86,24 @@ func TestFactory_CreateExtensionOnlyOnce(t *testing.T) {
 	// Restore instance tracking from factory, for other tests.
 	atomic.StoreInt32(&instanceState, instanceNotCreated)
 }
+
+func TestFactory_MissingConfigs(t *testing.T) {
+	factory := Factory{}
+	cfg := &Config{}
+
+	ext, err := factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	if ext != nil || err == nil {
+		t.Errorf("expected empty config to throw error: %v", cfg)
+	}
+
+	cfg.Endpoint = "localhost:55700"
+	ext, err = factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	if ext != nil || err == nil {
+		t.Errorf("expected incomplete config to throw error: %v", cfg)
+	}
+
+	cfg.RemoteConfigAddress = "localhost:55701"
+	ext, err = factory.CreateExtension(context.Background(), component.ExtensionCreateParams{Logger: zap.NewNop()}, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, ext)
+}

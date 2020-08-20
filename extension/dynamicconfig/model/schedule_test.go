@@ -44,6 +44,38 @@ func TestScheduleProto(t *testing.T) {
 	}
 }
 
+func TestScheduleBadPeriod(t *testing.T) {
+	schedule := Schedule{
+		InclusionPatterns: []Pattern{{Equals: "one"}, {StartsWith: "two"}},
+		ExclusionPatterns: []Pattern{{StartsWith: "three"}, {Equals: "four"}},
+		Period:            "MIN_3",
+	}
+
+	if _, err := schedule.Proto(); err == nil {
+		t.Errorf("expected schedule with Period=%v to be invalid", schedule.Period)
+	}
+}
+
+func TestScheduleBadPattern(t *testing.T) {
+	schedule := Schedule{
+		InclusionPatterns: []Pattern{{Equals: "one", StartsWith: "two"}},
+		Period:            "MIN_5",
+	}
+
+	if _, err := schedule.Proto(); err == nil {
+		t.Errorf("expected schedule with InclusionPattern=%v to be invalid", schedule.InclusionPatterns)
+	}
+
+	schedule = Schedule{
+		ExclusionPatterns: []Pattern{{Equals: "one", StartsWith: "two"}},
+		Period:            "MIN_5",
+	}
+
+	if _, err := schedule.Proto(); err == nil {
+		t.Errorf("expected schedule with ExclusionPatterns=%v to be invalid", schedule.ExclusionPatterns)
+	}
+}
+
 func TestScheduleHash(t *testing.T) {
 	configA := Schedule{
 		InclusionPatterns: []Pattern{

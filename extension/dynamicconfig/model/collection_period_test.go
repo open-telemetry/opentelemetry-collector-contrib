@@ -46,6 +46,21 @@ func TestCollectionPeriodNotFoundProto(t *testing.T) {
 	}
 }
 
+func TestParsePeriod(t *testing.T) {
+	if value, err := parsePeriod("69105"); value != 69105 || err != nil {
+		t.Errorf("periodParse(\"69105\") = %v with err=%v", value, err)
+	}
+
+	if value, err := parsePeriod("0"); value != 0 || err != nil {
+		t.Errorf("periodParse(\"0\") = %v with err=%v", value, err)
+	}
+
+	if value, err := parsePeriod("-1"); value != 0 || err == nil {
+		t.Errorf("periodParse(\"-1\") = %v with nil error", value)
+	}
+
+}
+
 func TestCollectionPeriodHash(t *testing.T) {
 	var configA CollectionPeriod = "NONE"
 	var configB CollectionPeriod = "DAY_69105"

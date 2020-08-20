@@ -34,6 +34,17 @@ func TestNewConfigService(t *testing.T) {
 	}
 }
 
+func TestRemoteConfigOption(t *testing.T) {
+	service, err := NewConfigService(WithRemoteConfig("localhost:55701"))
+	if err != nil {
+		t.Errorf("fail to create service with remote backend")
+	}
+
+	if err := service.Stop(); err != nil {
+		t.Errorf("fail to stop service")
+	}
+}
+
 func TestLocalConfigOption(t *testing.T) {
 	if service, err := NewConfigService(WithFileConfig("woot.yaml")); service != nil || err == nil {
 		t.Errorf("file does not exist but service created: %v: %v", service, err)
@@ -42,6 +53,10 @@ func TestLocalConfigOption(t *testing.T) {
 	service, err := NewConfigService(WithFileConfig("../testdata/schedules.yaml"))
 	if service == nil || err != nil {
 		t.Errorf("file exists but service not created: %v: %v", service, err)
+	}
+
+	if err := service.Stop(); err != nil {
+		t.Errorf("fail to stop service")
 	}
 }
 
@@ -59,6 +74,10 @@ func TestWaitTimeConfigOption(t *testing.T) {
 	time := service.backend.(*file.Backend).GetWaitTime()
 	if time != testWaitTime {
 		t.Errorf("wait time of %d requested, found %d", testWaitTime, time)
+	}
+
+	if err := service.Stop(); err != nil {
+		t.Errorf("fail to stop service")
 	}
 
 }

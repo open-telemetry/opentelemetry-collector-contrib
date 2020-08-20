@@ -16,9 +16,12 @@ package mock
 
 import (
 	"context"
+	"net"
+	"testing"
 
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
+	"google.golang.org/grpc"
 )
 
 var GlobalFingerprint = []byte("There once was a cat named Gretchen")
@@ -51,4 +54,34 @@ type Service struct {
 
 func (*Service) GetMetricConfig(context.Context, *pb.MetricConfigRequest) (*pb.MetricConfigResponse, error) {
 	return GlobalResponse, nil
+}
+
+// startServer is a test utility to start a quick-n-dirty gRPC server using the
+// mock backend.
+func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) string {
+	listen, err := net.Listen("tcp", ":0")
+	address := listen.Addr()
+
+	if err != nil || listen == nil {
+		t.Fatalf("fail to listen: %v", err)
+	}
+
+	server := grpc.NewServer()
+	configService := &Service{}
+	pb.RegisterMetricConfigServer(server, configService)
+
+	go func() {
+		if err := server.Serve(listen); err != nil {
+			t.Errorf("fail to serve: %v", err)
+		}
+	}()
+
+	go func() {
+		<-quit
+		server.Stop()
+
+		done <- struct{}{}
+	}()
+
+	return address.String()
 }
