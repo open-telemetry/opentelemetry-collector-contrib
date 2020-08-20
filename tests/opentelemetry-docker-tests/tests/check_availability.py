@@ -36,7 +36,7 @@ POSTGRES_PORT = int(os.getenv("POSTGRESQL_PORT", "5432"))
 POSTGRES_USER = os.getenv("POSTGRESQL_HOST", "testuser")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT ", "6379"))
-RETRY_COUNT = 5
+RETRY_COUNT = 8
 RETRY_INTERVAL = 5  # Seconds
 
 logger = logging.getLogger(__name__)
