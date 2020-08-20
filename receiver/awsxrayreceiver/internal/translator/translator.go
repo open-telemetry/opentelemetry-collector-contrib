@@ -107,10 +107,10 @@ func segToSpans(seg awsxray.Segment,
 		if seg.Cause != nil &&
 			populatedChildSpan.Status().Code() != pdata.StatusCode(otlptrace.Status_Ok) {
 			// if seg.Cause is not nil, then one of the subsegments must contain a
-			// HTTP error code. ALso, span.Status().Code() is already
+			// HTTP error code. Also, span.Status().Code() is already
 			// set to `otlptrace.Status_UnknownError` by `addCause()` in
 			// `populateSpan()` above, so here we are just trying to figure out
-			// whether we can get a event more specific error code.
+			// whether we can get an even more specific error code.
 
 			if span.Status().Code() == pdata.StatusCode(otlptrace.Status_UnknownError) {
 				// update the error code to a possibly more specific code

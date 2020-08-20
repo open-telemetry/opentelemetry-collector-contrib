@@ -28,7 +28,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/aws.go#L153
 		// this implies that the current segment being processed is not generated
 		// by an AWS entity.
-		attrs.UpsertString(conventions.AttributeCloudProvider, "nonAWS")
+		attrs.UpsertString(conventions.AttributeCloudProvider, "unknown")
 		return
 	}
 

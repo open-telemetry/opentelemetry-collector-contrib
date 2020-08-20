@@ -99,7 +99,7 @@ func convertStackFramesToStackTraceStr(excp awsxray.Exception) string {
 	for _, frame := range excp.Stack {
 		line := strconv.Itoa(*frame.Line)
 		// the string representation of a frame looks like:
-		// <*frame.Label>\n<*frame.Path>:line\n
+		// <*frame.Label>(<*frame.Path>):line\n
 		b.Grow(4 + len(*frame.Label) + 2 + len(*frame.Path) + len(separator) + len(line) + len(newLine))
 		b.WriteString("\tat ")
 		b.WriteString(*frame.Label)
