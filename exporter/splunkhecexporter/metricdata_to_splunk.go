@@ -21,9 +21,9 @@ import (
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -120,7 +120,7 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
-func timestampToEpochMilliseconds(ts *timestamp.Timestamp) float64 {
+func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) float64 {
 	if ts == nil {
 		return 0
 	}

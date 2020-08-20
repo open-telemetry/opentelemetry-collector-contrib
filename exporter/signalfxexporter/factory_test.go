@@ -23,7 +23,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
@@ -287,7 +287,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "used",
 							HasValue: true,
@@ -302,7 +302,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -311,7 +311,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "free",
 							HasValue: true,
@@ -326,7 +326,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -350,7 +350,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -362,7 +362,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -371,7 +371,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -383,7 +383,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -392,7 +392,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -404,7 +404,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -413,7 +413,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -425,7 +425,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -451,7 +451,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
 							HasValue: true,
@@ -469,7 +469,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -478,7 +478,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
 							HasValue: true,
@@ -496,7 +496,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -519,7 +519,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -531,7 +531,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -554,7 +554,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -566,7 +566,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -589,7 +589,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -601,7 +601,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{

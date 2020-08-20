@@ -20,9 +20,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -98,7 +97,7 @@ func (ms *metricsStore) getMetricData(currentTime time.Time) []consumerdata.Metr
 }
 
 func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
-	currentTime := timestampProto(t)
+	currentTime := timestamppb.New(t)
 	for _, metric := range metrics {
 		if metric != nil {
 			for i := range metric.Timeseries {
@@ -107,9 +106,4 @@ func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Met
 		}
 	}
 	return metrics
-}
-
-func timestampProto(t time.Time) *timestamp.Timestamp {
-	out, _ := ptypes.TimestampProto(t)
-	return out
 }
