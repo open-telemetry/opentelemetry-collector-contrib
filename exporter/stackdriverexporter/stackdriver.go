@@ -30,6 +30,7 @@ import (
 	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 const name = "stackdriver"
@@ -121,6 +122,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		if err != nil {
 			return nil, err
 		}
+		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
 	}
 	if cfg.NumOfWorkers > 0 {
@@ -154,6 +156,21 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 	for _, md := range mds {
 		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 		dropped += d
+
+		var points int
+		var st string
+		if err != nil {
+			points = d
+			s, ok := status.FromError(err)
+			if ok {
+				st = statusCodeToString(s)
+			}
+		} else {
+			_, points = pdatautil.TimeseriesAndPointCount(md)
+			st = "OK"
+		}
+		recordPointCount(ctx, points, st)
+
 		if err != nil {
 			return dropped, err
 		}
