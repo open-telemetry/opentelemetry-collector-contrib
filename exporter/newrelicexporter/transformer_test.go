@@ -43,6 +43,21 @@ func TestTransformSpan(t *testing.T) {
 	}{
 		{
 			in: &tracepb.Span{
+				// No status means no error.
+			},
+			want: telemetry.Span{
+				ID:          "0000000000000000",
+				TraceID:     "00000000000000000000000000000000",
+				ServiceName: "test-service",
+				Attributes: map[string]interface{}{
+					"collector.name":    name,
+					"collector.version": version,
+					"resource":          "R1",
+				},
+			},
+		},
+		{
+			in: &tracepb.Span{
 				Status: &tracepb.Status{},
 			},
 			want: telemetry.Span{
