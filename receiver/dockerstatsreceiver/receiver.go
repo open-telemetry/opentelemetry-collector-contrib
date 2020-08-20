@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -35,7 +36,7 @@ var _ interval.Runnable = (*Receiver)(nil)
 type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
-	nextConsumer      consumer.MetricsConsumerOld
+	nextConsumer      consumer.MetricsConsumer
 	client            *DockerClient
 	runner            *interval.Runner
 	obsCtx            context.Context
@@ -47,9 +48,9 @@ type Receiver struct {
 
 func NewReceiver(
 	_ context.Context,
-	config *Config,
 	logger *zap.Logger,
-	nextConsumer consumer.MetricsConsumerOld,
+	config *Config,
+	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	err := config.Validate()
 	if err != nil {
@@ -146,7 +147,8 @@ func (r *Receiver) Run() error {
 			numTimeSeries += nts
 			numPoints += np
 
-			err = r.nextConsumer.ConsumeMetricsData(r.runnerCtx, *result.md)
+			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*result.md})
+			err = r.nextConsumer.ConsumeMetrics(r.runnerCtx, md)
 		} else {
 			err = result.err
 		}

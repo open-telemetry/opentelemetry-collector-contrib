@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/docker
 go 1.14
 
 require (
+	contrib.go.opencensus.io/exporter/ocagent v0.7.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200514230353-811a247d06e8+incompatible
 	github.com/gobwas/glob v0.2.3
@@ -11,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-20200518175917-05cf2ea24e6c
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.7.1-0.20200807172154-11198b124dae
+	go.opentelemetry.io/collector v0.8.1-0.20200819173546-64befbcc0564
 	go.uber.org/zap v1.15.0
 )
 

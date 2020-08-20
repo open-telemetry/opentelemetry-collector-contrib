@@ -44,7 +44,7 @@ func TestInvalidEndpoint(t *testing.T) {
 }
 
 func TestInvalidExclude(t *testing.T) {
-	config := (&Factory{}).CreateDefaultConfig().(*Config)
+	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ExcludedImages = []string{"["}
 	cli, err := NewDockerClient(config, zap.NewNop())
 	assert.Nil(t, cli)
