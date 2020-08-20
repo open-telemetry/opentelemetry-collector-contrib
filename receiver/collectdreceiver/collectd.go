@@ -21,8 +21,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -52,16 +51,12 @@ func (r *collectDRecord) isEvent() bool {
 	return r.Time != nil && r.Severity != nil && r.Message != nil
 }
 
-func (r *collectDRecord) protoTime() *timestamp.Timestamp {
+func (r *collectDRecord) protoTime() *timestamppb.Timestamp {
 	if r.Time == nil {
 		return nil
 	}
 	ts := time.Unix(0, int64(float64(time.Second)**r.Time))
-	tsp, err := ptypes.TimestampProto(ts)
-	if err != nil {
-		return nil
-	}
-	return tsp
+	return timestamppb.New(ts)
 }
 
 func (r *collectDRecord) appendToMetrics(metrics []*metricspb.Metric, defaultLabels map[string]string) ([]*metricspb.Metric, error) {

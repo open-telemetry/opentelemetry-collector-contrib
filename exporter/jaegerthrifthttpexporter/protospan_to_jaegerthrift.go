@@ -16,15 +16,15 @@ package jaegerthrifthttpexporter
 
 import (
 	"fmt"
+	"time"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -86,7 +86,7 @@ func ocNodeAndResourceToJaegerProcess(node *commonpb.Node, resource *resourcepb.
 			jTags = append(jTags, hostTag)
 		}
 		if node.Identifier.StartTimestamp != nil && node.Identifier.StartTimestamp.Seconds != 0 {
-			startTimeStr := ptypes.TimestampString(node.Identifier.StartTimestamp)
+			startTimeStr := node.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano)
 			hostTag := &jaeger.Tag{
 				Key:   "start.time",
 				VType: jaeger.TagType_STRING,
@@ -423,7 +423,7 @@ func truncableStringToStr(ts *tracepb.TruncatableString) string {
 	return ts.Value
 }
 
-func timestampToEpochMicroseconds(ts *timestamp.Timestamp) int64 {
+func timestampToEpochMicroseconds(ts *timestamppb.Timestamp) int64 {
 	if ts == nil {
 		return 0
 	}

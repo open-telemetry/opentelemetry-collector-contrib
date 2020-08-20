@@ -24,11 +24,11 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_metricDataToSplunk(t *testing.T) {
@@ -40,7 +40,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	tsMSecs := timestampToEpochMilliseconds(&timestamp.Timestamp{Seconds: unixSecs, Nanos: int32(unixNSecs)})
+	tsMSecs := timestampToEpochMilliseconds(&timestamppb.Timestamp{Seconds: unixSecs, Nanos: int32(unixNSecs)})
 
 	doubleVal := 1234.5678
 	doublePt := metricstestutil.Double(tsUnix, doubleVal)
@@ -297,11 +297,11 @@ func expectedFromSummary(
 }
 
 func TestTimestampFormat(t *testing.T) {
-	ts := timestamp.Timestamp{Seconds: 32, Nanos: 1000345}
+	ts := timestamppb.Timestamp{Seconds: 32, Nanos: 1000345}
 	assert.Equal(t, 32.001, timestampToEpochMilliseconds(&ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
-	ts := timestamp.Timestamp{Seconds: 32, Nanos: 1999345}
+	ts := timestamppb.Timestamp{Seconds: 32, Nanos: 1999345}
 	assert.Equal(t, 32.002, timestampToEpochMilliseconds(&ts))
 }

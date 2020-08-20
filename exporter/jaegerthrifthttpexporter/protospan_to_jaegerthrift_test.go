@@ -26,11 +26,11 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/go-cmp/cmp"
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestThriftInvalidOCProtoIDs(t *testing.T) {
@@ -395,7 +395,7 @@ var tds = []consumerdata.TraceData{
 			Identifier: &commonpb.ProcessIdentifier{
 				HostName:       "api246-sjc1",
 				Pid:            13,
-				StartTimestamp: &timestamp.Timestamp{Seconds: 1485467190, Nanos: 639875000},
+				StartTimestamp: &timestamppb.Timestamp{Seconds: 1485467190, Nanos: 639875000},
 			},
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "someVersion"},
 			ServiceInfo: &commonpb.ServiceInfo{Name: "api"},
@@ -418,8 +418,8 @@ var tds = []consumerdata.TraceData{
 				ParentSpanId: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0xC4, 0xE3},
 				Name:         &tracepb.TruncatableString{Value: "get"},
 				Kind:         tracepb.Span_CLIENT,
-				StartTime:    &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
-				EndTime:      &timestamp.Timestamp{Seconds: 1485467191, Nanos: 662813000},
+				StartTime:    &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639875000},
+				EndTime:      &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 662813000},
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"http.url": {
@@ -448,7 +448,7 @@ var tds = []consumerdata.TraceData{
 				TimeEvents: &tracepb.Span_TimeEvents{
 					TimeEvent: []*tracepb.Span_TimeEvent{
 						{
-							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639874000},
+							Time: &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639874000},
 							Value: &tracepb.Span_TimeEvent_MessageEvent_{
 								MessageEvent: &tracepb.Span_TimeEvent_MessageEvent{
 									Type: tracepb.Span_TimeEvent_MessageEvent_SENT, UncompressedSize: 1024, CompressedSize: 512,
@@ -456,7 +456,7 @@ var tds = []consumerdata.TraceData{
 							},
 						},
 						{
-							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
+							Time: &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639875000},
 							Value: &tracepb.Span_TimeEvent_Annotation_{
 								Annotation: &tracepb.Span_TimeEvent_Annotation{
 									Attributes: &tracepb.Span_Attributes{
@@ -470,7 +470,7 @@ var tds = []consumerdata.TraceData{
 							},
 						},
 						{
-							Time: &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
+							Time: &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639875000},
 							Value: &tracepb.Span_TimeEvent_Annotation_{
 								Annotation: &tracepb.Span_TimeEvent_Annotation{
 									Description: &tracepb.TruncatableString{Value: "annotation description"},
@@ -500,8 +500,8 @@ var tds = []consumerdata.TraceData{
 				ParentSpanId: nil,
 				Name:         &tracepb.TruncatableString{Value: "get"},
 				Kind:         tracepb.Span_SERVER,
-				StartTime:    &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
-				EndTime:      &timestamp.Timestamp{Seconds: 1485467191, Nanos: 662813000},
+				StartTime:    &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639875000},
+				EndTime:      &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 662813000},
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"peer.service": {
@@ -516,8 +516,8 @@ var tds = []consumerdata.TraceData{
 				ParentSpanId: []byte{},
 				Name:         &tracepb.TruncatableString{Value: "get"},
 				Kind:         tracepb.Span_SERVER,
-				StartTime:    &timestamp.Timestamp{Seconds: 1485467191, Nanos: 639875000},
-				EndTime:      &timestamp.Timestamp{Seconds: 1485467191, Nanos: 662813000},
+				StartTime:    &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 639875000},
+				EndTime:      &timestamppb.Timestamp{Seconds: 1485467191, Nanos: 662813000},
 				Links: &tracepb.Span_Links{
 					Link: []*tracepb.Span_Link{
 						{
@@ -541,8 +541,8 @@ var tds = []consumerdata.TraceData{
 				SpanId:       []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98},
 				ParentSpanId: []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
 				Name:         &tracepb.TruncatableString{Value: "get2"},
-				StartTime:    &timestamp.Timestamp{Seconds: 1485467192, Nanos: 639875000},
-				EndTime:      &timestamp.Timestamp{Seconds: 1485467192, Nanos: 662813000},
+				StartTime:    &timestamppb.Timestamp{Seconds: 1485467192, Nanos: 639875000},
+				EndTime:      &timestamppb.Timestamp{Seconds: 1485467192, Nanos: 662813000},
 			},
 		},
 	},

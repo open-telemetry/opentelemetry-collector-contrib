@@ -22,11 +22,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestTransformEmptySpan(t *testing.T) {
@@ -185,10 +185,10 @@ func TestTransformSpan(t *testing.T) {
 				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 5},
 				Name:    &tracepb.TruncatableString{Value: "with time"},
 				Status:  &tracepb.Status{},
-				StartTime: &timestamp.Timestamp{
+				StartTime: &timestamppb.Timestamp{
 					Seconds: now.Unix(),
 				},
-				EndTime: &timestamp.Timestamp{
+				EndTime: &timestamppb.Timestamp{
 					Seconds: now.Add(time.Second * 5).Unix(),
 				},
 			},
@@ -247,7 +247,7 @@ func testTransformMetric(t *testing.T, metric *metricspb.Metric, want []telemetr
 }
 
 func TestTransformGuage(t *testing.T) {
-	ts := &timestamp.Timestamp{Seconds: 1}
+	ts := &timestamppb.Timestamp{Seconds: 1}
 	expected := []telemetry.Metric{
 		telemetry.Gauge{
 			Name:      "gauge",
@@ -304,8 +304,8 @@ func TestTransformGuage(t *testing.T) {
 }
 
 func TestTransformDeltaSummary(t *testing.T) {
-	start := &timestamp.Timestamp{Seconds: 1}
-	ts := &timestamp.Timestamp{Seconds: 2}
+	start := &timestamppb.Timestamp{Seconds: 1}
+	ts := &timestamppb.Timestamp{Seconds: 2}
 	expected := []telemetry.Metric{
 		telemetry.Summary{
 			Name:      "summary",
@@ -382,9 +382,9 @@ func TestTransformDeltaSummary(t *testing.T) {
 }
 
 func TestTransformCumulativeCount(t *testing.T) {
-	start := &timestamp.Timestamp{Seconds: 1}
-	ts1 := &timestamp.Timestamp{Seconds: 2}
-	ts2 := &timestamp.Timestamp{Seconds: 3}
+	start := &timestamppb.Timestamp{Seconds: 1}
+	ts1 := &timestamppb.Timestamp{Seconds: 2}
+	ts2 := &timestamppb.Timestamp{Seconds: 3}
 	attrs := map[string]interface{}{
 		"collector.name":    name,
 		"collector.version": version,
@@ -466,9 +466,9 @@ func TestTransformCumulativeCount(t *testing.T) {
 }
 
 func TestTransformCumulativeSummary(t *testing.T) {
-	start := &timestamp.Timestamp{Seconds: 1}
-	ts1 := &timestamp.Timestamp{Seconds: 2}
-	ts2 := &timestamp.Timestamp{Seconds: 3}
+	start := &timestamppb.Timestamp{Seconds: 1}
+	ts1 := &timestamppb.Timestamp{Seconds: 2}
+	ts2 := &timestamppb.Timestamp{Seconds: 3}
 	attrs := map[string]interface{}{
 		"collector.name":    name,
 		"collector.version": version,

@@ -18,15 +18,15 @@ import (
 	"testing"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := &timestamp.Timestamp{
+	ts := &timestamppb.Timestamp{
 		Nanos: 0,
 	}
 
@@ -76,7 +76,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func makeSpan(name string, ts *timestamp.Timestamp) *v1.Span {
+func makeSpan(name string, ts *timestamppb.Timestamp) *v1.Span {
 	trunceableName := &v1.TruncatableString{
 		Value: name,
 	}
@@ -88,7 +88,7 @@ func makeSpan(name string, ts *timestamp.Timestamp) *v1.Span {
 
 func commonSplunkEvent(
 	name string,
-	ts *timestamp.Timestamp,
+	ts *timestamppb.Timestamp,
 ) *splunkEvent {
 	trunceableName := &v1.TruncatableString{
 		Value: name,

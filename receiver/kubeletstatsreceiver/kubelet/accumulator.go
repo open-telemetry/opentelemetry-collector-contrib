@@ -19,10 +19,10 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -65,7 +65,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 
 	// todo s.Runtime.ImageFs
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		nodeResource(s),
 
 		cpuMetrics(nodePrefix, s.CPU),
@@ -81,7 +81,7 @@ func (a *metricDataAccumulator) podStats(podResource *resourcepb.Resource, s sta
 	}
 
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		podResource,
 
 		cpuMetrics(podPrefix, s.CPU),
@@ -105,7 +105,7 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 
 	// todo s.Logs
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		resource,
 
 		cpuMetrics(containerPrefix, s.CPU),
@@ -138,7 +138,7 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 }
 
 func (a *metricDataAccumulator) accumulate(
-	startTime *timestamp.Timestamp,
+	startTime *timestamppb.Timestamp,
 	r *resourcepb.Resource,
 	m ...[]*metricspb.Metric,
 ) {

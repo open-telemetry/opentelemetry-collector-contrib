@@ -12,7 +12,6 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200514230353-811a247d06e8+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect

@@ -25,13 +25,13 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type honeycombData struct {
@@ -110,7 +110,7 @@ func TestExporter(t *testing.T) {
 				SpanId:                  []byte{0x02},
 				Name:                    &tracepb.TruncatableString{Value: "root"},
 				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 				Attributes: &tracepb.Span_Attributes{
 					AttributeMap: map[string]*tracepb.AttributeValue{
 						"span_attr_name": {
@@ -129,7 +129,7 @@ func TestExporter(t *testing.T) {
 				TimeEvents: &tracepb.Span_TimeEvents{
 					TimeEvent: []*tracepb.Span_TimeEvent{
 						{
-							Time: &timestamp.Timestamp{
+							Time: &timestamppb.Timestamp{
 								Seconds: 0,
 								Nanos:   0,
 							},
@@ -157,7 +157,7 @@ func TestExporter(t *testing.T) {
 				ParentSpanId:            []byte{0x02},
 				Name:                    &tracepb.TruncatableString{Value: "client"},
 				Kind:                    tracepb.Span_CLIENT,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 				Links: &tracepb.Span_Links{
 					Link: []*tracepb.Span_Link{
 						{
@@ -184,7 +184,7 @@ func TestExporter(t *testing.T) {
 				ParentSpanId:            []byte{0x03},
 				Name:                    &tracepb.TruncatableString{Value: "server"},
 				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: false},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: false},
 			},
 		},
 	}
@@ -280,7 +280,7 @@ func TestEmptyNode(t *testing.T) {
 				SpanId:                  []byte{0x02},
 				Name:                    &tracepb.TruncatableString{Value: "root"},
 				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 			},
 		},
 	}

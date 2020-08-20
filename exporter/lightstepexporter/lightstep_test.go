@@ -26,11 +26,11 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func testingServer(callback func(data []byte)) *httptest.Server {
@@ -94,7 +94,7 @@ func TestEmptyNode(t *testing.T) {
 				SpanId:                  []byte{0x02},
 				Name:                    &tracepb.TruncatableString{Value: "root"},
 				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 			},
 		},
 	}
@@ -118,7 +118,7 @@ func TestPushTraceData(t *testing.T) {
 				SpanId:                  []byte{0x02},
 				Name:                    &tracepb.TruncatableString{Value: "rootSpan"},
 				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrappers.BoolValue{Value: true},
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 			},
 		},
 	}
