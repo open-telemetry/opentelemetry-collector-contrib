@@ -13,21 +13,3 @@
 #
 
 * @open-telemetry/collector-contrib-approvers
-
-# Exporters Reviewers
-
-/exporter/alibabacloudlogserviceexporter/ @shabicheng
-/exporter/awsxrayexporter/ @kbrockhoff @anuraaga
-/exporter/azuremonitorexporter/ @pcwiese
-/exporter/carbonexporter/ @pjanotti
-/exporter/elasticexporter/ @axw
-/exporter/honeycombexporter/ @paulosman @lizthegrey
-/exporter/jaegerthrifthttpexporter/ @jpkrohling @pavolloffay
-/exporter/kinesisexporter/ @owais
-/exporter/lightstepexporter/ @austinlparker @jmacd
-/exporter/newrelicexporter/ @MrAlias
-/exporter/sapmexporter/ @owais @dmitryax
-/exporter/sentryexporter/ @AbhiPrasad
-/exporter/signalfxexporter/ @pmcollins @asuresh4
-/exporter/splunkhecexporter/ @atoulme
-/exporter/stackdriverexporter/ @nilebox @james-bebbington
