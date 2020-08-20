@@ -20,8 +20,8 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_buildLabels(t *testing.T) {
@@ -143,7 +143,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				nil,
 				nil,
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -156,7 +156,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"source"},
 				[]string{"tst"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -169,7 +169,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"source"},
 				[]string{"tst"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -195,7 +195,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"k0", "k1", "k2"},
 				[]string{"v_0", "v_1", "v_2"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 128},
 				},
 			),
@@ -208,7 +208,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"k0"},
 				[]string{"v_0"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_DoubleValue{DoubleValue: 1.23},
 				},
 			),
@@ -236,7 +236,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"source", "cdk0", "cdk1"},
 				[]string{"tst", "cdv0", "cdv1"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -250,7 +250,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				[]string{"source", "cdk0"},
 				[]string{"tst", "cdv0"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -268,7 +268,7 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			line:    "invalid.timestamp.not.tag 1.23 xyz source=tst",
+			line:    "invalid.timestamppb.not.tag 1.23 xyz source=tst",
 			wantErr: true,
 		},
 		{

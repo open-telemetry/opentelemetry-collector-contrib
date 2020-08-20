@@ -32,7 +32,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,6 +47,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 )
@@ -380,7 +380,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 							},
 						},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: msec / 1e3,
 								Nanos:   int32(msec%1e3) * 1e3,
 							},

@@ -23,9 +23,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/empty"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -37,15 +34,16 @@ import (
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type testServer struct {
 	reqCh chan *cloudtracepb.BatchWriteSpansRequest
 }
 
-func (ts *testServer) BatchWriteSpans(ctx context.Context, req *cloudtracepb.BatchWriteSpansRequest) (*empty.Empty, error) {
+func (ts *testServer) BatchWriteSpans(ctx context.Context, req *cloudtracepb.BatchWriteSpansRequest) (*emptypb.Empty, error) {
 	go func() { ts.reqCh <- req }()
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 // Creates a new span.
@@ -93,15 +91,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 	r := <-reqCh
 	assert.Len(t, r.Spans, 1)
 	assert.Equal(t, fmt.Sprintf("Span.internal-%s", spanName), r.Spans[0].GetDisplayName().Value)
-	assert.Equal(t, mustTS(testTime), r.Spans[0].StartTime)
-}
-
-func mustTS(t time.Time) *timestamp.Timestamp {
-	tt, err := ptypes.TimestampProto(t)
-	if err != nil {
-		panic(err)
-	}
-	return tt
+	assert.Equal(t, timestamppb.New(testTime), r.Spans[0].StartTime)
 }
 
 type mockMetricServer struct {

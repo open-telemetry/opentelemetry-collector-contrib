@@ -22,11 +22,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/cumulative"
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -144,7 +144,7 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 	return attrs
 }
 
-func (t *transformer) Timestamp(ts *timestamp.Timestamp) time.Time {
+func (t *transformer) Timestamp(ts *timestamppb.Timestamp) time.Time {
 	if ts == nil {
 		return time.Time{}
 	}

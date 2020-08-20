@@ -29,11 +29,11 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func createMetricsData(numberOfDataPoints int) consumerdata.MetricsData {
@@ -76,7 +76,7 @@ func createTraceData(numberOfTraces int) consumerdata.TraceData {
 			SpanId:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
 			Name:      &tracepb.TruncatableString{Value: "root"},
 			Status:    &tracepb.Status{},
-			StartTime: &timestamp.Timestamp{Seconds: int64(i)},
+			StartTime: &timestamppb.Timestamp{Seconds: int64(i)},
 		}
 
 		traces = append(traces, span)

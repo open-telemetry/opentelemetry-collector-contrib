@@ -18,17 +18,11 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func timestampProto(t time.Time) *timestamp.Timestamp {
-	out, _ := ptypes.TimestampProto(t)
-	return out
-}
-
 func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
-	currentTime := timestampProto(t)
+	currentTime := timestamppb.New(t)
 	for _, metric := range metrics {
 		if metric != nil {
 			metric.Timeseries[0].Points[0].Timestamp = currentTime

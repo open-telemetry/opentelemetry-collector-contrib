@@ -23,13 +23,13 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func Test_MetricDataToSignalFxV2(t *testing.T) {
@@ -417,8 +417,8 @@ func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
 	values := []string{"v0", "v1"}
 
 	summaryValue := &metricspb.SummaryValue{
-		Count:    &wrappers.Int64Value{Value: 42},
-		Sum:      &wrappers.DoubleValue{Value: 42},
+		Count:    &wrapperspb.Int64Value{Value: 42},
+		Sum:      &wrapperspb.DoubleValue{Value: 42},
 		Snapshot: &metricspb.SummaryValue_Snapshot{},
 	}
 	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}

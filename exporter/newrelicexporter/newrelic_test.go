@@ -23,12 +23,12 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestLogWriter(t *testing.T) {
@@ -178,7 +178,7 @@ func TestExportMetricData(t *testing.T) {
 						},
 						Points: []*metricspb.Point{
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 100,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -186,7 +186,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 101,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -194,7 +194,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 102,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -210,7 +210,7 @@ func TestExportMetricData(t *testing.T) {
 						},
 						Points: []*metricspb.Point{
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 99,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -218,7 +218,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 106,
 								},
 								Value: &metricspb.Point_DoubleValue{
