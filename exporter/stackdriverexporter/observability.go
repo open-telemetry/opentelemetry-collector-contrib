@@ -25,15 +25,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// TODO: re-think if processor should register it's own telemetry views or if some other
-// mechanism should be used by the collector to discover views from all components
-
-func init() {
-	view.Register(viewPointCount)
-}
-
 var (
-	pointCount = stats.Int64("otelcol/stackdriver/point_count", "Count of metric points written to Cloud Monitoring.", "1")
+	pointCount = stats.Int64("otelcol/googlecloudmonitoring/point_count", "Count of metric points written to Cloud Monitoring.", "1")
 	statusKey  = tag.MustNewKey("status")
 )
 
@@ -45,7 +38,22 @@ var viewPointCount = &view.View{
 	TagKeys:     []tag.Key{statusKey},
 }
 
-func recordPointCount(ctx context.Context, points int, status string) {
+func recordPointCount(ctx context.Context, success, dropped int, grpcErr error) {
+	if success > 0 {
+		recordPointCountDataPoint(ctx, success, "OK")
+	}
+
+	if dropped > 0 {
+		var st string
+		s, ok := status.FromError(grpcErr)
+		if ok {
+			st = statusCodeToString(s)
+		}
+		recordPointCountDataPoint(ctx, dropped, st)
+	}
+}
+
+func recordPointCountDataPoint(ctx context.Context, points int, status string) {
 	ctx, err := tag.New(ctx, tag.Insert(statusKey, status))
 	if err != nil {
 		return
