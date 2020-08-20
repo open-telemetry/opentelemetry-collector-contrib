@@ -91,7 +91,7 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 
 	length := 2
 
-	isErr := t.isError(span.Status.Code)
+	isErr := span.Status != nil && span.Status.Code != 0
 	if isErr {
 		length++
 	}
@@ -149,10 +149,6 @@ func (t *transformer) Timestamp(ts *timestamp.Timestamp) time.Time {
 		return time.Time{}
 	}
 	return time.Unix(ts.Seconds, int64(ts.Nanos))
-}
-
-func (t *transformer) isError(code int32) bool {
-	return code != 0
 }
 
 func (t *transformer) Metric(metric *metricspb.Metric) ([]telemetry.Metric, error) {
