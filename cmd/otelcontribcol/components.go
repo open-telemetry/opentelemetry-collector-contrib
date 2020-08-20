@@ -121,7 +121,7 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	processors := []component.ProcessorFactoryBase{
+	processors := []component.ProcessorFactory{
 		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
