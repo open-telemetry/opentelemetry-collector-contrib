@@ -16,7 +16,9 @@ package stackdriverexporter
 
 import (
 	"context"
+	"sync"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -27,8 +29,15 @@ const (
 	typeStr = "stackdriver"
 )
 
+var once sync.Once
+
 // NewFactory creates a factory for the stackdriver exporter
 func NewFactory() component.ExporterFactory {
+	// register view for self-observability
+	once.Do(func() {
+		view.Register(viewPointCount)
+	})
+
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
