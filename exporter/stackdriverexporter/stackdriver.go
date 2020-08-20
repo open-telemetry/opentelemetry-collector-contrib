@@ -30,7 +30,6 @@ import (
 	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 )
 
 const name = "stackdriver"
@@ -151,31 +150,25 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+	var errors []error
+	var totalDropped int
+
 	mds := pdatautil.MetricsToMetricsData(m)
-	dropped := 0
 	for _, md := range mds {
-		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-		dropped += d
-
-		var points int
-		var st string
+		_, points := pdatautil.TimeseriesAndPointCount(md)
+		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+		recordPointCount(ctx, points-dropped, dropped, err)
+		totalDropped += dropped
 		if err != nil {
-			points = d
-			s, ok := status.FromError(err)
-			if ok {
-				st = statusCodeToString(s)
-			}
-		} else {
-			_, points = pdatautil.TimeseriesAndPointCount(md)
-			st = "OK"
-		}
-		recordPointCount(ctx, points, st)
-
-		if err != nil {
-			return dropped, err
+			errors = append(errors, err)
 		}
 	}
-	return dropped, nil
+
+	if len(errors) > 0 {
+		return totalDropped, componenterror.CombineErrors(errors)
+	}
+
+	return totalDropped, nil
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
