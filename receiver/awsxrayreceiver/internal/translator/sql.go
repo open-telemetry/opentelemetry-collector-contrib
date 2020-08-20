@@ -29,7 +29,7 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
 		return nil
 	}
 
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/sql.go#L33
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/sql.go#L60
 	if sql.URL != nil {
 		dbURL, dbName, err := splitSQLURL(*sql.URL)
 		if err != nil {
@@ -46,6 +46,7 @@ func addSQLToSpan(sql *awsxray.SQLData, attrs *pdata.AttributeMap) error {
 	return nil
 }
 
+// SQL URL is of the format: protocol+transport://host:port/dbName
 var re = regexp.MustCompile(`^(.+\/\/.+)\/(.+)$`)
 
 const (

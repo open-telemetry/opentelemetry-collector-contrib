@@ -15,15 +15,11 @@
 package translator
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
-
-type testStruct struct {
-	field string
-}
 
 func TestAddAnnotations(t *testing.T) {
 	input := make(map[string]interface{})
@@ -33,7 +29,6 @@ func TestAddAnnotations(t *testing.T) {
 	input["bool"] = false
 	input["float32"] = float32(4.5)
 	input["float64"] = float64(5.5)
-	input["struct"] = testStruct{field: "a field"}
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(initAttrCapacity)
@@ -48,7 +43,7 @@ func TestAddAnnotations(t *testing.T) {
 			"bool":    pdata.NewAttributeValueBool(false),
 			"float32": pdata.NewAttributeValueDouble(float64(4.5)),
 			"float64": pdata.NewAttributeValueDouble(float64(5.5)),
-			"struct":  pdata.NewAttributeValueString(fmt.Sprintf("%+v", input["struct"])),
 		},
 	)
+	assert.Equal(t, expectedAttrMap.Sort(), attrMap.Sort(), "attribute maps differ")
 }

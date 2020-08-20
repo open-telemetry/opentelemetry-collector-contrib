@@ -67,7 +67,6 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 	spans := ils.Spans()
 
 	// populating global attributes shared among segment and embedded subsegment(s)
-	populateInstrumentationLibrary(&seg, &ils)
 	populateResource(&seg, &resource)
 
 	// recursively traverse segment and embedded subsegments
@@ -127,6 +126,7 @@ func populateSpan(
 	traceID, parentID *string,
 	span *pdata.Span) error {
 
+	span.Status().InitEmpty() // by default this sets the code to `Status_Ok`
 	attrs := span.Attributes()
 	attrs.InitEmptyWithCapacity(initAttrCapacity)
 

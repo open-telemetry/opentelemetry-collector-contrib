@@ -23,14 +23,11 @@ import (
 )
 
 func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
-	span.Status().InitEmpty() // by default this sets the code to `Status_Ok`
 	if seg.HTTP == nil {
 		return
 	}
 
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/http.go#L47
 	attrs := span.Attributes()
-
 	if req := seg.HTTP.Request; req != nil {
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-http
 		addString(req.Method, conventions.AttributeHTTPMethod, &attrs)

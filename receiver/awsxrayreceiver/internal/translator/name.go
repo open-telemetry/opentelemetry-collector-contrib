@@ -28,7 +28,7 @@ const (
 )
 
 func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L193
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L160
 	span.SetName(*seg.Name)
 
 	if seg.HTTP != nil && seg.HTTP.Request != nil && seg.HTTP.Request.ClientIP != nil {
@@ -50,12 +50,12 @@ func addNameAndNamespace(seg *awsxray.Segment, span *pdata.Span) error {
 	// seg is a subsegment
 
 	attrs := span.Attributes()
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L197
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L163
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#spankind
 	span.SetKind(pdata.SpanKindCLIENT)
 	switch *seg.Namespace {
 	case validAWSNamespace:
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/segment.go#L144
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L116
 		attrs.UpsertString(awsxray.AWSServiceAttribute, *seg.Name)
 
 	case validRemoteNamespace:

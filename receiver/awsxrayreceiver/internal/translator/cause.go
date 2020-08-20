@@ -25,11 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
-const (
-	newLine   = "\n"
-	separator = ": "
-)
-
 func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	if seg.Cause == nil {
 		return
@@ -54,8 +49,7 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 		// Right now the X-Ray exporter does not support the case where
 		// 1) CauseData is just a 16-char exception ID,
 		// 2) `WorkingDirectory` and `Paths`
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/cause.go#L105
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/cause.go#L125
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/cause.go#L107
 
 		// so we can only pass the cause exceptionID as the status message as a fallback mechanism
 		span.Status().SetMessage(*seg.Cause.ExceptionID)
@@ -71,16 +65,20 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 			evt.InitEmpty()
 			evt.SetName(conventions.AttributeExceptionEventName)
 			attrs := evt.Attributes()
-			attrs.InitEmptyWithCapacity(2)
-			if excp.Type != nil {
-				attrs.UpsertString(conventions.AttributeExceptionType, *excp.Type)
-				attrs.UpsertString(conventions.AttributeExceptionMessage, *excp.Message)
+			attrs.InitEmptyWithCapacity(8)
+
+			// ID is a required field
+			attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
+			addString(excp.Message, conventions.AttributeExceptionMessage, &attrs)
+			addString(excp.Type, conventions.AttributeExceptionType, &attrs)
+			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, &attrs)
+			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, &attrs)
+			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, &attrs)
+			addString(excp.Cause, awsxray.AWSXrayExceptionCauseAttribute, &attrs)
+
+			if len(excp.Stack) > 0 {
 				stackTrace := convertStackFramesToStackTraceStr(excp)
 				attrs.UpsertString(conventions.AttributeExceptionStacktrace, stackTrace)
-				// For now X-Ray's exception data model is not fully supported in the OpenTelemetry
-				// spec, so some information is lost here.
-				// For example, the "cause" ,"remote", ... and some fields within each exception
-				// are dropped.
 			}
 		}
 	}
@@ -91,24 +89,24 @@ func convertStackFramesToStackTraceStr(excp awsxray.Exception) string {
 	// "<*excp.Type>: <*excp.Message>\n" +
 	// "\tat <*frameN.Label>(<*frameN.Path>: <*frameN.Line>)\n"
 	var b strings.Builder
-	b.Grow(len(*excp.Type) + len(separator) + len(*excp.Message) + len(newLine))
+	b.Grow(len(*excp.Type) + len(": ") + len(*excp.Message) + len("\n"))
 	b.WriteString(*excp.Type)
-	b.WriteString(separator)
+	b.WriteString(": ")
 	b.WriteString(*excp.Message)
-	b.WriteString(newLine)
+	b.WriteString("\n")
 	for _, frame := range excp.Stack {
 		line := strconv.Itoa(*frame.Line)
 		// the string representation of a frame looks like:
 		// <*frame.Label>(<*frame.Path>):line\n
-		b.Grow(4 + len(*frame.Label) + 2 + len(*frame.Path) + len(separator) + len(line) + len(newLine))
+		b.Grow(4 + len(*frame.Label) + 2 + len(*frame.Path) + len(": ") + len(line) + len("\n"))
 		b.WriteString("\tat ")
 		b.WriteString(*frame.Label)
 		b.WriteString("(")
 		b.WriteString(*frame.Path)
-		b.WriteString(separator)
+		b.WriteString(": ")
 		b.WriteString(line)
 		b.WriteString(")")
-		b.WriteString(newLine)
+		b.WriteString("\n")
 	}
 	return b.String()
 }

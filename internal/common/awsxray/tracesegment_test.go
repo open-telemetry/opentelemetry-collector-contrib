@@ -142,7 +142,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 						Operation:    aws.String("DescribeTable"),
 						RemoteRegion: aws.String("us-west-2"),
 						RequestID:    aws.String("29P5V7QSAKHS4LNL56ECAJFF3BVV4KQNSO5AEMVJF66Q9ASUAAJG"),
-						Retries:      aws.Int(0),
+						Retries:      aws.Int64(0),
 						TableName:    aws.String("xray_sample_table"),
 					},
 					Subsegments: []Segment{
@@ -328,7 +328,7 @@ var rawExpectedSegmentForInstrumentedApp = Segment{
 						RemoteRegion: aws.String("us-west-2"),
 						RequestID:    aws.String("TJUJNR0JV84CFHJL93D3GIA0LBVV4KQNSO5AEMVJF66Q9ASUAAJG"),
 						TableName:    aws.String("does_not_exist"),
-						Retries:      aws.Int(0),
+						Retries:      aws.Int64(0),
 					},
 					Subsegments: []Segment{
 						{

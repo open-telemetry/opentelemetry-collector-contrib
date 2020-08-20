@@ -15,8 +15,6 @@
 package translator
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -38,7 +36,6 @@ func addAnnotations(annos map[string]interface{}, attrs *pdata.AttributeMap) {
 		case float64:
 			attrs.UpsertDouble(k, t)
 		default:
-			attrs.UpsertString(k, fmt.Sprintf("%+v", t))
 		}
 	}
 }

@@ -25,7 +25,7 @@ import (
 
 func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 	if aws == nil {
-		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/awsxrayexporter/translator/aws.go#L153
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/aws.go#L121
 		// this implies that the current segment being processed is not generated
 		// by an AWS entity.
 		attrs.UpsertString(conventions.AttributeCloudProvider, "unknown")
@@ -65,6 +65,6 @@ func addAWSToSpan(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {
 		addString(aws.RequestID, awsxray.AWSRequestIDAttribute, attrs)
 		addString(aws.QueueURL, awsxray.AWSQueueURLAttribute, attrs)
 		addString(aws.TableName, awsxray.AWSTableNameAttribute, attrs)
-		// the "retries" field is dropped
+		addInt64(aws.Retries, awsxray.AWSXrayRetriesAttribute, attrs)
 	}
 }

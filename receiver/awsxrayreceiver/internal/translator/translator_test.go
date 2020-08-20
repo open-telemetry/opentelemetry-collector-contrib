@@ -206,6 +206,8 @@ func TestTranslation(t *testing.T) {
 					*subseg7318.AWS.RequestID)
 				childSpan7318Attrs[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(
 					*subseg7318.AWS.TableName)
+				childSpan7318Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewAttributeValueInt(
+					*subseg7318.AWS.Retries)
 
 				childSpan7318 := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -410,6 +412,8 @@ func TestTranslation(t *testing.T) {
 					*subseg7163.AWS.RequestID)
 				childSpan7163Attrs[awsxray.AWSTableNameAttribute] = pdata.NewAttributeValueString(
 					*subseg7163.AWS.TableName)
+				childSpan7163Attrs[awsxray.AWSXrayRetriesAttribute] = pdata.NewAttributeValueInt(
+					*subseg7163.AWS.Retries)
 
 				childSpan7163Evts := initExceptionEvents(&subseg7163)
 				assert.Len(t, childSpan7163Evts, 1, testCase+": childSpan7163Evts has incorrect size")
@@ -548,7 +552,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "awsMissingAwsField.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("nonAWS")
+				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -643,7 +647,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "minCauseIsExceptionId.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("nonAWS")
+				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -696,7 +700,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "indepSubsegment.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("nonAWS")
+				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -741,7 +745,7 @@ func TestTranslation(t *testing.T) {
 			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "indepSubsegmentWithSql.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
-				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("nonAWS")
+				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
 				return attrs
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
@@ -877,12 +881,42 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 	res := make([]eventProps, 0, len(expectedSeg.Cause.Exceptions))
 	for _, excp := range expectedSeg.Cause.Exceptions {
 		attrs := make(map[string]pdata.AttributeValue)
-		attrs[conventions.AttributeExceptionType] = pdata.NewAttributeValueString(
-			*excp.Type)
-		attrs[conventions.AttributeExceptionMessage] = pdata.NewAttributeValueString(
-			*excp.Message)
-		attrs[conventions.AttributeExceptionStacktrace] = pdata.NewAttributeValueString(
-			convertStackFramesToStackTraceStr(excp))
+		attrs[awsxray.AWSXrayExceptionIDAttribute] = pdata.NewAttributeValueString(
+			*excp.ID)
+		if excp.Message != nil {
+			attrs[conventions.AttributeExceptionMessage] = pdata.NewAttributeValueString(
+				*excp.Message)
+		}
+
+		if excp.Type != nil {
+			attrs[conventions.AttributeExceptionType] = pdata.NewAttributeValueString(
+				*excp.Type)
+		}
+
+		if excp.Remote != nil {
+			attrs[awsxray.AWSXrayExceptionRemoteAttribute] = pdata.NewAttributeValueBool(
+				*excp.Remote)
+		}
+
+		if excp.Truncated != nil {
+			attrs[awsxray.AWSXrayExceptionTruncatedAttribute] = pdata.NewAttributeValueInt(
+				*excp.Truncated)
+		}
+
+		if excp.Skipped != nil {
+			attrs[awsxray.AWSXrayExceptionSkippedAttribute] = pdata.NewAttributeValueInt(
+				*excp.Skipped)
+		}
+
+		if excp.Cause != nil {
+			attrs[awsxray.AWSXrayExceptionCauseAttribute] = pdata.NewAttributeValueString(
+				*excp.Cause)
+		}
+
+		if len(excp.Stack) > 0 {
+			attrs[conventions.AttributeExceptionStacktrace] = pdata.NewAttributeValueString(
+				convertStackFramesToStackTraceStr(excp))
+		}
 		res = append(res, eventProps{
 			name:  conventions.AttributeExceptionEventName,
 			attrs: attrs,
@@ -918,14 +952,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ls := rs.InstrumentationLibrarySpans().At(0)
 	ls.InitEmpty()
-	if expectedSeg.AWS != nil &&
-		expectedSeg.AWS.XRay != nil {
-		ls.InstrumentationLibrary().InitEmpty()
-		ls.InstrumentationLibrary().SetName(
-			*expectedSeg.AWS.XRay.SDK)
-		ls.InstrumentationLibrary().SetVersion(
-			*expectedSeg.AWS.XRay.SDKVersion)
-	}
 	ls.Spans().Resize(len(propsPerSpan))
 
 	for i, props := range propsPerSpan {
