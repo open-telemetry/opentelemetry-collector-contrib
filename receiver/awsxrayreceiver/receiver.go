@@ -16,6 +16,7 @@ package awsxrayreceiver
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -25,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -39,6 +41,7 @@ const (
 type xrayReceiver struct {
 	instanceName string
 	poller       udppoller.Poller
+	server       proxy.Server
 	logger       *zap.Logger
 	consumer     consumer.TraceConsumer
 	longLivedCtx context.Context
@@ -69,9 +72,15 @@ func newReceiver(config *Config,
 	logger.Info("Listening on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 
+	srv, err := proxy.NewServer(config.ProxyServer, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return &xrayReceiver{
 		instanceName: config.Name(),
 		poller:       poller,
+		server:       srv,
 		logger:       logger,
 		consumer:     consumer,
 	}, nil
@@ -84,6 +93,8 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 		x.longLivedCtx = obsreport.ReceiverContext(ctx, x.instanceName, udppoller.Transport, "")
 		x.poller.Start(x.longLivedCtx)
 		go x.start()
+		go x.server.ListenAndServe()
+		x.logger.Info("X-Ray TCP proxy server started")
 		err = nil
 	})
 	return err
@@ -92,7 +103,21 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 func (x *xrayReceiver) Shutdown(_ context.Context) error {
 	var err = componenterror.ErrAlreadyStopped
 	x.stopOnce.Do(func() {
-		err = x.poller.Close()
+		err = nil
+		pollerErr := x.poller.Close()
+		if pollerErr != nil {
+			err = pollerErr
+		}
+
+		proxyErr := x.server.Close()
+		if proxyErr != nil {
+			if err == nil {
+				err = proxyErr
+			} else {
+				err = fmt.Errorf("failed to close proxy: %s: failed to close poller: %s",
+					proxyErr.Error(), err.Error())
+			}
+		}
 	})
 	return err
 }
