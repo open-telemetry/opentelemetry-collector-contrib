@@ -17,14 +17,13 @@ package awsxrayreceiver
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
@@ -51,20 +50,7 @@ func createDefaultConfig() configmodels.Receiver {
 			Endpoint:  "0.0.0.0:2000",
 			Transport: udppoller.Transport,
 		},
-		ProxyServer: &proxyServer{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "0.0.0.0:2000",
-			},
-			ProxyAddress: "",
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:   false,
-				ServerName: "",
-			},
-			Region:      "",
-			RoleARN:     "",
-			AWSEndpoint: "",
-			LocalMode:   aws.Bool(false),
-		},
+		ProxyServer: proxy.DefaultConfig(),
 	}
 }
 
