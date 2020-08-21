@@ -258,6 +258,25 @@ translation_rules:
   without_dimensions:
   - device
 
+# disk utilization
+- action: calculate_new_metric
+  metric_name: disk.utilization
+  operand1_metric: df_complex.used
+  operand2_metric: disk.total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    disk.utilization: 100
+
+- action: calculate_new_metric
+  metric_name: disk.summary_utilization
+  operand1_metric: df_complex.used_total
+  operand2_metric: disk.summary_total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    disk.summary_utilization: 100
+
 # convert disk I/O metrics
 - action: rename_dimension_keys
   metric_names:
