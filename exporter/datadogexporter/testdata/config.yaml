@@ -6,10 +6,16 @@ processors:
 
 exporters:
   datadog:
-    api_key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    sending_method: agent
+    tags:
+      - tool:opentelemetry
+      - version:0.1.0
   datadog/2:
-    api_key: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+    api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     site: datadoghq.eu
+  datadog/invalid:
+     api_key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     sending_method: agent
 
 service:
   pipelines:

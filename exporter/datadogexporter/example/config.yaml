@@ -25,6 +25,11 @@ exporters:
     #
     # metrics_url: https://api.datadoghq.com
 
+    ## @param tags - list of strings - optional - default: []
+    ## The list of default tags to add to every metric or trace
+    #
+    # tags: []
+
 service:
   pipelines:
     traces:

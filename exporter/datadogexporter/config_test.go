@@ -46,9 +46,10 @@ func TestLoadConfig(t *testing.T) {
 			NameVal: "datadog",
 			TypeVal: "datadog",
 		},
-		APIKey:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		Site:       DefaultSite,
-		MetricsURL: "https://api.datadoghq.com",
+		MetricsURL: "127.0.0.1:8125",
+		Tags:       []string{"tool:opentelemetry", "version:0.1.0"},
+		Mode:       AgentMode,
 	})
 
 	e1 := cfg.Exporters["datadog/2"].(*Config)
@@ -61,10 +62,17 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "datadog/2",
 				TypeVal: "datadog",
 			},
-			APIKey:     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			APIKey:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 			Site:       "datadoghq.eu",
 			MetricsURL: "https://api.datadoghq.eu",
+			Tags:       DefaultTags,
+			Mode:       APIMode,
 		})
+
+	e3 := cfg.Exporters["datadog/invalid"].(*Config)
+	err = e3.Sanitize()
+	require.Error(t, err)
+
 }
 
 // TestOverrideMetricsURL tests that the metrics URL is overridden
@@ -77,6 +85,7 @@ func TestOverrideMetricsURL(t *testing.T) {
 		APIKey:     "notnull",
 		Site:       DefaultSite,
 		MetricsURL: DebugEndpoint,
+		Mode:       APIMode,
 	}
 
 	err := cfg.Sanitize()

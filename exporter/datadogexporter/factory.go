@@ -28,6 +28,16 @@ const (
 
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
+
+	// List the different sending methods
+	AgentMode   = "agent"
+	APIMode     = "api"
+	DefaultMode = APIMode
+)
+
+var (
+	// DefaultTags is the default set of tags to add to every metric or trace
+	DefaultTags = []string{}
 )
 
 // NewFactory creates a Datadog exporter factory
@@ -44,6 +54,8 @@ func NewFactory() component.ExporterFactory {
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		Site: DefaultSite,
+		Tags: DefaultTags,
+		Mode: DefaultMode,
 	}
 }
 
@@ -61,8 +73,17 @@ func CreateMetricsExporter(
 		return nil, err
 	}
 
-	//Metrics are not yet supported
-	return nil, configerror.ErrDataTypeIsNotSupported
+	exp, err := newMetricsExporter(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		exp.PushMetricsData,
+		exporterhelper.WithQueue(exp.GetQueueSettings()),
+		exporterhelper.WithRetry(exp.GetRetrySettings()),
+	)
 }
 
 // CreateTracesExporter creates a traces exporter based on this config.

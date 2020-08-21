@@ -24,6 +24,7 @@ import (
 
 var (
 	errUnsetAPIKey = errors.New("the Datadog API key is unset")
+	errConflict    = errors.New("'site' and 'api_key' must not be set with agent mode")
 )
 
 // Config defines configuration for the Datadog exporter.
@@ -38,25 +39,46 @@ type Config struct {
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 
-	// MetricsURL is the host of the Datadog intake server to send metrics to.
-	// If not set, the value is obtained from the Site.
+	// MetricsURL is the host of the Datadog intake server or Dogstatsd server to send metrics to.
+	// If not set, the value is obtained from the Site and the sending method.
 	MetricsURL string `mapstructure:"metrics_url"`
+
+	// Tags is the list of default tags to add to every metric or trace
+	Tags []string `mapstructure:"tags"`
+
+	// Mode states the mode for sending metrics and traces.
+	// The possible values are "api" and "agent".
+	// The default value is "agent".
+	Mode string `mapstructure:"sending_method"`
 }
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
+	if c.Mode == AgentMode {
 
-	// Check API key is set
-	if c.APIKey == "" {
-		return errUnsetAPIKey
-	}
+		if c.APIKey != "" || c.Site != DefaultSite {
+			return errConflict
+		}
 
-	// Sanitize API key
-	c.APIKey = strings.TrimSpace(c.APIKey)
+		if c.MetricsURL == "" {
+			c.MetricsURL = "127.0.0.1:8125"
+		}
 
-	// Set Endpoint based on site if unset
-	if c.MetricsURL == "" {
-		c.MetricsURL = fmt.Sprintf("https://api.%s", c.Site)
+	} else if c.Mode == APIMode {
+
+		if c.APIKey == "" {
+			return errUnsetAPIKey
+		}
+
+		// Sanitize API key
+		c.APIKey = strings.TrimSpace(c.APIKey)
+
+		if c.MetricsURL == "" {
+			c.MetricsURL = fmt.Sprintf("https://api.%s", c.Site)
+		}
+
+	} else {
+		return fmt.Errorf("Selected mode '%s' is invalid", c.Mode)
 	}
 
 	return nil
