@@ -23,7 +23,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
@@ -64,7 +64,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 					[]string{"source"},
 					[]string{"e2e"},
 					&metricspb.Point{
-						Timestamp: &timestamp.Timestamp{Seconds: 1582231120},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
 						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 					},
 				),
@@ -80,7 +80,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 					[]string{"source"},
 					[]string{"e2e"},
 					&metricspb.Point{
-						Timestamp: &timestamp.Timestamp{Seconds: 1582231120},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
 						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 					},
 				),
@@ -96,7 +96,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 					[]string{"source"},
 					[]string{"s0"},
 					&metricspb.Point{
-						Timestamp: &timestamp.Timestamp{Seconds: 1582231120},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1582231120},
 						Value:     &metricspb.Point_Int64Value{Int64Value: 0},
 					},
 				),
@@ -106,7 +106,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 					[]string{"source"},
 					[]string{"s1"},
 					&metricspb.Point{
-						Timestamp: &timestamp.Timestamp{Seconds: 1582231121},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1582231121},
 						Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 					},
 				),
@@ -116,7 +116,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 					[]string{"source"},
 					[]string{"s2"},
 					&metricspb.Point{
-						Timestamp: &timestamp.Timestamp{Seconds: 1582231122},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1582231122},
 						Value:     &metricspb.Point_Int64Value{Int64Value: 2},
 					},
 				),

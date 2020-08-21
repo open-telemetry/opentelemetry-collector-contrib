@@ -18,7 +18,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:  "0.0.0.0:5678",
 				Transport: "udp",
 			},
-			ProxyServer: &proxyServer{
+			ProxyServer: &proxy.Config{
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "0.0.0.0:2000",
 				},
@@ -74,7 +74,6 @@ func TestLoadConfig(t *testing.T) {
 				Region:      "",
 				RoleARN:     "",
 				AWSEndpoint: "",
-				LocalMode:   aws.Bool(false),
 			},
 		},
 		r1)
@@ -91,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:  "0.0.0.0:2000",
 				Transport: "udp",
 			},
-			ProxyServer: &proxyServer{
+			ProxyServer: &proxy.Config{
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "0.0.0.0:1234",
 				},
@@ -103,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 				Region:      "us-west-1",
 				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 				AWSEndpoint: "https://another.aws.endpoint.com",
-				LocalMode:   aws.Bool(true),
+				LocalMode:   true,
 			},
 		},
 		r2)

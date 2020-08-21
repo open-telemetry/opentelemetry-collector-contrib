@@ -20,11 +20,11 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_signalFxV2ToMetricsData(t *testing.T) {
@@ -70,7 +70,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 							},
 						},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: msec / 1e3,
 								Nanos:   int32(msec%1e3) * 1e3,
 							},

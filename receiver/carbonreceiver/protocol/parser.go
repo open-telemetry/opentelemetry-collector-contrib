@@ -16,7 +16,7 @@ package protocol
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Parser abstracts the type of parsing being done by the receiver.
@@ -64,8 +64,8 @@ func buildMetricForSinglePoint(
 	}
 }
 
-func convertUnixSec(sec int64) *timestamp.Timestamp {
-	ts := &timestamp.Timestamp{
+func convertUnixSec(sec int64) *timestamppb.Timestamp {
+	ts := &timestamppb.Timestamp{
 		Seconds: sec,
 	}
 	return ts

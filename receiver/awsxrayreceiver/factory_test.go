@@ -16,6 +16,8 @@ package awsxrayreceiver
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,7 +60,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	// TODO: Create proper tests after CreateTraceReceiver is implemented.
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
 	factory := NewFactory()
 	_, err := factory.CreateTraceReceiver(
 		context.Background(),
@@ -83,4 +88,20 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	)
 	assert.NotNil(t, err, "a trace receiver factory should not create a metric receiver")
 	assert.EqualError(t, err, configerror.ErrDataTypeIsNotSupported.Error())
+}
+
+func stashEnv() []string {
+	env := os.Environ()
+	os.Clearenv()
+
+	return env
+}
+
+func restoreEnv(env []string) {
+	os.Clearenv()
+
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		os.Setenv(p[0], p[1])
+	}
 }
