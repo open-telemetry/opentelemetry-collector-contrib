@@ -86,11 +86,11 @@ func TestBuildBadResponse(t *testing.T) {
 	backend, quit, done := SetUpServer(t)
 	defer TearDownServer(t, backend, quit, done)
 
-	mock.GlobalError = fmt.Errorf("something catastrophic has happened!")
+	mock.GlobalError = fmt.Errorf("something catastrophic has happened")
 	defer mock.ResetError()
 
 	if _, err := backend.BuildConfigResponse(nil); err == nil {
-		fmt.Errorf("fail to catch error in backend")
+		t.Errorf("fail to catch error in backend")
 	}
 }
 

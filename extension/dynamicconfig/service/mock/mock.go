@@ -19,9 +19,10 @@ import (
 	"net"
 	"testing"
 
+	"google.golang.org/grpc"
+
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
 	res "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/resource/v1"
-	"google.golang.org/grpc"
 )
 
 var GlobalFingerprint = []byte("There once was a cat named Gretchen")
