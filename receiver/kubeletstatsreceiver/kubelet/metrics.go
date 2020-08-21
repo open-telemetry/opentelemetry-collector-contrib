@@ -23,15 +23,14 @@ import (
 )
 
 func MetricsData(
-	logger *zap.Logger, summary *stats.Summary, metadata Metadata,
-	typeStr string, metricGroupsToCollect map[MetricGroup]bool,
-	volumeClaimLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error) []consumerdata.MetricsData {
+	logger *zap.Logger, summary *stats.Summary,
+	metadata Metadata, typeStr string,
+	metricGroupsToCollect map[MetricGroup]bool) []consumerdata.MetricsData {
 	acc := &metricDataAccumulator{
-		metadata:                metadata,
-		logger:                  logger,
-		metricGroupsToCollect:   metricGroupsToCollect,
-		time:                    time.Now(),
-		volumeClaimLabelsSetter: volumeClaimLabelsSetter,
+		metadata:              metadata,
+		logger:                logger,
+		metricGroupsToCollect: metricGroupsToCollect,
+		time:                  time.Now(),
 	}
 
 	acc.nodeStats(summary.Node)

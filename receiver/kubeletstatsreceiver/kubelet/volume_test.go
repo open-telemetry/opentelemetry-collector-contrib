@@ -34,12 +34,12 @@ type pod struct {
 // Tests for correctness of additional labels collected from PVCs.
 func TestDetailedPVCLabels(t *testing.T) {
 	tests := []struct {
-		name                    string
-		volumeName              string
-		volumeSource            v1.VolumeSource
-		pod                     pod
-		pvcDetailedLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error
-		want                    map[string]string
+		name                            string
+		volumeName                      string
+		volumeSource                    v1.VolumeSource
+		pod                             pod
+		detailedPVCLabelsSetterOverride func(volumeClaim, namespace string, labels map[string]string) error
+		want                            map[string]string
 	}{
 		{
 			name:       "persistentVolumeClaim - with detailed PVC labels (AWS)",
@@ -50,7 +50,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			pvcDetailedLabelsSetter: func(volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volumeClaim, namespace string, labels map[string]string) error {
 				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
 						VolumeID:  "volume_id",
@@ -81,7 +81,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			pvcDetailedLabelsSetter: func(volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volumeClaim, namespace string, labels map[string]string) error {
 				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
 						PDName:    "pd_name",
@@ -112,7 +112,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			pvcDetailedLabelsSetter: func(volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volumeClaim, namespace string, labels map[string]string) error {
 				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					Glusterfs: &v1.GlusterfsPersistentVolumeSource{
 						EndpointsName: "endpoints_name",
@@ -141,7 +141,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			pvcDetailedLabelsSetter: func(volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volumeClaim, namespace string, labels map[string]string) error {
 				GetPersistentVolumeLabels(v1.PersistentVolumeSource{
 					Local: &v1.LocalVolumeSource{
 						Path: "path",
@@ -168,30 +168,28 @@ func TestDetailedPVCLabels(t *testing.T) {
 					"k8s.namespace.name": tt.pod.namespace,
 				},
 			}
-			metadata := NewMetadata(
-				[]MetadataLabel{MetadataLabelVolumeType},
-				&v1.PodList{
-					Items: []v1.Pod{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								UID:       types.UID(tt.pod.uid),
-								Name:      tt.pod.name,
-								Namespace: tt.pod.namespace,
-							},
-							Spec: v1.PodSpec{
-								Volumes: []v1.Volume{
-									{
-										Name:         tt.volumeName,
-										VolumeSource: tt.volumeSource,
-									},
+			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID:       types.UID(tt.pod.uid),
+							Name:      tt.pod.name,
+							Namespace: tt.pod.namespace,
+						},
+						Spec: v1.PodSpec{
+							Volumes: []v1.Volume{
+								{
+									Name:         tt.volumeName,
+									VolumeSource: tt.volumeSource,
 								},
 							},
 						},
 					},
 				},
-			)
+			}, nil)
+			metadata.DetailedPVCLabelsSetter = tt.detailedPVCLabelsSetterOverride
 
-			volume, err := volumeResource(podResource, stats.VolumeStats{Name: tt.volumeName}, metadata, tt.pvcDetailedLabelsSetter)
+			volume, err := volumeResource(podResource, stats.VolumeStats{Name: tt.volumeName}, metadata)
 			require.NoError(t, err)
 			require.NotNil(t, volume)
 			require.Equal(t, tt.want, volume.Labels)
