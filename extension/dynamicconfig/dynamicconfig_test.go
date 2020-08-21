@@ -137,6 +137,7 @@ func TestDynamicConfigRemoteConnection(t *testing.T) {
 	done := make(chan struct{})
 
 	servAddr := mock.StartServer(t, quit, done)
+	<-done
 	config := Config{
 		Endpoint:            testutil.GetAvailableLocalAddress(t),
 		RemoteConfigAddress: servAddr,
@@ -174,4 +175,21 @@ func TestDynamicConfigRemoteConnection(t *testing.T) {
 	require.NoError(t, err)
 
 	quit <- struct{}{}
+}
+
+func TestDynamicConfigBadSchedules(t *testing.T) {
+	config := Config{
+		Endpoint:        testutil.GetAvailableLocalAddress(t),
+		LocalConfigFile: "testdata/schedules_bad.yaml",
+	}
+
+	dynamicconfigExt, err := newServer(config, zap.NewNop())
+	require.NoError(t, err)
+	require.NotNil(t, dynamicconfigExt)
+
+	if err := dynamicconfigExt.Start(context.Background(), componenttest.NewNopHost()); err == nil {
+		t.Errorf("expect extension to fail when given malformed schedules")
+	}
+
+	defer dynamicconfigExt.Shutdown(context.Background())
 }

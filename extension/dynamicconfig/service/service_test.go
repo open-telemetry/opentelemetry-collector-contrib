@@ -108,3 +108,17 @@ func TestGetMetricConfig(t *testing.T) {
 		t.Errorf("expected fingerprint to equal %v, got %v", mock.GlobalFingerprint, resp.Fingerprint)
 	}
 }
+
+func TestBackendWithBadSchedules(t *testing.T) {
+	service, err := NewConfigService(
+		WithFileConfig("../testdata/schedules_improper_pattern.yaml"),
+	)
+	if err != nil {
+		t.Errorf("file exists but service not created: %v: %v", service, err)
+	}
+
+	_, err = service.GetMetricConfig(context.Background(), &pb.MetricConfigRequest{})
+	if err == nil {
+		t.Errorf("should have failed to build config response with bad schedules")
+	}
+}

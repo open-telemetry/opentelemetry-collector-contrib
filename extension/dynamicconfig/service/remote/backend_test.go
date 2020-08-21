@@ -16,6 +16,7 @@ package remote
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	pb "github.com/open-telemetry/opentelemetry-collector-contrib/extension/dynamicconfig/proto/experimental/metrics/configservice"
@@ -28,6 +29,7 @@ func SetUpServer(t *testing.T) (*Backend, chan struct{}, chan struct{}) {
 
 	// making mock third-party
 	address := mock.StartServer(t, quit, done)
+	<-done
 
 	// making remote backend
 	backend, err := NewBackend(address)
@@ -78,4 +80,25 @@ func buildResp(t *testing.T, backend *Backend) *pb.MetricConfigResponse {
 	}
 
 	return resp
+}
+
+func TestBuildBadResponse(t *testing.T) {
+	backend, quit, done := SetUpServer(t)
+	defer TearDownServer(t, backend, quit, done)
+
+	mock.GlobalError = fmt.Errorf("something catastrophic has happened!")
+	defer mock.ResetError()
+
+	if _, err := backend.BuildConfigResponse(nil); err == nil {
+		fmt.Errorf("fail to catch error in backend")
+	}
+}
+
+func TestDoubleClose(t *testing.T) {
+	backend, quit, done := SetUpServer(t)
+	TearDownServer(t, backend, quit, done)
+
+	if err := backend.Close(); err == nil {
+		t.Errorf("should have failed to close backend, since it's already closed")
+	}
 }

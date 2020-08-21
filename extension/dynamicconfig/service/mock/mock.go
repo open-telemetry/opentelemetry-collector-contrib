@@ -28,24 +28,29 @@ var GlobalFingerprint = []byte("There once was a cat named Gretchen")
 var GlobalResponse = &pb.MetricConfigResponse{
 	Fingerprint: GlobalFingerprint,
 }
+var GlobalError error
 
 func AlterFingerprint(newFingerprint []byte) {
 	GlobalFingerprint = newFingerprint
 	GlobalResponse.Fingerprint = GlobalFingerprint
 }
 
+func ResetError() {
+	GlobalError = nil
+}
+
 type Backend struct{}
 
 func (*Backend) GetFingerprint(*res.Resource) ([]byte, error) {
-	return []byte(GlobalFingerprint), nil
+	return []byte(GlobalFingerprint), GlobalError
 }
 
 func (*Backend) BuildConfigResponse(*res.Resource) (*pb.MetricConfigResponse, error) {
-	return GlobalResponse, nil
+	return GlobalResponse, GlobalError
 }
 
 func (*Backend) Close() error {
-	return nil
+	return GlobalError
 }
 
 type Service struct {
@@ -53,7 +58,7 @@ type Service struct {
 }
 
 func (*Service) GetMetricConfig(context.Context, *pb.MetricConfigRequest) (*pb.MetricConfigResponse, error) {
-	return GlobalResponse, nil
+	return GlobalResponse, GlobalError
 }
 
 // startServer is a test utility to start a quick-n-dirty gRPC server using the
@@ -71,6 +76,7 @@ func StartServer(t *testing.T, quit <-chan struct{}, done chan<- struct{}) strin
 	pb.RegisterMetricConfigServer(server, configService)
 
 	go func() {
+		done <- struct{}{}
 		if err := server.Serve(listen); err != nil {
 			t.Errorf("fail to serve: %v", err)
 		}

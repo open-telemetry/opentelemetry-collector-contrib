@@ -75,6 +75,10 @@ func TestUpdateConfig(t *testing.T) {
 	case <-timeout:
 		t.Errorf("local config update timed out")
 	}
+
+	if err := backend.Close(); err != nil {
+		t.Errorf("fail to close backend: %v", err)
+	}
 }
 
 func newTmpSchedule(t *testing.T) *os.File {
@@ -127,6 +131,10 @@ func TestFingerprint(t *testing.T) {
 		t.Errorf("fingerprint inconsistent: expected %v, got %v",
 			fingerprint, resp.Fingerprint)
 	}
+
+	if err := backend.Close(); err != nil {
+		t.Errorf("fail to close backend: %v", err)
+	}
 }
 
 func TestBuildConfigResponse(t *testing.T) {
@@ -143,6 +151,10 @@ func TestBuildConfigResponse(t *testing.T) {
 	if resp.Fingerprint == nil || resp.Schedules == nil || resp.SuggestedWaitTimeSec == 0 {
 		t.Errorf("config response incomplete: %v", resp)
 	}
+
+	if err := backend.Close(); err != nil {
+		t.Errorf("fail to close backend: %v", err)
+	}
 }
 
 func TestBuildConfigResponseWithDuplicateInPattern(t *testing.T) {
@@ -154,6 +166,10 @@ func TestBuildConfigResponseWithDuplicateInPattern(t *testing.T) {
 	_, err = backend.BuildConfigResponse(nil)
 	if err == nil {
 		t.Errorf("fail to catch improper pattern")
+	}
+
+	if err := backend.Close(); err != nil {
+		t.Errorf("fail to close backend: %v", err)
 	}
 }
 
