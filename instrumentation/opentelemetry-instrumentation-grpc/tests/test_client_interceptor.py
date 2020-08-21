@@ -49,6 +49,7 @@ class TestClientProto(TestBase):
         GrpcInstrumentorClient().uninstrument()
         self.memory_metrics_exporter.clear()
         self.server.stop(None)
+        self.channel.close()
 
     def _verify_success_records(self, num_bytes_out, num_bytes_in, method):
         # pylint: disable=protected-access,no-member
