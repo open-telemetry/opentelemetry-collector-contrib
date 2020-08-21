@@ -235,6 +235,10 @@ func TestTranslatorErrorsOut(t *testing.T) {
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
 
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
 	const receiverName = "TestTranslatorErrorsOut"
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName, nil, true)
@@ -257,6 +261,10 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()
+
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
 
 	const receiverName = "TestSegmentsConsumerErrorsOut"
 
