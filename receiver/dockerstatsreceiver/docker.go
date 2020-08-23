@@ -33,11 +33,11 @@ const (
 	userAgent        = "OpenTelemetry-Collector Docker Stats Receiver/v0.0.1"
 )
 
-// DockerClient provides the core metric gathering functionality from the Docker Daemon.
+// dockerClient provides the core metric gathering functionality from the Docker Daemon.
 // It retrieves container information in two forms to produce metric data: dtypes.ContainerJSON
 // from client.ContainerInspect() for container information (id, name, hostname, labels, and env)
 // and dtypes.StatsJSON from client.ContainerStats() for metric values.
-type DockerClient struct {
+type dockerClient struct {
 	client               *docker.Client
 	config               *Config
 	containers           map[string]DockerContainer
@@ -46,7 +46,7 @@ type DockerClient struct {
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) {
+func NewDockerClient(config *Config, logger *zap.Logger) (*dockerClient, error) {
 	client, err := docker.NewClientWithOpts(
 		docker.WithHost(config.Endpoint),
 		docker.WithVersion(dockerAPIVersion),
@@ -61,7 +61,7 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 		return nil, fmt.Errorf("could not determine docker client excluded images: %w", err)
 	}
 
-	dc := &DockerClient{
+	dc := &dockerClient{
 		client:               client,
 		config:               config,
 		logger:               logger,
@@ -74,7 +74,7 @@ func NewDockerClient(config *Config, logger *zap.Logger) (*DockerClient, error) 
 }
 
 // Provides a slice of DockerContainers to use for individual FetchContainerStats calls.
-func (dc *DockerClient) Containers() []DockerContainer {
+func (dc *dockerClient) Containers() []DockerContainer {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
 	containers := make([]DockerContainer, 0, len(dc.containers))
@@ -87,7 +87,7 @@ func (dc *DockerClient) Containers() []DockerContainer {
 // LoadContainerList will load the initial running container maps for
 // inspection and establishing which containers warrant stat gathering calls
 // by the receiver.
-func (dc *DockerClient) LoadContainerList(ctx context.Context) error {
+func (dc *dockerClient) LoadContainerList(ctx context.Context) error {
 	// Build initial container maps before starting loop
 	filters := dfilters.NewArgs()
 	filters.Add("status", "running")
@@ -126,7 +126,7 @@ func (dc *DockerClient) LoadContainerList(ctx context.Context) error {
 
 // FetchContainerStatsAndConvertToMetrics will query the desired container stats and send
 // converted metrics to the results channel, since this is intended to be run in a goroutine.
-func (dc *DockerClient) FetchContainerStatsAndConvertToMetrics(
+func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 	ctx context.Context,
 	container DockerContainer,
 	results chan<- Result,
@@ -173,7 +173,7 @@ func (dc *DockerClient) FetchContainerStatsAndConvertToMetrics(
 	results <- Result{md, nil}
 }
 
-func (dc *DockerClient) toStatsJSON(
+func (dc *dockerClient) toStatsJSON(
 	containerStats dtypes.ContainerStats,
 	container *DockerContainer,
 	results chan<- Result,
@@ -201,7 +201,7 @@ func (dc *DockerClient) toStatsJSON(
 
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
 // nil and false otherwise.
-func (dc *DockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
+func (dc *dockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
 	inspectCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	container, err := dc.client.ContainerInspect(inspectCtx, cid)
 	defer cancel()
@@ -217,7 +217,7 @@ func (dc *DockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid 
 	return nil, false
 }
 
-func (dc *DockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
+func (dc *dockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	if containerJSON == nil {
 		return
 	}
@@ -229,14 +229,14 @@ func (dc *DockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	}
 }
 
-func (dc *DockerClient) removeContainer(cid string) {
+func (dc *dockerClient) removeContainer(cid string) {
 	dc.containersLock.Lock()
 	defer dc.containersLock.Unlock()
 	delete(dc.containers, cid)
 	dc.logger.Debug("Removed container from stores.", zap.String("id", cid))
 }
 
-func (dc *DockerClient) shouldBeExcluded(image string) bool {
+func (dc *dockerClient) shouldBeExcluded(image string) bool {
 	return dc.excludedImageMatcher != nil && dc.excludedImageMatcher.Matches(image)
 }
 

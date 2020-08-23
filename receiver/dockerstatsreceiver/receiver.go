@@ -37,7 +37,7 @@ type Receiver struct {
 	config            *Config
 	logger            *zap.Logger
 	nextConsumer      consumer.MetricsConsumer
-	client            *DockerClient
+	client            *dockerClient
 	runner            *interval.Runner
 	obsCtx            context.Context
 	runnerCtx         context.Context
