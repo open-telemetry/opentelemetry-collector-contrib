@@ -107,7 +107,7 @@ func (r *Receiver) Setup() error {
 	return err
 }
 
-type Result struct {
+type result struct {
 	md  *consumerdata.MetricsData
 	err error
 }
@@ -120,13 +120,14 @@ func (r *Receiver) Run() error {
 	c := obsreport.StartMetricsReceiveOp(r.obsCtx, typeStr, r.transport)
 
 	containers := r.client.Containers()
-	results := make(chan Result, len(containers))
+	results := make(chan result, len(containers))
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(containers))
 	for _, container := range containers {
 		go func(dc DockerContainer) {
-			r.client.FetchContainerStatsAndConvertToMetrics(r.runnerCtx, dc, results)
+			md, err := r.client.FetchContainerStatsAndConvertToMetrics(r.runnerCtx, dc)
+			results <- result{md, err}
 			wg.Done()
 		}(container)
 	}

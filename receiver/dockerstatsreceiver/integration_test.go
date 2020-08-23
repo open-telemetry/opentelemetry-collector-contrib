@@ -146,10 +146,8 @@ func TestFetchMissingContainerIntegration(t *testing.T) {
 		},
 	}
 
-	results := make(chan Result, 1)
-	go r.client.FetchContainerStatsAndConvertToMetrics(context.Background(), container, results)
-	result := <-results
-	assert.Nil(t, result.md)
-	require.Error(t, result.err)
-	assert.Equal(t, "Error response from daemon: No such container: notADockerContainer", result.err.Error())
+	md, err := r.client.FetchContainerStatsAndConvertToMetrics(context.Background(), container)
+	assert.Nil(t, md)
+	require.Error(t, err)
+	assert.Equal(t, "Error response from daemon: No such container: notADockerContainer", err.Error())
 }

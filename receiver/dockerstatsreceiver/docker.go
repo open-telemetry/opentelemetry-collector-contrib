@@ -25,6 +25,7 @@ import (
 	dtypes "github.com/docker/docker/api/types"
 	dfilters "github.com/docker/docker/api/types/filters"
 	docker "github.com/docker/docker/client"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 )
 
@@ -129,8 +130,7 @@ func (dc *dockerClient) LoadContainerList(ctx context.Context) error {
 func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 	ctx context.Context,
 	container DockerContainer,
-	results chan<- Result,
-) {
+) (*consumerdata.MetricsData, error) {
 	dc.logger.Debug("Fetching container stats.", zap.String("id", container.ID))
 	statsCtx, cancel := context.WithTimeout(ctx, dc.config.Timeout)
 	containerStats, err := dc.client.ContainerStats(statsCtx, container.ID, false)
@@ -150,13 +150,12 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 			)
 		}
 
-		results <- Result{nil, err}
-		return
+		return nil, err
 	}
 
-	statsJSON, err := dc.toStatsJSON(containerStats, &container, results)
+	statsJSON, err := dc.toStatsJSON(containerStats, &container)
 	if err != nil { // results have been sent in converter
-		return
+		return nil, err
 	}
 
 	md, err := ContainerStatsToMetrics(statsJSON, &container, dc.config)
@@ -166,17 +165,15 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 			zap.String("id", container.ID),
 			zap.Error(err),
 		)
-		results <- Result{nil, err}
-		return
+		return nil, err
 	}
 
-	results <- Result{md, nil}
+	return md, nil
 }
 
 func (dc *dockerClient) toStatsJSON(
 	containerStats dtypes.ContainerStats,
 	container *DockerContainer,
-	results chan<- Result,
 ) (*dtypes.StatsJSON, error) {
 	var statsJSON dtypes.StatsJSON
 	err := json.NewDecoder(containerStats.Body).Decode(&statsJSON)
@@ -185,7 +182,6 @@ func (dc *dockerClient) toStatsJSON(
 		// EOF means there aren't any containerStats, perhaps because the container has been removed.
 		if err == io.EOF {
 			// It isn't indicative of actual error.
-			results <- Result{nil, nil}
 			return nil, err
 		}
 		dc.logger.Error(
@@ -193,7 +189,6 @@ func (dc *dockerClient) toStatsJSON(
 			zap.String("id", container.ID),
 			zap.Error(err),
 		)
-		results <- Result{nil, err}
 		return nil, err
 	}
 	return &statsJSON, nil

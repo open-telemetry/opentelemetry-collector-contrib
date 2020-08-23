@@ -136,8 +136,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	resultChan := make(chan Result)
-	go cli.FetchContainerStatsAndConvertToMetrics(
+	md, err := cli.FetchContainerStatsAndConvertToMetrics(
 		context.Background(),
 		DockerContainer{
 			ContainerJSON: &dtypes.ContainerJSON{
@@ -146,14 +145,12 @@ func TestFetchingTimeouts(t *testing.T) {
 				},
 			},
 		},
-		resultChan,
 	)
-	result := <-resultChan
 
-	assert.Nil(t, result.md)
-	require.Error(t, result.err)
+	assert.Nil(t, md)
+	require.Error(t, err)
 
-	assert.Contains(t, result.err.Error(), expectedError)
+	assert.Contains(t, err.Error(), expectedError)
 
 	assert.Equal(t, 1, len(logs.All()))
 	for _, l := range logs.All() {
@@ -189,31 +186,20 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 		},
 	}
 
-	resultChan := make(chan Result)
 	// EOF should not signify error
-	go func() {
-		statsJSON, err := cli.toStatsJSON(
-			dtypes.ContainerStats{
-				Body: ioutil.NopCloser(strings.NewReader("")),
-			}, dc, resultChan,
-		)
-		assert.Nil(t, statsJSON)
-		assert.Equal(t, io.EOF, err)
-	}()
-	result := <-resultChan
-	assert.Nil(t, result.md)
-	assert.Nil(t, result.err)
+	statsJSON, err := cli.toStatsJSON(
+		dtypes.ContainerStats{
+			Body: ioutil.NopCloser(strings.NewReader("")),
+		}, dc,
+	)
+	assert.Nil(t, statsJSON)
+	assert.Equal(t, io.EOF, err)
 
-	go func() {
-		statsJSON, err := cli.toStatsJSON(
-			dtypes.ContainerStats{
-				Body: ioutil.NopCloser(strings.NewReader("{\"Networks\": 123}")),
-			}, dc, resultChan,
-		)
-		assert.Nil(t, statsJSON)
-		require.Error(t, err)
-	}()
-	result = <-resultChan
-	assert.Nil(t, result.md)
-	require.Error(t, result.err)
+	statsJSON, err = cli.toStatsJSON(
+		dtypes.ContainerStats{
+			Body: ioutil.NopCloser(strings.NewReader("{\"Networks\": 123}")),
+		}, dc,
+	)
+	assert.Nil(t, statsJSON)
+	require.Error(t, err)
 }
