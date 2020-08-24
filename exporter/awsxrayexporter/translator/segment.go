@@ -21,6 +21,7 @@ import (
 	"math/rand"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go/aws"
@@ -46,9 +47,6 @@ var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
-	// reInvalidAnnotationCharacters defines the invalid letters in an annotation key as per
-	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidAnnotationCharacters = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
 
 const (
@@ -340,10 +338,16 @@ func fixSegmentName(name string) string {
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {
-	if reInvalidAnnotationCharacters.MatchString(key) {
-		// only allocate for ReplaceAllString if we need to
-		key = reInvalidAnnotationCharacters.ReplaceAllString(key, "_")
-	}
-
-	return key
+	return strings.Map(func(r rune) rune {
+		switch {
+		case '0' <= r && r <= '9':
+			fallthrough
+		case 'A' <= r && r <= 'Z':
+			fallthrough
+		case 'a' <= r && r <= 'z':
+			return r
+		default:
+			return '_'
+		}
+	}, key)
 }
