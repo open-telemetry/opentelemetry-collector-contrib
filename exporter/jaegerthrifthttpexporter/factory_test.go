@@ -20,44 +20,33 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-}
-
-func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
-	assert.Error(t, err, configerror.ErrDataTypeIsNotSupported)
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
 
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 
 	// Default config doesn't have default URL so creating from it should
 	// fail.
-	exp, err := factory.CreateTraceExporter(
-		zap.NewNop(),
-		cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := createTraceExporter(context.Background(), params, cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exp)
 
 	// Endpoint doesn't have a default value so set it directly.
 	expCfg := cfg.(*Config)
 	expCfg.URL = "http://some.target.org:12345/api/traces"
-	exp, err = factory.CreateTraceExporter(
-		zap.NewNop(),
-		cfg)
+	exp, err = createTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 
@@ -65,7 +54,6 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 }
 
 func TestFactory_CreateTraceExporter(t *testing.T) {
-	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -79,7 +67,8 @@ func TestFactory_CreateTraceExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	te, err := f.CreateTraceExporter(zap.NewNop(), config)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	te, err := createTraceExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -126,8 +115,8 @@ func TestFactory_CreateTraceExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Factory{}
-			te, err := f.CreateTraceExporter(zap.NewNop(), tt.config)
+			params := component.ExporterCreateParams{Logger: zap.NewNop()}
+			te, err := createTraceExporter(context.Background(), params, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})
