@@ -15,34 +15,32 @@
 package splunkhecexporter
 
 import (
+	"context"
 	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "splunk_hec"
-	// default values
-	defaultNumWorkers  uint = 8
-	defaultMaxIdleCons      = 100
-	defaultHTTPTimeout      = 10 * time.Second
+	typeStr            = "splunk_hec"
+	defaultMaxIdleCons = 100
+	defaultHTTPTimeout = 10 * time.Second
 )
 
-// Factory is the factory for Splunk HEC exporter.
-type Factory struct {
+// NewFactory creates a factory for Splunk HEC exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -54,17 +52,17 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(
-	logger *zap.Logger,
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporterOld, error) {
+) (component.TraceExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, logger)
+	exp, err := createExporter(expCfg, params.Logger)
 
 	if err != nil {
 		return nil, err
@@ -73,17 +71,17 @@ func (f *Factory) CreateTraceExporter(
 	return exp, nil
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(
-	logger *zap.Logger,
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.MetricsExporterOld, error) {
+) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 	expCfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, logger)
+	exp, err := createExporter(expCfg, params.Logger)
 
 	if err != nil {
 		return nil, err

@@ -30,13 +30,17 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func createMetricsData(numberOfDataPoints int) consumerdata.MetricsData {
+func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	keys := []string{"k0", "k1"}
 	values := []string{"v0", "v1"}
 
@@ -51,24 +55,26 @@ func createMetricsData(numberOfDataPoints int) consumerdata.MetricsData {
 		metrics = append(metrics, metric)
 	}
 
-	return consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{
-				"k/n0": "vn0",
-				"k/n1": "vn1",
+	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+		{
+			Node: &commonpb.Node{
+				Attributes: map[string]string{
+					"k/n0": "vn0",
+					"k/n1": "vn1",
+				},
 			},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"k/r0": "vr0",
-				"k/r1": "vr1",
+			Resource: &resourcepb.Resource{
+				Labels: map[string]string{
+					"k/r0": "vr0",
+					"k/r1": "vr1",
+				},
 			},
+			Metrics: metrics,
 		},
-		Metrics: metrics,
-	}
+	})
 }
 
-func createTraceData(numberOfTraces int) consumerdata.TraceData {
+func createTraceData(numberOfTraces int) pdata.Traces {
 	var traces []*tracepb.Span
 	for i := 0; i < numberOfTraces; i++ {
 		span := &tracepb.Span{
@@ -76,13 +82,13 @@ func createTraceData(numberOfTraces int) consumerdata.TraceData {
 			SpanId:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
 			Name:      &tracepb.TruncatableString{Value: "root"},
 			Status:    &tracepb.Status{},
-			StartTime: &timestamppb.Timestamp{Seconds: int64(i)},
+			StartTime: &timestamppb.Timestamp{Seconds: int64(i + 1)},
 		}
 
 		traces = append(traces, span)
 	}
 
-	return consumerdata.TraceData{
+	return internaldata.OCToTraceData(consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
 		},
@@ -92,7 +98,7 @@ func createTraceData(numberOfTraces int) consumerdata.TraceData {
 			},
 		},
 		Spans: traces,
-	}
+	})
 }
 
 type CapturingData struct {
@@ -132,18 +138,19 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 		panic(s.Serve(listener))
 	}()
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
 
-	exporter, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	md := createMetricsData(numberOfDataPoints)
 
-	err = exporter.ConsumeMetricsData(context.Background(), md)
+	err = exporter.ConsumeMetrics(context.Background(), md)
 	assert.NoError(t, err)
 	select {
 	case request := <-receivedRequest:
@@ -167,18 +174,19 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 		panic(s.Serve(listener))
 	}()
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = disableCompression
 	cfg.Token = "1234-1234"
 
-	exporter, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	td := createTraceData(numberOfTraces)
 
-	err = exporter.ConsumeTraceData(context.Background(), td)
+	err = exporter.ConsumeTraces(context.Background(), td)
 	assert.NoError(t, err)
 	select {
 	case request := <-receivedRequest:
@@ -191,11 +199,11 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":0,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{},"status":{}}}`
-	expected += "\n\r\n\r\n"
-	expected += `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected := `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
 	expected += "\n\r\n\r\n"
 	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += "\n\r\n\r\n"
+	expected += `{"time":3,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":3},"status":{}}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -238,20 +246,21 @@ func TestErrorReceived(t *testing.T) {
 		panic(s.Serve(listener))
 	}()
 
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
-	exporter, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	assert.NoError(t, err)
 
 	td := createTraceData(3)
 
-	err = exporter.ConsumeTraceData(context.Background(), td)
+	err = exporter.ConsumeTraces(context.Background(), td)
 	select {
 	case <-receivedRequest:
 	case <-time.After(5 * time.Second):
@@ -271,16 +280,17 @@ func TestInvalidMetrics(t *testing.T) {
 }
 
 func TestInvalidURL(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
-	exporter, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 
 	td := createTraceData(2)
 
-	err = exporter.ConsumeTraceData(context.Background(), td)
+	err = exporter.ConsumeTraces(context.Background(), td)
 	assert.EqualError(t, err, "Post \"ftp://example.com:134/services/collector\": unsupported protocol scheme \"ftp\"")
 }
 
