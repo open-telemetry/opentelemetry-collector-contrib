@@ -108,7 +108,7 @@ func components() (component.Factories, error) {
 		&jaegerthrifthttpexporter.Factory{},
 		&lightstepexporter.Factory{},
 		&newrelicexporter.Factory{},
-		&splunkhecexporter.Factory{},
+		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		&alibabacloudlogserviceexporter.Factory{},
 		sentryexporter.NewFactory(),

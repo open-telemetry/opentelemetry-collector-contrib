@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
@@ -143,7 +144,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), *tt.md)
+			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*tt.md})
+			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
