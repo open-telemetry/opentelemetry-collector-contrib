@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 const testHTTPAddress = "http://a.test.dom:123/at/some/path"
@@ -42,13 +42,12 @@ func TestNew(t *testing.T) {
 		timeout:     10 * time.Nanosecond,
 	}
 
-	got, err := New(ar.config, ar.httpAddress, ar.headers, ar.timeout)
+	got, err := newTraceExporter(ar.config, ar.httpAddress, ar.headers, ar.timeout)
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
-	// This is expected to fail.
-	err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
-	assert.Error(t, err)
+	err = got.ConsumeTraces(context.Background(), pdata.NewTraces())
+	assert.NoError(t, err)
 }
 
 func TestNewFailsWithEmptyExporterName(t *testing.T) {
@@ -57,7 +56,7 @@ func TestNewFailsWithEmptyExporterName(t *testing.T) {
 		httpAddress: testHTTPAddress,
 	}
 
-	got, err := New(ar.config, ar.httpAddress, ar.headers, ar.timeout)
+	got, err := newTraceExporter(ar.config, ar.httpAddress, ar.headers, ar.timeout)
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 }

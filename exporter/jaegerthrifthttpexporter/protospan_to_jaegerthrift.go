@@ -31,8 +31,8 @@ var (
 	unknownProcess = &jaeger.Process{ServiceName: "unknown-service-name"}
 )
 
-// OCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
-func OCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
+// oCProtoToJaegerThrift translates OpenCensus trace data into the Jaeger Thrift format.
+func oCProtoToJaegerThrift(td consumerdata.TraceData) (*jaeger.Batch, error) {
 	jSpans, err := ocSpansToJaegerSpans(td.Spans)
 	if err != nil {
 		return nil, err
