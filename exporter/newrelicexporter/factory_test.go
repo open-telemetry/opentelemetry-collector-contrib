@@ -15,18 +15,19 @@
 package newrelicexporter
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.uber.org/zap"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, configcheck.ValidateConfig(cfg))
 
@@ -36,16 +37,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	nrConfig := cfg.(*Config)
 	nrConfig.APIKey = "a1b2c3d4"
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := factory.CreateTraceExporter(zap.NewNop(), nrConfig)
+	te, err := createTraceExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetricsExporter(zap.NewNop(), nrConfig)
+	me, err := createMetricsExporter(context.Background(), params, nrConfig)
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }

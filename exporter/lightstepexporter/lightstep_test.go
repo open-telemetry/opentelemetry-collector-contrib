@@ -28,7 +28,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -48,7 +51,7 @@ func testingServer(callback func(data []byte)) *httptest.Server {
 	}))
 }
 
-func testTraceExporter(td consumerdata.TraceData, t *testing.T) []byte {
+func testTraceExporter(td pdata.Traces, t *testing.T) []byte {
 	responseLock := sync.Mutex{}
 
 	response := []byte{}
@@ -70,13 +73,12 @@ func testTraceExporter(td consumerdata.TraceData, t *testing.T) []byte {
 		PlainText:     true,
 	}
 
-	logger := zap.NewNop()
-	factory := Factory{}
-	exporter, err := factory.CreateTraceExporter(logger, &cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := createTraceExporter(context.Background(), params, &cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = exporter.ConsumeTraceData(ctx, td)
+	err = exporter.ConsumeTraces(ctx, td)
 	require.NoError(t, err)
 	exporter.Shutdown(ctx)
 
@@ -99,7 +101,7 @@ func TestEmptyNode(t *testing.T) {
 		},
 	}
 
-	testTraceExporter(td, t)
+	testTraceExporter(internaldata.OCToTraceData(td), t)
 }
 
 func TestPushTraceData(t *testing.T) {
@@ -122,7 +124,7 @@ func TestPushTraceData(t *testing.T) {
 			},
 		},
 	}
-	response := testTraceExporter(td, t)
+	response := testTraceExporter(internaldata.OCToTraceData(td), t)
 	assert.Contains(t, string(response), "serviceABC")
 	assert.Contains(t, string(response), "hostname123")
 	assert.Contains(t, string(response), "rootSpan")
