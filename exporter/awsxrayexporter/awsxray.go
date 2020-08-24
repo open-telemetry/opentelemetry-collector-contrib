@@ -69,7 +69,8 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 							continue
 						}
 
-						document, localErr := translator.MakeSegmentDocumentString(span, resource)
+						document, localErr := translator.MakeSegmentDocumentString(span, resource,
+							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							totalDroppedSpans++
 							continue

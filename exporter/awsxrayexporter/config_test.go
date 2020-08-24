@@ -57,5 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			LocalMode:             false,
 			ResourceARN:           "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
 			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
+			IndexedAttributes:     []string{"indexed_attr_0", "indexed_attr_1"},
+			IndexAllAttributes:    false,
 		})
 }
