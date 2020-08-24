@@ -21,8 +21,9 @@ import (
 	"github.com/lightstep/opentelemetry-exporter-go/lightstep"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.opentelemetry.io/otel/api/kv"
 )
 
@@ -31,7 +32,7 @@ type LightStepExporter struct {
 	exporter *lightstep.Exporter
 }
 
-func newLightStepTraceExporter(cfg *Config) (component.TraceExporterOld, error) {
+func newLightStepTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	fmt.Println("LS CONFIG", cfg)
 	exporter, err := lightstep.NewExporter(
 		lightstep.WithAccessToken(cfg.AccessToken),
@@ -49,37 +50,40 @@ func newLightStepTraceExporter(cfg *Config) (component.TraceExporterOld, error) 
 		exporter: exporter,
 	}
 
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		cfg,
 		lsExporter.pushTraceData,
 		exporterhelper.WithShutdown(lsExporter.Shutdown))
 }
 
-func (e *LightStepExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+func (e *LightStepExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	goodSpans := 0
 
-	for _, span := range td.Spans {
-		sd, err := lightstep.OCProtoSpanToOTelSpanData(span)
-		if err == nil {
-			if td.Node != nil {
-				if td.Node.ServiceInfo != nil {
-					lightstepServiceName := kv.Key("lightstep.component_name")
-					sd.Attributes = append(sd.Attributes, lightstepServiceName.String(td.Node.ServiceInfo.Name))
+	octds := internaldata.TraceDataToOC(td)
+	for _, octd := range octds {
+		for _, span := range octd.Spans {
+			sd, err := lightstep.OCProtoSpanToOTelSpanData(span)
+			if err == nil {
+				if octd.Node != nil {
+					if octd.Node.ServiceInfo != nil {
+						lightstepServiceName := kv.Key("lightstep.component_name")
+						sd.Attributes = append(sd.Attributes, lightstepServiceName.String(octd.Node.ServiceInfo.Name))
+					}
+					if octd.Node.Identifier != nil {
+						lightstepHostName := kv.Key("lightstep.hostname")
+						sd.Attributes = append(sd.Attributes, lightstepHostName.String(octd.Node.Identifier.HostName))
+					}
 				}
-				if td.Node.Identifier != nil {
-					lightstepHostName := kv.Key("lightstep.hostname")
-					sd.Attributes = append(sd.Attributes, lightstepHostName.String(td.Node.Identifier.HostName))
-				}
+				e.exporter.ExportSpan(ctx, sd)
+				goodSpans++
+			} else {
+				errs = append(errs, err)
 			}
-			e.exporter.ExportSpan(ctx, sd)
-			goodSpans++
-		} else {
-			errs = append(errs, err)
 		}
 	}
 
-	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
+	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
 }
 
 // Shutdown closes the LightStep opentelemetry exporter.
