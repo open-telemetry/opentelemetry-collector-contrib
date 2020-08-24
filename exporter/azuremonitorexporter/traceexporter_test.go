@@ -26,8 +26,7 @@ import (
 )
 
 var (
-	defaultFactory = &factory{}
-	defaultConfig  = defaultFactory.CreateDefaultConfig().(*Config)
+	defaultConfig = createDefaultConfig().(*Config)
 )
 
 // Tests the export onTraceData callback with no Spans
