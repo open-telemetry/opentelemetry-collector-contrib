@@ -141,10 +141,7 @@ func (r *Receiver) Run() error {
 	for result := range results {
 		var err error
 		if result.md != nil {
-			var nts, np int
-			if result.md != nil {
-				nts, np = obsreport.CountMetricPoints(*result.md)
-			}
+			nts, np := obsreport.CountMetricPoints(*result.md)
 			numTimeSeries += nts
 			numPoints += np
 

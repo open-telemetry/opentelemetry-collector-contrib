@@ -28,7 +28,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[configmodels.Type(typeStr)] = factory

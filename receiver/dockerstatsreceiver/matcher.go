@@ -60,7 +60,7 @@ func isGlobbed(s string) bool {
 	return strings.ContainsAny(s, "*?[]{}!")
 }
 
-var _ Matcher = &StringMatcher{}
+var _ Matcher = (*StringMatcher)(nil)
 
 func NewStringMatcher(items []string) (*StringMatcher, error) {
 	standards := make(map[string]bool)
