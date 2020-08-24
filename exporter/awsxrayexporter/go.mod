@@ -14,3 +14,6 @@ require (
 	golang.org/x/net v0.0.0-20200625001655-4c5254603344
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )
+
+// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

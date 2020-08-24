@@ -21,3 +21,6 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
+
+// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
