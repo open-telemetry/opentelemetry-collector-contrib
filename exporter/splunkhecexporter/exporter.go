@@ -27,8 +27,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
@@ -41,16 +40,9 @@ const (
 	dialerKeepAlive     = 30 * time.Second
 )
 
-// TraceAndMetricExporter sends traces and metrics.
-type TraceAndMetricExporter interface {
-	component.Component
-	consumer.MetricsConsumerOld
-	consumer.TraceConsumerOld
-}
-
 type splunkExporter struct {
-	pushMetricsData func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
-	pushTraceData   func(ctx context.Context, td consumerdata.TraceData) (numDroppedSpans int, err error)
+	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
 	stop            func(ctx context.Context) (err error)
 }
 
@@ -63,7 +55,7 @@ type exporterOptions struct {
 func createExporter(
 	config *Config,
 	logger *zap.Logger,
-) (TraceAndMetricExporter, error) {
+) (*splunkExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -76,7 +68,7 @@ func createExporter(
 
 	client := buildClient(options, config, logger)
 
-	return splunkExporter{
+	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
 		pushTraceData:   client.pushTraceData,
 		stop:            client.stop,
@@ -125,21 +117,21 @@ func (se splunkExporter) Shutdown(ctxt context.Context) error {
 	return se.stop(ctxt)
 }
 
-func (se splunkExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (se splunkExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
 
-	numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
+	numReceivedTimeSeries, numPoints := pdatautil.MetricAndDataPointCount(md)
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 	return err
 }
 
-func (se splunkExporter) ConsumeTraceData(ctx context.Context, td consumerdata.TraceData) error {
+func (se splunkExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	ctx = obsreport.StartTraceDataExportOp(ctx, typeStr)
 
 	numDroppedSpans, err := se.pushTraceData(ctx, td)
 
-	obsreport.EndTraceDataExportOp(ctx, len(td.Spans), numDroppedSpans, err)
+	obsreport.EndTraceDataExportOp(ctx, td.SpanCount(), numDroppedSpans, err)
 	return err
 }

@@ -26,6 +26,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -176,7 +177,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, tt.metricsDataFn(), &Config{})
+			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{tt.metricsDataFn()})
+			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, md, &Config{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			assert.Equal(t, len(tt.wantSplunkMetrics), len(gotMetrics))
