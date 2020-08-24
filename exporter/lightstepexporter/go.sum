@@ -689,6 +689,7 @@ github.com/opentracing/opentracing-go v1.0.2/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFSt
 github.com/opentracing/opentracing-go v1.0.3-0.20180606204148-bd9c31933947/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/opentracing/opentracing-go v1.1.1-0.20190913142402-a7454ce5950e/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
+github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
 github.com/openzipkin-contrib/zipkin-go-opentracing v0.4.5/go.mod h1:/wsWhb9smxSfWAKL3wpBW7V8scJMt8N8gnaMCS9E/cA=
 github.com/openzipkin/zipkin-go v0.1.6/go.mod h1:QgAqvLzwWbR/WpD4A3cGpPtJrZXNIiJc5AZX7/PBEpw=
 github.com/openzipkin/zipkin-go v0.2.1/go.mod h1:NaW6tEwdmWMaCDZzg8sh+IBNOxHMPnhQw8ySjnjRyN4=
@@ -922,6 +923,8 @@ go.opencensus.io v0.22.4/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
 go.opentelemetry.io/collector v0.8.1-0.20200824223956-becebeb5b751 h1:DmztHKycIaMJChTOsscRiR6kkmiuZ5mKxwDwTQcKltc=
 go.opentelemetry.io/collector v0.8.1-0.20200824223956-becebeb5b751/go.mod h1:UYMC37KT0YRxyzoCzCo65BzW192zXK4oEfa8HqYpFc0=
 go.opentelemetry.io/otel v0.6.0/go.mod h1:jzBIgIzK43Iu1BpDAXwqOd6UPsSAk+ewVZ5ofSXw4Ek=
+go.opentelemetry.io/otel v0.10.0 h1:2y/HYj1dIfG1nPh0Z15X4se8WwYWuTyKHLSgRb/mbQ0=
+go.opentelemetry.io/otel v0.10.0/go.mod h1:n3v1JGUBpn5DafiF1UeoDs5fr5XZMG+43kigDtFB8Vk=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
