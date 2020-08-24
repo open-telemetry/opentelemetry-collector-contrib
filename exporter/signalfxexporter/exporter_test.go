@@ -38,6 +38,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
@@ -130,6 +131,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				zippers: sync.Pool{New: func() interface{} {
 					return gzip.NewWriter(nil)
 				}},
+				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), *tt.md)
@@ -233,6 +235,7 @@ func TestConsumeMetricsDataWithAccessTokenPassthrough(t *testing.T) {
 					return gzip.NewWriter(nil)
 				}},
 				accessTokenPassthrough: tt.accessTokenPassthrough,
+				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), newMetricData(tt.includedInMetricData))

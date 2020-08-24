@@ -215,7 +215,8 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := md()
 
-	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
+	c := translation.NewMetricsConverter(zap.NewNop(), tr)
+	translated, _ := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)

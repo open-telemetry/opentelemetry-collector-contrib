@@ -85,7 +85,7 @@ func newSignalFxExporter(
 			return gzip.NewWriter(nil)
 		}},
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		metricTranslator:       options.metricTranslator,
+		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
 	}
 
 	dimClient := dimensions.NewDimensionClient(
