@@ -104,7 +104,7 @@ func components() (component.Factories, error) {
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
 		carbonexporter.NewFactory(),
-		&honeycombexporter.Factory{},
+		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		lightstepexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
