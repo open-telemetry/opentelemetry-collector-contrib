@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	go.elastic.co/apm v1.8.1-0.20200515083825-95e54b2e24ea
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.8.1-0.20200820203435-961c48b75778
+	go.opentelemetry.io/collector v0.8.1-0.20200824223956-becebeb5b751
 	go.uber.org/zap v1.15.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )
