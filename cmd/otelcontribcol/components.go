@@ -110,7 +110,7 @@ func components() (component.Factories, error) {
 		newrelicexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
-		&alibabacloudlogserviceexporter.Factory{},
+		alibabacloudlogserviceexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
