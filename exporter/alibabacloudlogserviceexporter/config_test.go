@@ -15,11 +15,13 @@
 package alibabacloudlogserviceexporter
 
 import (
+	"context"
 	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -30,14 +32,12 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-
-	require.Equal(t, factory.Type(), configmodels.Type(typeStr))
 
 	e0 := cfg.Exporters[typeStr]
 
@@ -63,18 +63,20 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+
 	// missing params
-	te, err := factory.CreateTraceExporter(zap.NewNop(), e0)
+	te, err := factory.CreateTraceExporter(context.Background(), params, e0)
 	require.Error(t, err)
 	require.Nil(t, te)
-	me, err := factory.CreateMetricsExporter(zap.NewNop(), e0)
+	me, err := factory.CreateMetricsExporter(context.Background(), params, e0)
 	require.Error(t, err)
 	require.Nil(t, me)
 
-	te, err = factory.CreateTraceExporter(zap.NewNop(), e1)
+	te, err = factory.CreateTraceExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
-	me, err = factory.CreateMetricsExporter(zap.NewNop(), e1)
+	me, err = factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, me)
 

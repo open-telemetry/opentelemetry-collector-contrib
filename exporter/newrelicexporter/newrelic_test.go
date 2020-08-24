@@ -25,7 +25,10 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -89,13 +92,13 @@ func TestExportTraceData(t *testing.T) {
 		},
 	}
 
-	f := new(Factory)
+	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
 	c.APIKey, c.SpansURLOverride = "1", srv.URL
-	l := zap.NewNop()
-	exp, err := f.CreateTraceExporter(l, c)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateTraceExporter(context.Background(), params, c)
 	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeTraceData(ctx, td))
+	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
 	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Span{
@@ -232,13 +235,13 @@ func TestExportMetricData(t *testing.T) {
 		},
 	}
 
-	f := new(Factory)
+	f := NewFactory()
 	c := f.CreateDefaultConfig().(*Config)
 	c.APIKey, c.MetricsURLOverride = "1", srv.URL
-	l := zap.NewNop()
-	exp, err := f.CreateMetricsExporter(l, c)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
 	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeMetricsData(ctx, md))
+	require.NoError(t, exp.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})))
 	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Metric{

@@ -15,7 +15,8 @@
 package splunkhecexporter
 
 import (
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -28,33 +29,36 @@ type splunkEvent struct {
 	Event      interface{} `json:"event"`                // Payload of the event.
 }
 
-func traceDataToSplunk(logger *zap.Logger, data consumerdata.TraceData, config *Config) ([]*splunkEvent, int) {
-	var host string
-	if data.Resource != nil {
-		host = data.Resource.Labels[hostnameLabel]
-	}
-	if host == "" {
-		host = unknownHostName
-	}
+func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunkEvent, int) {
+	octds := internaldata.TraceDataToOC(data)
 	numDroppedSpans := 0
-	splunkEvents := make([]*splunkEvent, 0)
-	for _, span := range data.Spans {
-		if span.StartTime == nil {
-			logger.Debug(
-				"Span dropped as it had no start timestamp",
-				zap.Any("span", span))
-			numDroppedSpans++
-			continue
+	splunkEvents := make([]*splunkEvent, 0, data.SpanCount())
+	for _, octd := range octds {
+		var host string
+		if octd.Resource != nil {
+			host = octd.Resource.Labels[hostnameLabel]
 		}
-		se := &splunkEvent{
-			Time:       timestampToEpochMilliseconds(span.StartTime),
-			Host:       host,
-			Source:     config.Source,
-			SourceType: config.SourceType,
-			Index:      config.Index,
-			Event:      span,
+		if host == "" {
+			host = unknownHostName
 		}
-		splunkEvents = append(splunkEvents, se)
+		for _, span := range octd.Spans {
+			if span.StartTime == nil {
+				logger.Debug(
+					"Span dropped as it had no start timestamp",
+					zap.Any("span", span))
+				numDroppedSpans++
+				continue
+			}
+			se := &splunkEvent{
+				Time:       timestampToEpochMilliseconds(span.StartTime),
+				Host:       host,
+				Source:     config.Source,
+				SourceType: config.SourceType,
+				Index:      config.Index,
+				Event:      span,
+			}
+			splunkEvents = append(splunkEvents, se)
+		}
 	}
 
 	return splunkEvents, numDroppedSpans

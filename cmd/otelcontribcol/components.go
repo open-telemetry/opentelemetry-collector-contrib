@@ -107,12 +107,12 @@ func components() (component.Factories, error) {
 		awsxrayexporter.NewFactory(),
 		carbonexporter.NewFactory(),
 		&honeycombexporter.Factory{},
-		&jaegerthrifthttpexporter.Factory{},
-		&lightstepexporter.Factory{},
-		&newrelicexporter.Factory{},
-		&splunkhecexporter.Factory{},
+		jaegerthrifthttpexporter.NewFactory(),
+		lightstepexporter.NewFactory(),
+		newrelicexporter.NewFactory(),
+		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
-		&alibabacloudlogserviceexporter.Factory{},
+		alibabacloudlogserviceexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

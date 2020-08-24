@@ -102,7 +102,7 @@ func TestNilOCProtoNodeToJaegerThrift(t *testing.T) {
 			},
 		},
 	}
-	got, err := OCProtoToJaegerThrift(nilNodeBatch)
+	got, err := oCProtoToJaegerThrift(nilNodeBatch)
 	if err != nil {
 		t.Fatalf("Failed to translate OC batch to Jaeger Thrift: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestOCProtoToJaegerThrift(t *testing.T) {
 	for i := 0; i < numOfFiles; i++ {
 		td := tds[i]
 
-		gotJBatch, err := OCProtoToJaegerThrift(td)
+		gotJBatch, err := oCProtoToJaegerThrift(td)
 		if err != nil {
 			t.Errorf("Failed to translate OC batch to Jaeger Thrift: %v", err)
 			continue
@@ -365,7 +365,7 @@ func TestOCStatusToJaegerThriftTags(t *testing.T) {
 	fakeTraceID := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
 	fakeSpanID := []byte{0, 1, 2, 3, 4, 5, 6, 7}
 	for i, c := range cases {
-		gb, err := OCProtoToJaegerThrift(consumerdata.TraceData{
+		gb, err := oCProtoToJaegerThrift(consumerdata.TraceData{
 			Spans: []*tracepb.Span{{
 				TraceId:    fakeTraceID,
 				SpanId:     fakeSpanID,
