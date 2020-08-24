@@ -1,6 +1,5 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray
 
-
 go 1.14
 
 require (
