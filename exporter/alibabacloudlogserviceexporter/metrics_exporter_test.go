@@ -23,13 +23,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 )
 
 func TestNewMetricsExporter(t *testing.T) {
-
-	got, err := NewMetricsExporter(zap.NewNop(), &Config{
+	got, err := newMetricsExporter(zap.NewNop(), &Config{
 		Endpoint: "us-west-1.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -45,16 +45,19 @@ func TestNewMetricsExporter(t *testing.T) {
 	doublePt := metricstestutil.Double(tsUnix, doubleVal)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-		}})
+	err = got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+			},
+		},
+	}))
 	// a
 	assert.Error(t, err)
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
-	got, err := NewMetricsExporter(zap.NewNop(), &Config{})
+	got, err := newMetricsExporter(zap.NewNop(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }
