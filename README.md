@@ -156,3 +156,22 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | signalfxexporter | @pmcollins @asuresh4 |
 | splunkhecexporter | @atoulme |
 | stackdriverexporter | @nilebox @james-bebbington |
+
+#### Receivers
+
+| Receiver | Reviewer(s) |
+| -------- | ----------- |
+| awsecscontainermetricsreceiver | @kbrockhoff @anuraaga |
+| awsxrayreceiver | @kbrockhoff @anuraaga |
+| carbonreceiver | @pjanotti |
+| collectdreceiver | @owais |
+| k8sclusterreceiver | @asuresh4 |
+| kubeletstatsreceiver | @pmcollins @asuresh4 |
+| prometheusexecreceiver | @keitwb @james-bebbington |
+| receivercreator | @jrcamp |
+| redisreceiver | @pmcollins @jrcamp |
+| sapmreceiver | @owais |
+| signalfxreceiver | @pjanotti @asuresh4 |
+| simpleprometheusreceiver | @asuresh4 |
+| statsdreceiver | @keitwb @jmacd |
+| wavefrontreceiver | @pjanotti |
