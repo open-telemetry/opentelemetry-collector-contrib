@@ -272,7 +272,7 @@ jobs:
       - restore_workspace
       - run:
           name: Lint
-          command: make -j8 for-all-target TARGET=lint
+          command: make -j2 for-all-target TARGET=lint
       - run:
           name: Checks
           command: make -j4 checklicense impi misspell

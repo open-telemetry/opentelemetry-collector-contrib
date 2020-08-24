@@ -172,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 33, len(config.TranslationRules))
+	assert.Equal(t, 37, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -654,4 +654,15 @@ func TestDefaultDiskTranslations(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, 1, len(utPts))
 	require.Equal(t, 3, len(utPts[0].Dimensions))
+
+	du, ok := m["disk.utilization"]
+	require.True(t, ok)
+	require.Equal(t, 4, len(du[0].Dimensions))
+	// cheap test for pct conversion
+	require.True(t, *du[0].Value.DoubleValue > 1)
+
+	dsu, ok := m["disk.summary_utilization"]
+	require.True(t, ok)
+	require.Equal(t, 3, len(dsu[0].Dimensions))
+	require.True(t, *dsu[0].Value.DoubleValue > 1)
 }
