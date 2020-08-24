@@ -26,11 +26,14 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	internalErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
@@ -116,30 +119,45 @@ func TestCloseStopsPoller(t *testing.T) {
 }
 
 func TestSuccessfullyPollPacket(t *testing.T) {
-	addr, p, _ := createAndOptionallyStartPoller(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestSuccessfullyPollPacket"
+
+	addr, p, _ := createAndOptionallyStartPoller(t, receiverName, true)
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n" + randString.String())
-	err := writePacket(t, addr, string(rawData))
+	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestSuccessfullyPollPacket case")
 
 	testutil.WaitFor(t, func() bool {
 		select {
 		case seg, open := <-p.(*poller).segChan:
+			obsreport.EndTraceDataReceiveOp(seg.Ctx, awsxray.TypeStr, 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false
 		}
 	}, "poller should return parsed segment")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 1, 0)
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestIncompletePacketNoSeparator"
+
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, true)
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}`) // no separator
-	err := writePacket(t, addr, string(rawData))
+	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoSeparator case")
 	testutil.WaitFor(t, func() bool {
 		logs := recordedLogs.All()
@@ -153,14 +171,22 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 					lastEntry.Context[0].Interface.(error)).Error(),
 				fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", rawData)) == 0
 	}, "poller should reject segment")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestIncompletePacketNoBody(t *testing.T) {
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestIncompletePacketNoBody"
+
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, true)
 	defer p.Close()
 
 	rawData := []byte(`{"format": "json", "version": 1}` + "\n") // no body
-	err := writePacket(t, addr, string(rawData))
+	err = writePacket(t, addr, string(rawData))
 	assert.NoError(t, err, "can not write packet in the TestIncompletePacketNoBody case")
 	testutil.WaitFor(t, func() bool {
 		logs := recordedLogs.All()
@@ -169,14 +195,22 @@ func TestIncompletePacketNoBody(t *testing.T) {
 			lastEntry.Context[0].String == "json" &&
 			lastEntry.Context[1].Integer == 1
 	}, "poller should log missing body")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestNonJsonHeader(t *testing.T) {
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestNonJsonHeader"
+
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, true)
 	defer p.Close()
 
 	// the header (i.e. the portion before \n) is invalid
-	err := writePacket(t, addr, "nonJson\nBody")
+	err = writePacket(t, addr, "nonJson\nBody")
 	assert.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
 	testutil.WaitFor(t, func() bool {
 		var errRecv *internalErr.ErrRecoverable
@@ -190,15 +224,23 @@ func TestNonJsonHeader(t *testing.T) {
 			strings.Contains(lastEntry.Context[0].Interface.(error).Error(),
 				"invalid character 'o'")
 	}, "poller should reject segment")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestJsonInvalidHeader(t *testing.T) {
-	addr, p, recordedLogs := createAndOptionallyStartPoller(t, true)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestJsonInvalidHeader"
+
+	addr, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, true)
 	defer p.Close()
 
 	randString, _ := uuid.NewRandom()
 	// the header (i.e. the portion before \n) is invalid
-	err := writePacket(t, addr,
+	err = writePacket(t, addr,
 		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
 	assert.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
 	testutil.WaitFor(t, func() bool {
@@ -217,10 +259,18 @@ func TestJsonInvalidHeader(t *testing.T) {
 				},
 			)
 	}, "poller should reject segment")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, false)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestSocketReadIrrecoverableNetError"
+
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, false)
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -233,21 +283,30 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errIrrecv *internalErr.ErrIrrecoverable
-		return strings.Contains(lastEntry.Message, "irrecoverable socket read error. Exiting poller") &&
+		return strings.Contains(lastEntry.Message, "Irrecoverable socket read error. Exiting poller") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errIrrecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, "poller should exit due to irrecoverable net read error")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketReadTemporaryNetError(t *testing.T) {
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, false)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestSocketReadTemporaryNetError"
+
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, false)
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -261,21 +320,30 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errRecv *internalErr.ErrRecoverable
-		return strings.Contains(lastEntry.Message, "recoverable socket read error") &&
+		return strings.Contains(lastEntry.Message, "Recoverable socket read error") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, "poller should encounter net read error")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 func TestSocketGenericReadError(t *testing.T) {
-	_, p, recordedLogs := createAndOptionallyStartPoller(t, false)
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	const receiverName = "TestSocketGenericReadError"
+
+	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverName, false)
 	// close the actual socket because we are going to mock it out below
 	p.(*poller).udpSock.Close()
 
@@ -287,17 +355,20 @@ func TestSocketGenericReadError(t *testing.T) {
 		},
 	}
 
-	p.Start(context.Background())
+	longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+	p.Start(longLivedCtx)
 
 	testutil.WaitFor(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		var errRecv *internalErr.ErrRecoverable
-		return strings.Contains(lastEntry.Message, "recoverable socket read error") &&
+		return strings.Contains(lastEntry.Message, "Recoverable socket read error") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
 			errors.Unwrap(lastEntry.Context[0].Interface.(error)).Error() == randErrStr.String()
 	}, "poller should encounter generic socket read error")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, Transport, 0, 1)
 }
 
 type mockNetError struct {
@@ -347,20 +418,25 @@ func (m *mockSocketConn) Read(b []byte) (int, error) {
 
 func (m *mockSocketConn) Close() error { return nil }
 
-func createAndOptionallyStartPoller(t *testing.T, start bool) (string, Poller, *observer.ObservedLogs) {
+func createAndOptionallyStartPoller(
+	t *testing.T,
+	receiverName string,
+	start bool) (string, Poller, *observer.ObservedLogs) {
 	addr, err := findAvailableAddress()
 	assert.NoError(t, err, "there should be address available")
 
 	logger, recorded := logSetup()
 	poller, err := New(&Config{
-		Transport:          Transport,
-		Endpoint:           addr,
-		NumOfPollerToStart: 2,
+		ReceiverInstanceName: receiverName,
+		Transport:            Transport,
+		Endpoint:             addr,
+		NumOfPollerToStart:   2,
 	}, logger)
 	assert.NoError(t, err, "receiver should be created")
 
 	if start {
-		poller.Start(context.Background())
+		longLivedCtx := obsreport.ReceiverContext(context.Background(), receiverName, Transport, "")
+		poller.Start(longLivedCtx)
 	}
 	return addr, poller, recorded
 }

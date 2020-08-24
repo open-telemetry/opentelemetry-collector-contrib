@@ -21,10 +21,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 )
 
-const (
-	typeStr = "awsxray"
-)
-
 // Config defines the configurations for an AWS X-Ray receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
