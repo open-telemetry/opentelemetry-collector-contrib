@@ -21,11 +21,13 @@ import (
 	"net"
 	"sync"
 
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 	recvErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/socketconn"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/util"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
 const (
@@ -55,8 +57,8 @@ type Poller interface {
 type RawSegment struct {
 	// Payload is the raw bytes that represent one X-Ray segment.
 	Payload []byte
-	// SegmentCtx is the short-lived context created per raw segment received
-	SegmentCtx context.Context
+	// Ctx is the short-lived context created per raw segment received
+	Ctx context.Context
 }
 
 // Config represents the configurations needed to
@@ -166,48 +168,50 @@ func (p *poller) poll() {
 		case <-p.shutDown:
 			return
 		default:
-			// TODO:
-			// call https://pkg.go.dev/go.opentelemetry.io/collector@v0.4.1-0.20200622191610-a8db6271f90a/obsreport?tab=doc#StartTraceDataReceiveOp
-			// once here and
-			// https://pkg.go.dev/go.opentelemetry.io/collector@v0.4.1-0.20200622191610-a8db6271f90a/obsreport?tab=doc#EndTraceDataReceiveOp
-			// at corresponding places in the for loop below.
+			ctx := obsreport.StartTraceDataReceiveOp(
+				p.receiverLongLivedCtx,
+				p.receiverInstanceName,
+				Transport,
+				obsreport.WithLongLivedCtx())
 			bufPointer := &buffer
 			rlen, err := p.read(bufPointer)
 			if errors.As(err, &errIrrecv) {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
-				p.logger.Error("irrecoverable socket read error. Exiting poller", zap.Error(err))
+				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
-				p.logger.Error("recoverable socket read error", zap.Error(err))
+				p.logger.Error("Recoverable socket read error", zap.Error(err))
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
 
 			bufMessage := buffer[0:rlen]
 
-			header, body, err := util.SplitHeaderBody(bufMessage)
+			header, body, err := tracesegment.SplitHeaderBody(bufMessage)
+			// For now tracesegment.SplitHeaderBody does not return irrecoverable error
+			// so we don't check for it
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1, err)
 				continue
 			}
-			// For now util.SplitHeaderBody does not return irrecoverable error
-			// so we don't check for it
 
 			if len(body) == 0 {
 				p.logger.Warn("Missing body",
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				// TODO: emit metric here to indicate segment rejected
+				obsreport.EndTraceDataReceiveOp(ctx, awsxray.TypeStr, 1,
+					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}
 
 			p.segChan <- RawSegment{
 				Payload: body,
-				// TODO: change this to the short-lived context created at the top
-				// per each iteration in a followup PR.
-				SegmentCtx: context.Background(),
+				Ctx:     ctx,
 			}
 		}
 	}
