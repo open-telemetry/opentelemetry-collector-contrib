@@ -18,6 +18,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -34,7 +36,7 @@ type runnable struct {
 	receiverName          string
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
-	consumer              consumer.MetricsConsumerOld
+	consumer              consumer.MetricsConsumer
 	logger                *zap.Logger
 	restClient            kubelet.RestClient
 	extraMetadataLabels   []kubelet.MetadataLabel
@@ -43,7 +45,7 @@ type runnable struct {
 
 func newRunnable(
 	ctx context.Context,
-	consumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 	restClient kubelet.RestClient,
 	logger *zap.Logger,
 	rOptions *receiverOptions,
@@ -89,7 +91,7 @@ func (r *runnable) Run() error {
 	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
 	for _, md := range mds {
 		ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
-		err = r.consumer.ConsumeMetricsData(ctx, *md)
+		err = r.consumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md}))
 		var numTimeSeries, numPoints int
 		if err != nil {
 			r.logger.Error("ConsumeMetricsData failed", zap.Error(err))

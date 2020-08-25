@@ -19,6 +19,19 @@ that this will likely be removed in future in favour of processors handling para
 trace resource attribute, if any, as SFx access token.  In either case this attribute will be deleted
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
+- `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+- `retry_on_failure`
+  - `enabled` (default = true)
+  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
+  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
+  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
+- `sending_queue`
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
+  User should calculate this as `num_seconds * requests_per_second` where:
+    - `num_seconds` is the number of seconds to buffer in case of a backend outage
+    - `requests_per_second` is the average number of requests per seconds.
 
 Example:
 

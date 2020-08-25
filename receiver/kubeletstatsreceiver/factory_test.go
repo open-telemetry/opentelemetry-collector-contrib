@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -33,22 +34,22 @@ import (
 )
 
 func TestType(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	ft := factory.Type()
 	require.EqualValues(t, "kubeletstats", ft)
 }
 
 func TestValidConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraceReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -57,10 +58,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -69,13 +70,13 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := Config{
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		&cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -85,7 +86,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 }
 
 func TestFactoryBadAuthType(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := &Config{
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -93,12 +94,16 @@ func TestFactoryBadAuthType(t *testing.T) {
 			},
 		},
 	}
-	_, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &testbed.MockMetricConsumer{})
+	_, err := factory.CreateMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		&testbed.MockMetricConsumer{},
+	)
 	require.Error(t, err)
 }
 
 func TestRestClientErr(t *testing.T) {
-	f := &Factory{}
 	cfg := &Config{
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -106,7 +111,7 @@ func TestRestClientErr(t *testing.T) {
 			},
 		},
 	}
-	_, err := f.restClient(zap.NewNop(), cfg)
+	_, err := restClient(zap.NewNop(), cfg)
 	require.Error(t, err)
 }
 

@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 
@@ -41,7 +42,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	got, err := New(nil, zap.NewNop())
+	got, err := newSignalFxExporter(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
@@ -51,12 +52,12 @@ func TestNew(t *testing.T) {
 		Timeout:     1 * time.Second,
 		Headers:     nil,
 	}
-	got, err = New(config, zap.NewNop())
+	got, err = newSignalFxExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
 	// This is expected to fail.
-	err = got.ConsumeMetricsData(context.Background(), consumerdata.MetricsData{})
+	err = got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
 	assert.Error(t, err)
 }
 

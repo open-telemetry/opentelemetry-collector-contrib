@@ -19,12 +19,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
 func TestRedisRunnable(t *testing.T) {
-	consumer := &fakeMetricsConsumer{}
+	consumer := &exportertest.SinkMetricsExporter{}
 	logger, _ := zap.NewDevelopment()
 	runner := newRedisRunnable(context.Background(), newFakeClient(), "", consumer, logger)
 	err := runner.Setup()
@@ -32,14 +32,5 @@ func TestRedisRunnable(t *testing.T) {
 	err = runner.Run()
 	require.Nil(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	require.Equal(t, len(getDefaultRedisMetrics())+6, len(consumer.md.Metrics))
-}
-
-type fakeMetricsConsumer struct {
-	md consumerdata.MetricsData
-}
-
-func (c *fakeMetricsConsumer) ConsumeMetricsData(_ context.Context, md consumerdata.MetricsData) error {
-	c.md = md
-	return nil
+	require.Equal(t, len(getDefaultRedisMetrics())+6, consumer.MetricsCount())
 }
