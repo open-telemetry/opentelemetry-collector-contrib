@@ -61,7 +61,7 @@ func TestStabilityMetricsCarbon(t *testing.T) {
 		datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      237,
-			ExpectedMaxRAM:      100,
+			ExpectedMaxRAM:      120,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
