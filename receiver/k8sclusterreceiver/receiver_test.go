@@ -104,12 +104,7 @@ func setupReceiver(
 		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw, err := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
-
-	if err != nil {
-		return nil, err
-	}
-
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{

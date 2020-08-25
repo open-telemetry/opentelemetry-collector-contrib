@@ -47,7 +47,7 @@ type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) erro
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface,
-	nodeConditionTypesToReport []string) (*resourceWatcher, error) {
+	nodeConditionTypesToReport []string) *resourceWatcher {
 	rw := &resourceWatcher{
 		client:        client,
 		logger:        logger,
@@ -56,7 +56,7 @@ func newResourceWatcher(
 
 	rw.prepareSharedInformerFactory()
 
-	return rw, nil
+	return rw
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() {
