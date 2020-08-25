@@ -186,9 +186,9 @@ func TestConsumeMetrics(t *testing.T) {
 
 func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	fromHeaders := "AccessTokenFromClientHeaders"
-	fromLabels := "AccessTokenFromLabel"
+	fromLabels := []string{"AccessTokenFromLabel0", "AccessTokenFromLabel1"}
 
-	validMetrics := func(includeToken bool) pdata.Metrics {
+	validMetricsWithToken := func(includeToken bool, token string) pdata.Metrics {
 		md := consumerdata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
@@ -196,7 +196,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			Resource: &resourcepb.Resource{
 				Type: "test",
 				Labels: map[string]string{
-					"com.splunk.signalfx.access_token": fromLabels,
+					"com.splunk.signalfx.access_token": token,
 				},
 			},
 			Metrics: []*metricspb.Metric{
@@ -218,32 +218,34 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	tests := []struct {
 		name                   string
 		accessTokenPassthrough bool
-		expectedToken          string
+		expectedTokens         []string
 		metrics                pdata.Metrics
+		failHTTP               bool
+		droppedTimeseriesCount int
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
-			metrics:                validMetrics(true),
-			expectedToken:          fromLabels,
+			metrics:                validMetricsWithToken(true, fromLabels[0]),
+			expectedTokens:         fromLabels[:1],
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
-			metrics:                validMetrics(false),
-			expectedToken:          fromHeaders,
+			metrics:                validMetricsWithToken(false, fromLabels[0]),
+			expectedTokens:         []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
-			metrics:                validMetrics(true),
-			expectedToken:          fromHeaders,
+			metrics:                validMetricsWithToken(true, fromLabels[0]),
+			expectedTokens:         []string{fromHeaders},
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
-			metrics:                validMetrics(false),
-			expectedToken:          fromHeaders,
+			metrics:                validMetricsWithToken(false, fromLabels[0]),
+			expectedTokens:         []string{fromHeaders},
 		},
 		{
 			name:                   "use token from header when resource is nil",
@@ -264,14 +266,65 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 					},
 				},
 			}),
-			expectedToken: fromHeaders,
+			expectedTokens: []string{fromHeaders},
+		},
+		{
+			name:                   "multiple tokens passed through",
+			accessTokenPassthrough: true,
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
+				mds.ResourceMetrics().Resize(2)
+				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				return pdatautil.MetricsFromInternalMetrics(mds)
+			}(),
+			expectedTokens: fromLabels,
+		},
+		{
+			name:                   "multiple tokens passed through - one corrupted",
+			accessTokenPassthrough: true,
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forSecondToken := validMetricsWithToken(false, fromLabels[1])
+				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
+				mds.ResourceMetrics().Resize(2)
+				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				return pdatautil.MetricsFromInternalMetrics(mds)
+			}(),
+			expectedTokens: []string{fromLabels[0], fromHeaders},
+		},
+		{
+			name:                   "multiple tokens passed through - HTTP error cases",
+			accessTokenPassthrough: true,
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
+				mds.ResourceMetrics().Resize(2)
+				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				return pdatautil.MetricsFromInternalMetrics(mds)
+			}(),
+			failHTTP:               true,
+			droppedTimeseriesCount: 2,
 		},
 	}
 	for _, tt := range tests {
+		receivedTokens := struct {
+			sync.Mutex
+			tokens []string
+		}{}
+		receivedTokens.tokens = []string{}
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.failHTTP {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				assert.Equal(t, "test", r.Header.Get("test_header_"))
-				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				receivedTokens.Lock()
+				receivedTokens.tokens = append(receivedTokens.tokens, r.Header.Get("x-sf-token"))
+				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
 			defer server.Close()
@@ -297,8 +350,16 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.metrics)
+
+			if tt.failHTTP {
+				assert.Equal(t, tt.droppedTimeseriesCount, numDroppedTimeSeries)
+				assert.Error(t, err)
+				return
+			}
+
 			assert.Equal(t, 0, numDroppedTimeSeries)
 			assert.NoError(t, err)
+			require.ElementsMatch(t, tt.expectedTokens, receivedTokens.tokens)
 		})
 	}
 }

@@ -67,7 +67,9 @@ func (s *sfxDPClient) pushMetricsData(
 		//    there are a lot of tokens.
 		droppedCount, err := s.pushMetricsDataForToken(metricsData, accessToken)
 		numDroppedTimeseries += droppedCount
-		errs = append(errs, err)
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return numDroppedTimeseries, componenterror.CombineErrors(errs)
