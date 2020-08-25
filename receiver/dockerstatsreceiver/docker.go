@@ -47,7 +47,7 @@ type dockerClient struct {
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*dockerClient, error) {
+func newDockerClient(config *Config, logger *zap.Logger) (*dockerClient, error) {
 	client, err := docker.NewClientWithOpts(
 		docker.WithHost(config.Endpoint),
 		docker.WithVersion(dockerAPIVersion),

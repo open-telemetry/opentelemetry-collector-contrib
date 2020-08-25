@@ -74,7 +74,7 @@ func NewReceiver(
 
 func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	r.client, err = NewDockerClient(r.config, r.logger)
+	r.client, err = newDockerClient(r.config, r.logger)
 	if err != nil {
 		return err
 	}

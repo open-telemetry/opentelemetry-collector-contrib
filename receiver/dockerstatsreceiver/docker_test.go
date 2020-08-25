@@ -37,7 +37,7 @@ func TestInvalidEndpoint(t *testing.T) {
 	config := &Config{
 		Endpoint: "$notavalidendpoint*",
 	}
-	cli, err := NewDockerClient(config, zap.NewNop())
+	cli, err := newDockerClient(config, zap.NewNop())
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Equal(t, "could not create docker client: unable to parse docker host `$notavalidendpoint*`", err.Error())
@@ -46,7 +46,7 @@ func TestInvalidEndpoint(t *testing.T) {
 func TestInvalidExclude(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
 	config.ExcludedImages = []string{"["}
-	cli, err := NewDockerClient(config, zap.NewNop())
+	cli, err := newDockerClient(config, zap.NewNop())
 	assert.Nil(t, cli)
 	require.Error(t, err)
 	assert.Equal(t, "could not determine docker client excluded images: invalid glob item: unexpected end of input", err.Error())
@@ -82,7 +82,7 @@ func TestWatchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := NewDockerClient(config, zap.NewNop())
+	cli, err := newDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -95,7 +95,7 @@ func TestWatchingTimeouts(t *testing.T) {
 	assert.Contains(t, err.Error(), expectedError)
 
 	observed, logs := observer.New(zapcore.WarnLevel)
-	cli, err = NewDockerClient(config, zap.New(observed))
+	cli, err = newDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -123,7 +123,7 @@ func TestFetchingTimeouts(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := NewDockerClient(config, zap.NewNop())
+	cli, err := newDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -132,7 +132,7 @@ func TestFetchingTimeouts(t *testing.T) {
 	shouldHaveTaken := time.Now().Add(50 * time.Millisecond).UnixNano()
 
 	observed, logs := observer.New(zapcore.WarnLevel)
-	cli, err = NewDockerClient(config, zap.New(observed))
+	cli, err = newDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
@@ -174,7 +174,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 		Timeout:  50 * time.Millisecond,
 	}
 
-	cli, err := NewDockerClient(config, zap.NewNop())
+	cli, err := newDockerClient(config, zap.NewNop())
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
