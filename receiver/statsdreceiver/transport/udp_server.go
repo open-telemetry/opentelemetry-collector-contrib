@@ -20,7 +20,6 @@ import (
 	"io"
 	"net"
 	"strings"
-	"sync"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer"
@@ -31,7 +30,6 @@ import (
 )
 
 type udpServer struct {
-	wg         sync.WaitGroup
 	packetConn net.PacketConn
 	reporter   Reporter
 }
@@ -66,14 +64,9 @@ func (u *udpServer) ListenAndServe(
 	for {
 		n, _, err := u.packetConn.ReadFrom(buf)
 		if n > 0 {
-			u.wg.Add(1)
 			bufCopy := make([]byte, n)
 			copy(bufCopy, buf)
-			// TODO: remove this goroutine spawning
-			go func() {
-				u.handlePacket(parser, nextConsumer, bufCopy)
-				u.wg.Done()
-			}()
+			u.handlePacket(parser, nextConsumer, bufCopy)
 		}
 		if err != nil {
 			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
@@ -90,9 +83,7 @@ func (u *udpServer) ListenAndServe(
 }
 
 func (u *udpServer) Close() error {
-	err := u.packetConn.Close()
-	u.wg.Wait()
-	return err
+	return u.packetConn.Close()
 }
 
 func (u *udpServer) handlePacket(
