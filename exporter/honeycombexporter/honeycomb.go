@@ -19,12 +19,14 @@ import (
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	libhoney "github.com/honeycombio/libhoney-go"
+	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -78,7 +80,7 @@ type spanRefType int64
 
 // newHoneycombTraceExporter creates and returns a new honeycombExporter. It
 // wraps the exporter in the component.TraceExporterOld helper method.
-func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporterOld, error) {
+func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
 	libhoneyConfig := libhoney.Config{
 		WriteKey:   cfg.APIKey,
 		Dataset:    cfg.Dataset,
@@ -104,7 +106,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 		},
 	}
 
-	return exporterhelper.NewTraceExporterOld(
+	return exporterhelper.NewTraceExporter(
 		cfg,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
@@ -112,7 +114,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
-func (e *honeycombExporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	goodSpans := 0
 
@@ -122,74 +124,72 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td consumerdata.T
 	go e.RunErrorLogger(ctx, libhoney.TxResponses())
 	defer cancel()
 
-	// Extract Node and Resource attributes, labels and other information.
-	// Because these exist on the TraceData, they will be added to every span.
-	traceLevelFields := getTraceLevelFields(td)
-	addTraceLevelFields := func(ev *libhoney.Event) {
-		for k, v := range traceLevelFields {
-			ev.AddField(k, v)
-		}
-	}
+	octds := internaldata.TraceDataToOC(td)
+	for _, octd := range octds {
 
-	for _, span := range td.Spans {
-		ev := e.builder.NewEvent()
-		addTraceLevelFields(ev)
-
-		// Treat resource labels as underlays, with any same-keyed span attributes taking
-		// precedence. Apply them first.
-		if span.Resource != nil && span.Resource.Labels != nil {
-			resourceType := span.Resource.GetType()
-			if len(resourceType) != 0 {
-				ev.AddField("resource_type", resourceType)
-			}
-			for k, v := range span.Resource.Labels {
+		// Extract Node and Resource attributes, labels and other information.
+		// Because these exist on the TraceData, they will be added to every span.
+		traceLevelFields := getTraceLevelFields(octd.Node, octd.Resource, octd.SourceFormat)
+		addTraceLevelFields := func(ev *libhoney.Event, tlf map[string]interface{}) {
+			for k, v := range tlf {
 				ev.AddField(k, v)
 			}
 		}
 
-		if len(span.GetParentSpanId()) == 0 || hasRemoteParent(span) {
-			if td.Node != nil {
-				for k, v := range td.Node.Attributes {
+		for _, span := range octd.Spans {
+			ev := e.builder.NewEvent()
+
+			tlf := traceLevelFields
+			// If Resource present need to recalculate traceLevelFields
+			if span.Resource != nil {
+				tlf = getTraceLevelFields(octd.Node, span.Resource, octd.SourceFormat)
+			}
+			addTraceLevelFields(ev, tlf)
+
+			if len(span.GetParentSpanId()) == 0 || hasRemoteParent(span) {
+				if octd.Node != nil {
+					for k, v := range octd.Node.Attributes {
+						ev.AddField(k, v)
+					}
+				}
+			}
+
+			if attrs := spanAttributesToMap(span.GetAttributes()); attrs != nil {
+				for k, v := range attrs {
 					ev.AddField(k, v)
 				}
 			}
-		}
 
-		if attrs := spanAttributesToMap(span.GetAttributes()); attrs != nil {
-			for k, v := range attrs {
-				ev.AddField(k, v)
+			ev.Timestamp = timestampToTime(span.GetStartTime())
+			startTime := timestampToTime(span.GetStartTime())
+			endTime := timestampToTime(span.GetEndTime())
+
+			ev.Add(event{
+				ID:              getHoneycombSpanID(span.GetSpanId()),
+				TraceID:         getHoneycombTraceID(span.GetTraceId()),
+				ParentID:        getHoneycombSpanID(span.GetParentSpanId()),
+				Name:            truncatableStringAsString(span.GetName()),
+				DurationMilli:   float64(endTime.Sub(startTime)) / float64(time.Millisecond),
+				HasRemoteParent: hasRemoteParent(span),
+			})
+
+			e.sendMessageEvents(octd, span, tlf)
+			e.sendSpanLinks(span)
+
+			ev.AddField("status.code", getStatusCode(span.Status))
+			ev.AddField("status.message", getStatusMessage(span.Status))
+			ev.AddField("has_remote_parent", !span.GetSameProcessAsParentSpan().GetValue())
+			ev.AddField("child_span_count", span.GetChildSpanCount())
+
+			if err := ev.SendPresampled(); err != nil {
+				errs = append(errs, err)
+			} else {
+				goodSpans++
 			}
-		}
-
-		ev.Timestamp = timestampToTime(span.GetStartTime())
-		startTime := timestampToTime(span.GetStartTime())
-		endTime := timestampToTime(span.GetEndTime())
-
-		ev.Add(event{
-			ID:              getHoneycombSpanID(span.GetSpanId()),
-			TraceID:         getHoneycombTraceID(span.GetTraceId()),
-			ParentID:        getHoneycombSpanID(span.GetParentSpanId()),
-			Name:            truncatableStringAsString(span.GetName()),
-			DurationMilli:   float64(endTime.Sub(startTime)) / float64(time.Millisecond),
-			HasRemoteParent: hasRemoteParent(span),
-		})
-
-		e.sendMessageEvents(td, span, traceLevelFields)
-		e.sendSpanLinks(span)
-
-		ev.AddField("status.code", getStatusCode(span.Status))
-		ev.AddField("status.message", getStatusMessage(span.Status))
-		ev.AddField("has_remote_parent", !span.GetSameProcessAsParentSpan().GetValue())
-		ev.AddField("child_span_count", span.GetChildSpanCount())
-
-		if err := ev.SendPresampled(); err != nil {
-			errs = append(errs, err)
-		} else {
-			goodSpans++
 		}
 	}
 
-	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
+	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
 }
 
 // sendSpanLinks gets the list of links associated with this span and sends them as
@@ -243,15 +243,6 @@ func (e *honeycombExporter) sendMessageEvents(td consumerdata.TraceData, span *t
 		ev := e.builder.NewEvent()
 		for k, v := range traceFields {
 			ev.AddField(k, v)
-		}
-		if span.Resource != nil && span.Resource.Labels != nil {
-			resourceType := span.Resource.GetType()
-			if len(resourceType) != 0 {
-				ev.AddField("resource_type", resourceType)
-			}
-			for k, v := range span.Resource.Labels {
-				ev.AddField(k, v)
-			}
 		}
 		if len(span.GetParentSpanId()) == 0 || hasRemoteParent(span) {
 			if td.Node != nil {

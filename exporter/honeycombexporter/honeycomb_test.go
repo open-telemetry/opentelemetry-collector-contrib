@@ -28,7 +28,10 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -63,7 +66,7 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 	}))
 }
 
-func testTraceExporter(td consumerdata.TraceData, t *testing.T) []honeycombData {
+func testTraceExporter(td pdata.Traces, t *testing.T) []honeycombData {
 	var got []honeycombData
 	server := testingServer(func(data []honeycombData) {
 		got = append(got, data...)
@@ -77,13 +80,12 @@ func testTraceExporter(td consumerdata.TraceData, t *testing.T) []honeycombData 
 		SampleRate: 1,
 	}
 
-	logger := zap.NewNop()
-	factory := Factory{}
-	exporter, err := factory.CreateTraceExporter(logger, &cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := createTraceExporter(context.Background(), params, &cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	err = exporter.ConsumeTraceData(ctx, td)
+	err = exporter.ConsumeTraces(ctx, td)
 	require.NoError(t, err)
 	exporter.Shutdown(context.Background())
 
@@ -163,7 +165,7 @@ func TestExporter(t *testing.T) {
 						{
 							TraceId: []byte{0x04},
 							SpanId:  []byte{0x05},
-							Type:    tracepb.Span_Link_CHILD_LINKED_SPAN,
+							Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
 							Attributes: &tracepb.Span_Attributes{
 								AttributeMap: map[string]*tracepb.AttributeValue{
 									"span_link_attr": {
@@ -188,44 +190,11 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-	got := testTraceExporter(td, t)
+	got := testTraceExporter(internaldata.OCToTraceData(td), t)
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
-				"A":                       "B",
-				"B":                       "D",
-				"attribute_name":          "Hello MessageEvent",
-				"meta.span_type":          "span_event",
-				"name":                    "Some Description",
-				"opencensus.resourcetype": "foobar",
-				"resource_type":           "override",
-				"service_name":            "test_service",
-				"trace.parent_id":         "02",
-				"trace.parent_name":       "root",
-				"trace.trace_id":          "01",
-			},
-		},
-		{
-			Data: map[string]interface{}{
-				"duration_ms":             float64(0),
-				"has_remote_parent":       false,
-				"name":                    "root",
-				"resource_type":           "override",
-				"service_name":            "test_service",
-				"span_attr_name":          "Span Attribute",
-				"status.code":             float64(0),
-				"status.message":          "OK",
-				"trace.span_id":           "02",
-				"trace.trace_id":          "01",
-				"A":                       "B",
-				"B":                       "D",
-				"opencensus.resourcetype": "foobar",
-			},
-		},
-		{
-			Data: map[string]interface{}{
 				"meta.span_type":      "link",
-				"ref_type":            float64(1),
 				"span_link_attr":      float64(12345),
 				"trace.trace_id":      "01",
 				"trace.parent_id":     "03",
@@ -235,33 +204,71 @@ func TestExporter(t *testing.T) {
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":             float64(0),
-				"has_remote_parent":       false,
-				"name":                    "client",
-				"service_name":            "test_service",
-				"status.code":             float64(0),
-				"status.message":          "OK",
-				"trace.parent_id":         "02",
-				"trace.span_id":           "03",
-				"trace.trace_id":          "01",
-				"opencensus.resourcetype": "foobar",
-				"B":                       "C",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "client",
+				"service_name":                           "test_service",
+				"source_format":                          "otlp_trace",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.parent_id":                        "02",
+				"trace.span_id":                          "03",
+				"trace.trace_id":                         "01",
+				"opencensus.resourcetype":                "foobar",
+				"opencensus.same_process_as_parent_span": true,
+				"A":                                      "B",
+				"B":                                      "C",
 			},
 		},
 		{
 			Data: map[string]interface{}{
-				"duration_ms":             float64(0),
-				"has_remote_parent":       true,
-				"name":                    "server",
-				"service_name":            "test_service",
-				"status.code":             float64(0),
-				"status.message":          "OK",
-				"trace.parent_id":         "03",
-				"trace.span_id":           "04",
-				"trace.trace_id":          "01",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      true,
+				"name":                                   "server",
+				"service_name":                           "test_service",
+				"source_format":                          "otlp_trace",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.parent_id":                        "03",
+				"trace.span_id":                          "04",
+				"trace.trace_id":                         "01",
+				"A":                                      "B",
+				"B":                                      "C",
+				"opencensus.resourcetype":                "foobar",
+				"opencensus.same_process_as_parent_span": false,
+			},
+		},
+		{
+			Data: map[string]interface{}{
 				"A":                       "B",
-				"B":                       "C",
-				"opencensus.resourcetype": "foobar",
+				"B":                       "D",
+				"attribute_name":          "Hello MessageEvent",
+				"meta.span_type":          "span_event",
+				"name":                    "Some Description",
+				"opencensus.resourcetype": "override",
+				"service_name":            "test_service",
+				"source_format":           "otlp_trace",
+				"trace.parent_id":         "02",
+				"trace.parent_name":       "root",
+				"trace.trace_id":          "01",
+			},
+		},
+		{
+			Data: map[string]interface{}{
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"service_name":                           "test_service",
+				"source_format":                          "otlp_trace",
+				"span_attr_name":                         "Span Attribute",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"A":                                      "B",
+				"B":                                      "D",
+				"opencensus.resourcetype":                "override",
+				"opencensus.same_process_as_parent_span": true,
 			},
 		},
 	}
@@ -285,18 +292,20 @@ func TestEmptyNode(t *testing.T) {
 		},
 	}
 
-	got := testTraceExporter(td, t)
+	got := testTraceExporter(internaldata.OCToTraceData(td), t)
 
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
-				"duration_ms":       float64(0),
-				"has_remote_parent": false,
-				"name":              "root",
-				"status.code":       float64(0),
-				"status.message":    "OK",
-				"trace.span_id":     "02",
-				"trace.trace_id":    "01",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.same_process_as_parent_span": true,
 			},
 		},
 	}
