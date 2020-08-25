@@ -293,9 +293,9 @@ func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {
 func makeXRayAttributes(attributes map[string]string, indexedAttrs []string, indexAllAttrs bool) (
 	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
-		annotations     = map[string]interface{}{}
-		metadata        = map[string]map[string]interface{}{}
-		user            string
+		annotations = map[string]interface{}{}
+		metadata    = map[string]map[string]interface{}{}
+		user        string
 	)
 	delete(attributes, semconventions.AttributeComponent)
 	userid, ok := attributes[semconventions.AttributeEnduserID]
