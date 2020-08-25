@@ -177,9 +177,10 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: expectedFromSummary("summary", tsMSecs, keys, values, summaryTimeSeries),
 		},
 	}
+	c := NewMetricsConverter(logger, nil)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, tt.metricsDataFn())
+			gotSfxDataPoints, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(tt.metricsDataFn())
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
@@ -238,7 +239,8 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			},
 		},
 	}
-	got, dropped := MetricDataToSignalFxV2(zap.NewNop(), translator, md)
+	c := NewMetricsConverter(zap.NewNop(), translator)
+	got, dropped := c.MetricDataToSignalFxV2(md)
 
 	assert.EqualValues(t, 0, dropped)
 	assert.EqualValues(t, expected, got)
@@ -404,7 +406,8 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
+	c := NewMetricsConverter(logger, nil)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
 
@@ -431,7 +434,8 @@ func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
+	c := NewMetricsConverter(logger, nil)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
 
@@ -452,7 +456,8 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 				point)),
 		},
 	}
-	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
+	c := NewMetricsConverter(logger, nil)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
 
@@ -467,7 +472,8 @@ func Test_InvalidMetric(t *testing.T) {
 			},
 		},
 	}
-	_, gotNumDroppedTimeSeries := MetricDataToSignalFxV2(logger, nil, metricData)
+	c := NewMetricsConverter(logger, nil)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
 	// Only 1 timeseries is dropped because the nil metric does not have any timeseries.
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
