@@ -41,20 +41,9 @@ type Config struct {
 	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)
 }
 
-func (cfg *Config) getReceiverOptions() (*receiverOptions, error) {
+func (cfg *Config) getK8sClient() (k8s.Interface, error) {
 	if cfg.makeClient == nil {
 		cfg.makeClient = k8sconfig.MakeClient
 	}
-	client, err := cfg.makeClient(cfg.APIConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	return &receiverOptions{
-		name:                       cfg.Name(),
-		client:                     client,
-		collectionInterval:         cfg.CollectionInterval,
-		nodeConditionTypesToReport: cfg.NodeConditionTypesToReport,
-		metadataExporters:          cfg.MetadataExporters,
-	}, nil
+	return cfg.makeClient(cfg.APIConfig)
 }
