@@ -439,6 +439,27 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError: `fields "metric_name", "operand1_metric", "operand2_metric", and "operator" ` +
 				`are required for "calculate_new_metric" translation rule`,
 		},
+		{
+			name: "drop_metrics_valid",
+			trs: []Rule{
+				{
+					Action:      ActionDropMetrics,
+					MetricNames: map[string]bool{"metric": true},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
+			name: "drop_metrics_invalid",
+			trs: []Rule{
+				{
+					Action: ActionDropMetrics,
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         `field "metric_names" is required for "drop_metrics" translation rule`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -1470,6 +1491,54 @@ func TestTranslateDataPoints(t *testing.T) {
 							Key:   "dim1",
 							Value: "val1",
 						},
+					},
+				},
+			},
+		},
+		{
+			name: "drop_metrics",
+			trs: []Rule{
+				{
+					Action: ActionDropMetrics,
+					MetricNames: map[string]bool{
+						"metric1": true,
+						"metric2": true,
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(1.2),
+					},
+				},
+				{
+					Metric:     "metric2",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.2),
+					},
+				},
+				{
+					Metric:     "metric3",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.2),
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric3",
+					Timestamp:  msec,
+					MetricType: &gaugeType,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.2),
 					},
 				},
 			},

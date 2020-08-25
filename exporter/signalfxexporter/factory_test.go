@@ -172,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 37, len(config.TranslationRules))
+	assert.Equal(t, 38, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -642,18 +642,14 @@ func TestDefaultDiskTranslations(t *testing.T) {
 		m[pt.Metric] = l
 	}
 
-	dtPts := m["disk.total"]
-	require.Equal(t, 4, len(dtPts))
-	require.Equal(t, 4, len(dtPts[0].Dimensions))
+	_, ok := m["disk.total"]
+	require.False(t, ok)
 
-	dstPts := m["disk.summary_total"]
-	require.Equal(t, 1, len(dstPts))
-	require.Equal(t, 3, len(dstPts[0].Dimensions))
+	_, ok = m["disk.summary_total"]
+	require.False(t, ok)
 
-	utPts, ok := m["df_complex.used_total"]
-	require.True(t, ok)
-	require.Equal(t, 1, len(utPts))
-	require.Equal(t, 3, len(utPts[0].Dimensions))
+	_, ok = m["df_complex.used_total"]
+	require.False(t, ok)
 
 	du, ok := m["disk.utilization"]
 	require.True(t, ok)

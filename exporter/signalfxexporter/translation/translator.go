@@ -29,7 +29,7 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
-	// The rule can be applied only to a particular metric if MetricName is provided,
+	// The rule can be applied only to particular metrics if MetricNames are provided,
 	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
@@ -109,6 +109,9 @@ const (
 	// new metric will also get any attributes of the 'memory.used' metric except for its value and metric name.
 	// Currently only integer inputs are handled and only division is supported.
 	ActionCalculateNewMetric Action = "calculate_new_metric"
+
+	// ActionDropMetrics drops datapoints with metric name defined in "metric_names".
+	ActionDropMetrics Action = "drop_metrics"
 )
 
 type MetricOperator string
@@ -177,8 +180,7 @@ type Rule struct {
 	// excluded by aggregation.
 	WithoutDimensions []string `mapstructure:"without_dimensions"`
 
-	// MetricName is used by "split_metric" translation rule to specify a name
-	// of a metric that will be split.
+	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
 
 	Operand1Metric string         `mapstructure:"operand1_metric"`
@@ -280,6 +282,10 @@ func validateTranslationRules(rules []Rule) error {
 			}
 			if tr.Operator != MetricOperatorDivision {
 				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
+			}
+		case ActionDropMetrics:
+			if len(tr.MetricNames) == 0 {
+				return fmt.Errorf(`field "metric_names" is required for %q translation rule`, tr.Action)
 			}
 
 		default:
@@ -405,6 +411,18 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			}
 			aggregatedDps := aggregateDatapoints(dpsToAggregate, tr.WithoutDimensions, tr.AggregationMethod)
 			processedDataPoints = append(otherDps, aggregatedDps...)
+
+		case ActionDropMetrics:
+			resultSliceLen := 0
+			for i, dp := range processedDataPoints {
+				if match := tr.MetricNames[dp.Metric]; !match {
+					if resultSliceLen < i {
+						processedDataPoints[resultSliceLen] = dp
+					}
+					resultSliceLen++
+				}
+			}
+			processedDataPoints = processedDataPoints[:resultSliceLen]
 		}
 	}
 

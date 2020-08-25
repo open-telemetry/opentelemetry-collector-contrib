@@ -360,5 +360,12 @@ translation_rules:
 - action: multiply_float
   scale_factors_float:
     memory.utilization: 100
+
+# remove redundant metrics
+- action: drop_metrics
+  metric_names:
+    df_complex.used_total: true
+    disk.summary_total: true
+    disk.total: true
 `
 )
