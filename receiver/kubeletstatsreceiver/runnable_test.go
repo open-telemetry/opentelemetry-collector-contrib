@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 )
@@ -207,6 +209,195 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 
 			require.Equal(t, test.dataLen, consumer.MetricsCount())
 		})
+	}
+}
+
+type expectedVolume struct {
+	name   string
+	typ    string
+	labels map[string]string
+}
+
+func TestRunnableWithPVCDetailedLabels(t *testing.T) {
+	tests := []struct {
+		name               string
+		k8sAPIClient       kubernetes.Interface
+		expectedVolumes    map[string]expectedVolume
+		volumeClaimsToMiss map[string]bool
+		dataLen            int
+		numLogs            int
+	}{
+		{
+			name:         "successful",
+			k8sAPIClient: fake.NewSimpleClientset(getValidMockedObjects()...),
+			expectedVolumes: map[string]expectedVolume{
+				"volume_claim_1": {
+					name: "storage-provisioner-token-qzlx6",
+					typ:  "awsElasticBlockStore",
+					labels: map[string]string{
+						"aws.volume.id": "volume_id",
+						"fs.type":       "fs_type",
+						"partition":     "10",
+					},
+				},
+				"volume_claim_2": {
+					name: "kube-proxy",
+					typ:  "gcePersistentDisk",
+					labels: map[string]string{
+						"gce.pd.name": "pd_name",
+						"fs.type":     "fs_type",
+						"partition":   "10",
+					},
+				},
+				"volume_claim_3": {
+					name: "coredns-token-dzc5t",
+					typ:  "glusterfs",
+					labels: map[string]string{
+						"glusterfs.endpoints.name": "endpoints_name",
+						"glusterfs.path":           "path",
+					},
+				},
+			},
+			dataLen: numVolumes,
+		},
+		{
+			name:         "pvc doesn't exist",
+			k8sAPIClient: fake.NewSimpleClientset(),
+			dataLen:      numVolumes - 3,
+			volumeClaimsToMiss: map[string]bool{
+				"volume_claim_1": true,
+				"volume_claim_2": true,
+				"volume_claim_3": true,
+			},
+			numLogs: 3,
+		},
+		{
+			name:         "empty volume name in pvc",
+			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithEmptyVolumeName()...),
+			expectedVolumes: map[string]expectedVolume{
+				"volume_claim_1": {
+					name: "storage-provisioner-token-qzlx6",
+					typ:  "awsElasticBlockStore",
+					labels: map[string]string{
+						"aws.volume.id": "volume_id",
+						"fs.type":       "fs_type",
+						"partition":     "10",
+					},
+				},
+				"volume_claim_2": {
+					name: "kube-proxy",
+					typ:  "gcePersistentDisk",
+					labels: map[string]string{
+						"gce.pd.name": "pd_name",
+						"fs.type":     "fs_type",
+						"partition":   "10",
+					},
+				},
+			},
+			// Two of mocked volumes are invalid and do not match any of volumes in
+			// testdata/pods.json. Hence, don't expected to see metrics from them.
+			dataLen: numVolumes - 1,
+			volumeClaimsToMiss: map[string]bool{
+				"volume_claim_3": true,
+			},
+			numLogs: 1,
+		},
+		{
+			name:         "non existent volume in pvc",
+			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithNonExistentVolumeName()...),
+			expectedVolumes: map[string]expectedVolume{
+				"volume_claim_1": {
+					name: "storage-provisioner-token-qzlx6",
+					typ:  "awsElasticBlockStore",
+					labels: map[string]string{
+						"aws.volume.id": "volume_id",
+						"fs.type":       "fs_type",
+						"partition":     "10",
+					},
+				},
+				"volume_claim_2": {
+					name: "kube-proxy",
+					typ:  "gcePersistentDisk",
+					labels: map[string]string{
+						"gce.pd.name": "pd_name",
+						"fs.type":     "fs_type",
+						"partition":   "10",
+					},
+				},
+			},
+			// Two of mocked volumes are invalid and do not match any of volumes in
+			// testdata/pods.json. Hence, don't expected to see metrics from them.
+			dataLen: numVolumes - 1,
+			volumeClaimsToMiss: map[string]bool{
+				"volume_claim_3": true,
+			},
+			numLogs: 1,
+		},
+		{
+			name:    "don't collect detailed labels",
+			dataLen: numVolumes,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			consumer := &exportertest.SinkMetricsExporter{}
+			r := newRunnable(
+				context.Background(),
+				consumer,
+				&fakeRestClient{},
+				zap.NewNop(),
+				&receiverOptions{
+					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
+					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+						kubelet.VolumeMetricGroup: true,
+					},
+					k8sAPIClient: test.k8sAPIClient,
+				},
+			)
+
+			err := r.Setup()
+			require.NoError(t, err)
+
+			err = r.Run()
+			require.NoError(t, err)
+			require.Equal(t, test.dataLen*volumeMetrics, consumer.MetricsCount())
+
+			// If Kubernetes API is set, assert additional labels as well.
+			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {
+				for _, m := range consumer.AllMetrics() {
+					mds := pdatautil.MetricsToMetricsData(m)
+					for _, md := range mds {
+						claimName, ok := md.Resource.Labels["k8s.persistentvolumeclaim.name"]
+						// claimName will be non empty only when PVCs are used, all test cases
+						// in this method are interested only in such cases.
+						if !ok {
+							continue
+						}
+
+						ev := test.expectedVolumes[claimName]
+						requireExpectedVolume(t, ev, md.Resource.Labels)
+
+						// Assert metrics from certain volume claims expected to be missed
+						// are not collected.
+						if test.volumeClaimsToMiss != nil {
+							for c := range test.volumeClaimsToMiss {
+								require.False(t, md.Resource.Labels["k8s.persistentvolumeclaim.name"] == c)
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func requireExpectedVolume(t *testing.T, ev expectedVolume, resourceLabels map[string]string) {
+	require.NotNil(t, ev)
+	require.Equal(t, ev.name, resourceLabels["k8s.volume.name"])
+	require.Equal(t, ev.typ, resourceLabels["k8s.volume.type"])
+	for k, v := range ev.labels {
+		require.Equal(t, resourceLabels[k], v)
 	}
 }
 

@@ -67,18 +67,30 @@ func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Met
 		labelVolumeName: vs.Name,
 	}
 
-	err := metadata.setExtraLabels(labels, pod.Labels[conventions.AttributeK8sPodUID], MetadataLabelVolumeType, labels[labelVolumeName])
+	err := metadata.setExtraLabels(
+		labels, pod.Labels[conventions.AttributeK8sPodUID],
+		MetadataLabelVolumeType, labels[labelVolumeName],
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
 
+	}
+
+	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
+		err = metadata.DetailedPVCLabelsSetter(
+			labels[labelPersistentVolumeClaimName],
+			pod.Labels[conventions.AttributeK8sNamespace], labels,
+		)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
+
+		}
 	}
 
 	// Collect relevant Pod labels to be able to associate the volume to it.
 	labels[conventions.AttributeK8sPodUID] = pod.Labels[conventions.AttributeK8sPodUID]
 	labels[conventions.AttributeK8sPod] = pod.Labels[conventions.AttributeK8sPod]
 	labels[conventions.AttributeK8sNamespace] = pod.Labels[conventions.AttributeK8sNamespace]
-
-	//TODO: Optionally add more labels through the Kubernetes API when dealing with PVCs.
 
 	return &resourcepb.Resource{
 		Type:   "k8s",
