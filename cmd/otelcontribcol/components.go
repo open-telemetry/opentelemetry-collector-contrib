@@ -96,7 +96,7 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	exporters := []component.ExporterFactoryBase{
+	exporters := []component.ExporterFactory{
 		stackdriverexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
 		signalfxexporter.NewFactory(),

@@ -10,6 +10,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-proto v0.4.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.8.1-0.20200824223956-becebeb5b751
+	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
 	go.uber.org/zap v1.15.0
 )
