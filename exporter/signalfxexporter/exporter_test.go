@@ -32,7 +32,9 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
@@ -43,44 +45,79 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	got, err := newSignalFxExporter(nil, zap.NewNop())
-	assert.EqualError(t, err, "nil config")
-	assert.Nil(t, got)
-
-	config := &Config{
-		AccessToken: "someToken",
-		Realm:       "xyz",
-		Timeout:     1 * time.Second,
-		Headers:     nil,
+	tests := []struct {
+		name           string
+		config         *Config
+		wantErr        bool
+		wantErrMessage string
+	}{
+		{
+			name:           "nil config fails",
+			wantErr:        true,
+			wantErrMessage: "nil config",
+		},
+		{
+			name: "bad config fails",
+			config: &Config{
+				APIURL: "abc",
+			},
+			wantErr: true,
+		},
+		{
+			name: "successfully create exporter",
+			config: &Config{
+				AccessToken: "someToken",
+				Realm:       "xyz",
+				Timeout:     1 * time.Second,
+				Headers:     nil,
+			},
+		},
 	}
-	got, err = newSignalFxExporter(config, zap.NewNop())
-	assert.NoError(t, err)
-	require.NotNil(t, got)
 
-	// This is expected to fail.
-	err = got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
-	assert.Error(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := newSignalFxExporter(tt.config, zap.NewNop())
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.wantErrMessage != "" {
+					require.EqualError(t, err, tt.wantErrMessage)
+				}
+			} else {
+				require.NotNil(t, got)
+				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, got.Shutdown(context.Background()))
+
+				// This is expected to fail.
+				cErr := got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
+				assert.Error(t, cErr)
+			}
+		})
+	}
 }
 
-func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := &consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+func TestConsumeMetrics(t *testing.T) {
+	smallBatch := pdatautil.MetricsFromMetricsData(
+		[]consumerdata.MetricsData{
+			{
+				Node: &commonpb.Node{
+					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+				},
+				Resource: &resourcepb.Resource{Type: "test"},
+				Metrics: []*metricspb.Metric{
+					metricstestutil.Gauge(
+						"test_gauge",
+						[]string{"k0", "k1"},
+						metricstestutil.Timeseries(
+							time.Now(),
+							[]string{"v0", "v1"},
+							metricstestutil.Double(time.Now(), 123))),
+				},
+			},
 		},
-		Resource: &resourcepb.Resource{Type: "test"},
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge(
-				"test_gauge",
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					metricstestutil.Double(time.Now(), 123))),
-		},
-	}
+	)
 	tests := []struct {
 		name                 string
-		md                   *consumerdata.MetricsData
+		md                   pdata.Metrics
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedTimeSeries int
@@ -102,7 +139,7 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeBatch(t),
+			md:               generateLargeBatch(),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -134,7 +171,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
-			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), *tt.md)
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
@@ -147,11 +184,11 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func TestConsumeMetricsDataWithAccessTokenPassthrough(t *testing.T) {
+func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	fromHeaders := "AccessTokenFromClientHeaders"
 	fromLabels := "AccessTokenFromLabel"
 
-	newMetricData := func(includeToken bool) consumerdata.MetricsData {
+	validMetrics := func(includeToken bool) pdata.Metrics {
 		md := consumerdata.MetricsData{
 			Node: &commonpb.Node{
 				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
@@ -175,38 +212,59 @@ func TestConsumeMetricsDataWithAccessTokenPassthrough(t *testing.T) {
 		if !includeToken {
 			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
 		}
-		return md
+		return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
 	}
 
 	tests := []struct {
 		name                   string
 		accessTokenPassthrough bool
-		includedInMetricData   bool
 		expectedToken          string
+		metrics                pdata.Metrics
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
-			includedInMetricData:   true,
+			metrics:                validMetrics(true),
 			expectedToken:          fromLabels,
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
-			includedInMetricData:   false,
+			metrics:                validMetrics(false),
 			expectedToken:          fromHeaders,
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
-			includedInMetricData:   true,
+			metrics:                validMetrics(true),
 			expectedToken:          fromHeaders,
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
-			includedInMetricData:   false,
+			metrics:                validMetrics(false),
 			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "use token from header when resource is nil",
+			accessTokenPassthrough: true,
+			metrics: pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
+				{
+					Node: &commonpb.Node{
+						ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+					},
+					Metrics: []*metricspb.Metric{
+						metricstestutil.Gauge(
+							"test_gauge",
+							[]string{"k0", "k1"},
+							metricstestutil.Timeseries(
+								time.Now(),
+								[]string{"v0", "v1"},
+								metricstestutil.Double(time.Now(), 123))),
+					},
+				},
+			}),
+			expectedToken: fromHeaders,
 		},
 	}
 	for _, tt := range tests {
@@ -238,25 +296,24 @@ func TestConsumeMetricsDataWithAccessTokenPassthrough(t *testing.T) {
 				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
-			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), newMetricData(tt.includedInMetricData))
+			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.metrics)
 			assert.Equal(t, 0, numDroppedTimeSeries)
 			assert.NoError(t, err)
 		})
 	}
 }
 
-func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
-	md := &consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-		},
-		Resource: &resourcepb.Resource{Type: "test"},
-	}
+func generateLargeBatch() pdata.Metrics {
+	mds := make([]consumerdata.MetricsData, 65000)
 
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
-		md.Metrics = append(md.Metrics,
-			metricstestutil.Gauge(
+		mds[i] = consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+			},
+			Resource: &resourcepb.Resource{Type: "test" + strconv.Itoa(i)},
+			Metrics: []*metricspb.Metric{metricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
 				metricstestutil.Timeseries(
@@ -267,11 +324,11 @@ func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
 					},
 				),
-			),
-		)
+			)},
+		}
 	}
 
-	return md
+	return pdatautil.MetricsFromMetricsData(mds)
 }
 
 func TestConsumeKubernetesMetadata(t *testing.T) {

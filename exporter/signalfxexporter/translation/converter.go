@@ -93,7 +93,7 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(md consumerdata.MetricsData) (
+func (c *MetricsConverter) MetricDataToSignalFxV2(md []consumerdata.MetricsData) (
 	sfxDataPoints []*sfxpb.DataPoint,
 	numDroppedTimeSeries int,
 ) {
@@ -102,121 +102,123 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(md consumerdata.MetricsData) (
 	return
 }
 
-func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData) (
+func (c *MetricsConverter) metricDataToSfxDataPoints(mds []consumerdata.MetricsData) (
 	sfxDataPoints []*sfxpb.DataPoint,
 	numDroppedTimeSeries int,
 ) {
 	var err error
 
-	// Labels from Node and Resource.
-	// TODO: Options to add lib, service name, etc as dimensions?
-	//  Q.: what about resource type?
-	nodeAttribs := md.Node.GetAttributes()
-	resourceAttribs := md.Resource.GetLabels()
-	numExtraDimensions := len(nodeAttribs) + len(resourceAttribs)
-	var extraDimensions []*sfxpb.Dimension
-	if numExtraDimensions > 0 {
-		extraDimensions = make([]*sfxpb.Dimension, 0, numExtraDimensions)
-		extraDimensions = appendAttributesToDimensions(extraDimensions, nodeAttribs)
-		extraDimensions = appendAttributesToDimensions(extraDimensions, resourceAttribs)
-	}
-
-	for _, metric := range md.Metrics {
-		if metric == nil || metric.MetricDescriptor == nil {
-			c.logger.Warn("Received nil metrics data or nil descriptor for metrics")
-			numDroppedTimeSeries += len(metric.GetTimeseries())
-			continue
+	for _, md := range mds {
+		// Labels from Node and Resource.
+		// TODO: Options to add lib, service name, etc as dimensions?
+		//  Q.: what about resource type?
+		nodeAttribs := md.Node.GetAttributes()
+		resourceAttribs := md.Resource.GetLabels()
+		numExtraDimensions := len(nodeAttribs) + len(resourceAttribs)
+		var extraDimensions []*sfxpb.Dimension
+		if numExtraDimensions > 0 {
+			extraDimensions = make([]*sfxpb.Dimension, 0, numExtraDimensions)
+			extraDimensions = appendAttributesToDimensions(extraDimensions, nodeAttribs)
+			extraDimensions = appendAttributesToDimensions(extraDimensions, resourceAttribs)
 		}
 
-		if sfxDataPoints == nil {
-			// Suppose all metrics has roughly similar number of timeseries
-			sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics)*len(metric.Timeseries))
-		}
-
-		metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
-
-		// Build the fixed parts for this metrics from the descriptor.
-		descriptor := metric.MetricDescriptor
-		metricName := descriptor.Name
-
-		metricType := fromOCMetricDescriptorToMetricType(descriptor.Type)
-		numLabels := len(descriptor.LabelKeys)
-
-		for _, series := range metric.Timeseries {
-			dimensions := make([]*sfxpb.Dimension, numLabels+numExtraDimensions)
-			copy(dimensions, extraDimensions)
-			for i := 0; i < numLabels; i++ {
-				dimension := &sfxpb.Dimension{
-					Key:   descriptor.LabelKeys[i].Key,
-					Value: series.LabelValues[i].Value,
-				}
-				dimensions[numExtraDimensions+i] = dimension
+		for _, metric := range md.Metrics {
+			if metric == nil || metric.MetricDescriptor == nil {
+				c.logger.Warn("Received nil metrics data or nil descriptor for metrics")
+				numDroppedTimeSeries += len(metric.GetTimeseries())
+				continue
 			}
 
-			for _, dp := range series.Points {
-
-				var msec int64
-				if dp.Timestamp != nil {
-					msec = dp.Timestamp.Seconds*1e3 + int64(dp.Timestamp.Nanos)/1e6
-				}
-
-				sfxDataPoint := &sfxpb.DataPoint{
-					// Source field is not set by code seen at
-					// github.com/signalfx/golib/sfxclient/httpsink.go
-					Metric:     metricName,
-					MetricType: metricType,
-					Timestamp:  msec,
-					Dimensions: dimensions,
-				}
-
-				switch pv := dp.Value.(type) {
-				case *metricspb.Point_Int64Value:
-					sfxDataPoint.Value = sfxpb.Datum{IntValue: &pv.Int64Value}
-					metricDataPoints = append(metricDataPoints, sfxDataPoint)
-
-				case *metricspb.Point_DoubleValue:
-					sfxDataPoint.Value = sfxpb.Datum{DoubleValue: &pv.DoubleValue}
-					metricDataPoints = append(metricDataPoints, sfxDataPoint)
-
-				case *metricspb.Point_DistributionValue:
-					metricDataPoints, err = appendDistributionValues(
-						metricDataPoints,
-						sfxDataPoint,
-						pv.DistributionValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						c.logger.Warn(
-							"Timeseries for distribution metric dropped",
-							zap.Error(err),
-							zap.String("metric", sfxDataPoint.Metric))
-					}
-				case *metricspb.Point_SummaryValue:
-					metricDataPoints, err = appendSummaryValues(
-						metricDataPoints,
-						sfxDataPoint,
-						pv.SummaryValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						c.logger.Warn(
-							"Timeseries for summary metric dropped",
-							zap.Error(err),
-							zap.String("metric", sfxDataPoint.Metric))
-					}
-				default:
-					numDroppedTimeSeries++
-					c.logger.Warn(
-						"Timeseries dropped to unexpected metric type",
-						zap.String("metric", sfxDataPoint.Metric))
-				}
-
+			if sfxDataPoints == nil {
+				// Suppose all metrics has roughly similar number of timeseries
+				sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics)*len(metric.Timeseries))
 			}
-		}
 
-		if c.metricTranslator != nil {
-			metricDataPoints = c.metricTranslator.TranslateDataPoints(c.logger, metricDataPoints)
-		}
+			metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
 
-		sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
+			// Build the fixed parts for this metrics from the descriptor.
+			descriptor := metric.MetricDescriptor
+			metricName := descriptor.Name
+
+			metricType := fromOCMetricDescriptorToMetricType(descriptor.Type)
+			numLabels := len(descriptor.LabelKeys)
+
+			for _, series := range metric.Timeseries {
+				dimensions := make([]*sfxpb.Dimension, numLabels+numExtraDimensions)
+				copy(dimensions, extraDimensions)
+				for i := 0; i < numLabels; i++ {
+					dimension := &sfxpb.Dimension{
+						Key:   descriptor.LabelKeys[i].Key,
+						Value: series.LabelValues[i].Value,
+					}
+					dimensions[numExtraDimensions+i] = dimension
+				}
+
+				for _, dp := range series.Points {
+
+					var msec int64
+					if dp.Timestamp != nil {
+						msec = dp.Timestamp.Seconds*1e3 + int64(dp.Timestamp.Nanos)/1e6
+					}
+
+					sfxDataPoint := &sfxpb.DataPoint{
+						// Source field is not set by code seen at
+						// github.com/signalfx/golib/sfxclient/httpsink.go
+						Metric:     metricName,
+						MetricType: metricType,
+						Timestamp:  msec,
+						Dimensions: dimensions,
+					}
+
+					switch pv := dp.Value.(type) {
+					case *metricspb.Point_Int64Value:
+						sfxDataPoint.Value = sfxpb.Datum{IntValue: &pv.Int64Value}
+						metricDataPoints = append(metricDataPoints, sfxDataPoint)
+
+					case *metricspb.Point_DoubleValue:
+						sfxDataPoint.Value = sfxpb.Datum{DoubleValue: &pv.DoubleValue}
+						metricDataPoints = append(metricDataPoints, sfxDataPoint)
+
+					case *metricspb.Point_DistributionValue:
+						metricDataPoints, err = appendDistributionValues(
+							metricDataPoints,
+							sfxDataPoint,
+							pv.DistributionValue)
+						if err != nil {
+							numDroppedTimeSeries++
+							c.logger.Warn(
+								"Timeseries for distribution metric dropped",
+								zap.Error(err),
+								zap.String("metric", sfxDataPoint.Metric))
+						}
+					case *metricspb.Point_SummaryValue:
+						metricDataPoints, err = appendSummaryValues(
+							metricDataPoints,
+							sfxDataPoint,
+							pv.SummaryValue)
+						if err != nil {
+							numDroppedTimeSeries++
+							c.logger.Warn(
+								"Timeseries for summary metric dropped",
+								zap.Error(err),
+								zap.String("metric", sfxDataPoint.Metric))
+						}
+					default:
+						numDroppedTimeSeries++
+						c.logger.Warn(
+							"Timeseries dropped to unexpected metric type",
+							zap.String("metric", sfxDataPoint.Metric))
+					}
+
+				}
+			}
+
+			if c.metricTranslator != nil {
+				metricDataPoints = c.metricTranslator.TranslateDataPoints(c.logger, metricDataPoints)
+			}
+
+			sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
+		}
 	}
 
 	return sfxDataPoints, numDroppedTimeSeries
