@@ -43,7 +43,7 @@ type sfxDPClient struct {
 	logger                 *zap.Logger
 	zippers                sync.Pool
 	accessTokenPassthrough bool
-	metricTranslator       *translation.MetricTranslator
+	converter              *translation.MetricsConverter
 }
 
 func (s *sfxDPClient) pushMetricsData(
@@ -51,7 +51,8 @@ func (s *sfxDPClient) pushMetricsData(
 	md consumerdata.MetricsData,
 ) (droppedTimeSeries int, err error) {
 	accessToken := s.retrieveAccessToken(md)
-	sfxDataPoints, numDroppedTimeseries := translation.MetricDataToSignalFxV2(s.logger, s.metricTranslator, md)
+
+	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(md)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {

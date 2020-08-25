@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright 2020, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -76,22 +76,36 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func MetricDataToSignalFxV2(
-	logger *zap.Logger,
-	metricTranslator *MetricTranslator,
-	md consumerdata.MetricsData,
-) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
-	sfxDataPoints, numDroppedTimeSeries = metricDataToSfxDataPoints(logger, metricTranslator, md)
+// MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
+// MetricTranslator to translate SFx metrics using translation rules.
+type MetricsConverter struct {
+	logger           *zap.Logger
+	metricTranslator *MetricTranslator
+}
 
+// NewMetricsConverter creates a MetricsConverter from the passed in logger and
+// MetricTranslator. Pass in a nil MetricTranslator to not use translation
+// rules.
+func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConverter {
+	return &MetricsConverter{logger: logger, metricTranslator: t}
+}
+
+// MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
+// returning those datapoints and the number of time series that had to be
+// dropped because of errors or warnings.
+func (c *MetricsConverter) MetricDataToSignalFxV2(md consumerdata.MetricsData) (
+	sfxDataPoints []*sfxpb.DataPoint,
+	numDroppedTimeSeries int,
+) {
+	sfxDataPoints, numDroppedTimeSeries = c.metricDataToSfxDataPoints(md)
 	sanitizeDataPointDimensions(sfxDataPoints)
 	return
 }
 
-func metricDataToSfxDataPoints(
-	logger *zap.Logger,
-	metricTranslator *MetricTranslator,
-	md consumerdata.MetricsData,
-) (sfxDataPoints []*sfxpb.DataPoint, numDroppedTimeSeries int) {
+func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData) (
+	sfxDataPoints []*sfxpb.DataPoint,
+	numDroppedTimeSeries int,
+) {
 	var err error
 
 	// Labels from Node and Resource.
@@ -109,7 +123,7 @@ func metricDataToSfxDataPoints(
 
 	for _, metric := range md.Metrics {
 		if metric == nil || metric.MetricDescriptor == nil {
-			logger.Warn("Received nil metrics data or nil descriptor for metrics")
+			c.logger.Warn("Received nil metrics data or nil descriptor for metrics")
 			numDroppedTimeSeries += len(metric.GetTimeseries())
 			continue
 		}
@@ -171,7 +185,7 @@ func metricDataToSfxDataPoints(
 						pv.DistributionValue)
 					if err != nil {
 						numDroppedTimeSeries++
-						logger.Warn(
+						c.logger.Warn(
 							"Timeseries for distribution metric dropped",
 							zap.Error(err),
 							zap.String("metric", sfxDataPoint.Metric))
@@ -183,14 +197,14 @@ func metricDataToSfxDataPoints(
 						pv.SummaryValue)
 					if err != nil {
 						numDroppedTimeSeries++
-						logger.Warn(
+						c.logger.Warn(
 							"Timeseries for summary metric dropped",
 							zap.Error(err),
 							zap.String("metric", sfxDataPoint.Metric))
 					}
 				default:
 					numDroppedTimeSeries++
-					logger.Warn(
+					c.logger.Warn(
 						"Timeseries dropped to unexpected metric type",
 						zap.String("metric", sfxDataPoint.Metric))
 				}
@@ -198,8 +212,8 @@ func metricDataToSfxDataPoints(
 			}
 		}
 
-		if metricTranslator != nil {
-			metricDataPoints = metricTranslator.TranslateDataPoints(logger, metricDataPoints)
+		if c.metricTranslator != nil {
+			metricDataPoints = c.metricTranslator.TranslateDataPoints(c.logger, metricDataPoints)
 		}
 
 		sfxDataPoints = append(sfxDataPoints, metricDataPoints...)
