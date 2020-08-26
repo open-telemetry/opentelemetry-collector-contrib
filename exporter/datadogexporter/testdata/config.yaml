@@ -5,21 +5,45 @@ processors:
   exampleprocessor:
 
 exporters:
-  datadog:
-    sending_method: agent
+  datadog/api:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
     tags:
-      - tool:opentelemetry
-      - version:0.1.0
-  datadog/2:
-    api_key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    site: datadoghq.eu
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    metrics:
+      mode: agentless
+      namespace: opentelemetry
+
+  datadog/dogstatsd:
+    metrics:
+      mode: dogstatsd
+
+  datadog/dogstatsd/config:
+    metrics:
+      mode: dogstatsd
+      dogstatsd:
+        endpoint: "localhost:5000"
+        telemetry: false
+        
   datadog/invalid:
-     api_key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-     sending_method: agent
+    metrics:
+      mode: invalid
+
+  datadog/agentless/invalid:
+    metrics:
+      mode: agentless
 
 service:
   pipelines:
-    traces:
+    metrics:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [datadog, datadog/2]
+      exporters: [datadog/api, datadog/dogstatsd]

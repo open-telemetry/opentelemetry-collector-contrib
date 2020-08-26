@@ -6,30 +6,97 @@ processors:
 
 exporters:
   datadog:
-    ## @param api_key - string - required
-    ## The Datadog API key to associate your Agent's data with your organization.
-    ## Create a new API key here: https://app.datadoghq.com/account/settings
+    ## @param hostname - string - optional
+    ## A custom hostname.
+    ## If unset this will be determined automatically if possible.
     #
-    api_key: ""
+    # hostname: customhostname
 
-    ## @param site - string - optional - default: datadoghq.com
-    ## The site of the Datadog intake to send Agent data to.
-    ## Set to 'datadoghq.eu' to send data to the EU site.
+    ## @param env - string - optional
+    ## The environment for unified service tagging.
+    ## If unset it will be determined from the `DD_ENV` environment variable.
     #
-    # site: datadoghq.com
+    # env: prod
 
-    ## @param metrics_url - string - optional - default: https://api.datadoghq.com
-    ## The host of the Datadog intake server to send metrics to, only set this option
-    ## if you need the Agent to send metrics to a custom URL, it overrides the site
-    ## setting defined in "site".
+    ## @param service - string - optional
+    ## The service for unified service tagging.
+    ## If unset it will be determined from the `DD_SERVICE` environment variable.
     #
-    # metrics_url: https://api.datadoghq.com
+    # service: myservice
+
+    ## @param version - string - optional
+    ## The version for unified service tagging.
+    ## If unset it will be determined from the `DD_VERSION` environment variable.
+    #
+    # version: myversion
 
     ## @param tags - list of strings - optional - default: []
-    ## The list of default tags to add to every metric or trace
+    ## The list of default tags to add to every metric or trace.
     #
     # tags: []
 
+    ## @param api - custom object - optional.
+    ## Specific API configuration for the agentless exporters.
+    #
+    # api:
+      ## @ param key - string - optional
+      ## The Datadog API key to associate your Agent's data with your organization.
+      ## Create a new API key here: https://app.datadoghq.com/account/settings
+      ##
+      ## This is required if using any agentless exporter.
+      #
+      # key: <YOUR API KEY>
+
+      ## @param site - string - optional - default: datadoghq.com
+      ## The site of the Datadog intake to send Agent data to.
+      ## Set to 'datadoghq.eu' to send data to the EU site.
+      #
+      # site: datadoghq.com
+
+    ## @param metrics - custom object - optional
+    ## Metric exporter specific configuration.
+    #
+    # metrics:
+      ## @param mode - string - optional - default: dogstatsd
+      ## The mode with which to send metrics.
+      ## It can be one of
+      ## - 'none' (to explicitly disable it)
+      ## - 'dogstatsd' (to send metrics to a DogStatsD endpoint)
+      ## - 'agentless' (to send metrics directly through the API)
+      ##
+      ## If the mode is 'agentless' the API key must be set.
+      #
+      # mode: dogstatsd
+
+      ## @param namespace - string - optional
+      ## The namespace with which to prefix all metrics.
+      ## By default metrics are not namespaced.
+      #
+      # namespace: ""
+
+      ## @param dogstatsd - custom object - optional
+      ## DogStatSD mode specific configuration.
+      #
+      # dogstatsd:
+        ## @param endpoint - string - default: 127.0.0.1:8125
+        ## The DogStatsD endpoint. It can be an UDP or UDS endpoint
+        #
+        # endpoint: 127.0.0.1:8125
+
+        ## @param telemetry - boolean - default: true
+        ## Whether to send telemetry metrics about the number of custom metrics sent.
+        #
+        # telemetry: true
+
+      ## @param agentless - custom object - optional
+      ## Agentless metrics exporter specific configuration
+      #
+      # agentless:
+        ## @param endpoint - string - optional
+        ## The host of the Datadog intake server to send metrics to.
+        ## If unset the value is obtained through the `site` parameter in the `api` section.
+        #
+        # endpoint: https://api.datadoghq.com
 service:
   pipelines:
     traces:

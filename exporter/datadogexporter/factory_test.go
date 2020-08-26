@@ -34,9 +34,14 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, cfg, &Config{
-		Site: DefaultSite,
-		Tags: DefaultTags,
-		Mode: DefaultMode,
+		API: APIConfig{Site: "datadoghq.com"},
+		Metrics: MetricsConfig{
+			Mode: DogStatsDMode,
+			DogStatsD: DogStatsDConfig{
+				Endpoint:  "127.0.0.1:8125",
+				Telemetry: true,
+			},
+		},
 	}, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
@@ -59,7 +64,7 @@ func TestCreateAgentMetricsExporter(t *testing.T) {
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog"],
+		cfg.Exporters["datadog/dogstatsd"],
 	)
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
@@ -82,7 +87,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/2"],
+		cfg.Exporters["datadog/api"],
 	)
 
 	// Not implemented
@@ -107,7 +112,7 @@ func TestCreateAPITraceExporter(t *testing.T) {
 	exp, err := factory.CreateTraceExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/2"],
+		cfg.Exporters["datadog/api"],
 	)
 
 	// Not implemented

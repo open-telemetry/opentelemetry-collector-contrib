@@ -37,40 +37,75 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	e0 := cfg.Exporters["datadog"].(*Config)
-	err = e0.Sanitize()
+	apiConfig := cfg.Exporters["datadog/api"].(*Config)
+	err = apiConfig.Sanitize()
 
 	require.NoError(t, err)
-	assert.Equal(t, e0, &Config{
+	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "datadog",
+			NameVal: "datadog/api",
 			TypeVal: "datadog",
 		},
-		Site:       DefaultSite,
-		MetricsURL: "127.0.0.1:8125",
-		Tags:       []string{"tool:opentelemetry", "version:0.1.0"},
-		Mode:       AgentMode,
+
+		TagsConfig: TagsConfig{
+			Hostname: "customhostname",
+			Env:      "prod",
+			Service:  "myservice",
+			Version:  "myversion",
+			Tags:     []string{"example:tag"},
+		},
+
+		API: APIConfig{
+			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			Site: "datadoghq.eu",
+		},
+
+		Metrics: MetricsConfig{
+			Mode:      AgentlessMode,
+			Namespace: "opentelemetry",
+
+			DogStatsD: DogStatsDConfig{
+				Endpoint:  "127.0.0.1:8125",
+				Telemetry: true,
+			},
+
+			Agentless: AgentlessConfig{
+				Endpoint: "https://api.datadoghq.eu",
+			},
+		},
 	})
 
-	e1 := cfg.Exporters["datadog/2"].(*Config)
-	err = e1.Sanitize()
+	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
+	err = dogstatsdConfig.Sanitize()
 
 	require.NoError(t, err)
-	assert.Equal(t, e1,
-		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "datadog/2",
-				TypeVal: "datadog",
-			},
-			APIKey:     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site:       "datadoghq.eu",
-			MetricsURL: "https://api.datadoghq.eu",
-			Tags:       DefaultTags,
-			Mode:       APIMode,
-		})
+	assert.Equal(t, dogstatsdConfig, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "datadog/dogstatsd",
+			TypeVal: "datadog",
+		},
 
-	e3 := cfg.Exporters["datadog/invalid"].(*Config)
-	err = e3.Sanitize()
+		TagsConfig: TagsConfig{},
+		API:        APIConfig{Site: "datadoghq.com"},
+
+		Metrics: MetricsConfig{
+			Mode: DogStatsDMode,
+
+			DogStatsD: DogStatsDConfig{
+				Endpoint:  "127.0.0.1:8125",
+				Telemetry: true,
+			},
+
+			Agentless: AgentlessConfig{},
+		},
+	})
+
+	invalidConfig := cfg.Exporters["datadog/invalid"].(*Config)
+	err = invalidConfig.Sanitize()
+	require.Error(t, err)
+
+	invalidConfig2 := cfg.Exporters["datadog/agentless/invalid"].(*Config)
+	err = invalidConfig2.Sanitize()
 	require.Error(t, err)
 
 }
@@ -81,24 +116,15 @@ func TestOverrideMetricsURL(t *testing.T) {
 
 	const DebugEndpoint string = "http://localhost:8080"
 
-	cfg := &Config{
-		APIKey:     "notnull",
-		Site:       DefaultSite,
-		MetricsURL: DebugEndpoint,
-		Mode:       APIMode,
+	cfg := Config{
+		API: APIConfig{Key: "notnull", Site: DefaultSite},
+		Metrics: MetricsConfig{
+			Mode:      AgentlessMode,
+			Agentless: AgentlessConfig{Endpoint: DebugEndpoint},
+		},
 	}
 
 	err := cfg.Sanitize()
 	require.NoError(t, err)
-	assert.Equal(t, cfg.MetricsURL, DebugEndpoint)
-}
-
-// TestUnsetAPIKey tests that the config sanitizing throws an error
-// when the API key has not been set
-func TestUnsetAPIKey(t *testing.T) {
-
-	cfg := &Config{}
-	err := cfg.Sanitize()
-
-	require.Error(t, err)
-}
+	assert.Equal(t, cfg.Metrics.Agentless.Endpoint, DebugEndpoint)
+}		   

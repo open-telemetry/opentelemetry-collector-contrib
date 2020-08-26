@@ -34,12 +34,14 @@ type MetricsExporter interface {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (MetricsExporter, error) {
-	switch cfg.Mode {
-	case AgentMode:
+	switch cfg.Metrics.Mode {
+	case DogStatsDMode:
 		return newDogStatsDExporter(logger, cfg)
+	case NoneMode:
+		return nil, fmt.Errorf("Metrics exporter disabled for Datadog exporter")
 	}
 
-	return nil, fmt.Errorf("Unsupported mode: '%s'", cfg.Mode)
+	return nil, fmt.Errorf("Unsupported mode: '%s'", cfg.Metrics.Mode)
 }
 
 type MetricType int

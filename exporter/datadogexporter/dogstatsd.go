@@ -32,10 +32,18 @@ type dogStatsDExporter struct {
 
 func newDogStatsDExporter(logger *zap.Logger, cfg *Config) (*dogStatsDExporter, error) {
 
+	options := []statsd.Option{
+		statsd.WithNamespace(cfg.Metrics.Namespace),
+		statsd.WithTags(cfg.TagsConfig.GetTags()),
+	}
+
+	if !cfg.Metrics.DogStatsD.Telemetry {
+		options = append(options, statsd.WithoutTelemetry())
+	}
+
 	client, err := statsd.New(
-		cfg.MetricsURL,
-		statsd.WithNamespace("opentelemetry."),
-		statsd.WithTags(cfg.Tags),
+		cfg.Metrics.DogStatsD.Endpoint,
+		options...,
 	)
 
 	if err != nil {
