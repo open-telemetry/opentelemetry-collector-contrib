@@ -16,7 +16,7 @@ docker build -f cmd/otelcontribcol/Dockerfile -t otelcontribcol .
 
 ## Differences from the core release
 
-SumoLogic version of OpenTelemetry Collector introduces a number of additions on the plain version:
+SumoLogic version of OpenTelemetry Collector introduces a number of additions over the plain version:
 
 * Extensions to [k8sprocessor](https://github.com/SumoLogic/opentelemetry-collector-contrib/tree/master/processor/k8sprocessor) 
   which include more tags being collected and field extraction enhancements
