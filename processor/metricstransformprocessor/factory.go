@@ -17,6 +17,7 @@ package metricstransformprocessor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -59,7 +60,7 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg))
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.ApplicationStartInfo.Version))
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
@@ -100,7 +101,7 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildHelperConfig constructs the maps that will be useful for the operations
-func buildHelperConfig(config *Config) []internalTransform {
+func buildHelperConfig(config *Config, version string) []internalTransform {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 		helperT := internalTransform{
@@ -110,11 +111,13 @@ func buildHelperConfig(config *Config) []internalTransform {
 			Operations: make([]internalOperation, len(t.Operations)),
 		}
 		for j, op := range t.Operations {
+			op.NewValue = strings.ReplaceAll(op.NewValue, "{{version}}", version)
+
 			mtpOp := internalOperation{
 				configOperation: op,
 			}
 			if len(op.ValueActions) > 0 {
-				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions)
+				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions, version)
 			}
 			if op.Action == AggregateLabels {
 				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
@@ -129,10 +132,11 @@ func buildHelperConfig(config *Config) []internalTransform {
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
-func createLabelValueMapping(valueActions []ValueAction) map[string]string {
+func createLabelValueMapping(valueActions []ValueAction, version string) map[string]string {
 	mapping := make(map[string]string)
-	for _, valueAction := range valueActions {
-		mapping[valueAction.Value] = valueAction.NewValue
+	for i := 0; i < len(valueActions); i++ {
+		valueActions[i].NewValue = strings.ReplaceAll(valueActions[i].NewValue, "{{version}}", version)
+		mapping[valueActions[i].Value] = valueActions[i].NewValue
 	}
 	return mapping
 }
@@ -141,8 +145,8 @@ func createLabelValueMapping(valueActions []ValueAction) map[string]string {
 // Returns the set of strings
 func sliceToSet(slice []string) map[string]bool {
 	set := make(map[string]bool, len(slice))
-	for _, label := range slice {
-		set[label] = true
+	for _, s := range slice {
+		set[s] = true
 	}
 	return set
 }
