@@ -59,6 +59,7 @@ func TestStabilityTracesOpenCensus(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 	)
 }
 
@@ -74,6 +75,7 @@ func TestStabilityTracesSAPM(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 	)
 }
 
@@ -89,6 +91,7 @@ func TestStabilityTracesOTLP(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 	)
 }
 
@@ -104,6 +107,7 @@ func TestStabilityTracesJaegerGRPC(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 	)
 }
 
@@ -119,5 +123,6 @@ func TestStabilityTracesZipkin(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		processorsConfig,
+		nil,
 	)
 }

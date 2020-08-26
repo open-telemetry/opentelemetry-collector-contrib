@@ -85,6 +85,7 @@ func TestTrace10kSPS(t *testing.T) {
 				test.resourceSpec,
 				contribPerfResultsSummary,
 				processors,
+				nil,
 			)
 		})
 	}
