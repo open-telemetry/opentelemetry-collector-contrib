@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
+	go.opentelemetry.io/collector v0.8.1-0.20200826180016-7f13eb66c333
 	go.uber.org/zap v1.15.0
 	google.golang.org/protobuf v1.25.0
 )
@@ -18,3 +18,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../../receiver/k8sclusterreceiver
+
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

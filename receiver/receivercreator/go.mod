@@ -10,7 +10,7 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
+	go.opentelemetry.io/collector v0.8.1-0.20200826180016-7f13eb66c333
 	go.uber.org/zap v1.15.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
@@ -21,3 +21,5 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
+
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
