@@ -16,10 +16,7 @@ package prometheusexecreceiver
 
 import (
 	"context"
-	"fmt"
-	"net"
 	"path"
-	"reflect"
 	"testing"
 	"time"
 
@@ -290,9 +287,7 @@ func TestGetReceiverConfig(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			test.config.SetName(test.customName)
 			got := getPromReceiverConfig(test.config)
-			if !reflect.DeepEqual(got, test.wantReceiverConfig) {
-				t.Errorf("getReceiverConfig() got = %+v, want %+v", got, test.wantReceiverConfig)
-			}
+			assert.Equal(t, test.wantReceiverConfig, got)
 		})
 	}
 }
@@ -445,9 +440,7 @@ func TestGetSubprocessConfig(t *testing.T) {
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := getSubprocessConfig(test.config)
-			if !reflect.DeepEqual(got, test.wantSubprocessConfig) {
-				t.Errorf("getSubprocessConfig() got = %+v, want %+v", got, test.wantSubprocessConfig)
-			}
+			assert.Equal(t, test.wantSubprocessConfig, got)
 		})
 	}
 }
@@ -527,26 +520,9 @@ func TestExtractName(t *testing.T) {
 	for _, test := range customNameTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := extractName(test.config)
-			if !reflect.DeepEqual(got, test.want) {
-				t.Errorf("getCustomName() got = %v, want %v", got, test.want)
-			}
+			assert.Equal(t, test.want, got)
 		})
 	}
-}
-
-func TestGenerateRandomPort(t *testing.T) {
-	t.Run("TestGenerateRandomPort", func(t *testing.T) {
-		testPort := 35000
-		holdPort, _ := net.Listen("tcp", fmt.Sprintf(":%v", testPort))
-		got, err := generateRandomPort()
-		if err != nil {
-			t.Errorf("generateRandomPort() returned an error: %w", err)
-		}
-		if got == testPort {
-			t.Errorf("generateRandomPort() got = %v, wanted something different since this port is in use", got)
-		}
-		holdPort.Close()
-	})
 }
 
 func TestFillPortPlaceholders(t *testing.T) {
@@ -703,9 +679,8 @@ func TestFillPortPlaceholders(t *testing.T) {
 	for _, test := range fillPortPlaceholdersTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.wrapper.fillPortPlaceholders(test.newPort)
-			if got.Command != test.want.Command || !reflect.DeepEqual(got.Env, test.want.Env) {
-				t.Errorf("fillPortPlaceholders() got = %v, want %v", got, test.want)
-			}
+			assert.Equal(t, test.want.Command, got.Command)
+			assert.Equal(t, test.want.Env, got.Env)
 		})
 	}
 }
@@ -781,8 +756,8 @@ func TestGetDelay(t *testing.T) {
 			got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
 
 			if test.name == "healthy process" {
-				if !reflect.DeepEqual(got, test.wantDelay) {
-					t.Errorf("getDelay() got = %v, want %v", got, test.wantDelay)
+				if assert.NotEqual(t, test.wantDelay, got) {
+					assert.Fail(t, "getDelay() got = %v, want %v", got, test.wantDelay)
 					return
 				}
 			}
@@ -790,7 +765,6 @@ func TestGetDelay(t *testing.T) {
 			if previousResult > got {
 				t.Errorf("getDelay() got = %v, want something larger than the previous result %v", got, previousResult)
 			}
-
 			previousResult = got
 		})
 	}
@@ -802,9 +776,7 @@ func TestComputeCrashCount(t *testing.T) {
 	for _, test := range getDelayAndComputeCrashCountTests {
 		t.Run(test.name, func(t *testing.T) {
 			got := per.computeCrashCount(test.elapsed, test.crashCount)
-			if got != test.wantCrashCount {
-				t.Errorf("computeCrashCount() got = %v, want %v", got, test.wantCrashCount)
-			}
+			assert.Equal(t, test.wantCrashCount, got)
 		})
 	}
 }
