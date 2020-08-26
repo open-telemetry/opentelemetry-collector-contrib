@@ -108,13 +108,13 @@ func (s *sfxDPClient) pushMetricsDataForToken(
 		return numTimeseries, consumererror.Permanent(err)
 	}
 
-	// Override access token in headers map if it's non empty.
-	if accessToken != "" {
-		s.headers[splunk.SFxAccessTokenHeader] = accessToken
-	}
-
 	for k, v := range s.headers {
 		req.Header.Set(k, v)
+	}
+
+	// Override access token in headers map if it's non empty.
+	if accessToken != "" {
+		req.Header.Set(splunk.SFxAccessTokenHeader, accessToken)
 	}
 
 	if compressed {

@@ -219,6 +219,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		name                     string
 		accessTokenPassthrough   bool
 		metrics                  pdata.Metrics
+		additionalHeaders        map[string]string
 		failHTTP                 bool
 		droppedTimeseriesCount   int
 		numPushDataCallsPerToken map[string]int
@@ -253,6 +254,17 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
 			numPushDataCallsPerToken: map[string]int{
 				fromHeaders: 1,
+			},
+		},
+		{
+			name:                   "override user-specified token-like header",
+			accessTokenPassthrough: true,
+			metrics:                validMetricsWithToken(true, fromLabels[0]),
+			additionalHeaders: map[string]string{
+				"x-sf-token": "user-specified",
+			},
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
 			},
 		},
 		{
@@ -410,6 +422,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				}},
 				accessTokenPassthrough: tt.accessTokenPassthrough,
 				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
+			}
+
+			for k, v := range tt.additionalHeaders {
+				dpClient.headers[k] = v
 			}
 
 			numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), tt.metrics)
