@@ -168,7 +168,8 @@ class JaegerSpanExporter(SpanExporter):
 
         if self.collector is not None:
             self.collector.submit(batch)
-        self.agent_client.emit(batch)
+        else:
+            self.agent_client.emit(batch)
 
         return SpanExportResult.SUCCESS
 

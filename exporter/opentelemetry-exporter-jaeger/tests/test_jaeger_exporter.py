@@ -367,7 +367,7 @@ class TestJaegerSpanExporter(unittest.TestCase):
         exporter._collector = collector_mock
 
         exporter.export((self._test_span,))
-        self.assertEqual(agent_client_mock.emit.call_count, 2)
+        self.assertEqual(agent_client_mock.emit.call_count, 1)
         self.assertEqual(collector_mock.submit.call_count, 1)
 
     def test_agent_client(self):
