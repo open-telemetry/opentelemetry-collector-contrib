@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 go 1.14
 
 require (
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.3
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.4
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.2.2-0.20200728233621-2752da7eaab7
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.6.1
