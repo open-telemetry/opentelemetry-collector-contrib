@@ -385,9 +385,6 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 				token := r.Header.Get("x-sf-token")
 				receivedTokens.tokens = append(receivedTokens.tokens, token)
-				if _, ok := receivedTokens.totalCalls[token]; !ok {
-					receivedTokens.totalCalls[token] = 0
-				}
 				receivedTokens.totalCalls[token]++
 
 				receivedTokens.Unlock()
