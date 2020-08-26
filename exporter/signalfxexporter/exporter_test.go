@@ -216,36 +216,44 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                   string
-		accessTokenPassthrough bool
-		expectedTokens         []string
-		metrics                pdata.Metrics
-		failHTTP               bool
-		droppedTimeseriesCount int
+		name                     string
+		accessTokenPassthrough   bool
+		metrics                  pdata.Metrics
+		failHTTP                 bool
+		droppedTimeseriesCount   int
+		numPushDataCallsPerToken map[string]int
 	}{
 		{
 			name:                   "passthrough access token and included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			expectedTokens:         fromLabels[:1],
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
+			},
 		},
 		{
 			name:                   "passthrough access token and not included in md",
 			accessTokenPassthrough: true,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			expectedTokens:         []string{fromHeaders},
+			numPushDataCallsPerToken: map[string]int{
+				fromHeaders: 1,
+			},
 		},
 		{
 			name:                   "don't passthrough access token and included in md",
 			accessTokenPassthrough: false,
 			metrics:                validMetricsWithToken(true, fromLabels[0]),
-			expectedTokens:         []string{fromHeaders},
+			numPushDataCallsPerToken: map[string]int{
+				fromHeaders: 1,
+			},
 		},
 		{
 			name:                   "don't passthrough access token and not included in md",
 			accessTokenPassthrough: false,
 			metrics:                validMetricsWithToken(false, fromLabels[0]),
-			expectedTokens:         []string{fromHeaders},
+			numPushDataCallsPerToken: map[string]int{
+				fromHeaders: 1,
+			},
 		},
 		{
 			name:                   "use token from header when resource is nil",
@@ -266,7 +274,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 					},
 				},
 			}),
-			expectedTokens: []string{fromHeaders},
+			numPushDataCallsPerToken: map[string]int{
+				fromHeaders: 1,
+			},
 		},
 		{
 			name:                   "multiple tokens passed through",
@@ -277,9 +287,53 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
 				mds.ResourceMetrics().Resize(2)
 				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+
 				return pdatautil.MetricsFromInternalMetrics(mds)
 			}(),
-			expectedTokens: fromLabels,
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
+				fromLabels[1]: 1,
+			},
+		},
+		{
+			name:                   "multiple tokens passed through - multiple md with same token",
+			accessTokenPassthrough: true,
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
+
+				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
+				mds.ResourceMetrics().Resize(3)
+				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+
+				return pdatautil.MetricsFromInternalMetrics(mds)
+			}(),
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
+				fromLabels[1]: 2,
+			},
+		},
+		{
+			name:                   "multiple tokens passed through - multiple md with same token grouped together",
+			accessTokenPassthrough: true,
+			metrics: func() pdata.Metrics {
+				forFirstToken := validMetricsWithToken(true, fromLabels[0])
+				forSecondToken := validMetricsWithToken(true, fromLabels[1])
+				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
+
+				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
+				mds.ResourceMetrics().Resize(3)
+				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+
+				return pdatautil.MetricsFromInternalMetrics(mds)
+			}(),
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
+				fromLabels[1]: 1,
+			},
 		},
 		{
 			name:                   "multiple tokens passed through - one corrupted",
@@ -292,7 +346,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
 				return pdatautil.MetricsFromInternalMetrics(mds)
 			}(),
-			expectedTokens: []string{fromLabels[0], fromHeaders},
+			numPushDataCallsPerToken: map[string]int{
+				fromLabels[0]: 1,
+				fromHeaders:   1,
+			},
 		},
 		{
 			name:                   "multiple tokens passed through - HTTP error cases",
@@ -312,9 +369,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		receivedTokens := struct {
 			sync.Mutex
-			tokens []string
+			tokens     []string
+			totalCalls map[string]int
 		}{}
 		receivedTokens.tokens = []string{}
+		receivedTokens.totalCalls = map[string]int{}
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tt.failHTTP {
@@ -323,7 +382,14 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				}
 				assert.Equal(t, "test", r.Header.Get("test_header_"))
 				receivedTokens.Lock()
-				receivedTokens.tokens = append(receivedTokens.tokens, r.Header.Get("x-sf-token"))
+
+				token := r.Header.Get("x-sf-token")
+				receivedTokens.tokens = append(receivedTokens.tokens, token)
+				if _, ok := receivedTokens.totalCalls[token]; !ok {
+					receivedTokens.totalCalls[token] = 0
+				}
+				receivedTokens.totalCalls[token]++
+
 				receivedTokens.Unlock()
 				w.WriteHeader(http.StatusAccepted)
 			}))
@@ -359,7 +425,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 
 			assert.Equal(t, 0, numDroppedTimeSeries)
 			assert.NoError(t, err)
-			require.ElementsMatch(t, tt.expectedTokens, receivedTokens.tokens)
+			require.Equal(t, tt.numPushDataCallsPerToken, receivedTokens.totalCalls)
+			for _, rt := range receivedTokens.tokens {
+				_, ok := tt.numPushDataCallsPerToken[rt]
+				require.True(t, ok)
+			}
 		})
 	}
 }

@@ -53,19 +53,37 @@ func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
 ) (droppedTimeSeries int, err error) {
-	metricDataByToken := s.metricsByAccessToken(md)
+	metricsData := pdatautil.MetricsToMetricsData(md)
 	var numDroppedTimeseries int
 	var errs []error
 
-	for accessToken, metricsData := range metricDataByToken {
-		// TODO:
-		// 1) To leverage the queued retry mechanism available in new exporters,
-		// 	  look for error cases that are non-permanent and track the list of metric
-		//    data that needs to be retried. This will be done once partial retry support
-		//    is added for metrics type.
-		// 2) Also consider invoking in a goroutine to some concurrency going, in case
-		//    there are a lot of tokens.
-		droppedCount, err := s.pushMetricsDataForToken(metricsData, accessToken)
+	var currentToken string
+	var batchStartIdx int
+	for i := range metricsData {
+		metricToken := s.retrieveAccessToken(metricsData[i])
+		if currentToken != metricToken {
+			if batchStartIdx < i {
+				// TODO:
+				// 1) To leverage the queued retry mechanism available in new exporters,
+				// 	  look for error cases that are non-permanent and track the list of metric
+				//    data that needs to be retried. This will be done once partial retry support
+				//    is added for metrics type.
+				// 2) Also consider invoking in a goroutine to some concurrency going, in case
+				//    there are a lot of tokens.
+				droppedCount, err := s.pushMetricsDataForToken(metricsData[batchStartIdx:i], currentToken)
+				numDroppedTimeseries += droppedCount
+				if err != nil {
+					errs = append(errs, err)
+				}
+				batchStartIdx = i
+			}
+			currentToken = metricToken
+		}
+	}
+
+	// Ensure to get the last chunk of metrics.
+	if len(metricsData[batchStartIdx:]) > 0 {
+		droppedCount, err := s.pushMetricsDataForToken(metricsData[batchStartIdx:], currentToken)
 		numDroppedTimeseries += droppedCount
 		if err != nil {
 			errs = append(errs, err)
@@ -134,30 +152,6 @@ func timeseriesCount(metricsData []consumerdata.MetricsData) int {
 	return numTimeseries
 }
 
-func (s *sfxDPClient) metricsByAccessToken(md pdata.Metrics) map[string][]consumerdata.MetricsData {
-	metricsData := pdatautil.MetricsToMetricsData(md)
-
-	// If access token pass through is disabled, return.
-	if !s.accessTokenPassthrough {
-		return map[string][]consumerdata.MetricsData{
-			"": metricsData,
-		}
-	}
-
-	metricsDataByToken := make(map[string][]consumerdata.MetricsData, 1)
-
-	for _, metricData := range metricsData {
-		accessToken := s.retrieveAccessToken(metricData)
-		_, ok := metricsDataByToken[accessToken]
-		if !ok {
-			metricsDataByToken[accessToken] = []consumerdata.MetricsData{}
-		}
-
-		metricsDataByToken[accessToken] = append(metricsDataByToken[accessToken], metricData)
-	}
-	return metricsDataByToken
-}
-
 func buildHeaders(config *Config) map[string]string {
 	headers := map[string]string{
 		"Connection":   "keep-alive",
@@ -191,8 +185,8 @@ func (s *sfxDPClient) encodeBody(dps []*sfxpb.DataPoint) (bodyReader io.Reader, 
 }
 
 func (s *sfxDPClient) retrieveAccessToken(md consumerdata.MetricsData) string {
-	if md.Resource == nil {
-		// Nothing to do if Resource is nil.
+	if !s.accessTokenPassthrough || md.Resource == nil {
+		// Nothing to do if token is pass through not configured or resource is nil.
 		return ""
 	}
 
