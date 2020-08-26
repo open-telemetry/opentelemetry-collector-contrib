@@ -17,9 +17,8 @@ package redisreceiver
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Helper functions that produce protobuf
@@ -79,16 +78,14 @@ func buildKeyspaceTTLMetric(k *keyspace, t *timeBundle) *metricspb.Metric {
 //   * pt -- the protobuf Point to be wrapped
 //   * currTime -- the timestamp to be put on the Point (not on the timeseries)
 func newProtoMetric(m *redisMetric, pt *metricspb.Point, t *timeBundle) *metricspb.Metric {
-	var startTime *timestamp.Timestamp
+	var startTime *timestamppb.Timestamp
 
 	if m.mdType == metricspb.MetricDescriptor_CUMULATIVE_INT64 ||
 		m.mdType == metricspb.MetricDescriptor_CUMULATIVE_DOUBLE {
-		ts, _ := ptypes.TimestampProto(t.serverStart)
-		startTime = ts
+		startTime = timestamppb.New(t.serverStart)
 	}
 
-	ts, _ := ptypes.TimestampProto(t.current)
-	pt.Timestamp = ts
+	pt.Timestamp = timestamppb.New(t.current)
 	labelKeys, labelVals := buildLabels(m.labels, m.labelDescriptions)
 	pbMetric := &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{

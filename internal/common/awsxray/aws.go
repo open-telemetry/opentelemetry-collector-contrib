@@ -40,4 +40,23 @@ const (
 
 	// AWSXRayTracedAttribute is the `traced` field in an X-Ray subsegment
 	AWSXRayTracedAttribute = "aws.xray.traced"
+
+	// AWSXraySegmentMetadataAttributePrefix is the prefix of the attribute that
+	// will be treated by the X-Ray exporter as metadata. The key of a metadata
+	// will be AWSXraySegmentMetadataAttributePrefix + <metadata_key>.
+	AWSXraySegmentMetadataAttributePrefix = "aws.xray.metadata."
+
+	// AWSXrayRetriesAttribute is the `retries` field in an X-Ray (sub)segment.
+	AWSXrayRetriesAttribute = "aws.xray.retries"
+
+	// AWSXrayExceptionIDAttribute is the `id` field in an exception
+	AWSXrayExceptionIDAttribute = "aws.xray.exception.id"
+	// AWSXrayExceptionRemoteAttribute is the `remote` field in an exception
+	AWSXrayExceptionRemoteAttribute = "aws.xray.exception.remote"
+	// AWSXrayExceptionTruncatedAttribute is the `truncated` field in an exception
+	AWSXrayExceptionTruncatedAttribute = "aws.xray.exception.truncated"
+	// AWSXrayExceptionSkippedAttribute is the `skipped` field in an exception
+	AWSXrayExceptionSkippedAttribute = "aws.xray.exception.skipped"
+	// AWSXrayExceptionCauseAttribute is the `cause` field in an exception
+	AWSXrayExceptionCauseAttribute = "aws.xray.exception.cause"
 )

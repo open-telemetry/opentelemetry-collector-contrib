@@ -69,6 +69,7 @@ func TestMetric10kDPS(t *testing.T) {
 				test.resourceSpec,
 				contribPerfResultsSummary,
 				nil,
+				nil,
 			)
 		})
 	}

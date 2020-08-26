@@ -78,32 +78,29 @@ func TestSetExtraLabels(t *testing.T) {
 	}{
 		{
 			name:     "no_labels",
-			metadata: NewMetadata([]MetadataLabel{}, nil),
+			metadata: NewMetadata([]MetadataLabel{}, nil, nil),
 			args:     []string{"uid", "container.id", "container"},
 			want:     map[string]string{},
 		},
 		{
 			name: "set_container_id_valid",
-			metadata: NewMetadata(
-				[]MetadataLabel{MetadataLabelContainerID},
-				&v1.PodList{
-					Items: []v1.Pod{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								UID: types.UID("uid-1234"),
-							},
-							Status: v1.PodStatus{
-								ContainerStatuses: []v1.ContainerStatus{
-									{
-										Name:        "container1",
-										ContainerID: "test-container",
-									},
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: types.UID("uid-1234"),
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container1",
+									ContainerID: "test-container",
 								},
 							},
 						},
 					},
 				},
-			),
+			}, nil),
 			args: []string{"uid-1234", "container.id", "container1"},
 			want: map[string]string{
 				string(MetadataLabelContainerID): "test-container",
@@ -111,63 +108,57 @@ func TestSetExtraLabels(t *testing.T) {
 		},
 		{
 			name:      "set_container_id_no_metadata",
-			metadata:  NewMetadata([]MetadataLabel{MetadataLabelContainerID}, nil),
+			metadata:  NewMetadata([]MetadataLabel{MetadataLabelContainerID}, nil, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pods metadata were not fetched",
 		},
 		{
 			name: "set_container_id_not_found",
-			metadata: NewMetadata(
-				[]MetadataLabel{MetadataLabelContainerID},
-				&v1.PodList{
-					Items: []v1.Pod{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								UID: types.UID("uid-1234"),
-							},
-							Status: v1.PodStatus{
-								ContainerStatuses: []v1.ContainerStatus{
-									{
-										Name:        "container2",
-										ContainerID: "another-container",
-									},
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: types.UID("uid-1234"),
+						},
+						Status: v1.PodStatus{
+							ContainerStatuses: []v1.ContainerStatus{
+								{
+									Name:        "container2",
+									ContainerID: "another-container",
 								},
 							},
 						},
 					},
 				},
-			),
+			}, nil),
 			args:      []string{"uid-1234", "container.id", "container1"},
 			wantError: "pod \"uid-1234\" with container \"container1\" not found in the fetched metadata",
 		},
 		{
 			name:      "set_volume_type_no_metadata",
-			metadata:  NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil),
+			metadata:  NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
 			args:      []string{"uid-1234", "k8s.volume.type", "volume0"},
 			wantError: "pods metadata were not fetched",
 		},
 		{
 			name: "set_volume_type_not_found",
-			metadata: NewMetadata(
-				[]MetadataLabel{MetadataLabelVolumeType},
-				&v1.PodList{
-					Items: []v1.Pod{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								UID: types.UID("uid-1234"),
-							},
-							Spec: v1.PodSpec{
-								Volumes: []v1.Volume{
-									{
-										Name:         "volume0",
-										VolumeSource: v1.VolumeSource{},
-									},
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: types.UID("uid-1234"),
+						},
+						Spec: v1.PodSpec{
+							Volumes: []v1.Volume{
+								{
+									Name:         "volume0",
+									VolumeSource: v1.VolumeSource{},
 								},
 							},
 						},
 					},
 				},
-			),
+			}, nil),
 			args:      []string{"uid-1234", "k8s.volume.type", "volume1"},
 			wantError: "pod \"uid-1234\" with volume \"volume1\" not found in the fetched metadata",
 		},
@@ -247,11 +238,63 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 		{
 			name: "persistentVolumeClaim",
 			vs: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{},
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "claim-name",
+				},
 			},
 			args: []string{"uid-1234", "k8s.volume.type"},
 			want: map[string]string{
-				"k8s.volume.type": "persistentVolumeClaim",
+				"k8s.volume.type":                "persistentVolumeClaim",
+				"k8s.persistentvolumeclaim.name": "claim-name",
+			},
+		},
+		{
+			name: "awsElasticBlockStore",
+			vs: v1.VolumeSource{
+				AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
+					VolumeID:  "volume_id",
+					FSType:    "fs_type",
+					Partition: 10,
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type": "awsElasticBlockStore",
+				"aws.volume.id":   "volume_id",
+				"fs.type":         "fs_type",
+				"partition":       "10",
+			},
+		},
+		{
+			name: "gcePersistentDisk",
+			vs: v1.VolumeSource{
+				GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
+					PDName:    "pd_name",
+					FSType:    "fs_type",
+					Partition: 10,
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type": "gcePersistentDisk",
+				"gce.pd.name":     "pd_name",
+				"fs.type":         "fs_type",
+				"partition":       "10",
+			},
+		},
+		{
+			name: "glusterfs",
+			vs: v1.VolumeSource{
+				Glusterfs: &v1.GlusterfsVolumeSource{
+					EndpointsName: "endspoints_name",
+					Path:          "path",
+				},
+			},
+			args: []string{"uid-1234", "k8s.volume.type"},
+			want: map[string]string{
+				"k8s.volume.type":          "glusterfs",
+				"glusterfs.endpoints.name": "endspoints_name",
+				"glusterfs.path":           "path",
 			},
 		},
 		{
@@ -265,26 +308,23 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fields := map[string]string{}
 			volName := "volume0"
-			metadata := NewMetadata(
-				[]MetadataLabel{MetadataLabelVolumeType},
-				&v1.PodList{
-					Items: []v1.Pod{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								UID: types.UID("uid-1234"),
-							},
-							Spec: v1.PodSpec{
-								Volumes: []v1.Volume{
-									{
-										Name:         volName,
-										VolumeSource: tt.vs,
-									},
+			metadata := NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: types.UID("uid-1234"),
+						},
+						Spec: v1.PodSpec{
+							Volumes: []v1.Volume{
+								{
+									Name:         volName,
+									VolumeSource: tt.vs,
 								},
 							},
 						},
 					},
 				},
-			)
+			}, nil)
 			metadata.setExtraLabels(fields, tt.args[0], MetadataLabel(tt.args[1]), volName)
 			assert.Equal(t, tt.want, fields)
 		})

@@ -310,18 +310,19 @@ func TestSpanHTTPURL(t *testing.T) {
 			"http.target": pdata.NewAttributeValueString("/foo?bar"),
 		})
 	})
-	t.Run("scheme_netpeername_nethostport_target", func(t *testing.T) {
+	t.Run("scheme_netpeername_netpeerport_target", func(t *testing.T) {
 		test(t, "https://testing.invalid:80/foo?bar", map[string]pdata.AttributeValue{
 			"http.scheme":   pdata.NewAttributeValueString("https"),
 			"net.peer.name": pdata.NewAttributeValueString("testing.invalid"),
+			"net.peer.ip":   pdata.NewAttributeValueString("::1"), // net.peer.name preferred
 			"net.peer.port": pdata.NewAttributeValueInt(80),
 			"http.target":   pdata.NewAttributeValueString("/foo?bar"),
 		})
 	})
-	t.Run("scheme_nethostname_nethostport_target", func(t *testing.T) {
+	t.Run("scheme_netpeerip_netpeerport_target", func(t *testing.T) {
 		test(t, "https://[::1]:80/foo?bar", map[string]pdata.AttributeValue{
 			"http.scheme":   pdata.NewAttributeValueString("https"),
-			"net.peer.name": pdata.NewAttributeValueString("::1"),
+			"net.peer.ip":   pdata.NewAttributeValueString("::1"),
 			"net.peer.port": pdata.NewAttributeValueInt(80),
 			"http.target":   pdata.NewAttributeValueString("/foo?bar"),
 		})
@@ -332,6 +333,51 @@ func TestSpanHTTPURL(t *testing.T) {
 		test(t, "http://testing.invalid:80/foo?bar", map[string]pdata.AttributeValue{
 			"http.host":   pdata.NewAttributeValueString("testing.invalid:80"),
 			"http.target": pdata.NewAttributeValueString("/foo?bar"),
+		})
+	})
+}
+
+func TestSpanHTTPDestination(t *testing.T) {
+	test := func(t *testing.T, expectedAddr string, expectedPort int, expectedName string, expectedResource string, attrs map[string]pdata.AttributeValue) {
+		span := spanWithAttributes(t, attrs)
+		assert.Equal(t, &model.DestinationSpanContext{
+			Address: expectedAddr,
+			Port:    expectedPort,
+			Service: &model.DestinationServiceSpanContext{
+				Type:     "external",
+				Name:     expectedName,
+				Resource: expectedResource,
+			},
+		}, span.Context.Destination)
+	}
+	t.Run("url_default_port_specified", func(t *testing.T) {
+		test(t, "testing.invalid", 443, "https://testing.invalid", "testing.invalid:443", map[string]pdata.AttributeValue{
+			"http.url": pdata.NewAttributeValueString("https://testing.invalid:443/foo?bar"),
+		})
+	})
+	t.Run("url_port_scheme", func(t *testing.T) {
+		test(t, "testing.invalid", 443, "https://testing.invalid", "testing.invalid:443", map[string]pdata.AttributeValue{
+			"http.url": pdata.NewAttributeValueString("https://testing.invalid/foo?bar"),
+		})
+	})
+	t.Run("url_non_default_port", func(t *testing.T) {
+		test(t, "testing.invalid", 444, "https://testing.invalid:444", "testing.invalid:444", map[string]pdata.AttributeValue{
+			"http.url": pdata.NewAttributeValueString("https://testing.invalid:444/foo?bar"),
+		})
+	})
+	t.Run("scheme_host_target", func(t *testing.T) {
+		test(t, "testing.invalid", 444, "https://testing.invalid:444", "testing.invalid:444", map[string]pdata.AttributeValue{
+			"http.scheme": pdata.NewAttributeValueString("https"),
+			"http.host":   pdata.NewAttributeValueString("testing.invalid:444"),
+			"http.target": pdata.NewAttributeValueString("/foo?bar"),
+		})
+	})
+	t.Run("scheme_netpeername_nethostport_target", func(t *testing.T) {
+		test(t, "::1", 444, "https://[::1]:444", "[::1]:444", map[string]pdata.AttributeValue{
+			"http.scheme":   pdata.NewAttributeValueString("https"),
+			"net.peer.ip":   pdata.NewAttributeValueString("::1"),
+			"net.peer.port": pdata.NewAttributeValueInt(444),
+			"http.target":   pdata.NewAttributeValueString("/foo?bar"),
 		})
 	})
 }
@@ -355,28 +401,75 @@ func TestSpanHTTPStatusCode(t *testing.T) {
 }
 
 func TestSpanDatabaseContext(t *testing.T) {
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md#mysql
+	connectionString := "Server=shopdb.example.com;Database=ShopDb;Uid=billing_user;TableCache=true;UseCompression=True;MinimumPoolSize=10;MaximumPoolSize=50;"
 	span := spanWithAttributes(t, map[string]pdata.AttributeValue{
-		"db.system":            pdata.NewAttributeValueString("sql"),
-		"db.name":              pdata.NewAttributeValueString("customers"),
-		"db.statement":         pdata.NewAttributeValueString("SELECT * FROM wuser_table"),
-		"db.user":              pdata.NewAttributeValueString("readonly_user"),
-		"db.connection_string": pdata.NewAttributeValueString("mysql://db.example.com:3306"),
+		"db.system":            pdata.NewAttributeValueString("mysql"),
+		"db.connection_string": pdata.NewAttributeValueString(connectionString),
+		"db.user":              pdata.NewAttributeValueString("billing_user"),
+		"db.name":              pdata.NewAttributeValueString("ShopDb"),
+		"db.statement":         pdata.NewAttributeValueString("SELECT * FROM orders WHERE order_id = 'o4711'"),
+		"net.peer.name":        pdata.NewAttributeValueString("shopdb.example.com"),
+		"net.peer.ip":          pdata.NewAttributeValueString("192.0.2.12"),
+		"net.peer.port":        pdata.NewAttributeValueInt(3306),
+		"net.transport":        pdata.NewAttributeValueString("IP.TCP"),
 	})
 
 	assert.Equal(t, "db", span.Type)
-	assert.Equal(t, "sql", span.Subtype)
+	assert.Equal(t, "mysql", span.Subtype)
 	assert.Equal(t, "", span.Action)
 
 	assert.Equal(t, &model.DatabaseSpanContext{
-		Type:      "sql",
-		Instance:  "customers",
-		Statement: "SELECT * FROM wuser_table",
-		User:      "readonly_user",
+		Type:      "mysql",
+		Instance:  "ShopDb",
+		Statement: "SELECT * FROM orders WHERE order_id = 'o4711'",
+		User:      "billing_user",
 	}, span.Context.Database)
 
 	assert.Equal(t, model.IfaceMap{
-		{Key: "db_connection_string", Value: "mysql://db.example.com:3306"},
+		{Key: "db_connection_string", Value: connectionString},
+		{Key: "net_transport", Value: "IP.TCP"},
 	}, span.Context.Tags)
+
+	assert.Equal(t, &model.DestinationSpanContext{
+		Address: "shopdb.example.com",
+		Port:    3306,
+		Service: &model.DestinationServiceSpanContext{
+			Type:     "db",
+			Name:     "mysql",
+			Resource: "mysql",
+		},
+	}, span.Context.Destination)
+}
+
+func TestInstrumentationLibrary(t *testing.T) {
+	var w fastjson.Writer
+	var recorder transporttest.RecorderTransport
+
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("root_span")
+
+	library := pdata.NewInstrumentationLibrary()
+	library.InitEmpty()
+	library.SetName("library-name")
+	library.SetVersion("1.2.3")
+
+	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	err := elastic.EncodeSpan(span, library, &w)
+	assert.NoError(t, err)
+	sendStream(t, &w, &recorder)
+
+	payloads := recorder.Payloads()
+	require.Len(t, payloads.Transactions, 1)
+	assert.Equal(t, &model.Context{
+		Service: &model.Service{
+			Framework: &model.Framework{
+				Name:    "library-name",
+				Version: "1.2.3",
+			},
+		},
+	}, payloads.Transactions[0].Context)
 }
 
 func transactionWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) model.Transaction {

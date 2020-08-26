@@ -23,12 +23,9 @@ import (
 )
 
 func MetricsData(
-	logger *zap.Logger,
-	summary *stats.Summary,
-	metadata Metadata,
-	typeStr string,
-	metricGroupsToCollect map[MetricGroup]bool,
-) []consumerdata.MetricsData {
+	logger *zap.Logger, summary *stats.Summary,
+	metadata Metadata, typeStr string,
+	metricGroupsToCollect map[MetricGroup]bool) []consumerdata.MetricsData {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,

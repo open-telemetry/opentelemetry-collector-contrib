@@ -22,7 +22,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -33,6 +32,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type metricLabel struct {
@@ -139,7 +139,7 @@ func TestCollectDServer(t *testing.T) {
 						{Value: "attr1val"},
 					},
 					Points: []*metricspb.Point{{
-						Timestamp: &timestamp.Timestamp{Seconds: 1415062577, Nanos: 494999808},
+						Timestamp: &timestamppb.Timestamp{Seconds: 1415062577, Nanos: 494999808},
 						Value: &metricspb.Point_DoubleValue{
 							DoubleValue: 2.1474,
 						}},

@@ -115,7 +115,7 @@ type AWSData struct {
 	RequestID    *string `json:"request_id,omitempty"`
 	QueueURL     *string `json:"queue_url,omitempty"`
 	TableName    *string `json:"table_name,omitempty"`
-	Retries      *int    `json:"retries,omitempty"`
+	Retries      *int64  `json:"retries,omitempty"`
 }
 
 // EC2Metadata represents the EC2 metadata field
@@ -177,8 +177,8 @@ type Exception struct {
 	Message   *string      `json:"message,omitempty"`
 	Type      *string      `json:"type,omitempty"`
 	Remote    *bool        `json:"remote,omitempty"`
-	Truncated *int         `json:"truncated,omitempty"`
-	Skipped   *int         `json:"skipped,omitempty"`
+	Truncated *int64       `json:"truncated,omitempty"`
+	Skipped   *int64       `json:"skipped,omitempty"`
 	Cause     *string      `json:"cause,omitempty"`
 	Stack     []StackFrame `json:"stack,omitempty"`
 }

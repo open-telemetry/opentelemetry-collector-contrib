@@ -23,7 +23,6 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
@@ -172,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 33, len(config.TranslationRules))
+	assert.Equal(t, 38, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -215,7 +215,8 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := md()
 
-	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
+	c := translation.NewMetricsConverter(zap.NewNop(), tr)
+	translated, _ := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)
@@ -269,7 +270,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func md() consumerdata.MetricsData {
+func md() []consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
@@ -287,7 +288,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "used",
 							HasValue: true,
@@ -302,7 +303,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -311,7 +312,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "free",
 							HasValue: true,
@@ -326,7 +327,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -350,7 +351,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -362,7 +363,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -371,7 +372,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -383,7 +384,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -392,7 +393,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -404,7 +405,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -413,7 +414,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -425,7 +426,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -451,7 +452,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
 							HasValue: true,
@@ -469,7 +470,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -478,7 +479,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
 							HasValue: true,
@@ -496,7 +497,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -519,7 +520,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -531,7 +532,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -554,7 +555,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -566,7 +567,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -589,7 +590,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -601,7 +602,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -613,7 +614,7 @@ func md() consumerdata.MetricsData {
 			},
 		},
 	}
-	return md
+	return []consumerdata.MetricsData{md}
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
@@ -642,16 +643,23 @@ func TestDefaultDiskTranslations(t *testing.T) {
 		m[pt.Metric] = l
 	}
 
-	dtPts := m["disk.total"]
-	require.Equal(t, 4, len(dtPts))
-	require.Equal(t, 4, len(dtPts[0].Dimensions))
+	_, ok := m["disk.total"]
+	require.False(t, ok)
 
-	dstPts := m["disk.summary_total"]
-	require.Equal(t, 1, len(dstPts))
-	require.Equal(t, 3, len(dstPts[0].Dimensions))
+	_, ok = m["disk.summary_total"]
+	require.False(t, ok)
 
-	utPts, ok := m["df_complex.used_total"]
+	_, ok = m["df_complex.used_total"]
+	require.False(t, ok)
+
+	du, ok := m["disk.utilization"]
 	require.True(t, ok)
-	require.Equal(t, 1, len(utPts))
-	require.Equal(t, 3, len(utPts[0].Dimensions))
+	require.Equal(t, 4, len(du[0].Dimensions))
+	// cheap test for pct conversion
+	require.True(t, *du[0].Value.DoubleValue > 1)
+
+	dsu, ok := m["disk.summary_utilization"]
+	require.True(t, ok)
+	require.Equal(t, 3, len(dsu[0].Dimensions))
+	require.True(t, *dsu[0].Value.DoubleValue > 1)
 }

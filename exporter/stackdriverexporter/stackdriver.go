@@ -121,6 +121,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		if err != nil {
 			return nil, err
 		}
+		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
 	}
 	if cfg.NumOfWorkers > 0 {
@@ -149,16 +150,25 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
+	var errors []error
+	var totalDropped int
+
 	mds := pdatautil.MetricsToMetricsData(m)
-	dropped := 0
 	for _, md := range mds {
-		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-		dropped += d
+		_, points := pdatautil.TimeseriesAndPointCount(md)
+		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+		recordPointCount(ctx, points-dropped, dropped, err)
+		totalDropped += dropped
 		if err != nil {
-			return dropped, err
+			errors = append(errors, err)
 		}
 	}
-	return dropped, nil
+
+	if len(errors) > 0 {
+		return totalDropped, componenterror.CombineErrors(errors)
+	}
+
+	return totalDropped, nil
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces

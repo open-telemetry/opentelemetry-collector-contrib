@@ -19,10 +19,9 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServiceName(t *testing.T) {
@@ -114,11 +113,11 @@ func TestKeyspaceMetrics(t *testing.T) {
 }
 
 func TestNewProtoMetric(t *testing.T) {
-	serverStartTime, _ := ptypes.TimestampProto(time.Unix(900, 0))
+	serverStartTime := timestamppb.New(time.Unix(900, 0))
 	tests := []struct {
 		name     string
 		mdType   metricspb.MetricDescriptor_Type
-		expected *timestamp.Timestamp
+		expected *timestamppb.Timestamp
 	}{
 		{"cumulative int", metricspb.MetricDescriptor_CUMULATIVE_INT64, serverStartTime},
 		{"cumulative double", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, serverStartTime},

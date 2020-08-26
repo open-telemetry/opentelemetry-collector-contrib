@@ -15,6 +15,7 @@
 package splunkhecexporter
 
 import (
+	"context"
 	"net/url"
 	"path"
 	"testing"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
@@ -32,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -65,7 +67,8 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateMetricsExporter(zap.NewNop(), e1)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	te, err := factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }
