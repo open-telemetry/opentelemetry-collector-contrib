@@ -39,4 +39,11 @@ type Config struct {
 	ResourceARN string `mapstructure:"resource_arn"`
 	// IAM role to upload segments to a different account.
 	RoleARN string `mapstructure:"role_arn"`
+	// By default, OpenTelemetry attributes are converted to X-Ray metadata, which are not indexed.
+	// Specify a list of attribute names to be converted to X-Ray annotations instead, which will be indexed.
+	// See annotation vs. metadata: https://docs.aws.amazon.com/xray/latest/devguide/xray-concepts.html#xray-concepts-annotations
+	IndexedAttributes []string `mapstructure:"indexed_attributes"`
+	// Set to true to convert all OpenTelemetry attributes to X-Ray annotation (indexed) ignoring the IndexedAttributes option.
+	// Default value: false
+	IndexAllAttributes bool `mapstructure:"index_all_attributes"`
 }
