@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 
 go 1.14
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray => ../../internal/common/awsxray
-
 require (
 	github.com/aws/aws-sdk-go v1.34.10
 	github.com/google/uuid v1.1.1
@@ -13,3 +11,8 @@ require (
 	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
 	go.uber.org/zap v1.15.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray => ../../internal/common/awsxray
+
+// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
+replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
