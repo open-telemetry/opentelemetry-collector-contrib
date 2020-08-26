@@ -46,6 +46,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/prometheusexecreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/receivercreator"
     schedule:
       interval: "weekly"
@@ -66,11 +70,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/statsdreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/common"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/common/awsxray"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
