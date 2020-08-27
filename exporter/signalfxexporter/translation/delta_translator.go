@@ -27,35 +27,41 @@ func newDeltaTranslator() *deltaTranslator {
 	return &deltaTranslator{prevPts: map[string]*sfxpb.DataPoint{}}
 }
 
-func (dt *deltaTranslator) translate(processedDataPoints []*sfxpb.DataPoint, tr Rule) []*sfxpb.DataPoint {
+func (t *deltaTranslator) translate(processedDataPoints []*sfxpb.DataPoint, tr Rule) []*sfxpb.DataPoint {
 	for _, currPt := range processedDataPoints {
 		deltaMetricName, ok := tr.Mapping[currPt.Metric]
 		if !ok {
 			// only metrics defined in Rule.Mapping get translated
 			continue
 		}
-
-		// check if we have a previous point for this metric + dimensions
-		dimKey := stringifyDimensions(currPt.Dimensions, nil)
-		fullKey := currPt.Metric + ":" + dimKey
-		prevPt, ok := dt.prevPts[fullKey]
-		dt.prevPts[fullKey] = currPt
-		if !ok {
-			// no previous point, so we can't calculate a delta
-			continue
-		}
-
-		var deltaPt *sfxpb.DataPoint
-		if currPt.Value.DoubleValue != nil && prevPt.Value.DoubleValue != nil {
-			deltaPt = doublePt(currPt, prevPt, deltaMetricName)
-		} else if currPt.Value.IntValue != nil && prevPt.Value.IntValue != nil {
-			deltaPt = intPt(currPt, prevPt, deltaMetricName)
-		} else {
+		deltaPt := t.deltaPt(deltaMetricName, currPt)
+		if deltaPt == nil {
 			continue
 		}
 		processedDataPoints = append(processedDataPoints, deltaPt)
 	}
 	return processedDataPoints
+}
+
+func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoint) *sfxpb.DataPoint {
+	// check if we have a previous point for this metric + dimensions
+	dimKey := stringifyDimensions(currPt.Dimensions, nil)
+	fullKey := currPt.Metric + ":" + dimKey
+	prevPt, ok := t.prevPts[fullKey]
+	t.prevPts[fullKey] = currPt
+	if !ok {
+		// no previous point, so we can't calculate a delta
+		return nil
+	}
+	var deltaPt *sfxpb.DataPoint
+	if currPt.Value.DoubleValue != nil && prevPt.Value.DoubleValue != nil {
+		deltaPt = doublePt(currPt, prevPt, deltaMetricName)
+	} else if currPt.Value.IntValue != nil && prevPt.Value.IntValue != nil {
+		deltaPt = intPt(currPt, prevPt, deltaMetricName)
+	} else {
+		return nil
+	}
+	return deltaPt
 }
 
 func doublePt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {
