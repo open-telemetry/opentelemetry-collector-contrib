@@ -82,14 +82,9 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 }
 
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
-	timeout := defaultTimeout
-	if cfg.Timeout > 0 {
-		timeout = cfg.Timeout
-	}
-
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
-		cloudtrace.WithTimeout(timeout),
+		cloudtrace.WithTimeout(getTimeout(cfg)),
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -125,6 +120,8 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
+
+		Timeout: getTimeout(cfg),
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -133,11 +130,6 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		}
 		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
-	}
-	if cfg.Timeout > 0 {
-		options.Timeout = cfg.Timeout
-	} else {
-		options.Timeout = defaultTimeout
 	}
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
@@ -209,4 +201,12 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	}
 
 	return numSpans - goodSpans, componenterror.CombineErrors(errs)
+}
+
+func getTimeout(cfg *Config) time.Duration {
+	if cfg.Timeout > 0 {
+		return cfg.Timeout
+	}
+
+	return defaultTimeout
 }
