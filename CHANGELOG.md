@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v0.9.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.9.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.9.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+- Remove deprecated `lightstep` exporter (#828)
+
+## 🚀 New components 🚀
+- `statsd` receiver for ingesting StatsD messages (#566)
+
+## 💡 Enhancements 💡
+- `signalfx` exporter
+   - Add disk usage translations (#760)
+   - Add disk utilization translations (#782)
+   - Add translation rule to drop redundant metrics (#809)
+- `kubeletstats` receiver
+  - Sync available volume metadata from /pods endpoint (#690)
+  - Add ability to collect detailed data from PVC (#743)
+- `awsxray` exporter: Translate SDK name/version into xray model (#755)
+- `elastic` exporter: Translate semantic conventions to Elastic destination fields (#671)
+- `stackdriver` exporter: Add point count metric (#757)
+- `awsxray` receiver
+  - Ported the TCP proxy from the X-Ray daemon (#774)
+  - Convert to OTEL trace format (#691)
+
+## 🧰 Bug fixes 🧰
+- `kubeletstats` receiver: Do not break down metrics batch (#754)
+- `host` observer: Fix issue on darwin where ports listening on all interfaces are not correctly accounted for (#582)
+- `newrelic` exporter: Fix panic on missing span status (#775)
+
 ## v0.8.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.8.0 (Beta) 🎉
