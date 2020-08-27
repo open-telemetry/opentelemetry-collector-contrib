@@ -82,8 +82,14 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 }
 
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
+	timeout := defaultTimeout
+	if cfg.Timeout > 0 {
+		timeout = cfg.Timeout
+	}
+
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
+		cloudtrace.WithTimeout(timeout),
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
