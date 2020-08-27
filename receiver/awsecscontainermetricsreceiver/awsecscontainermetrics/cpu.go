@@ -23,6 +23,7 @@ import (
 func cpuMetrics(prefix string, stats *CPUStats, containerMetadata ContainerMetadata) []*metricspb.Metric {
 	numOfCores := (uint64)(len(stats.CpuUsage.PerCpuUsage))
 	utilized := (uint64)(*stats.CpuUsage.TotalUsage / numOfCores / 1024)
+	cpuLimit := (float64)(*containerMetadata.Limits.CPU / 1024)
 	return applyCurrentTime([]*metricspb.Metric{
 		totalUsageMetric(prefix, stats.CpuUsage.TotalUsage),
 		usageInKernelMode(prefix, stats.CpuUsage.UsageInKernelmode),
@@ -31,7 +32,7 @@ func cpuMetrics(prefix string, stats *CPUStats, containerMetadata ContainerMetad
 		onlineCpus(prefix, stats.OnlineCpus),
 		systemCpuUsage(prefix, stats.SystemCpuUsage),
 		cpuUtilized(prefix, &utilized),
-		cpuReserved(prefix, containerMetadata.Limits.CPU),
+		cpuReserved(prefix, &cpuLimit),
 	}, time.Now())
 }
 
@@ -63,6 +64,6 @@ func cpuUtilized(prefix string, value *uint64) *metricspb.Metric {
 	return intGauge(prefix+"cpu.cpu_utilized", "Count", value)
 }
 
-func cpuReserved(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"cpu.cpu_reserved", "vCPU", value)
+func cpuReserved(prefix string, value *float64) *metricspb.Metric {
+	return doubleGauge(prefix+"cpu.cpu_reserved", "vCPU", value)
 }

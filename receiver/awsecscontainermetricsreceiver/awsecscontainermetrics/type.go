@@ -86,6 +86,7 @@ type TaskStats struct {
 	MemoryMaxUsage *uint64
 	MemoryLimit    *uint64
 	MemoryUtilized *uint64
+	MemoryReserved *uint64
 
 	NetworkRateRxBytesPerSecond *float64
 	NetworkRateTxBytesPerSecond *float64
@@ -130,6 +131,6 @@ type ContainerMetadata struct {
 }
 
 type Limit struct {
-	CPU    *uint64 `json:"CPU,omitempty"`
-	Memory *uint64 `json:"Memory,omitempty"`
+	CPU    *float64 `json:"CPU,omitempty"`
+	Memory *uint64  `json:"Memory,omitempty"`
 }

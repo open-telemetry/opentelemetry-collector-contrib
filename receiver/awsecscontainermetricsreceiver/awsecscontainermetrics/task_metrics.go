@@ -20,7 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func taskMetrics(prefix string, stats *TaskStats) []*metricspb.Metric {
+func taskMetrics(prefix string, stats *TaskStats, taskLimit Limit) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
 		memUsageMetric(prefix, stats.MemoryUsage),
 		memMaxUsageMetric(prefix, stats.MemoryMaxUsage),
@@ -44,5 +44,7 @@ func taskMetrics(prefix string, stats *TaskStats) []*metricspb.Metric {
 		systemCpuUsage(prefix, stats.SystemCPUUsage),
 		storageReadBytes(prefix, stats.StorageReadBytes),
 		storageWriteBytes(prefix, stats.StorageWriteBytes),
+		memReserved(prefix, taskLimit.Memory),
+		cpuReserved(prefix, taskLimit.CPU),
 	}, time.Now())
 }

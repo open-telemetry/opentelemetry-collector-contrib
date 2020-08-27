@@ -34,17 +34,30 @@ const (
 
 func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
 
+	var taskMemLimit uint64
+	var taskCpuLimit float64
 	for _, containerMetadata := range metadata.Containers {
-		value := containerStatsMap[containerMetadata.DockerId]
+		stats := containerStatsMap[containerMetadata.DockerId]
+		taskMemLimit += *containerMetadata.Limits.Memory
+		taskCpuLimit += *containerMetadata.Limits.CPU
 		acc.accumulate(
 			timestampProto(time.Now()),
 
-			memMetrics(container_prefix, &value.Memory, containerMetadata),
-			diskMetrics(container_prefix, &value.Disk),
-			networkMetrics(container_prefix, value.Network),
-			networkRateMetrics(container_prefix, &value.NetworkRate),
-			cpuMetrics(container_prefix, &value.CPU, containerMetadata),
+			memMetrics(container_prefix, &stats.Memory, containerMetadata),
+			diskMetrics(container_prefix, &stats.Disk),
+			networkMetrics(container_prefix, stats.Network),
+			networkRateMetrics(container_prefix, &stats.NetworkRate),
+			cpuMetrics(container_prefix, &stats.CPU, containerMetadata),
 		)
+	}
+
+	taskCpuLimitInVCpu := taskCpuLimit / 1024
+	taskLimit := Limit{Memory: &taskMemLimit, CPU: &taskCpuLimitInVCpu}
+	if metadata.Limits.CPU != nil {
+		taskLimit.CPU = metadata.Limits.CPU
+	}
+	if metadata.Limits.Memory != nil {
+		taskLimit.Memory = metadata.Limits.Memory
 	}
 
 	// // Container metrics
@@ -64,7 +77,7 @@ func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]Containe
 	taskStat := aggregateTaskStats(containerStatsMap)
 	acc.accumulate(
 		timestampProto(time.Now()),
-		taskMetrics(task_prefix, &taskStat),
+		taskMetrics(task_prefix, &taskStat, taskLimit),
 	)
 
 	// Conainer Limits

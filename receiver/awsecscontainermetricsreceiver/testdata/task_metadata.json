@@ -8,6 +8,10 @@
     "PullStartedAt": "2020-07-30T22:12:25.705983342Z",
     "PullStoppedAt": "2020-07-30T22:12:29.827677602Z",
     "AvailabilityZone": "us-west-2a",
+    "Limits": {
+      "CPU": 0.5,
+      "Memory": 512
+    },
     "Containers": [
       {
         "DockerId": "5302b3fac16c62951717f444030cb1b8f233f40c03fe5507fc127ca1a70597da",
