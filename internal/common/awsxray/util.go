@@ -14,7 +14,7 @@
 
 package awsxray
 
-// Util to check nil string pointer
+// String returns a pointer to the provided string, or nil if it is an empty string.
 func String(v string) *string {
 	if v == "" {
 		return nil
