@@ -2117,17 +2117,34 @@ func TestDeltaMetricInt(t *testing.T) {
 	}
 }
 
+func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
+	c := converter(t, map[string]string{"foo": "bar"})
+	md := intMD(1, 1)
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md})
+	idx := indexPts(pts)
+	require.Equal(t, 1, len(idx))
+}
+
+func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
+	c := converter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
+	md1 := baseMD()
+	md1.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", 1, 1, 1),
+	}
+	_, _ = c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1})
+	md2 := baseMD()
+	md2.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		dblTS("cpu0", "user", 1, 1, 1),
+	}
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2})
+	idx := indexPts(pts)
+	require.Equal(t, 1, len(idx))
+}
+
 func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) (
 	[]*sfxpb.DataPoint, []*sfxpb.DataPoint,
 ) {
-	rules := []Rule{{
-		Action:  ActionDeltaMetric,
-		Mapping: map[string]string{"system.cpu.time": "system.cpu.delta"},
-	}}
-	tr, err := NewMetricTranslator(rules)
-	require.NoError(t, err)
-
-	c := NewMetricsConverter(zap.NewNop(), tr)
+	c := converter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 
 	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1})
 	require.Equal(t, 0, dropped1)
@@ -2162,6 +2179,18 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 	return deltaPts1, deltaPts2
+}
+
+func converter(t *testing.T, mapping map[string]string) *MetricsConverter {
+	rules := []Rule{{
+		Action:  ActionDeltaMetric,
+		Mapping: mapping,
+	}}
+	tr, err := NewMetricTranslator(rules)
+	require.NoError(t, err)
+
+	c := NewMetricsConverter(zap.NewNop(), tr)
+	return c
 }
 
 func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
