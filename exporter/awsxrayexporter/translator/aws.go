@@ -124,15 +124,15 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	// as per X-Ray docs
 	if hostID != "" {
 		ec2 = &awsxray.EC2Metadata{
-			InstanceID:       aws.String(hostID),
-			AvailabilityZone: aws.String(zone),
-			InstanceSize:     aws.String(hostType),
-			AmiID:            aws.String(amiID),
+			InstanceID:       awsxray.String(hostID),
+			AvailabilityZone: awsxray.String(zone),
+			InstanceSize:     awsxray.String(hostType),
+			AmiID:            awsxray.String(amiID),
 		}
 	}
 	if container != "" {
 		ecs = &awsxray.ECSMetadata{
-			ContainerName: aws.String(container),
+			ContainerName: awsxray.String(container),
 		}
 	}
 	if deployID != "" {
@@ -141,9 +141,9 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			deployNum = 0
 		}
 		ebs = &awsxray.BeanstalkMetadata{
-			Environment:  aws.String(namespace),
+			Environment:  awsxray.String(namespace),
 			DeploymentID: aws.Int64(deployNum),
-			VersionLabel: aws.String(versionLabel),
+			VersionLabel: awsxray.String(versionLabel),
 		}
 	}
 
@@ -156,22 +156,22 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	}
 
 	xray := &awsxray.XRayMetaData{
-		SDK:                 aws.String(sdk),
-		SDKVersion:          aws.String(sdkVersion),
+		SDK:                 awsxray.String(sdk),
+		SDKVersion:          awsxray.String(sdkVersion),
 		AutoInstrumentation: aws.Bool(autoVersion != ""),
 	}
 
 	awsData := &awsxray.AWSData{
-		AccountID:    aws.String(account),
+		AccountID:    awsxray.String(account),
 		Beanstalk:    ebs,
 		ECS:          ecs,
 		EC2:          ec2,
 		XRay:         xray,
-		Operation:    aws.String(operation),
-		RemoteRegion: aws.String(remoteRegion),
-		RequestID:    aws.String(requestID),
-		QueueURL:     aws.String(queueURL),
-		TableName:    aws.String(tableName),
+		Operation:    awsxray.String(operation),
+		RemoteRegion: awsxray.String(remoteRegion),
+		RequestID:    awsxray.String(requestID),
+		QueueURL:     awsxray.String(queueURL),
+		TableName:    awsxray.String(tableName),
 	}
 	return filtered, awsData
 }
