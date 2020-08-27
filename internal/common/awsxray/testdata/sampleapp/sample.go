@@ -39,7 +39,7 @@ type Record struct {
 func main() {
 	dynamo = dynamodb.New(session.Must(session.NewSession(
 		&aws.Config{
-			Region: String("us-west-2")},
+			Region: aws.String("us-west-2")},
 	)))
 	xray.AWS(dynamo.Client)
 
@@ -55,7 +55,7 @@ func ddbExpectedFailure(ctx context.Context) error {
 		xray.AddMetadata(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata", "meta")
 
 		_, err := dynamo.DescribeTableWithContext(ctx1, &dynamodb.DescribeTableInput{
-			TableName: String(existingTableName),
+			TableName: aws.String(existingTableName),
 		})
 		if err != nil {
 			return err
@@ -72,7 +72,7 @@ func ddbExpectedFailure(ctx context.Context) error {
 		}
 
 		_, err = dynamo.PutItemWithContext(ctx1, &dynamodb.PutItemInput{
-			TableName: String(nonExistingTableName),
+			TableName: aws.String(nonExistingTableName),
 			Item:      item,
 		})
 
