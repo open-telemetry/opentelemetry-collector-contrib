@@ -185,12 +185,11 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 
 	for i := range mds {
 		md := &mds[i]
-		var presetPodIP string
 		var podIP string
 
 		// Check if a collector/agent or a prior processor has already annotated the metrics with IP.
 		if md.Resource.GetLabels() != nil {
-			presetPodIP = md.Resource.Labels[k8sIPLabelName]
+			podIP = md.Resource.Labels[k8sIPLabelName]
 		}
 
 		// Most of the metric receivers uses "host.hostname" resource label (which is represented as
@@ -201,17 +200,16 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 			hostname := md.Node.Identifier.HostName
 			if net.ParseIP(hostname) != nil {
 				podIP = hostname
-			}
-		}
 
-		if presetPodIP == "" && podIP != "" {
-			if md.Resource == nil {
-				md.Resource = &resourcepb.Resource{}
+				// Set pod IP as resource label.
+				if md.Resource == nil {
+					md.Resource = &resourcepb.Resource{}
+				}
+				if md.Resource.Labels == nil {
+					md.Resource.Labels = map[string]string{}
+				}
+				md.Resource.Labels[k8sIPLabelName] = podIP
 			}
-			if md.Resource.Labels == nil {
-				md.Resource.Labels = map[string]string{}
-			}
-			md.Resource.Labels[k8sIPLabelName] = podIP
 		}
 
 		// Ignore metrics if cannot infer IP address of the origin pod.
