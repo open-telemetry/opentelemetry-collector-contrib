@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -459,6 +462,15 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantDimensionsMap: nil,
 			wantError:         `field "metric_names" is required for "drop_metrics" translation rule`,
+		},
+		{
+			name: "delta_metric_invalid",
+			trs: []Rule{
+				{
+					Action: ActionDeltaMetric,
+				},
+			},
+			wantError: `field "mapping" is required for "delta_metric" translation rule`,
 		},
 	}
 
@@ -2071,5 +2083,160 @@ func TestDimensionsEqual(t *testing.T) {
 			b := dimensionsEqual(test.d1, test.d2)
 			require.Equal(t, test.want, b)
 		})
+	}
+}
+
+func TestDeltaMetricDouble(t *testing.T) {
+	const delta1 = 3
+	const delta2 = 5
+	md1 := doubleMD(10, 0)
+	md2 := doubleMD(20, delta1)
+	md3 := doubleMD(30, delta1+delta2)
+
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, delta1, *pt.Value.DoubleValue)
+	}
+	for _, pt := range pts2 {
+		require.EqualValues(t, delta2, *pt.Value.DoubleValue)
+	}
+}
+
+func TestDeltaMetricInt(t *testing.T) {
+	const delta1 = 7
+	const delta2 = 11
+	md1 := intMD(10, 0)
+	md2 := intMD(20, delta1)
+	md3 := intMD(30, delta1+delta2)
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, delta1, *pt.Value.IntValue)
+	}
+	for _, pt := range pts2 {
+		require.EqualValues(t, delta2, *pt.Value.IntValue)
+	}
+}
+
+func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) (
+	[]*sfxpb.DataPoint, []*sfxpb.DataPoint,
+) {
+	rules := []Rule{{
+		Action:  ActionDeltaMetric,
+		Mapping: map[string]string{"system.cpu.time": "system.cpu.delta"},
+	}}
+	tr, err := NewMetricTranslator(rules)
+	require.NoError(t, err)
+
+	c := NewMetricsConverter(zap.NewNop(), tr)
+
+	dp1, dropped1 := c.MetricDataToSignalFxV2(md1)
+	require.Equal(t, 0, dropped1)
+	m1 := indexPts(dp1)
+	require.Equal(t, 1, len(m1))
+
+	dp2, dropped2 := c.MetricDataToSignalFxV2(md2)
+	require.Equal(t, 0, dropped2)
+	m2 := indexPts(dp2)
+	require.Equal(t, 2, len(m2))
+
+	origPts, ok := m2["system.cpu.time"]
+	require.True(t, ok)
+
+	deltaPts1, ok := m2["system.cpu.delta"]
+	require.True(t, ok)
+	require.Equal(t, len(origPts), len(deltaPts1))
+	counterType := sfxpb.MetricType_CUMULATIVE_COUNTER
+	for _, pt := range deltaPts1 {
+		require.Equal(t, &counterType, pt.MetricType)
+	}
+
+	dp3, dropped3 := c.MetricDataToSignalFxV2(md3)
+	require.Equal(t, 0, dropped3)
+	m3 := indexPts(dp3)
+	require.Equal(t, 2, len(m3))
+
+	deltaPts2, ok := m3["system.cpu.delta"]
+	require.True(t, ok)
+	require.Equal(t, len(origPts), len(deltaPts2))
+	for _, pt := range deltaPts2 {
+		require.Equal(t, &counterType, pt.MetricType)
+	}
+	return deltaPts1, deltaPts2
+}
+
+func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range pts {
+		l := m[pt.Metric]
+		m[pt.Metric] = append(l, pt)
+	}
+	return m
+}
+
+func doubleMD(secondsDelta int64, valueDelta float64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		dblTS("cpu0", "user", secondsDelta, 100, valueDelta),
+		dblTS("cpu0", "system", secondsDelta, 200, valueDelta),
+		dblTS("cpu0", "idle", secondsDelta, 300, valueDelta),
+		dblTS("cpu1", "user", secondsDelta, 111, valueDelta),
+		dblTS("cpu1", "system", secondsDelta, 222, valueDelta),
+		dblTS("cpu1", "idle", secondsDelta, 333, valueDelta),
+	}
+	return md
+}
+
+func intMD(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", secondsDelta, 100, valueDelta),
+		intTS("cpu0", "system", secondsDelta, 200, valueDelta),
+		intTS("cpu0", "idle", secondsDelta, 300, valueDelta),
+		intTS("cpu1", "user", secondsDelta, 111, valueDelta),
+		intTS("cpu1", "system", secondsDelta, 222, valueDelta),
+		intTS("cpu1", "idle", secondsDelta, 333, valueDelta),
+	}
+	return md
+}
+
+func baseMD() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: "system.cpu.time",
+				Unit: "s",
+				Type: 5,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "cpu"},
+					{Key: "state"},
+				},
+			},
+		}},
+	}
+}
+
+func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) *metricspb.TimeSeries {
+	ts := baseTS(lbl0, lbl1, secondsDelta)
+	ts.Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: v + valueDelta}
+	return ts
+}
+
+func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) *metricspb.TimeSeries {
+	ts := baseTS(lbl0, lbl1, secondsDelta)
+	ts.Points[0].Value = &metricspb.Point_Int64Value{Int64Value: v + valueDelta}
+	return ts
+}
+
+func baseTS(lbl0 string, lbl1 string, secondsDelta int64) *metricspb.TimeSeries {
+	const startTime = 1600000000
+	return &metricspb.TimeSeries{
+		StartTimestamp: &timestamp.Timestamp{Seconds: startTime},
+		LabelValues: []*metricspb.LabelValue{
+			{Value: lbl0, HasValue: true},
+			{Value: lbl1, HasValue: true},
+		},
+		Points: []*metricspb.Point{{
+			Timestamp: &timestamp.Timestamp{Seconds: startTime + secondsDelta},
+		}},
 	}
 }
