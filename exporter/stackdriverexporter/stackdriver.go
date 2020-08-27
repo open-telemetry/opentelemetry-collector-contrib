@@ -34,8 +34,8 @@ import (
 )
 
 const (
-	name = "stackdriver"
-  defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
+	name           = "stackdriver"
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
 // traceExporter is a wrapper struct of OT cloud trace exporter
@@ -128,11 +128,11 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
 	}
-  if cfg.Timeout > 0 {
-    options.Timeout = cfg.Timeout
-  } else {
-    options.Timeout = defaultTimeout
-  }
+	if cfg.Timeout > 0 {
+		options.Timeout = cfg.Timeout
+	} else {
+		options.Timeout = defaultTimeout
+	}
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
