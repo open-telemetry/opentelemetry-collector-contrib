@@ -130,10 +130,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/lightstepexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/newrelicexporter"
     schedule:
       interval: "weekly"

@@ -70,19 +70,21 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	tests := []struct {
 		name                     string
-		metricsDataFn            func() consumerdata.MetricsData
+		metricsDataFn            func() []consumerdata.MetricsData
 		wantSfxDataPoints        []*sfxpb.DataPoint
 		wantNumDroppedTimeseries int
 	}{
 		{
 			name: "nil_node_nil_resources_no_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+							metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+						},
 					},
 				}
 			},
@@ -95,13 +97,15 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "nil_node_and_resources_with_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-						metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+							metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+							metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+							metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						},
 					},
 				}
 			},
@@ -114,23 +118,25 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_node_resources_dims",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Node: &commonpb.Node{
-						Attributes: map[string]string{
-							"k/n0": "vn0",
-							"k/n1": "vn1",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Node: &commonpb.Node{
+							Attributes: map[string]string{
+								"k/n0": "vn0",
+								"k/n1": "vn1",
+							},
 						},
-					},
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0": "vr0",
-							"k/r1": "vr1",
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0": "vr0",
+								"k/r1": "vr1",
+							},
 						},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-						metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+							metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+						},
 					},
 				}
 			},
@@ -153,11 +159,13 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "distributions",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
-						metricstestutil.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
+							metricstestutil.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
+						},
 					},
 				}
 			},
@@ -167,10 +175,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "summary",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Summary("summary", keys, summaryTimeSeries),
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Summary("summary", keys, summaryTimeSeries),
+						},
 					},
 				}
 			},
@@ -202,20 +212,22 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	md := consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{"old.dim": "val1"},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name: "metric1",
-					Type: metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						Points: []*metricspb.Point{
-							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+	md := []consumerdata.MetricsData{
+		{
+			Node: &commonpb.Node{
+				Attributes: map[string]string{"old.dim": "val1"},
+			},
+			Metrics: []*metricspb.Metric{
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name: "metric1",
+						Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							Points: []*metricspb.Point{
+								{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+							},
 						},
 					},
 				},
@@ -398,12 +410,14 @@ func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
 	}
 	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
 	assert.Nil(t, point.GetDistributionValue().BucketOptions.GetExplicit())
-	metricData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.GaugeDist("gauge_distrib", keys, metricstestutil.Timeseries(
-				tsUnix,
-				values,
-				point)),
+	metricData := []consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				metricstestutil.GaugeDist("gauge_distrib", keys, metricstestutil.Timeseries(
+					tsUnix,
+					values,
+					point)),
+			},
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
@@ -426,12 +440,14 @@ func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
 	}
 	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
 	assert.Nil(t, point.GetSummaryValue().GetSnapshot().GetPercentileValues())
-	metricData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Summary("summary", keys, metricstestutil.Timeseries(
-				tsUnix,
-				values,
-				point)),
+	metricData := []consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Summary("summary", keys, metricstestutil.Timeseries(
+					tsUnix,
+					values,
+					point)),
+			},
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
@@ -448,12 +464,14 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 	values := []string{"v0", "v1"}
 
 	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: nil}
-	metricData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge("gauge", keys, metricstestutil.Timeseries(
-				tsUnix,
-				values,
-				point)),
+	metricData := []consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge("gauge", keys, metricstestutil.Timeseries(
+					tsUnix,
+					values,
+					point)),
+			},
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
@@ -463,12 +481,14 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 
 func Test_InvalidMetric(t *testing.T) {
 	logger := zap.NewNop()
-	metricData := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			nil,
-			{
-				MetricDescriptor: nil,
-				Timeseries:       []*metricspb.TimeSeries{nil},
+	metricData := []consumerdata.MetricsData{
+		{
+			Metrics: []*metricspb.Metric{
+				nil,
+				{
+					MetricDescriptor: nil,
+					Timeseries:       []*metricspb.TimeSeries{nil},
+				},
 			},
 		},
 	}

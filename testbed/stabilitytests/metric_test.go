@@ -36,6 +36,7 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		nil,
+		nil,
 	)
 }
 
@@ -50,6 +51,7 @@ func TestStabilityMetricsOpenCensus(t *testing.T) {
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
+		nil,
 		nil,
 	)
 }
@@ -66,6 +68,7 @@ func TestStabilityMetricsCarbon(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		nil,
+		nil,
 	)
 }
 
@@ -80,6 +83,7 @@ func TestStabilityMetricsSignalFx(t *testing.T) {
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
+		nil,
 		nil,
 	)
 }
