@@ -2129,12 +2129,12 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 
 	c := NewMetricsConverter(zap.NewNop(), tr)
 
-	dp1, dropped1 := c.MetricDataToSignalFxV2(md1)
+	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1})
 	require.Equal(t, 0, dropped1)
 	m1 := indexPts(dp1)
 	require.Equal(t, 1, len(m1))
 
-	dp2, dropped2 := c.MetricDataToSignalFxV2(md2)
+	dp2, dropped2 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2})
 	require.Equal(t, 0, dropped2)
 	m2 := indexPts(dp2)
 	require.Equal(t, 2, len(m2))
@@ -2150,7 +2150,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 
-	dp3, dropped3 := c.MetricDataToSignalFxV2(md3)
+	dp3, dropped3 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md3})
 	require.Equal(t, 0, dropped3)
 	m3 := indexPts(dp3)
 	require.Equal(t, 2, len(m3))
