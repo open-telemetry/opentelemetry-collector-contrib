@@ -236,7 +236,7 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 		}
 	}
 
-	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, metrics)
+	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData(mds))
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
