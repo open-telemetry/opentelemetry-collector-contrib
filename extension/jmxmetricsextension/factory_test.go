@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsreceiver
+package jmxmetricsextension
 
 import (
 	"context"
@@ -21,9 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
@@ -34,11 +32,10 @@ func TestWithInvalidConfig(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
 
-	r, err := f.CreateMetricsReceiver(
+	r, err := f.CreateExtension(
 		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		component.ExtensionCreateParams{Logger: zap.NewNop()},
 		cfg,
-		&testbed.MockMetricConsumer{},
 	)
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics missing required fields: [`service_url` `groovy_script`]", err.Error())
@@ -53,29 +50,11 @@ func TestWithValidConfig(t *testing.T) {
 	cfg.(*config).ServiceURL = "myserviceurl"
 	cfg.(*config).GroovyScript = "mygroovyscriptpath"
 
-	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	consumer := &testbed.MockMetricConsumer{}
-	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumer)
+	params := component.ExtensionCreateParams{Logger: zap.NewNop()}
+	r, err := f.CreateExtension(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	receiver := r.(*jmxMetricsReceiver)
-	assert.Same(t, receiver.logger, params.Logger)
-	assert.Same(t, receiver.config, cfg)
-	assert.Same(t, receiver.consumer, consumer)
-}
-
-func TestTracerReceiverNotSupported(t *testing.T) {
-	f := NewFactory()
-	assert.Equal(t, configmodels.Type("jmx_metrics"), f.Type())
-
-	r, err := f.CreateTraceReceiver(
-		context.Background(),
-		component.ReceiverCreateParams{Logger: zap.NewNop()},
-		f.CreateDefaultConfig(),
-		&testbed.MockTraceConsumer{},
-	)
-
-	require.Error(t, err)
-	require.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-	require.Nil(t, r)
+	extension := r.(*jmxMetricsExtension)
+	assert.Same(t, extension.logger, params.Logger)
+	assert.Same(t, extension.config, cfg)
 }

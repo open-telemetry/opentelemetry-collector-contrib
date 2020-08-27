@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsreceiver
+package jmxmetricsextension
 
 import (
 	"fmt"
@@ -22,15 +22,21 @@ import (
 )
 
 type config struct {
-	configmodels.ReceiverSettings `mapstructure:",squash"`
+	configmodels.ExtensionSettings `mapstructure:",squash"`
 	// The target JMX service url.
 	ServiceURL string `mapstructure:"service_url"`
 	// The script for the metric gatherer to run on the configured interval.
 	GroovyScript string `mapstructure:"groovy_script"`
-	// The endpoint for the metric gatherer to use to report metrics.
-	CollectorEndpoint string `mapstructure:"collector_endpoint"`
 	// The duration in between groovy script invocations and metric exports.  Will be converted to milliseconds.
 	Interval time.Duration `mapstructure:"interval"`
+	// The JMX username
+	Username string `mapstructure:"username"`
+	// The JMX password
+	Password string `mapstructure:"password"`
+	// The otlp exporter timeout.  Will be converted to milliseconds.
+	OtlpTimeout time.Duration `mapstructure:"otlp_timeout"`
+	// The headers to include in otlp metric submission requests.
+	OtlpHeaders map[string]string `mapstructure:"otlp_headers"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
@@ -67,6 +73,10 @@ func (c *config) validate() error {
 
 	if c.Interval < 0 {
 		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.Interval.Milliseconds())
+	}
+
+	if c.OtlpTimeout < 0 {
+		return fmt.Errorf("%v `otlp_timeout` must be positive: %vms", c.Name(), c.OtlpTimeout.Milliseconds())
 	}
 	return nil
 }

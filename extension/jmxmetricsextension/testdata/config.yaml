@@ -1,10 +1,15 @@
-receivers:
+extensions:
   jmx_metrics:
   jmx_metrics/all:
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
-    collector_endpoint: mycollectorendpoint:55680
     interval: 15s
+    username: myusername
+    password: mypassword
+    otlp_headers:
+      x-header-1: value1
+      x-header-2: value2
+    otlp_timeout: 5s
     keystore_path: mykeystorepath
     keystore_password: mykeystorepassword
     keystore_type: mykeystoretype
@@ -20,6 +25,13 @@ receivers:
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
     interval: -100ms
+  jmx_metrics/invalidotlptimeout:
+    service_url: myserviceurl
+    groovy_script: mygroovyscriptpath
+    otlp_timeout: -100ms
+
+receivers:
+  examplereceiver:
 
 processors:
   exampleprocessor:
@@ -28,8 +40,9 @@ exporters:
   exampleexporter:
 
 service:
+  extensions: [jmx_metrics, jmx_metrics/all]
   pipelines:
     metrics:
-      receivers: [jmx_metrics]
+      receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

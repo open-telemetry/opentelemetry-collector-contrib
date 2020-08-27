@@ -12,38 +12,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsreceiver
+package jmxmetricsextension
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
 
-type jmxMetricsReceiver struct {
-	logger   *zap.Logger
-	config   *config
-	consumer consumer.MetricsConsumer
+var _ component.ServiceExtension = (*jmxMetricsExtension)(nil)
+var _ component.PipelineWatcher = (*jmxMetricsExtension)(nil)
+
+type jmxMetricsExtension struct {
+	logger *zap.Logger
+	config *config
 }
 
-func newJmxMetricsReceiver(
+func newJmxMetricsExtension(
 	logger *zap.Logger,
 	config *config,
-	consumer consumer.MetricsConsumer,
-) *jmxMetricsReceiver {
-	return &jmxMetricsReceiver{
-		logger:   logger,
-		config:   config,
-		consumer: consumer,
+) *jmxMetricsExtension {
+	return &jmxMetricsExtension{
+		logger: logger,
+		config: config,
 	}
 }
 
-func (jmx *jmxMetricsReceiver) Start(ctx context.Context, host component.Host) error {
+func (jmx *jmxMetricsExtension) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (jmx *jmxMetricsReceiver) Shutdown(ctx context.Context) error {
+func (jmx *jmxMetricsExtension) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (jmx *jmxMetricsExtension) Ready() error {
+	return nil
+}
+
+func (jmx *jmxMetricsExtension) NotReady() error {
 	return nil
 }

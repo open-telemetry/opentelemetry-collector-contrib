@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsreceiver
+package jmxmetricsextension
 
 import (
 	"path"
@@ -32,33 +32,39 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Extensions[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Receivers), 5)
+	assert.Equal(t, len(cfg.Extensions), 6)
 
-	r0 := cfg.Receivers["jmx_metrics"].(*config)
+	r0 := cfg.Extensions["jmx_metrics"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r0))
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics missing required fields: [`service_url` `groovy_script`]", err.Error())
 
-	r1 := cfg.Receivers["jmx_metrics/all"].(*config)
+	r1 := cfg.Extensions["jmx_metrics/all"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r1))
 	require.NoError(t, r1.validate())
 	assert.Equal(t, r1,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/all",
 			},
-			ServiceURL:         "myserviceurl",
-			GroovyScript:       "mygroovyscriptpath",
-			CollectorEndpoint:  "mycollectorendpoint:55680",
+			ServiceURL:   "myserviceurl",
+			GroovyScript: "mygroovyscriptpath",
+			Username:     "myusername",
+			Password:     "mypassword",
+			OtlpHeaders: map[string]string{
+				"x-header-1": "value1",
+				"x-header-2": "value2",
+			},
+			OtlpTimeout:        5 * time.Second,
 			Interval:           15 * time.Second,
 			KeystorePath:       "mykeystorepath",
 			KeystorePassword:   "mykeystorepassword",
@@ -69,49 +75,69 @@ func TestLoadConfig(t *testing.T) {
 			Realm:              "myrealm",
 		})
 
-	r2 := cfg.Receivers["jmx_metrics/missingservice"].(*config)
+	r2 := cfg.Extensions["jmx_metrics/missingservice"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
 	assert.Equal(t, r2,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/missingservice",
 			},
 			GroovyScript: "mygroovyscriptpath",
 			Interval:     10 * time.Second,
+			OtlpTimeout:  5 * time.Second,
 		})
 	err = r2.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics/missingservice missing required field: [`service_url`]", err.Error())
 
-	r3 := cfg.Receivers["jmx_metrics/missinggroovy"].(*config)
+	r3 := cfg.Extensions["jmx_metrics/missinggroovy"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r3))
 	assert.Equal(t, r3,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/missinggroovy",
 			},
-			ServiceURL: "myserviceurl",
-			Interval:   10 * time.Second,
+			ServiceURL:  "myserviceurl",
+			Interval:    10 * time.Second,
+			OtlpTimeout: 5 * time.Second,
 		})
 	err = r3.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics/missinggroovy missing required field: [`groovy_script`]", err.Error())
 
-	r4 := cfg.Receivers["jmx_metrics/invalidinterval"].(*config)
+	r4 := cfg.Extensions["jmx_metrics/invalidinterval"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r4))
 	assert.Equal(t, r4,
 		&config{
-			ReceiverSettings: configmodels.ReceiverSettings{
+			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/invalidinterval",
 			},
 			ServiceURL:   "myserviceurl",
 			GroovyScript: "mygroovyscriptpath",
 			Interval:     -100 * time.Millisecond,
+			OtlpTimeout:  5 * time.Second,
 		})
 	err = r4.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics/invalidinterval `interval` must be positive: -100ms", err.Error())
+
+	r5 := cfg.Extensions["jmx_metrics/invalidotlptimeout"].(*config)
+	require.NoError(t, configcheck.ValidateConfig(r5))
+	assert.Equal(t, r5,
+		&config{
+			ExtensionSettings: configmodels.ExtensionSettings{
+				TypeVal: "jmx_metrics",
+				NameVal: "jmx_metrics/invalidotlptimeout",
+			},
+			ServiceURL:   "myserviceurl",
+			GroovyScript: "mygroovyscriptpath",
+			Interval:     10 * time.Second,
+			OtlpTimeout:  -100 * time.Millisecond,
+		})
+	err = r5.validate()
+	require.Error(t, err)
+	assert.Equal(t, "jmx_metrics/invalidotlptimeout `otlp_timeout` must be positive: -100ms", err.Error())
 }

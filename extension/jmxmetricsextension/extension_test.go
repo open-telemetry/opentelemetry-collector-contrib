@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsreceiver
+package jmxmetricsextension
 
 import (
 	"context"
@@ -20,21 +20,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
 
-func TestReceiver(t *testing.T) {
+func TestExtension(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{}
-	consumer := &testbed.MockMetricConsumer{}
 
-	receiver := newJmxMetricsReceiver(logger, config, consumer)
-	assert.NotNil(t, receiver)
-	assert.Same(t, logger, receiver.logger)
-	assert.Same(t, config, receiver.config)
-	assert.Same(t, consumer, receiver.consumer)
+	extension := newJmxMetricsExtension(logger, config)
+	assert.NotNil(t, extension)
+	assert.Same(t, logger, extension.logger)
+	assert.Same(t, config, extension.config)
 
-	assert.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Nil(t, receiver.Shutdown(context.Background()))
+	assert.Nil(t, extension.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Nil(t, extension.Shutdown(context.Background()))
+	assert.Nil(t, extension.Ready())
+	assert.Nil(t, extension.NotReady())
 }
