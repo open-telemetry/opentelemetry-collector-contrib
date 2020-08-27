@@ -9,6 +9,7 @@ The following configuration options are supported:
 - `metric_prefix` (optional): MetricPrefix overrides the prefix of a Stackdriver metric names.
 - `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
+- `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
 - `skip_create_metric_descriptor` (optional): Whether to skip creating the metric descriptor.
 - `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
 - `label_mappings`.`optional` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
@@ -24,6 +25,7 @@ exporters:
     number_of_workers: 3
     skip_create_metric_descriptor: true
     use_insecure: true
+    timeout: 12s
     resource_mappings:
       - source_type: source.resource1
         target_type: target-resource1

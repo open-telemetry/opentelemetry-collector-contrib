@@ -15,6 +15,8 @@
 package stackdriverexporter
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -28,6 +30,8 @@ type Config struct {
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
 	// Only has effect if Endpoint is not ""
 	UseInsecure      bool              `mapstructure:"use_insecure"`
+	// Timeout for all API calls. If not set, defaults to 12 seconds.
+  Timeout          time.Duration     `mapstructure:"timeout"`
 	ResourceMappings []ResourceMapping `mapstructure:"resource_mappings"`
 }
 

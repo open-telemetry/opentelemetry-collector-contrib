@@ -19,6 +19,7 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
@@ -32,7 +33,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const name = "stackdriver"
+const (
+	name = "stackdriver"
+  defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
+)
 
 // traceExporter is a wrapper struct of OT cloud trace exporter
 type traceExporter struct {
@@ -124,6 +128,11 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
 	}
+  if cfg.Timeout > 0 {
+    options.Timeout = cfg.Timeout
+  } else {
+    options.Timeout = defaultTimeout
+  }
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}

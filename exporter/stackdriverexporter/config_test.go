@@ -17,6 +17,7 @@ package stackdriverexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,6 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			Timeout: 20 * time.Second,
 			ResourceMappings: []ResourceMapping{
 				{
 					SourceType: "source.resource1",
