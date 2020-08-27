@@ -186,7 +186,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		SQL:         sql,
 		Annotations: annotations,
 		Metadata:    metadata,
-		Type:        awsP.String(segmentType),
+		Type:        awsxray.String(segmentType),
 	}
 }
 
