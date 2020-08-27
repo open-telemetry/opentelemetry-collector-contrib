@@ -20,8 +20,9 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func cpuMetrics(prefix string, stats *CPUStats) []*metricspb.Metric {
+func cpuMetrics(prefix string, stats *CPUStats, containerMetadata ContainerMetadata) []*metricspb.Metric {
 	numOfCores := (uint64)(len(stats.CpuUsage.PerCpuUsage))
+	utilized := (uint64)(*stats.CpuUsage.TotalUsage / numOfCores / 1024)
 	return applyCurrentTime([]*metricspb.Metric{
 		totalUsageMetric(prefix, stats.CpuUsage.TotalUsage),
 		usageInKernelMode(prefix, stats.CpuUsage.UsageInKernelmode),
@@ -29,6 +30,8 @@ func cpuMetrics(prefix string, stats *CPUStats) []*metricspb.Metric {
 		numberOfCores(prefix, &numOfCores),
 		onlineCpus(prefix, stats.OnlineCpus),
 		systemCpuUsage(prefix, stats.SystemCpuUsage),
+		cpuUtilized(prefix, &utilized),
+		cpuReserved(prefix, containerMetadata.Limits.CPU),
 	}, time.Now())
 }
 
@@ -54,4 +57,12 @@ func onlineCpus(prefix string, value *uint64) *metricspb.Metric {
 
 func systemCpuUsage(prefix string, value *uint64) *metricspb.Metric {
 	return intGauge(prefix+"cpu.system_cpu_usage", "Count", value)
+}
+
+func cpuUtilized(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.cpu_utilized", "Count", value)
+}
+
+func cpuReserved(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"cpu.cpu_reserved", "vCPU", value)
 }

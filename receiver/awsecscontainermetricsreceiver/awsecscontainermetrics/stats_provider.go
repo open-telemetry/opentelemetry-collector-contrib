@@ -31,31 +31,27 @@ func NewStatsProvider(rc RestClient) *StatsProvider {
 
 // GetStats calls the ecs task metadata endpoint and unmarshals the
 // results into a stats.TaskStats struct.
-func (p *StatsProvider) GetStats() (map[string]ContainerStats, error) {
-	response, err := p.rc.EndpointResponse()
-	// fmt.Println(string(response))
+func (p *StatsProvider) GetStats() (map[string]ContainerStats, TaskMetadata, error) {
+	stats := make(map[string]ContainerStats)
+	var metadata TaskMetadata
+
+	taskStats, taskMetadata, err := p.rc.EndpointResponse()
+	// fmt.Println(string(taskStats))
 	if err != nil {
-		return nil, err
+		return stats, metadata, err
 	}
 	//var out Model
-	m := make(map[string]ContainerStats)
 
-	err = json.Unmarshal(response, &m)
+	err = json.Unmarshal(taskStats, &stats)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
-	} else {
-		fmt.Println(len(m))
+		return stats, metadata, err
 	}
 
-	for key, value := range m {
-		fmt.Println(key, value.Name, value.Id)
+	err = json.Unmarshal(taskMetadata, &metadata)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return stats, metadata, err
 	}
-	return m, nil
-
-	// err = json.Unmarshal(response, &out)
-	// if err != nil {
-	// 	fmt.Println("Unmarshal Error: \n", err)
-	// 	return nil, err
-	// }
-	// return &out, nil
+	return stats, metadata, nil
 }

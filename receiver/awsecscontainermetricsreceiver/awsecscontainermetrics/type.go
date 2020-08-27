@@ -78,6 +78,7 @@ type CPUStats struct {
 	CpuUsage       CPUUsage `json:"cpu_usage,omitempty"`
 	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
 	SystemCpuUsage *uint64  `json:"system_cpu_usage,omitempty"`
+	CpuUtilized    *uint64
 }
 
 type TaskStats struct {
@@ -107,4 +108,28 @@ type TaskStats struct {
 
 	StorageReadBytes  *uint64
 	StorageWriteBytes *uint64
+}
+
+type TaskMetadata struct {
+	Cluster  string `json:"Cluster,omitempty"`
+	TaskARN  string `json:"TaskARN,omitempty"`
+	Family   string `json:"Family,omitempty"`
+	Revision string `json:"Revision,omitempty"`
+
+	Limits     Limit               `json:"Limits,omitempty"`
+	Containers []ContainerMetadata `json:"Containers,omitempty"`
+}
+
+type ContainerMetadata struct {
+	DockerId      string            `json:"DockerId,omitempty"`
+	ContainerName string            `json:"Name,omitempty"`
+	DockerName    string            `json:"DockerName,omitempty"`
+	Image         string            `json:"Image,omitempty"`
+	Labels        map[string]string `json:"Labels,omitempty"`
+	Limits        Limit             `json:"Limits,omitempty"`
+}
+
+type Limit struct {
+	CPU    *uint64 `json:"CPU,omitempty"`
+	Memory *uint64 `json:"Memory,omitempty"`
 }

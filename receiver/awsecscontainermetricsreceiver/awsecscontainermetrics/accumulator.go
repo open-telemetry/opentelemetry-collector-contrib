@@ -32,24 +32,43 @@ const (
 	container_prefix = "container."
 )
 
-func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]ContainerStats) {
-	for _, value := range containerStatsMap {
+func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
+
+	for _, containerMetadata := range metadata.Containers {
+		value := containerStatsMap[containerMetadata.DockerId]
 		acc.accumulate(
 			timestampProto(time.Now()),
 
-			memMetrics(container_prefix, &value.Memory),
+			memMetrics(container_prefix, &value.Memory, containerMetadata),
 			diskMetrics(container_prefix, &value.Disk),
 			networkMetrics(container_prefix, value.Network),
 			networkRateMetrics(container_prefix, &value.NetworkRate),
-			cpuMetrics(container_prefix, &value.CPU),
+			cpuMetrics(container_prefix, &value.CPU, containerMetadata),
 		)
 	}
 
+	// // Container metrics
+	// for _, value := range containerStatsMap {
+	// 	acc.accumulate(
+	// 		timestampProto(time.Now()),
+
+	// 		memMetrics(container_prefix, &value.Memory),
+	// 		diskMetrics(container_prefix, &value.Disk),
+	// 		networkMetrics(container_prefix, value.Network),
+	// 		networkRateMetrics(container_prefix, &value.NetworkRate),
+	// 		cpuMetrics(container_prefix, &value.CPU),
+	// 	)
+	// }
+
+	// Task metrics- aggregation of containers
 	taskStat := aggregateTaskStats(containerStatsMap)
 	acc.accumulate(
 		timestampProto(time.Now()),
 		taskMetrics(task_prefix, &taskStat),
 	)
+
+	// Conainer Limits
+
 }
 
 func (acc *metricDataAccumulator) accumulate(

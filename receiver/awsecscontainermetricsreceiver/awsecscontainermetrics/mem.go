@@ -25,7 +25,7 @@ const (
 	BytesInMiB = 1024 * 1024
 )
 
-func memMetrics(prefix string, stats *MemoryStats) []*metricspb.Metric {
+func memMetrics(prefix string, stats *MemoryStats, containerMetadata ContainerMetadata) []*metricspb.Metric {
 	memoryUtilizedInMb := (*stats.Usage - stats.Stats["cache"]) / BytesInMiB
 	stats.MemoryUtilized = &memoryUtilizedInMb
 	return applyCurrentTime([]*metricspb.Metric{
@@ -33,6 +33,7 @@ func memMetrics(prefix string, stats *MemoryStats) []*metricspb.Metric {
 		memMaxUsageMetric(prefix, stats.MaxUsage),
 		memLimitMetric(prefix, stats.Limit),
 		memUtilizedMetric(prefix, stats.MemoryUtilized),
+		memReserved(prefix, containerMetadata.Limits.Memory),
 	}, time.Now())
 }
 
@@ -41,13 +42,17 @@ func memUsageMetric(prefix string, value *uint64) *metricspb.Metric {
 }
 
 func memMaxUsageMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.maxusage", "Bytes", value)
+	return intGauge(prefix+"memory.maxusage", "MB", value)
 }
 
 func memLimitMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.limit", "Bytes", value)
+	return intGauge(prefix+"memory.limit", "MB", value)
 }
 
 func memUtilizedMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.utilized", "Bytes", value)
+	return intGauge(prefix+"memory.utilized", "MB", value)
+}
+
+func memReserved(prefix string, value *uint64) *metricspb.Metric {
+	return intGauge(prefix+"memory.reserved", "MB", value)
 }
