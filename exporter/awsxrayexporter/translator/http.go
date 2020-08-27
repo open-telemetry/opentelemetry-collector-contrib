@@ -44,14 +44,14 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 	span.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
 		switch key {
 		case semconventions.AttributeHTTPMethod:
-			info.Request.Method = aws.String(value.StringVal())
+			info.Request.Method = awsxray.String(value.StringVal())
 			hasHTTP = true
 		case semconventions.AttributeHTTPClientIP:
-			info.Request.ClientIP = aws.String(value.StringVal())
+			info.Request.ClientIP = awsxray.String(value.StringVal())
 			info.Request.XForwardedFor = aws.Bool(true)
 			hasHTTP = true
 		case semconventions.AttributeHTTPUserAgent:
-			info.Request.UserAgent = aws.String(value.StringVal())
+			info.Request.UserAgent = awsxray.String(value.StringVal())
 			hasHTTP = true
 		case semconventions.AttributeHTTPStatusCode:
 			info.Response.Status = aws.Int64(value.IntVal())
@@ -89,7 +89,7 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 		case semconventions.AttributeNetPeerIP:
 			// Prefer HTTP forwarded information (AttributeHTTPClientIP) when present.
 			if info.Request.ClientIP == nil {
-				info.Request.ClientIP = aws.String(value.StringVal())
+				info.Request.ClientIP = awsxray.String(value.StringVal())
 			}
 			urlParts[key] = value.StringVal()
 		default:
@@ -103,9 +103,9 @@ func makeHTTP(span pdata.Span) (map[string]string, *awsxray.HTTPData) {
 	}
 
 	if span.Kind() == pdata.SpanKindSERVER {
-		info.Request.URL = aws.String(constructServerURL(urlParts))
+		info.Request.URL = awsxray.String(constructServerURL(urlParts))
 	} else {
-		info.Request.URL = aws.String(constructClientURL(urlParts))
+		info.Request.URL = awsxray.String(constructClientURL(urlParts))
 	}
 
 	if !span.Status().IsNil() && info.Response.Status == nil {
