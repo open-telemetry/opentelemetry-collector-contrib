@@ -25,18 +25,18 @@ import (
 
 func TestConvertStackFramesToStackTraceStr(t *testing.T) {
 	excp := awsxray.Exception{
-		Type:    aws.String("exceptionType"),
-		Message: aws.String("exceptionMessage"),
+		Type:    awsxray.String("exceptionType"),
+		Message: awsxray.String("exceptionMessage"),
 		Stack: []awsxray.StackFrame{
 			{
-				Path:  aws.String("path0"),
+				Path:  awsxray.String("path0"),
 				Line:  aws.Int(10),
-				Label: aws.String("label0"),
+				Label: awsxray.String("label0"),
 			},
 			{
-				Path:  aws.String("path1"),
+				Path:  awsxray.String("path1"),
 				Line:  aws.Int(11),
-				Label: aws.String("label1"),
+				Label: awsxray.String("label1"),
 			},
 		},
 	}

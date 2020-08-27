@@ -22,6 +22,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-xray-sdk-go/xray"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
 )
 
 var dynamo *dynamodb.DynamoDB
@@ -39,7 +41,7 @@ type Record struct {
 func main() {
 	dynamo = dynamodb.New(session.Must(session.NewSession(
 		&aws.Config{
-			Region: aws.String("us-west-2")},
+			Region: awsxray.String("us-west-2")},
 	)))
 	xray.AWS(dynamo.Client)
 
@@ -55,7 +57,7 @@ func ddbExpectedFailure(ctx context.Context) error {
 		xray.AddMetadata(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata", "meta")
 
 		_, err := dynamo.DescribeTableWithContext(ctx1, &dynamodb.DescribeTableInput{
-			TableName: aws.String(existingTableName),
+			TableName: awsxray.String(existingTableName),
 		})
 		if err != nil {
 			return err
@@ -72,7 +74,7 @@ func ddbExpectedFailure(ctx context.Context) error {
 		}
 
 		_, err = dynamo.PutItemWithContext(ctx1, &dynamodb.PutItemInput{
-			TableName: aws.String(nonExistingTableName),
+			TableName: awsxray.String(nonExistingTableName),
 			Item:      item,
 		})
 

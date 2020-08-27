@@ -15,7 +15,6 @@
 package translator
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
@@ -35,7 +34,7 @@ func makeService(resource pdata.Resource) *awsxray.ServiceData {
 	}
 	if ok {
 		service = &awsxray.ServiceData{
-			Version: aws.String(verStr.StringVal()),
+			Version: awsxray.String(verStr.StringVal()),
 		}
 	}
 	return service

@@ -15,7 +15,6 @@
 package translator
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
@@ -59,10 +58,10 @@ func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData)
 	}
 	url := dbURL + "/" + dbInstance
 	sqlData = awsxray.SQLData{
-		URL:            aws.String(url),
-		DatabaseType:   aws.String(dbSystem),
-		User:           aws.String(dbUser),
-		SanitizedQuery: aws.String(dbStatement),
+		URL:            awsxray.String(url),
+		DatabaseType:   awsxray.String(dbSystem),
+		User:           awsxray.String(dbUser),
+		SanitizedQuery: awsxray.String(dbStatement),
 	}
 	return filtered, &sqlData
 }
