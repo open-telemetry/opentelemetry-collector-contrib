@@ -167,26 +167,26 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	return awsxray.Segment{
-		ID:          awsP.String(convertToAmazonSpanID(span.SpanID())),
-		TraceID:     awsP.String(traceID),
-		Name:        awsP.String(name),
+		ID:          awsxray.String(convertToAmazonSpanID(span.SpanID())),
+		TraceID:     awsxray.String(traceID),
+		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
 		EndTime:     awsP.Float64(endTime),
-		ParentID:    awsP.String(convertToAmazonSpanID(span.ParentSpanID())),
+		ParentID:    awsxray.String(convertToAmazonSpanID(span.ParentSpanID())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
 		Throttle:    awsP.Bool(isThrottled),
 		Cause:       cause,
-		Origin:      awsP.String(origin),
-		Namespace:   awsP.String(namespace),
-		User:        awsP.String(user),
+		Origin:      awsxray.String(origin),
+		Namespace:   awsxray.String(namespace),
+		User:        awsxray.String(user),
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
 		SQL:         sql,
 		Annotations: annotations,
 		Metadata:    metadata,
-		Type:        awsP.String(segmentType),
+		Type:        awsxray.String(segmentType),
 	}
 }
 
