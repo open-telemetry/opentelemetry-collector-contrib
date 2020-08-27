@@ -127,4 +127,4 @@ func TestOverrideMetricsURL(t *testing.T) {
 	err := cfg.Sanitize()
 	require.NoError(t, err)
 	assert.Equal(t, cfg.Metrics.Agentless.Endpoint, DebugEndpoint)
-}		   
+}
