@@ -10,7 +10,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
+	go.opentelemetry.io/collector v0.8.1-0.20200826180016-7f13eb66c333
 	go.uber.org/zap v1.15.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0

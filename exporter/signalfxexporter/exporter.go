@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
@@ -38,7 +37,7 @@ import (
 
 type signalfxExporter struct {
 	logger                 *zap.Logger
-	pushMetricsData        func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	pushMetricsData        func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushKubernetesMetadata func(metadata []*collection.KubernetesMetadataUpdate) error
 }
 
@@ -67,10 +66,7 @@ func newSignalFxExporter(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	headers, err := buildHeaders(config)
-	if err != nil {
-		return nil, err
-	}
+	headers := buildHeaders(config)
 
 	dpClient := &sfxDPClient{
 		ingestURL: options.ingestURL,
@@ -123,16 +119,7 @@ func (se signalfxExporter) Shutdown(context.Context) error {
 
 func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
-	numDroppedTimeSeries := 0
-	var err error
-	for _, md := range pdatautil.MetricsToMetricsData(md) {
-		ndts, cErr := se.pushMetricsData(ctx, md)
-		if cErr != nil {
-			err = cErr
-		}
-		numDroppedTimeSeries += ndts
-	}
-
+	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
 	numReceivedTimeSeries, numPoints := pdatautil.MetricAndDataPointCount(md)
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)

@@ -270,7 +270,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func md() consumerdata.MetricsData {
+func md() []consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
@@ -614,7 +614,7 @@ func md() consumerdata.MetricsData {
 			},
 		},
 	}
-	return md
+	return []consumerdata.MetricsData{md}
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {

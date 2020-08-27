@@ -93,11 +93,15 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(md consumerdata.MetricsData) (
+func (c *MetricsConverter) MetricDataToSignalFxV2(mds []consumerdata.MetricsData) (
 	sfxDataPoints []*sfxpb.DataPoint,
 	numDroppedTimeSeries int,
 ) {
-	sfxDataPoints, numDroppedTimeSeries = c.metricDataToSfxDataPoints(md)
+	for _, md := range mds {
+		dps, droppedDPCount := c.metricDataToSfxDataPoints(md)
+		sfxDataPoints = append(sfxDataPoints, dps...)
+		numDroppedTimeSeries += droppedDPCount
+	}
 	sanitizeDataPointDimensions(sfxDataPoints)
 	return
 }
