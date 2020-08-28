@@ -95,7 +95,7 @@ func TestEncodeResourceSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "root_span",
 		Type:      "unknown",
-		Result:    "Ok",
+		Result:    "STATUS_CODE_OK",
 		Context: &model.Context{
 			Tags: model.IfaceMap{{
 				Key:   "bool_attr",
