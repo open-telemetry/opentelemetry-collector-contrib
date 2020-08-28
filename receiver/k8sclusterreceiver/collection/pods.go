@@ -232,7 +232,7 @@ func handleErrors(err error, ref *v1.OwnerReference, podUID types.UID, logger *z
 		return
 	}
 
-	logger.Warn(
+	logger.WithOptions().Warn(
 		"Resource does not exist in store, properties from it will not be synced.",
 		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
 		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),

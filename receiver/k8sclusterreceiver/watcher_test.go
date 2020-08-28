@@ -16,11 +16,16 @@ package k8sclusterreceiver
 
 import (
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestSetupMetadataExporters(t *testing.T) {
@@ -83,6 +88,57 @@ func TestSetupMetadataExporters(t *testing.T) {
 			}
 
 			require.Equal(t, len(tt.fields.metadataConsumers), len(rw.metadataConsumers))
+		})
+	}
+}
+
+func TestWaitForInitialInformerSync(t *testing.T) {
+	type fields struct {
+		initialCacheSyncTimeout time.Duration
+		informersHaveSynced     *atomic.Bool
+	}
+	tests := []struct {
+		name           string
+		fields         fields
+		wantWarning    bool
+		warningMessage string
+	}{
+		{
+			name: "Times out on initial sync with warning",
+			fields: fields{
+				initialCacheSyncTimeout: 1 * time.Second,
+				informersHaveSynced:     atomic.NewBool(false),
+			},
+			wantWarning:    true,
+			warningMessage: "Initial sync of informers cache not yet completed. Try increasing 'initial_cache_sync_timeout'.",
+		},
+		{
+			name: "Returns without warning",
+			fields: fields{
+				initialCacheSyncTimeout: 1 * time.Second,
+				informersHaveSynced:     atomic.NewBool(true),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedLogger, logs := observer.New(zapcore.WarnLevel)
+			logger := zap.New(observedLogger)
+			rw := &resourceWatcher{
+				logger:                  logger,
+				initialCacheSyncTimeout: tt.fields.initialCacheSyncTimeout,
+				informersHaveSynced:     tt.fields.informersHaveSynced,
+			}
+
+			rw.waitForInitialInformerSync()
+
+			if tt.wantWarning {
+				require.Len(t, logs.All(), 1)
+				assert.Equal(t, tt.warningMessage, logs.All()[0].Message)
+				return
+			}
+
+			require.Len(t, logs.All(), 0)
 		})
 	}
 }
