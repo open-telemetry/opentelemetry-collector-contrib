@@ -42,7 +42,8 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, mReceiver)
 
-	tReceiver, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	mockTracesConsumer := exportertest.NewNopTraceExporter()
+	tReceiver, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockTracesConsumer)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
 }
