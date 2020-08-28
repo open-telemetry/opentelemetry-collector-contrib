@@ -476,7 +476,7 @@ func TestNewMetricTranslator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs)
+			mt, err := NewMetricTranslator(tt.trs, 1)
 			if tt.wantError == "" {
 				require.NoError(t, err)
 				require.NotNil(t, mt)
@@ -1558,7 +1558,7 @@ func TestTranslateDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs)
+			mt, err := NewMetricTranslator(tt.trs, 1)
 			require.NoError(t, err)
 			assert.NotEqualValues(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
@@ -1594,7 +1594,7 @@ func TestTestTranslateDimension(t *testing.T) {
 				"old.dimension": "new.dimension",
 			},
 		},
-	})
+	}, 1)
 	require.NoError(t, err)
 
 	assert.Equal(t, "new_dimension", mt.TranslateDimension("old_dimension"))
@@ -1602,7 +1602,7 @@ func TestTestTranslateDimension(t *testing.T) {
 	assert.Equal(t, "another_dimension", mt.TranslateDimension("another_dimension"))
 
 	// Test no rename_dimension_keys translation rule
-	mt, err = NewMetricTranslator([]Rule{})
+	mt, err = NewMetricTranslator([]Rule{}, 1)
 	require.NoError(t, err)
 	assert.Equal(t, "old_dimension", mt.TranslateDimension("old_dimension"))
 }
@@ -1693,7 +1693,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 				Operand1Metric: "metric1",
 				Operand2Metric: "metric2",
 				Operator:       MetricOperatorDivision,
-			}})
+			}}, 1)
 			require.NoError(t, err)
 			tr := mt.TranslateDataPoints(logger, dps)
 			require.Equal(t, 2, len(tr))
@@ -1714,7 +1714,7 @@ func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "*",
-	}})
+	}}, 1)
 	require.Errorf(
 		t,
 		err,
@@ -1870,7 +1870,7 @@ func TestCalculateNewMetric_MatchingDims_Single(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}})
+	}}, 1)
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -1921,7 +1921,7 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}})
+	}}, 1)
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -2117,6 +2117,21 @@ func TestDeltaMetricInt(t *testing.T) {
 	}
 }
 
+// disabled due to 2 second runtime
+func DisabledTestDeltaMetricTTL(t *testing.T) {
+	c := converter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
+
+	dp1, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(10, 0)})
+	m1 := indexPts(dp1)
+	require.Equal(t, 1, len(m1))
+
+	time.Sleep(2 * time.Second)
+
+	dp2, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(20, 10)})
+	m2 := indexPts(dp2)
+	require.Equal(t, 1, len(m2))
+}
+
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 	c := converter(t, map[string]string{"foo": "bar"})
 	md := intMD(1, 1)
@@ -2186,7 +2201,7 @@ func converter(t *testing.T, mapping map[string]string) *MetricsConverter {
 		Action:  ActionDeltaMetric,
 		Mapping: mapping,
 	}}
-	tr, err := NewMetricTranslator(rules)
+	tr, err := NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
 
 	c := NewMetricsConverter(zap.NewNop(), tr)

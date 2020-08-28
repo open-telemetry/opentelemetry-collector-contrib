@@ -94,7 +94,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	var metricTranslator *translation.MetricTranslator
 	if cfg.SendCompatibleMetrics {
-		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules)
+		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, 1)
 		if err != nil {
 			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
 		}

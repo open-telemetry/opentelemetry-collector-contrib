@@ -31,7 +31,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				"prope_rty2": "rty2",
 				"prope.rty3": "rty3"},
 		},
-	})
+	}, 1)
 	type args struct {
 		metadata         collection.KubernetesMetadataUpdate
 		metricTranslator *translation.MetricTranslator

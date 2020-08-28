@@ -202,7 +202,7 @@ type MetricTranslator struct {
 	deltaTranslator *deltaTranslator
 }
 
-func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
+func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
 	err := validateTranslationRules(rules)
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
 	return &MetricTranslator{
 		rules:           rules,
 		dimensionsMap:   createDimensionsMap(rules),
-		deltaTranslator: newDeltaTranslator(),
+		deltaTranslator: newDeltaTranslator(ttl),
 	}, nil
 }
 
