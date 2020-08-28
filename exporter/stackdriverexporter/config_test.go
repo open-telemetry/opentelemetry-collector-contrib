@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -54,7 +55,9 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
-			Timeout:                    20 * time.Second,
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 20 * time.Second,
+			},
 			ResourceMappings: []ResourceMapping{
 				{
 					SourceType: "source.resource1",
