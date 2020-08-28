@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -35,7 +36,7 @@ var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
 type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
-	options  *receiverOptions
+	config   *Config
 	logger   *zap.Logger
 	consumer consumer.MetricsConsumer
 	cancel   context.CancelFunc
@@ -43,18 +44,18 @@ type kubernetesReceiver struct {
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	var c context.Context
-	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, transport, kr.options.name))
+	c, kr.cancel = context.WithCancel(obsreport.ReceiverContext(ctx, typeStr, transport, kr.config.Name()))
 
 	exporters := host.GetExporters()
 	if err := kr.resourceWatcher.setupMetadataExporters(
-		exporters[configmodels.MetricsDataType], kr.options.metadataExporters); err != nil {
+		exporters[configmodels.MetricsDataType], kr.config.MetadataExporters); err != nil {
 		return err
 	}
 
 	go func() {
 		kr.resourceWatcher.startWatchingResources(c.Done())
 
-		ticker := time.NewTicker(kr.options.collectionInterval)
+		ticker := time.NewTicker(kr.config.CollectionInterval)
 		defer ticker.Stop()
 
 		for {
@@ -90,18 +91,14 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
-	logger *zap.Logger, rOptions *receiverOptions,
-	consumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
-
-	resourceWatcher, err := newResourceWatcher(logger, rOptions)
-	if err != nil {
-		return nil, err
-	}
+	logger *zap.Logger, config *Config, consumer consumer.MetricsConsumer,
+	client kubernetes.Interface) (component.MetricsReceiver, error) {
+	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,
 		logger:          logger,
-		options:         rOptions,
+		config:          config,
 		consumer:        consumer,
 	}, nil
 }
