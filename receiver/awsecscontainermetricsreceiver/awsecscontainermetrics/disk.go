@@ -20,22 +20,22 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func diskMetrics(prefix string, stats *DiskStats) []*metricspb.Metric {
+func diskMetrics(prefix string, stats *DiskStats, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
 	readBytes, writeBytes := extractStorageUsage(stats)
 
 	return applyCurrentTime([]*metricspb.Metric{
-		storageReadBytes(prefix, readBytes),
-		storageWriteBytes(prefix, writeBytes),
+		intGauge(prefix+"disk.storage_read_bytes", "Bytes", readBytes, labelKeys, labelValues),
+		intGauge(prefix+"disk.storage_write_bytes", "Bytes", writeBytes, labelKeys, labelValues),
 	}, time.Now())
 }
 
-func storageReadBytes(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"disk.storage_read_bytes", "Bytes", value)
-}
+// func storageReadBytes(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"disk.storage_read_bytes", "Bytes", value)
+// }
 
-func storageWriteBytes(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"disk.storage_write_bytes", "Bytes", value)
-}
+// func storageWriteBytes(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"disk.storage_write_bytes", "Bytes", value)
+// }
 
 func extractStorageUsage(stats *DiskStats) (*uint64, *uint64) {
 	var readBytes, writeBytes *uint64

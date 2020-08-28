@@ -38,16 +38,21 @@ func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]Containe
 	var taskCpuLimit float64
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerId]
+
 		taskMemLimit += *containerMetadata.Limits.Memory
 		taskCpuLimit += *containerMetadata.Limits.CPU
+
+		containerResource := containerResource(containerMetadata)
+		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
 		acc.accumulate(
 			timestampProto(time.Now()),
+			containerResource,
 
-			memMetrics(container_prefix, &stats.Memory, containerMetadata),
-			diskMetrics(container_prefix, &stats.Disk),
-			networkMetrics(container_prefix, stats.Network),
-			networkRateMetrics(container_prefix, &stats.NetworkRate),
-			cpuMetrics(container_prefix, &stats.CPU, containerMetadata),
+			memMetrics(container_prefix, &stats.Memory, containerMetadata, labelKeys, labelValues),
+			diskMetrics(container_prefix, &stats.Disk, labelKeys, labelValues),
+			networkMetrics(container_prefix, stats.Network, labelKeys, labelValues),
+			networkRateMetrics(container_prefix, &stats.NetworkRate, labelKeys, labelValues),
+			cpuMetrics(container_prefix, &stats.CPU, containerMetadata, labelKeys, labelValues),
 		)
 	}
 
@@ -60,32 +65,20 @@ func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]Containe
 		taskLimit.Memory = metadata.Limits.Memory
 	}
 
-	// // Container metrics
-	// for _, value := range containerStatsMap {
-	// 	acc.accumulate(
-	// 		timestampProto(time.Now()),
-
-	// 		memMetrics(container_prefix, &value.Memory),
-	// 		diskMetrics(container_prefix, &value.Disk),
-	// 		networkMetrics(container_prefix, value.Network),
-	// 		networkRateMetrics(container_prefix, &value.NetworkRate),
-	// 		cpuMetrics(container_prefix, &value.CPU),
-	// 	)
-	// }
-
 	// Task metrics- aggregation of containers
 	taskStat := aggregateTaskStats(containerStatsMap)
+	taskResource := taskResource(metadata)
+	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 	acc.accumulate(
 		timestampProto(time.Now()),
-		taskMetrics(task_prefix, &taskStat, taskLimit),
+		taskResource,
+		taskMetrics(task_prefix, &taskStat, taskLimit, taskLabelKeys, taskLabelValues),
 	)
-
-	// Conainer Limits
-
 }
 
 func (acc *metricDataAccumulator) accumulate(
 	startTime *timestamp.Timestamp,
+	r *resourcepb.Resource,
 	m ...[]*metricspb.Metric,
 ) {
 	var resourceMetrics []*metricspb.Metric
@@ -99,11 +92,8 @@ func (acc *metricDataAccumulator) accumulate(
 	}
 
 	acc.md = append(acc.md, &consumerdata.MetricsData{
-		Metrics: resourceMetrics,
-		Resource: &resourcepb.Resource{
-			Type:   "awsecscontainermetrics", // k8s/pod/container
-			Labels: map[string]string{"receiver": "awsecscontainermetrics"},
-		},
+		Metrics:  resourceMetrics,
+		Resource: r,
 	})
 }
 

@@ -20,17 +20,17 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func networkRateMetrics(prefix string, stats *NetworkRateStats) []*metricspb.Metric {
+func networkRateMetrics(prefix string, stats *NetworkRateStats, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
 	return applyCurrentTime([]*metricspb.Metric{
-		rxBytesPerSecond(prefix, stats.RxBytesPerSecond),
-		txBytesPerSecond(prefix, stats.TxBytesPerSecond),
+		doubleGauge(prefix+"network_rate.rx_bytes_per_sec", "Bytes/Sec", stats.RxBytesPerSecond, labelKeys, labelValues),
+		doubleGauge(prefix+"network_rate.tx_bytes_per_sec", "Bytes/Sec", stats.TxBytesPerSecond, labelKeys, labelValues),
 	}, time.Now())
 }
 
-func rxBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
-	return doubleGauge(prefix+"network_rate.rx_bytes_per_sec", "Bytes/Sec", value)
-}
+// func rxBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
+// 	return doubleGauge(prefix+"network_rate.rx_bytes_per_sec", "Bytes/Sec", value)
+// }
 
-func txBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
-	return doubleGauge(prefix+"network_rate.tx_bytes_per_sec", "Bytes/Sec", value)
-}
+// func txBytesPerSecond(prefix string, value *float64) *metricspb.Metric {
+// 	return doubleGauge(prefix+"network_rate.tx_bytes_per_sec", "Bytes/Sec", value)
+// }

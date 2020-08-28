@@ -25,34 +25,34 @@ const (
 	BytesInMiB = 1024 * 1024
 )
 
-func memMetrics(prefix string, stats *MemoryStats, containerMetadata ContainerMetadata) []*metricspb.Metric {
+func memMetrics(prefix string, stats *MemoryStats, containerMetadata ContainerMetadata, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
 	memoryUtilizedInMb := (*stats.Usage - stats.Stats["cache"]) / BytesInMiB
 	stats.MemoryUtilized = &memoryUtilizedInMb
 	return applyCurrentTime([]*metricspb.Metric{
-		memUsageMetric(prefix, stats.Usage),
-		memMaxUsageMetric(prefix, stats.MaxUsage),
-		memLimitMetric(prefix, stats.Limit),
-		memUtilizedMetric(prefix, stats.MemoryUtilized),
-		memReserved(prefix, containerMetadata.Limits.Memory),
+		intGauge(prefix+"memory.usage", "Bytes", stats.Usage, labelKeys, labelValues),
+		intGauge(prefix+"memory.maxusage", "MB", stats.MaxUsage, labelKeys, labelValues),
+		intGauge(prefix+"memory.limit", "MB", stats.Limit, labelKeys, labelValues),
+		intGauge(prefix+"memory.utilized", "MB", stats.MemoryUtilized, labelKeys, labelValues),
+		intGauge(prefix+"memory.reserved", "MB", containerMetadata.Limits.Memory, labelKeys, labelValues),
 	}, time.Now())
 }
 
-func memUsageMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.usage", "Bytes", value)
-}
+// func memUsageMetric(prefix string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
+// 	return intGauge(prefix+"memory.usage", "Bytes", value, labelKeys, labelValues)
+// }
 
-func memMaxUsageMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.maxusage", "MB", value)
-}
+// func memMaxUsageMetric(prefix string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
+// 	return intGauge(prefix+"memory.maxusage", "MB", value, labelKeys, labelValues)
+// }
 
-func memLimitMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.limit", "MB", value)
-}
+// func memLimitMetric(prefix string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
+// 	return intGauge(prefix+"memory.limit", "MB", value, labelKeys, labelValues)
+// }
 
-func memUtilizedMetric(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.utilized", "MB", value)
-}
+// func memUtilizedMetric(prefix string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
+// 	return intGauge(prefix+"memory.utilized", "MB", value, labelKeys, labelValues)
+// }
 
-func memReserved(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"memory.reserved", "MB", value)
-}
+// func memReserved(prefix string, value *uint64, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) *metricspb.Metric {
+// 	return intGauge(prefix+"memory.reserved", "MB", value, labelKeys, labelValues)
+// }

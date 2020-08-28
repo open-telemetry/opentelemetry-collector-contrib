@@ -20,7 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func networkMetrics(prefix string, stats map[string]NetworkStats) []*metricspb.Metric {
+func networkMetrics(prefix string, stats map[string]NetworkStats, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
 	var rBytes, rPackets, rErrors, rDropped uint64
 	var tBytes, tPackets, tErrors, tDropped uint64
 	for _, netStat := range stats {
@@ -35,45 +35,45 @@ func networkMetrics(prefix string, stats map[string]NetworkStats) []*metricspb.M
 		tDropped += *netStat.TxDropped
 	}
 	return applyCurrentTime([]*metricspb.Metric{
-		rxBytes(prefix, &rBytes),
-		rxPackets(prefix, &rPackets),
-		rxErrors(prefix, &rErrors),
-		rxDropped(prefix, &rDropped),
-		txBytes(prefix, &tBytes),
-		txPackets(prefix, &tPackets),
-		txErrors(prefix, &tErrors),
-		txDropped(prefix, &tDropped),
+		intGauge(prefix+"network.rx_bytes", "Bytes", &rBytes, labelKeys, labelValues),
+		intGauge(prefix+"network.rx_packets", "Bytes", &rPackets, labelKeys, labelValues),
+		intGauge(prefix+"network.rx_errors", "Bytes", &rErrors, labelKeys, labelValues),
+		intGauge(prefix+"network.rx_dropped", "Bytes", &rDropped, labelKeys, labelValues),
+		intGauge(prefix+"network.tx_bytes", "Bytes", &tBytes, labelKeys, labelValues),
+		intGauge(prefix+"network.tx_packets", "Bytes", &tPackets, labelKeys, labelValues),
+		intGauge(prefix+"network.tx_errors", "Bytes", &tErrors, labelKeys, labelValues),
+		intGauge(prefix+"network.tx_dropped", "Bytes", &tDropped, labelKeys, labelValues),
 	}, time.Now())
 }
 
-func rxBytes(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.rx_bytes", "Bytes", value)
-}
+// func rxBytes(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.rx_bytes", "Bytes", value)
+// }
 
-func rxPackets(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.rx_packets", "Bytes", value)
-}
+// func rxPackets(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.rx_packets", "Bytes", value)
+// }
 
-func rxErrors(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.rx_errors", "Bytes", value)
-}
+// func rxErrors(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.rx_errors", "Bytes", value)
+// }
 
-func rxDropped(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.rx_dropped", "Bytes", value)
-}
+// func rxDropped(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.rx_dropped", "Bytes", value)
+// }
 
-func txBytes(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.tx_bytes", "Bytes", value)
-}
+// func txBytes(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.tx_bytes", "Bytes", value)
+// }
 
-func txPackets(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.tx_packets", "Bytes", value)
-}
+// func txPackets(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.tx_packets", "Bytes", value)
+// }
 
-func txErrors(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.tx_errors", "Bytes", value)
-}
+// func txErrors(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.tx_errors", "Bytes", value)
+// }
 
-func txDropped(prefix string, value *uint64) *metricspb.Metric {
-	return intGauge(prefix+"network.tx_dropped", "Bytes", value)
-}
+// func txDropped(prefix string, value *uint64) *metricspb.Metric {
+// 	return intGauge(prefix+"network.tx_dropped", "Bytes", value)
+// }

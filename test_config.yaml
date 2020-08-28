@@ -4,10 +4,12 @@ receivers:
 exporters:
   logging:
     loglevel: debug
+  file:
+    path: ./metrics_result.json
   
 service:
   pipelines:
     metrics:
       receivers: [awsecscontainermetrics]
-      exporters: [logging]
+      exporters: [logging, file]
   
