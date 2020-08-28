@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // client sends the data to the splunk backend.
@@ -159,7 +161,7 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression
 	return getReader(zippers, buf, disableCompression)
 }
 
-func encodeBody(zippers *sync.Pool, dps []*splunkMetric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers *sync.Pool, dps []*splunk.Metric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
