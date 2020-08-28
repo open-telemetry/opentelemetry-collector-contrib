@@ -17,6 +17,7 @@ package stackdriverexporter
 import (
 	"context"
 	"sync"
+	"time"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
@@ -26,7 +27,8 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "stackdriver"
+	typeStr        = "stackdriver"
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
 var once sync.Once
@@ -53,6 +55,7 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 	}
 }
 

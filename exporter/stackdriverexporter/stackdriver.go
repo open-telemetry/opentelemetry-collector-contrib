@@ -80,6 +80,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
+		cloudtrace.WithTimeout(cfg.Timeout),
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -100,7 +101,10 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		tExp.pushTraces,
-		exporterhelper.WithShutdown(tExp.Shutdown))
+		exporterhelper.WithShutdown(tExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
 func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
@@ -115,6 +119,8 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
+
+		Timeout: cfg.Timeout,
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -145,7 +151,10 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		mExp.pushMetrics,
-		exporterhelper.WithShutdown(mExp.Shutdown))
+		exporterhelper.WithShutdown(mExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
