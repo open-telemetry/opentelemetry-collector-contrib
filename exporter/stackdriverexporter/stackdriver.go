@@ -19,7 +19,6 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
@@ -33,10 +32,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	name           = "stackdriver"
-	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
-)
+const name = "stackdriver"
 
 // traceExporter is a wrapper struct of OT cloud trace exporter
 type traceExporter struct {
@@ -84,7 +80,7 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
-		cloudtrace.WithTimeout(getTimeout(cfg)),
+		cloudtrace.WithTimeout(cfg.Timeout),
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -105,7 +101,10 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		tExp.pushTraces,
-		exporterhelper.WithShutdown(tExp.Shutdown))
+		exporterhelper.WithShutdown(tExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
 func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
@@ -121,7 +120,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
 
-		Timeout: getTimeout(cfg),
+		Timeout: cfg.Timeout,
 	}
 	if cfg.Endpoint != "" {
 		copts, err := generateClientOptions(cfg)
@@ -152,7 +151,10 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		mExp.pushMetrics,
-		exporterhelper.WithShutdown(mExp.Shutdown))
+		exporterhelper.WithShutdown(mExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
@@ -201,12 +203,4 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	}
 
 	return numSpans - goodSpans, componenterror.CombineErrors(errs)
-}
-
-func getTimeout(cfg *Config) time.Duration {
-	if cfg.Timeout > 0 {
-		return cfg.Timeout
-	}
-
-	return defaultTimeout
 }
