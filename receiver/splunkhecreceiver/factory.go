@@ -22,9 +22,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // This file implements factory for Splunk HEC receiver.
@@ -52,7 +55,10 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Endpoint: defaultEndpoint,
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: defaultEndpoint,
+		},
+		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 	}
 }
 
