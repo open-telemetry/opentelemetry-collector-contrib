@@ -2117,19 +2117,20 @@ func TestDeltaMetricInt(t *testing.T) {
 	}
 }
 
-// disabled due to 2 second runtime
-func DisabledTestDeltaMetricTTL(t *testing.T) {
+func TestNegativeDeltas(t *testing.T) {
 	c := converter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 
-	dp1, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(10, 0)})
+	dp1, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(10, 100)})
 	m1 := indexPts(dp1)
 	require.Equal(t, 1, len(m1))
 
-	time.Sleep(2 * time.Second)
-
-	dp2, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(20, 10)})
+	dp2, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(20, 200)})
 	m2 := indexPts(dp2)
-	require.Equal(t, 1, len(m2))
+	require.Equal(t, 2, len(m2))
+
+	dp3, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(30, 50)})
+	m3 := indexPts(dp3)
+	require.Equal(t, 1, len(m3))
 }
 
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {

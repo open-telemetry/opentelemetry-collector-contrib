@@ -16,7 +16,6 @@ package translation
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -29,17 +28,4 @@ func TestTTLMapData(t *testing.T) {
 	require.NotNil(t, m.get("bob"))
 	m.sweep(13)
 	require.Nil(t, m.get("bob"))
-}
-
-// disabled due to 5 second run time
-func DisabledTestNewMap(t *testing.T) {
-	m := newTTLMap(2, 1)
-	m.start()
-	m.put("bob", "xyz")
-	time.Sleep(time.Second)
-	v := m.get("bob")
-	require.NotNil(t, v)
-	time.Sleep(4 * time.Second)
-	v = m.get("bob")
-	require.Nil(t, v)
 }
