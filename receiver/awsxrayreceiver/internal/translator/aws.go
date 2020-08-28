@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 func addAWSToResource(aws *awsxray.AWSData, attrs *pdata.AttributeMap) {

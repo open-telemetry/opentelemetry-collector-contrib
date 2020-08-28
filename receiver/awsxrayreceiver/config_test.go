@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 )
 

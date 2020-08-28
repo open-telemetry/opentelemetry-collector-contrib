@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 func addMetadata(meta map[string]map[string]interface{}, attrs *pdata.AttributeMap) error {
