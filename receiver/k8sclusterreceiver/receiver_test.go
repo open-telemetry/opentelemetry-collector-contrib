@@ -99,24 +99,18 @@ func setupReceiver(
 	consumer consumer.MetricsConsumer) (*kubernetesReceiver, error) {
 
 	logger := zap.NewNop()
-	rOptions := &receiverOptions{
-		collectionInterval:         1 * time.Second,
-		nodeConditionTypesToReport: []string{"Ready"},
-		client:                     client,
+	config := &Config{
+		CollectionInterval:         1 * time.Second,
+		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw, err := newResourceWatcher(logger, rOptions)
-
-	if err != nil {
-		return nil, err
-	}
-
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{
 		resourceWatcher: rw,
 		logger:          logger,
-		options:         rOptions,
+		config:          config,
 		consumer:        consumer,
 	}, nil
 }

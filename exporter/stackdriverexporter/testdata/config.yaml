@@ -13,6 +13,7 @@ exporters:
     number_of_workers: 3
     skip_create_metric_descriptor: true
     use_insecure: true
+    timeout: 20s
     resource_mappings:
       - source_type: source.resource1
         target_type: target-resource1

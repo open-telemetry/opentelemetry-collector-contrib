@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
@@ -67,9 +68,38 @@ func TestFactory(t *testing.T) {
 		return nil, nil
 	}
 	r, err = f.CreateMetricsReceiver(
-		context.Background(), component.ReceiverCreateParams{},
+		context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()},
 		rCfg, &exportertest.SinkMetricsExporter{},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
+
+	// Test metadata exporters setup.
+	rCfg.MetadataExporters = []string{"exampleexporter/withoutmetadata"}
+	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
+}
+
+// nopHostWithExporters mocks a receiver.ReceiverHost for test purposes.
+type nopHostWithExporters struct {
+}
+
+var _ component.Host = (*nopHostWithExporters)(nil)
+
+func (n nopHostWithExporters) ReportFatalError(error) {
+}
+
+func (n nopHostWithExporters) GetFactory(component.Kind, configmodels.Type) component.Factory {
+	return nil
+}
+
+func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]component.ServiceExtension {
+	return nil
+}
+
+func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
+	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
+		configmodels.MetricsDataType: {
+			mockExporterConfig{ExporterName: "exampleexporter/withoutmetadata"}: MockExporter{},
+		},
+	}
 }
