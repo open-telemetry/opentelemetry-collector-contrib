@@ -21,11 +21,13 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
@@ -136,7 +138,7 @@ func phaseToInt(phase corev1.PodPhase) int32 {
 }
 
 // getMetadataForPod returns all metadata associated with the pod.
-func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*KubernetesMetadata {
+func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) map[ResourceID]*KubernetesMetadata {
 	metadata := utils.MergeStringMaps(map[string]string{}, pod.Labels)
 
 	metadata[podCreationTime] = pod.CreationTimestamp.Format(time.RFC3339)
@@ -161,13 +163,13 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*Kuber
 
 	if mc.jobs != nil {
 		metadata = utils.MergeStringMaps(metadata,
-			collectPodJobProperties(pod, mc.jobs),
+			collectPodJobProperties(pod, mc.jobs, logger),
 		)
 	}
 
 	if mc.replicaSets != nil {
 		metadata = utils.MergeStringMaps(metadata,
-			collectPodReplicaSetProperties(pod, mc.replicaSets),
+			collectPodReplicaSetProperties(pod, mc.replicaSets, logger),
 		)
 	}
 
@@ -183,37 +185,58 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore) map[ResourceID]*Kuber
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
-func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindJob)
 	if jobRef != nil {
-		job, ok, _ := JobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
-		if ok {
+		job, exists, err := JobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+		if exists {
 			jobObj := job.(*batchv1.Job)
 			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
 				return getWorkloadProperties(cronJobRef, conventions.AttributeK8sCronJob)
 			}
 			return getWorkloadProperties(jobRef, conventions.AttributeK8sJob)
-
 		}
+		handleErrors(err, jobRef, pod.UID, logger)
 	}
 	return nil
 }
 
 // collectPodReplicaSetProperties checks if pod owner of type ReplicaSet is cached. Check owners reference
 // on ReplicaSet to see if it was created by a Deployment. Sync metadata accordingly.
-func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store) map[string]string {
+func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store, logger *zap.Logger) map[string]string {
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindReplicaSet)
 	if rsRef != nil {
-		replicaSet, ok, _ := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
-		if ok {
+		replicaSet, exists, err := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
+		if exists {
 			replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
 			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
 				return getWorkloadProperties(deployRef, conventions.AttributeK8sDeployment)
 			}
 			return getWorkloadProperties(rsRef, conventions.AttributeK8sReplicaSet)
 		}
+		handleErrors(err, rsRef, pod.UID, logger)
 	}
 	return nil
+}
+
+// handleErrors is intended to be invoked when a resource is not found in its store
+// or an error occurs while trying to retrieve it from its store
+func handleErrors(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	if err != nil {
+		logger.Error(
+			"Failed to get resource from store, properties from it will not be synced.",
+			zap.String(conventions.AttributeK8sPodUID, string(podUID)),
+			zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+			zap.Error(err),
+		)
+		return
+	}
+
+	logger.Warn(
+		"Resource does not exist in store, properties from it will not be synced.",
+		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
+		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+	)
 }
 
 // getPodServiceTags returns a set of services associated with the pod.

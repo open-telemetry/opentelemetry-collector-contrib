@@ -45,7 +45,7 @@ func TestReceiver(t *testing.T) {
 	createNodes(t, client, numNodes)
 
 	ctx := context.Background()
-	r.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
@@ -77,14 +77,13 @@ func TestReceiverWithManyResources(t *testing.T) {
 	consumer := &exportertest.SinkMetricsExporter{}
 
 	r, err := setupReceiver(client, consumer)
-
 	require.NoError(t, err)
 
 	numPods := 1000
 	createPods(t, client, numPods)
 
 	ctx := context.Background()
-	r.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
 		return consumer.MetricsCount() == numPods
@@ -102,9 +101,10 @@ func setupReceiver(
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
+		InitialCacheSyncTimeout:    1 * time.Second,
 	}
 
-	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, config.InitialCacheSyncTimeout)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{

@@ -20,6 +20,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,9 +84,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 func TestPodAndContainerMetadata(t *testing.T) {
 	pod := newPodWithContainer("1")
 
-	actualMetadata := getMetadataForPod(pod,
-		&metadataStore{},
-	)
+	actualMetadata := getMetadataForPod(pod, &metadataStore{}, zap.NewNop())
 
 	require.Equal(t, 2, len(actualMetadata))
 

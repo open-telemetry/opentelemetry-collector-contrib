@@ -16,9 +16,11 @@ package k8sclusterreceiver
 
 import (
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -35,11 +37,13 @@ import (
 )
 
 type resourceWatcher struct {
-	client                kubernetes.Interface
-	sharedInformerFactory informers.SharedInformerFactory
-	dataCollector         *collection.DataCollector
-	logger                *zap.Logger
-	metadataConsumers     []metadataConsumer
+	client                  kubernetes.Interface
+	sharedInformerFactory   informers.SharedInformerFactory
+	dataCollector           *collection.DataCollector
+	logger                  *zap.Logger
+	metadataConsumers       []metadataConsumer
+	initialCacheSyncTimeout time.Duration
+	informersHaveSynced     *atomic.Bool
 }
 
 type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
@@ -47,11 +51,14 @@ type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) erro
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface,
-	nodeConditionTypesToReport []string) *resourceWatcher {
+	nodeConditionTypesToReport []string,
+	initialCacheSyncTimeout time.Duration) *resourceWatcher {
 	rw := &resourceWatcher{
-		client:        client,
-		logger:        logger,
-		dataCollector: collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		client:                  client,
+		logger:                  logger,
+		dataCollector:           collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		initialCacheSyncTimeout: initialCacheSyncTimeout,
+		informersHaveSynced:     atomic.NewBool(false),
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -86,7 +93,16 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 
 // startWatchingResources starts up all informers.
 func (rw *resourceWatcher) startWatchingResources(stopper <-chan struct{}) {
+	// Start off individual informers in the factory.
 	rw.sharedInformerFactory.Start(stopper)
+
+	// Ensure cache is synced with initial state, once informers are started up.
+	// Note that the event handler can start receiving events as soon as the informers
+	// are started. So it's required to ensure that the receiver does not start
+	// collecting data before the cache sync since all data may not be available.
+	// This synchronization is achieved using rw.informersHaveSynced.
+	rw.sharedInformerFactory.WaitForCacheSync(stopper)
+	rw.informersHaveSynced.Store(true)
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
@@ -100,6 +116,7 @@ func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.Share
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
+	rw.waitForInitialInformerSync()
 	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -112,10 +129,12 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
+	rw.waitForInitialInformerSync()
 	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+	rw.waitForInitialInformerSync()
 	// Sync metrics from the new object
 	rw.dataCollector.SyncMetrics(newObj)
 
@@ -128,6 +147,28 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	newMetadata := rw.dataCollector.SyncMetadata(newObj)
 
 	rw.syncMetadataUpdate(oldMetadata, newMetadata)
+}
+
+// waitForInitialInformerSync waits for initial cache sync, after the informers
+// are started up. This is achieved by resourceWatcher.informersHaveSynced. This
+// method is intended to be used by the ResourceEventHandler callbacks to ensure
+// that data sync does not start until the cache is synced as the events could be
+// received by the handler even before the informer caches being synced.
+func (rw *resourceWatcher) waitForInitialInformerSync() {
+	// Return immediately if already synced.
+	if rw.informersHaveSynced.Load() {
+		return
+	}
+
+	waitUntil := time.Now().Add(rw.initialCacheSyncTimeout)
+	for !rw.informersHaveSynced.Load() {
+		if time.Now().After(waitUntil) {
+			rw.logger.Warn("Initial sync of informers cache not yet completed. Try increasing 'initial_cache_sync_timeout'.")
+			rw.informersHaveSynced.Store(true)
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
