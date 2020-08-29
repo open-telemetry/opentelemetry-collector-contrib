@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )

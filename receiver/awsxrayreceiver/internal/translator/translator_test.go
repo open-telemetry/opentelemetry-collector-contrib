@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 type perSpanProperties struct {
@@ -88,7 +88,7 @@ func TestTranslation(t *testing.T) {
 	}{
 		{
 			testCase:   "TranslateInstrumentedServerSegment",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "serverSample.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "serverSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("aws")
@@ -128,7 +128,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateInstrumentedClientSegment",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "ddbSample.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "ddbSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("aws")
@@ -549,7 +549,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "[aws] TranslateMissingAWSFieldSegment",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "awsMissingAwsField.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "awsMissingAwsField.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
@@ -584,7 +584,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "[aws] TranslateEC2AWSFieldsSegment",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "awsValidAwsFields.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "awsValidAwsFields.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("aws")
@@ -644,7 +644,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateCauseIsExceptionId",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "minCauseIsExceptionId.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "minCauseIsExceptionId.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
@@ -679,7 +679,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateInvalidNamespace",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "invalidNamespace.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "invalidNamespace.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				return nil
 			},
@@ -697,7 +697,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateIndepSubsegment",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "indepSubsegment.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "indepSubsegment.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
@@ -742,7 +742,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateSql",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "indepSubsegmentWithSql.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "indepSubsegmentWithSql.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				attrs := make(map[string]pdata.AttributeValue)
 				attrs[conventions.AttributeCloudProvider] = pdata.NewAttributeValueString("unknown")
@@ -787,7 +787,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateInvalidSqlUrl",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "indepSubsegmentWithInvalidSqlUrl.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "indepSubsegmentWithInvalidSqlUrl.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				return nil
 			},
@@ -808,7 +808,7 @@ func TestTranslation(t *testing.T) {
 		{
 			testCase:                  "TranslateJsonUnmarshallFailed",
 			expectedUnmarshallFailure: true,
-			samplePath:                path.Join("../../../../internal/common/awsxray", "testdata", "minCauseIsInvalid.txt"),
+			samplePath:                path.Join("../../../../internal/awsxray", "testdata", "minCauseIsInvalid.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				return nil
 			},
@@ -828,7 +828,7 @@ func TestTranslation(t *testing.T) {
 		},
 		{
 			testCase:   "TranslateRootSegValidationFailed",
-			samplePath: path.Join("../../../../internal/common/awsxray", "testdata", "segmentValidationFailed.txt"),
+			samplePath: path.Join("../../../../internal/awsxray", "testdata", "segmentValidationFailed.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 				return nil
 			},
