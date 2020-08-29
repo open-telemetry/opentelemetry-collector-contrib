@@ -16,5 +16,3 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
