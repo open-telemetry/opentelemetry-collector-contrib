@@ -9,10 +9,10 @@ require (
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
 	go.uber.org/zap v1.15.0
-	k8s.io/api v0.18.8
-	k8s.io/apimachinery v0.18.8
-	k8s.io/client-go v0.18.8
-	k8s.io/utils v0.0.0-20200724153422-f32512634ab7
+	k8s.io/api v0.19.0
+	k8s.io/apimachinery v0.19.0
+	k8s.io/client-go v0.19.0
+	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
