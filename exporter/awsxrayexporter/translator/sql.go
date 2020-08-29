@@ -17,7 +17,7 @@ package translator
 import (
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData) {

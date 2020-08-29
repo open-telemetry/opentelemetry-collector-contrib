@@ -82,7 +82,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/common/awsxray"
+    directory: "/internal/awsxray"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleapp"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleserver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
