@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/antonmedv/expr v1.8.8
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.1
@@ -21,5 +20,3 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer
-
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

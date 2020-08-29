@@ -119,6 +119,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
-
-// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
