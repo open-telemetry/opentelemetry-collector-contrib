@@ -15,7 +15,6 @@
 package translation
 
 import (
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -110,8 +109,6 @@ func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData
 	sfxDataPoints []*sfxpb.DataPoint,
 	numDroppedTimeSeries int,
 ) {
-	var err error
-
 	// Labels from Node and Resource.
 	// TODO: Options to add lib, service name, etc as dimensions?
 	//  Q.: what about resource type?
@@ -183,29 +180,15 @@ func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData
 					metricDataPoints = append(metricDataPoints, sfxDataPoint)
 
 				case *metricspb.Point_DistributionValue:
-					metricDataPoints, err = appendDistributionValues(
+					metricDataPoints = appendDistributionValues(
 						metricDataPoints,
 						sfxDataPoint,
 						pv.DistributionValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						c.logger.Warn(
-							"Timeseries for distribution metric dropped",
-							zap.Error(err),
-							zap.String("metric", sfxDataPoint.Metric))
-					}
 				case *metricspb.Point_SummaryValue:
-					metricDataPoints, err = appendSummaryValues(
+					metricDataPoints = appendSummaryValues(
 						metricDataPoints,
 						sfxDataPoint,
 						pv.SummaryValue)
-					if err != nil {
-						numDroppedTimeSeries++
-						c.logger.Warn(
-							"Timeseries for summary metric dropped",
-							zap.Error(err),
-							zap.String("metric", sfxDataPoint.Metric))
-					}
 				default:
 					numDroppedTimeSeries++
 					c.logger.Warn(
@@ -254,7 +237,7 @@ func appendDistributionValues(
 	sfxDataPoints []*sfxpb.DataPoint,
 	sfxBaseDataPoint *sfxpb.DataPoint,
 	distributionValue *metricspb.DistributionValue,
-) ([]*sfxpb.DataPoint, error) {
+) []*sfxpb.DataPoint {
 
 	// Translating distribution values per symmetrical recommendations to Prometheus:
 	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
@@ -276,9 +259,7 @@ func appendDistributionValues(
 	metricName := sfxBaseDataPoint.Metric + "_bucket"
 	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
 	if explicitBuckets == nil {
-		return sfxDataPoints, fmt.Errorf(
-			"unknown bucket options type for metric %q",
-			sfxBaseDataPoint.Metric)
+		return sfxDataPoints
 	}
 	bounds := explicitBuckets.Bounds
 	sfxBounds := make([]string, len(bounds)+1)
@@ -308,14 +289,14 @@ func appendDistributionValues(
 		sfxDataPoints = append(sfxDataPoints, &bucketDP)
 	}
 
-	return sfxDataPoints, nil
+	return sfxDataPoints
 }
 
 func appendSummaryValues(
 	sfxDataPoints []*sfxpb.DataPoint,
 	sfxBaseDataPoint *sfxpb.DataPoint,
 	summaryValue *metricspb.SummaryValue,
-) ([]*sfxpb.DataPoint, error) {
+) []*sfxpb.DataPoint {
 
 	// Translating summary values per symmetrical recommendations to Prometheus:
 	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
@@ -335,9 +316,7 @@ func appendSummaryValues(
 	// and will include a dimension called quantile that specifies the quantile.
 	percentiles := summaryValue.GetSnapshot().GetPercentileValues()
 	if percentiles == nil {
-		return sfxDataPoints, fmt.Errorf(
-			"unknown percentiles values for summary metric %q",
-			sfxBaseDataPoint.Metric)
+		return sfxDataPoints
 	}
 	metricName := sfxBaseDataPoint.Metric + "_quantile"
 	for _, quantile := range percentiles {
@@ -362,7 +341,7 @@ func appendSummaryValues(
 		sfxDataPoints = append(sfxDataPoints, &quantileDP)
 	}
 
-	return sfxDataPoints, nil
+	return sfxDataPoints
 }
 
 func appendTotalAndSum(
