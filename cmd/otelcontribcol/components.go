@@ -15,6 +15,7 @@
 package main
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/service/defaultcomponents"
@@ -107,6 +108,7 @@ func components() (component.Factories, error) {
 		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
 		lightstepexporter.NewFactory(),
+		logzioexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
