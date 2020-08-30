@@ -1,0 +1,17 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  logzio:
+    account_token: "logzioTESTtoken"
+    region: "eu"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [logzio]
