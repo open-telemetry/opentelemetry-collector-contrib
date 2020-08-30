@@ -58,6 +58,19 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		values,
 		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
 
+	distributionValueNoBuckets := metricspb.DistributionValue{
+		Count: 2,
+		Sum:   10,
+	}
+	distributionNoBuckets := metricstestutil.Timeseries(
+		tsUnix,
+		values,
+		&metricspb.Point{
+			Timestamp: metricstestutil.Timestamp(tsUnix),
+			Value:     &metricspb.Point_DistributionValue{DistributionValue: &distributionValueNoBuckets},
+		},
+	)
+
 	summaryTimeSeries := metricstestutil.Timeseries(
 		tsUnix,
 		values,
@@ -67,6 +80,19 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			111,
 			[]float64{90, 95, 99, 99.9},
 			[]float64{100, 6, 4, 1}))
+
+	summaryValueNoQuantiles := metricspb.SummaryValue{
+		Sum:   &wrapperspb.DoubleValue{Value: 111},
+		Count: &wrapperspb.Int64Value{Value: 11},
+	}
+	summaryNoQuantiles := metricstestutil.Timeseries(
+		tsUnix,
+		values,
+		&metricspb.Point{
+			Timestamp: metricstestutil.Timestamp(tsUnix),
+			Value:     &metricspb.Point_SummaryValue{SummaryValue: &summaryValueNoQuantiles},
+		},
+	)
 
 	tests := []struct {
 		name                     string
@@ -174,6 +200,19 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				expectedFromDistribution("cumulative_distrib", tsMSecs, keys, values, distributionTimeSeries)...),
 		},
 		{
+			name: "distribution_no_buckets",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.GaugeDist("invalid_distrib", keys, distributionNoBuckets),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: expectedFromDistribution("invalid_distrib", tsMSecs, keys, values, distributionNoBuckets),
+		},
+		{
 			name: "summary",
 			metricsDataFn: func() []consumerdata.MetricsData {
 				return []consumerdata.MetricsData{
@@ -185,6 +224,19 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				}
 			},
 			wantSfxDataPoints: expectedFromSummary("summary", tsMSecs, keys, values, summaryTimeSeries),
+		},
+		{
+			name: "summary_no_quantiles",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Summary("summary_no_quantiles", keys, summaryNoQuantiles),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: expectedFromSummary("summary_no_quantiles", tsMSecs, keys, values, summaryNoQuantiles),
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
@@ -343,6 +395,9 @@ func expectedFromDistribution(
 			distributionValue.Sum))
 
 	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
+	if explicitBuckets == nil {
+		return dps
+	}
 	for i := 0; i < len(explicitBuckets.Bounds); i++ {
 		dps = append(dps,
 			int64SFxDataPoint(metricName+"_bucket", ts, &sfxMetricTypeCumulativeCounter,
@@ -367,9 +422,7 @@ func expectedFromSummary(
 ) []*sfxpb.DataPoint {
 	summaryValue := summaryTimeSeries.Points[0].GetSummaryValue()
 
-	// Two additional data points: one for count and one for sum.
-	const extraDataPoints = 2
-	dps := make([]*sfxpb.DataPoint, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
+	dps := []*sfxpb.DataPoint{}
 
 	dps = append(dps,
 		int64SFxDataPoint(metricName+"_count", ts, &sfxMetricTypeCumulativeCounter, keys, values,
@@ -387,72 +440,6 @@ func expectedFromSummary(
 	}
 
 	return dps
-}
-
-func Test_InvalidDistribution_NoExplicitBuckets(t *testing.T) {
-	logger := zap.NewNop()
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
-	keys := []string{"k0", "k1"}
-	values := []string{"v0", "v1"}
-	buckets := make([]*metricspb.DistributionValue_Bucket, 2)
-
-	distrValue := &metricspb.DistributionValue{
-		BucketOptions: &metricspb.DistributionValue_BucketOptions{
-			Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-				Explicit: nil,
-			},
-		},
-		Count:   42,
-		Sum:     42,
-		Buckets: buckets,
-	}
-	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_DistributionValue{DistributionValue: distrValue}}
-	assert.Nil(t, point.GetDistributionValue().BucketOptions.GetExplicit())
-	metricData := []consumerdata.MetricsData{
-		{
-			Metrics: []*metricspb.Metric{
-				metricstestutil.GaugeDist("gauge_distrib", keys, metricstestutil.Timeseries(
-					tsUnix,
-					values,
-					point)),
-			},
-		},
-	}
-	c := NewMetricsConverter(logger, nil)
-	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
-	assert.Equal(t, 1, gotNumDroppedTimeSeries)
-}
-
-func Test_InvalidSummary_NoPercentileValues(t *testing.T) {
-	logger := zap.NewNop()
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
-	keys := []string{"k0", "k1"}
-	values := []string{"v0", "v1"}
-
-	summaryValue := &metricspb.SummaryValue{
-		Count:    &wrapperspb.Int64Value{Value: 42},
-		Sum:      &wrapperspb.DoubleValue{Value: 42},
-		Snapshot: &metricspb.SummaryValue_Snapshot{},
-	}
-	point := &metricspb.Point{Timestamp: metricstestutil.Timestamp(tsUnix), Value: &metricspb.Point_SummaryValue{SummaryValue: summaryValue}}
-	assert.Nil(t, point.GetSummaryValue().GetSnapshot().GetPercentileValues())
-	metricData := []consumerdata.MetricsData{
-		{
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Summary("summary", keys, metricstestutil.Timeseries(
-					tsUnix,
-					values,
-					point)),
-			},
-		},
-	}
-	c := NewMetricsConverter(logger, nil)
-	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
-	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
 
 func Test_InvalidPoint_NoValue(t *testing.T) {
