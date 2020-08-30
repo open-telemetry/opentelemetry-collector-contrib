@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.65.0
-	github.com/aws/aws-sdk-go v1.34.11
+	github.com/aws/aws-sdk-go v1.34.13
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
