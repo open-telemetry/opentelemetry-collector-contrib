@@ -185,19 +185,21 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_partial_aws_dim",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0":             "vr0",
-							"k/r1":             "vr1",
-							"cloud.provider":   "ec2",
-							"cloud.account.id": "efgh",
-							"cloud.region":     "us-east",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "ec2",
+								"cloud.account.id": "efgh",
+								"cloud.region":     "us-east",
+							},
 						},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
 					},
 				}
 			},
@@ -213,20 +215,22 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_aws_dim",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0":             "vr0",
-							"k/r1":             "vr1",
-							"cloud.provider":   "ec2",
-							"cloud.account.id": "efgh",
-							"cloud.region":     "us-east",
-							"host.id":          "abcd",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "ec2",
+								"cloud.account.id": "efgh",
+								"cloud.region":     "us-east",
+								"host.id":          "abcd",
+							},
 						},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
 					},
 				}
 			},
@@ -242,18 +246,20 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_gce_dim_partial",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0":           "vr0",
-							"k/r1":           "vr1",
-							"cloud.provider": "gce",
-							"host.id":        "abcd",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":           "vr0",
+								"k/r1":           "vr1",
+								"cloud.provider": "gce",
+								"host.id":        "abcd",
+							},
 						},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
 					},
 				}
 			},
@@ -269,19 +275,21 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		},
 		{
 			name: "with_resources_cloud_gcp_dim",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Resource: &resourcepb.Resource{
-						Labels: map[string]string{
-							"k/r0":             "vr0",
-							"k/r1":             "vr1",
-							"cloud.provider":   "gce",
-							"cloud.account.id": "efgh",
-							"host.id":          "abcd",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "gce",
+								"cloud.account.id": "efgh",
+								"host.id":          "abcd",
+							},
 						},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
 					},
 				}
 			},
