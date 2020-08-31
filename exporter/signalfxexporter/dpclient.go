@@ -96,7 +96,8 @@ func (s *sfxDPClient) pushMetricsData(
 func (s *sfxDPClient) pushMetricsDataForToken(
 	metricsData []consumerdata.MetricsData, accessToken string) (int, error) {
 	numTimeseries := timeseriesCount(metricsData)
-	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData)
+	sfxDataPoints := make([]*sfxpb.DataPoint, 0, numTimeseries)
+	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData, sfxDataPoints)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {
