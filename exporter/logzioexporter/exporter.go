@@ -46,8 +46,9 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	})
 
 	writerConfig := store.LogzioConfig{
-		Region:			config.Region,
-		AccountToken:	config.Token,
+		Region:				config.Region,
+		AccountToken:	   	config.Token,
+		CustomListenerURL: 	config.CustomListenerAddress,
 	}
 
 	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, logger)
