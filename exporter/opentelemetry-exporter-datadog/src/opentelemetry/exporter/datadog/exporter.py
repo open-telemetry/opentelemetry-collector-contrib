@@ -247,7 +247,7 @@ def _get_sampling_rate(span):
     return (
         span.sampler.rate
         if ctx.trace_flags.sampled
-        and isinstance(span.sampler, sampling.ProbabilitySampler)
+        and isinstance(span.sampler, sampling.TraceIdRatioBased)
         else None
     )
 
