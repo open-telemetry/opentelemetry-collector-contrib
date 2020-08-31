@@ -90,6 +90,7 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 				if localErr != nil && !config.(*Config).LocalMode {
 					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
 				}
+				logger.Debug("localErr: " + localErr.Error())
 				if output != nil {
 					logger.Debug("response: " + output.String())
 					if output.UnprocessedTraceSegments != nil {
