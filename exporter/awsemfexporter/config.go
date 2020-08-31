@@ -54,7 +54,4 @@ type Config struct {
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// MaxRetries is the maximum number of retries before abandoning an attempt to post data.
 	MaxRetries int `mapstructure:"max_retries"`
-	// ForceFlushInterval specifies in seconds the maximum amount of time that metrics remain
-	// in the memory buffer before being sent to the server.
-	ForceFlushInterval int64 `mapstructure:"force_flush_interval"`
 }

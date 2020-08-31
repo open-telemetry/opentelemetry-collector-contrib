@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package awsemfexporter
 
 import (
 	"bytes"
@@ -22,8 +22,6 @@ import (
 	"sort"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -78,10 +76,11 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	namespace := defaultNameSpace
 	svcAttrMode := ServiceNotDefined
+	totalDroppedMetrics := 0
 
 	if !rm.Resource().IsNil() {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
@@ -127,17 +126,18 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, error) {
 			}
 			cwMetricList, err := getMeasurements(&metric, namespace, OTLib)
 			if err != nil {
+				totalDroppedMetrics++
 				continue
 			}
 			cwMetricLists = append(cwMetricLists, cwMetricList...)
 		}
 	}
-	return cwMetricLists, nil
+	return cwMetricLists, totalDroppedMetrics
 }
 
-func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*cloudwatchlogs.InputLogEvent {
+func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	// convert CWMetric into map format for compatible with PLE input
-	ples := make([]*cloudwatchlogs.InputLogEvent, 0, maximumLogEventsPerPut)
+	ples := make([]*LogEvent, 0, maximumLogEventsPerPut)
 	for _, met := range cwMetricLists {
 		cwmMap := make(map[string]interface{})
 		fieldMap := met.Fields
@@ -151,11 +151,14 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*cloudwatchlogs.InputL
 		}
 		metricCreationTime := met.Timestamp
 
-		LogEvent := &cloudwatchlogs.InputLogEvent{
-			Timestamp: aws.Int64(metricCreationTime),
-			Message:   aws.String(string(pleMsg)),
-		}
-		ples = append(ples, LogEvent)
+		logEvent := NewLogEvent(
+			metricCreationTime,
+			string(pleMsg),
+			"",
+			0,
+		)
+		logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
+		ples = append(ples, logEvent)
 	}
 	return ples
 }

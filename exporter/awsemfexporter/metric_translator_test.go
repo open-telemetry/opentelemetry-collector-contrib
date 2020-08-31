@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translator
+package awsemfexporter
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 	"time"
@@ -156,15 +157,16 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 	rm := rms.At(0)
 	assert.NotNil(t, rm)
 
-	cwm, err := TranslateOtToCWMetric(&rm)
-	assert.Nil(t, err)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm)
+	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 3, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
 	assert.Equal(t, met.Fields[OtlibDimensionKey], noInstrumentationLibraryName)
-	assert.Equal(t, met.Fields["spanCounter"], 0)
+	fmt.Printf("spancounter type is %T\n", (met.Fields["spanCounter"]))
+	assert.Equal(t, met.Fields["spanCounter"], int64(0))
 
 	assert.Equal(t, met.Measurements[0].Namespace, "test-emf")
 	assert.Equal(t, len(met.Measurements[0].Dimensions), 1)
@@ -173,6 +175,7 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 	assert.Equal(t, met.Measurements[0].Metrics[0]["Name"], "spanCounter")
 	assert.Equal(t, met.Measurements[0].Metrics[0]["Unit"], "Count")
 }
+
 func TestTranslateCWMetricToEMF(t *testing.T) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
@@ -195,7 +198,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	}
 	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met})
 
-	assert.Equal(t, readFromFile("../testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].Message, "Expect to be equal")
+	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
 }
 
 func TestCalculateRate(t *testing.T) {

@@ -26,6 +26,26 @@ import (
 	"go.uber.org/zap"
 )
 
+func NewAlwaysPassMockLogClient() LogClient {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+
+	svc.On("PutLogEvents", mock.Anything).Return(
+		&cloudwatchlogs.PutLogEventsOutput{
+			NextSequenceToken: &expectedNextSequenceToken},
+		nil)
+
+	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
+
+	svc.On("CreateLogStream", mock.Anything).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil)
+
+	svc.On("DescribeLogStreams", mock.Anything).Return(
+		&cloudwatchlogs.DescribeLogStreamsOutput{
+			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}}},
+		nil)
+	return newCloudWatchLogClient(svc, logger)
+}
+
 type mockCloudWatchLogsClient struct {
 	cloudwatchlogsiface.CloudWatchLogsAPI
 	mock.Mock
@@ -74,7 +94,7 @@ func TestPutLogEvents_HappyCase(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
 	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
@@ -100,7 +120,7 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
 
 	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
@@ -123,7 +143,7 @@ func TestPutLogEvents_InvalidSequenceTokenException(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
 	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
@@ -144,7 +164,7 @@ func TestPutLogEvents_DataAlreadyAcceptedException(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
 
 	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
@@ -171,7 +191,7 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 
 	client := newCloudWatchLogClient(svc, logger)
-	tokenP := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
