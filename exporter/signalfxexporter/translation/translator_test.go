@@ -2118,19 +2118,17 @@ func TestDeltaMetricInt(t *testing.T) {
 }
 
 func TestNegativeDeltas(t *testing.T) {
-	c := converter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
-
-	dp1, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(10, 100)})
-	m1 := indexPts(dp1)
-	require.Equal(t, 1, len(m1))
-
-	dp2, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(20, 200)})
-	m2 := indexPts(dp2)
-	require.Equal(t, 2, len(m2))
-
-	dp3, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{intMD(30, 50)})
-	m3 := indexPts(dp3)
-	require.Equal(t, 1, len(m3))
+	md1 := intMD(10, 0)
+	md2 := intMD(20, 13)
+	md3 := intMDAfterReset(30, 5)
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, 13, *pt.Value.IntValue)
+	}
+	for _, pt := range pts2 {
+		// since the counter went down (assuming a reset), we expect a delta of the most recent value
+		require.EqualValues(t, 5, *pt.Value.IntValue)
+	}
 }
 
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
@@ -2240,6 +2238,19 @@ func intMD(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
 		intTS("cpu1", "user", secondsDelta, 111, valueDelta),
 		intTS("cpu1", "system", secondsDelta, 222, valueDelta),
 		intTS("cpu1", "idle", secondsDelta, 333, valueDelta),
+	}
+	return md
+}
+
+func intMDAfterReset(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", secondsDelta, 0, valueDelta),
+		intTS("cpu0", "system", secondsDelta, 0, valueDelta),
+		intTS("cpu0", "idle", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "user", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "system", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "idle", secondsDelta, 0, valueDelta),
 	}
 	return md
 }

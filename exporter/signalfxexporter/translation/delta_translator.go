@@ -74,7 +74,8 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 func doubleDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {
 	delta := *currPt.Value.DoubleValue - *prevPt.Value.DoubleValue
 	if delta < 0 {
-		return nil
+		// assume a reset, emit the current value
+		delta = *currPt.Value.DoubleValue
 	}
 	deltaPt := basePt(currPt, deltaMetricName)
 	*deltaPt.Value.DoubleValue = delta
@@ -84,7 +85,8 @@ func doubleDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetric
 func intDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {
 	delta := *currPt.Value.IntValue - *prevPt.Value.IntValue
 	if delta < 0 {
-		return nil
+		// assume a reset, emit the current value
+		delta = *currPt.Value.IntValue
 	}
 	deltaPt := basePt(currPt, deltaMetricName)
 	*deltaPt.Value.IntValue = delta
