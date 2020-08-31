@@ -498,7 +498,7 @@ class TestDatadogSpanExporter(unittest.TestCase):
             is_remote=False,
             trace_flags=trace_api.TraceFlags(trace_api.TraceFlags.SAMPLED),
         )
-        sampler = sampling.ProbabilitySampler(0.5)
+        sampler = sampling.TraceIdRatioBased(0.5)
 
         span = trace.Span(
             name="sampled", context=context, parent=None, sampler=sampler
