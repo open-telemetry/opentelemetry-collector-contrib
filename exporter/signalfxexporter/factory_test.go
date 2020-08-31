@@ -213,10 +213,10 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules)
 	require.NoError(t, err)
-	data := md()
+	data := testMetricsData()
 
 	c := translation.NewMetricsConverter(zap.NewNop(), tr)
-	translated, _ := c.MetricDataToSignalFxV2(data)
+	translated, _ := c.MetricDataToSignalFxV2(data, nil)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)
@@ -270,7 +270,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func md() []consumerdata.MetricsData {
+func testMetricsData() []consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{

@@ -677,3 +677,36 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkExporterConsumeData(b *testing.B) {
+	batchSize := 1000
+	mds := make([]consumerdata.MetricsData, 0, batchSize)
+	for i := 0; i < batchSize; i++ {
+		mds = append(mds, testMetricsData()...)
+	}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(b, err)
+
+	dpClient := &sfxDPClient{
+		ingestURL: serverURL,
+		client: &http.Client{
+			Timeout: 1 * time.Second,
+		},
+		logger: zap.NewNop(),
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
+	}
+	metrics := pdatautil.MetricsFromMetricsData(mds)
+	for i := 0; i < b.N; i++ {
+		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
+		assert.NoError(b, err)
+		assert.Equal(b, 0, numDroppedTimeSeries)
+	}
+}
