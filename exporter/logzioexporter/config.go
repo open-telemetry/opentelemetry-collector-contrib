@@ -6,8 +6,8 @@ import (
 
 
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"`
-	Token string	`mapstructure:"account_token"`
-	Region string	`mapstructure:"region"`
-	CustomListenerAddress string
+	configmodels.ExporterSettings 	`mapstructure:",squash"`
+	Token string					`mapstructure:"account_token"`
+	Region string					`mapstructure:"region"`
+	CustomListenerAddress string	`mapstructure:"custom_listener_address"`
 }
