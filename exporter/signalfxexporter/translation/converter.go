@@ -92,23 +92,20 @@ func NewMetricsConverter(logger *zap.Logger, t *MetricTranslator) *MetricsConver
 // MetricDataToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricDataToSignalFxV2(mds []consumerdata.MetricsData) (
-	sfxDataPoints []*sfxpb.DataPoint,
-	numDroppedTimeSeries int,
-) {
+func (c *MetricsConverter) MetricDataToSignalFxV2(mds []consumerdata.MetricsData, sfxDataPoints []*sfxpb.DataPoint) ([]*sfxpb.DataPoint, int) {
+	var numDroppedTimeSeries int
+	var droppedDPCount int
 	for _, md := range mds {
-		dps, droppedDPCount := c.metricDataToSfxDataPoints(md)
-		sfxDataPoints = append(sfxDataPoints, dps...)
+		sfxDataPoints, droppedDPCount = c.metricDataToSfxDataPoints(md, sfxDataPoints)
 		numDroppedTimeSeries += droppedDPCount
 	}
 	sanitizeDataPointDimensions(sfxDataPoints)
-	return
+	return sfxDataPoints, numDroppedTimeSeries
 }
 
-func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData) (
-	sfxDataPoints []*sfxpb.DataPoint,
-	numDroppedTimeSeries int,
-) {
+func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData, sfxDataPoints []*sfxpb.DataPoint) ([]*sfxpb.DataPoint, int) {
+	var numDroppedTimeSeries int
+
 	// Labels from Node and Resource.
 	// TODO: Options to add lib, service name, etc as dimensions?
 	//  Q.: what about resource type?
@@ -127,11 +124,6 @@ func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData
 			c.logger.Warn("Received nil metrics data or nil descriptor for metrics")
 			numDroppedTimeSeries += len(metric.GetTimeseries())
 			continue
-		}
-
-		if sfxDataPoints == nil {
-			// Suppose all metrics has roughly similar number of timeseries
-			sfxDataPoints = make([]*sfxpb.DataPoint, 0, len(md.Metrics)*len(metric.Timeseries))
 		}
 
 		metricDataPoints := make([]*sfxpb.DataPoint, 0, len(metric.Timeseries))
