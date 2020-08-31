@@ -23,6 +23,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
 
@@ -111,13 +112,11 @@ func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData
 	//  Q.: what about resource type?
 	nodeAttribs := md.Node.GetAttributes()
 	resourceAttribs := md.Resource.GetLabels()
-	numExtraDimensions := len(nodeAttribs) + len(resourceAttribs)
-	var extraDimensions []*sfxpb.Dimension
-	if numExtraDimensions > 0 {
-		extraDimensions = make([]*sfxpb.Dimension, 0, numExtraDimensions)
-		extraDimensions = appendAttributesToDimensions(extraDimensions, nodeAttribs)
-		extraDimensions = appendAttributesToDimensions(extraDimensions, resourceAttribs)
-	}
+
+	extraDimensions := make([]*sfxpb.Dimension, 0, len(nodeAttribs)+len(resourceAttribs))
+
+	extraDimensions = appendResourceAttributesToDimensions(extraDimensions, resourceAttribs)
+	extraDimensions = appendAttributesToDimensions(extraDimensions, nodeAttribs)
 
 	for _, metric := range md.Metrics {
 		if metric == nil || metric.MetricDescriptor == nil {
@@ -136,14 +135,14 @@ func (c *MetricsConverter) metricDataToSfxDataPoints(md consumerdata.MetricsData
 		numLabels := len(descriptor.LabelKeys)
 
 		for _, series := range metric.Timeseries {
-			dimensions := make([]*sfxpb.Dimension, numLabels+numExtraDimensions)
+			dimensions := make([]*sfxpb.Dimension, numLabels+len(extraDimensions))
 			copy(dimensions, extraDimensions)
 			for i := 0; i < numLabels; i++ {
 				dimension := &sfxpb.Dimension{
 					Key:   descriptor.LabelKeys[i].Key,
 					Value: series.LabelValues[i].Value,
 				}
-				dimensions[numExtraDimensions+i] = dimension
+				dimensions[len(extraDimensions)+i] = dimension
 			}
 
 			for _, dp := range series.Points {
@@ -406,4 +405,61 @@ func float64ToDimValue(f float64) string {
 	// The important issue here is consistency with the exporter, opting for the
 	// more common one used by Prometheus.
 	return strconv.FormatFloat(f, 'g', -1, 64)
+}
+
+// resourceAttributesToDimensions will return a set of dimension from the
+// resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
+// if it can be constructed from the provided metadata.
+func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr map[string]string) []*sfxpb.Dimension {
+	accountID := resourceAttr[conventions.AttributeCloudAccount]
+	region := resourceAttr[conventions.AttributeCloudRegion]
+	instanceID := resourceAttr[conventions.AttributeHostID]
+	provider := resourceAttr[conventions.AttributeCloudProvider]
+
+	filter := func(k string) bool { return true }
+
+	switch provider {
+	// TODO: Should these be defined as constants in resourcedetector module that we import or somewhere else?
+	case "ec2":
+		if instanceID == "" || region == "" || accountID == "" {
+			break
+		}
+		filter = func(k string) bool {
+			return k != conventions.AttributeCloudAccount &&
+				k != conventions.AttributeCloudRegion &&
+				k != conventions.AttributeHostID &&
+				k != conventions.AttributeCloudProvider
+		}
+		dims = append(dims, &sfxpb.Dimension{
+			Key:   "AWSUniqueId",
+			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
+		})
+	case "gce":
+		if accountID == "" || instanceID == "" {
+			break
+		}
+		filter = func(k string) bool {
+			return k != conventions.AttributeCloudAccount &&
+				k != conventions.AttributeHostID &&
+				k != conventions.AttributeCloudProvider
+		}
+		dims = append(dims, &sfxpb.Dimension{
+			Key:   "gcp_id",
+			Value: fmt.Sprintf("%s_%s", accountID, instanceID),
+		})
+	default:
+	}
+
+	for k, v := range resourceAttr {
+		if !filter(k) {
+			continue
+		}
+
+		dims = append(dims, &sfxpb.Dimension{
+			Key:   k,
+			Value: v,
+		})
+	}
+
+	return dims
 }
