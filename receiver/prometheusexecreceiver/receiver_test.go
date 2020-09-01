@@ -121,7 +121,7 @@ func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 	assert.Fail(t, "All %v scraped values were non-unique", len(metricsSlice))
 }
 
-func TestGetReceiverConfig(t *testing.T) {
+func TestConfigBuilderFunctions(t *testing.T) {
 	configTests := []struct {
 		name                 string
 		customName           string
@@ -169,8 +169,10 @@ func TestGetReceiverConfig(t *testing.T) {
 					},
 				},
 			},
-			wantSubprocessConfig: nil,
-			wantErr:              true,
+			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
+				Env: []subprocessmanager.EnvConfig{},
+			},
+			wantErr: true,
 		},
 		{
 			name:       "normal config",
@@ -290,152 +292,6 @@ func TestGetReceiverConfig(t *testing.T) {
 			assert.Equal(t, test.wantReceiverConfig, got)
 		})
 	}
-}
-
-func TestGetSubprocessConfig(t *testing.T) {
-	configTests := []struct {
-		name                 string
-		customName           string
-		config               *Config
-		wantReceiverConfig   *prometheusreceiver.Config
-		wantSubprocessConfig *subprocessmanager.SubprocessConfig
-	}{
-		{
-			name: "no command",
-			config: &Config{
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "",
-					Env:     []subprocessmanager.EnvConfig{},
-				},
-			},
-			wantReceiverConfig: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(60 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							Scheme:          "http",
-							MetricsPath:     "/metrics",
-							JobName:         "prometheus_exec",
-							HonorLabels:     false,
-							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue("localhost:9104")},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
-				Env: []subprocessmanager.EnvConfig{},
-			},
-		},
-		{
-			name: "normal config",
-			config: &Config{
-				ScrapeInterval: 90 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "mysqld_exporter",
-					Env: []subprocessmanager.EnvConfig{
-						{
-							Name:  "DATA_SOURCE_NAME",
-							Value: "password:username@(url:port)/dbname",
-						},
-					},
-				},
-			},
-			wantReceiverConfig: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(90 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							Scheme:          "http",
-							MetricsPath:     "/metrics",
-							JobName:         "mysqld",
-							HonorLabels:     false,
-							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue("localhost:9104")},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
-				Command: "mysqld_exporter",
-				Env: []subprocessmanager.EnvConfig{
-					{
-						Name:  "DATA_SOURCE_NAME",
-						Value: "password:username@(url:port)/dbname",
-					},
-				},
-			},
-		},
-		{
-			name: "lots of defaults",
-			config: &Config{
-				ScrapeInterval: 60 * time.Second,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "postgres_exporter",
-					Env: []subprocessmanager.EnvConfig{
-						{
-							Name:  "DATA_SOURCE_NAME",
-							Value: "password:username@(url:port)/dbname",
-						},
-					},
-				},
-			},
-			wantReceiverConfig: &prometheusreceiver.Config{
-				PrometheusConfig: &config.Config{
-					ScrapeConfigs: []*config.ScrapeConfig{
-						{
-							ScrapeInterval:  model.Duration(60 * time.Second),
-							ScrapeTimeout:   model.Duration(10 * time.Second),
-							Scheme:          "http",
-							MetricsPath:     "/metrics",
-							JobName:         "postgres",
-							HonorLabels:     false,
-							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
-									{
-										Targets: []model.LabelSet{
-											{model.AddressLabel: model.LabelValue("localhost:0")},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			wantSubprocessConfig: &subprocessmanager.SubprocessConfig{
-				Command: "postgres_exporter",
-				Env: []subprocessmanager.EnvConfig{
-					{
-						Name:  "DATA_SOURCE_NAME",
-						Value: "password:username@(url:port)/dbname",
-					},
-				},
-			},
-		},
-	}
 
 	for _, test := range configTests {
 		t.Run(test.name, func(t *testing.T) {
@@ -458,12 +314,6 @@ func TestExtractName(t *testing.T) {
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec",
 				},
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "mysqld_exporter",
-					Env:     []subprocessmanager.EnvConfig{},
-				},
 			},
 			want: "prometheus_exec",
 		},
@@ -473,12 +323,6 @@ func TestExtractName(t *testing.T) {
 				ReceiverSettings: configmodels.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/",
-				},
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "mysqld_exporter",
-					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "prometheus_exec",
@@ -490,12 +334,6 @@ func TestExtractName(t *testing.T) {
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/custom",
 				},
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "mysqld_exporter",
-					Env:     []subprocessmanager.EnvConfig{},
-				},
 			},
 			want: "custom",
 		},
@@ -505,12 +343,6 @@ func TestExtractName(t *testing.T) {
 				ReceiverSettings: configmodels.ReceiverSettings{
 					TypeVal: "prometheus_exec",
 					NameVal: "prometheus_exec/custom/name",
-				},
-				ScrapeInterval: 60 * time.Second,
-				Port:           9104,
-				SubprocessConfig: subprocessmanager.SubprocessConfig{
-					Command: "mysqld_exporter",
-					Env:     []subprocessmanager.EnvConfig{},
 				},
 			},
 			want: "custom/name",
@@ -552,15 +384,12 @@ func TestFillPortPlaceholders(t *testing.T) {
 					},
 				},
 				subprocessConfig: &subprocessmanager.SubprocessConfig{
-					Command: "apache_exporter --port:{{port}}",
 					Env: []subprocessmanager.EnvConfig{
 						{
-							Name:  "DATA_SOURCE_NAME",
-							Value: "user:password@(hostname:{{port}})/dbname",
+							Name: "DATA_SOURCE_NAME",
 						},
 						{
-							Name:  "SECONDARY_PORT",
-							Value: "{{port}}",
+							Name: "SECONDARY_PORT",
 						},
 					},
 				},
@@ -599,15 +428,12 @@ func TestFillPortPlaceholders(t *testing.T) {
 					},
 				},
 				subprocessConfig: &subprocessmanager.SubprocessConfig{
-					Command: "apache_exporter",
 					Env: []subprocessmanager.EnvConfig{
 						{
-							Name:  "DATA_SOURCE_NAME",
-							Value: "user:password@(hostname:port)/dbname",
+							Name: "DATA_SOURCE_NAME",
 						},
 						{
-							Name:  "SECONDARY_PORT",
-							Value: "1234",
+							Name: "SECONDARY_PORT",
 						},
 					},
 				},
@@ -646,15 +472,12 @@ func TestFillPortPlaceholders(t *testing.T) {
 					},
 				},
 				subprocessConfig: &subprocessmanager.SubprocessConfig{
-					Command: "apache_exporter --port={{port}}",
 					Env: []subprocessmanager.EnvConfig{
 						{
-							Name:  "DATA_SOURCE_NAME",
-							Value: "user:password@(hostname:{{port}})/dbname",
+							Name: "DATA_SOURCE_NAME",
 						},
 						{
-							Name:  "SECONDARY_PORT",
-							Value: "{{port}}",
+							Name: "SECONDARY_PORT",
 						},
 					},
 				},
@@ -752,21 +575,17 @@ var (
 
 func TestGetDelay(t *testing.T) {
 	for _, test := range getDelayAndComputeCrashCountTests {
-		t.Run(test.name, func(t *testing.T) {
-			got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
+		got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
 
-			if test.name == "healthy process" {
-				if assert.NotEqual(t, test.wantDelay, got) {
-					assert.Fail(t, "getDelay() got = %v, want %v", got, test.wantDelay)
-					return
-				}
-			}
+		if test.wantDelay > 0 {
+			assert.Equalf(t, test.wantDelay, got, "getDelay() '%v', got = %v, want %v", test.name, got, test.wantDelay)
+			continue
+		}
 
-			if previousResult > got {
-				t.Errorf("getDelay() got = %v, want something larger than the previous result %v", got, previousResult)
-			}
-			previousResult = got
-		})
+		if previousResult > got {
+			t.Errorf("getDelay() '%v', got = %v, want something larger than the previous result %v", test.name, got, previousResult)
+		}
+		previousResult = got
 	}
 }
 
