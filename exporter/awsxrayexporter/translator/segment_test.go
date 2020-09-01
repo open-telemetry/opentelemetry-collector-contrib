@@ -27,7 +27,7 @@ import (
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 var (
@@ -63,6 +63,7 @@ func TestClientSpanWithAwsSdkClient(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, semconventions.AttributeComponent))
+	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
 func TestClientSpanWithPeerService(t *testing.T) {
@@ -122,6 +123,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMessage))
 	assert.True(t, strings.Contains(jsonStr, userAgent))
 	assert.True(t, strings.Contains(jsonStr, enduser))
+	assert.False(t, strings.Contains(jsonStr, "namespace"))
 }
 
 func TestServerSpanNoParentId(t *testing.T) {
@@ -274,6 +276,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.False(t, strings.Contains(jsonStr, "1-11"))
+	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
 func TestSpanWithExpiredTraceId(t *testing.T) {

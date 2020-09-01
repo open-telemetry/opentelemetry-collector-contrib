@@ -42,7 +42,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.8.1-0.20200826180016-7f13eb66c333
+	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
 	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642
 	honnef.co/go/tools v0.0.1-2020.1.5
 )
@@ -52,7 +52,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray => ./internal/common/awsxray
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray => ./internal/awsxray
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
@@ -108,6 +108,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8scl
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ./receiver/signalfxreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver => ./receiver/splunkhecreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver => ./receiver/simpleprometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ./receiver/prometheusexecreceiver
@@ -119,6 +121,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
-
-// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

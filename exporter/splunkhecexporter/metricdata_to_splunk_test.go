@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func Test_metricDataToSplunk(t *testing.T) {
@@ -71,7 +73,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name                     string
 		metricsDataFn            func() consumerdata.MetricsData
-		wantSplunkMetrics        []*splunkMetric
+		wantSplunkMetrics        []*splunk.Metric
 		wantNumDroppedTimeseries int
 	}{
 		{
@@ -86,7 +88,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*splunk.Metric{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{}, []string{}, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
@@ -105,7 +107,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*splunk.Metric{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, keys, values, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, keys, values, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, keys, values, doubleVal),
@@ -134,7 +136,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunkMetric{
+			wantSplunkMetrics: []*splunk.Metric{
 				commonSplunkMetric(
 					"gauge_double_with_dims",
 					tsMSecs,
@@ -192,7 +194,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 }
 
-func sortMetrics(metrics []*splunkMetric) {
+func sortMetrics(metrics []*splunk.Metric) {
 	sort.Slice(metrics, func(p, q int) bool {
 		firstField := getFieldValue(metrics[p])
 		secondField := getFieldValue(metrics[q])
@@ -200,7 +202,7 @@ func sortMetrics(metrics []*splunkMetric) {
 	})
 }
 
-func getFieldValue(metric *splunkMetric) string {
+func getFieldValue(metric *splunk.Metric) string {
 	for k := range metric.Fields {
 		if strings.HasPrefix(k, "metric_name:") {
 			return k
@@ -215,14 +217,14 @@ func commonSplunkMetric(
 	keys []string,
 	values []string,
 	val interface{},
-) *splunkMetric {
+) *splunk.Metric {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
 
 	for i, k := range keys {
 		fields[k] = values[i]
 	}
 
-	return &splunkMetric{
+	return &splunk.Metric{
 		Time:   ts,
 		Host:   "unknown",
 		Event:  "metric",
@@ -236,12 +238,12 @@ func expectedFromDistribution(
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
-) []*splunkMetric {
+) []*splunk.Metric {
 	distributionValue := distributionTimeSeries.Points[0].GetDistributionValue()
 
 	// Three additional data points: one for count, one for sum and one for sum of squared deviation.
 	const extraDataPoints = 3
-	dps := make([]*splunkMetric, 0, len(distributionValue.Buckets)+extraDataPoints)
+	dps := make([]*splunk.Metric, 0, len(distributionValue.Buckets)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName, ts, keys, values,
@@ -273,12 +275,12 @@ func expectedFromSummary(
 	keys []string,
 	values []string,
 	summaryTimeSeries *metricspb.TimeSeries,
-) []*splunkMetric {
+) []*splunk.Metric {
 	summaryValue := summaryTimeSeries.Points[0].GetSummaryValue()
 
 	// Two additional data points: one for count and one for sum.
 	const extraDataPoints = 2
-	dps := make([]*splunkMetric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
+	dps := make([]*splunk.Metric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName+".count", ts, keys, values,

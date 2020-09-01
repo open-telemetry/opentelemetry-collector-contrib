@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -53,20 +55,10 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-type splunkMetric struct {
-	Time       float64                `json:"time"`                 // epoch time
-	Host       string                 `json:"host"`                 // hostname
-	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      string                 `json:"event"`                // type of event: this is a metric.
-	Fields     map[string]interface{} `json:"fields"`               // metric data
-}
-
-func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunkMetric, int, error) {
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Metric, int, error) {
 	ocmds := pdatautil.MetricsToMetricsData(data)
 	numDroppedTimeSeries := 0
-	splunkMetrics := make([]*splunkMetric, 0, pdatautil.MetricPointCount(data))
+	splunkMetrics := make([]*splunk.Metric, 0, pdatautil.MetricPointCount(data))
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {
@@ -105,7 +97,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
 							fields[desc.Key] = timeSeries.LabelValues[i].Value
 						}
-						sm := &splunkMetric{
+						sm := &splunk.Metric{
 							Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
 							Host:       host,
 							Source:     config.Source,

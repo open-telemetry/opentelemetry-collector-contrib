@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 const (

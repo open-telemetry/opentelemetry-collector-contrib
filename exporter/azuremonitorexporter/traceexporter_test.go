@@ -21,6 +21,7 @@ import (
 	mock "github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"golang.org/x/net/context"
 )
@@ -80,10 +81,11 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	// re-use some test generation method(s) from trace_to_envelope_test
 	resource := getResource()
 	instrumentationLibrary := getInstrumentationLibrary()
-	span := getDefaultHTTPServerSpan()
+	span := getDefaultInternalSpan()
 
-	// rest the SpanKind to unspecified
-	span.SetKind(pdata.SpanKindUNSPECIFIED)
+	// Make this a FaaS span, which will trigger an error, because conversion
+	// of them is currently not supported.
+	span.Attributes().InsertString(conventions.AttributeFaaSTrigger, "http")
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)

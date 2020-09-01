@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
 )
@@ -36,14 +35,6 @@ const (
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
-
-type receiverOptions struct {
-	name                       string
-	client                     kubernetes.Interface
-	collectionInterval         time.Duration
-	nodeConditionTypesToReport []string
-	metadataExporters          []string
-}
 
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
@@ -64,11 +55,11 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
 	rCfg := cfg.(*Config)
 
-	rOptions, err := rCfg.getReceiverOptions()
+	k8sClient, err := rCfg.getK8sClient()
 	if err != nil {
 		return nil, err
 	}
-	return newReceiver(params.Logger, rOptions, consumer)
+	return newReceiver(params.Logger, rCfg, consumer, k8sClient)
 }
 
 // NewFactory creates a factory for k8s_cluster receiver.
