@@ -93,11 +93,11 @@ func intDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricNam
 	return deltaPt
 }
 
-var cumulativeCounterType = sfxpb.MetricType_CUMULATIVE_COUNTER
+var metricType = sfxpb.MetricType_GAUGE
 
 func basePt(currPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {
 	deltaPt := proto.Clone(currPt).(*sfxpb.DataPoint)
 	deltaPt.Metric = deltaMetricName
-	deltaPt.MetricType = &cumulativeCounterType
+	deltaPt.MetricType = &metricType
 	return deltaPt
 }

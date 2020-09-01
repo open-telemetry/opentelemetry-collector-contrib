@@ -2176,7 +2176,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 	deltaPts1, ok := m2["system.cpu.delta"]
 	require.True(t, ok)
 	require.Equal(t, len(origPts), len(deltaPts1))
-	counterType := sfxpb.MetricType_CUMULATIVE_COUNTER
+	counterType := sfxpb.MetricType_GAUGE
 	for _, pt := range deltaPts1 {
 		require.Equal(t, &counterType, pt.MetricType)
 	}
