@@ -31,6 +31,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -204,9 +205,9 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(sourceLabel, "myapp")
-		logRecord.Attributes().InsertString(sourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(hostnameLabel, "myhost")
+		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -218,7 +219,7 @@ func TestConsumeLogsData(t *testing.T) {
 	logRecord := pdata.NewLogRecord()
 	logRecord.InitEmpty()
 	logRecord.Body().SetStringVal("mylog")
-	logRecord.Attributes().InsertString(hostnameLabel, "myhost")
+	logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")
 	logRecord.SetTimestamp(123)
 	smallBatch := makeLog(logRecord)
@@ -309,4 +310,15 @@ func TestConsumeLogsData(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	}
+}
+
+func TestExporterStartAlwaysReturnsNil(t *testing.T) {
+	config := &Config{
+		Endpoint: "https://example.com:8088",
+		Token:    "abc",
+	}
+	e, err := createExporter(config, zap.NewNop())
+	assert.NoError(t, err)
+	err = e.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 }

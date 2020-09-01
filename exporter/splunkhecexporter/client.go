@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -220,5 +221,9 @@ func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io
 
 func (c *client) stop(context context.Context) error {
 	c.wg.Wait()
+	return nil
+}
+
+func (c *client) start(context.Context, component.Host) (err error) {
 	return nil
 }

@@ -31,6 +31,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -38,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
@@ -115,9 +118,9 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(sourceLabel, "myapp")
-		logRecord.Attributes().InsertString(sourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(hostnameLabel, "myhost")
+		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 		ill.Logs().Append(&logRecord)
@@ -397,4 +400,10 @@ func TestInvalidJson(t *testing.T) {
 	}
 	reader, _, err := encodeBodyEvents(&syncPool, evs, false)
 	assert.Error(t, err, reader)
+}
+
+func TestStartAlwaysReturnsNil(t *testing.T) {
+	c := client{}
+	err := c.start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 }

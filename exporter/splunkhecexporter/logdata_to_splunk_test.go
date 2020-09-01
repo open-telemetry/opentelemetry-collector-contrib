@@ -21,6 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func Test_logDataToSplunk(t *testing.T) {
@@ -40,9 +42,9 @@ func Test_logDataToSplunk(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(sourceLabel, "myapp")
-				logRecord.Attributes().InsertString(sourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(hostnameLabel, "myhost")
+				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+				logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -64,7 +66,6 @@ func Test_logDataToSplunk(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(hostnameLabel, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)
@@ -76,14 +77,15 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunkEvent{
-				commonLogSplunkEvent("mylog", ts, map[string]string{"custom": "custom"}, "myhost", "source", "sourcetype"),
+				commonLogSplunkEvent("mylog", ts, map[string]string{"custom": "custom"}, "unknown", "source", "sourcetype"),
 			},
 			wantNumDroppedLogs: 0,
 		},
 		{
-			name: "is_nil",
+			name: "body_is_nil",
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
+				logRecord.InitEmpty()
 				return makeLog(logRecord)
 			},
 			configDataFn: func() *Config {
@@ -152,4 +154,23 @@ func Test_nilResourceLogs(t *testing.T) {
 	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
 	assert.Equal(t, 0, dropped)
 	assert.Equal(t, 0, len(events))
+}
+
+func Test_nilInstrumentationLogs(t *testing.T) {
+	logs := pdata.NewLogs()
+	resourceLog := pdata.NewResourceLogs()
+	resourceLog.InitEmpty()
+	logs.ResourceLogs().Append(&resourceLog)
+	ils := pdata.NewInstrumentationLibraryLogs()
+	resourceLog.InstrumentationLibraryLogs().Append(&ils)
+	events, dropped := logDataToSplunk(zap.NewNop(), logs, &Config{})
+	assert.Equal(t, 0, dropped)
+	assert.Equal(t, 0, len(events))
+}
+
+func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
+	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
+	assert.Equal(t, 1.001, splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
+	assert.Equal(t, 1.002, splunkTs)
 }

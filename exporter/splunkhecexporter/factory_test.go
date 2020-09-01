@@ -88,6 +88,14 @@ func TestCreateLogsExporterNoConfig(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "urn:something:12345"
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 

@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 type splunkEvent struct {
@@ -37,7 +39,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 	for _, octd := range octds {
 		var host string
 		if octd.Resource != nil {
-			host = octd.Resource.Labels[hostnameLabel]
+			host = octd.Resource.Labels[splunk.HostnameLabel]
 		}
 		if host == "" {
 			host = unknownHostName

@@ -45,6 +45,7 @@ type splunkExporter struct {
 	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
 	pushLogData     func(ctx context.Context, td pdata.Logs) (numDroppedSpans int, err error)
 	stop            func(ctx context.Context) (err error)
+	start           func(ctx context.Context, host component.Host) (err error)
 }
 
 type exporterOptions struct {
@@ -74,6 +75,7 @@ func createExporter(
 		pushTraceData:   client.pushTraceData,
 		pushLogData:     client.pushLogData,
 		stop:            client.stop,
+		start:           client.start,
 	}, nil
 }
 
@@ -111,8 +113,8 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 	}
 }
 
-func (se splunkExporter) Start(context.Context, component.Host) error {
-	return nil
+func (se splunkExporter) Start(ctxt context.Context, host component.Host) error {
+	return se.start(ctxt, host)
 }
 
 func (se splunkExporter) Shutdown(ctxt context.Context) error {

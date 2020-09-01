@@ -19,11 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-)
 
-const (
-	sourceLabel     = "service.name"
-	sourcetypeLabel = "source.type"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunkEvent, int) {
@@ -47,11 +44,14 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 			for j := 0; j < logs.Len(); j++ {
 				lr := logs.At(j)
 				if lr.IsNil() {
-					numDroppedLogs++
 					continue
 				}
 				ev := mapLogRecordToSplunkEvent(lr, config)
-				splunkEvents = append(splunkEvents, ev)
+				if ev == nil {
+					numDroppedLogs++
+				} else {
+					splunkEvents = append(splunkEvents, ev)
+				}
 			}
 		}
 	}
@@ -60,16 +60,19 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 }
 
 func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent {
+	if lr.Body().IsNil() {
+		return nil
+	}
 	var host string
 	var source string
 	var sourcetype string
 	fields := map[string]string{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if k == hostnameLabel {
+		if k == splunk.HostnameLabel {
 			host = v.StringVal()
-		} else if k == sourceLabel {
+		} else if k == splunk.SourceLabel {
 			source = v.StringVal()
-		} else if k == sourcetypeLabel {
+		} else if k == splunk.SourcetypeLabel {
 			sourcetype = v.StringVal()
 		} else {
 			fields[k] = v.StringVal()
@@ -99,6 +102,7 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent 
 	}
 }
 
+// nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
 func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) float64 {
-	return float64(ts/1e9) + math.Round(float64(ts)/1e6)/1e3
+	return float64(ts/1e9) + math.Round(float64(ts%1e9)/1e6)/1e3
 }
