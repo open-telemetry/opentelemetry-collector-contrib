@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -45,7 +44,7 @@ type perSpanProperties struct {
 
 type spanSt struct {
 	message string
-	code    otlptrace.Status_StatusCode
+	code    pdata.StatusCode
 }
 
 type eventProps struct {
@@ -54,9 +53,7 @@ type eventProps struct {
 }
 
 func TestTranslation(t *testing.T) {
-	var defaultServerSpanAttrs func(
-		seg *awsxray.Segment,
-	) map[string]pdata.AttributeValue = func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
+	var defaultServerSpanAttrs = func(seg *awsxray.Segment) map[string]pdata.AttributeValue {
 		attrs := make(map[string]pdata.AttributeValue)
 		attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
 			*seg.HTTP.Request.Method)
@@ -67,7 +64,7 @@ func TestTranslation(t *testing.T) {
 		attrs[awsxray.AWSXRayXForwardedForAttribute] = pdata.NewAttributeValueBool(
 			*seg.HTTP.Request.XForwardedFor)
 		attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
-			int64(*seg.HTTP.Response.Status))
+			*seg.HTTP.Response.Status)
 		attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
 			*seg.HTTP.Request.URL)
 
@@ -109,7 +106,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					attrs: attrs,
 				}
@@ -153,7 +150,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_InvalidArgument,
+						code: pdata.StatusCodeInvalidArgument,
 					},
 					eventsProps: rootSpanEvts,
 					attrs:       rootSpanAttrs,
@@ -184,7 +181,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7df6.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_InvalidArgument,
+						code: pdata.StatusCodeInvalidArgument,
 					},
 					eventsProps: childSpan7df6Evts,
 					attrs:       childSpan7df6Attrs,
@@ -195,9 +192,9 @@ func TestTranslation(t *testing.T) {
 				childSpan7318Attrs[awsxray.AWSServiceAttribute] = pdata.NewAttributeValueString(
 					*subseg7318.Name)
 				childSpan7318Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
-					int64(*subseg7318.HTTP.Response.Status))
+					*subseg7318.HTTP.Response.Status)
 				childSpan7318Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					int64(*subseg7318.HTTP.Response.ContentLength))
+					*subseg7318.HTTP.Response.ContentLength)
 				childSpan7318Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7318.AWS.Operation)
 				childSpan7318Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -218,7 +215,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7318.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       childSpan7318Attrs,
@@ -234,7 +231,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg0239.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -250,7 +247,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg23cf.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -273,7 +270,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg417b.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       childSpan417bAttrs,
@@ -296,7 +293,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg0cab.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       childSpan0cabAttrs,
@@ -319,7 +316,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegF8db.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       childSpanF8dbAttrs,
@@ -342,7 +339,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegE2de.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       childSpanE2deAttrs,
@@ -358,7 +355,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegA70b.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -374,7 +371,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegC053.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -390,7 +387,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg5fca.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -401,9 +398,9 @@ func TestTranslation(t *testing.T) {
 				childSpan7163Attrs[awsxray.AWSServiceAttribute] = pdata.NewAttributeValueString(
 					*subseg7163.Name)
 				childSpan7163Attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
-					int64(*subseg7163.HTTP.Response.Status))
+					*subseg7163.HTTP.Response.Status)
 				childSpan7163Attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					int64(*subseg7163.HTTP.Response.ContentLength))
+					*subseg7163.HTTP.Response.ContentLength)
 				childSpan7163Attrs[awsxray.AWSOperationAttribute] = pdata.NewAttributeValueString(
 					*subseg7163.AWS.Operation)
 				childSpan7163Attrs[awsxray.AWSRegionAttribute] = pdata.NewAttributeValueString(
@@ -426,7 +423,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7163.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: otlptrace.Status_InvalidArgument,
+						code: pdata.StatusCodeInvalidArgument,
 					},
 					eventsProps: childSpan7163Evts,
 					attrs:       childSpan7163Attrs,
@@ -442,7 +439,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg9da0.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -460,7 +457,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg56b1.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_UnknownError,
+						code: pdata.StatusCodeUnknownError,
 					},
 					eventsProps: childSpan56b1Evts,
 					attrs:       nil,
@@ -476,7 +473,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg6f90.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -492,7 +489,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegAcfa.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -510,7 +507,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegBa8d.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: otlptrace.Status_UnknownError,
+						code: pdata.StatusCodeUnknownError,
 					},
 					eventsProps: childSpanBa8dEvts,
 					attrs:       nil,
@@ -565,7 +562,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					attrs: attrs,
 				}
@@ -625,7 +622,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					attrs: attrs,
 				}
@@ -660,7 +657,7 @@ func TestTranslation(t *testing.T) {
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
 						message: *seg.Cause.ExceptionID,
-						code:    otlptrace.Status_UnknownError,
+						code:    pdata.StatusCodeUnknownError,
 					},
 					attrs: nil,
 				}
@@ -708,11 +705,11 @@ func TestTranslation(t *testing.T) {
 				attrs[conventions.AttributeHTTPMethod] = pdata.NewAttributeValueString(
 					*seg.HTTP.Request.Method)
 				attrs[conventions.AttributeHTTPStatusCode] = pdata.NewAttributeValueInt(
-					int64(*seg.HTTP.Response.Status))
+					*seg.HTTP.Response.Status)
 				attrs[conventions.AttributeHTTPURL] = pdata.NewAttributeValueString(
 					*seg.HTTP.Request.URL)
 				attrs[conventions.AttributeHTTPResponseContentLength] = pdata.NewAttributeValueInt(
-					int64(*seg.HTTP.Response.ContentLength))
+					*seg.HTTP.Response.ContentLength)
 				attrs[awsxray.AWSXRayTracedAttribute] = pdata.NewAttributeValueBool(true)
 				res := perSpanProperties{
 					traceID:      *seg.TraceID,
@@ -723,7 +720,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					attrs: attrs,
 				}
@@ -768,7 +765,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: otlptrace.Status_Ok,
+						code: pdata.StatusCodeOk,
 					},
 					attrs: attrs,
 				}
@@ -956,9 +953,9 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 
 	for i, props := range propsPerSpan {
 		sp := ls.Spans().At(i)
-		sp.SetSpanID(pdata.SpanID([]byte(props.spanID)))
+		sp.SetSpanID([]byte(props.spanID))
 		if props.parentSpanID != nil {
-			sp.SetParentSpanID(pdata.SpanID([]byte(*props.parentSpanID)))
+			sp.SetParentSpanID([]byte(*props.parentSpanID))
 		}
 		sp.SetName(props.name)
 		sp.SetStartTime(pdata.TimestampUnixNano(props.startTimeSec * float64(time.Second)))
@@ -966,10 +963,10 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			sp.SetEndTime(pdata.TimestampUnixNano(*props.endTimeSec * float64(time.Second)))
 		}
 		sp.SetKind(props.spanKind)
-		sp.SetTraceID(pdata.TraceID([]byte(props.traceID)))
+		sp.SetTraceID([]byte(props.traceID))
 		sp.Status().InitEmpty()
 		sp.Status().SetMessage(props.spanStatus.message)
-		sp.Status().SetCode(pdata.StatusCode(props.spanStatus.code))
+		sp.Status().SetCode(props.spanStatus.code)
 
 		if len(props.eventsProps) > 0 {
 			sp.Events().Resize(len(props.eventsProps))
