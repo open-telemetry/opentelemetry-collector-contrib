@@ -12,32 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package translation
+package ttlmap
 
 import (
 	"sync"
 	"time"
 )
 
-// ttlMap is a map that evicts entries after the configured ttl has elapsed.
-type ttlMap struct {
+// TTLMap is a map that evicts entries after the configured ttl has elapsed.
+type TTLMap struct {
 	md            *ttlMapData
 	sweepInterval int64
 }
 
-// newTTLMap creates a ttlMap. The maxAgeSeconds arg indicates how long
-// entries can persist before getting evicted. The sweepIntervalSeconds arg
-// indicates how often entries are checked for expiration. Call start() on the
-// returned ttlMap to begin periodic sweeps which check for expiration and evict
-// entries as needed.
-func newTTLMap(maxAgeSeconds int64, sweepIntervalSeconds int64) *ttlMap {
-	return &ttlMap{
+// New creates a TTLMap. The maxAgeSeconds arg indicates how long entries can
+// persist before getting evicted. The sweepIntervalSeconds arg indicates how
+// often entries are checked for expiration. Call Start() on the returned TTLMap
+// to begin periodic sweeps which check for expiration and evict entries as
+// needed.
+func New(maxAgeSeconds int64, sweepIntervalSeconds int64) *TTLMap {
+	return &TTLMap{
 		md:            newTTLMapData(maxAgeSeconds),
 		sweepInterval: sweepIntervalSeconds,
 	}
 }
 
-func (m *ttlMap) start() {
+// Start starts periodic sweeps for expired entries in the underlying map.
+func (m *TTLMap) Start() {
 	go func() {
 		d := time.Duration(m.sweepInterval) * time.Second
 		for range time.Tick(d) {
@@ -46,11 +47,16 @@ func (m *ttlMap) start() {
 	}()
 }
 
-func (m *ttlMap) put(k string, v interface{}) {
+// Put adds the passed-in key and value to the underlying map. The current time
+// is attached to the entry for periodic expiration checking and eviction when
+// necessary.
+func (m *TTLMap) Put(k string, v interface{}) {
 	m.md.put(k, v, time.Now().Unix())
 }
 
-func (m *ttlMap) get(k string) interface{} {
+// Get returns the object in the underlying map at the given key. If there is no
+// value at that key, Get returns nil.
+func (m *TTLMap) Get(k string) interface{} {
 	return m.md.get(k)
 }
 

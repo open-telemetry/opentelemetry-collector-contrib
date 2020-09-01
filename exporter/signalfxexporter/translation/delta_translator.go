@@ -17,10 +17,12 @@ package translation
 import (
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/ttlmap"
 )
 
 type deltaTranslator struct {
-	prevPts *ttlMap
+	prevPts *ttlmap.TTLMap
 }
 
 func newDeltaTranslator(ttl int64) *deltaTranslator {
@@ -28,8 +30,8 @@ func newDeltaTranslator(ttl int64) *deltaTranslator {
 	if sweepIntervalSeconds == 0 {
 		sweepIntervalSeconds = 1
 	}
-	m := newTTLMap(ttl, sweepIntervalSeconds)
-	m.start()
+	m := ttlmap.New(ttl, sweepIntervalSeconds)
+	m.Start()
 	return &deltaTranslator{prevPts: m}
 }
 
@@ -53,8 +55,8 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 	// check if we have a previous point for this metric + dimensions
 	dimKey := stringifyDimensions(currPt.Dimensions, nil)
 	fullKey := currPt.Metric + ":" + dimKey
-	v := t.prevPts.get(fullKey)
-	t.prevPts.put(fullKey, currPt)
+	v := t.prevPts.Get(fullKey)
+	t.prevPts.Put(fullKey, currPt)
 	if v == nil {
 		// no previous point, so we can't calculate a delta
 		return nil
@@ -93,11 +95,11 @@ func intDeltaPt(currPt *sfxpb.DataPoint, prevPt *sfxpb.DataPoint, deltaMetricNam
 	return deltaPt
 }
 
-var metricType = sfxpb.MetricType_GAUGE
+var metricTypeGauge = sfxpb.MetricType_GAUGE
 
 func basePt(currPt *sfxpb.DataPoint, deltaMetricName string) *sfxpb.DataPoint {
 	deltaPt := proto.Clone(currPt).(*sfxpb.DataPoint)
 	deltaPt.Metric = deltaMetricName
-	deltaPt.MetricType = &metricType
+	deltaPt.MetricType = &metricTypeGauge
 	return deltaPt
 }
