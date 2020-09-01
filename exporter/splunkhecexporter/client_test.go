@@ -101,6 +101,31 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	})
 }
 
+func createLogData(numberOfLogs int) pdata.Logs {
+	logs := pdata.NewLogs()
+	rl := pdata.NewResourceLogs()
+	rl.InitEmpty()
+	logs.ResourceLogs().Append(&rl)
+	ill := pdata.NewInstrumentationLibraryLogs()
+	ill.InitEmpty()
+	rl.InstrumentationLibraryLogs().Append(&ill)
+
+	ts := pdata.TimestampUnixNano(123)
+	for i := 0; i < numberOfLogs; i++ {
+		logRecord := pdata.NewLogRecord()
+		logRecord.InitEmpty()
+		logRecord.Body().SetStringVal("mylog")
+		logRecord.Attributes().InsertString(sourceLabel, "myapp")
+		logRecord.Attributes().InsertString(sourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(hostnameLabel, "myhost")
+		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.SetTimestamp(ts)
+		ill.Logs().Append(&logRecord)
+	}
+
+	return logs
+}
+
 type CapturingData struct {
 	testing          *testing.T
 	receivedRequest  chan string
@@ -196,6 +221,42 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	}
 }
 
+func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (string, error) {
+	receivedRequest := make(chan string)
+	capture := CapturingData{testing: t, receivedRequest: receivedRequest, statusCode: 200, checkCompression: !disableCompression}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		panic(err)
+	}
+	s := &http.Server{
+		Handler: &capture,
+	}
+	go func() {
+		panic(s.Serve(listener))
+	}()
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.DisableCompression = disableCompression
+	cfg.Token = "1234-1234"
+
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+
+	ld := createLogData(numberOfLogs)
+
+	err = exporter.ConsumeLogs(context.Background(), ld)
+	assert.NoError(t, err)
+	select {
+	case request := <-receivedRequest:
+		return request, nil
+	case <-time.After(5 * time.Second):
+		return "", errors.New("Timeout")
+	}
+}
+
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
@@ -204,6 +265,18 @@ func TestReceiveTraces(t *testing.T) {
 	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
 	expected += "\n\r\n\r\n"
 	expected += `{"time":3,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":3},"status":{}}}`
+	expected += "\n\r\n\r\n"
+	assert.Equal(t, expected, actual)
+}
+
+func TestReceiveLogs(t *testing.T) {
+	actual, err := runLogExport(true, 3, t)
+	assert.NoError(t, err)
+	expected := `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += "\n\r\n\r\n"
+	expected += `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += "\n\r\n\r\n"
+	expected += `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -222,6 +295,12 @@ func TestReceiveMetrics(t *testing.T) {
 
 func TestReceiveTracesWithCompression(t *testing.T) {
 	request, err := runTraceExport(false, 5000, t)
+	assert.NoError(t, err)
+	assert.NotEqual(t, "", request)
+}
+
+func TestReceiveLogsWithCompression(t *testing.T) {
+	request, err := runLogExport(false, 5000, t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }
@@ -271,6 +350,11 @@ func TestErrorReceived(t *testing.T) {
 
 func TestInvalidTraces(t *testing.T) {
 	_, err := runTraceExport(false, 0, t)
+	assert.Error(t, err)
+}
+
+func TestInvalidLogs(t *testing.T) {
+	_, err := runLogExport(false, 0, t)
 	assert.Error(t, err)
 }
 

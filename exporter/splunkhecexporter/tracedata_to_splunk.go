@@ -21,12 +21,13 @@ import (
 )
 
 type splunkEvent struct {
-	Time       float64     `json:"time"`                 // epoch time
-	Host       string      `json:"host"`                 // hostname
-	Source     string      `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string      `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string      `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      interface{} `json:"event"`                // Payload of the event.
+	Time       float64           `json:"time"`                 // epoch time
+	Host       string            `json:"host"`                 // hostname
+	Source     string            `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
+	SourceType string            `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	Index      string            `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Event      interface{}       `json:"event"`                // Payload of the event.
+	Fields     map[string]string `json:"fields,omitempty"`     // Fields of the event.
 }
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunkEvent, int) {

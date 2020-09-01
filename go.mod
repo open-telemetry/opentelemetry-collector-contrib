@@ -45,6 +45,7 @@ require (
 	github.com/tcnksm/ghr v0.13.0
 	go.opentelemetry.io/collector v0.9.1-0.20200901221426-ec327358d634
 	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642
+	golang.org/x/tools v0.0.0-20200831203904-5a2aa26beb65 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5
 )
 

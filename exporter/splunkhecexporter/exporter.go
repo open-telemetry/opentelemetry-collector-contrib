@@ -43,6 +43,7 @@ const (
 type splunkExporter struct {
 	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
+	pushLogData     func(ctx context.Context, td pdata.Logs) (numDroppedSpans int, err error)
 	stop            func(ctx context.Context) (err error)
 }
 
@@ -71,6 +72,7 @@ func createExporter(
 	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
 		pushTraceData:   client.pushTraceData,
+		pushLogData:     client.pushLogData,
 		stop:            client.stop,
 	}, nil
 }
@@ -133,5 +135,14 @@ func (se splunkExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) err
 	numDroppedSpans, err := se.pushTraceData(ctx, td)
 
 	obsreport.EndTraceDataExportOp(ctx, td.SpanCount(), numDroppedSpans, err)
+	return err
+}
+
+func (se splunkExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	ctx = obsreport.StartLogsExportOp(ctx, typeStr)
+
+	numDroppedLogs, err := se.pushLogData(ctx, ld)
+
+	obsreport.EndLogsExportOp(ctx, ld.LogRecordCount(), numDroppedLogs, err)
 	return err
 }
