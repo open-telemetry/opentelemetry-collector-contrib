@@ -20,7 +20,6 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/google/go-cmp/cmp"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -210,7 +209,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 
 		testSpan.Status().InitEmpty()
 		testSpan.Status().SetMessage(statusMessage)
-		testSpan.Status().SetCode(pdata.StatusCode(otlptrace.Status_Ok))
+		testSpan.Status().SetCode(pdata.StatusCodeOk)
 
 		library := pdata.NewInstrumentationLibrary()
 		library.InitEmpty()
@@ -391,7 +390,7 @@ func TestStatusFromSpanStatus(t *testing.T) {
 				spanStatus := pdata.NewSpanStatus()
 				spanStatus.InitEmpty()
 				spanStatus.SetMessage("message")
-				spanStatus.SetCode(pdata.StatusCode(otlptrace.Status_ResourceExhausted))
+				spanStatus.SetCode(pdata.StatusCodeResourceExhausted)
 
 				return spanStatus
 			}(),
