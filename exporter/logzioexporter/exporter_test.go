@@ -26,13 +26,14 @@ const (
 	testHost      = "testHost"
 	testOperation = "testOperation"
 )
+
 var testSpans = []*tracepb.Span{
 	{
-	TraceId:                 []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-	SpanId:                  []byte{0, 0, 0, 0, 0, 0, 0, 2},
-	Name:                    &tracepb.TruncatableString{Value: testOperation},
-	Kind:                    tracepb.Span_SERVER,
-	SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+		TraceId:                 []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+		SpanId:                  []byte{0, 0, 0, 0, 0, 0, 0, 2},
+		Name:                    &tracepb.TruncatableString{Value: testOperation},
+		Kind:                    tracepb.Span_SERVER,
+		SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
 	},
 }
 
@@ -47,14 +48,13 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg Config) {
 	exporter.Shutdown(ctx)
 }
 
-
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
-		Token: "test",
+		Token:  "test",
 		Region: "eu",
 	}
 	td := consumerdata.TraceData{
-		Node: nil,
+		Node:  nil,
 		Spans: testSpans,
 	}
 	testTraceExporter(internaldata.OCToTraceData(td), tester, cfg)
@@ -67,9 +67,9 @@ func TestPushTraceData(tester *testing.T) {
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
-		Token: "test",
-		Region: "eu",
-		CustomListenerAddress:	server.URL,
+		Token:                 "test",
+		Region:                "eu",
+		CustomListenerAddress: server.URL,
 	}
 	defer server.Close()
 

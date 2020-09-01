@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	loggerName 			  = "logzio-exporter"
+	loggerName = "logzio-exporter"
 )
 
 var _ io.Writer = logWriter{}
@@ -35,7 +35,7 @@ func (w logWriter) Write(p []byte) (n int, err error) {
 type logzioExporter struct {
 	accountToken string
 	writer       *store.LogzioSpanWriter
-	logger		 hclog.Logger
+	logger       hclog.Logger
 }
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
@@ -46,9 +46,9 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	})
 
 	writerConfig := store.LogzioConfig{
-		Region:				config.Region,
-		AccountToken:	   	config.Token,
-		CustomListenerURL: 	config.CustomListenerAddress,
+		Region:            config.Region,
+		AccountToken:      config.Token,
+		CustomListenerURL: config.CustomListenerAddress,
 	}
 
 	spanWriter, err := store.NewLogzioSpanWriter(writerConfig, logger)
@@ -57,9 +57,9 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}
 
 	return &logzioExporter{
-		writer:			spanWriter,
-		accountToken:	config.Token,
-		logger:			logger,
+		writer:       spanWriter,
+		accountToken: config.Token,
+		logger:       logger,
 	}, nil
 }
 
