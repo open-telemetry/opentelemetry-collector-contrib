@@ -25,15 +25,15 @@ type TTLMap struct {
 	sweepInterval int64
 }
 
-// New creates a TTLMap. The maxAgeSeconds arg indicates how long entries can
-// persist before getting evicted. The sweepIntervalSeconds arg indicates how
-// often entries are checked for expiration. Call Start() on the returned TTLMap
-// to begin periodic sweeps which check for expiration and evict entries as
-// needed.
-func New(maxAgeSeconds int64, sweepIntervalSeconds int64) *TTLMap {
+// New creates a TTLMap. The sweepIntervalSeconds arg indicates how often
+// entries are checked for expiration. The maxAgeSeconds arg indicates how long
+// entries can persist before getting evicted. Call Start() on the returned
+// TTLMap to begin periodic sweeps which check for expiration and evict entries
+// as needed.
+func New(sweepIntervalSeconds int64, maxAgeSeconds int64) *TTLMap {
 	return &TTLMap{
-		md:            newTTLMapData(maxAgeSeconds),
 		sweepInterval: sweepIntervalSeconds,
+		md:            newTTLMapData(maxAgeSeconds),
 	}
 }
 

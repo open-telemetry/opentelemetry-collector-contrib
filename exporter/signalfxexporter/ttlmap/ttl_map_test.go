@@ -29,3 +29,9 @@ func TestTTLMapData(t *testing.T) {
 	m.sweep(13)
 	require.Nil(t, m.get("bob"))
 }
+
+func TestTTLMap(t *testing.T) {
+	ttlMap := New(5, 10)
+	require.EqualValues(t, ttlMap.sweepInterval, 5)
+	require.EqualValues(t, ttlMap.md.maxAge, 10)
+}

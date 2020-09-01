@@ -30,7 +30,7 @@ func newDeltaTranslator(ttl int64) *deltaTranslator {
 	if sweepIntervalSeconds == 0 {
 		sweepIntervalSeconds = 1
 	}
-	m := ttlmap.New(ttl, sweepIntervalSeconds)
+	m := ttlmap.New(sweepIntervalSeconds, ttl)
 	m.Start()
 	return &deltaTranslator{prevPts: m}
 }
