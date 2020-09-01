@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/iancoleman/strcase v0.0.0-20171129010253-3de563c3dc08
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
 	go.uber.org/zap v1.15.0
@@ -15,4 +15,4 @@ require (
 	k8s.io/client-go v0.19.0
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
