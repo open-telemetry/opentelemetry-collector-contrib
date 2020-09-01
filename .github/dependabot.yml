@@ -90,6 +90,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/k8sconfig"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/awsxray/testdata/sampleapp"
     schedule:
       interval: "weekly"

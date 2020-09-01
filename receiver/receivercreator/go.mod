@@ -17,6 +17,4 @@ require (
 	k8s.io/utils v0.0.0-20200724153422-f32512634ab7 // indirect
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer

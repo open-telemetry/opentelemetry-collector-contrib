@@ -22,6 +22,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../internal/common
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../internal/k8sconfig
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../receiver/k8sclusterreceiver
