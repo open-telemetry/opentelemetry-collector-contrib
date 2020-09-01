@@ -70,6 +70,13 @@ type MetricsConfig struct {
 	// Mode is the metrics sending mode: either 'dogstatsd' or 'agentless'
 	Mode string `mapstructure:"mode"`
 
+	// Percentiles states whether to report percentiles for summary metrics,
+	// including the minimum and maximum
+	Percentiles bool `mapstructure:"report_percentiles"`
+
+	// Buckets states whether to report buckets from distribution metrics
+	Buckets bool `mapstructure:"report_buckets"`
+
 	// DogStatsD defines the DogStatsD configuration options.
 	DogStatsD DogStatsDConfig `mapstructure:"dogstatsd"`
 

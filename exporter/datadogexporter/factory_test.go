@@ -36,7 +36,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, cfg, &Config{
 		API: APIConfig{Site: "datadoghq.com"},
 		Metrics: MetricsConfig{
-			Mode: DogStatsDMode,
+			Mode:        DogStatsDMode,
+			Percentiles: true,
 			DogStatsD: DogStatsDConfig{
 				Endpoint:  "127.0.0.1:8125",
 				Telemetry: true,

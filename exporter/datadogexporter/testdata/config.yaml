@@ -21,6 +21,7 @@ exporters:
     metrics:
       mode: agentless
       namespace: opentelemetry
+      report_percentiles: false
 
   datadog/dogstatsd:
     metrics:

@@ -24,7 +24,6 @@ import (
 	v1agent "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
@@ -61,44 +60,18 @@ func (m *MockMetricsExporter) GetRetrySettings() exporterhelper.RetrySettings {
 func TestMetricValue(t *testing.T) {
 	var (
 		hostname string   = "unknown"
-		name     string   = "metric.name"
 		value    float64  = math.Pi
 		tags     []string = []string{"tool:opentelemetry", "version:0.1.0"}
 		rate     float64  = 1
 	)
 
-	metric, err := NewMetric(
-		hostname,
-		name,
-		Gauge,
-		value,
-		tags,
-		rate,
-	)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, metric)
+	metric := NewGauge(hostname, value, tags)
 
 	assert.Equal(t, hostname, metric.GetHost())
-	assert.Equal(t, name, metric.GetName())
 	assert.Equal(t, Gauge, metric.GetType())
 	assert.Equal(t, value, metric.GetValue())
 	assert.Equal(t, tags, metric.GetTags())
 	assert.Equal(t, rate, metric.GetRate())
-
-	// Fail when using incorrect type
-	nilMetric, err := NewMetric(
-		hostname,
-		name,
-		Count,
-		value,
-		tags,
-		rate,
-	)
-
-	require.Error(t, err)
-	assert.Nil(t, nilMetric)
-
 }
 
 var (
@@ -137,27 +110,21 @@ func TestMapNumericMetric(t *testing.T) {
 	assert.Equal(t, 0, droppedTimeSeries)
 	assert.Nil(t, err)
 	assert.Equal(t,
-		map[string][]*Metric{
-			"cumulative.float64.test": {
-				{
-					hostname:   "unknown",
-					name:       "cumulative.float64.test",
-					metricType: Gauge,
-					fvalue:     math.Pi,
-					rate:       1,
-					tags:       testTags[:],
-				},
-			},
-			"gauge.float64.test": {
-				{
-					hostname:   "unknown",
-					name:       "gauge.float64.test",
-					metricType: Gauge,
-					fvalue:     math.Pi,
-					rate:       1,
-					tags:       testTags[:],
-				},
-			},
+		map[string][]MetricValue{
+			"cumulative.float64.test": {{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      math.Pi,
+				rate:       1,
+				tags:       testTags[:],
+			}},
+			"gauge.float64.test": {{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      math.Pi,
+				rate:       1,
+				tags:       testTags[:],
+			}},
 		},
 		metrics,
 	)
@@ -168,29 +135,130 @@ func TestMapDistributionMetric(t *testing.T) {
 	ts := time.Now()
 	md := NewMetricsData([]*v1.Metric{
 		metricstest.GaugeDist("dist.test", testKeys[:],
-			metricstest.Timeseries(ts, testValues[:], metricstest.DistPt(ts, []float64{}, []int64{}))),
-		metricstest.CumulativeDist("cumulative.dist.test", testKeys[:],
-			metricstest.Timeseries(ts, testValues[:], metricstest.DistPt(ts, []float64{}, []int64{}))),
+			metricstest.Timeseries(ts, testValues[:], metricstest.DistPt(ts, []float64{0.1, 0.2}, []int64{100, 200}))),
 	})
 
-	metrics, _, err := MapMetrics(mockExporter, md)
+	metrics, _, err := MapMetrics(
+		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Buckets: true}}},
+		md,
+	)
 
-	// Right now they are silently ignored
 	assert.Nil(t, err)
-	assert.Equal(t, map[string][]*Metric{}, metrics)
+	assert.Equal(t, map[string][]MetricValue{
+		"dist.test.count": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      300,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"dist.test.sum": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			// The sum value is approximated by the metricstest
+			// package using lower bounds and counts:
+			// sum = ∑ bound(i-1) * count(i)
+			//     = 0*100 + 0.1*200
+			//     = 20
+			value: 20,
+			rate:  1,
+			tags:  testTags[:],
+		}},
+		"dist.test.squared_dev_sum": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			// The sum of squared deviations is set to 0 by the
+			// metricstest package
+			value: 0,
+			rate:  1,
+			tags:  testTags[:],
+		}},
+		"dist.test.count_per_bucket": {
+			{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      100,
+				rate:       1,
+				tags:       append(testTags[:], "bucket_idx:0"),
+			},
+
+			{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      200,
+				rate:       1,
+				tags:       append(testTags[:], "bucket_idx:1"),
+			},
+		},
+	},
+		metrics,
+	)
 }
 
 func TestMapSummaryMetric(t *testing.T) {
 	ts := time.Now()
 
+	summaryPoint := metricstest.Timeseries(
+		ts,
+		testValues[:],
+		metricstest.SummPt(ts, 5, 23, []float64{0, 50.1, 95, 100}, []float64{1, 22, 100, 300}),
+	)
+
 	md := NewMetricsData([]*v1.Metric{
-		metricstest.Summary("summary.test", testKeys[:],
-			metricstest.Timeseries(ts, testValues[:], metricstest.SummPt(ts, 2, 10, []float64{}, []float64{}))),
+		metricstest.Summary("summary.test", testKeys[:], summaryPoint),
 	})
 
-	metrics, _, err := MapMetrics(mockExporter, md)
+	metrics, _, err := MapMetrics(
+		// Enable percentiles for test
+		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Percentiles: true}}},
+		md,
+	)
 
-	// Right now they are silently ignored
 	assert.Nil(t, err)
-	assert.Equal(t, map[string][]*Metric{}, metrics)
+	assert.Equal(t, map[string][]MetricValue{
+		"summary.test.sum": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      23,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"summary.test.count": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      5,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"summary.test.p50": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      22,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"summary.test.p95": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      100,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"summary.test.min": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      1,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+		"summary.test.max": {{
+			hostname:   "unknown",
+			metricType: Gauge,
+			value:      300,
+			rate:       1,
+			tags:       testTags[:],
+		}},
+	},
+		metrics,
+	)
 }

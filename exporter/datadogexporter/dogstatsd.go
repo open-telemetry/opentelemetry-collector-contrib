@@ -62,11 +62,17 @@ func (exp *dogStatsDExporter) PushMetricsData(_ context.Context, md pdata.Metric
 
 	for name, data := range metrics {
 		for _, metric := range data {
+
+			tags := metric.GetTags()
+
+			// Send the hostname if it has not been overridden
+			if exp.GetConfig().Hostname == "" && metric.GetHost() != "" {
+				tags = append(tags, fmt.Sprintf("host:%s", metric.GetHost()))
+			}
+
 			switch metric.GetType() {
-			case Count:
-				err = exp.client.Count(name, metric.GetValue().(int64), metric.GetTags(), metric.GetRate())
 			case Gauge:
-				err = exp.client.Gauge(name, metric.GetValue().(float64), metric.GetTags(), metric.GetRate())
+				err = exp.client.Gauge(name, metric.GetValue(), tags, metric.GetRate())
 			}
 
 			if err != nil {

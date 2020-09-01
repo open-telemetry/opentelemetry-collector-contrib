@@ -17,6 +17,7 @@ package datadogexporter
 import (
 	"context"
 	"fmt"
+	"math"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -47,82 +48,45 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (MetricsExporter, error
 type MetricType int
 
 const (
-	Count MetricType = iota
-	Gauge
+	Gauge MetricType = iota
 )
 
-type Metric struct {
+type MetricValue struct {
 	hostname   string
-	name       string
 	metricType MetricType
-	fvalue     float64
-	ivalue     int64
+	value      float64
 	tags       []string
 	rate       float64
 }
 
-func (m *Metric) GetHost() string {
+func (m *MetricValue) GetHost() string {
 	return m.hostname
 }
 
-func (m *Metric) GetName() string {
-	return m.name
-}
-
-func (m *Metric) GetType() MetricType {
+func (m *MetricValue) GetType() MetricType {
 	return m.metricType
 }
 
-func (m *Metric) GetValue() interface{} {
-	switch m.metricType {
-	case Count:
-		return m.ivalue
-	case Gauge:
-		return m.fvalue
-	}
-	return nil
+func (m *MetricValue) GetValue() float64 {
+	return m.value
 }
 
-func (m *Metric) GetRate() float64 {
+func (m *MetricValue) GetRate() float64 {
 	return m.rate
 }
 
-func (m *Metric) GetTags() []string {
+func (m *MetricValue) GetTags() []string {
 	return m.tags
 }
 
-func NewMetric(hostname, name string, metricType MetricType, value interface{}, tags []string, rate float64) (*Metric, error) {
-	switch metricType {
-	case Count:
-		ivalue, ok := value.(int64)
-		if !ok {
-			return nil, fmt.Errorf("Incorrect value type for count metric '%s'", name)
-		}
-		return &Metric{
-			hostname:   hostname,
-			name:       name,
-			metricType: Count,
-			ivalue:     ivalue,
-			rate:       rate,
-			tags:       tags,
-		}, nil
-
-	case Gauge:
-		fvalue, ok := value.(float64)
-		if !ok {
-			return nil, fmt.Errorf("Incorrect value type for count metric '%s'", name)
-		}
-		return &Metric{
-			hostname:   hostname,
-			name:       name,
-			metricType: Gauge,
-			fvalue:     fvalue,
-			rate:       rate,
-			tags:       tags,
-		}, nil
+func NewGauge(hostname string, value float64, tags []string) MetricValue {
+	return MetricValue{
+		hostname:   hostname,
+		metricType: Gauge,
+		value:      value,
+		rate:       1,
+		tags:       tags,
 	}
-
-	return nil, fmt.Errorf("Unrecognized Metric type for metric '%s'", name)
 }
 
 type OpenCensusKind int
@@ -134,12 +98,12 @@ const (
 	Summary
 )
 
-func MapMetrics(exp MetricsExporter, md pdata.Metrics) (map[string][]*Metric, int, error) {
+func MapMetrics(exp MetricsExporter, md pdata.Metrics) (map[string][]MetricValue, int, error) {
 	// Transform it into OpenCensus format
 	data := pdatautil.MetricsToMetricsData(md)
 
 	// Mapping from metrics name to data
-	metrics := map[string][]*Metric{}
+	metrics := map[string][]MetricValue{}
 
 	logger := exp.GetLogger()
 
@@ -202,30 +166,105 @@ func MapMetrics(exp MetricsExporter, md pdata.Metrics) (map[string][]*Metric, in
 				}
 
 				for _, point := range timeseries.GetPoints() {
-					// We assume the sampling rate is 1.
-					const defaultRate float64 = 1
-
 					switch kind {
-					case Int64, Double:
-						var value float64
-						if kind == Int64 {
-							value = float64(point.GetInt64Value())
-						} else {
-							value = point.GetDoubleValue()
+					case Int64:
+						metrics[metricName] = append(metrics[metricName],
+							NewGauge(hostname, float64(point.GetInt64Value()), tags),
+						)
+					case Double:
+						metrics[metricName] = append(metrics[metricName],
+							NewGauge(hostname, point.GetDoubleValue(), tags),
+						)
+					case Distribution:
+						// A Distribution metric has:
+						// - The count of values in the population
+						// - The sum of values in the population
+						// - The sum of squared deviations
+						// - A number of buckets, each of them having
+						//    - the bounds that define the bucket
+						//    - the count of the number of items in that bucket
+						//    - a sample value from each bucket
+						//
+						// We follow the implementation on `opencensus-go-exporter-datadog`:
+						// we report the first three values and the buckets count can also
+						// be reported (opt-in), but bounds are ignored.
+
+						dist := point.GetDistributionValue()
+
+						distMetrics := map[string]float64{
+							"count":           float64(dist.GetCount()),
+							"sum":             dist.GetSum(),
+							"squared_dev_sum": dist.GetSumOfSquaredDeviation(),
 						}
 
-						newVal, err := NewMetric(hostname, metricName, Gauge, value, tags, defaultRate)
-						if err != nil {
-							logger.Error("Error when creating Datadog metric, continuing...", nameField, zap.Error(err))
-							continue
+						for suffix, value := range distMetrics {
+							fullName := fmt.Sprintf("%s.%s", metricName, suffix)
+							metrics[fullName] = append(metrics[fullName],
+								NewGauge(hostname, value, tags),
+							)
 						}
-						metrics[metricName] = append(metrics[metricName], newVal)
-					case Distribution:
-						logger.Warn("Ignoring distribution metric, not implemented yet", nameField)
-						continue
+
+						if exp.GetConfig().Metrics.Buckets {
+							// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
+							// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
+							fullName := fmt.Sprintf("%s.count_per_bucket", metricName)
+
+							for idx, bucket := range dist.GetBuckets() {
+								bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
+								metrics[fullName] = append(metrics[fullName],
+									NewGauge(hostname, float64(bucket.GetCount()), bucketTags),
+								)
+							}
+						}
 					case Summary:
-						logger.Warn("Ignoring summary metric, not implemented yet", nameField)
-						continue
+						// A Summary metric has:
+						// - The total sum so far
+						// - The total count so far
+						// - A snapshot with
+						//   - the sum in the current snapshot
+						//   - the count in the current snapshot
+						//   - a series of percentiles
+						//
+						// By default we report the sum and count as gauges and percentiles.
+						// Percentiles are opt-out
+
+						// Report count if available
+						if count := point.GetSummaryValue().GetCount(); count != nil {
+							fullName := fmt.Sprintf("%s.count", metricName)
+							metrics[fullName] = append(metrics[fullName],
+								NewGauge(hostname, float64(count.GetValue()), tags),
+							)
+						}
+
+						// Report sum if available
+						if sum := point.GetSummaryValue().GetSum(); sum != nil {
+							fullName := fmt.Sprintf("%s.sum", metricName)
+							metrics[fullName] = append(metrics[fullName],
+								NewGauge(hostname, sum.GetValue(), tags),
+							)
+						}
+
+						if exp.GetConfig().Metrics.Percentiles {
+							snapshot := point.GetSummaryValue().GetSnapshot()
+							for _, pair := range snapshot.GetPercentileValues() {
+								var fullName string
+								if perc := pair.GetPercentile(); perc == 0 {
+									// p0 is the minimum
+									fullName = fmt.Sprintf("%s.min", metricName)
+								} else if perc == 100 {
+									// p100 is the maximum
+									fullName = fmt.Sprintf("%s.max", metricName)
+								} else {
+									// Round to the nearest digit
+									fullName = fmt.Sprintf("%s.p%02d", metricName, int(math.Round(perc)))
+								}
+
+								metrics[fullName] = append(metrics[fullName],
+									NewGauge(hostname, pair.GetValue(), tags),
+								)
+							}
+						}
+
 					}
 				}
 			}
