@@ -1,0 +1,24 @@
+receivers:
+  splunk_hec:
+  splunk_hec/allsettings:
+    # endpoint specifies the network interface and port which will receive
+    # Splunk metrics.
+    endpoint: localhost:8088
+    access_token_passthrough: true
+  splunk_hec/tls:
+    tls_settings:
+      cert_file: /test.crt
+      key_file: /test.key
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [splunk_hec, splunk_hec/allsettings]
+      processors: [exampleprocessor]
+      exporters: [exampleexporter]
