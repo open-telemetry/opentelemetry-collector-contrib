@@ -84,3 +84,7 @@ func (c *FakeController) HasStopped() bool {
 func (c *FakeController) LastSyncResourceVersion() string {
 	return ""
 }
+
+func (f *FakeInformer) SetWatchErrorHandler(cache.WatchErrorHandler) error {
+	return nil
+}

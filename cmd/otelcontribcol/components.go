@@ -28,7 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
@@ -40,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
@@ -88,6 +88,7 @@ func components() (component.Factories, error) {
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
 		statsdreceiver.NewFactory(),
+		awsxrayreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -107,7 +108,6 @@ func components() (component.Factories, error) {
 		carbonexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),
-		lightstepexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		newrelicexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),

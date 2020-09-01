@@ -15,7 +15,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000
@@ -28,6 +27,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
@@ -43,7 +43,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
+	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
 	golang.org/x/sys v0.0.0-20200803210538-64077c9b5642
 	honnef.co/go/tools v0.0.1-2020.1.5
 )
@@ -53,7 +53,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ./internal/common
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/awsxray => ./internal/common/awsxray
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray => ./internal/awsxray
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter => ./exporter/alibabacloudlogserviceexporter
 
@@ -67,10 +67,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honey
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ./exporter/jaegerthrifthttpexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter => ./exporter/lightstepexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ./exporter/logzioexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter => ./exporter/newrelicexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter => ./exporter/kinesisexporter
@@ -92,6 +90,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/obse
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver => ./extension/observer/hostobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver => ./extension/observer/k8sobserver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ./receiver/awsxrayreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ./receiver/carbonreceiver
 
@@ -122,6 +122,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
-
-// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

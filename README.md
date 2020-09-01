@@ -149,7 +149,6 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | honeycombexporter | @paulosman @lizthegrey |
 | jaegerthrifthttpexporter | @jpkrohling @pavolloffay |
 | kinesisexporter | @owais |
-| lightstepexporter | @austinlparker @jmacd |
 | newrelicexporter | @MrAlias |
 | sapmexporter | @owais @dmitryax |
 | sentryexporter | @AbhiPrasad |
