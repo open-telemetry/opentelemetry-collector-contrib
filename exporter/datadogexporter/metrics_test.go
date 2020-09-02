@@ -286,3 +286,20 @@ func TestMapSummaryMetric(t *testing.T) {
 		metrics,
 	)
 }
+
+func TestMapInvalid(t *testing.T) {
+	ts := time.Now()
+	md := NewMetricsData([]*v1.Metric{{
+		MetricDescriptor: &v1.MetricDescriptor{
+			Type: v1.MetricDescriptor_UNSPECIFIED,
+		},
+		Timeseries: []*v1.TimeSeries{metricstest.Timeseries(
+			ts, []string{}, metricstest.Double(ts, 0.0))},
+	}})
+
+	metrics, dropped, err := MapMetrics(mockExporter, md)
+
+	assert.Nil(t, err)
+	assert.Equal(t, dropped, 1)
+	assert.Equal(t, metrics, map[string][]MetricValue{})
+}
