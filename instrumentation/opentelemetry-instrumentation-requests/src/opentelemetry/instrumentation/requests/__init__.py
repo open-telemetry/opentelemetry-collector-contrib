@@ -29,26 +29,17 @@ Usage
     opentelemetry.instrumentation.requests.RequestsInstrumentor().instrument()
     response = requests.get(url="https://www.example.org/")
 
-Limitations
------------
-
-Note that calls that do not use the higher-level APIs but use
-:code:`requests.sessions.Session.send` (or an alias thereof) directly, are
-currently not traced. If you find any other way to trigger an untraced HTTP
-request, please report it via a GitHub issue with :code:`[requests: untraced
-API]` in the title.
-
 API
 ---
 """
 
 import functools
 import types
-from urllib.parse import urlparse
 
 from requests import Timeout, URLRequired
 from requests.exceptions import InvalidSchema, InvalidURL, MissingSchema
 from requests.sessions import Session
+from requests.structures import CaseInsensitiveDict
 
 from opentelemetry import context, propagators
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
@@ -56,6 +47,10 @@ from opentelemetry.instrumentation.requests.version import __version__
 from opentelemetry.instrumentation.utils import http_status_to_canonical_code
 from opentelemetry.trace import SpanKind, get_tracer
 from opentelemetry.trace.status import Status, StatusCanonicalCode
+
+# A key to a context variable to avoid creating duplicate spans when instrumenting
+# both, Session.request and Session.send, since Session.request calls into Session.send
+_SUPPRESS_REQUESTS_INSTRUMENTATION_KEY = "suppress_requests_instrumentation"
 
 
 # pylint: disable=unused-argument
@@ -71,15 +66,54 @@ def _instrument(tracer_provider=None, span_callback=None):
     # before v1.0.0, Dec 17, 2012, see
     # https://github.com/psf/requests/commit/4e5c4a6ab7bb0195dececdd19bb8505b872fe120)
 
-    wrapped = Session.request
+    wrapped_request = Session.request
+    wrapped_send = Session.send
 
-    @functools.wraps(wrapped)
+    @functools.wraps(wrapped_request)
     def instrumented_request(self, method, url, *args, **kwargs):
-        if context.get_value("suppress_instrumentation"):
-            return wrapped(self, method, url, *args, **kwargs)
+        def get_or_create_headers():
+            headers = kwargs.get("headers")
+            if headers is None:
+                headers = {}
+                kwargs["headers"] = headers
+
+            return headers
+
+        def call_wrapped():
+            return wrapped_request(self, method, url, *args, **kwargs)
+
+        return _instrumented_requests_call(
+            method, url, call_wrapped, get_or_create_headers
+        )
+
+    @functools.wraps(wrapped_send)
+    def instrumented_send(self, request, **kwargs):
+        def get_or_create_headers():
+            request.headers = (
+                request.headers
+                if request.headers is not None
+                else CaseInsensitiveDict()
+            )
+            return request.headers
+
+        def call_wrapped():
+            return wrapped_send(self, request, **kwargs)
+
+        return _instrumented_requests_call(
+            request.method, request.url, call_wrapped, get_or_create_headers
+        )
+
+    def _instrumented_requests_call(
+        method: str, url: str, call_wrapped, get_or_create_headers
+    ):
+        if context.get_value("suppress_instrumentation") or context.get_value(
+            _SUPPRESS_REQUESTS_INSTRUMENTATION_KEY
+        ):
+            return call_wrapped()
 
         # See
         # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-client
+        method = method.upper()
         span_name = "HTTP {}".format(method)
 
         exception = None
@@ -91,17 +125,19 @@ def _instrument(tracer_provider=None, span_callback=None):
             span.set_attribute("http.method", method.upper())
             span.set_attribute("http.url", url)
 
-            headers = kwargs.get("headers", {}) or {}
+            headers = get_or_create_headers()
             propagators.inject(type(headers).__setitem__, headers)
-            kwargs["headers"] = headers
 
+            token = context.attach(
+                context.set_value(_SUPPRESS_REQUESTS_INSTRUMENTATION_KEY, True)
+            )
             try:
-                result = wrapped(
-                    self, method, url, *args, **kwargs
-                )  # *** PROCEED
+                result = call_wrapped()  # *** PROCEED
             except Exception as exc:  # pylint: disable=W0703
                 exception = exc
                 result = getattr(exc, "response", None)
+            finally:
+                context.detach(token)
 
             if exception is not None:
                 span.set_status(
@@ -124,24 +160,34 @@ def _instrument(tracer_provider=None, span_callback=None):
 
         return result
 
-    instrumented_request.opentelemetry_ext_requests_applied = True
-
+    instrumented_request.opentelemetry_instrumentation_requests_applied = True
     Session.request = instrumented_request
 
-    # TODO: We should also instrument requests.sessions.Session.send
-    # but to avoid doubled spans, we would need some context-local
-    # state (i.e., only create a Span if the current context's URL is
-    # different, then push the current URL, pop it afterwards)
+    instrumented_send.opentelemetry_instrumentation_requests_applied = True
+    Session.send = instrumented_send
 
 
 def _uninstrument():
-    # pylint: disable=global-statement
     """Disables instrumentation of :code:`requests` through this module.
 
     Note that this only works if no other module also patches requests."""
-    if getattr(Session.request, "opentelemetry_ext_requests_applied", False):
-        original = Session.request.__wrapped__  # pylint:disable=no-member
-        Session.request = original
+    _uninstrument_from(Session)
+
+
+def _uninstrument_from(instr_root, restore_as_bound_func=False):
+    for instr_func_name in ("request", "send"):
+        instr_func = getattr(instr_root, instr_func_name)
+        if not getattr(
+            instr_func,
+            "opentelemetry_instrumentation_requests_applied",
+            False,
+        ):
+            continue
+
+        original = instr_func.__wrapped__  # pylint:disable=no-member
+        if restore_as_bound_func:
+            original = types.MethodType(original, instr_root)
+        setattr(instr_root, instr_func_name, original)
 
 
 def _exception_to_canonical_code(exc: Exception) -> StatusCanonicalCode:
@@ -179,8 +225,4 @@ class RequestsInstrumentor(BaseInstrumentor):
     @staticmethod
     def uninstrument_session(session):
         """Disables instrumentation on the session object."""
-        if getattr(
-            session.request, "opentelemetry_ext_requests_applied", False
-        ):
-            original = session.request.__wrapped__  # pylint:disable=no-member
-            session.request = types.MethodType(original, session)
+        _uninstrument_from(session, restore_as_bound_func=True)

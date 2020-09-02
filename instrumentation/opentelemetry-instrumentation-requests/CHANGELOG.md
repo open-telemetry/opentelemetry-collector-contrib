@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add support for instrumenting prepared requests
+  ([#1040](https://github.com/open-telemetry/opentelemetry-python/pull/1040))
+
 ## Version 0.12b0
 
 Released 2020-08-14
