@@ -93,9 +93,9 @@ func (exp *dogStatsDExporter) GetConfig() *Config {
 }
 
 func (exp *dogStatsDExporter) GetQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.CreateDefaultQueueSettings()
+	return exporterhelper.QueueSettings{Enabled: false}
 }
 
 func (exp *dogStatsDExporter) GetRetrySettings() exporterhelper.RetrySettings {
-	return exporterhelper.CreateDefaultRetrySettings()
+	return exporterhelper.RetrySettings{Enabled: false}
 }
