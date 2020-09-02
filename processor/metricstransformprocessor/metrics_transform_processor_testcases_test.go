@@ -377,15 +377,17 @@ var (
 			},
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(2, []string{"label1-value2", "label2-value2"}).
-					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).addDoublePoint(2, 3, 2).
+					addTimeseries(2, []string{"label1-value2", "label2-value2"}).addDoublePoint(0, 3, 2).
+					addTimeseries(0, []string{"label1-value0", "label2-value0"}).addDoublePoint(1, 4, 2).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).addDoublePoint(2, 1, 2).
+					addTimeseries(1, []string{"label1-value1", "label2-value2"}).addDoublePoint(3, 3, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
-					addTimeseries(1, []string{"label1-value1"}).addTimeseries(2, []string{"label1-value2"}).
-					addDoublePoint(0, 1, 2).addDoublePoint(1, 3, 2).
+					addTimeseries(1, []string{"label1-value1"}).addDoublePoint(0, 1, 2).
+					addTimeseries(2, []string{"label1-value2"}).addDoublePoint(1, 3, 2).
+					addTimeseries(0, []string{"label1-value0"}).addDoublePoint(2, 4, 2).
 					build(),
 			},
 		},
@@ -410,15 +412,17 @@ var (
 			},
 			in: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(3, []string{"label1-value1", "label2-value1"}).addTimeseries(3, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
-					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).addInt64Point(1, 2, 3).addInt64Point(2, 1, 2).
+					addTimeseries(3, []string{"label1-value1", "label2-value1"}).addInt64Point(0, 3, 2).
+					addTimeseries(0, []string{"label1-value1", "label2-value4"}).
+					addTimeseries(3, []string{"label1-value1", "label2-value2"}).addInt64Point(2, 1, 2).addInt64Point(2, 2, 3).
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).addInt64Point(3, 1, 2).
 					build(),
 			},
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).addTimeseries(3, []string{"label1-value1", "new/label2-value"}).
-					addInt64Point(0, 1, 2).addInt64Point(1, 4, 2).addInt64Point(1, 2, 3).
+					addTimeseries(1, []string{"label1-value1", "label2-value3"}).addInt64Point(0, 1, 2).
+					addTimeseries(3, []string{"label1-value1", "new/label2-value"}).addInt64Point(1, 4, 2).addInt64Point(1, 2, 3).
+					addTimeseries(0, []string{"label1-value1", "label2-value4"}).
 					build(),
 			},
 		},

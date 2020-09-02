@@ -147,5 +147,9 @@ func (mtp *metricsTransformProcessor) minInt64(num1, num2 int64) int64 {
 
 // compareTimestamps returns if t1 is a smaller timestamp than t2
 func (mtp *metricsTransformProcessor) compareTimestamps(t1 *timestamppb.Timestamp, t2 *timestamppb.Timestamp) bool {
+	if t1 == nil || t2 == nil {
+		return t1 != nil
+	}
+
 	return t1.Seconds < t2.Seconds || (t1.Seconds == t2.Seconds && t1.Nanos < t2.Nanos)
 }
