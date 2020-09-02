@@ -51,6 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings:           configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "stackdriver/customname"},
 			ProjectID:                  "my-project",
 			Prefix:                     "prefix",
+			UserAgent:                  "opentelemetry-collector-contrib {{version}}",
 			Endpoint:                   "test-endpoint",
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
