@@ -100,8 +100,8 @@ from opentracing import (
 )
 
 from opentelemetry import propagators
+from opentelemetry.baggage import get_baggage, set_baggage
 from opentelemetry.context import Context, attach, detach, get_value, set_value
-from opentelemetry.correlationcontext import get_correlation, set_correlation
 from opentelemetry.instrumentation.opentracing_shim import util
 from opentelemetry.instrumentation.opentracing_shim.version import __version__
 from opentelemetry.trace import INVALID_SPAN_CONTEXT, DefaultSpan, Link
@@ -290,7 +290,7 @@ class SpanShim(Span):
             value: A tag value.
         """
         # pylint: disable=protected-access
-        self._context._baggage = set_correlation(
+        self._context._baggage = set_baggage(
             key, value, context=self._context._baggage
         )
 
@@ -303,7 +303,7 @@ class SpanShim(Span):
             Returns this :class:`SpanShim` instance to allow call chaining.
         """
         # pylint: disable=protected-access
-        return get_correlation(key, context=self._context._baggage)
+        return get_baggage(key, context=self._context._baggage)
 
 
 class ScopeShim(Scope):
