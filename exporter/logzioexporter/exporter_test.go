@@ -37,15 +37,21 @@ var testSpans = []*tracepb.Span{
 	},
 }
 
-func testTraceExporter(td pdata.Traces, t *testing.T, cfg Config) {
+func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := createTraceExporter(context.Background(), params, &cfg)
+	exporter, err := createTraceExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, td)
 	require.NoError(t, err)
 	exporter.Shutdown(ctx)
+}
+
+func TestNullExporterConfig(tester *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createTraceExporter(context.Background(), params, nil)
+	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestEmptyNode(tester *testing.T) {
@@ -57,7 +63,7 @@ func TestEmptyNode(tester *testing.T) {
 		Node:  nil,
 		Spans: testSpans,
 	}
-	testTraceExporter(internaldata.OCToTraceData(td), tester, cfg)
+	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
 }
 
 func TestPushTraceData(tester *testing.T) {
@@ -84,7 +90,7 @@ func TestPushTraceData(tester *testing.T) {
 		},
 		Spans: testSpans,
 	}
-	testTraceExporter(internaldata.OCToTraceData(td), tester, cfg)
+	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
 	//time.Sleep(time.Second * 10)
 	requests := strings.Split(string(recordedRequests), "\n")
 	var logzioSpan objects.LogzioSpan

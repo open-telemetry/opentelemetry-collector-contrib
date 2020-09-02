@@ -2,6 +2,7 @@ package logzioexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/hashicorp/go-hclog"
 	"github.com/jaegertracing/jaeger/model"
@@ -10,26 +11,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/trace/jaeger"
-	"go.uber.org/zap/zapcore"
-	"io"
 )
 
 const (
 	loggerName = "logzio-exporter"
 )
-
-var _ io.Writer = logWriter{}
-
-// logWriter wraps a zap.Logger into an io.Writer.
-type logWriter struct {
-	logf func(string, ...zapcore.Field)
-}
-
-// Write implements io.Writer
-func (w logWriter) Write(p []byte) (n int, err error) {
-	w.logf(string(p))
-	return len(p), nil
-}
 
 // exporter exporters OpenTelemetry Collector data to New Relic.
 type logzioExporter struct {
@@ -45,6 +31,9 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 		JSONFormat: true,
 	})
 
+	if config == nil {
+		return nil, errors.New("exporter config can't be null")
+	}
 	writerConfig := store.LogzioConfig{
 		Region:            config.Region,
 		AccountToken:      config.Token,
