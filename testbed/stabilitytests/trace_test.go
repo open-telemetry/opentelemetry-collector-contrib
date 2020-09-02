@@ -118,7 +118,7 @@ func TestStabilityTracesZipkin(t *testing.T) {
 		testbed.NewZipkinDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      80,
-			ExpectedMaxRAM:      95,
+			ExpectedMaxRAM:      110,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,

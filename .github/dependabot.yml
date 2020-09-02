@@ -74,6 +74,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/splunkhecreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
     schedule:
       interval: "weekly"
@@ -83,6 +87,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/awsxray"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/k8sconfig"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -16,6 +16,7 @@ The metrics transform processor can be used to rename metrics, labels, or label 
 - Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
   - Aggregation_type: sum, mean, max
 - Add label to an existing metric
+- When adding or updating a label value, specify `{{version}}` to include the application version number
 
 ## Configuration
 ```yaml
@@ -103,9 +104,9 @@ operations:
 # aggregate away everything but `state` using summation
 ...
 operations:
-  -action: aggregate_labels
-   label_set: [ state ]
-   aggregation_type: sum
+  - action: aggregate_labels
+    label_set: [ state ]
+    aggregation_type: sum
 ```
 
 ### Aggregate Label Values
@@ -113,24 +114,21 @@ operations:
 # combine slab_reclaimable & slab_unreclaimable by summation
 ...
 operations:
-  -action: aggregate_label_values
-   label: state
-   aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
-   new_value: slab 
-   aggregation_type: sum
+  - action: aggregate_label_values
+    label: state
+    aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
+    new_value: slab 
+    aggregation_type: sum
 ```
 
 ### Add a label to an existing metric
 ```yaml
-transforms:
 ...
-# The following will append label {Key: `mylabel`, Description: `myvalue`} to the metric `some_name`.
-  - metric_name: some_name
-      action: update
-      operations:
-        - action: add_label
-          new_label: mylabel
-          new_value: myvalue
+# add label `version` with value `opentelemetry collector vX.Y.Z` to all points
+operations:
+  - action: add_label
+    new_label: version
+    new_value: opentelemetry collector {{version}}
 ```
 
 ### Toggle Datatype

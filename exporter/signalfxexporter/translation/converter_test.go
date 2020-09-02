@@ -184,6 +184,126 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			},
 		},
 		{
+			name: "with_resources_cloud_partial_aws_dim",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "ec2",
+								"cloud.account.id": "efgh",
+								"cloud.region":     "us-east",
+							},
+						},
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					"gauge_double_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					append([]string{"cloud_account_id", "cloud_provider", "cloud_region", "k_r0", "k_r1"}, keys...),
+					append([]string{"efgh", "ec2", "us-east", "vr0", "vr1"}, values...),
+					doubleVal),
+			},
+		},
+		{
+			name: "with_resources_cloud_aws_dim",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "ec2",
+								"cloud.account.id": "efgh",
+								"cloud.region":     "us-east",
+								"host.id":          "abcd",
+							},
+						},
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					"gauge_double_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					append([]string{"AWSUniqueId", "k_r0", "k_r1"}, keys...),
+					append([]string{"abcd_us-east_efgh", "vr0", "vr1"}, values...),
+					doubleVal),
+			},
+		},
+		{
+			name: "with_resources_cloud_gce_dim_partial",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":           "vr0",
+								"k/r1":           "vr1",
+								"cloud.provider": "gce",
+								"host.id":        "abcd",
+							},
+						},
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					"gauge_double_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					append([]string{"cloud_provider", "host_id", "k_r0", "k_r1"}, keys...),
+					append([]string{"gce", "abcd", "vr0", "vr1"}, values...),
+					doubleVal),
+			},
+		},
+		{
+			name: "with_resources_cloud_gcp_dim",
+			metricsDataFn: func() []consumerdata.MetricsData {
+				return []consumerdata.MetricsData{
+					{
+						Resource: &resourcepb.Resource{
+							Labels: map[string]string{
+								"k/r0":             "vr0",
+								"k/r1":             "vr1",
+								"cloud.provider":   "gce",
+								"cloud.account.id": "efgh",
+								"host.id":          "abcd",
+							},
+						},
+						Metrics: []*metricspb.Metric{
+							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
+						},
+					},
+				}
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				doubleSFxDataPoint(
+					"gauge_double_with_dims",
+					tsMSecs,
+					&sfxMetricTypeGauge,
+					append([]string{"gcp_id", "k_r0", "k_r1"}, keys...),
+					append([]string{"efgh_abcd", "vr0", "vr1"}, values...),
+					doubleVal),
+			},
+		},
+		{
 			name: "distributions",
 			metricsDataFn: func() []consumerdata.MetricsData {
 				return []consumerdata.MetricsData{
@@ -242,7 +362,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	c := NewMetricsConverter(logger, nil)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSfxDataPoints, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(tt.metricsDataFn())
+			gotSfxDataPoints, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(tt.metricsDataFn(), nil)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
 			// Sort SFx dimensions since they are built from maps and the order
 			// of those is not deterministic.
@@ -304,7 +424,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 		},
 	}
 	c := NewMetricsConverter(zap.NewNop(), translator)
-	got, dropped := c.MetricDataToSignalFxV2(md)
+	got, dropped := c.MetricDataToSignalFxV2(md, nil)
 
 	assert.EqualValues(t, 0, dropped)
 	assert.EqualValues(t, expected, got)
@@ -462,7 +582,7 @@ func Test_InvalidPoint_NoValue(t *testing.T) {
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
-	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData, nil)
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }
 
@@ -480,7 +600,7 @@ func Test_InvalidMetric(t *testing.T) {
 		},
 	}
 	c := NewMetricsConverter(logger, nil)
-	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData)
+	_, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(metricData, nil)
 	// Only 1 timeseries is dropped because the nil metric does not have any timeseries.
 	assert.Equal(t, 1, gotNumDroppedTimeSeries)
 }

@@ -20,9 +20,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/api/kv"
-	"go.opentelemetry.io/otel/api/kv/value"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -122,26 +121,23 @@ func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
 	return codes.Code(c)
 }
 
-func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []kv.KeyValue {
-	otAttrs := make([]kv.KeyValue, 0, attrs.Len())
+func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []label.KeyValue {
+	otAttrs := make([]label.KeyValue, 0, attrs.Len())
 	appendAttrs := func(m pdata.AttributeMap) {
 		m.ForEach(func(k string, v pdata.AttributeValue) {
-			var newVal value.Value
 			switch v.Type() {
 			case pdata.AttributeValueSTRING:
-				newVal = value.String(v.StringVal())
+				otAttrs = append(otAttrs, label.String(k, v.StringVal()))
 			case pdata.AttributeValueBOOL:
-				newVal = value.Bool(v.BoolVal())
+				otAttrs = append(otAttrs, label.Bool(k, v.BoolVal()))
 			case pdata.AttributeValueINT:
-				newVal = value.Int64(v.IntVal())
-			// pdata Double, Array, and Map cannot be converted to value.Value
+				otAttrs = append(otAttrs, label.Int64(k, v.IntVal()))
+			case pdata.AttributeValueDOUBLE:
+				otAttrs = append(otAttrs, label.Float64(k, v.DoubleVal()))
+			// pdata Array, and Map cannot be converted to value.Value
 			default:
 				return
 			}
-			otAttrs = append(otAttrs, kv.KeyValue{
-				Key:   kv.Key(k),
-				Value: newVal,
-			})
 		})
 	}
 	if !resource.IsNil() {

@@ -1,4 +1,4 @@
-// Copyright The OpenTelemetry Authors
+// Copyright 2019, OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build integration
-
-package common
-
-import (
-	"testing"
-)
-
-func TestIntegration(t *testing.T) {
-	t.Log("just for exercising integration coverage, remove in next PR")
-}
+// Package splunkhecreceiver implements a receiver that can be used by the
+// OpenTelemetry collector to receive data in the Splunk HEC supported formats.
+package splunkhecreceiver

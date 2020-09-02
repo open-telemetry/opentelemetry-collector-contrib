@@ -9,6 +9,7 @@ exporters:
   stackdriver/customname:
     project: my-project
     metric_prefix: prefix
+    user_agent: opentelemetry-collector-contrib {{version}}
     endpoint: test-endpoint
     number_of_workers: 3
     skip_create_metric_descriptor: true
