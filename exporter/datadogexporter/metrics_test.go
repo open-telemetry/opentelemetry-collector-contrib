@@ -98,11 +98,21 @@ func NewMetricsData(metrics []*v1.Metric) pdata.Metrics {
 func TestMapNumericMetric(t *testing.T) {
 	ts := time.Now()
 
+	intValue := &v1.Point{
+		Timestamp: metricstest.Timestamp(ts),
+		Value:     &v1.Point_Int64Value{Int64Value: 17},
+	}
+
 	md := NewMetricsData([]*v1.Metric{
 		metricstest.Gauge("gauge.float64.test", testKeys[:],
 			metricstest.Timeseries(ts, testValues[:], metricstest.Double(ts, math.Pi))),
 		metricstest.Cumulative("cumulative.float64.test", testKeys[:],
 			metricstest.Timeseries(ts, testValues[:], metricstest.Double(ts, math.Pi))),
+
+		metricstest.GaugeInt("gauge.int64.test", testKeys[:],
+			metricstest.Timeseries(ts, testValues[:], intValue)),
+		metricstest.CumulativeInt("cumulative.int64.test", testKeys[:],
+			metricstest.Timeseries(ts, testValues[:], intValue)),
 	})
 
 	metrics, droppedTimeSeries, err := MapMetrics(mockExporter, md)
@@ -122,6 +132,20 @@ func TestMapNumericMetric(t *testing.T) {
 				hostname:   "unknown",
 				metricType: Gauge,
 				value:      math.Pi,
+				rate:       1,
+				tags:       testTags[:],
+			}},
+			"gauge.int64.test": {{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      17,
+				rate:       1,
+				tags:       testTags[:],
+			}},
+			"cumulative.int64.test": {{
+				hostname:   "unknown",
+				metricType: Gauge,
+				value:      17,
 				rate:       1,
 				tags:       testTags[:],
 			}},
