@@ -33,6 +33,7 @@ import (
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -97,25 +98,42 @@ func TestStackdriverTraceExport(t *testing.T) {
 type mockMetricServer struct {
 	cloudmonitoringpb.MetricServiceServer
 
-	descriptorReqCh chan *cloudmonitoringpb.CreateMetricDescriptorRequest
-	timeSeriesReqCh chan *cloudmonitoringpb.CreateTimeSeriesRequest
+	descriptorReqCh chan *requestWithMetadata
+	timeSeriesReqCh chan *requestWithMetadata
 }
 
-func (ms *mockMetricServer) CreateMetricDescriptor(_ context.Context, req *cloudmonitoringpb.CreateMetricDescriptorRequest) (*cloudmetricpb.MetricDescriptor, error) {
-	go func() { ms.descriptorReqCh <- req }()
+type requestWithMetadata struct {
+	req      interface{}
+	metadata metadata.MD
+}
+
+func (ms *mockMetricServer) CreateMetricDescriptor(ctx context.Context, req *cloudmonitoringpb.CreateMetricDescriptorRequest) (*cloudmetricpb.MetricDescriptor, error) {
+	reqWithMetadata := &requestWithMetadata{req: req}
+	metadata, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		reqWithMetadata.metadata = metadata
+	}
+
+	go func() { ms.descriptorReqCh <- reqWithMetadata }()
 	return &cloudmetricpb.MetricDescriptor{}, nil
 }
 
-func (ms *mockMetricServer) CreateTimeSeries(_ context.Context, req *cloudmonitoringpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
-	go func() { ms.timeSeriesReqCh <- req }()
+func (ms *mockMetricServer) CreateTimeSeries(ctx context.Context, req *cloudmonitoringpb.CreateTimeSeriesRequest) (*emptypb.Empty, error) {
+	reqWithMetadata := &requestWithMetadata{req: req}
+	metadata, ok := metadata.FromIncomingContext(ctx)
+	if ok {
+		reqWithMetadata.metadata = metadata
+	}
+
+	go func() { ms.timeSeriesReqCh <- reqWithMetadata }()
 	return &emptypb.Empty{}, nil
 }
 
 func TestStackdriverMetricExport(t *testing.T) {
 	srv := grpc.NewServer()
 
-	descriptorReqCh := make(chan *cloudmonitoringpb.CreateMetricDescriptorRequest)
-	timeSeriesReqCh := make(chan *cloudmonitoringpb.CreateTimeSeriesRequest)
+	descriptorReqCh := make(chan *requestWithMetadata)
+	timeSeriesReqCh := make(chan *requestWithMetadata)
 
 	mockServer := &mockMetricServer{descriptorReqCh: descriptorReqCh, timeSeriesReqCh: timeSeriesReqCh}
 	cloudmonitoringpb.RegisterMetricServiceServer(srv, mockServer)
@@ -126,7 +144,7 @@ func TestStackdriverMetricExport(t *testing.T) {
 
 	go srv.Serve(lis)
 
-	sde, err := newStackdriverMetricsExporter(&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true})
+	sde, err := newStackdriverMetricsExporter(&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UserAgent: "MyAgent {{version}}", UseInsecure: true}, "v0.0.1")
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
@@ -150,10 +168,14 @@ func TestStackdriverMetricExport(t *testing.T) {
 
 	assert.NoError(t, sde.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})), err)
 
-	dr := <-descriptorReqCh
+	drm := <-descriptorReqCh
+	assert.Regexp(t, "MyAgent v0\\.0\\.1", drm.metadata["user-agent"])
+	dr := drm.req.(*cloudmonitoringpb.CreateMetricDescriptorRequest)
 	assert.Equal(t, "projects/idk/metricDescriptors/custom.googleapis.com/opencensus/test_gauge", dr.MetricDescriptor.Name)
 
-	tr := <-timeSeriesReqCh
+	trm := <-timeSeriesReqCh
+	assert.Regexp(t, "MyAgent v0\\.0\\.1", trm.metadata["user-agent"])
+	tr := trm.req.(*cloudmonitoringpb.CreateTimeSeriesRequest)
 	require.Len(t, tr.TimeSeries, 1)
 	assert.Equal(t, map[string]string{"k0": "v0", "k1": "v1"}, tr.TimeSeries[0].Metric.Labels)
 	require.Len(t, tr.TimeSeries[0].Points, 1)
