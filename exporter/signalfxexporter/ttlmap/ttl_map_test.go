@@ -44,11 +44,10 @@ func TestTTLMapLong(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping TestTTLMapLong in short mode")
 	}
-	m := New(1, 2)
+	m := New(1, 1)
 	m.Start()
 	m.Put("foo", "bar")
-	time.Sleep(time.Second)
 	require.Equal(t, "bar", m.Get("foo"))
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Second * 3)
 	require.Nil(t, m.Get("foo"))
 }
