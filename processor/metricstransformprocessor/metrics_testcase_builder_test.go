@@ -52,7 +52,7 @@ func (b builder) setLabels(labels []string) builder {
 }
 
 // addTimeseries adds new timeseries with the labelValuesVal and startTimestamp
-func (b builder) addTimeseries(startTimestamp int64, labelValuesVal []string) builder {
+func (b builder) addTimeseries(startTimestampSeconds int64, labelValuesVal []string) builder {
 	labelValues := make([]*metricspb.LabelValue, len(labelValuesVal))
 	for i, v := range labelValuesVal {
 		labelValues[i] = &metricspb.LabelValue{
@@ -60,13 +60,16 @@ func (b builder) addTimeseries(startTimestamp int64, labelValuesVal []string) bu
 			HasValue: true,
 		}
 	}
+
+	var startTimestamp *timestamppb.Timestamp
+	if startTimestampSeconds != 0 {
+		startTimestamp = &timestamppb.Timestamp{Seconds: startTimestampSeconds}
+	}
+
 	timeseries := &metricspb.TimeSeries{
-		StartTimestamp: &timestamppb.Timestamp{
-			Seconds: startTimestamp,
-			Nanos:   0,
-		},
-		LabelValues: labelValues,
-		Points:      make([]*metricspb.Point, 0),
+		StartTimestamp: startTimestamp,
+		LabelValues:    labelValues,
+		Points:         make([]*metricspb.Point, 0),
 	}
 	b.metric.Timeseries = append(b.metric.Timeseries, timeseries)
 	return b
