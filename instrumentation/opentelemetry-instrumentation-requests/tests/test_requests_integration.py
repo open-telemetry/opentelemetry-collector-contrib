@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 from unittest import mock
 
 import httpretty
@@ -26,32 +27,47 @@ from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCanonicalCode
 
 
-class TestRequestsIntegration(TestBase):
+class RequestsIntegrationTestBase(abc.ABC):
+    # pylint: disable=no-member
+
     URL = "http://httpbin.org/status/200"
 
+    # pylint: disable=invalid-name
     def setUp(self):
         super().setUp()
         RequestsInstrumentor().instrument()
         httpretty.enable()
-        httpretty.register_uri(
-            httpretty.GET, self.URL, body="Hello!",
-        )
+        httpretty.register_uri(httpretty.GET, self.URL, body="Hello!")
 
+    # pylint: disable=invalid-name
     def tearDown(self):
         super().tearDown()
         RequestsInstrumentor().uninstrument()
         httpretty.disable()
 
-    def test_basic(self):
-        result = requests.get(self.URL)
-        self.assertEqual(result.text, "Hello!")
+    def assert_span(self, exporter=None, num_spans=1):
+        if exporter is None:
+            exporter = self.memory_exporter
+        span_list = exporter.get_finished_spans()
+        self.assertEqual(num_spans, len(span_list))
+        if num_spans == 0:
+            return None
+        if num_spans == 1:
+            return span_list[0]
+        return span_list
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
+    @staticmethod
+    @abc.abstractmethod
+    def perform_request(url: str, session: requests.Session = None):
+        pass
+
+    def test_basic(self):
+        result = self.perform_request(self.URL)
+        self.assertEqual(result.text, "Hello!")
+        span = self.assert_span()
 
         self.assertIs(span.kind, trace.SpanKind.CLIENT)
-        self.assertEqual(span.name, "HTTP get")
+        self.assertEqual(span.name, "HTTP GET")
 
         self.assertEqual(
             span.attributes,
@@ -77,12 +93,10 @@ class TestRequestsIntegration(TestBase):
         httpretty.register_uri(
             httpretty.GET, url_404, status=404,
         )
-        result = requests.get(url_404)
+        result = self.perform_request(url_404)
         self.assertEqual(result.status_code, 404)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
+        span = self.assert_span()
 
         self.assertEqual(span.attributes.get("http.status_code"), 404)
         self.assertEqual(span.attributes.get("http.status_text"), "Not Found")
@@ -92,31 +106,11 @@ class TestRequestsIntegration(TestBase):
             trace.status.StatusCanonicalCode.NOT_FOUND,
         )
 
-    def test_invalid_url(self):
-        url = "http://[::1/nope"
-
-        with self.assertRaises(ValueError):
-            requests.post(url)
-
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
-
-        self.assertEqual(span.name, "HTTP post")
-        self.assertEqual(
-            span.attributes,
-            {"component": "http", "http.method": "POST", "http.url": url},
-        )
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.INVALID_ARGUMENT
-        )
-
     def test_uninstrument(self):
         RequestsInstrumentor().uninstrument()
-        result = requests.get(self.URL)
+        result = self.perform_request(self.URL)
         self.assertEqual(result.text, "Hello!")
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 0)
+        self.assert_span(num_spans=0)
         # instrument again to avoid annoying warning message
         RequestsInstrumentor().instrument()
 
@@ -124,49 +118,43 @@ class TestRequestsIntegration(TestBase):
         session1 = requests.Session()
         RequestsInstrumentor().uninstrument_session(session1)
 
-        result = session1.get(self.URL)
+        result = self.perform_request(self.URL, session1)
         self.assertEqual(result.text, "Hello!")
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 0)
+        self.assert_span(num_spans=0)
 
         # Test that other sessions as well as global requests is still
         # instrumented
         session2 = requests.Session()
-        result = session2.get(self.URL)
+        result = self.perform_request(self.URL, session2)
         self.assertEqual(result.text, "Hello!")
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
+        self.assert_span()
 
         self.memory_exporter.clear()
 
-        result = requests.get(self.URL)
+        result = self.perform_request(self.URL)
         self.assertEqual(result.text, "Hello!")
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
+        self.assert_span()
 
     def test_suppress_instrumentation(self):
         token = context.attach(
             context.set_value("suppress_instrumentation", True)
         )
         try:
-            result = requests.get(self.URL)
+            result = self.perform_request(self.URL)
             self.assertEqual(result.text, "Hello!")
         finally:
             context.detach(token)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 0)
+        self.assert_span(num_spans=0)
 
     def test_distributed_context(self):
         previous_propagator = propagators.get_global_httptextformat()
         try:
             propagators.set_global_httptextformat(MockHTTPTextFormat())
-            result = requests.get(self.URL)
+            result = self.perform_request(self.URL)
             self.assertEqual(result.text, "Hello!")
 
-            span_list = self.memory_exporter.get_finished_spans()
-            self.assertEqual(len(span_list), 1)
-            span = span_list[0]
+            span = self.assert_span()
 
             headers = dict(httpretty.last_request().headers)
             self.assertIn(MockHTTPTextFormat.TRACE_ID_KEY, headers)
@@ -195,13 +183,10 @@ class TestRequestsIntegration(TestBase):
             tracer_provider=self.tracer_provider, span_callback=span_callback,
         )
 
-        result = requests.get(self.URL)
+        result = self.perform_request(self.URL)
         self.assertEqual(result.text, "Hello!")
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
-
+        span = self.assert_span()
         self.assertEqual(
             span.attributes,
             {
@@ -221,28 +206,21 @@ class TestRequestsIntegration(TestBase):
         RequestsInstrumentor().uninstrument()
         RequestsInstrumentor().instrument(tracer_provider=tracer_provider)
 
-        result = requests.get(self.URL)
+        result = self.perform_request(self.URL)
         self.assertEqual(result.text, "Hello!")
 
-        span_list = exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
-
+        span = self.assert_span(exporter=exporter)
         self.assertIs(span.resource, resource)
 
-    def test_if_headers_equals_none(self):
-        result = requests.get(self.URL, headers=None)
-        self.assertEqual(result.text, "Hello!")
-
-    @mock.patch("requests.Session.send", side_effect=requests.RequestException)
+    @mock.patch(
+        "requests.adapters.HTTPAdapter.send",
+        side_effect=requests.RequestException,
+    )
     def test_requests_exception_without_response(self, *_, **__):
-
         with self.assertRaises(requests.RequestException):
-            requests.get(self.URL)
+            self.perform_request(self.URL)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
+        span = self.assert_span()
         self.assertEqual(
             span.attributes,
             {"component": "http", "http.method": "GET", "http.url": self.URL},
@@ -256,17 +234,14 @@ class TestRequestsIntegration(TestBase):
     mocked_response.reason = "Internal Server Error"
 
     @mock.patch(
-        "requests.Session.send",
+        "requests.adapters.HTTPAdapter.send",
         side_effect=requests.RequestException(response=mocked_response),
     )
     def test_requests_exception_with_response(self, *_, **__):
-
         with self.assertRaises(requests.RequestException):
-            requests.get(self.URL)
+            self.perform_request(self.URL)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
-        span = span_list[0]
+        span = self.assert_span()
         self.assertEqual(
             span.attributes,
             {
@@ -281,27 +256,66 @@ class TestRequestsIntegration(TestBase):
             span.status.canonical_code, StatusCanonicalCode.INTERNAL
         )
 
-    @mock.patch("requests.Session.send", side_effect=Exception)
+    @mock.patch("requests.adapters.HTTPAdapter.send", side_effect=Exception)
     def test_requests_basic_exception(self, *_, **__):
-
         with self.assertRaises(Exception):
-            requests.get(self.URL)
+            self.perform_request(self.URL)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
+        span = self.assert_span()
         self.assertEqual(
-            span_list[0].status.canonical_code, StatusCanonicalCode.UNKNOWN
+            span.status.canonical_code, StatusCanonicalCode.UNKNOWN
         )
 
-    @mock.patch("requests.Session.send", side_effect=requests.Timeout)
+    @mock.patch(
+        "requests.adapters.HTTPAdapter.send", side_effect=requests.Timeout
+    )
     def test_requests_timeout_exception(self, *_, **__):
-
         with self.assertRaises(Exception):
-            requests.get(self.URL)
+            self.perform_request(self.URL)
 
-        span_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(span_list), 1)
+        span = self.assert_span()
         self.assertEqual(
-            span_list[0].status.canonical_code,
-            StatusCanonicalCode.DEADLINE_EXCEEDED,
+            span.status.canonical_code, StatusCanonicalCode.DEADLINE_EXCEEDED
         )
+
+
+class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
+    @staticmethod
+    def perform_request(url: str, session: requests.Session = None):
+        if session is None:
+            return requests.get(url)
+        return session.get(url)
+
+    def test_invalid_url(self):
+        url = "http://[::1/nope"
+
+        with self.assertRaises(ValueError):
+            requests.post(url)
+
+        span = self.assert_span()
+
+        self.assertEqual(span.name, "HTTP POST")
+        self.assertEqual(
+            span.attributes,
+            {"component": "http", "http.method": "POST", "http.url": url},
+        )
+        self.assertEqual(
+            span.status.canonical_code, StatusCanonicalCode.INVALID_ARGUMENT
+        )
+
+    def test_if_headers_equals_none(self):
+        result = requests.get(self.URL, headers=None)
+        self.assertEqual(result.text, "Hello!")
+        self.assert_span()
+
+
+class TestRequestsIntegrationPreparedRequest(
+    RequestsIntegrationTestBase, TestBase
+):
+    @staticmethod
+    def perform_request(url: str, session: requests.Session = None):
+        if session is None:
+            session = requests.Session()
+        request = requests.Request("GET", url)
+        prepared_request = session.prepare_request(request)
+        return session.send(prepared_request)
