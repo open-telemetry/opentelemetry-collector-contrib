@@ -34,4 +34,7 @@ func TestTTLMap(t *testing.T) {
 	ttlMap := New(5, 10)
 	require.EqualValues(t, ttlMap.sweepInterval, 5)
 	require.EqualValues(t, ttlMap.md.maxAge, 10)
+	ttlMap.Put("foo", "bar")
+	s := ttlMap.Get("foo").(string)
+	require.Equal(t, "bar", s)
 }
