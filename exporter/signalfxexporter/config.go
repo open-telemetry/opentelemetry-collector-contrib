@@ -71,6 +71,10 @@ type Config struct {
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// If not provided explicitly, the rules defined in translations/config/default.yaml are used.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
+
+	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
+	// `delta_metric` specified in TranslationRules. Default is 3600s.
+	DeltaTranslationTTL int64 `mapstructure:"delta_translation_ttl"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -94,7 +98,7 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 
 	var metricTranslator *translation.MetricTranslator
 	if cfg.SendCompatibleMetrics {
-		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules)
+		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
 		}
