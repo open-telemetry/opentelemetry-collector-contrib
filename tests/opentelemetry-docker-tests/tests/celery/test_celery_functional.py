@@ -13,11 +13,8 @@
 # limitations under the License.
 
 
-import time
-
 import celery
 import pytest
-from celery import signals
 from celery.exceptions import Retry
 
 import opentelemetry.instrumentation.celery

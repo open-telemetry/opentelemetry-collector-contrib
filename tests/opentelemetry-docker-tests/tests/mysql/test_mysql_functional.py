@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import time
 
 import mysql.connector
 
@@ -36,20 +35,23 @@ class TestFunctionalMysql(TestBase):
         cls._cursor = None
         cls._tracer = cls.tracer_provider.get_tracer(__name__)
         MySQLInstrumentor().instrument()
-        cls._connection = mysql.connector.connect(
-            user=MYSQL_USER,
-            password=MYSQL_PASSWORD,
-            host=MYSQL_HOST,
-            port=MYSQL_PORT,
-            database=MYSQL_DB_NAME,
-        )
-        cls._cursor = cls._connection.cursor()
 
     @classmethod
     def tearDownClass(cls):
         if cls._connection:
             cls._connection.close()
         MySQLInstrumentor().uninstrument()
+
+    def setUp(self):
+        super().setUp()
+        self._connection = mysql.connector.connect(
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD,
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            database=MYSQL_DB_NAME,
+        )
+        self._cursor = self._connection.cursor()
 
     def validate_spans(self):
         spans = self.memory_exporter.get_finished_spans()
@@ -77,6 +79,23 @@ class TestFunctionalMysql(TestBase):
         """
         with self._tracer.start_as_current_span("rootSpan"):
             self._cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
+        self.validate_spans()
+
+    def test_execute_with_connection_context_manager(self):
+        """Should create a child span for execute with connection context
+        """
+        with self._tracer.start_as_current_span("rootSpan"):
+            with self._connection as conn:
+                cursor = conn.cursor()
+                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
+        self.validate_spans()
+
+    def test_execute_with_cursor_context_manager(self):
+        """Should create a child span for execute with cursor context
+        """
+        with self._tracer.start_as_current_span("rootSpan"):
+            with self._connection.cursor() as cursor:
+                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
         self.validate_spans()
 
     def test_executemany(self):
