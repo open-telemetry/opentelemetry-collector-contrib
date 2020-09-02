@@ -47,7 +47,7 @@ func newDogStatsDExporter(logger *zap.Logger, cfg *Config) (*dogStatsDExporter, 
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("Failed to initialize DogStatsD client: %s", err)
+		return nil, fmt.Errorf("failed to initialize DogStatsD client: %s", err)
 	}
 
 	return &dogStatsDExporter{logger, cfg, client}, nil

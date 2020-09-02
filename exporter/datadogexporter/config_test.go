@@ -72,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			Env:      "prod",
 			Service:  "myservice",
 			Version:  "myversion",
- 			Tags:     []string{"example:tag"},
+			Tags:     []string{"example:tag"},
 		},
 
 		Metrics: MetricsConfig{
