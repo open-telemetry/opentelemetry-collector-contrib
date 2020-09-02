@@ -18,6 +18,13 @@ receivers:
     extra_metadata_labels:
     - container.id
     - k8s.volume.type
+  kubeletstats/metadata_with_k8s_api:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    extra_metadata_labels:
+      - k8s.volume.type
+    k8s_api_config:
+      auth_type: kubeConfig
   kubeletstats/metric_groups:
     collection_interval: 20s
     auth_type: "serviceAccount"

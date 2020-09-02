@@ -18,7 +18,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -26,6 +25,9 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[configmodels.Type(typeStr)] = factory
+	factories.Receivers[configmodels.Type(awsxray.TypeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
 	)
@@ -45,22 +47,22 @@ func TestLoadConfig(t *testing.T) {
 
 	// ensure default configurations are generated when users provide
 	// nothing.
-	r0 := cfg.Receivers[typeStr]
+	r0 := cfg.Receivers[awsxray.TypeStr]
 	assert.Equal(t, factory.CreateDefaultConfig(), r0)
 
 	// ensure the UDP endpoint can be properly overwritten
-	r1 := cfg.Receivers[typeStr+"/udp_endpoint"].(*Config)
+	r1 := cfg.Receivers[awsxray.TypeStr+"/udp_endpoint"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(typeStr),
-				NameVal: typeStr + "/udp_endpoint",
+				TypeVal: configmodels.Type(awsxray.TypeStr),
+				NameVal: awsxray.TypeStr + "/udp_endpoint",
 			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:5678",
 				Transport: "udp",
 			},
-			ProxyServer: &proxyServer{
+			ProxyServer: &proxy.Config{
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "0.0.0.0:2000",
 				},
@@ -72,24 +74,23 @@ func TestLoadConfig(t *testing.T) {
 				Region:      "",
 				RoleARN:     "",
 				AWSEndpoint: "",
-				LocalMode:   aws.Bool(false),
 			},
 		},
 		r1)
 
 	// ensure the fields under proxy_server are properly overwritten
-	r2 := cfg.Receivers[typeStr+"/proxy_server"].(*Config)
+	r2 := cfg.Receivers[awsxray.TypeStr+"/proxy_server"].(*Config)
 	assert.Equal(t,
 		&Config{
 			ReceiverSettings: configmodels.ReceiverSettings{
-				TypeVal: configmodels.Type(typeStr),
-				NameVal: typeStr + "/proxy_server",
+				TypeVal: configmodels.Type(awsxray.TypeStr),
+				NameVal: awsxray.TypeStr + "/proxy_server",
 			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  "0.0.0.0:2000",
 				Transport: "udp",
 			},
-			ProxyServer: &proxyServer{
+			ProxyServer: &proxy.Config{
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "0.0.0.0:1234",
 				},
@@ -101,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 				Region:      "us-west-1",
 				RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 				AWSEndpoint: "https://another.aws.endpoint.com",
-				LocalMode:   aws.Bool(true),
+				LocalMode:   true,
 			},
 		},
 		r2)

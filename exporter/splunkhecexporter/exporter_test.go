@@ -32,8 +32,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestNew(t *testing.T) {
@@ -91,7 +94,7 @@ func TestConsumeMetricsData(t *testing.T) {
 					t.Fatal("Small batch should not be compressed")
 				}
 				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
-				var metric splunkMetric
+				var metric splunk.Metric
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
 					t.Fatal(err)
@@ -143,7 +146,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), *tt.md)
+			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*tt.md})
+			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {

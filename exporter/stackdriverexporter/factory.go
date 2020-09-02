@@ -16,7 +16,10 @@ package stackdriverexporter
 
 import (
 	"context"
+	"sync"
+	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -24,11 +27,19 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "stackdriver"
+	typeStr        = "stackdriver"
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
+
+var once sync.Once
 
 // NewFactory creates a factory for the stackdriver exporter
 func NewFactory() component.ExporterFactory {
+	// register view for self-observability
+	once.Do(func() {
+		view.Register(viewPointCount)
+	})
+
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
@@ -44,6 +55,8 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		UserAgent:       "opentelemetry-collector-contrib {{version}}",
 	}
 }
 
@@ -59,8 +72,8 @@ func createTraceExporter(
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverMetricsExporter(eCfg)
+	return newStackdriverMetricsExporter(eCfg, params.ApplicationStartInfo.Version)
 }

@@ -15,10 +15,11 @@
 package honeycombexporter
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -26,16 +27,15 @@ const (
 	typeStr = "honeycomb"
 )
 
-// Factory is the factory for the Honeycomb exporter.
-type Factory struct{}
-
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+// NewFactory creates a factory for Honeycomb exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter))
 }
 
-// CreateDefaultConfig creates the default configuration for the exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -49,14 +49,11 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
 	eCfg := cfg.(*Config)
-	return newHoneycombTraceExporter(eCfg, logger)
-}
-
-// CreateMetricsExporter always returns nil.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger,
-	cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
+	return newHoneycombTraceExporter(eCfg, params.Logger)
 }

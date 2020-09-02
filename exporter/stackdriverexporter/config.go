@@ -16,6 +16,7 @@ package stackdriverexporter
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Stackdriver exporter.
@@ -23,12 +24,15 @@ type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	ProjectID                     string                   `mapstructure:"project"`
 	Prefix                        string                   `mapstructure:"metric_prefix"`
+	UserAgent                     string                   `mapstructure:"user_agent"`
 	Endpoint                      string                   `mapstructure:"endpoint"`
 	NumOfWorkers                  int                      `mapstructure:"number_of_workers"`
 	SkipCreateMetricDescriptor    bool                     `mapstructure:"skip_create_metric_descriptor"`
 	// Only has effect if Endpoint is not ""
-	UseInsecure      bool              `mapstructure:"use_insecure"`
-	ResourceMappings []ResourceMapping `mapstructure:"resource_mappings"`
+	UseInsecure bool `mapstructure:"use_insecure"`
+	// Timeout for all API calls. If not set, defaults to 12 seconds.
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	ResourceMappings               []ResourceMapping        `mapstructure:"resource_mappings"`
 }
 
 // ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).

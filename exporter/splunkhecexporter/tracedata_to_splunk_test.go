@@ -18,16 +18,18 @@ import (
 	"testing"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := &timestamp.Timestamp{
-		Nanos: 0,
+	ts := &timestamppb.Timestamp{
+		Nanos: 123,
 	}
 
 	tests := []struct {
@@ -65,9 +67,9 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, tt.traceDataFn(), &Config{})
+			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, internaldata.OCToTraceData(tt.traceDataFn()), &Config{})
 			assert.Equal(t, tt.wantNumDroppedSpans, gotNumDroppedSpans)
-			assert.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
+			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
 				assert.EqualValues(t, want, gotEvents[i])
 			}
@@ -76,7 +78,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func makeSpan(name string, ts *timestamp.Timestamp) *v1.Span {
+func makeSpan(name string, ts *timestamppb.Timestamp) *v1.Span {
 	trunceableName := &v1.TruncatableString{
 		Value: name,
 	}
@@ -88,7 +90,7 @@ func makeSpan(name string, ts *timestamp.Timestamp) *v1.Span {
 
 func commonSplunkEvent(
 	name string,
-	ts *timestamp.Timestamp,
+	ts *timestamppb.Timestamp,
 ) *splunkEvent {
 	trunceableName := &v1.TruncatableString{
 		Value: name,

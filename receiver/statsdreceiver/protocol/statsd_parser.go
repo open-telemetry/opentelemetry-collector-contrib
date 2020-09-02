@@ -22,7 +22,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -146,7 +146,7 @@ func buildMetric(metric *statsDMetric, point *metricspb.Point) *metricspb.Metric
 
 func buildPoint(parsedMetric *statsDMetric) (*metricspb.Point, error) {
 	point := &metricspb.Point{
-		Timestamp: &timestamp.Timestamp{
+		Timestamp: &timestamppb.Timestamp{
 			Seconds: timeNowFunc(),
 		},
 	}

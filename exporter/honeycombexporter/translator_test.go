@@ -19,7 +19,7 @@ import (
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestSpanAttributesToMap(t *testing.T) {
@@ -91,7 +91,7 @@ func TestTimestampToTime(t *testing.T) {
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(&timestamp.Timestamp{
+	nowTime := timestampToTime(&timestamppb.Timestamp{
 		Seconds: seconds,
 		Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),
 	})

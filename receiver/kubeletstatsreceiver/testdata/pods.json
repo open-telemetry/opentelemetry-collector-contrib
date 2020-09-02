@@ -117,9 +117,8 @@
           },
           {
             "name": "coredns-token-dzc5t",
-            "secret": {
-              "secretName": "coredns-token-dzc5t",
-              "defaultMode": 420
+            "persistentVolumeClaim": {
+              "claimName": "volume_claim_3"
             }
           }
         ]
@@ -156,9 +155,8 @@
         "volumes": [
           {
             "name": "kube-proxy",
-            "configMap": {
-              "name": "kube-proxy",
-              "defaultMode": 420
+            "persistentVolumeClaim": {
+              "claimName": "volume_claim_2"
             }
           },
           {
@@ -195,9 +193,8 @@
           },
           {
             "name": "storage-provisioner-token-qzlx6",
-            "secret": {
-              "secretName": "storage-provisioner-token-qzlx6",
-              "defaultMode": 420
+            "persistentVolumeClaim": {
+              "claimName": "volume_claim_1"
             }
           }
         ]

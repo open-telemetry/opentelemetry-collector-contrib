@@ -20,10 +20,10 @@ import (
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -177,12 +177,12 @@ func buildPoint(
 	return p, nil
 }
 
-func convertTimestamp(msec int64) *timestamp.Timestamp {
+func convertTimestamp(msec int64) *timestamppb.Timestamp {
 	if msec == 0 {
 		return nil
 	}
 
-	ts := &timestamp.Timestamp{
+	ts := &timestamppb.Timestamp{
 		Seconds: msec / 1e3,
 		Nanos:   int32(msec%1e3) * 1e6,
 	}
