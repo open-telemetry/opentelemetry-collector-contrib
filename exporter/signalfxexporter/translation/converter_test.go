@@ -381,7 +381,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 				"old.dim": "new.dim",
 			},
 		},
-	})
+	}, 1)
 	require.NoError(t, err)
 
 	md := []consumerdata.MetricsData{

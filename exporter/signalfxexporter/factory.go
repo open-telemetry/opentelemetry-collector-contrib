@@ -56,6 +56,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		SendCompatibleMetrics: false,
 		TranslationRules:      nil,
+		DeltaTranslationTTL:   3600,
 	}
 }
 
