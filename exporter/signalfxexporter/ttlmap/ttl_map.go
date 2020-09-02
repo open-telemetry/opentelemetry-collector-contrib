@@ -41,8 +41,8 @@ func New(sweepIntervalSeconds int64, maxAgeSeconds int64) *TTLMap {
 func (m *TTLMap) Start() {
 	go func() {
 		d := time.Duration(m.sweepInterval) * time.Second
-		for range time.Tick(d) {
-			m.md.sweep(time.Now().Unix())
+		for now := range time.Tick(d) {
+			m.md.sweep(now.Unix())
 		}
 	}()
 }
