@@ -35,14 +35,9 @@ type MetricsExporter interface {
 }
 
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (MetricsExporter, error) {
-	switch cfg.Metrics.Mode {
-	case DogStatsDMode:
-		return newDogStatsDExporter(logger, cfg)
-	case NoneMode:
-		return nil, fmt.Errorf("Metrics exporter disabled for Datadog exporter")
-	}
-
-	return nil, fmt.Errorf("Unsupported mode: '%s'", cfg.Metrics.Mode)
+	// A different exporter will be added depending on configuration
+	// in the future
+	return newDogStatsDExporter(logger, cfg)
 }
 
 type MetricType int

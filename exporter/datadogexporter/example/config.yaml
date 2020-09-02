@@ -35,39 +35,10 @@ exporters:
     #
     # tags: []
 
-    ## @param api - custom object - optional.
-    ## Specific API configuration for the agentless exporters.
-    #
-    # api:
-      ## @ param key - string - optional
-      ## The Datadog API key to associate your Agent's data with your organization.
-      ## Create a new API key here: https://app.datadoghq.com/account/settings
-      ##
-      ## This is required if using any agentless exporter.
-      #
-      # key: <YOUR API KEY>
-
-      ## @param site - string - optional - default: datadoghq.com
-      ## The site of the Datadog intake to send Agent data to.
-      ## Set to 'datadoghq.eu' to send data to the EU site.
-      #
-      # site: datadoghq.com
-
     ## @param metrics - custom object - optional
     ## Metric exporter specific configuration.
     #
     # metrics:
-      ## @param mode - string - optional - default: dogstatsd
-      ## The mode with which to send metrics.
-      ## It can be one of
-      ## - 'none' (to explicitly disable it)
-      ## - 'dogstatsd' (to send metrics to a DogStatsD endpoint)
-      ## - 'agentless' (to send metrics directly through the API)
-      ##
-      ## If the mode is 'agentless' the API key must be set.
-      #
-      # mode: dogstatsd
-
       ## @param namespace - string - optional
       ## The namespace with which to prefix all metrics.
       ## By default metrics are not namespaced.
@@ -100,16 +71,6 @@ exporters:
         ## Whether to send telemetry metrics about the number of custom metrics sent.
         #
         # telemetry: true
-
-      ## @param agentless - custom object - optional
-      ## Agentless metrics exporter specific configuration
-      #
-      # agentless:
-        ## @param endpoint - string - optional
-        ## The host of the Datadog intake server to send metrics to.
-        ## If unset the value is obtained through the `site` parameter in the `api` section.
-        #
-        # endpoint: https://api.datadoghq.com
 service:
   pipelines:
     traces:

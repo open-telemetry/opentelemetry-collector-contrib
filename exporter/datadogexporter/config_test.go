@@ -37,13 +37,33 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	apiConfig := cfg.Exporters["datadog/api"].(*Config)
+	apiConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
 	err = apiConfig.Sanitize()
 
 	require.NoError(t, err)
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "datadog/api",
+			NameVal: "datadog/dogstatsd",
+			TypeVal: "datadog",
+		},
+
+		Metrics: MetricsConfig{
+			Percentiles: true,
+
+			DogStatsD: DogStatsDConfig{
+				Endpoint:  "127.0.0.1:8125",
+				Telemetry: true,
+			},
+		},
+	})
+
+	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd/config"].(*Config)
+	err = dogstatsdConfig.Sanitize()
+
+	require.NoError(t, err)
+	assert.Equal(t, dogstatsdConfig, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: "datadog/dogstatsd/config",
 			TypeVal: "datadog",
 		},
 
@@ -52,80 +72,18 @@ func TestLoadConfig(t *testing.T) {
 			Env:      "prod",
 			Service:  "myservice",
 			Version:  "myversion",
-			Tags:     []string{"example:tag"},
-		},
-
-		API: APIConfig{
-			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site: "datadoghq.eu",
+ 			Tags:     []string{"example:tag"},
 		},
 
 		Metrics: MetricsConfig{
-			Mode:        AgentlessMode,
 			Namespace:   "opentelemetry",
 			Percentiles: false,
-
+			Buckets:     true,
 			DogStatsD: DogStatsDConfig{
-				Endpoint:  "127.0.0.1:8125",
-				Telemetry: true,
-			},
-
-			Agentless: AgentlessConfig{
-				Endpoint: "https://api.datadoghq.eu",
+				Endpoint:  "localhost:5000",
+				Telemetry: false,
 			},
 		},
 	})
 
-	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
-	err = dogstatsdConfig.Sanitize()
-
-	require.NoError(t, err)
-	assert.Equal(t, dogstatsdConfig, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "datadog/dogstatsd",
-			TypeVal: "datadog",
-		},
-
-		TagsConfig: TagsConfig{},
-		API:        APIConfig{Site: "datadoghq.com"},
-
-		Metrics: MetricsConfig{
-			Mode:        DogStatsDMode,
-			Percentiles: true,
-			DogStatsD: DogStatsDConfig{
-				Endpoint:  "127.0.0.1:8125",
-				Telemetry: true,
-			},
-
-			Agentless: AgentlessConfig{},
-		},
-	})
-
-	invalidConfig := cfg.Exporters["datadog/invalid"].(*Config)
-	err = invalidConfig.Sanitize()
-	require.Error(t, err)
-
-	invalidConfig2 := cfg.Exporters["datadog/agentless/invalid"].(*Config)
-	err = invalidConfig2.Sanitize()
-	require.Error(t, err)
-
-}
-
-// TestOverrideMetricsURL tests that the metrics URL is overridden
-// correctly when set manually.
-func TestOverrideMetricsURL(t *testing.T) {
-
-	const DebugEndpoint string = "http://localhost:8080"
-
-	cfg := Config{
-		API: APIConfig{Key: "notnull", Site: DefaultSite},
-		Metrics: MetricsConfig{
-			Mode:      AgentlessMode,
-			Agentless: AgentlessConfig{Endpoint: DebugEndpoint},
-		},
-	}
-
-	err := cfg.Sanitize()
-	require.NoError(t, err)
-	assert.Equal(t, cfg.Metrics.Agentless.Endpoint, DebugEndpoint)
 }

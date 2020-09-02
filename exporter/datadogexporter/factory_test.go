@@ -34,9 +34,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, cfg, &Config{
-		API: APIConfig{Site: "datadoghq.com"},
 		Metrics: MetricsConfig{
-			Mode:        DogStatsDMode,
 			Percentiles: true,
 			DogStatsD: DogStatsDConfig{
 				Endpoint:  "127.0.0.1:8125",
@@ -71,32 +69,7 @@ func TestCreateAgentMetricsExporter(t *testing.T) {
 	assert.NotNil(t, exp)
 }
 
-func TestCreateAPIMetricsExporter(t *testing.T) {
-	logger := zap.NewNop()
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ctx := context.Background()
-	exp, err := factory.CreateMetricsExporter(
-		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
-	)
-
-	// Not implemented
-	assert.NotNil(t, err)
-	assert.Nil(t, exp)
-}
-
-func TestCreateAPITraceExporter(t *testing.T) {
+func TestCreateTraceExporter(t *testing.T) {
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
@@ -113,7 +86,7 @@ func TestCreateAPITraceExporter(t *testing.T) {
 	exp, err := factory.CreateTraceExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
+		cfg.Exporters["datadog/dogstatsd"],
 	)
 
 	// Not implemented

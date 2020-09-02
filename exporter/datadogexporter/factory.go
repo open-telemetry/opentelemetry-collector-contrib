@@ -53,22 +53,12 @@ func NewFactory() component.ExporterFactory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
-		API: APIConfig{
-			Key:  "", // must be set if using API
-			Site: "datadoghq.com",
-		},
-
 		Metrics: MetricsConfig{
-			Mode:        DogStatsDMode,
 			Percentiles: true,
 
 			DogStatsD: DogStatsDConfig{
 				Endpoint:  "127.0.0.1:8125",
 				Telemetry: true,
-			},
-
-			Agentless: AgentlessConfig{
-				Endpoint: "", // set during config sanitization
 			},
 		},
 	}

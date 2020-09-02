@@ -15,33 +15,10 @@
 package datadogexporter
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 )
-
-var (
-	errUnsetAPIKey = errors.New("the Datadog API key is unset")
-)
-
-const (
-	NoneMode      = "none"
-	AgentlessMode = "agentless"
-	DogStatsDMode = "dogstatsd"
-)
-
-// APIConfig defines the API configuration options
-type APIConfig struct {
-	// Key is the Datadog API key to associate your Agent's data with your organization.
-	// Create a new API key here: https://app.datadoghq.com/account/settings
-	Key string `mapstructure:"key"`
-
-	// Site is the site of the Datadog intake to send data to.
-	// The default value is "datadoghq.com".
-	Site string `mapstructure:"site"`
-}
 
 // DogStatsDConfig defines the DogStatsd related configuration
 type DogStatsDConfig struct {
@@ -54,21 +31,11 @@ type DogStatsDConfig struct {
 	Telemetry bool `mapstructure:"telemetry"`
 }
 
-// AgentlessConfig defines the Agentless related configuration
-type AgentlessConfig struct {
-	// Endpoint is the host of the Datadog intake server to send metrics to.
-	// If unset, the value is obtained from the Site.
-	Endpoint string `mapstructure:"endpoint"`
-}
-
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
 	// Namespace is the namespace under which the metrics are sent
 	// By default metrics are not namespaced
 	Namespace string `mapstructure:"namespace"`
-
-	// Mode is the metrics sending mode: either 'dogstatsd' or 'agentless'
-	Mode string `mapstructure:"mode"`
 
 	// Percentiles states whether to report percentiles for summary metrics,
 	// including the minimum and maximum
@@ -79,9 +46,6 @@ type MetricsConfig struct {
 
 	// DogStatsD defines the DogStatsD configuration options.
 	DogStatsD DogStatsDConfig `mapstructure:"dogstatsd"`
-
-	// Agentless defines the Agentless configuration options.
-	Agentless AgentlessConfig `mapstructure:"agentless"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -142,33 +106,12 @@ type Config struct {
 
 	TagsConfig `mapstructure:",squash"`
 
-	// API defines the Datadog API configuration.
-	API APIConfig `mapstructure:"api"`
-
 	// Metrics defines the Metrics exporter specific configuration
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
-
-	if c.Metrics.Mode != AgentlessMode && c.Metrics.Mode != DogStatsDMode {
-		return fmt.Errorf("Metrics mode '%s' is not recognized", c.Metrics.Mode)
-	}
-
-	// Exactly one configuration for metrics must be set
-	if c.Metrics.Mode == AgentlessMode {
-		if c.API.Key == "" {
-			return errUnsetAPIKey
-		}
-
-		c.API.Key = strings.TrimSpace(c.API.Key)
-
-		// Set the endpoint based on the Site
-		if c.Metrics.Agentless.Endpoint == "" {
-			c.Metrics.Agentless.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
-		}
-	}
-
+	// This will be useful on a future PR
 	return nil
 }
