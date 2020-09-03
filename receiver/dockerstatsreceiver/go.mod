@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-20200518175917-05cf2ea24e6c
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.9.1-0.20200902232519-95389af25077
-	go.uber.org/zap v1.15.0
+	go.uber.org/zap v1.16.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
