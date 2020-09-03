@@ -25,6 +25,7 @@ import (
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -176,7 +177,7 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 
 	mds := pdatautil.MetricsToMetricsData(m)
 	for _, md := range mds {
-		_, points := pdatautil.TimeseriesAndPointCount(md)
+		points := numPoints(md)
 		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 		recordPointCount(ctx, points-dropped, dropped, err)
 		totalDropped += dropped
@@ -215,4 +216,15 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	}
 
 	return numSpans - goodSpans, componenterror.CombineErrors(errs)
+}
+
+func numPoints(md consumerdata.MetricsData) int {
+	numPoints := 0
+	for _, metric := range md.Metrics {
+		tss := metric.GetTimeseries()
+		for _, ts := range tss {
+			numPoints += len(ts.GetPoints())
+		}
+	}
+	return numPoints
 }

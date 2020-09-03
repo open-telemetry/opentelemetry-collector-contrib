@@ -86,10 +86,6 @@ func TestNew(t *testing.T) {
 				require.NotNil(t, got)
 				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, got.Shutdown(context.Background()))
-
-				// This is expected to fail.
-				cErr := got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
-				assert.Error(t, cErr)
 			}
 		})
 	}
@@ -296,11 +292,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -315,12 +310,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -335,12 +329,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -353,10 +346,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(false, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -369,10 +361,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			failHTTP:               true,
 			droppedTimeseriesCount: 2,

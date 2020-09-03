@@ -2134,7 +2134,7 @@ func TestNegativeDeltas(t *testing.T) {
 func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
 	c := testConverter(t, map[string]string{"foo": "bar"})
 	md := intMD(1, 1)
-	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md})
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md}, nil)
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
 }
@@ -2145,12 +2145,12 @@ func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
 	md1.Metrics[0].Timeseries = []*metricspb.TimeSeries{
 		intTS("cpu0", "user", 1, 1, 1),
 	}
-	_, _ = c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1})
+	_, _ = c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
 	md2 := baseMD()
 	md2.Metrics[0].Timeseries = []*metricspb.TimeSeries{
 		dblTS("cpu0", "user", 1, 1, 1),
 	}
-	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2})
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
 	idx := indexPts(pts)
 	require.Equal(t, 1, len(idx))
 }
@@ -2160,12 +2160,12 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 ) {
 	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
 
-	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1})
+	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
 	require.Equal(t, 0, dropped1)
 	m1 := indexPts(dp1)
 	require.Equal(t, 1, len(m1))
 
-	dp2, dropped2 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2})
+	dp2, dropped2 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
 	require.Equal(t, 0, dropped2)
 	m2 := indexPts(dp2)
 	require.Equal(t, 2, len(m2))
@@ -2181,7 +2181,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) 
 		require.Equal(t, &counterType, pt.MetricType)
 	}
 
-	dp3, dropped3 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md3})
+	dp3, dropped3 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md3}, nil)
 	require.Equal(t, 0, dropped3)
 	m3 := indexPts(dp3)
 	require.Equal(t, 2, len(m3))
