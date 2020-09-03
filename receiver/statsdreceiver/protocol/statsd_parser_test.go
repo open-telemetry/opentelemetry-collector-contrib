@@ -28,9 +28,11 @@ func Test_StatsDParser_Parse(t *testing.T) {
 	timeNowFunc = func() int64 {
 		return 0
 	}
-	defer func() {
-		timeNowFunc = prevTimeNowFunc
-	}()
+	t.Cleanup(
+		func() {
+			timeNowFunc = prevTimeNowFunc
+		},
+	)
 
 	tests := []struct {
 		name       string
@@ -187,7 +189,6 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				assert.Equal(t, err, tt.err)
 			} else {
 				assert.NoError(t, err)
-				// assert.Equal(t, got.GetTimeseries()[0].GetPoints()[0].GetValue(), tt.wa)
 				assert.Equal(t, got, tt.wantMetric)
 			}
 		})
