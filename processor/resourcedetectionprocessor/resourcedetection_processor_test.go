@@ -233,7 +233,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			err = rmp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(md))
 			require.NoError(t, err)
-			got = pdatautil.MetricsToInternalMetrics(tmn.AllMetrics()[0]).ResourceMetrics().At(0).Resource()
+			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
 
 			tt.expectedResource.Attributes().Sort()
 			got.Attributes().Sort()
