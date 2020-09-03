@@ -59,7 +59,7 @@ func (m MockExporter) Shutdown(context.Context) error {
 var _ component.Exporter = (*mockExporterWithK8sMetadata)(nil)
 
 type mockExporterWithK8sMetadata struct {
-	exportertest.SinkMetricsExporter
+	*exportertest.SinkMetricsExporter
 }
 
 func (m mockExporterWithK8sMetadata) Start(context.Context, component.Host) error {
