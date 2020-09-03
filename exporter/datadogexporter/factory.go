@@ -17,7 +17,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -25,19 +24,6 @@ import (
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
-
-	// DefaultSite is the default site of the Datadog intake to send data to
-	DefaultSite = "datadoghq.com"
-
-	// List the different sending methods
-	AgentMode   = "agent"
-	APIMode     = "api"
-	DefaultMode = APIMode
-)
-
-var (
-	// DefaultTags is the default set of tags to add to every metric or trace
-	DefaultTags = []string{}
 )
 
 // NewFactory creates a Datadog exporter factory
@@ -46,7 +32,6 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(CreateMetricsExporter),
-		exporterhelper.WithTraces(CreateTracesExporter),
 	)
 }
 
@@ -89,21 +74,4 @@ func CreateMetricsExporter(
 		exporterhelper.WithQueue(exp.GetQueueSettings()),
 		exporterhelper.WithRetry(exp.GetRetrySettings()),
 	)
-}
-
-// CreateTracesExporter creates a traces exporter based on this config.
-func CreateTracesExporter(
-	_ context.Context,
-	params component.ExporterCreateParams,
-	c configmodels.Exporter) (component.TraceExporter, error) {
-
-	cfg := c.(*Config)
-
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
-		return nil, err
-	}
-
-	// Traces are not yet supported
-	return nil, configerror.ErrDataTypeIsNotSupported
 }
