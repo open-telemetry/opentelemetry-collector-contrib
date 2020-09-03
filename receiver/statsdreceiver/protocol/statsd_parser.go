@@ -70,6 +70,7 @@ func buildMetric(metricName string, point *metricspb.Point) *metricspb.Metric {
 	return &metricspb.Metric{
 		MetricDescriptor: &metricspb.MetricDescriptor{
 			Name: metricName,
+			Type: metricspb.MetricDescriptor_GAUGE_INT64,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{

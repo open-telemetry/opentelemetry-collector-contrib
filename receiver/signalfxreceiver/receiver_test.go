@@ -152,10 +152,16 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{want})))
 	// Description, unit and start time are expected to be dropped during conversions.
 	for _, metric := range want.Metrics {
+		if len(metric.MetricDescriptor.LabelKeys) == 0 {
+			metric.MetricDescriptor.LabelKeys = nil
+		}
 		metric.MetricDescriptor.Description = ""
 		metric.MetricDescriptor.Unit = ""
 		for _, ts := range metric.Timeseries {
 			ts.StartTimestamp = nil
+			if len(ts.LabelValues) == 0 {
+				ts.LabelValues = nil
+			}
 		}
 	}
 
