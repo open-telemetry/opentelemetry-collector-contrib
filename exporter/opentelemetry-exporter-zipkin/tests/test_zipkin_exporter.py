@@ -165,6 +165,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
         ]
 
         otel_spans[0].start(start_time=start_times[0])
+        otel_spans[0].resource = Resource({})
         # added here to preserve order
         otel_spans[0].set_attribute("key_bool", False)
         otel_spans[0].set_attribute("key_string", "hello_world")
@@ -185,6 +186,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
         otel_spans[2].end(end_time=end_times[2])
 
         otel_spans[3].start(start_time=start_times[3])
+        otel_spans[3].resource = Resource({})
         otel_spans[3].end(end_time=end_times[3])
 
         service_name = "test-service"
@@ -295,6 +297,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
         )
 
         otel_span.start(start_time=start_time)
+        otel_span.resource = Resource({})
         otel_span.end(end_time=end_time)
 
         service_name = "test-service"
