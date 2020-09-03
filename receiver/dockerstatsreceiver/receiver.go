@@ -23,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -145,7 +145,7 @@ func (r *Receiver) Run() error {
 			numTimeSeries += nts
 			numPoints += np
 
-			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*result.md})
+			md := internaldata.OCToMetrics(*result.md)
 			err = r.nextConsumer.ConsumeMetrics(r.runnerCtx, md)
 		} else {
 			err = result.err

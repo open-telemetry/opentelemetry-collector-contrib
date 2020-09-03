@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -414,7 +414,7 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 1)
-	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds := internaldata.MetricsToOC(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md := mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
@@ -434,7 +434,7 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 2)
-	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[1])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[1])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 4, len(md.Resource.Labels))
@@ -450,7 +450,7 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 	kp.passthroughMode = true
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 3)
-	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[2])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[2])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
@@ -479,7 +479,7 @@ func TestMetricsProcessorPicksUpPassthoughPodIp(t *testing.T) {
 
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 1)
-	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds := internaldata.MetricsToOC(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md := mds[0]
 	require.Equal(t, 3, len(md.Resource.Labels))
@@ -510,13 +510,13 @@ func TestMetricsProcessorInvalidIP(t *testing.T) {
 		},
 	}
 	metrics := generateMetricsWithHostname()
-	mds := pdatautil.MetricsToMetricsData(metrics)
+	mds := internaldata.MetricsToOC(metrics)
 	require.Len(t, mds, 1)
 	mds[0].Node.Identifier.HostName = "invalid-ip"
 
-	assert.NoError(t, p.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(mds)))
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds)))
 	require.Len(t, next.AllMetrics(), 1)
-	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md := mds[0]
 	assert.Len(t, md.Resource.Labels, 0)
@@ -555,14 +555,14 @@ func TestMetricsProcessorAddLabels(t *testing.T) {
 		t.Run(ip, func(t *testing.T) {
 			next.Reset()
 			metrics := generateMetricsWithHostname()
-			mds := pdatautil.MetricsToMetricsData(metrics)
+			mds := internaldata.MetricsToOC(metrics)
 			mds[0].Node.Identifier.HostName = ip
 
-			err = p.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(mds))
+			err = p.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds))
 			require.NoError(t, err)
 
 			require.Len(t, next.AllMetrics(), 1)
-			mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+			mds = internaldata.MetricsToOC(next.AllMetrics()[0])
 			require.Len(t, mds, 1)
 			md := mds[0]
 			require.Lenf(t, md.Resource.Labels, len(attrs)+1, "%v", md.Node)
@@ -601,7 +601,7 @@ func generateMetricsWithHostname() pdata.Metrics {
 			},
 		},
 	}
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+	return internaldata.OCToMetrics(md)
 }
 
 func generateMetricsWithPodIP() pdata.Metrics {
@@ -627,7 +627,7 @@ func generateMetricsWithPodIP() pdata.Metrics {
 			},
 		},
 	}
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+	return internaldata.OCToMetrics(md)
 }
 
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {

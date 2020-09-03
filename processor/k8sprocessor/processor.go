@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -181,7 +181,7 @@ func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Trace
 // ConsumeMetrics process metrics and add k8s metadata using resource hostname as pod origin.
 // TODO: Move to internal data model once it's available in contrib.
 func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
-	mds := pdatautil.MetricsToMetricsData(metrics)
+	mds := internaldata.MetricsToOC(metrics)
 
 	for i := range mds {
 		md := &mds[i]
@@ -234,7 +234,7 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 		}
 	}
 
-	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData(mds))
+	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, internaldata.OCSliceToMetrics(mds))
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {

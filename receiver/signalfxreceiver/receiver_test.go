@@ -42,10 +42,10 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -148,8 +148,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, testutil.WaitForPort(t, port))
 	defer exp.Shutdown(context.Background())
-	require.NoError(t, exp.ConsumeMetrics(context.Background(),
-		pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{want})))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(want)))
 	// Description, unit and start time are expected to be dropped during conversions.
 	for _, metric := range want.Metrics {
 		if len(metric.MetricDescriptor.LabelKeys) == 0 {
@@ -167,7 +166,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
-	got := pdatautil.MetricsToMetricsData(mds[0])
+	got := internaldata.MetricsToOC(mds[0])
 	require.Len(t, got, 1)
 	assert.Equal(t, want, got[0])
 
@@ -430,7 +429,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
-	got := pdatautil.MetricsToMetricsData(mds[0])
+	got := internaldata.MetricsToOC(mds[0])
 	require.Len(t, got, 1)
 	assert.Equal(t, want, got[0])
 }
@@ -498,7 +497,7 @@ func Test_sfxReceiver_AccessTokenPassthrough(t *testing.T) {
 
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			got := pdatautil.MetricsToMetricsData(mds[0])
+			got := internaldata.MetricsToOC(mds[0])
 			require.Len(t, got, 1)
 			tokenLabel := ""
 			if got[0].Resource != nil && got[0].Resource.Labels != nil {

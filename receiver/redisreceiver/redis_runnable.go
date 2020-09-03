@@ -19,9 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -111,8 +110,8 @@ func (r *redisRunnable) Run() error {
 
 	md := newMetricsData(metrics, r.serviceName)
 
-	err = r.metricsConsumer.ConsumeMetrics(r.ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md}))
-	numTimeSeries, numPoints := obsreport.CountMetricPoints(*md)
+	err = r.metricsConsumer.ConsumeMetrics(r.ctx, internaldata.OCToMetrics(md))
+	numTimeSeries, numPoints := obsreport.CountMetricPoints(md)
 	obsreport.EndMetricsReceiveOp(ctx, dataFormat, numPoints, numTimeSeries, err)
 
 	return nil
