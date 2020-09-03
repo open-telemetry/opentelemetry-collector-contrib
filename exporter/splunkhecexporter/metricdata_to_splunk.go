@@ -23,6 +23,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -62,7 +63,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {
-			host = ocmd.Resource.Labels[splunk.HostnameLabel]
+			host = ocmd.Resource.Labels[conventions.AttributeHostHostname]
 		}
 		if host == "" {
 			host = unknownHostName

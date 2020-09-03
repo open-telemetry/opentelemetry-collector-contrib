@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -118,9 +119,9 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
+		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 		ill.Logs().Append(&logRecord)

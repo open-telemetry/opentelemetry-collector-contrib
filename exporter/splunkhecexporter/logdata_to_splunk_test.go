@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -42,9 +43,9 @@ func Test_logDataToSplunk(t *testing.T) {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
 				logRecord.Body().SetStringVal("mylog")
-				logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-				logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
+				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetTimestamp(ts)
 				return makeLog(logRecord)

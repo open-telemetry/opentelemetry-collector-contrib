@@ -17,10 +17,8 @@ package splunk
 import "strings"
 
 const (
-	HostnameLabel        = "host.hostname"
 	SFxAccessTokenHeader = "X-Sf-Token"
 	SFxAccessTokenLabel  = "com.splunk.signalfx.access_token"
-	SourceLabel          = "service.name"
 	SourcetypeLabel      = "source.type"
 )
 

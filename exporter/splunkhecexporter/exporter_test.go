@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -205,9 +206,9 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().InsertString(splunk.SourceLabel, "myapp")
+		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
-		logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
+		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 	}
@@ -219,7 +220,7 @@ func TestConsumeLogsData(t *testing.T) {
 	logRecord := pdata.NewLogRecord()
 	logRecord.InitEmpty()
 	logRecord.Body().SetStringVal("mylog")
-	logRecord.Attributes().InsertString(splunk.HostnameLabel, "myhost")
+	logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 	logRecord.Attributes().InsertString("custom", "custom")
 	logRecord.SetTimestamp(123)
 	smallBatch := makeLog(logRecord)

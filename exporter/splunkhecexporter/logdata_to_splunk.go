@@ -15,9 +15,10 @@
 package splunkhecexporter
 
 import (
-	"math"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -68,9 +69,9 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent 
 	var sourcetype string
 	fields := map[string]string{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if k == splunk.HostnameLabel {
+		if k == conventions.AttributeHostHostname {
 			host = v.StringVal()
-		} else if k == splunk.SourceLabel {
+		} else if k == conventions.AttributeServiceName {
 			source = v.StringVal()
 		} else if k == splunk.SourcetypeLabel {
 			sourcetype = v.StringVal()
@@ -104,5 +105,5 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent 
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
 func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) float64 {
-	return float64(ts/1e9) + math.Round(float64(ts%1e9)/1e6)/1e3
+	return time.Duration(ts).Round(time.Millisecond).Seconds()
 }
