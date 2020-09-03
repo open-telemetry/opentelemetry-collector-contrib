@@ -27,7 +27,7 @@ type DogStatsDConfig struct {
 	// A Unix address is supported
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Telemetry states whether to send metrics
+	// Telemetry states whether to send telemetry metrics
 	Telemetry bool `mapstructure:"telemetry"`
 }
 
