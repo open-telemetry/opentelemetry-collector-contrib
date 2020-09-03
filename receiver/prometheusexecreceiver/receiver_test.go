@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -102,7 +102,7 @@ func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, test
 func assertTwoUniqueValuesScraped(t *testing.T, metricsSlice []pdata.Metrics) {
 	var value float64
 	for i, val := range metricsSlice {
-		temp := pdatautil.MetricsToMetricsData(val)[0].Metrics[0].Timeseries[0].Points[0].GetDoubleValue()
+		temp := internaldata.MetricsToOC(val)[0].Metrics[0].Timeseries[0].Points[0].GetDoubleValue()
 		if i != 0 && temp != value {
 			return
 		}

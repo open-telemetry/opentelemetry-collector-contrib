@@ -23,8 +23,8 @@ import (
 
 // Helper functions that produce protobuf
 
-func newMetricsData(protoMetrics []*metricspb.Metric, serviceName string) *consumerdata.MetricsData {
-	return &consumerdata.MetricsData{
+func newMetricsData(protoMetrics []*metricspb.Metric, serviceName string) consumerdata.MetricsData {
+	return consumerdata.MetricsData{
 		Resource: &resourcepb.Resource{
 			Type:   typeStr,
 			Labels: map[string]string{"service.name": serviceName},

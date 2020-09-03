@@ -19,8 +19,8 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -56,7 +56,7 @@ func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []inter
 
 // ProcessMetrics implements the MProcessor interface.
 func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
-	mds := pdatautil.MetricsToMetricsData(md)
+	mds := internaldata.MetricsToOC(md)
 
 	for i := range mds {
 		data := &mds[i]
@@ -87,7 +87,7 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 		}
 	}
 
-	return pdatautil.MetricsFromMetricsData(mds), nil
+	return internaldata.OCSliceToMetrics(mds), nil
 }
 
 // update updates the metric content based on operations indicated in transform.

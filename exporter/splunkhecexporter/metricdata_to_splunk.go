@@ -22,7 +22,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -56,9 +56,10 @@ var (
 )
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Metric, int, error) {
-	ocmds := pdatautil.MetricsToMetricsData(data)
+	ocmds := internaldata.MetricsToOC(data)
 	numDroppedTimeSeries := 0
-	splunkMetrics := make([]*splunk.Metric, 0, pdatautil.MetricPointCount(data))
+	_, numPoints := data.MetricAndDataPointCount()
+	splunkMetrics := make([]*splunk.Metric, 0, numPoints)
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {

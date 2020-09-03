@@ -24,9 +24,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
@@ -105,7 +105,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			mdd := mc.AllMetrics()
 			require.Len(t, mdd, 1)
-			ocmd := pdatautil.MetricsToMetricsData(mdd[0])
+			ocmd := internaldata.MetricsToOC(mdd[0])
 			require.Len(t, ocmd, 1)
 			require.Len(t, ocmd[0].Metrics, 1)
 			metric := ocmd[0].Metrics[0]

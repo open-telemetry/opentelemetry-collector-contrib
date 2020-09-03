@@ -28,7 +28,7 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
@@ -189,7 +189,7 @@ func (t *tcpServer) handleConnection(
 			md := consumerdata.MetricsData{
 				Metrics: []*metricspb.Metric{metric},
 			}
-			err = nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
+			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
 			t.reporter.OnMetricsProcessed(ctx, numReceivedTimeSeries, numInvalidTimeSeries, err)
 			if err != nil {
 				// The protocol doesn't account for returning errors.

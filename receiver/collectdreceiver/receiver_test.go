@@ -27,9 +27,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -197,7 +197,7 @@ func TestCollectDServer(t *testing.T) {
 			})
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			got := pdatautil.MetricsToMetricsData(mds[0])
+			got := internaldata.MetricsToOC(mds[0])
 			assertMetricsDataAreEqual(t, got, tt.wantData)
 		})
 	}

@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
@@ -166,7 +166,7 @@ func TestStackdriverMetricExport(t *testing.T) {
 		},
 	}
 
-	assert.NoError(t, sde.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})), err)
+	assert.NoError(t, sde.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md)), err)
 
 	drm := <-descriptorReqCh
 	assert.Regexp(t, "MyAgent v0\\.0\\.1", drm.metadata["user-agent"])
