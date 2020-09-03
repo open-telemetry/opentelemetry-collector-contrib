@@ -510,15 +510,16 @@ func TestMetricsProcessorInvalidIP(t *testing.T) {
 		},
 	}
 	metrics := generateMetricsWithHostname()
-	md := pdatautil.MetricsToMetricsData(metrics)[0]
-	md.Node.Identifier.HostName = "invalid-ip"
+	mds := pdatautil.MetricsToMetricsData(metrics)
+	require.Len(t, mds, 1)
+	mds[0].Node.Identifier.HostName = "invalid-ip"
 
-	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(mds)))
 	require.Len(t, next.AllMetrics(), 1)
-	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
-	md = mds[0]
-	require.Nil(t, md.Resource)
+	md := mds[0]
+	assert.Len(t, md.Resource.Labels, 0)
 }
 
 func TestMetricsProcessorAddLabels(t *testing.T) {
@@ -549,29 +550,31 @@ func TestMetricsProcessorAddLabels(t *testing.T) {
 		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
 	}
 
-	var i int
-	for ip, attrs := range tests {
-		metrics := generateMetricsWithHostname()
-		md := pdatautil.MetricsToMetricsData(metrics)[0]
-		md.Node.Identifier.HostName = ip
+	for ip := range tests {
+		attrs := tests[ip]
+		t.Run(ip, func(t *testing.T) {
+			next.Reset()
+			metrics := generateMetricsWithHostname()
+			mds := pdatautil.MetricsToMetricsData(metrics)
+			mds[0].Node.Identifier.HostName = ip
 
-		err = p.ConsumeMetrics(context.Background(), metrics)
-		require.NoError(t, err)
+			err = p.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(mds))
+			require.NoError(t, err)
 
-		require.Len(t, next.AllMetrics(), i+1)
-		mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[i])
-		require.Equal(t, len(mds), 1)
-		md = mds[0]
-		require.Equal(t, len(attrs)+1, len(md.Resource.Labels))
-		gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
-		assert.True(t, ok)
-		assert.Equal(t, ip, gotIP)
-		for k, v := range attrs {
-			got, ok := attrs[k]
+			require.Len(t, next.AllMetrics(), 1)
+			mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+			require.Len(t, mds, 1)
+			md := mds[0]
+			require.Lenf(t, md.Resource.Labels, len(attrs)+1, "%v", md.Node)
+			gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
 			assert.True(t, ok)
-			assert.Equal(t, v, got)
-		}
-		i++
+			assert.Equal(t, ip, gotIP)
+			for k, v := range attrs {
+				got, ok := attrs[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
 	}
 }
 

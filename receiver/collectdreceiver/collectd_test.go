@@ -86,8 +86,8 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "fake"},
-					{Value: "i-b13d1e5f"},
+					{Value: "fake", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -113,8 +113,8 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "fake"},
-					{Value: "i-b13d1e5f"},
+					{Value: "fake", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -140,8 +140,8 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -167,8 +167,8 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -194,8 +194,8 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -222,9 +222,9 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "memory"},
-					{Value: "i-b13d1e5f"},
-					{Value: "value"},
+					{Value: "memory", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
+					{Value: "value", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -252,10 +252,10 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "value"},
-					{Value: "df"},
-					{Value: "dev"},
-					{Value: "i-b13d1e5f"},
+					{Value: "value", HasValue: true},
+					{Value: "df", HasValue: true},
+					{Value: "dev", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -288,14 +288,14 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "mwp-signalbox"},
-					{Value: "value"},
-					{Value: "tail"},
-					{Value: "analytics"},
-					{Value: "v1"},
-					{Value: "v2"},
-					{Value: "b"},
-					{Value: "x"},
+					{Value: "mwp-signalbox", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "tail", HasValue: true},
+					{Value: "analytics", HasValue: true},
+					{Value: "v1", HasValue: true},
+					{Value: "v2", HasValue: true},
+					{Value: "b", HasValue: true},
+					{Value: "x", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -328,14 +328,14 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "mwp-signalbox"},
-					{Value: "value"},
-					{Value: "tail"},
-					{Value: "analytics"},
-					{Value: "v1"},
-					{Value: "v2"},
-					{Value: "b"},
-					{Value: "x"},
+					{Value: "mwp-signalbox", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "tail", HasValue: true},
+					{Value: "analytics", HasValue: true},
+					{Value: "v1", HasValue: true},
+					{Value: "v2", HasValue: true},
+					{Value: "b", HasValue: true},
+					{Value: "x", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
@@ -365,11 +365,11 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "some-host"},
-					{Value: "value"},
-					{Value: "dogstatsd"},
-					{Value: "dev"},
-					{Value: "v1"},
+					{Value: "some-host", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "dogstatsd", HasValue: true},
+					{Value: "dev", HasValue: true},
+					{Value: "v1", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{

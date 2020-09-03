@@ -176,8 +176,8 @@ func TestExportMetricData(t *testing.T) {
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Portland"},
-							{Value: "0"},
+							{Value: "Portland", HasValue: true},
+							{Value: "0", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
@@ -208,8 +208,8 @@ func TestExportMetricData(t *testing.T) {
 					},
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Denver"},
-							{Value: "5280"},
+							{Value: "Denver", HasValue: true},
+							{Value: "5280", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
