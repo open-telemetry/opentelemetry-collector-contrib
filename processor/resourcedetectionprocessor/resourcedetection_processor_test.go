@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -229,9 +229,9 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
 			// TODO create pdata.Metrics directly when this is no longer internal
-			md := []consumerdata.MetricsData{{Resource: oCensusResource(tt.sourceResource)}}
-
-			err = rmp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(md))
+			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(consumerdata.MetricsData{
+				Resource: oCensusResource(tt.sourceResource),
+			}))
 			require.NoError(t, err)
 			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
 
@@ -285,7 +285,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
-		processor.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(nil))
+		processor.ConsumeMetrics(context.Background(), pdata.NewMetrics())
 	}
 }
 

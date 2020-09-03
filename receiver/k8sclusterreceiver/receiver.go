@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
@@ -79,11 +79,11 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
-	resourceMetrics := pdatautil.MetricsFromMetricsData(mds)
+	resourceMetrics := internaldata.OCSliceToMetrics(mds)
 
 	c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 
-	numTimeseries, numPoints := pdatautil.MetricAndDataPointCount(resourceMetrics)
+	numTimeseries, numPoints := resourceMetrics.MetricAndDataPointCount()
 
 	err := kr.consumer.ConsumeMetrics(c, resourceMetrics)
 	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, numTimeseries, err)

@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -241,7 +240,7 @@ func TestExportMetricData(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
 	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})))
+	require.NoError(t, exp.ConsumeMetrics(ctx, internaldata.OCToMetrics(md)))
 	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Metric{

@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
@@ -92,25 +92,22 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	smallBatch := pdatautil.MetricsFromMetricsData(
-		[]consumerdata.MetricsData{
-			{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-				},
-				Resource: &resourcepb.Resource{Type: "test"},
-				Metrics: []*metricspb.Metric{
-					metricstestutil.Gauge(
-						"test_gauge",
-						[]string{"k0", "k1"},
-						metricstestutil.Timeseries(
-							time.Now(),
-							[]string{"v0", "v1"},
-							metricstestutil.Double(time.Now(), 123))),
-				},
+	smallBatch := internaldata.OCToMetrics(
+		consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
 			},
-		},
-	)
+			Resource: &resourcepb.Resource{Type: "test"},
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge(
+					"test_gauge",
+					[]string{"k0", "k1"},
+					metricstestutil.Timeseries(
+						time.Now(),
+						[]string{"v0", "v1"},
+						metricstestutil.Double(time.Now(), 123))),
+			},
+		})
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
@@ -208,7 +205,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		if !includeToken {
 			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
 		}
-		return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+		return internaldata.OCToMetrics(md)
 	}
 
 	tests := []struct {
@@ -266,20 +263,18 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		{
 			name:                   "use token from header when resource is nil",
 			accessTokenPassthrough: true,
-			metrics: pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-				{
-					Node: &commonpb.Node{
-						ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge(
-							"test_gauge",
-							[]string{"k0", "k1"},
-							metricstestutil.Timeseries(
-								time.Now(),
-								[]string{"v0", "v1"},
-								metricstestutil.Double(time.Now(), 123))),
-					},
+			metrics: internaldata.OCToMetrics(consumerdata.MetricsData{
+				Node: &commonpb.Node{
+					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+				},
+				Metrics: []*metricspb.Metric{
+					metricstestutil.Gauge(
+						"test_gauge",
+						[]string{"k0", "k1"},
+						metricstestutil.Timeseries(
+							time.Now(),
+							[]string{"v0", "v1"},
+							metricstestutil.Double(time.Now(), 123))),
 				},
 			}),
 			numPushDataCallsPerToken: map[string]int{
@@ -463,7 +458,7 @@ func generateLargeBatch() pdata.Metrics {
 		}
 	}
 
-	return pdatautil.MetricsFromMetricsData(mds)
+	return internaldata.OCSliceToMetrics(mds)
 }
 
 func TestConsumeKubernetesMetadata(t *testing.T) {
@@ -694,7 +689,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		}},
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
-	metrics := pdatautil.MetricsFromMetricsData(mds)
+	metrics := internaldata.OCSliceToMetrics(mds)
 	for i := 0; i < b.N; i++ {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)
