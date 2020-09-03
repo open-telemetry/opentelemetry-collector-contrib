@@ -69,7 +69,7 @@ func (b builder) addTimeseries(startTimestampSeconds int64, labelValuesVal []str
 	timeseries := &metricspb.TimeSeries{
 		StartTimestamp: startTimestamp,
 		LabelValues:    labelValues,
-		Points:         make([]*metricspb.Point, 0),
+		Points:         nil,
 	}
 	b.metric.Timeseries = append(b.metric.Timeseries, timeseries)
 	return b
@@ -135,10 +135,9 @@ func (b builder) addDistributionPoints(tidx int, timestampVal int64, count int64
 						},
 					},
 				},
-				Count:                 count,
-				Sum:                   sum,
-				Buckets:               buckets,
-				SumOfSquaredDeviation: sumOfSquaredDeviation,
+				Count:   count,
+				Sum:     sum,
+				Buckets: buckets,
 			},
 		},
 	}

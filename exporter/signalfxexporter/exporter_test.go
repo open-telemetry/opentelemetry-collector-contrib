@@ -86,10 +86,6 @@ func TestNew(t *testing.T) {
 				require.NotNil(t, got)
 				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, got.Shutdown(context.Background()))
-
-				// This is expected to fail.
-				cErr := got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
-				assert.Error(t, cErr)
 			}
 		})
 	}

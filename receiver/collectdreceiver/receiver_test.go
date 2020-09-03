@@ -133,10 +133,10 @@ func TestCollectDServer(t *testing.T) {
 				},
 				Timeseries: []*metricspb.TimeSeries{{
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "memory"},
-						{Value: "i-b13d1e5f"},
-						{Value: "value"},
-						{Value: "attr1val"},
+						{Value: "memory", HasValue: true},
+						{Value: "i-b13d1e5f", HasValue: true},
+						{Value: "value", HasValue: true},
+						{Value: "attr1val", HasValue: true},
 					},
 					Points: []*metricspb.Point{{
 						Timestamp: &timestamppb.Timestamp{Seconds: 1415062577, Nanos: 494999808},
