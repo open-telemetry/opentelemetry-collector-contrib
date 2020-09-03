@@ -215,9 +215,11 @@ class TestJaegerSpanExporter(unittest.TestCase):
         otel_spans[0].end(end_time=end_times[0])
 
         otel_spans[1].start(start_time=start_times[1])
+        otel_spans[1].resource = Resource({})
         otel_spans[1].end(end_time=end_times[1])
 
         otel_spans[2].start(start_time=start_times[2])
+        otel_spans[2].resource = Resource({})
         otel_spans[2].end(end_time=end_times[2])
 
         # pylint: disable=protected-access
