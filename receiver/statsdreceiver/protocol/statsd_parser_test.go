@@ -128,7 +128,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				}),
 		},
 		{
-			name:  "double guage metric",
+			name:  "double gauge metric",
 			input: "test.gauge:42.0|g|@0.1|#key:value",
 			wantMetric: testMetric("test.gauge",
 				metricspb.MetricDescriptor_GAUGE_DOUBLE,
@@ -153,7 +153,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				}),
 		},
 		{
-			name:  "int guage metric",
+			name:  "int gauge metric",
 			input: "test.gauge:42|g|@0.1|#key:value",
 			wantMetric: testMetric("test.gauge",
 				metricspb.MetricDescriptor_GAUGE_INT64,
