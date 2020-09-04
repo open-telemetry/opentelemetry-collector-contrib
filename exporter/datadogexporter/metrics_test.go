@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	metricstest "go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
@@ -81,18 +80,16 @@ var (
 	testTags     = [...]string{"key1:val1", "key2:val2", "key3:n/a"}
 )
 
-func NewMetricsData(metrics []*v1.Metric) pdata.Metrics {
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-		{
-			Node: &v1agent.Node{
-				Identifier: &v1agent.ProcessIdentifier{
-					HostName: "unknown",
-				},
+func NewMetricsData(metrics []*v1.Metric) []consumerdata.MetricsData {
+	return []consumerdata.MetricsData{{
+		Node: &v1agent.Node{
+			Identifier: &v1agent.ProcessIdentifier{
+				HostName: "unknown",
 			},
-			Resource: nil,
-			Metrics:  metrics,
 		},
-	})
+		Resource: nil,
+		Metrics:  metrics,
+	}}
 }
 
 func TestMapNumericMetric(t *testing.T) {

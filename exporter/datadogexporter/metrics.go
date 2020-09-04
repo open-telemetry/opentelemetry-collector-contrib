@@ -20,8 +20,8 @@ import (
 	"math"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -93,10 +93,7 @@ const (
 	Summary
 )
 
-func MapMetrics(exp MetricsExporter, md pdata.Metrics) (map[string][]MetricValue, int) {
-	// Transform it into OpenCensus format
-	data := pdatautil.MetricsToMetricsData(md)
-
+func MapMetrics(exp MetricsExporter, data []consumerdata.MetricsData) (map[string][]MetricValue, int) {
 	// Mapping from metrics name to data
 	metrics := map[string][]MetricValue{}
 
