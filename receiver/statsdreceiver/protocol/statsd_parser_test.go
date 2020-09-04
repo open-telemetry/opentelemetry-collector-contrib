@@ -100,7 +100,7 @@ func Test_StatsDParser_Parse(t *testing.T) {
 		{
 			name:  "unhandled metric type",
 			input: "test.metric:42|unhandled_type",
-			err:   errors.New("unhandled metric type: unhandled_type"),
+			err:   errors.New("unsupported metric type: unhandled_type"),
 		},
 		{
 			name:  "counter metric with sample rate and tags",
