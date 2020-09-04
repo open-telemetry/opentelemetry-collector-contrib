@@ -54,11 +54,7 @@ func newDogStatsDExporter(logger *zap.Logger, cfg *Config) (*dogStatsDExporter, 
 }
 
 func (exp *dogStatsDExporter) PushMetricsData(_ context.Context, md pdata.Metrics) (int, error) {
-	metrics, droppedTimeSeries, err := MapMetrics(exp, md)
-
-	if err != nil {
-		return droppedTimeSeries, err
-	}
+	metrics, droppedTimeSeries := MapMetrics(exp, md)
 
 	for name, data := range metrics {
 		for _, metric := range data {
@@ -70,13 +66,14 @@ func (exp *dogStatsDExporter) PushMetricsData(_ context.Context, md pdata.Metric
 				tags = append(tags, fmt.Sprintf("host:%s", metric.GetHost()))
 			}
 
+			var err error
 			switch metric.GetType() {
 			case Gauge:
 				err = exp.client.Gauge(name, metric.GetValue(), tags, metric.GetRate())
 			}
 
 			if err != nil {
-				return droppedTimeSeries, err
+				exp.GetLogger().Warn("Could not send metric to statsd", zap.String("metric", name), zap.Error(err))
 			}
 		}
 	}

@@ -38,9 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	apiConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
-	err = apiConfig.Sanitize()
 
-	require.NoError(t, err)
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: "datadog/dogstatsd",
@@ -58,9 +56,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd/config"].(*Config)
-	err = dogstatsdConfig.Sanitize()
 
-	require.NoError(t, err)
 	assert.Equal(t, dogstatsdConfig, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: "datadog/dogstatsd/config",

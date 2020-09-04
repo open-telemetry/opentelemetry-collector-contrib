@@ -50,3 +50,20 @@ func TestDogStatsDExporter(t *testing.T) {
 	assert.Equal(t, testNamespace, exp.client.Namespace)
 	assert.Equal(t, testTags, exp.client.Tags)
 }
+
+func TestInvalidDogStatsDExporter(t *testing.T) {
+	logger := zap.NewNop()
+
+	// The configuration is invalid if no
+	// endpoint is set
+	cfg := &Config{
+		Metrics: MetricsConfig{
+			DogStatsD: DogStatsDConfig{
+				Endpoint: "",
+			},
+		},
+	}
+
+	_, err := newDogStatsDExporter(logger, cfg)
+	require.Error(t, err)
+}

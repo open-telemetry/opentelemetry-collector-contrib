@@ -109,9 +109,3 @@ type Config struct {
 	// Metrics defines the Metrics exporter specific configuration
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }
-
-// Sanitize tries to sanitize a given configuration
-func (c *Config) Sanitize() error {
-	// This will be useful on a future PR
-	return nil
-}

@@ -58,11 +58,6 @@ func CreateMetricsExporter(
 
 	cfg := c.(*Config)
 
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
-		return nil, err
-	}
-
 	exp, err := newMetricsExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err

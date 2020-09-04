@@ -115,10 +115,9 @@ func TestMapNumericMetric(t *testing.T) {
 			metricstest.Timeseries(ts, testValues[:], intValue)),
 	})
 
-	metrics, droppedTimeSeries, err := MapMetrics(mockExporter, md)
+	metrics, droppedTimeSeries := MapMetrics(mockExporter, md)
 
 	assert.Equal(t, 0, droppedTimeSeries)
-	assert.Nil(t, err)
 	assert.Equal(t,
 		map[string][]MetricValue{
 			"cumulative.float64.test": {{
@@ -162,12 +161,11 @@ func TestMapDistributionMetric(t *testing.T) {
 			metricstest.Timeseries(ts, testValues[:], metricstest.DistPt(ts, []float64{0.1, 0.2}, []int64{100, 200}))),
 	})
 
-	metrics, _, err := MapMetrics(
+	metrics, _ := MapMetrics(
 		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Buckets: true}}},
 		md,
 	)
 
-	assert.Nil(t, err)
 	assert.Equal(t, map[string][]MetricValue{
 		"dist.test.count": {{
 			hostname:   "unknown",
@@ -232,13 +230,12 @@ func TestMapSummaryMetric(t *testing.T) {
 		metricstest.Summary("summary.test", testKeys[:], summaryPoint),
 	})
 
-	metrics, _, err := MapMetrics(
+	metrics, _ := MapMetrics(
 		// Enable percentiles for test
 		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Percentiles: true}}},
 		md,
 	)
 
-	assert.Nil(t, err)
 	assert.Equal(t, map[string][]MetricValue{
 		"summary.test.sum": {{
 			hostname:   "unknown",
@@ -297,9 +294,8 @@ func TestMapInvalid(t *testing.T) {
 			ts, []string{}, metricstest.Double(ts, 0.0))},
 	}})
 
-	metrics, dropped, err := MapMetrics(mockExporter, md)
+	metrics, dropped := MapMetrics(mockExporter, md)
 
-	assert.Nil(t, err)
 	assert.Equal(t, dropped, 1)
 	assert.Equal(t, metrics, map[string][]MetricValue{})
 }

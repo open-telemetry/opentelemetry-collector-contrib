@@ -23,6 +23,11 @@ exporters:
       dogstatsd:
         endpoint: "localhost:5000"
         telemetry: false
+
+  datadog/dogstatsd/invalid:
+    metrics:
+      dogstatsd:
+        endpoint: "invalid:"
 service:
   pipelines:
     metrics:
