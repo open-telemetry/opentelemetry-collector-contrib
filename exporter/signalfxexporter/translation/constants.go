@@ -138,6 +138,11 @@ translation_rules:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
+# cpu deltas
+- action: delta_metric
+  mapping:
+    system.cpu.time: system.cpu.delta
+
 # convert cpu metrics
 - action: split_metric
   metric_name: system.cpu.time
