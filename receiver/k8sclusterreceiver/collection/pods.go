@@ -189,14 +189,19 @@ func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store, logger *zap.
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindJob)
 	if jobRef != nil {
 		job, exists, err := JobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
-		if exists {
-			jobObj := job.(*batchv1.Job)
-			if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
-				return getWorkloadProperties(cronJobRef, conventions.AttributeK8sCronJob)
-			}
-			return getWorkloadProperties(jobRef, conventions.AttributeK8sJob)
+		if err != nil {
+			logError(err, jobRef, pod.UID, logger)
+			return nil
+		} else if !exists {
+			logWarning(jobRef, pod.UID, logger)
+			return nil
 		}
-		handleErrors(err, jobRef, pod.UID, logger)
+
+		jobObj := job.(*batchv1.Job)
+		if cronJobRef := utils.FindOwnerWithKind(jobObj.OwnerReferences, k8sKindCronJob); cronJobRef != nil {
+			return getWorkloadProperties(cronJobRef, conventions.AttributeK8sCronJob)
+		}
+		return getWorkloadProperties(jobRef, conventions.AttributeK8sJob)
 	}
 	return nil
 }
@@ -207,35 +212,37 @@ func collectPodReplicaSetProperties(pod *corev1.Pod, replicaSetstore cache.Store
 	rsRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindReplicaSet)
 	if rsRef != nil {
 		replicaSet, exists, err := replicaSetstore.GetByKey(utils.GetIDForCache(pod.Namespace, rsRef.Name))
-		if exists {
-			replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
-			if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
-				return getWorkloadProperties(deployRef, conventions.AttributeK8sDeployment)
-			}
-			return getWorkloadProperties(rsRef, conventions.AttributeK8sReplicaSet)
+		if err != nil {
+			logError(err, rsRef, pod.UID, logger)
+			return nil
+		} else if !exists {
+			logWarning(rsRef, pod.UID, logger)
+			return nil
 		}
-		handleErrors(err, rsRef, pod.UID, logger)
+
+		replicaSetObj := replicaSet.(*appsv1.ReplicaSet)
+		if deployRef := utils.FindOwnerWithKind(replicaSetObj.OwnerReferences, k8sKindDeployment); deployRef != nil {
+			return getWorkloadProperties(deployRef, conventions.AttributeK8sDeployment)
+		}
+		return getWorkloadProperties(rsRef, conventions.AttributeK8sReplicaSet)
 	}
 	return nil
 }
 
-// handleErrors is intended to be invoked when a resource is not found in its store
-// or an error occurs while trying to retrieve it from its store
-func handleErrors(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
-	if err != nil {
-		logger.Error(
-			"Failed to get resource from store, properties from it will not be synced.",
-			zap.String(conventions.AttributeK8sPodUID, string(podUID)),
-			zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
-			zap.Error(err),
-		)
-		return
-	}
-
-	logger.WithOptions().Warn(
+func logWarning(ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	logger.Warn(
 		"Resource does not exist in store, properties from it will not be synced.",
 		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
 		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+	)
+}
+
+func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.Logger) {
+	logger.Error(
+		"Failed to get resource from store, properties from it will not be synced.",
+		zap.String(conventions.AttributeK8sPodUID, string(podUID)),
+		zap.String(conventions.AttributeK8sJobUID, string(ref.UID)),
+		zap.Error(err),
 	)
 }
 
