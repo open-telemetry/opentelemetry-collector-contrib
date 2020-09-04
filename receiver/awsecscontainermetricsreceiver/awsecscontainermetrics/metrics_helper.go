@@ -103,6 +103,39 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 	return readBytes, writeBytes
 }
 
+func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
+	taskMetrics.MemoryUsage += conMetrics.MemoryUsage
+	taskMetrics.MemoryMaxUsage += conMetrics.MemoryMaxUsage
+	taskMetrics.MemoryLimit += conMetrics.MemoryLimit
+	taskMetrics.MemoryReserved += conMetrics.MemoryReserved
+	taskMetrics.MemoryUtilized += conMetrics.MemoryUtilized
+
+	taskMetrics.CPUTotalUsage += conMetrics.CPUTotalUsage
+	taskMetrics.CPUUsageInKernelmode += conMetrics.CPUUsageInKernelmode
+	taskMetrics.CPUUsageInUserMode += conMetrics.CPUUsageInUserMode
+	taskMetrics.NumOfCPUCores += conMetrics.NumOfCPUCores
+	taskMetrics.CPUOnlineCpus += conMetrics.CPUOnlineCpus
+	taskMetrics.SystemCPUUsage += conMetrics.SystemCPUUsage
+	taskMetrics.CPUUtilized += conMetrics.CPUUtilized
+	taskMetrics.CPUReserved += conMetrics.CPUReserved
+
+	taskMetrics.NetworkRateRxBytesPerSecond += conMetrics.NetworkRateRxBytesPerSecond
+	taskMetrics.NetworkRateTxBytesPerSecond += conMetrics.NetworkRateTxBytesPerSecond
+
+	taskMetrics.NetworkRxBytes += conMetrics.NetworkRxBytes
+	taskMetrics.NetworkRxPackets += conMetrics.NetworkRxPackets
+	taskMetrics.NetworkRxErrors += conMetrics.NetworkRxErrors
+	taskMetrics.NetworkRxDropped += conMetrics.NetworkRxDropped
+
+	taskMetrics.NetworkTxBytes += conMetrics.NetworkTxBytes
+	taskMetrics.NetworkTxPackets += conMetrics.NetworkTxPackets
+	taskMetrics.NetworkTxErrors += conMetrics.NetworkTxErrors
+	taskMetrics.NetworkTxDropped += conMetrics.NetworkTxDropped
+
+	taskMetrics.StorageReadBytes += conMetrics.StorageReadBytes
+	taskMetrics.StorageWriteBytes += conMetrics.StorageWriteBytes
+}
+
 // GenerateDummyMetrics generates some dummy metrics
 func GenerateDummyMetrics() consumerdata.MetricsData {
 

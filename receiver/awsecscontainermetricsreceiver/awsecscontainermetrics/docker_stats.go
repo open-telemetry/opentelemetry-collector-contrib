@@ -93,30 +93,3 @@ type TaskStats struct {
 	StorageReadBytes  *uint64
 	StorageWriteBytes *uint64
 }
-
-// TaskMetadata defines task metadata for a task
-type TaskMetadata struct {
-	Cluster  string `json:"Cluster,omitempty"`
-	TaskARN  string `json:"TaskARN,omitempty"`
-	Family   string `json:"Family,omitempty"`
-	Revision string `json:"Revision,omitempty"`
-
-	Limits     Limit               `json:"Limits,omitempty"`
-	Containers []ContainerMetadata `json:"Containers,omitempty"`
-}
-
-// ContainerMetadata defines container metadata for a container
-type ContainerMetadata struct {
-	DockerId      string            `json:"DockerId,omitempty"`
-	ContainerName string            `json:"Name,omitempty"`
-	DockerName    string            `json:"DockerName,omitempty"`
-	Image         string            `json:"Image,omitempty"`
-	Labels        map[string]string `json:"Labels,omitempty"`
-	Limits        Limit             `json:"Limits,omitempty"`
-}
-
-// Limit defines the Cpu and Memory limts
-type Limit struct {
-	CPU    *float64 `json:"CPU,omitempty"`
-	Memory *uint64  `json:"Memory,omitempty"`
-}
