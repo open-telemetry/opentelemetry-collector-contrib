@@ -16,6 +16,8 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
@@ -23,13 +25,16 @@ import (
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 )
 
+// Factory for awscontainermetrics
 const (
+	// Key to invoke this receiver (awsecscontainermetrics)
 	typeStr = "awsecscontainermetrics"
 
-	// Default collection interval
+	// Default collection interval. In every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
 
@@ -41,24 +46,8 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
-var _ component.ReceiverFactoryBase = (*Factory)(nil)
-
-// Factory creates an aws ecs container metrics receiver.
-type Factory struct {
-}
-
-// Type returns the type of this factory, "awsecscontainermetrics".
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
-// CreateDefaultConfig creates a default config.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+// CreateDefaultConfig returns a default config for the receiver.
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -69,32 +58,37 @@ func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
 }
 
 // CreateTraceReceiver returns error as trace receiver is not applicable to aws ecs container metrics receiver.
-func (f *Factory) CreateTraceReceiver(
+func createTraceReceiver(
 	ctx context.Context,
 	logger *zap.Logger,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumerOld,
+	nextConsumer consumer.TraceConsumer,
 ) (component.TraceReceiver, error) {
 	// Amazon ECS Task Metadata Endpoint does not support traces.
 	return nil, configerror.ErrDataTypeIsNotSupported
 }
 
-// CreateMetricsReceiver creates an aws ecs container metrics receiver.
-func (f *Factory) CreateMetricsReceiver(
+// CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
+func createMetricsReceiver(
 	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumerOld,
+	params component.ReceiverCreateParams,
+	baseCfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	rest, err := f.restClient(logger, "https://jsonplaceholder.typicode.com/todos/1")
+	ecsTaskMetadataEndpointV4 := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
+	if ecsTaskMetadataEndpointV4 == "" {
+		return nil, fmt.Errorf("Could not get environment variable- ECS_CONTAINER_METADATA_URI_V4")
+	}
+
+	rest, err := restClient(params.Logger, ecsTaskMetadataEndpointV4)
 	if err != nil {
 		return nil, err
 	}
-	rCfg := cfg.(*Config)
-	return New(logger, rCfg, nextConsumer, rest)
+	rCfg := baseCfg.(*Config)
+	return New(params.Logger, rCfg, consumer, rest)
 }
 
-func (f *Factory) restClient(logger *zap.Logger, endpoint string) (awsecscontainermetrics.RestClient, error) {
+func restClient(logger *zap.Logger, endpoint string) (awsecscontainermetrics.RestClient, error) {
 	clientProvider, err := awsecscontainermetrics.NewClientProvider(endpoint, logger)
 	if err != nil {
 		return nil, err

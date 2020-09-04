@@ -21,59 +21,32 @@ import (
 )
 
 func networkMetrics(prefix string, stats map[string]NetworkStats, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
-	var rBytes, rPackets, rErrors, rDropped uint64
-	var tBytes, tPackets, tErrors, tDropped uint64
-	for _, netStat := range stats {
-		rBytes += *netStat.RxBytes
-		rPackets += *netStat.RxPackets
-		rErrors += *netStat.RxErrors
-		rDropped += *netStat.RxDropped
 
-		tBytes += *netStat.TxBytes
-		tPackets += *netStat.TxPackets
-		tErrors += *netStat.TxErrors
-		tDropped += *netStat.TxDropped
-	}
+	netStatArray := getNetworkStats(stats)
 	return applyCurrentTime([]*metricspb.Metric{
-		intGauge(prefix+"network.rx_bytes", "Bytes", &rBytes, labelKeys, labelValues),
-		intGauge(prefix+"network.rx_packets", "Bytes", &rPackets, labelKeys, labelValues),
-		intGauge(prefix+"network.rx_errors", "Bytes", &rErrors, labelKeys, labelValues),
-		intGauge(prefix+"network.rx_dropped", "Bytes", &rDropped, labelKeys, labelValues),
-		intGauge(prefix+"network.tx_bytes", "Bytes", &tBytes, labelKeys, labelValues),
-		intGauge(prefix+"network.tx_packets", "Bytes", &tPackets, labelKeys, labelValues),
-		intGauge(prefix+"network.tx_errors", "Bytes", &tErrors, labelKeys, labelValues),
-		intGauge(prefix+"network.tx_dropped", "Bytes", &tDropped, labelKeys, labelValues),
+		intGauge(prefix+"network.rx_bytes", "Bytes", &netStatArray[0], labelKeys, labelValues),
+		intGauge(prefix+"network.rx_packets", "Bytes", &netStatArray[1], labelKeys, labelValues),
+		intGauge(prefix+"network.rx_errors", "Bytes", &netStatArray[2], labelKeys, labelValues),
+		intGauge(prefix+"network.rx_dropped", "Bytes", &netStatArray[3], labelKeys, labelValues),
+		intGauge(prefix+"network.tx_bytes", "Bytes", &netStatArray[4], labelKeys, labelValues),
+		intGauge(prefix+"network.tx_packets", "Bytes", &netStatArray[5], labelKeys, labelValues),
+		intGauge(prefix+"network.tx_errors", "Bytes", &netStatArray[6], labelKeys, labelValues),
+		intGauge(prefix+"network.tx_dropped", "Bytes", &netStatArray[7], labelKeys, labelValues),
 	}, time.Now())
 }
 
-// func rxBytes(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.rx_bytes", "Bytes", value)
-// }
+func getNetworkStats(stats map[string]NetworkStats) [8]uint64 {
+	var netStatArray [8]uint64
+	for _, netStat := range stats {
+		netStatArray[0] += *netStat.RxBytes
+		netStatArray[1] += *netStat.RxPackets
+		netStatArray[2] += *netStat.RxErrors
+		netStatArray[3] += *netStat.RxDropped
 
-// func rxPackets(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.rx_packets", "Bytes", value)
-// }
-
-// func rxErrors(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.rx_errors", "Bytes", value)
-// }
-
-// func rxDropped(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.rx_dropped", "Bytes", value)
-// }
-
-// func txBytes(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.tx_bytes", "Bytes", value)
-// }
-
-// func txPackets(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.tx_packets", "Bytes", value)
-// }
-
-// func txErrors(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.tx_errors", "Bytes", value)
-// }
-
-// func txDropped(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"network.tx_dropped", "Bytes", value)
-// }
+		netStatArray[4] += *netStat.TxBytes
+		netStatArray[5] += *netStat.TxPackets
+		netStatArray[6] += *netStat.TxErrors
+		netStatArray[7] += *netStat.TxDropped
+	}
+	return netStatArray
+}

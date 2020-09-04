@@ -20,14 +20,13 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
-func memMetrics(prefix string, stats *MemoryStats, containerMetadata ContainerMetadata, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
-	memoryUtilizedInMb := (*stats.Usage - stats.Stats["cache"]) / BytesInMiB
-	stats.MemoryUtilized = &memoryUtilizedInMb
+func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
+
 	return applyCurrentTime([]*metricspb.Metric{
-		intGauge(prefix+"memory.usage", "Bytes", stats.Usage, labelKeys, labelValues),
-		intGauge(prefix+"memory.maxusage", "MB", stats.MaxUsage, labelKeys, labelValues),
-		intGauge(prefix+"memory.limit", "MB", stats.Limit, labelKeys, labelValues),
-		intGauge(prefix+"memory.utilized", "MB", stats.MemoryUtilized, labelKeys, labelValues),
-		intGauge(prefix+"memory.reserved", "MB", containerMetadata.Limits.Memory, labelKeys, labelValues),
+		intGauge(prefix+"memory_usage", "Bytes", &m.MemoryUsage, labelKeys, labelValues),
+		intGauge(prefix+"memory_maxusage", "Bytes", &m.MemoryMaxUsage, labelKeys, labelValues),
+		intGauge(prefix+"memory_limit", "Bytes", &m.MemoryLimit, labelKeys, labelValues),
+		intGauge(prefix+"memory_utilized", "MB", &m.MemoryUtilized, labelKeys, labelValues),
+		intGauge(prefix+"memory_reserved", "MB", &m.MemoryReserved, labelKeys, labelValues),
 	}, time.Now())
 }

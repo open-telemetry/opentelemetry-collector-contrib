@@ -28,52 +28,85 @@ type metricDataAccumulator struct {
 }
 
 const (
-	task_prefix      = "task."
-	container_prefix = "container."
+	taskPrefix      = "ecs.task."
+	containerPrefix = "ecs.container."
+	cpusInVCpu      = 1024
 )
 
-func (acc *metricDataAccumulator) getStats(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
+func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
 
 	var taskMemLimit uint64
-	var taskCpuLimit float64
+	var taskCPULimit float64
+	// var f uint64
+	// f = 5
+	taskMetrics := ECSMetrics{}
+
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerId]
+		containerMetrics := getContainerMetrics(stats)
+		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 
 		taskMemLimit += *containerMetadata.Limits.Memory
-		taskCpuLimit += *containerMetadata.Limits.CPU
+		taskCPULimit += *containerMetadata.Limits.CPU
 
 		containerResource := containerResource(containerMetadata)
 		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
+
 		acc.accumulate(
 			timestampProto(time.Now()),
 			containerResource,
 
-			memMetrics(container_prefix, &stats.Memory, containerMetadata, labelKeys, labelValues),
-			diskMetrics(container_prefix, &stats.Disk, labelKeys, labelValues),
-			networkMetrics(container_prefix, stats.Network, labelKeys, labelValues),
-			networkRateMetrics(container_prefix, &stats.NetworkRate, labelKeys, labelValues),
-			cpuMetrics(container_prefix, &stats.CPU, containerMetadata, labelKeys, labelValues),
+			convertToOTMetrics(containerPrefix, containerMetrics, labelKeys, labelValues),
 		)
+
+		aggregateTaskMetrics(&taskMetrics, containerMetrics)
+		// Container level metrics accumulation
+		// acc.accumulate(
+		// 	timestampProto(time.Now()),
+		// 	containerResource,
+
+		// 	memMetrics(containerPrefix, &stats.Memory, containerMetadata, labelKeys, labelValues),
+		// 	diskMetrics(containerPrefix, &stats.Disk, labelKeys, labelValues),
+		// 	networkMetrics(containerPrefix, stats.Network, labelKeys, labelValues),
+		// 	networkRateMetrics(containerPrefix, &stats.NetworkRate, labelKeys, labelValues),
+		// 	cpuMetrics(containerPrefix, &stats.CPU, containerMetadata, labelKeys, labelValues),
+		// )
 	}
 
-	taskCpuLimitInVCpu := taskCpuLimit / 1024
+	taskCpuLimitInVCpu := taskCPULimit / cpusInVCpu
 	taskLimit := Limit{Memory: &taskMemLimit, CPU: &taskCpuLimitInVCpu}
+
+	// Overwrite CPU limit with task level limit
 	if metadata.Limits.CPU != nil {
 		taskLimit.CPU = metadata.Limits.CPU
 	}
+
+	// Overwrite Memory limit with memory level limit
 	if metadata.Limits.Memory != nil {
 		taskLimit.Memory = metadata.Limits.Memory
 	}
 
-	// Task metrics- aggregation of containers
-	taskStat := aggregateTaskStats(containerStatsMap)
+	if metadata.Limits.Memory != nil {
+		taskMetrics.MemoryReserved = *metadata.Limits.Memory
+	}
+
 	taskResource := taskResource(metadata)
 	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 	acc.accumulate(
 		timestampProto(time.Now()),
 		taskResource,
-		taskMetrics(task_prefix, &taskStat, taskLimit, taskLabelKeys, taskLabelValues),
+		convertToOTMetrics(taskPrefix, taskMetrics, taskLabelKeys, taskLabelValues),
 	)
+
+	// Task metrics- summation from all containers
+	// taskStat := aggregateTaskStats(containerStatsMap)
+	// taskResource := taskResource(metadata)
+	// taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
+	// acc.accumulate(
+	// 	timestampProto(time.Now()),
+	// 	taskResource,
+	// 	taskMetrics(taskPrefix, &taskStat, taskLimit, taskLabelKeys, taskLabelValues),
+	// )
 }
 
 func (acc *metricDataAccumulator) accumulate(
@@ -97,11 +130,37 @@ func (acc *metricDataAccumulator) accumulate(
 	})
 }
 
+func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
+	// taskMetrics.MemoryUsage += 10
+	// taskMetrics.MemoryMaxUsage += 10
+	// taskMetrics.MemoryLimit += 10
+	// taskMetrics.MemoryReserved += 10
+	// taskMetrics.MemoryUtilized += 10
+
+	// if taskMetrics == nil {
+	// 	fmt.Println("--------------------------- In the nil")
+	// 	taskMetrics = conMetrics
+	// } else {
+	// 	fmt.Println("--------------------------- In the else")
+	// 	// *taskMetrics.MemoryUsage += *conMetrics.MemoryUsage
+	// 	// *taskMetrics.MemoryMaxUsage += *conMetrics.MemoryMaxUsage
+	// 	// *taskMetrics.MemoryLimit += *conMetrics.MemoryLimit
+	// 	// *taskMetrics.MemoryReserved += *conMetrics.MemoryReserved
+	// 	// *taskMetrics.MemoryUtilized += *conMetrics.MemoryUtilized
+	// }
+
+	taskMetrics.MemoryUsage += conMetrics.MemoryUsage
+	taskMetrics.MemoryMaxUsage += conMetrics.MemoryMaxUsage
+	taskMetrics.MemoryLimit += conMetrics.MemoryLimit
+	taskMetrics.MemoryReserved += conMetrics.MemoryReserved
+	taskMetrics.MemoryUtilized += conMetrics.MemoryUtilized
+
+}
+
 func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 	var memUsage, memMaxUsage, memLimit, memUtilized uint64
+	var netStatArray [8]uint64
 	var netRateRx, netRateTx float64
-	var rBytes, rPackets, rErrors, rDropped uint64
-	var tBytes, tPackets, tErrors, tDropped uint64
 	var cpuTotal, cpuKernel, cpuUser, cpuSystem, cpuCores, cpuOnline uint64
 	var storageRead, storageWrite uint64
 
@@ -115,16 +174,10 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		netRateRx += *value.NetworkRate.RxBytesPerSecond
 		netRateTx += *value.NetworkRate.TxBytesPerSecond
 
-		for _, netStat := range value.Network {
-			rBytes += *netStat.RxBytes
-			rPackets += *netStat.RxPackets
-			rErrors += *netStat.RxErrors
-			rDropped += *netStat.RxDropped
+		net := getNetworkStats(value.Network)
 
-			tBytes += *netStat.TxBytes
-			tPackets += *netStat.TxPackets
-			tErrors += *netStat.TxErrors
-			tDropped += *netStat.TxDropped
+		for i, val := range net {
+			netStatArray[i] += val
 		}
 
 		cpuTotal += *value.CPU.CpuUsage.TotalUsage
@@ -144,28 +197,26 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		}
 	}
 	taskStat := TaskStats{
-		MemoryUsage:                 &memUsage,
-		MemoryMaxUsage:              &memMaxUsage,
-		MemoryLimit:                 &memLimit,
-		MemoryUtilized:              &memUtilized,
-		NetworkRateRxBytesPerSecond: &netRateRx,
-		NetworkRateTxBytesPerSecond: &netRateTx,
-		NetworkRxBytes:              &rBytes,
-		NetworkRxPackets:            &rPackets,
-		NetworkRxErrors:             &rErrors,
-		NetworkRxDropped:            &rDropped,
-		NetworkTxBytes:              &tBytes,
-		NetworkTxPackets:            &tPackets,
-		NetworkTxErrors:             &tErrors,
-		NetworkTxDropped:            &tDropped,
-		CPUTotalUsage:               &cpuTotal,
-		CPUUsageInKernelmode:        &cpuKernel,
-		CPUUsageInUserMode:          &cpuUser,
-		SystemCPUUsage:              &cpuSystem,
-		CPUOnlineCpus:               &cpuOnline,
-		NumOfCPUCores:               &cpuCores,
-		StorageReadBytes:            &storageRead,
-		StorageWriteBytes:           &storageWrite,
+		Memory:      MemoryStats{Usage: &memUsage, MaxUsage: &memMaxUsage, Limit: &memLimit, MemoryUtilized: &memUtilized},
+		NetworkRate: NetworkRateStats{RxBytesPerSecond: &netRateRx, TxBytesPerSecond: &netRateTx},
+		Network: NetworkStats{RxBytes: &netStatArray[0], RxPackets: &netStatArray[1], RxErrors: &netStatArray[2], RxDropped: &netStatArray[3],
+			TxBytes: &netStatArray[4], TxPackets: &netStatArray[5], TxErrors: &netStatArray[6], TxDropped: &netStatArray[7]},
+		// NetworkRxBytes:              &rBytes,
+		// NetworkRxPackets:            &rPackets,
+		// NetworkRxErrors:             &rErrors,
+		// NetworkRxDropped:            &rDropped,
+		// NetworkTxBytes:              &tBytes,
+		// NetworkTxPackets:            &tPackets,
+		// NetworkTxErrors:             &tErrors,
+		// NetworkTxDropped:            &tDropped,
+		// CPUTotalUsage:               &cpuTotal,
+		// CPUUsageInKernelmode:        &cpuKernel,
+		// CPUUsageInUserMode:          &cpuUser,
+		// SystemCPUUsage:              &cpuSystem,
+		// CPUOnlineCpus:               &cpuOnline,
+		// NumOfCPUCores:               &cpuCores,
+		// StorageReadBytes:            &storageRead,
+		// StorageWriteBytes:           &storageWrite,
 	}
 	return taskStat
 }

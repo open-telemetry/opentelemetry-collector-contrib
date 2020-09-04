@@ -33,7 +33,7 @@ var _ component.MetricsReceiver = (*awsEcsContainerMetricsReceiver)(nil)
 // awsEcsContainerMetricsReceiver implements the component.MetricsReceiver for aws ecs container metrics.
 type awsEcsContainerMetricsReceiver struct {
 	logger       *zap.Logger
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 	config       *Config
 	cancel       context.CancelFunc
 	restClient   awsecscontainermetrics.RestClient
@@ -44,7 +44,7 @@ type awsEcsContainerMetricsReceiver struct {
 func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumerOld,
+	nextConsumer consumer.MetricsConsumer,
 	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
@@ -85,25 +85,27 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 }
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
-// TODO: Replace with acutal logic.
 func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
 	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
 	stats, metadata, err := aecmr.provider.GetStats()
 
 	if err != nil {
-		aecmr.logger.Error("GetStats failed", zap.Error(err))
+		aecmr.logger.Error("Failed to collect stats", zap.Error(err))
 		return nil
 	}
 
 	mds := awsecscontainermetrics.MetricsData(stats, metadata, typeStr)
 
 	for _, md := range mds {
-		err := aecmr.nextConsumer.ConsumeMetricsData(ctx, *md)
+		err := aecmr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md}))
 		if err != nil {
 			return err
 		}
 	}
 
+<<<<<<< HEAD
 	err := aecmr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+=======
+>>>>>>> create translator and new data structure
 	return err
 }

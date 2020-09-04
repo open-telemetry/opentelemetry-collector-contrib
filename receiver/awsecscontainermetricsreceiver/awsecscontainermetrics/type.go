@@ -14,6 +14,7 @@
 
 package awsecscontainermetrics
 
+// ContainerStats defines the structure for container stats
 type ContainerStats struct {
 	Name string `json:"name"`
 	Id   string `json:"id"`
@@ -25,25 +26,22 @@ type ContainerStats struct {
 	CPU         CPUStats                `json:"cpu_stats,omitempty"`
 }
 
+// MemoryStats defines the memory stats
 type MemoryStats struct {
-	// Memory usage.
-	Usage *uint64 `json:"usage,omitempty"`
-
-	// Memory max usage.
-	MaxUsage *uint64 `json:"max_usage,omitempty"`
-
-	// Memory limit.
-	Limit *uint64 `json:"limit,omitempty"`
-
-	Stats map[string]uint64 `json:"stats,omitempty"`
-
+	Usage          *uint64 `json:"usage,omitempty"`
+	MaxUsage       *uint64 `json:"max_usage,omitempty"`
+	Limit          *uint64 `json:"limit,omitempty"`
 	MemoryUtilized *uint64
+	MemoryReserved *uint64
+	Stats          map[string]uint64 `json:"stats,omitempty"`
 }
 
+// DiskStats defines the storage stats
 type DiskStats struct {
 	IoServiceBytesRecursives []IoServiceBytesRecursive `json:"io_service_bytes_recursive,omitempty"`
 }
 
+//IoServiceBytesRecursive defines the IO device stats
 type IoServiceBytesRecursive struct {
 	Major *uint64 `json:"major,omitempty"`
 	Minor *uint64 `json:"minor,omitempty"`
@@ -51,6 +49,7 @@ type IoServiceBytesRecursive struct {
 	Value *uint64 `json:"value,omitempty"`
 }
 
+// NetworkStats defines the network stats
 type NetworkStats struct {
 	RxBytes   *uint64 `json:"rx_bytes,omitempty"`
 	RxPackets *uint64 `json:"rx_packets,omitempty"`
@@ -62,11 +61,13 @@ type NetworkStats struct {
 	TxDropped *uint64 `json:"tx_dropped,omitempty"`
 }
 
+// NetworkRateStats doesn't come from docker stat. The rates are being calculated in ECS agent
 type NetworkRateStats struct {
 	RxBytesPerSecond *float64 `json:"rx_bytes_per_sec,omitempty"`
 	TxBytesPerSecond *float64 `json:"tx_bytes_per_sec,omitempty"`
 }
 
+// CPUUsage defines raw Cpu usage
 type CPUUsage struct {
 	TotalUsage        *uint64   `json:"total_usage,omitempty"`
 	UsageInKernelmode *uint64   `json:"usage_in_kernelmode,omitempty"`
@@ -74,43 +75,26 @@ type CPUUsage struct {
 	PerCpuUsage       []*uint64 `json:"percpu_usage,omitempty"`
 }
 
+// CPUStats defines Cpu stats
 type CPUStats struct {
 	CpuUsage       CPUUsage `json:"cpu_usage,omitempty"`
 	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
 	SystemCpuUsage *uint64  `json:"system_cpu_usage,omitempty"`
 	CpuUtilized    *uint64
+	CpuReserved    *uint64
 }
 
+// TaskStats defines the stats for a task
 type TaskStats struct {
-	MemoryUsage    *uint64
-	MemoryMaxUsage *uint64
-	MemoryLimit    *uint64
-	MemoryUtilized *uint64
-	MemoryReserved *uint64
-
-	NetworkRateRxBytesPerSecond *float64
-	NetworkRateTxBytesPerSecond *float64
-
-	NetworkRxBytes   *uint64
-	NetworkRxPackets *uint64
-	NetworkRxErrors  *uint64
-	NetworkRxDropped *uint64
-	NetworkTxBytes   *uint64
-	NetworkTxPackets *uint64
-	NetworkTxErrors  *uint64
-	NetworkTxDropped *uint64
-
-	CPUTotalUsage        *uint64
-	CPUUsageInKernelmode *uint64
-	CPUUsageInUserMode   *uint64
-	CPUOnlineCpus        *uint64
-	SystemCPUUsage       *uint64
-	NumOfCPUCores        *uint64
-
+	Memory            MemoryStats
+	NetworkRate       NetworkRateStats
+	Network           NetworkStats
+	Cpu               CPUStats
 	StorageReadBytes  *uint64
 	StorageWriteBytes *uint64
 }
 
+// TaskMetadata defines task metadata for a task
 type TaskMetadata struct {
 	Cluster  string `json:"Cluster,omitempty"`
 	TaskARN  string `json:"TaskARN,omitempty"`
@@ -121,6 +105,7 @@ type TaskMetadata struct {
 	Containers []ContainerMetadata `json:"Containers,omitempty"`
 }
 
+// ContainerMetadata defines container metadata for a container
 type ContainerMetadata struct {
 	DockerId      string            `json:"DockerId,omitempty"`
 	ContainerName string            `json:"Name,omitempty"`
@@ -130,6 +115,7 @@ type ContainerMetadata struct {
 	Limits        Limit             `json:"Limits,omitempty"`
 }
 
+// Limit defines the Cpu and Memory limts
 type Limit struct {
 	CPU    *float64 `json:"CPU,omitempty"`
 	Memory *uint64  `json:"Memory,omitempty"`

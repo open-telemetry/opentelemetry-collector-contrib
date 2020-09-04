@@ -23,6 +23,11 @@ import (
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 )
 
+const (
+	// BytesInMiB is the number of bytes in a MebiByte.
+	BytesInMiB = 1024 * 1024
+)
+
 // GenerateDummyMetrics generates some dummy metrics
 func GenerateDummyMetrics() consumerdata.MetricsData {
 
@@ -57,4 +62,17 @@ func GenerateDummyMetrics() consumerdata.MetricsData {
 		)
 	}
 	return md
+}
+
+func getContainerMetrics(stats ContainerStats) ECSMetrics {
+	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
+
+	m := ECSMetrics{}
+
+	m.MemoryUsage = *stats.Memory.Usage
+	m.MemoryMaxUsage = *stats.Memory.MaxUsage
+	m.MemoryLimit = *stats.Memory.Limit
+	m.MemoryUtilized = memoryUtilizedInMb
+
+	return m
 }

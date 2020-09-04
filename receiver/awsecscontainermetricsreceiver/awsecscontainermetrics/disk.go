@@ -29,14 +29,6 @@ func diskMetrics(prefix string, stats *DiskStats, labelKeys []*metricspb.LabelKe
 	}, time.Now())
 }
 
-// func storageReadBytes(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"disk.storage_read_bytes", "Bytes", value)
-// }
-
-// func storageWriteBytes(prefix string, value *uint64) *metricspb.Metric {
-// 	return intGauge(prefix+"disk.storage_write_bytes", "Bytes", value)
-// }
-
 func extractStorageUsage(stats *DiskStats) (*uint64, *uint64) {
 	var readBytes, writeBytes *uint64
 	for _, blockStat := range stats.IoServiceBytesRecursives {

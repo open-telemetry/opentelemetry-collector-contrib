@@ -20,7 +20,7 @@ import (
 
 func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata, typeStr string) []*consumerdata.MetricsData {
 	acc := &metricDataAccumulator{}
-	acc.getStats(containerStatsMap, metadata)
+	acc.getMetricsData(containerStatsMap, metadata)
 
 	for _, md := range acc.md {
 		// TODO this should prob go in core
