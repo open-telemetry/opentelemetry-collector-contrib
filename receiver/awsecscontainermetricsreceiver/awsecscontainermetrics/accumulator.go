@@ -37,14 +37,13 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 
 	var taskMemLimit uint64
 	var taskCPULimit float64
-	// var f uint64
-	// f = 5
 	taskMetrics := ECSMetrics{}
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerId]
 		containerMetrics := getContainerMetrics(stats)
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
+		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
 		taskMemLimit += *containerMetadata.Limits.Memory
 		taskCPULimit += *containerMetadata.Limits.CPU
@@ -81,13 +80,21 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		taskLimit.CPU = metadata.Limits.CPU
 	}
 
-	// Overwrite Memory limit with memory level limit
+	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskLimit.Memory = metadata.Limits.Memory
 	}
 
+	// Overwrite Memory limit with task level limit
 	if metadata.Limits.Memory != nil {
 		taskMetrics.MemoryReserved = *metadata.Limits.Memory
+	}
+
+	taskMetrics.CPUReserved = taskMetrics.CPUReserved / cpusInVCpu
+
+	// Overwrite CPU limit with task level limit
+	if metadata.Limits.CPU != nil {
+		taskMetrics.CPUReserved = *metadata.Limits.CPU
 	}
 
 	taskResource := taskResource(metadata)
@@ -131,30 +138,36 @@ func (acc *metricDataAccumulator) accumulate(
 }
 
 func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
-	// taskMetrics.MemoryUsage += 10
-	// taskMetrics.MemoryMaxUsage += 10
-	// taskMetrics.MemoryLimit += 10
-	// taskMetrics.MemoryReserved += 10
-	// taskMetrics.MemoryUtilized += 10
-
-	// if taskMetrics == nil {
-	// 	fmt.Println("--------------------------- In the nil")
-	// 	taskMetrics = conMetrics
-	// } else {
-	// 	fmt.Println("--------------------------- In the else")
-	// 	// *taskMetrics.MemoryUsage += *conMetrics.MemoryUsage
-	// 	// *taskMetrics.MemoryMaxUsage += *conMetrics.MemoryMaxUsage
-	// 	// *taskMetrics.MemoryLimit += *conMetrics.MemoryLimit
-	// 	// *taskMetrics.MemoryReserved += *conMetrics.MemoryReserved
-	// 	// *taskMetrics.MemoryUtilized += *conMetrics.MemoryUtilized
-	// }
-
 	taskMetrics.MemoryUsage += conMetrics.MemoryUsage
 	taskMetrics.MemoryMaxUsage += conMetrics.MemoryMaxUsage
 	taskMetrics.MemoryLimit += conMetrics.MemoryLimit
 	taskMetrics.MemoryReserved += conMetrics.MemoryReserved
 	taskMetrics.MemoryUtilized += conMetrics.MemoryUtilized
 
+	taskMetrics.CPUTotalUsage += conMetrics.CPUTotalUsage
+	taskMetrics.CPUUsageInKernelmode += conMetrics.CPUUsageInKernelmode
+	taskMetrics.CPUUsageInUserMode += conMetrics.CPUUsageInUserMode
+	taskMetrics.NumOfCPUCores += conMetrics.NumOfCPUCores
+	taskMetrics.CPUOnlineCpus += conMetrics.CPUOnlineCpus
+	taskMetrics.SystemCPUUsage += conMetrics.SystemCPUUsage
+	taskMetrics.CPUUtilized += conMetrics.CPUUtilized
+	taskMetrics.CPUReserved += conMetrics.CPUReserved
+
+	taskMetrics.NetworkRateRxBytesPerSecond += conMetrics.NetworkRateRxBytesPerSecond
+	taskMetrics.NetworkRateTxBytesPerSecond += conMetrics.NetworkRateTxBytesPerSecond
+
+	taskMetrics.NetworkRxBytes += conMetrics.NetworkRxBytes
+	taskMetrics.NetworkRxPackets += conMetrics.NetworkRxPackets
+	taskMetrics.NetworkRxErrors += conMetrics.NetworkRxErrors
+	taskMetrics.NetworkRxDropped += conMetrics.NetworkRxDropped
+
+	taskMetrics.NetworkTxBytes += conMetrics.NetworkTxBytes
+	taskMetrics.NetworkTxPackets += conMetrics.NetworkTxPackets
+	taskMetrics.NetworkTxErrors += conMetrics.NetworkTxErrors
+	taskMetrics.NetworkTxDropped += conMetrics.NetworkTxDropped
+
+	taskMetrics.StorageReadBytes += conMetrics.StorageReadBytes
+	taskMetrics.StorageWriteBytes += conMetrics.StorageWriteBytes
 }
 
 func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
@@ -162,7 +175,7 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 	var netStatArray [8]uint64
 	var netRateRx, netRateTx float64
 	var cpuTotal, cpuKernel, cpuUser, cpuSystem, cpuCores, cpuOnline uint64
-	var storageRead, storageWrite uint64
+	//var storageRead, storageWrite uint64
 
 	for _, value := range containerStatsMap {
 		memUsage += *value.Memory.Usage
@@ -188,13 +201,13 @@ func aggregateTaskStats(containerStatsMap map[string]ContainerStats) TaskStats {
 		numOfCores := (uint64)(len(value.CPU.CpuUsage.PerCpuUsage))
 		cpuCores += numOfCores
 
-		read, write := extractStorageUsage(&value.Disk)
-		if read != nil {
-			storageRead += *read
-		}
-		if write != nil {
-			storageWrite += *write
-		}
+		// read, write := extractStorageUsage(&value.Disk)
+		// if read != nil {
+		// 	storageRead += *read
+		// }
+		// if write != nil {
+		// 	storageWrite += *write
+		// }
 	}
 	taskStat := TaskStats{
 		Memory:      MemoryStats{Usage: &memUsage, MaxUsage: &memMaxUsage, Limit: &memLimit, MemoryUtilized: &memUtilized},

@@ -24,23 +24,7 @@ func diskMetrics(prefix string, stats *DiskStats, labelKeys []*metricspb.LabelKe
 	readBytes, writeBytes := extractStorageUsage(stats)
 
 	return applyCurrentTime([]*metricspb.Metric{
-		intGauge(prefix+"disk.storage_read_bytes", "Bytes", readBytes, labelKeys, labelValues),
-		intGauge(prefix+"disk.storage_write_bytes", "Bytes", writeBytes, labelKeys, labelValues),
+		intGauge(prefix+"disk.storage_read_bytes", "Bytes", &readBytes, labelKeys, labelValues),
+		intGauge(prefix+"disk.storage_write_bytes", "Bytes", &writeBytes, labelKeys, labelValues),
 	}, time.Now())
-}
-
-func extractStorageUsage(stats *DiskStats) (*uint64, *uint64) {
-	var readBytes, writeBytes *uint64
-	for _, blockStat := range stats.IoServiceBytesRecursives {
-		switch op := blockStat.Op; op {
-		case "Read":
-			readBytes = blockStat.Value
-		case "Write":
-			writeBytes = blockStat.Value
-		default:
-			//ignoring "Async", "Total", "Sum", etc
-			continue
-		}
-	}
-	return readBytes, writeBytes
 }

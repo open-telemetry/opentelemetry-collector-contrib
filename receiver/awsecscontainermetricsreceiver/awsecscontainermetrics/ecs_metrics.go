@@ -22,25 +22,27 @@ type ECSMetrics struct {
 	MemoryUtilized uint64
 	MemoryReserved uint64
 
-	CPUTotalUsage        *uint64
-	CPUUsageInKernelmode *uint64
-	CPUUsageInUserMode   *uint64
-	CPUOnlineCpus        *uint64
-	SystemCPUUsage       *uint64
-	NumOfCPUCores        *uint64
+	CPUTotalUsage        uint64
+	CPUUsageInKernelmode uint64
+	CPUUsageInUserMode   uint64
+	CPUOnlineCpus        uint64
+	SystemCPUUsage       uint64
+	NumOfCPUCores        uint64
+	CPUReserved          float64
+	CPUUtilized          float64
 
-	NetworkRateRxBytesPerSecond *float64
-	NetworkRateTxBytesPerSecond *float64
+	NetworkRateRxBytesPerSecond float64
+	NetworkRateTxBytesPerSecond float64
 
-	NetworkRxBytes   *uint64
-	NetworkRxPackets *uint64
-	NetworkRxErrors  *uint64
-	NetworkRxDropped *uint64
-	NetworkTxBytes   *uint64
-	NetworkTxPackets *uint64
-	NetworkTxErrors  *uint64
-	NetworkTxDropped *uint64
+	NetworkRxBytes   uint64
+	NetworkRxPackets uint64
+	NetworkRxErrors  uint64
+	NetworkRxDropped uint64
+	NetworkTxBytes   uint64
+	NetworkTxPackets uint64
+	NetworkTxErrors  uint64
+	NetworkTxDropped uint64
 
-	StorageReadBytes  *uint64
-	StorageWriteBytes *uint64
+	StorageReadBytes  uint64
+	StorageWriteBytes uint64
 }
