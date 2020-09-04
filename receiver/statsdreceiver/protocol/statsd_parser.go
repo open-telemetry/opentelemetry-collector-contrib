@@ -38,7 +38,6 @@ func getSupportedTypes() []string {
 type StatsDParser struct{}
 
 type statsDMetric struct {
-	message          string
 	name             string
 	value            string
 	statsdMetricType string

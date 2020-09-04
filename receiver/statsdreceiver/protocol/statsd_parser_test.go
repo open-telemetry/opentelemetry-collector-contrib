@@ -177,6 +177,21 @@ func Test_StatsDParser_Parse(t *testing.T) {
 					},
 				}),
 		},
+		{
+			name:  "invalid sample rate value",
+			input: "test.metric:42|c|@1.0a",
+			err:   errors.New("parse sample rate: 1.0a"),
+		},
+		{
+			name:  "invalid tag format",
+			input: "test.metric:42|c|#key1",
+			err:   errors.New("invalid tag format: [key1]"),
+		},
+		{
+			name:  "unrecognized message part",
+			input: "test.metric:42|c|$extra",
+			err:   errors.New("unrecognized message part: $extra"),
+		},
 	}
 
 	for _, tt := range tests {
