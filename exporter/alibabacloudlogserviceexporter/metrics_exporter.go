@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -52,7 +52,7 @@ func (s *logServiceMetricsSender) pushMetricsData(
 	_ context.Context,
 	md pdata.Metrics,
 ) (int, error) {
-	ocmds := pdatautil.MetricsToMetricsData(md)
+	ocmds := internaldata.MetricsToOC(md)
 	droppedTimeSeries := 0
 	var errs []error
 	for _, ocmd := range ocmds {

@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	pointCount = stats.Int64("otelcol/googlecloudmonitoring/point_count", "Count of metric points written to Cloud Monitoring.", "1")
+	pointCount = stats.Int64("googlecloudmonitoring/point_count", "Count of metric points written to Cloud Monitoring.", "1")
 	statusKey  = tag.MustNewKey("status")
 )
 

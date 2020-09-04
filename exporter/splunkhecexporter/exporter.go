@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
@@ -121,7 +120,7 @@ func (se splunkExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) e
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
 
-	numReceivedTimeSeries, numPoints := pdatautil.MetricAndDataPointCount(md)
+	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 	return err

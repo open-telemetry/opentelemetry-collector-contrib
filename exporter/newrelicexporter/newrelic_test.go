@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -176,8 +175,8 @@ func TestExportMetricData(t *testing.T) {
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Portland"},
-							{Value: "0"},
+							{Value: "Portland", HasValue: true},
+							{Value: "0", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
@@ -208,8 +207,8 @@ func TestExportMetricData(t *testing.T) {
 					},
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Denver"},
-							{Value: "5280"},
+							{Value: "Denver", HasValue: true},
+							{Value: "5280", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
@@ -241,7 +240,7 @@ func TestExportMetricData(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
 	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})))
+	require.NoError(t, exp.ConsumeMetrics(ctx, internaldata.OCToMetrics(md)))
 	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Metric{

@@ -28,9 +28,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
@@ -155,7 +155,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 
 			mdd := sink.AllMetrics()
 			require.Len(t, mdd, 1)
-			ocmd := pdatautil.MetricsToMetricsData(mdd[0])
+			ocmd := internaldata.MetricsToOC(mdd[0])
 			require.Len(t, ocmd, 1)
 			require.Len(t, ocmd[0].Metrics, 1)
 			metric := ocmd[0].Metrics[0]

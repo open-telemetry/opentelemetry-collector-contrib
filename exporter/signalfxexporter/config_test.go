@@ -78,6 +78,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		DeltaTranslationTTL: 3600,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

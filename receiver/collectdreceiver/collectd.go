@@ -282,7 +282,7 @@ func labelKeysAndValues(labels map[string]string) ([]*metricspb.LabelKey, []*met
 	i := 0
 	for k, v := range labels {
 		keys[i] = &metricspb.LabelKey{Key: k}
-		values[i] = &metricspb.LabelValue{Value: v}
+		values[i] = &metricspb.LabelValue{Value: v, HasValue: true}
 		i++
 	}
 	return keys, values

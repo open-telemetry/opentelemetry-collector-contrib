@@ -32,8 +32,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -55,7 +55,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := &consumerdata.MetricsData{
+	smallBatch := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -72,7 +72,7 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	tests := []struct {
 		name                 string
-		md                   *consumerdata.MetricsData
+		md                   consumerdata.MetricsData
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedTimeSeries int
@@ -146,7 +146,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 			sender := buildClient(options, config, zap.NewNop())
 
-			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*tt.md})
+			md := internaldata.OCToMetrics(tt.md)
 			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
@@ -160,8 +160,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
-	md := &consumerdata.MetricsData{
+func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
+	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},
