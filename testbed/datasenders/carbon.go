@@ -20,7 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -29,12 +29,12 @@ import (
 
 // CarbonDataSender implements MetricDataSender for Carbon metrics protocol.
 type CarbonDataSender struct {
-	exporter component.MetricsExporterOld
+	exporter component.MetricsExporter
 	port     int
 }
 
 // Ensure CarbonDataSender implements MetricDataSenderOld.
-var _ testbed.MetricDataSenderOld = (*CarbonDataSender)(nil)
+var _ testbed.MetricDataSender = (*CarbonDataSender)(nil)
 
 // NewCarbonDataSender creates a new Carbon metric protocol sender that will send
 // to the specified port after Start is called.
@@ -49,8 +49,9 @@ func (cs *CarbonDataSender) Start() error {
 		Timeout:  5 * time.Second,
 	}
 
-	factory := carbonexporter.Factory{}
-	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+	factory := carbonexporter.NewFactory()
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
@@ -61,8 +62,8 @@ func (cs *CarbonDataSender) Start() error {
 }
 
 // SendMetrics sends metrics. Can be called after Start.
-func (cs *CarbonDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
-	return cs.exporter.ConsumeMetricsData(context.Background(), metrics)
+func (cs *CarbonDataSender) SendMetrics(md pdata.Metrics) error {
+	return cs.exporter.ConsumeMetrics(context.Background(), md)
 }
 
 // Flush previously sent metrics.

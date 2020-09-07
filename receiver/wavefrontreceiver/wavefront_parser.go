@@ -21,7 +21,7 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
@@ -91,7 +91,7 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 	if len(parts) == 2 {
 		tags = parts[1]
 	}
-	var ts timestamp.Timestamp
+	var ts timestamppb.Timestamp
 	if unixTime, err := strconv.ParseInt(timestampStr, 10, 64); err == nil {
 		ts.Seconds = unixTime
 	} else {

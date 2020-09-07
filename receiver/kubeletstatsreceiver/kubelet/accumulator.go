@@ -19,10 +19,10 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -43,7 +43,7 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                     []*consumerdata.MetricsData
+	m                     []consumerdata.MetricsData
 	metadata              Metadata
 	logger                *zap.Logger
 	metricGroupsToCollect map[MetricGroup]bool
@@ -65,7 +65,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 
 	// todo s.Runtime.ImageFs
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		nodeResource(s),
 
 		cpuMetrics(nodePrefix, s.CPU),
@@ -81,7 +81,7 @@ func (a *metricDataAccumulator) podStats(podResource *resourcepb.Resource, s sta
 	}
 
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		podResource,
 
 		cpuMetrics(podPrefix, s.CPU),
@@ -105,7 +105,7 @@ func (a *metricDataAccumulator) containerStats(podResource *resourcepb.Resource,
 
 	// todo s.Logs
 	a.accumulate(
-		timestampProto(s.StartTime.Time),
+		timestamppb.New(s.StartTime.Time),
 		resource,
 
 		cpuMetrics(containerPrefix, s.CPU),
@@ -119,7 +119,16 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 		return
 	}
 
-	volume := volumeResource(podResource, s)
+	volume, err := volumeResource(podResource, s, a.metadata)
+	if err != nil {
+		a.logger.Warn(
+			"Failed to gather additional volume metadata. Skipping metric collection.",
+			zap.String("pod", podResource.Labels[conventions.AttributeK8sPod]),
+			zap.String("volume", podResource.Labels[labelVolumeName]),
+			zap.Error(err),
+		)
+		return
+	}
 
 	a.accumulate(
 		nil,
@@ -129,7 +138,7 @@ func (a *metricDataAccumulator) volumeStats(podResource *resourcepb.Resource, s 
 }
 
 func (a *metricDataAccumulator) accumulate(
-	startTime *timestamp.Timestamp,
+	startTime *timestamppb.Timestamp,
 	r *resourcepb.Resource,
 	m ...[]*metricspb.Metric,
 ) {
@@ -142,7 +151,7 @@ func (a *metricDataAccumulator) accumulate(
 			}
 		}
 	}
-	a.m = append(a.m, &consumerdata.MetricsData{
+	a.m = append(a.m, consumerdata.MetricsData{
 		Resource: r,
 		Metrics:  resourceMetrics,
 	})

@@ -524,6 +524,17 @@ func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	defaultInternalRemoteDependencyDataValidations(t, span, data)
 }
 
+// Tests that spans with unspecified kind are treated similar to internal spans
+func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
+	span := getDefaultInternalSpan()
+	span.SetKind(pdata.SpanKindUNSPECIFIED)
+
+	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
+	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+	defaultInternalRemoteDependencyDataValidations(t, span, data)
+}
+
 func TestSanitize(t *testing.T) {
 	sanitizeFunc := func() []string {
 		warnings := [4]string{

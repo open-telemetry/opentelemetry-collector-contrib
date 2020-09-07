@@ -17,11 +17,12 @@ package metricstransformprocessor
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
 const (
@@ -29,16 +30,17 @@ const (
 	typeStr = "metricstransform"
 )
 
-// Factory is the factory for metrics transform processor.
-type Factory struct{}
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
 
-// Type gets the type of the Option config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return typeStr
+// NewFactory returns a new factory for the Metrics Transform processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithMetrics(createMetricsProcessor))
 }
 
-// CreateDefaultConfig creates the default configuration for processor.
-func (f *Factory) CreateDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -47,30 +49,24 @@ func (f *Factory) CreateDefaultConfig() configmodels.Processor {
 	}
 }
 
-// CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
+func createMetricsProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
 	cfg configmodels.Processor,
-) (component.TraceProcessor, error) {
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsProcessor creates a metrics processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	ctx context.Context,
-	params component.ProcessorCreateParams,
 	nextConsumer consumer.MetricsConsumer,
-	c configmodels.Processor,
 ) (component.MetricsProcessor, error) {
-	oCfg := c.(*Config)
-	err := validateConfiguration(oCfg)
-	if err != nil {
+	oCfg := cfg.(*Config)
+	if err := validateConfiguration(oCfg); err != nil {
 		return nil, err
 	}
-	return newMetricsTransformProcessor(nextConsumer, params.Logger, buildHelperConfig(oCfg)), nil
 
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.ApplicationStartInfo.Version))
+
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		metricsProcessor,
+		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor
@@ -105,7 +101,7 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildHelperConfig constructs the maps that will be useful for the operations
-func buildHelperConfig(config *Config) []internalTransform {
+func buildHelperConfig(config *Config, version string) []internalTransform {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 		helperT := internalTransform{
@@ -115,11 +111,13 @@ func buildHelperConfig(config *Config) []internalTransform {
 			Operations: make([]internalOperation, len(t.Operations)),
 		}
 		for j, op := range t.Operations {
+			op.NewValue = strings.ReplaceAll(op.NewValue, "{{version}}", version)
+
 			mtpOp := internalOperation{
 				configOperation: op,
 			}
 			if len(op.ValueActions) > 0 {
-				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions)
+				mtpOp.valueActionsMapping = createLabelValueMapping(op.ValueActions, version)
 			}
 			if op.Action == AggregateLabels {
 				mtpOp.labelSetMap = sliceToSet(op.LabelSet)
@@ -134,10 +132,11 @@ func buildHelperConfig(config *Config) []internalTransform {
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions
-func createLabelValueMapping(valueActions []ValueAction) map[string]string {
+func createLabelValueMapping(valueActions []ValueAction, version string) map[string]string {
 	mapping := make(map[string]string)
-	for _, valueAction := range valueActions {
-		mapping[valueAction.Value] = valueAction.NewValue
+	for i := 0; i < len(valueActions); i++ {
+		valueActions[i].NewValue = strings.ReplaceAll(valueActions[i].NewValue, "{{version}}", version)
+		mapping[valueActions[i].Value] = valueActions[i].NewValue
 	}
 	return mapping
 }
@@ -146,8 +145,8 @@ func createLabelValueMapping(valueActions []ValueAction) map[string]string {
 // Returns the set of strings
 func sliceToSet(slice []string) map[string]bool {
 	set := make(map[string]bool, len(slice))
-	for _, label := range slice {
-		set[label] = true
+	for _, s := range slice {
+		set[s] = true
 	}
 	return set
 }

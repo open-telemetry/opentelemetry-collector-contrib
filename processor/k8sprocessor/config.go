@@ -17,7 +17,7 @@ package k8sprocessor
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config defines configuration for k8s attributes processor.

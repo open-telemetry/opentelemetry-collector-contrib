@@ -3,16 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackd
 go 1.14
 
 require (
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.2
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.2.2-0.20200728233621-2752da7eaab7
-	github.com/golang/protobuf v1.4.2
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.4
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.10.1-0.20200828070728-ba72e89a4087
+	github.com/census-instrumentation/opencensus-proto v0.3.0
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.8.1-0.20200815205113-8e5c6065eb0e
-	go.opentelemetry.io/otel v0.9.0
-	go.uber.org/zap v1.15.0
+	go.opentelemetry.io/collector v0.9.1-0.20200903224024-3eb3b664a832
+	go.opentelemetry.io/otel v0.11.0
+	go.opentelemetry.io/otel/sdk v0.11.0
+	go.uber.org/zap v1.16.0
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200804131852-c06518451d9c
-	google.golang.org/grpc v1.31.0
+	google.golang.org/grpc v1.31.1
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
+	google.golang.org/protobuf v1.25.0
 )

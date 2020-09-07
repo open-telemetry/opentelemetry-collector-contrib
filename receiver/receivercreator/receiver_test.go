@@ -27,18 +27,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	corecomponenttest "go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	zapObserver "go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/componenttest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -57,7 +56,7 @@ var _ consumer.MetricsConsumer = &mockMetricsConsumer{}
 
 func (p *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	p.Metrics = append(p.Metrics, md)
-	p.TotalMetrics += pdatautil.MetricCount(md)
+	p.TotalMetrics += md.MetricCount()
 	return nil
 }
 
@@ -113,29 +112,27 @@ func TestMockedEndToEnd(t *testing.T) {
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
 		example := receiver.(*componenttest.ExampleReceiverProducer)
-		md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-			{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
-					LibraryInfo: &commonpb.LibraryInfo{},
-					Identifier:  &commonpb.ProcessIdentifier{},
-					Attributes: map[string]string{
-						"attr": "1",
-					},
+		md := internaldata.OCToMetrics(consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "dynamictest"},
+				LibraryInfo: &commonpb.LibraryInfo{},
+				Identifier:  &commonpb.ProcessIdentifier{},
+				Attributes: map[string]string{
+					"attr": "1",
 				},
-				Resource: &resourcepb.Resource{Type: "test"},
-				Metrics: []*metricspb.Metric{
-					{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name:        "my-metric",
-							Description: "My metric",
-							Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-						},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								Points: []*metricspb.Point{
-									{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
-								},
+			},
+			Resource: &resourcepb.Resource{Type: "test"},
+			Metrics: []*metricspb.Metric{
+				{
+					MetricDescriptor: &metricspb.MetricDescriptor{
+						Name:        "my-metric",
+						Description: "My metric",
+						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					},
+					Timeseries: []*metricspb.TimeSeries{
+						{
+							Points: []*metricspb.Point{
+								{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
 							},
 						},
 					},
@@ -156,7 +153,7 @@ func TestMockedEndToEnd(t *testing.T) {
 func TestLoggingHost(t *testing.T) {
 	core, obs := zapObserver.New(zap.ErrorLevel)
 	host := &loggingHost{
-		Host:   corecomponenttest.NewNopHost(),
+		Host:   componenttest.NewNopHost(),
 		logger: zap.New(core),
 	}
 	host.ReportFatalError(errors.New("runtime error"))

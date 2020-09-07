@@ -28,8 +28,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -157,7 +157,7 @@ func TestResourceProcessor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := &Factory{providers: map[string]*internal.ResourceProvider{}}
+			factory := &factory{providers: map[string]*internal.ResourceProvider{}}
 
 			md1 := &MockDetector{}
 			md1.On("Detect").Return(tt.detectedResource, tt.detectedError)
@@ -174,7 +174,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test trace consuner
 			ttn := &exportertest.SinkTraceExporter{}
-			rtp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, ttn, cfg)
+			rtp, err := factory.createTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -208,7 +208,7 @@ func TestResourceProcessor(t *testing.T) {
 
 			// Test metrics consumer
 			tmn := &exportertest.SinkMetricsExporter{}
-			rmp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, tmn, cfg)
+			rmp, err := factory.createMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tmn)
 
 			if tt.expectedNewError != "" {
 				assert.EqualError(t, err, tt.expectedNewError)
@@ -229,11 +229,11 @@ func TestResourceProcessor(t *testing.T) {
 			defer func() { assert.NoError(t, rmp.Shutdown(context.Background())) }()
 
 			// TODO create pdata.Metrics directly when this is no longer internal
-			md := []consumerdata.MetricsData{{Resource: oCensusResource(tt.sourceResource)}}
-
-			err = rmp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(md))
+			err = rmp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(consumerdata.MetricsData{
+				Resource: oCensusResource(tt.sourceResource),
+			}))
 			require.NoError(t, err)
-			got = pdatautil.MetricsToInternalMetrics(tmn.AllMetrics()[0]).ResourceMetrics().At(0).Resource()
+			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
 
 			tt.expectedResource.Attributes().Sort()
 			got.Attributes().Sort()
@@ -285,7 +285,7 @@ func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		// TODO use testbed.PerfTestDataProvider here once that includes resources
-		processor.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData(nil))
+		processor.ConsumeMetrics(context.Background(), pdata.NewMetrics())
 	}
 }
 

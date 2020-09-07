@@ -17,6 +17,7 @@ OTEL_VERSION=master
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
+	receiver/dockerstatsreceiver \
 	receiver/redisreceiver \
 	internal/common
 
@@ -47,6 +48,7 @@ stability-tests: otelcontribcol
 
 .PHONY: gotidy
 gotidy:
+	$(MAKE) for-all CMD="rm -fr go.sum"
 	$(MAKE) for-all CMD="go mod tidy"
 
 .PHONY: gofmt

@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/model"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +72,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span0.Status().InitEmpty()
-	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span0.Status().SetCode(pdata.StatusCodeNotFound)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
@@ -83,7 +82,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
 	span1.Status().InitEmpty()
-	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
+	span1.Status().SetCode(pdata.StatusCodeInternalError)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces

@@ -15,26 +15,26 @@
 package newrelicexporter
 
 import (
+	"context"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 )
 
 const typeStr = "newrelic"
 
-// Factory is the factory for the New Relic exporter.
-type Factory struct{}
-
-// Type gets the type of the exporter configuration created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
+// NewFactory creates a factory for New Relic exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-// CreateDefaultConfig creates a default configuration for this exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -45,21 +45,29 @@ func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
 }
 
 // CreateTraceExporter creates a New Relic trace exporter for this configuration.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
-	exp, err := newExporter(logger, cfg)
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.TraceExporter, error) {
+	exp, err := newExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporterOld(cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
+	return exporterhelper.NewTraceExporter(cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
 }
 
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
-	exp, err := newExporter(logger, cfg)
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	exp, err := newExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporterOld(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
+	return exporterhelper.NewMetricsExporter(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
 }

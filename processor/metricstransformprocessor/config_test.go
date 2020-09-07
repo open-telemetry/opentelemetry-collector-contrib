@@ -109,7 +109,7 @@ func TestLoadingFullConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Processors[configmodels.Type(typeStr)] = factory
 	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
 

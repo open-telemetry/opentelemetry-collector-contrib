@@ -25,8 +25,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 
@@ -37,7 +36,7 @@ import (
 
 type signalfxExporter struct {
 	logger                 *zap.Logger
-	pushMetricsData        func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
+	pushMetricsData        func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushKubernetesMetadata func(metadata []*collection.KubernetesMetadataUpdate) error
 }
 
@@ -50,11 +49,11 @@ type exporterOptions struct {
 	metricTranslator *translation.MetricTranslator
 }
 
-// New returns a new SignalFx exporter.
-func New(
+// newSignalFxExporter returns a new SignalFx exporter.
+func newSignalFxExporter(
 	config *Config,
 	logger *zap.Logger,
-) (component.MetricsExporterOld, error) {
+) (component.MetricsExporter, error) {
 
 	if config == nil {
 		return nil, errors.New("nil config")
@@ -66,10 +65,7 @@ func New(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	headers, err := buildHeaders(config)
-	if err != nil {
-		return nil, err
-	}
+	headers := buildHeaders(config)
 
 	dpClient := &sfxDPClient{
 		ingestURL: options.ingestURL,
@@ -84,7 +80,7 @@ func New(
 			return gzip.NewWriter(nil)
 		}},
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		metricTranslator:       options.metricTranslator,
+		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -120,11 +116,10 @@ func (se signalfxExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func (se signalfxExporter) ConsumeMetricsData(ctx context.Context, md consumerdata.MetricsData) error {
+func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
-
-	numReceivedTimeSeries, numPoints := pdatautil.TimeseriesAndPointCount(md)
+	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
 	return err

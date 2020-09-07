@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !darwin
-
 package hostobserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"syscall"
 	"testing"
 	"time"
 
 	psnet "github.com/shirou/gopsutil/net"
+	"github.com/shirou/gopsutil/process"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -36,71 +37,147 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
 
+// Tests observer with real connections on system.
 func TestHostObserver(t *testing.T) {
-	tcpConns := openTestTCPPorts(t)
-	udpConns := openTestUDPPorts(t)
-
-	mn := startAndStopObserver(t)
-
-	assert.True(t, len(mn.endpointsMap) >= len(tcpConns)+len(udpConns))
-
-	t.Run("TCP Ports", func(t *testing.T) {
-		for _, conn := range tcpConns {
-			host, port, err := net.SplitHostPort(conn.Addr().String())
-			assert.NoError(t, err, "Failed to et host and port")
-
-			expectedID := observer.EndpointID(
-				fmt.Sprintf(
-					"(host_observer/1)%s-%s-%s-%d", host, port, observer.ProtocolTCP, selfPid),
-			)
-			actualEndpoint := mn.endpointsMap[expectedID]
-			assert.NotEmpty(t, actualEndpoint, "expected endpoint ID not found")
-			assert.Equal(t, expectedID, actualEndpoint.ID, "unexpected endpoint ID found")
-
-			details, ok := actualEndpoint.Details.(observer.HostPort)
-			assert.True(t, ok, "failed to get Endpoint.Details")
-			assert.Equal(t, filepath.Base(exe), details.Name)
-			assert.Equal(t, observer.ProtocolTCP, details.Transport)
-			if host[0] == ':' {
-				assert.Equal(t, true, details.IsIPv6)
-			} else {
-				assert.Equal(t, false, details.IsIPv6)
+	tests := []struct {
+		name                    string
+		protocol                observer.Transport
+		setup                   func() ([]hostPort, mockNotifier)
+		errorListingConnections bool
+	}{
+		{
+			name:     "TCP ports",
+			protocol: observer.ProtocolTCP,
+			setup: func() ([]hostPort, mockNotifier) {
+				tcpConns := openTestTCPPorts(t)
+				mn := startAndStopObserver(t, nil)
+				out := make([]hostPort, len(tcpConns))
+				for i, conn := range tcpConns {
+					out[i] = getHostAndPort(conn)
+				}
+				return out, mn
+			},
+		},
+		{
+			name:     "UDP ports",
+			protocol: observer.ProtocolUDP,
+			setup: func() ([]hostPort, mockNotifier) {
+				udpConns := openTestUDPPorts(t)
+				mn := startAndStopObserver(t, nil)
+				out := make([]hostPort, len(udpConns))
+				for i, conn := range udpConns {
+					out[i] = getHostAndPort(conn)
+				}
+				return out, mn
+			},
+		},
+		{
+			name: "Fails to get connections",
+			setup: func() ([]hostPort, mockNotifier) {
+				mn := startAndStopObserver(t, func() (conns []psnet.ConnectionStat, err error) {
+					return nil, errors.New("fails to list connections")
+				})
+				return nil, mn
+			},
+			errorListingConnections: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			hostPorts, notifier := tt.setup()
+			if tt.errorListingConnections {
+				require.Equal(t, len(notifier.endpointsMap), 0)
+				return
 			}
-		}
-	})
 
-	t.Run("UDP Ports", func(t *testing.T) {
-		for _, conn := range udpConns {
-			host, port, err := net.SplitHostPort(conn.LocalAddr().String())
-			assert.NoError(t, err, "Failed to et host and port")
+			require.True(t, len(notifier.endpointsMap) >= len(hostPorts))
 
-			expectedID := observer.EndpointID(
-				fmt.Sprintf(
-					"(host_observer/1)%s-%s-%s-%d", host, port, observer.ProtocolUDP, selfPid),
-			)
+			for _, hp := range hostPorts {
+				require.NoError(t, hp.err, "Failed to et host and port")
 
-			actualEndpoint := mn.endpointsMap[expectedID]
-			assert.NotEmpty(t, actualEndpoint, "expected endpoint ID not found")
-			assert.Equal(t, expectedID, actualEndpoint.ID, "unexpected endpoint ID found")
+				host := hp.host
+				port := hp.port
+				isIPv6 := false
+				if host[0] == ':' {
+					isIPv6 = true
+				}
 
-			details, ok := actualEndpoint.Details.(observer.HostPort)
-			assert.True(t, ok, "failed to get Endpoint.Details")
-			assert.Equal(t, filepath.Base(exe), details.Name)
-			assert.Equal(t, observer.ProtocolUDP, details.Transport)
-			if host[0] == ':' {
-				assert.Equal(t, true, details.IsIPv6)
-			} else {
-				assert.Equal(t, false, details.IsIPv6)
+				host = getExpectedHost(host, isIPv6)
+				expectedID := observer.EndpointID(
+					fmt.Sprintf(
+						"(host_observer/1)%s-%s-%s-%d", host, port, tt.protocol, selfPid),
+				)
+
+				actualEndpoint := notifier.endpointsMap[expectedID]
+				require.NotEmpty(t, actualEndpoint, "expected endpoint ID not found. ID: %v", expectedID)
+				assert.Equal(t, expectedID, actualEndpoint.ID, "unexpected endpoint ID found")
+
+				details, ok := actualEndpoint.Details.(observer.HostPort)
+				assert.True(t, ok, "failed to get Endpoint.Details")
+				assert.Equal(t, filepath.Base(exe), details.Name)
+				assert.Equal(t, tt.protocol, details.Transport)
+				assert.Equal(t, isIPv6, details.IsIPv6)
+
 			}
-		}
-	})
+		})
+	}
 }
 
-func startAndStopObserver(t *testing.T) mockNotifier {
-	ml := endpointsLister{
-		logger:       zap.NewNop(),
-		observerName: "host_observer/1",
+type hostPort struct {
+	host string
+	port string
+	err  error
+}
+
+func getHostAndPort(i interface{}) hostPort {
+	var host, port string
+	var err error
+	switch conn := i.(type) {
+	case *net.TCPListener:
+		host, port, err = net.SplitHostPort(conn.Addr().String())
+	case *net.UDPConn:
+		host, port, err = net.SplitHostPort(conn.LocalAddr().String())
+	default:
+		err = errors.New("failed to get host and port")
 	}
+	return hostPort{
+		host: host,
+		port: port,
+		err:  err,
+	}
+}
+
+func getExpectedHost(host string, isIPv6 bool) string {
+	out := host
+
+	if runtime.GOOS == "darwin" && host == "::" {
+		out = "127.0.0.1"
+	}
+
+	if isIPv6 {
+		out = "[" + out + "]"
+	}
+	return out
+}
+
+func startAndStopObserver(
+	t *testing.T,
+	getConnectionsOverride func() (conns []psnet.ConnectionStat, err error)) mockNotifier {
+	ml := endpointsLister{
+		logger:                zap.NewNop(),
+		observerName:          "host_observer/1",
+		getConnections:        getConnections,
+		getProcess:            process.NewProcess,
+		collectProcessDetails: collectProcessDetails,
+	}
+
+	if getConnectionsOverride != nil {
+		ml.getConnections = getConnectionsOverride
+	}
+
+	require.NotNil(t, ml.getConnections)
+	require.NotNil(t, ml.getProcess)
+	require.NotNil(t, ml.collectProcessDetails)
 
 	h := &hostObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
@@ -327,6 +404,24 @@ func TestCollectConnectionDetails(t *testing.T) {
 				transport: observer.ProtocolUDP,
 			},
 		},
+		{
+			name: "Listening on all interfaces (Darwin)",
+			conn: psnet.ConnectionStat{
+				Family: syscall.AF_INET,
+				Type:   syscall.SOCK_DGRAM,
+				Laddr: psnet.Addr{
+					IP:   "*",
+					Port: 8080,
+				},
+			},
+			want: connectionDetails{
+				ip:        "127.0.0.1",
+				isIPv6:    false,
+				port:      uint16(8080),
+				target:    "127.0.0.1:8080",
+				transport: observer.ProtocolUDP,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -339,10 +434,11 @@ func TestCollectConnectionDetails(t *testing.T) {
 
 func TestCollectEndpoints(t *testing.T) {
 	tests := []struct {
-		name                       string
-		conns                      []psnet.ConnectionStat
-		overrideProcessInfoMethods func()
-		want                       []observer.Endpoint
+		name        string
+		conns       []psnet.ConnectionStat
+		newProc     func(pid int32) (*process.Process, error)
+		procDetails func(proc *process.Process) (*processDetails, error)
+		want        []observer.Endpoint
 	}{
 		{
 			name: "Listening TCP socket without process info",
@@ -388,6 +484,25 @@ func TestCollectEndpoints(t *testing.T) {
 			want: []observer.Endpoint{},
 		},
 		{
+			name: "Fails to get process that no longer exists",
+			conns: []psnet.ConnectionStat{
+				{
+					Family: syscall.AF_INET,
+					Type:   syscall.SOCK_STREAM,
+					Laddr: psnet.Addr{
+						IP:   "123.345.567.789",
+						Port: 80,
+					},
+					Status: "LISTEN",
+					Pid:    9999,
+				},
+			},
+			newProc: func(int32) (*process.Process, error) {
+				return nil, errors.New("always fail")
+			},
+			want: []observer.Endpoint{},
+		},
+		{
 			name: "Fails to get process info",
 			conns: []psnet.ConnectionStat{
 				{
@@ -401,14 +516,34 @@ func TestCollectEndpoints(t *testing.T) {
 					Pid:    9999,
 				},
 			},
+			newProc: func(pid int32) (*process.Process, error) {
+				return &process.Process{Pid: pid}, nil
+			},
+			procDetails: func(proc *process.Process) (*processDetails, error) {
+				return nil, errors.New("always fail")
+			},
 			want: []observer.Endpoint{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := endpointsLister{
-				logger: zap.NewNop(),
+				logger:                zap.NewNop(),
+				getProcess:            process.NewProcess,
+				collectProcessDetails: collectProcessDetails,
 			}
+
+			if tt.procDetails != nil {
+				e.collectProcessDetails = tt.procDetails
+			}
+
+			if tt.newProc != nil {
+				e.getProcess = tt.newProc
+			}
+
+			require.NotNil(t, e.collectProcessDetails)
+			require.NotNil(t, e.getProcess)
+
 			if got := e.collectEndpoints(tt.conns); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("collectEndpoints() = %v, want %v", got, tt.want)
 			}

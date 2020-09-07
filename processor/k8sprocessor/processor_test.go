@@ -22,17 +22,18 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
@@ -409,11 +410,11 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 
 	// pod doesn't have attrs to add
 	kc.Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
-	metrics := generateMetrics()
+	metrics := generateMetricsWithHostname()
 
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 1)
-	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds := internaldata.MetricsToOC(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
 	md := mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
@@ -433,7 +434,7 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 2)
-	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[1])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[1])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 4, len(md.Resource.Labels))
@@ -445,17 +446,49 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 	assert.Equal(t, "b", gotAttr)
 
 	// passthrough doesn't add attrs
-	metrics = generateMetrics()
+	metrics = generateMetricsWithHostname()
 	kp.passthroughMode = true
 	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
 	require.Len(t, next.AllMetrics(), 3)
-	mds = pdatautil.MetricsToMetricsData(next.AllMetrics()[2])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[2])
 	require.Equal(t, len(mds), 1)
 	md = mds[0]
 	require.Equal(t, 1, len(md.Resource.Labels))
 }
 
-func TestMetricsProcessoInvalidIP(t *testing.T) {
+func TestMetricsProcessorPicksUpPassthoughPodIp(t *testing.T) {
+	next := &exportertest.SinkMetricsExporter{}
+	p, err := newMetricsProcessor(
+		zap.NewNop(),
+		next,
+		newFakeClient,
+		WithExtractMetadata(metadataPodName),
+	)
+	require.NoError(t, err)
+	kp := p.(*kubernetesprocessor)
+	kc := kp.kc.(*fakeClient)
+	kc.Pods["2.2.2.2"] = &kube.Pod{
+		Name: "PodA",
+		Attributes: map[string]string{
+			"k": "v",
+			"1": "2",
+		},
+	}
+
+	metrics := generateMetricsWithPodIP()
+
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	require.Len(t, next.AllMetrics(), 1)
+	mds := internaldata.MetricsToOC(next.AllMetrics()[0])
+	require.Equal(t, len(mds), 1)
+	md := mds[0]
+	require.Equal(t, 3, len(md.Resource.Labels))
+	require.Equal(t, "2.2.2.2", md.Resource.Labels[k8sIPLabelName])
+	require.Equal(t, "v", md.Resource.Labels["k"])
+	require.Equal(t, "2", md.Resource.Labels["1"])
+}
+
+func TestMetricsProcessorInvalidIP(t *testing.T) {
 	next := &exportertest.SinkMetricsExporter{}
 	p, err := newMetricsProcessor(
 		zap.NewNop(),
@@ -476,16 +509,17 @@ func TestMetricsProcessoInvalidIP(t *testing.T) {
 			"aa": "b",
 		},
 	}
-	metrics := generateMetrics()
-	md := pdatautil.MetricsToMetricsData(metrics)[0]
-	md.Node.Identifier.HostName = "invalid-ip"
+	metrics := generateMetricsWithHostname()
+	mds := internaldata.MetricsToOC(metrics)
+	require.Len(t, mds, 1)
+	mds[0].Node.Identifier.HostName = "invalid-ip"
 
-	assert.NoError(t, p.ConsumeMetrics(context.Background(), metrics))
+	assert.NoError(t, p.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds)))
 	require.Len(t, next.AllMetrics(), 1)
-	mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[0])
+	mds = internaldata.MetricsToOC(next.AllMetrics()[0])
 	require.Equal(t, len(mds), 1)
-	md = mds[0]
-	require.Nil(t, md.Resource)
+	md := mds[0]
+	assert.Len(t, md.Resource.Labels, 0)
 }
 
 func TestMetricsProcessorAddLabels(t *testing.T) {
@@ -516,33 +550,35 @@ func TestMetricsProcessorAddLabels(t *testing.T) {
 		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
 	}
 
-	var i int
-	for ip, attrs := range tests {
-		metrics := generateMetrics()
-		md := pdatautil.MetricsToMetricsData(metrics)[0]
-		md.Node.Identifier.HostName = ip
+	for ip := range tests {
+		attrs := tests[ip]
+		t.Run(ip, func(t *testing.T) {
+			next.Reset()
+			metrics := generateMetricsWithHostname()
+			mds := internaldata.MetricsToOC(metrics)
+			mds[0].Node.Identifier.HostName = ip
 
-		err = p.ConsumeMetrics(context.Background(), metrics)
-		require.NoError(t, err)
+			err = p.ConsumeMetrics(context.Background(), internaldata.OCSliceToMetrics(mds))
+			require.NoError(t, err)
 
-		require.Len(t, next.AllMetrics(), i+1)
-		mds := pdatautil.MetricsToMetricsData(next.AllMetrics()[i])
-		require.Equal(t, len(mds), 1)
-		md = mds[0]
-		require.Equal(t, len(attrs)+1, len(md.Resource.Labels))
-		gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
-		assert.True(t, ok)
-		assert.Equal(t, ip, gotIP)
-		for k, v := range attrs {
-			got, ok := attrs[k]
+			require.Len(t, next.AllMetrics(), 1)
+			mds = internaldata.MetricsToOC(next.AllMetrics()[0])
+			require.Len(t, mds, 1)
+			md := mds[0]
+			require.Lenf(t, md.Resource.Labels, len(attrs)+1, "%v", md.Node)
+			gotIP, ok := md.Resource.Labels["k8s.pod.ip"]
 			assert.True(t, ok)
-			assert.Equal(t, v, got)
-		}
-		i++
+			assert.Equal(t, ip, gotIP)
+			for k, v := range attrs {
+				got, ok := attrs[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
 	}
 }
 
-func generateMetrics() pdata.Metrics {
+func generateMetricsWithHostname() pdata.Metrics {
 	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			Identifier: &commonpb.ProcessIdentifier{
@@ -565,7 +601,33 @@ func generateMetrics() pdata.Metrics {
 			},
 		},
 	}
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+	return internaldata.OCToMetrics(md)
+}
+
+func generateMetricsWithPodIP() pdata.Metrics {
+	md := consumerdata.MetricsData{
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				k8sIPLabelName: "2.2.2.2",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "my-metric",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						Points: []*metricspb.Point{
+							{Value: &metricspb.Point_Int64Value{Int64Value: 123}},
+						},
+					},
+				},
+			},
+		},
+	}
+	return internaldata.OCToMetrics(md)
 }
 
 func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v string) {

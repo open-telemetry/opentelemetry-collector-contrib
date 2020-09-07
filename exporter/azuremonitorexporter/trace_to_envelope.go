@@ -43,7 +43,6 @@ const (
 )
 
 var (
-	errUnspecifiedSpanKind          = errors.New("SpanKind is unspecified")
 	errUnexpectedAttributeValueType = errors.New("attribute value type is unexpected")
 	errUnsupportedSpanType          = errors.New("unsupported Span type")
 )
@@ -61,9 +60,10 @@ func spanToEnvelope(
 
 	spanKind := span.Kind()
 
-	// unspecified, drop it
+	// According to the SpanKind documentation, we can assume it to be INTERNAL
+	// when we get UNSPECIFIED.
 	if spanKind == pdata.SpanKindUNSPECIFIED {
-		return nil, errUnspecifiedSpanKind
+		spanKind = pdata.SpanKindINTERNAL
 	}
 
 	attributeMap := span.Attributes()

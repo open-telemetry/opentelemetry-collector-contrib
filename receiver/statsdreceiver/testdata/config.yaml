@@ -1,0 +1,18 @@
+receivers:
+  statsd:
+  statsd/receiver_settings:
+    endpoint: "localhost:12345"
+    transport: "custom_transport"
+
+processors:
+  exampleprocessor:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    metrics:
+     receivers: [statsd]
+     processors: [exampleprocessor]
+     exporters: [exampleexporter]

@@ -212,6 +212,27 @@ translation_rules:
     slab_unreclaimable: memory.slab_unrecl
     used: memory.used
 
+# calculate disk.total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.total
+- action: aggregate_metric
+  metric_name: disk.total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+
+# calculate disk.summary_total
+- action: copy_metrics
+  mapping:
+    system.filesystem.usage: disk.summary_total
+- action: aggregate_metric
+  metric_name: disk.summary_total
+  aggregation_method: sum
+  without_dimensions:
+    - state
+    - device
+
 # convert filesystem metrics
 - action: split_metric
   metric_name: system.filesystem.usage
@@ -226,6 +247,35 @@ translation_rules:
   mapping:
     free: df_inodes.free
     used: df_inodes.used
+
+# df_complex.used_total
+- action: copy_metrics
+  mapping:
+    df_complex.used: df_complex.used_total 
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: sum
+  without_dimensions:
+  - device
+
+# disk utilization
+- action: calculate_new_metric
+  metric_name: disk.utilization
+  operand1_metric: df_complex.used
+  operand2_metric: disk.total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    disk.utilization: 100
+
+- action: calculate_new_metric
+  metric_name: disk.summary_utilization
+  operand1_metric: df_complex.used_total
+  operand2_metric: disk.summary_total
+  operator: /
+- action: multiply_float
+  scale_factors_float:
+    disk.summary_utilization: 100
 
 # convert disk I/O metrics
 - action: rename_dimension_keys
@@ -310,5 +360,12 @@ translation_rules:
 - action: multiply_float
   scale_factors_float:
     memory.utilization: 100
+
+# remove redundant metrics
+- action: drop_metrics
+  metric_names:
+    df_complex.used_total: true
+    disk.summary_total: true
+    disk.total: true
 `
 )

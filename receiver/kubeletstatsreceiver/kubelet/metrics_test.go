@@ -42,14 +42,14 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata)
+	metadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
 	requireMetricsDataOk(t, MetricsData(zap.NewNop(), summary, metadata, "", ValidMetricGroups))
 
 	// Disable all groups
 	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, metadata, "", map[MetricGroup]bool{})))
 }
 
-func requireMetricsDataOk(t *testing.T, mds []*consumerdata.MetricsData) {
+func requireMetricsDataOk(t *testing.T, mds []consumerdata.MetricsData) {
 	for _, md := range mds {
 		requireResourceOk(t, md.Resource)
 		for _, metric := range md.Metrics {
@@ -161,7 +161,7 @@ func indexedFakeMetrics() map[string][]*metricspb.Metric {
 	return metrics
 }
 
-func fakeMetrics() []*consumerdata.MetricsData {
+func fakeMetrics() []consumerdata.MetricsData {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()

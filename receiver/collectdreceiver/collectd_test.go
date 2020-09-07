@@ -21,9 +21,9 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestDecodeEvent(t *testing.T) {
@@ -86,12 +86,12 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "fake"},
-					{Value: "i-b13d1e5f"},
+					{Value: "fake", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -113,12 +113,12 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "fake"},
-					{Value: "i-b13d1e5f"},
+					{Value: "fake", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -140,12 +140,12 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -167,12 +167,12 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -194,12 +194,12 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "load"},
-					{Value: "i-b13d1e5f"},
+					{Value: "load", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -222,13 +222,13 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "memory"},
-					{Value: "i-b13d1e5f"},
-					{Value: "value"},
+					{Value: "memory", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
+					{Value: "value", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   496000000,
 						},
@@ -252,14 +252,14 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "value"},
-					{Value: "df"},
-					{Value: "dev"},
-					{Value: "i-b13d1e5f"},
+					{Value: "value", HasValue: true},
+					{Value: "df", HasValue: true},
+					{Value: "dev", HasValue: true},
+					{Value: "i-b13d1e5f", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1415062577,
 							Nanos:   494999808,
 						},
@@ -288,18 +288,18 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "mwp-signalbox"},
-					{Value: "value"},
-					{Value: "tail"},
-					{Value: "analytics"},
-					{Value: "v1"},
-					{Value: "v2"},
-					{Value: "b"},
-					{Value: "x"},
+					{Value: "mwp-signalbox", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "tail", HasValue: true},
+					{Value: "analytics", HasValue: true},
+					{Value: "v1", HasValue: true},
+					{Value: "v2", HasValue: true},
+					{Value: "b", HasValue: true},
+					{Value: "x", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1434477504,
 							Nanos:   484000000,
 						},
@@ -328,18 +328,18 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "mwp-signalbox"},
-					{Value: "value"},
-					{Value: "tail"},
-					{Value: "analytics"},
-					{Value: "v1"},
-					{Value: "v2"},
-					{Value: "b"},
-					{Value: "x"},
+					{Value: "mwp-signalbox", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "tail", HasValue: true},
+					{Value: "analytics", HasValue: true},
+					{Value: "v1", HasValue: true},
+					{Value: "v2", HasValue: true},
+					{Value: "b", HasValue: true},
+					{Value: "x", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1434477504,
 							Nanos:   484000000,
 						},
@@ -365,15 +365,15 @@ var wantMetricsData = []*metricspb.Metric{
 		Timeseries: []*metricspb.TimeSeries{
 			{
 				LabelValues: []*metricspb.LabelValue{
-					{Value: "some-host"},
-					{Value: "value"},
-					{Value: "dogstatsd"},
-					{Value: "dev"},
-					{Value: "v1"},
+					{Value: "some-host", HasValue: true},
+					{Value: "value", HasValue: true},
+					{Value: "dogstatsd", HasValue: true},
+					{Value: "dev", HasValue: true},
+					{Value: "v1", HasValue: true},
 				},
 				Points: []*metricspb.Point{
 					{
-						Timestamp: &timestamp.Timestamp{
+						Timestamp: &timestamppb.Timestamp{
 							Seconds: 1434477504,
 							Nanos:   484000000,
 						},

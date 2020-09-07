@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/otel/api/kv"
-	"go.opentelemetry.io/otel/api/kv/value"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	"google.golang.org/grpc/codes"
@@ -127,17 +126,12 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 			{
 				Time:       startTime,
 				Name:       "start",
-				Attributes: []kv.KeyValue{},
+				Attributes: []label.KeyValue{},
 			},
 			{
-				Time: endTime,
-				Name: "end",
-				Attributes: []kv.KeyValue{
-					{
-						Key:   kv.Key("flag"),
-						Value: value.Bool(false),
-					},
-				},
+				Time:       endTime,
+				Name:       "end",
+				Attributes: []label.KeyValue{label.Bool("flag", false)},
 			},
 		},
 		Links: []apitrace.Link{
@@ -146,39 +140,24 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 					TraceID: apitrace.ID{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF},
 					SpanID:  apitrace.SpanID{0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7},
 				},
-				Attributes: []kv.KeyValue{},
+				Attributes: []label.KeyValue{},
 			},
 			{
 				SpanContext: apitrace.SpanContext{
 					TraceID: apitrace.ID{0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF},
 					SpanID:  apitrace.SpanID{0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7},
 				},
-				Attributes: []kv.KeyValue{},
+				Attributes: []label.KeyValue{},
 			},
 		},
 		StatusCode:    codes.Internal,
 		StatusMessage: "This is not a drill!",
-		Attributes: []kv.KeyValue{
-			{
-				Key:   kv.Key("namespace"),
-				Value: value.String("kube-system"),
-			},
-			{
-				Key:   kv.Key("ping_count"),
-				Value: value.Int64(25),
-			},
-			{
-				Key:   kv.Key("agent"),
-				Value: value.String("ocagent"),
-			},
-			{
-				Key:   kv.Key("cache_hit"),
-				Value: value.Bool(true),
-			},
-			{
-				Key:   kv.Key("timeout_ns"),
-				Value: value.Int64(12e9),
-			},
+		Attributes: []label.KeyValue{
+			label.String("namespace", "kube-system"),
+			label.Int64("ping_count", 25),
+			label.String("agent", "ocagent"),
+			label.Bool("cache_hit", true),
+			label.Int64("timeout_ns", 12e9),
 		},
 		InstrumentationLibrary: instrumentation.Library{
 			Name:    "test_il_name",

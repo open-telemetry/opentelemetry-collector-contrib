@@ -16,51 +16,44 @@ package signalfxexporter
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	c := cfg.(*Config)
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
-	_, err := factory.CreateMetricsExporter(zap.NewNop(), cfg)
+	_, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, cfg)
 	assert.NoError(t, err)
 }
 
-func TestCreateTraceExporter(t *testing.T) {
-	factory := Factory{}
-	cfg := factory.CreateDefaultConfig()
-	_, err := factory.CreateTraceExporter(zap.NewNop(), cfg)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-}
-
 func TestCreateInstanceViaFactory(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
 	c := cfg.(*Config)
@@ -68,7 +61,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	c.Realm = "us0"
 
 	exp, err := factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -78,7 +72,8 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.AccessToken = "testToken"
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
-		zap.NewNop(),
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -86,8 +81,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateMetricsExporter(t *testing.T) {
-	f := &Factory{}
+func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -102,7 +96,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		Timeout: 2 * time.Second,
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -154,8 +148,7 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &Factory{}
-			te, err := f.CreateMetricsExporter(zap.NewNop(), tt.config)
+			te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, tt.config)
 			assert.EqualError(t, err, tt.errorMessage)
 			assert.Nil(t, te)
 		})
@@ -163,7 +156,6 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 }
 
 func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
-	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -174,19 +166,18 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 		SendCompatibleMetrics: true,
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 27, len(config.TranslationRules))
+	assert.Equal(t, 38, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
-	f := &Factory{}
 	config := &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -205,7 +196,7 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 		},
 	}
 
-	te, err := f.CreateMetricsExporter(zap.NewNop(), config)
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 
@@ -220,17 +211,18 @@ func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules)
+	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
-	data := md()
+	data := testMetricsData()
 
-	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
+	c := translation.NewMetricsConverter(zap.NewNop(), tr)
+	translated, _ := c.MetricDataToSignalFxV2(data, nil)
 	require.NotNil(t, translated)
 
-	metrics := make(map[string][]*model.DataPoint)
+	metrics := make(map[string][]*sfxpb.DataPoint)
 	for _, pt := range translated {
 		if _, ok := metrics[pt.Metric]; !ok {
-			metrics[pt.Metric] = make([]*model.DataPoint, 0, 1)
+			metrics[pt.Metric] = make([]*sfxpb.DataPoint, 0, 1)
 		}
 		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
 	}
@@ -278,7 +270,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func md() consumerdata.MetricsData {
+func testMetricsData() []consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
@@ -296,7 +288,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "used",
 							HasValue: true,
@@ -311,7 +303,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -320,7 +312,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "free",
 							HasValue: true,
@@ -335,7 +327,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -359,7 +351,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -371,7 +363,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -380,7 +372,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -392,7 +384,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -401,7 +393,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -413,7 +405,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -422,7 +414,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -434,7 +426,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -460,7 +452,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
 							HasValue: true,
@@ -478,7 +470,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -487,7 +479,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
 							HasValue: true,
@@ -505,7 +497,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -528,7 +520,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -540,7 +532,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -563,7 +555,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -575,7 +567,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -598,7 +590,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -610,7 +602,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -622,5 +614,52 @@ func md() consumerdata.MetricsData {
 			},
 		},
 	}
-	return md
+	return []consumerdata.MetricsData{md}
+}
+
+func TestDefaultDiskTranslations(t *testing.T) {
+	file, err := os.Open("testdata/json/system.filesystem.usage.json")
+	require.NoError(t, err)
+	defer func() { require.NoError(t, file.Close()) }()
+	bytes, err := ioutil.ReadAll(file)
+	require.NoError(t, err)
+	var pts []*sfxpb.DataPoint
+	err = json.Unmarshal(bytes, &pts)
+	require.NoError(t, err)
+
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(t, err)
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1)
+	require.NoError(t, err)
+
+	translated := tr.TranslateDataPoints(zap.NewNop(), pts)
+	require.NotNil(t, translated)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated {
+		l := m[pt.Metric]
+		l = append(l, pt)
+		m[pt.Metric] = l
+	}
+
+	_, ok := m["disk.total"]
+	require.False(t, ok)
+
+	_, ok = m["disk.summary_total"]
+	require.False(t, ok)
+
+	_, ok = m["df_complex.used_total"]
+	require.False(t, ok)
+
+	du, ok := m["disk.utilization"]
+	require.True(t, ok)
+	require.Equal(t, 4, len(du[0].Dimensions))
+	// cheap test for pct conversion
+	require.True(t, *du[0].Value.DoubleValue > 1)
+
+	dsu, ok := m["disk.summary_utilization"]
+	require.True(t, ok)
+	require.Equal(t, 3, len(dsu[0].Dimensions))
+	require.True(t, *dsu[0].Value.DoubleValue > 1)
 }

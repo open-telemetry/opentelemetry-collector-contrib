@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -79,7 +80,7 @@ type sfxReceiver struct {
 	sync.Mutex
 	logger       *zap.Logger
 	config       *Config
-	nextConsumer consumer.MetricsConsumerOld
+	nextConsumer consumer.MetricsConsumer
 	server       *http.Server
 
 	startOnce sync.Once
@@ -92,7 +93,7 @@ var _ component.MetricsReceiver = (*sfxReceiver)(nil)
 func New(
 	logger *zap.Logger,
 	config Config,
-	nextConsumer consumer.MetricsConsumerOld,
+	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
@@ -216,7 +217,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	md, _ := SignalFxV2ToMetricsData(r.logger, msg.Datapoints)
+	md, _ := signalFxV2ToMetricsData(r.logger, msg.Datapoints)
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
@@ -230,7 +231,7 @@ func (r *sfxReceiver) handleReq(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	err = r.nextConsumer.ConsumeMetricsData(ctx, *md)
+	err = r.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
 	obsreport.EndMetricsReceiveOp(
 		ctx,
 		typeStr,

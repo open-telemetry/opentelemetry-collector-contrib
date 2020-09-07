@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -26,26 +27,26 @@ import (
 )
 
 func main() {
-	writeMetrics()
 	server()
-}
-
-// writeMetrics truncates the previous metrics file or creates it if not there, populating it with the current time as a metric
-func writeMetrics() {
-	f, err := os.Create("./testdata/metrics")
-	if err != nil {
-		return
-	}
-	defer f.Close()
-
-	f.WriteString(fmt.Sprintf("# HELP timestamp_now Unix timestamp\n# TYPE timestamp_now gauge\ntimestamp_now %v", strconv.FormatInt(time.Now().UnixNano(), 10)))
 }
 
 // server serves one route "./metrics" and will shutdown the server as soon as it is scraped once, to allow for the next subprocess to be run
 func server() {
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		defer os.Exit(1)
-		http.ServeFile(w, r, "./testdata/metrics")
+		file, err := ioutil.TempFile("testdata", "metrics")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer os.Remove(file.Name())
+		_, err = file.WriteString(fmt.Sprintf("# HELP timestamp_now Unix timestamp\n# TYPE timestamp_now gauge\ntimestamp_now %v", strconv.FormatInt(time.Now().UnixNano(), 10)))
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := file.Close(); err != nil {
+			log.Fatal(err)
+		}
+		http.ServeFile(w, r, file.Name())
 		return
 	})
 

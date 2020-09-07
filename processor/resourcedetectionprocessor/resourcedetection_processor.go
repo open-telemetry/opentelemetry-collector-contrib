@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -32,7 +31,7 @@ type resourceTraceProcessor struct {
 	next     consumer.TraceConsumer
 }
 
-func newResourceTraceProcessor(ctx context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
+func newResourceTraceProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
 	return &resourceTraceProcessor{
 		provider: provider,
 		override: override,
@@ -79,7 +78,7 @@ type resourceMetricProcessor struct {
 	next     consumer.MetricsConsumer
 }
 
-func newResourceMetricProcessor(ctx context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
+func newResourceMetricProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
 	return &resourceMetricProcessor{
 		provider: provider,
 		override: override,
@@ -105,8 +104,7 @@ func (*resourceMetricProcessor) Shutdown(context.Context) error {
 }
 
 // ConsumeMetrics implements the MetricsProcessor interface
-func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
-	md := pdatautil.MetricsToInternalMetrics(metrics)
+func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
@@ -117,5 +115,5 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, metrics 
 		internal.MergeResource(res, rmp.resource, rmp.override)
 	}
 
-	return rmp.next.ConsumeMetrics(ctx, pdatautil.MetricsFromInternalMetrics(md))
+	return rmp.next.ConsumeMetrics(ctx, md)
 }

@@ -27,7 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lightstepexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
@@ -39,6 +38,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
@@ -49,6 +49,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 )
 
@@ -61,7 +63,7 @@ func components() (component.Factories, error) {
 
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
-		&hostobserver.Factory{},
+		hostobserver.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -73,18 +75,21 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	receivers := []component.ReceiverFactoryBase{
-		&collectdreceiver.Factory{},
+	receivers := []component.ReceiverFactory{
+		collectdreceiver.NewFactory(),
 		sapmreceiver.NewFactory(),
-		&signalfxreceiver.Factory{},
-		&carbonreceiver.Factory{},
-		&wavefrontreceiver.Factory{},
+		signalfxreceiver.NewFactory(),
+		carbonreceiver.NewFactory(),
+		wavefrontreceiver.NewFactory(),
 		redisreceiver.NewFactory(),
 		kubeletstatsreceiver.NewFactory(),
-		&simpleprometheusreceiver.Factory{},
-		&k8sclusterreceiver.Factory{},
+		simpleprometheusreceiver.NewFactory(),
+		k8sclusterreceiver.NewFactory(),
 		prometheusexecreceiver.NewFactory(),
 		receivercreator.NewFactory(),
+		statsdreceiver.NewFactory(),
+		awsxrayreceiver.NewFactory(),
+		splunkhecreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -94,21 +99,20 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	exporters := []component.ExporterFactoryBase{
+	exporters := []component.ExporterFactory{
 		stackdriverexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
-		&signalfxexporter.Factory{},
+		signalfxexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		kinesisexporter.NewFactory(),
 		awsxrayexporter.NewFactory(),
-		&carbonexporter.Factory{},
-		&honeycombexporter.Factory{},
-		&jaegerthrifthttpexporter.Factory{},
-		&lightstepexporter.Factory{},
-		&newrelicexporter.Factory{},
-		&splunkhecexporter.Factory{},
+		carbonexporter.NewFactory(),
+		honeycombexporter.NewFactory(),
+		jaegerthrifthttpexporter.NewFactory(),
+		newrelicexporter.NewFactory(),
+		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
-		&alibabacloudlogserviceexporter.Factory{},
+		alibabacloudlogserviceexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {
@@ -119,10 +123,10 @@ func components() (component.Factories, error) {
 		errs = append(errs, err)
 	}
 
-	processors := []component.ProcessorFactoryBase{
+	processors := []component.ProcessorFactory{
 		k8sprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
-		&metricstransformprocessor.Factory{},
+		metricstransformprocessor.NewFactory(),
 	}
 	for _, pr := range factories.Processors {
 		processors = append(processors, pr)
