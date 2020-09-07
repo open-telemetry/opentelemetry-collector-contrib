@@ -35,8 +35,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
@@ -86,35 +86,28 @@ func TestNew(t *testing.T) {
 				require.NotNil(t, got)
 				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, got.Shutdown(context.Background()))
-
-				// This is expected to fail.
-				cErr := got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
-				assert.Error(t, cErr)
 			}
 		})
 	}
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	smallBatch := pdatautil.MetricsFromMetricsData(
-		[]consumerdata.MetricsData{
-			{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-				},
-				Resource: &resourcepb.Resource{Type: "test"},
-				Metrics: []*metricspb.Metric{
-					metricstestutil.Gauge(
-						"test_gauge",
-						[]string{"k0", "k1"},
-						metricstestutil.Timeseries(
-							time.Now(),
-							[]string{"v0", "v1"},
-							metricstestutil.Double(time.Now(), 123))),
-				},
+	smallBatch := internaldata.OCToMetrics(
+		consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
 			},
-		},
-	)
+			Resource: &resourcepb.Resource{Type: "test"},
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge(
+					"test_gauge",
+					[]string{"k0", "k1"},
+					metricstestutil.Timeseries(
+						time.Now(),
+						[]string{"v0", "v1"},
+						metricstestutil.Double(time.Now(), 123))),
+			},
+		})
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
@@ -212,7 +205,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		if !includeToken {
 			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
 		}
-		return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+		return internaldata.OCToMetrics(md)
 	}
 
 	tests := []struct {
@@ -270,20 +263,18 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		{
 			name:                   "use token from header when resource is nil",
 			accessTokenPassthrough: true,
-			metrics: pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-				{
-					Node: &commonpb.Node{
-						ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge(
-							"test_gauge",
-							[]string{"k0", "k1"},
-							metricstestutil.Timeseries(
-								time.Now(),
-								[]string{"v0", "v1"},
-								metricstestutil.Double(time.Now(), 123))),
-					},
+			metrics: internaldata.OCToMetrics(consumerdata.MetricsData{
+				Node: &commonpb.Node{
+					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+				},
+				Metrics: []*metricspb.Metric{
+					metricstestutil.Gauge(
+						"test_gauge",
+						[]string{"k0", "k1"},
+						metricstestutil.Timeseries(
+							time.Now(),
+							[]string{"v0", "v1"},
+							metricstestutil.Double(time.Now(), 123))),
 				},
 			}),
 			numPushDataCallsPerToken: map[string]int{
@@ -296,11 +287,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -315,12 +305,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -335,12 +324,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -353,10 +341,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(false, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -369,10 +356,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			failHTTP:               true,
 			droppedTimeseriesCount: 2,
@@ -472,7 +458,7 @@ func generateLargeBatch() pdata.Metrics {
 		}
 	}
 
-	return pdatautil.MetricsFromMetricsData(mds)
+	return internaldata.OCSliceToMetrics(mds)
 }
 
 func TestConsumeKubernetesMetadata(t *testing.T) {
@@ -703,7 +689,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		}},
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
-	metrics := pdatautil.MetricsFromMetricsData(mds)
+	metrics := internaldata.OCSliceToMetrics(mds)
 	for i := 0; i < b.N; i++ {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)

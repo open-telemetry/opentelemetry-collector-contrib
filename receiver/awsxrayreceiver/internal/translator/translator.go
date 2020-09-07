@@ -17,7 +17,6 @@ package translator
 import (
 	"encoding/json"
 
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -50,7 +49,7 @@ func ToTraces(rawSeg []byte) (*pdata.Traces, int, error) {
 
 	traceData := pdata.NewTraces()
 	rspanSlice := traceData.ResourceSpans()
-	// ## allocate a new otlptrace.ResourceSpans for the segment document
+	// ## allocate a new pdata.ResourceSpans for the segment document
 	// (potentially with embedded subsegments)
 	rspanSlice.Resize(1)      // initialize a new empty pdata.ResourceSpans
 	rspan := rspanSlice.At(0) // retrieve the empty pdata.ResourceSpans we just created
@@ -104,14 +103,14 @@ func segToSpans(seg awsxray.Segment,
 		}
 
 		if seg.Cause != nil &&
-			populatedChildSpan.Status().Code() != pdata.StatusCode(otlptrace.Status_Ok) {
+			populatedChildSpan.Status().Code() != pdata.StatusCodeOk {
 			// if seg.Cause is not nil, then one of the subsegments must contain a
 			// HTTP error code. Also, span.Status().Code() is already
-			// set to `otlptrace.Status_UnknownError` by `addCause()` in
+			// set to `StatusCodeUnknownError` by `addCause()` in
 			// `populateSpan()` above, so here we are just trying to figure out
 			// whether we can get an even more specific error code.
 
-			if span.Status().Code() == pdata.StatusCode(otlptrace.Status_UnknownError) {
+			if span.Status().Code() == pdata.StatusCodeUnknownError {
 				// update the error code to a possibly more specific code
 				span.Status().SetCode(populatedChildSpan.Status().Code())
 			}

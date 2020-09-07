@@ -25,9 +25,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/testing/protocmp"
 )
@@ -59,18 +59,13 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			md := consumerdata.MetricsData{Metrics: test.in}
 
 			// process
-			cErr := mtp.ConsumeMetrics(
-				context.Background(),
-				pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-					md,
-				}),
-			)
+			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
 			assert.NoError(t, cErr)
 
 			// get and check results
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
-			gotMD := pdatautil.MetricsToMetricsData(got[0])
+			gotMD := internaldata.MetricsToOC(got[0])
 			require.Equal(t, 1, len(gotMD))
 			actualOutMetrics := gotMD[0].Metrics
 			require.Equal(t, len(test.out), len(actualOutMetrics))
@@ -184,6 +179,6 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mtp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md}))
+		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(md))
 	}
 }

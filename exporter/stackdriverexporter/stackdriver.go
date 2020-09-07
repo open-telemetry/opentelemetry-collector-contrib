@@ -19,14 +19,16 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -63,10 +65,10 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
+func generateClientOptions(cfg *Config, dialOpts ...grpc.DialOption) ([]option.ClientOption, error) {
 	var copts []option.ClientOption
 	if cfg.UseInsecure {
-		conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
+		conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithInsecure())...)
 		if err != nil {
 			return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
 		}
@@ -107,7 +109,7 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
-func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
+func newStackdriverMetricsExporter(cfg *Config, version string) (component.MetricsExporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -122,14 +124,24 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 		Timeout: cfg.Timeout,
 	}
+
+	userAgent := strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
 	if cfg.Endpoint != "" {
-		copts, err := generateClientOptions(cfg)
+		// WithGRPCConn option takes precedent over all other supplied options so need to provide user agent here as well
+		dialOpts := []grpc.DialOption{}
+		if userAgent != "" {
+			dialOpts = append(dialOpts, grpc.WithUserAgent(userAgent))
+		}
+
+		copts, err := generateClientOptions(cfg, dialOpts...)
 		if err != nil {
 			return nil, err
 		}
 		options.TraceClientOptions = copts
 		options.MonitoringClientOptions = copts
 	}
+	options.MonitoringClientOptions = append(options.MonitoringClientOptions, option.WithUserAgent(options.UserAgent))
+
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
@@ -142,6 +154,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		}
 		options.MapResource = rm.mapResource
 	}
+
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %w", serr)
@@ -162,9 +175,9 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 	var errors []error
 	var totalDropped int
 
-	mds := pdatautil.MetricsToMetricsData(m)
+	mds := internaldata.MetricsToOC(m)
 	for _, md := range mds {
-		_, points := pdatautil.TimeseriesAndPointCount(md)
+		points := numPoints(md)
 		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 		recordPointCount(ctx, points-dropped, dropped, err)
 		totalDropped += dropped
@@ -203,4 +216,15 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	}
 
 	return numSpans - goodSpans, componenterror.CombineErrors(errs)
+}
+
+func numPoints(md consumerdata.MetricsData) int {
+	numPoints := 0
+	for _, metric := range md.Metrics {
+		tss := metric.GetTimeseries()
+		for _, ts := range tss {
+			numPoints += len(ts.GetPoints())
+		}
+	}
+	return numPoints
 }

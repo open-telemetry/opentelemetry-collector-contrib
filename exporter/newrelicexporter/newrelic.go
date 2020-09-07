@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -114,7 +113,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 	var errs []error
 	goodMetrics := 0
 
-	ocmds := pdatautil.MetricsToMetricsData(md)
+	ocmds := internaldata.MetricsToOC(md)
 	for _, ocmd := range ocmds {
 		transform := &transformer{
 			DeltaCalculator: e.deltaCalculator,
@@ -138,7 +137,7 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 
 	e.harvester.HarvestNow(ctx)
 
-	return pdatautil.MetricCount(md) - goodMetrics, componenterror.CombineErrors(errs)
+	return md.MetricCount() - goodMetrics, componenterror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {
