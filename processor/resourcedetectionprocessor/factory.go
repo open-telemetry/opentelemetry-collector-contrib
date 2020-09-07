@@ -63,7 +63,8 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(f.createTraceProcessor),
-		processorhelper.WithMetrics(f.createMetricsProcessor))
+		processorhelper.WithMetrics(f.createMetricsProcessor),
+		processorhelper.WithLogs(f.createLogsProcessor))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -96,7 +97,7 @@ func (f *factory) createTraceProcessor(
 		return nil, err
 	}
 
-	return newResourceTraceProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+	return newResourceDetectionTracesProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
 }
 
 func (f *factory) createMetricsProcessor(
@@ -112,7 +113,23 @@ func (f *factory) createMetricsProcessor(
 		return nil, err
 	}
 
-	return newResourceMetricProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+	return newResourceDetectionMetricsProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+}
+
+func (f *factory) createLogsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	provider, err := f.getResourceProvider(params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	if err != nil {
+		return nil, err
+	}
+
+	return newResourceDetectionLogsProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
 }
 
 func (f *factory) getResourceProvider(

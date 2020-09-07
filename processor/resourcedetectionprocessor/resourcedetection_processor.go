@@ -24,87 +24,72 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-type resourceTraceProcessor struct {
-	provider *internal.ResourceProvider
-	resource pdata.Resource
-	override bool
-	next     consumer.TraceConsumer
+type resourceDetectionProcessor struct {
+	provider   *internal.ResourceProvider
+	resource   pdata.Resource
+	override   bool
+	traceNext  consumer.TraceConsumer
+	metricNext consumer.MetricsConsumer
+	logNext    consumer.LogsConsumer
 }
 
-func newResourceTraceProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
-	return &resourceTraceProcessor{
-		provider: provider,
-		override: override,
-		next:     next,
+func newResourceDetectionTracesProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
+	return &resourceDetectionProcessor{
+		provider:  provider,
+		override:  override,
+		traceNext: next,
 	}
 }
 
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
+func newResourceDetectionMetricsProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
+	return &resourceDetectionProcessor{
+		provider:   provider,
+		override:   override,
+		metricNext: next,
+	}
+}
+
+func newResourceDetectionLogsProcessor(_ context.Context, next consumer.LogsConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
+	return &resourceDetectionProcessor{
+		provider: provider,
+		override: override,
+		logNext:  next,
+	}
+}
+
+// GetCapabilities returns the capabilities of the processor
+func (rdp *resourceDetectionProcessor) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
-func (rtp *resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
+func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
 	var err error
-	rtp.resource, err = rtp.provider.Get(ctx)
+	rdp.resource, err = rdp.provider.Get(ctx)
 	return err
 }
 
 // Shutdown is invoked during service shutdown.
-func (*resourceTraceProcessor) Shutdown(context.Context) error {
+func (*resourceDetectionProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
 // ConsumeTraces implements the TraceProcessor interface
-func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
-	rs := traces.ResourceSpans()
+func (rdp *resourceDetectionProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		res := rs.At(i).Resource()
 		if res.IsNil() {
 			res.InitEmpty()
 		}
 
-		internal.MergeResource(res, rtp.resource, rtp.override)
+		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
-
-	return rtp.next.ConsumeTraces(ctx, traces)
-}
-
-type resourceMetricProcessor struct {
-	provider *internal.ResourceProvider
-	resource pdata.Resource
-	override bool
-	next     consumer.MetricsConsumer
-}
-
-func newResourceMetricProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
-	return &resourceMetricProcessor{
-		provider: provider,
-		override: override,
-		next:     next,
-	}
-}
-
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (rmp *resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	var err error
-	rmp.resource, err = rmp.provider.Get(ctx)
-	return err
-}
-
-// Shutdown is invoked during service shutdown.
-func (*resourceMetricProcessor) Shutdown(context.Context) error {
-	return nil
+	return rdp.traceNext.ConsumeTraces(ctx, td)
 }
 
 // ConsumeMetrics implements the MetricsProcessor interface
-func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (rdp *resourceDetectionProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
@@ -112,8 +97,21 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata
 			res.InitEmpty()
 		}
 
-		internal.MergeResource(res, rmp.resource, rmp.override)
+		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
+	return rdp.metricNext.ConsumeMetrics(ctx, md)
+}
 
-	return rmp.next.ConsumeMetrics(ctx, md)
+// ConsumeLogs implements the LogsProcessor interface
+func (rdp *resourceDetectionProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		res := rls.At(i).Resource()
+		if res.IsNil() {
+			res.InitEmpty()
+		}
+
+		internal.MergeResource(res, rdp.resource, rdp.override)
+	}
+	return rdp.logNext.ConsumeLogs(ctx, ld)
 }
