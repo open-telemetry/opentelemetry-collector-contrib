@@ -36,8 +36,6 @@ type Config struct {
 	NodeConditionTypesToReport []string `mapstructure:"node_conditions_to_report"`
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
-	// How long to wait for initial sync of informer cache.
-	InitialCacheSyncTimeout time.Duration `mapstructure:"initial_cache_sync_timeout"`
 
 	// For mocking.
 	makeClient func(apiConf k8sconfig.APIConfig) (k8s.Interface, error)

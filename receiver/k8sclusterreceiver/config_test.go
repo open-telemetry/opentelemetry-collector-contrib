@@ -60,7 +60,6 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
-			InitialCacheSyncTimeout: 20 * time.Second,
 		})
 
 	r3 := cfg.Receivers["k8s_cluster/partial_settings"].(*Config)
@@ -75,6 +74,5 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
-			InitialCacheSyncTimeout: 30 * time.Second,
 		})
 }

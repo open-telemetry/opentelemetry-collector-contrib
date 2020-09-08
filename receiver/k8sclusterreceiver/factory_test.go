@@ -47,7 +47,6 @@ func TestFactory(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
-		InitialCacheSyncTimeout: 30 * time.Second,
 	}, rCfg)
 
 	r, err := f.CreateTraceReceiver(

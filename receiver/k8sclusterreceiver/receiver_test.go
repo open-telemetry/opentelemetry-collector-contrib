@@ -159,10 +159,9 @@ func setupReceiver(
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
-		InitialCacheSyncTimeout:    1 * time.Second,
 	}
 
-	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, config.InitialCacheSyncTimeout)
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{

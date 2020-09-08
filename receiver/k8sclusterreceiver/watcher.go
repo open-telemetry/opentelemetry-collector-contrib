@@ -37,13 +37,12 @@ import (
 )
 
 type resourceWatcher struct {
-	client                  kubernetes.Interface
-	sharedInformerFactory   informers.SharedInformerFactory
-	dataCollector           *collection.DataCollector
-	logger                  *zap.Logger
-	metadataConsumers       []metadataConsumer
-	initialCacheSyncTimeout time.Duration
-	informersHaveSynced     *atomic.Bool
+	client                kubernetes.Interface
+	sharedInformerFactory informers.SharedInformerFactory
+	dataCollector         *collection.DataCollector
+	logger                *zap.Logger
+	metadataConsumers     []metadataConsumer
+	informersHaveSynced   *atomic.Bool
 }
 
 type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
@@ -51,14 +50,12 @@ type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) erro
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface,
-	nodeConditionTypesToReport []string,
-	initialCacheSyncTimeout time.Duration) *resourceWatcher {
+	nodeConditionTypesToReport []string) *resourceWatcher {
 	rw := &resourceWatcher{
-		client:                  client,
-		logger:                  logger,
-		dataCollector:           collection.NewDataCollector(logger, nodeConditionTypesToReport),
-		initialCacheSyncTimeout: initialCacheSyncTimeout,
-		informersHaveSynced:     atomic.NewBool(false),
+		client:              client,
+		logger:              logger,
+		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		informersHaveSynced: atomic.NewBool(false),
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -103,6 +100,7 @@ func (rw *resourceWatcher) startWatchingResources(stopper <-chan struct{}) {
 	// This synchronization is achieved using rw.informersHaveSynced.
 	rw.sharedInformerFactory.WaitForCacheSync(stopper)
 	rw.informersHaveSynced.Store(true)
+	rw.logger.Info("Information caches synced.")
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
@@ -160,13 +158,7 @@ func (rw *resourceWatcher) waitForInitialInformerSync() {
 		return
 	}
 
-	waitUntil := time.Now().Add(rw.initialCacheSyncTimeout)
 	for !rw.informersHaveSynced.Load() {
-		if time.Now().After(waitUntil) {
-			rw.logger.Warn("Initial sync of informers cache not yet completed. Try increasing 'initial_cache_sync_timeout'.")
-			rw.informersHaveSynced.Store(true)
-			return
-		}
 		time.Sleep(100 * time.Millisecond)
 	}
 }

@@ -4,7 +4,6 @@ receivers:
     collection_interval: 30s
     node_conditions_to_report: ["Ready", "MemoryPressure"]
     metadata_exporters: [exampleexporter]
-    initial_cache_sync_timeout: 20s
   k8s_cluster/partial_settings:
     collection_interval: 30s
 

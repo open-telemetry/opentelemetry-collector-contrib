@@ -31,8 +31,7 @@ const (
 	typeStr = "k8s_cluster"
 
 	// Default config values.
-	defaultCollectionInterval      = 10 * time.Second
-	defaultInitialCacheSyncTimeout = 30 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
@@ -48,7 +47,6 @@ func createDefaultConfig() configmodels.Receiver {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
-		InitialCacheSyncTimeout: defaultInitialCacheSyncTimeout,
 	}
 }
 

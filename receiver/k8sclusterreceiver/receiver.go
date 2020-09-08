@@ -93,10 +93,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 func newReceiver(
 	logger *zap.Logger, config *Config, consumer consumer.MetricsConsumer,
 	client kubernetes.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(
-		logger, client,
-		config.NodeConditionTypesToReport, config.InitialCacheSyncTimeout,
-	)
+	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,
