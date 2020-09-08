@@ -50,14 +50,52 @@ func TestLogWriter(t *testing.T) {
 	assert.Len(t, messages, 2)
 }
 
-func TestExportTraceData(t *testing.T) {
+func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	m := &Mock{make([]Data, 0, 3)}
+	m := &Mock{make([]Data, 0, 1)}
 	srv := m.Server()
 	defer srv.Close()
 
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	c.APIKey, c.SpansURLOverride = "1", srv.URL
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateTraceExporter(context.Background(), params, c)
+	require.NoError(t, err)
+	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
+	require.NoError(t, exp.Shutdown(ctx))
+	assert.Equal(t, expected, m.Spans())
+}
+
+func TestExportTraceDataMinimum(t *testing.T) {
+	td := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:    &tracepb.TruncatableString{Value: "root"},
+			},
+		},
+	}
+
+	expected := []Span{
+		{
+			ID:      "0000000000000001",
+			TraceID: "01010101010101010101010101010101",
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"name":              "root",
+			},
+		},
+	}
+
+	testTraceData(t, expected, td)
+}
+
+func TestExportTraceDataFullTrace(t *testing.T) {
 	td := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
@@ -90,15 +128,6 @@ func TestExportTraceData(t *testing.T) {
 			},
 		},
 	}
-
-	f := NewFactory()
-	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.SpansURLOverride = "1", srv.URL
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := f.CreateTraceExporter(context.Background(), params, c)
-	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
-	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Span{
 		{
@@ -138,10 +167,10 @@ func TestExportTraceData(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, m.Spans())
+	testTraceData(t, expected, td)
 }
 
-func TestExportMetricData(t *testing.T) {
+func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.MetricsData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -149,6 +178,76 @@ func TestExportMetricData(t *testing.T) {
 	srv := m.Server()
 	defer srv.Close()
 
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	c.APIKey, c.MetricsURLOverride = "1", srv.URL
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
+	require.NoError(t, err)
+	require.NoError(t, exp.ConsumeMetrics(ctx, internaldata.OCToMetrics(md)))
+	require.NoError(t, exp.Shutdown(ctx))
+	assert.Equal(t, expected, m.Metrics())
+}
+
+func TestExportMetricDataMinimal(t *testing.T) {
+	desc := "physical property of matter that quantitatively expresses hot and cold"
+	unit := "K"
+	md := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "temperature",
+					Description: desc,
+					Unit:        unit,
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "location"},
+						{Key: "elevation"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "Portland", HasValue: true},
+							{Value: "0", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamppb.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.15,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []Metric{
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.15,
+			Timestamp: int64(100 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"location":          "Portland",
+				"elevation":         "0",
+			},
+		},
+	}
+
+	testExportMetricData(t, expected, md)
+}
+
+func TestExportMetricDataFull(t *testing.T) {
 	desc := "physical property of matter that quantitatively expresses hot and cold"
 	unit := "K"
 	md := consumerdata.MetricsData{
@@ -234,15 +333,6 @@ func TestExportMetricData(t *testing.T) {
 		},
 	}
 
-	f := NewFactory()
-	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.MetricsURLOverride = "1", srv.URL
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
-	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeMetrics(ctx, internaldata.OCToMetrics(md)))
-	require.NoError(t, exp.Shutdown(ctx))
-
 	expected := []Metric{
 		{
 			Name:      "temperature",
@@ -326,5 +416,5 @@ func TestExportMetricData(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, m.Metrics())
+	testExportMetricData(t, expected, md)
 }
