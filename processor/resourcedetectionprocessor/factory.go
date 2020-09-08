@@ -37,6 +37,8 @@ const (
 	typeStr = "resourcedetection"
 )
 
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
+
 type factory struct {
 	resourceProviderFactory *internal.ResourceProviderFactory
 
@@ -85,51 +87,77 @@ func createDefaultConfig() configmodels.Processor {
 }
 
 func (f *factory) createTraceProcessor(
-	ctx context.Context,
+	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
-	oCfg := cfg.(*Config)
-
-	provider, err := f.getResourceProvider(params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return newResourceDetectionTracesProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextConsumer,
+		rdp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) createMetricsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	oCfg := cfg.(*Config)
-
-	provider, err := f.getResourceProvider(params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return newResourceDetectionMetricsProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextConsumer,
+		rdp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(rdp.Start))
 }
 
 func (f *factory) createLogsProcessor(
-	ctx context.Context,
+	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.LogsConsumer,
 ) (component.LogsProcessor, error) {
-	oCfg := cfg.(*Config)
-
-	provider, err := f.getResourceProvider(params.Logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return newResourceDetectionLogsProcessor(ctx, nextConsumer, provider, oCfg.Override), nil
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextConsumer,
+		rdp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(rdp.Start))
+}
+
+func (f *factory) getResourceDetectionProcessor(
+	logger *zap.Logger,
+	cfg configmodels.Processor,
+) (*resourceDetectionProcessor, error) {
+	oCfg := cfg.(*Config)
+
+	provider, err := f.getResourceProvider(logger, cfg.Name(), oCfg.Timeout, oCfg.Detectors)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resourceDetectionProcessor{
+		provider: provider,
+		override: oCfg.Override,
+	}, nil
 }
 
 func (f *factory) getResourceProvider(

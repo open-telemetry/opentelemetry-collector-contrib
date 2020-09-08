@@ -18,48 +18,15 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type resourceDetectionProcessor struct {
-	provider   *internal.ResourceProvider
-	resource   pdata.Resource
-	override   bool
-	traceNext  consumer.TraceConsumer
-	metricNext consumer.MetricsConsumer
-	logNext    consumer.LogsConsumer
-}
-
-func newResourceDetectionTracesProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
-	return &resourceDetectionProcessor{
-		provider:  provider,
-		override:  override,
-		traceNext: next,
-	}
-}
-
-func newResourceDetectionMetricsProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
-	return &resourceDetectionProcessor{
-		provider:   provider,
-		override:   override,
-		metricNext: next,
-	}
-}
-
-func newResourceDetectionLogsProcessor(_ context.Context, next consumer.LogsConsumer, provider *internal.ResourceProvider, override bool) *resourceDetectionProcessor {
-	return &resourceDetectionProcessor{
-		provider: provider,
-		override: override,
-		logNext:  next,
-	}
-}
-
-// GetCapabilities returns the capabilities of the processor
-func (rdp *resourceDetectionProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+	provider *internal.ResourceProvider
+	resource pdata.Resource
+	override bool
 }
 
 // Start is invoked during service startup.
@@ -69,13 +36,8 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 	return err
 }
 
-// Shutdown is invoked during service shutdown.
-func (*resourceDetectionProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-// ConsumeTraces implements the TraceProcessor interface
-func (rdp *resourceDetectionProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ProcessTraces implements the TraceProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		res := rs.At(i).Resource()
@@ -85,11 +47,11 @@ func (rdp *resourceDetectionProcessor) ConsumeTraces(ctx context.Context, td pda
 
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
-	return rdp.traceNext.ConsumeTraces(ctx, td)
+	return td, nil
 }
 
-// ConsumeMetrics implements the MetricsProcessor interface
-func (rdp *resourceDetectionProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ProcessMetrics implements the MetricsProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
@@ -99,11 +61,11 @@ func (rdp *resourceDetectionProcessor) ConsumeMetrics(ctx context.Context, md pd
 
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
-	return rdp.metricNext.ConsumeMetrics(ctx, md)
+	return md, nil
 }
 
-// ConsumeLogs implements the LogsProcessor interface
-func (rdp *resourceDetectionProcessor) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
+// ProcessLogs implements the LogsProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		res := rls.At(i).Resource()
@@ -113,5 +75,5 @@ func (rdp *resourceDetectionProcessor) ConsumeLogs(ctx context.Context, ld pdata
 
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
-	return rdp.logNext.ConsumeLogs(ctx, ld)
+	return ld, nil
 }
