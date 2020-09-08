@@ -28,10 +28,10 @@ func TestLoadConfig(tester *testing.T) {
 	assert.Equal(tester,  2, len(cfg.Exporters))
 
 	config := cfg.Exporters["logzio/2"].(*Config)
-	assert.Equal(tester, config, &Config{
+	assert.Equal(tester, &Config{
 		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
 		Token:            "logzioTESTtoken",
 		Region:           "eu",
 		CustomListenerAddress:	"https://some-url.com:8888",
-	})
+	}, config)
 }

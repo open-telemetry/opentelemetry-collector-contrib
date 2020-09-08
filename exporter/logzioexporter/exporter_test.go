@@ -47,7 +47,8 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, td)
 	require.NoError(t, err)
-	exporter.Shutdown(ctx)
+	err = exporter.Shutdown(ctx)
+	require.NoError(t, err)
 }
 
 func TestNullExporterConfig(tester *testing.T) {
@@ -96,13 +97,13 @@ func TestPushTraceData(tester *testing.T) {
 	requests := strings.Split(string(recordedRequests), "\n")
 	var logzioSpan objects.LogzioSpan
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
-	assert.Equal(tester, logzioSpan.OperationName, testOperation)
-	assert.Equal(tester, logzioSpan.Process.ServiceName, testService)
+	assert.Equal(tester, testOperation, logzioSpan.OperationName)
+	assert.Equal(tester, testService, logzioSpan.Process.ServiceName)
 
 	var logzioService objects.LogzioService
 	assert.NoError(tester, json.Unmarshal([]byte(requests[1]), &logzioService))
 
-	assert.Equal(tester, logzioService.OperationName, testOperation)
-	assert.Equal(tester, logzioService.ServiceName, testService)
+	assert.Equal(tester, testOperation, logzioService.OperationName)
+	assert.Equal(tester, testService, logzioService.ServiceName)
 
 }
