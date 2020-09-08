@@ -25,13 +25,13 @@ func TestLoadConfig(tester *testing.T) {
 	require.NoError(tester, err)
 	require.NotNil(tester, cfg)
 
-	assert.Equal(tester,  2, len(cfg.Exporters))
+	assert.Equal(tester, 2, len(cfg.Exporters))
 
 	config := cfg.Exporters["logzio/2"].(*Config)
 	assert.Equal(tester, &Config{
-		ExporterSettings: configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
-		Token:            "logzioTESTtoken",
-		Region:           "eu",
-		CustomListenerAddress:	"https://some-url.com:8888",
+		ExporterSettings:      configmodels.ExporterSettings{TypeVal: typeStr, NameVal: "logzio/2"},
+		Token:                 "logzioTESTtoken",
+		Region:                "eu",
+		CustomListenerAddress: "https://some-url.com:8888",
 	}, config)
 }
