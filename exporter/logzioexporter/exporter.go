@@ -57,6 +57,9 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 	if err != nil {
 		return nil, err
 	}
+	if err := config.validate(); err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTraceExporter(
 		config,

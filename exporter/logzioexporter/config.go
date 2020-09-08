@@ -1,6 +1,7 @@
 package logzioexporter
 
 import (
+	"errors"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -9,4 +10,11 @@ type Config struct {
 	Token                         string `mapstructure:"account_token"`
 	Region                        string `mapstructure:"region"`
 	CustomListenerAddress         string `mapstructure:"custom_listener_address"`
+}
+
+func (c *Config) validate() error {
+	if c.Token == "" {
+		return errors.New("`Account Token` not specified")
+	}
+	return nil
 }
