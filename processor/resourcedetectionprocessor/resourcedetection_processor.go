@@ -18,93 +18,40 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-type resourceTraceProcessor struct {
+type resourceDetectionProcessor struct {
 	provider *internal.ResourceProvider
 	resource pdata.Resource
 	override bool
-	next     consumer.TraceConsumer
-}
-
-func newResourceTraceProcessor(_ context.Context, next consumer.TraceConsumer, provider *internal.ResourceProvider, override bool) *resourceTraceProcessor {
-	return &resourceTraceProcessor{
-		provider: provider,
-		override: override,
-		next:     next,
-	}
-}
-
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rtp *resourceTraceProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
 }
 
 // Start is invoked during service startup.
-func (rtp *resourceTraceProcessor) Start(ctx context.Context, host component.Host) error {
+func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
 	var err error
-	rtp.resource, err = rtp.provider.Get(ctx)
+	rdp.resource, err = rdp.provider.Get(ctx)
 	return err
 }
 
-// Shutdown is invoked during service shutdown.
-func (*resourceTraceProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-// ConsumeTraces implements the TraceProcessor interface
-func (rtp *resourceTraceProcessor) ConsumeTraces(ctx context.Context, traces pdata.Traces) error {
-	rs := traces.ResourceSpans()
+// ProcessTraces implements the TraceProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		res := rs.At(i).Resource()
 		if res.IsNil() {
 			res.InitEmpty()
 		}
 
-		internal.MergeResource(res, rtp.resource, rtp.override)
+		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
-
-	return rtp.next.ConsumeTraces(ctx, traces)
+	return td, nil
 }
 
-type resourceMetricProcessor struct {
-	provider *internal.ResourceProvider
-	resource pdata.Resource
-	override bool
-	next     consumer.MetricsConsumer
-}
-
-func newResourceMetricProcessor(_ context.Context, next consumer.MetricsConsumer, provider *internal.ResourceProvider, override bool) *resourceMetricProcessor {
-	return &resourceMetricProcessor{
-		provider: provider,
-		override: override,
-		next:     next,
-	}
-}
-
-// GetCapabilities returns the ProcessorCapabilities assocciated with the resource processor.
-func (rmp *resourceMetricProcessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
-// Start is invoked during service startup.
-func (rmp *resourceMetricProcessor) Start(ctx context.Context, host component.Host) error {
-	var err error
-	rmp.resource, err = rmp.provider.Get(ctx)
-	return err
-}
-
-// Shutdown is invoked during service shutdown.
-func (*resourceMetricProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-// ConsumeMetrics implements the MetricsProcessor interface
-func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+// ProcessMetrics implements the MetricsProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
@@ -112,8 +59,21 @@ func (rmp *resourceMetricProcessor) ConsumeMetrics(ctx context.Context, md pdata
 			res.InitEmpty()
 		}
 
-		internal.MergeResource(res, rmp.resource, rmp.override)
+		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
+	return md, nil
+}
 
-	return rmp.next.ConsumeMetrics(ctx, md)
+// ProcessLogs implements the LogsProcessor interface
+func (rdp *resourceDetectionProcessor) ProcessLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		res := rls.At(i).Resource()
+		if res.IsNil() {
+			res.InitEmpty()
+		}
+
+		internal.MergeResource(res, rdp.resource, rdp.override)
+	}
+	return ld, nil
 }
