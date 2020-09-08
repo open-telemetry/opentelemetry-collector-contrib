@@ -18,10 +18,10 @@ package dockerstatsreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
-	dtypes "github.com/docker/docker/api/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -51,23 +51,25 @@ func factory() (component.ReceiverFactory, *Config) {
 	return f, config
 }
 
-func params(t *testing.T) component.ReceiverCreateParams {
+func paramsAndContext(t *testing.T) (component.ReceiverCreateParams, context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	return component.ReceiverCreateParams{Logger: logger}
+	return component.ReceiverCreateParams{Logger: logger}, ctx, cancel
 }
 
 func TestDefaultMetricsIntegration(t *testing.T) {
-	params := params(t)
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
 	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
-	require.NoError(t, r.Start(context.Background(), &testHost{
+	require.NoError(t, r.Start(ctx, &testHost{
 		t: t,
 	}))
 
@@ -75,24 +77,25 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 		return len(consumer.AllMetrics()) > 0
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 func TestAllMetricsIntegration(t *testing.T) {
-	params := params(t)
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
 	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
-
 	config.ProvidePerCoreCPUMetrics = true
 
-	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
+
+	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
-	require.NoError(t, r.Start(context.Background(), &testHost{
+	require.NoError(t, r.Start(ctx, &testHost{
 		t: t,
 	}))
 
@@ -100,11 +103,36 @@ func TestAllMetricsIntegration(t *testing.T) {
 		return len(consumer.AllMetrics()) > 0
 	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(ctx))
+}
+
+func TestMonitoringAddedContainerIntegration(t *testing.T) {
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
+	consumer := &exportertest.SinkMetricsExporter{}
+	f, config := factory()
+
+	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
+	r := receiver.(*Receiver)
+
+	require.NoError(t, err, "failed creating metrics Receiver")
+	require.NoError(t, r.Start(ctx, &testHost{
+		t: t,
+	}))
+
+	d := container.New(t)
+	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+
+	assert.Eventuallyf(t, func() bool {
+		return len(consumer.AllMetrics()) > 0
+	}, 5*time.Second, 1*time.Second, "failed to receive any metrics")
+
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
-	params := params(t)
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
 	d := container.New(t)
 	d.StartImage("docker.io/library/redis:6.0.3", container.WithPortReady(6379))
 
@@ -112,11 +140,11 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
 
 	consumer := &exportertest.SinkMetricsExporter{}
-	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
+	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
 
 	require.NoError(t, err, "failed creating metrics Receiver")
-	require.NoError(t, r.Start(context.Background(), &testHost{
+	require.NoError(t, r.Start(ctx, &testHost{
 		t: t,
 	}))
 
@@ -124,30 +152,50 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 		return len(consumer.AllMetrics()) > 0
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
-	assert.NoError(t, r.Shutdown(context.Background()))
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestFetchMissingContainerIntegration(t *testing.T) {
-	params := params(t)
+func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
+	params, ctx, cancel := paramsAndContext(t)
+	defer cancel()
 	consumer := &exportertest.SinkMetricsExporter{}
 	f, config := factory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), params, config, consumer)
-	require.NoError(t, err, "failed creating metrics Receiver")
+	config.ExcludedImages = append(config.ExcludedImages, "!*nginx*")
+	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
-	require.NoError(t, r.Start(context.Background(), &testHost{
+
+	require.NoError(t, r.Start(ctx, &testHost{
 		t: t,
 	}))
 
-	container := DockerContainer{
-		ContainerJSON: &dtypes.ContainerJSON{
-			ContainerJSONBase: &dtypes.ContainerJSONBase{
-				ID: "notADockerContainer",
-			},
-		},
+	d := container.New(t)
+	nginx := d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
+
+	require.NoError(t, err, "failed creating metrics Receiver")
+
+	desiredAmount := func(numDesired int) func() bool {
+		return func() bool {
+			// We need the lock to prevent data race warnings for test activity
+			r.client.containersLock.Lock()
+			defer r.client.containersLock.Unlock()
+			return len(r.client.containers) == numDesired
+		}
 	}
 
-	md, err := r.client.FetchContainerStatsAndConvertToMetrics(context.Background(), container)
+	assert.Eventuallyf(t, desiredAmount(1), 5*time.Second, 1*time.Millisecond, "failed to load container stores")
+	containers := r.client.Containers()
+	d.RemoveContainer(nginx)
+	assert.Eventuallyf(t, desiredAmount(0), 5*time.Second, 1*time.Millisecond, "failed to clear container stores")
+
+	// Confirm missing container paths
+	md, err := r.client.FetchContainerStatsAndConvertToMetrics(ctx, containers[0])
 	assert.Nil(t, md)
 	require.Error(t, err)
-	assert.Equal(t, "Error response from daemon: No such container: notADockerContainer", err.Error())
+	assert.Equal(t, fmt.Sprintf("Error response from daemon: No such container: %s", containers[0].ID), err.Error())
+
+	ctr, ok := r.client.inspectedContainerIsOfInterest(ctx, containers[0].ID)
+	assert.False(t, ok)
+	assert.Nil(t, ctr)
+
+	assert.NoError(t, r.Shutdown(ctx))
 }

@@ -101,10 +101,13 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 
 func (r *Receiver) Setup() error {
 	err := r.client.LoadContainerList(r.runnerCtx)
-	if err == nil {
-		r.successfullySetup = true
+	if err != nil {
+		return err
 	}
-	return err
+
+	go r.client.ContainerEventLoop(r.runnerCtx)
+	r.successfullySetup = true
+	return nil
 }
 
 type result struct {
