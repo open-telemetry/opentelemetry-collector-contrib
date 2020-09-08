@@ -493,25 +493,27 @@ func calculateNewMetric(
 	operand2 *sfxpb.DataPoint,
 	tr Rule,
 ) *sfxpb.DataPoint {
-	if operand1.Value.IntValue == nil {
+	v1 := ptToFloatVal(operand1)
+	if v1 == nil {
 		logger.Warn(
-			"calculate_new_metric: operand1 has no IntValue",
+			"calculate_new_metric: operand1 has no numeric value",
 			zap.String("tr.Operand1Metric", tr.Operand1Metric),
 			zap.String("tr.MetricName", tr.MetricName),
 		)
 		return nil
 	}
 
-	if operand2.Value.IntValue == nil {
+	v2 := ptToFloatVal(operand2)
+	if v2 == nil {
 		logger.Warn(
-			"calculate_new_metric: operand2 has no IntValue",
-			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			"calculate_new_metric: operand2 has no numeric value",
+			zap.String("tr.Operand2Metric", tr.Operand1Metric),
 			zap.String("tr.MetricName", tr.MetricName),
 		)
 		return nil
 	}
 
-	if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+	if tr.Operator == MetricOperatorDivision && *v2 == 0 {
 		logger.Warn(
 			"calculate_new_metric: attempt to divide by zero, skipping",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
@@ -526,14 +528,28 @@ func calculateNewMetric(
 	switch tr.Operator {
 	// only supporting divide operator for now
 	case MetricOperatorDivision:
-		// only supporting int values for now
-		newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+		newPtVal = *v1 / *v2
 	default:
 		logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
 		return nil
 	}
 	newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
 	return newPt
+}
+
+func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
+	if pt == nil {
+		return nil
+	}
+	var f float64
+	if pt.Value.IntValue != nil {
+		f = float64(*pt.Value.IntValue)
+	} else if pt.Value.DoubleValue != nil {
+		f = *pt.Value.DoubleValue
+	} else {
+		return nil
+	}
+	return &f
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {
