@@ -28,7 +28,7 @@ type logzioExporter struct {
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
 	logger := hclog.New(&hclog.LoggerOptions{
-		Level:      hclog.Debug,
+		Level:      hclog.Info,
 		Name:       loggerName,
 		JSONFormat: true,
 	})
