@@ -2,6 +2,7 @@ package logzioexporter
 
 import (
 	"errors"
+
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
