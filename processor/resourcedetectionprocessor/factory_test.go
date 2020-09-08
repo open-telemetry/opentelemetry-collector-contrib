@@ -46,3 +46,22 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, lp)
 }
+
+func TestInvalidConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"not-existing"}
+
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopTraceExporter(), cfg)
+	assert.Error(t, err)
+	assert.Nil(t, tp)
+
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, exportertest.NewNopMetricsExporter(), cfg)
+	assert.Error(t, err)
+	assert.Nil(t, mp)
+
+	lp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	assert.Error(t, err)
+	assert.Nil(t, lp)
+}
