@@ -84,8 +84,14 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 
 	octds := internaldata.TraceDataToOC(td)
 	for _, octd := range octds {
+
+		var srv string
+		if octd.Node != nil && octd.Node.ServiceInfo != nil {
+			srv = octd.Node.ServiceInfo.Name
+		}
+
 		transform := &transformer{
-			ServiceName: octd.Node.ServiceInfo.Name,
+			ServiceName: srv,
 			Resource:    octd.Resource,
 		}
 
@@ -115,9 +121,14 @@ func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, er
 
 	ocmds := internaldata.MetricsToOC(md)
 	for _, ocmd := range ocmds {
+		var srv string
+		if ocmd.Node != nil && ocmd.Node.ServiceInfo != nil {
+			srv = ocmd.Node.ServiceInfo.Name
+		}
+
 		transform := &transformer{
 			DeltaCalculator: e.deltaCalculator,
-			ServiceName:     ocmd.Node.ServiceInfo.Name,
+			ServiceName:     srv,
 			Resource:        ocmd.Resource,
 		}
 
