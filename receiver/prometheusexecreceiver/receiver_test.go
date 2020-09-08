@@ -508,88 +508,89 @@ func TestFillPortPlaceholders(t *testing.T) {
 	}
 }
 
-// Testcases needed for two tests
-var (
-	getDelayAndComputeCrashCountTests = []struct {
-		name               string
-		elapsed            time.Duration
-		healthyProcessTime time.Duration
-		crashCount         int
-		healthyCrashCount  int
-		wantDelay          time.Duration
-		wantCrashCount     int
-	}{
-		{
-			name:               "healthy process 1",
-			elapsed:            15 * time.Minute,
-			healthyProcessTime: 30 * time.Minute,
-			crashCount:         2,
-			healthyCrashCount:  3,
-			wantDelay:          1 * time.Second,
-			wantCrashCount:     3,
-		},
-		{
-			name:               "healthy process 2",
-			elapsed:            15 * time.Hour,
-			healthyProcessTime: 20 * time.Minute,
-			crashCount:         6,
-			healthyCrashCount:  2,
-			wantDelay:          1 * time.Second,
-			wantCrashCount:     1,
-		},
-		{
-			name:               "unhealthy process 1",
-			elapsed:            15 * time.Second,
-			healthyProcessTime: 45 * time.Minute,
-			crashCount:         4,
-			healthyCrashCount:  3,
-			wantCrashCount:     5,
-		},
-		{
-			name:               "unhealthy process 2",
-			elapsed:            15 * time.Second,
-			healthyProcessTime: 75 * time.Second,
-			crashCount:         5,
-			healthyCrashCount:  3,
-			wantCrashCount:     6,
-		},
-		{
-			name:               "unhealthy process 3",
-			elapsed:            15 * time.Second,
-			healthyProcessTime: 30 * time.Minute,
-			crashCount:         6,
-			healthyCrashCount:  3,
-			wantCrashCount:     7,
-		},
-		{
-			name:               "unhealthy process 4",
-			elapsed:            15 * time.Second,
-			healthyProcessTime: 10 * time.Minute,
-			crashCount:         7,
-			healthyCrashCount:  3,
-			wantCrashCount:     8,
-		},
-	}
-	previousResult time.Duration
-)
-
-func TestGetDelay(t *testing.T) {
-	for _, test := range getDelayAndComputeCrashCountTests {
-		got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
-
-		if test.wantDelay > 0 {
-			assert.Equalf(t, test.wantDelay, got, "getDelay() '%v', got = %v, want %v", test.name, got, test.wantDelay)
-			continue
+func TestGetDelayAndComputeCrashCount(t *testing.T) {
+	var (
+		getDelayAndComputeCrashCountTests = []struct {
+			name               string
+			elapsed            time.Duration
+			healthyProcessTime time.Duration
+			crashCount         int
+			healthyCrashCount  int
+			wantDelay          time.Duration
+			wantCrashCount     int
+		}{
+			{
+				name:               "healthy process 1",
+				elapsed:            15 * time.Minute,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         2,
+				healthyCrashCount:  3,
+				wantDelay:          1 * time.Second,
+				wantCrashCount:     3,
+			},
+			{
+				name:               "healthy process 2",
+				elapsed:            15 * time.Hour,
+				healthyProcessTime: 20 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  2,
+				wantDelay:          1 * time.Second,
+				wantCrashCount:     1,
+			},
+			{
+				name:               "unhealthy process 1",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 45 * time.Minute,
+				crashCount:         4,
+				healthyCrashCount:  3,
+				wantCrashCount:     5,
+			},
+			{
+				name:               "unhealthy process 2",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 75 * time.Second,
+				crashCount:         5,
+				healthyCrashCount:  3,
+				wantCrashCount:     6,
+			},
+			{
+				name:               "unhealthy process 3",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 30 * time.Minute,
+				crashCount:         6,
+				healthyCrashCount:  3,
+				wantCrashCount:     7,
+			},
+			{
+				name:               "unhealthy process 4",
+				elapsed:            15 * time.Second,
+				healthyProcessTime: 10 * time.Minute,
+				crashCount:         7,
+				healthyCrashCount:  3,
+				wantCrashCount:     8,
+			},
 		}
+		previousResult time.Duration
+	)
 
-		if previousResult > got {
-			t.Errorf("getDelay() '%v', got = %v, want something larger than the previous result %v", test.name, got, previousResult)
+	// getDelay() test
+	t.Run("GetDelay test", func(t *testing.T) {
+		for _, test := range getDelayAndComputeCrashCountTests {
+			got := getDelay(test.elapsed, test.healthyProcessTime, test.crashCount, test.healthyCrashCount)
+
+			if test.wantDelay > 0 {
+				assert.Equalf(t, test.wantDelay, got, "getDelay() '%v', got = %v, want %v", test.name, got, test.wantDelay)
+				continue
+			}
+
+			if previousResult > got {
+				t.Errorf("getDelay() '%v', got = %v, want something larger than the previous result %v", test.name, got, previousResult)
+			}
+			previousResult = got
 		}
-		previousResult = got
-	}
-}
+	})
 
-func TestComputeCrashCount(t *testing.T) {
+	// computeCrashCount() test
 	per := &prometheusExecReceiver{}
 
 	for _, test := range getDelayAndComputeCrashCountTests {
