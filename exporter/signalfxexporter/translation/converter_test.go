@@ -192,7 +192,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   "ec2",
+								"cloud.provider":   cloudProviderAWS,
 								"cloud.account.id": "efgh",
 								"cloud.region":     "us-east",
 							},
@@ -209,7 +209,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					tsMSecs,
 					&sfxMetricTypeGauge,
 					append([]string{"cloud_account_id", "cloud_provider", "cloud_region", "k_r0", "k_r1"}, keys...),
-					append([]string{"efgh", "ec2", "us-east", "vr0", "vr1"}, values...),
+					append([]string{"efgh", cloudProviderAWS, "us-east", "vr0", "vr1"}, values...),
 					doubleVal),
 			},
 		},
@@ -222,7 +222,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   "ec2",
+								"cloud.provider":   cloudProviderAWS,
 								"cloud.account.id": "efgh",
 								"cloud.region":     "us-east",
 								"host.id":          "abcd",
@@ -245,7 +245,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			},
 		},
 		{
-			name: "with_resources_cloud_gce_dim_partial",
+			name: "with_resources_cloud_gcp_dim_partial",
 			metricsDataFn: func() []consumerdata.MetricsData {
 				return []consumerdata.MetricsData{
 					{
@@ -253,7 +253,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":           "vr0",
 								"k/r1":           "vr1",
-								"cloud.provider": "gce",
+								"cloud.provider": cloudProviderGCP,
 								"host.id":        "abcd",
 							},
 						},
@@ -269,7 +269,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					tsMSecs,
 					&sfxMetricTypeGauge,
 					append([]string{"cloud_provider", "host_id", "k_r0", "k_r1"}, keys...),
-					append([]string{"gce", "abcd", "vr0", "vr1"}, values...),
+					append([]string{cloudProviderGCP, "abcd", "vr0", "vr1"}, values...),
 					doubleVal),
 			},
 		},
@@ -282,7 +282,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   "gce",
+								"cloud.provider":   cloudProviderGCP,
 								"cloud.account.id": "efgh",
 								"host.id":          "abcd",
 							},
