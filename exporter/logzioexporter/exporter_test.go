@@ -28,13 +28,12 @@ import (
 	"github.com/logzio/jaeger-logzio/store/objects"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
