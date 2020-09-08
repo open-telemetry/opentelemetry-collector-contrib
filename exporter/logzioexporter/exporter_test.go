@@ -75,6 +75,15 @@ func TestNullExporterConfig(tester *testing.T) {
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
+func TestNullTokenConfig(tester *testing.T) {
+	cfg := Config{
+		Region: "eu",
+	}
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createTraceExporter(context.Background(), params, &cfg)
+	assert.Error(tester,  err, "Empty token should produce error")
+}
+
 func TestEmptyNode(tester *testing.T) {
 	cfg := Config{
 		Token:  "test",

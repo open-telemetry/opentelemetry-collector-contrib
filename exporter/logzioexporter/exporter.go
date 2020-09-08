@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -91,9 +90,6 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
-			if span.Process == nil {
-				span.Process = &model.Process{}
-			}
 			if err := exporter.writer.WriteSpan(span); err != nil {
 				exporter.logger.Debug(fmt.Sprintf("dropped bad span: %s", span.String()))
 				droppedSpans++
