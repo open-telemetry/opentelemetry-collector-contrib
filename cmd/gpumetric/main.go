@@ -15,50 +15,31 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
-	"net/http"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-)
-
-// GPU metrics declarations
-var (
-	gpuTemp = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "gpu_temperature_celsius",
-		Help: "Current temperature of the GPU.",
-	})
-	powerUsage = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "gpu_power_usage",
-		Help: "Current power usage of the GPU.",
-	})
-	gpuPCIeThroughputRxBytes = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "gpu_pcie_throughput_rx_bytes",
-		Help: "PCIe utilization counters of Rx in Bytes",
-	})
-	gpuPCIeThroughputTxBytes = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "gpu_pcie_throughput_tx_bytes",
-		Help: "PCIe utilization counters of Tx in Bytes",
-	})
-	gpuPCIeThroughputCount = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "gpu_pcie_throughput_count",
-		Help: "PCIe utilization counters of Tx in Bytes",
-	})
+	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/metric"
+	"go.opentelemetry.io/otel/exporters/otlp"
+	"go.opentelemetry.io/otel/sdk/metric/controller/push"
+	"go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 )
 
 var (
 	errGPUNotFound = errors.New("GPU was not found")
 )
 
-func init() {
-	prometheus.MustRegister(gpuTemp)
-	prometheus.MustRegister(powerUsage)
-	prometheus.MustRegister(gpuPCIeThroughputRxBytes)
-	prometheus.MustRegister(gpuPCIeThroughputTxBytes)
-	prometheus.MustRegister(gpuPCIeThroughputCount)
-}
+// GPU metrics declarations
+var (
+	temperature           metric.Int64ValueRecorder
+	powerUsage            metric.Int64ValueRecorder
+	pcieThroughputRxBytes metric.Int64ValueRecorder
+	pcieThroughputTxBytes metric.Int64ValueRecorder
+	pcieThroughputCount   metric.Int64ValueRecorder
+)
 
 func main() {
 	d, err := newGPUDevice()
@@ -66,14 +47,41 @@ func main() {
 		log.Fatalf("failed to get a GPU device: %s", err)
 		return
 	}
-	d.StartScraping()
-	defer d.StopScraping()
-	// TODO(ymotongpoo): Change endpoint to be configurable
-	http.Handle("/metrics", promhttp.Handler())
-	// TODO(ymotongpoo): Change port to be configurable
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal("failed to serve metrics server", err)
+
+	exporter, err := otlp.NewExporter(otlp.WithInsecure())
+	if err != nil {
+		log.Fatalf("failed to create OpenTelemetry exporter: %v", err)
 	}
+	defer func() {
+		err := exporter.Stop()
+		if err != nil {
+			log.Fatalf("failed to stop OpenTelemetry exporter: %v", err)
+		}
+	}()
+
+	pusher := push.New(
+		basic.New(simple.NewWithExactDistribution(), exporter),
+		exporter,
+		push.WithPeriod(2*time.Second),
+	)
+	global.SetMeterProvider(pusher.Provider())
+	pusher.Start()
+	defer pusher.Stop()
+	meterInit(pusher.Provider())
+
+	ctx := context.Background()
+	d.StartScraping(ctx)
+	defer d.StopScraping()
+}
+
+func meterInit(p metric.Provider) metric.Meter {
+	meter := p.Meter("opentelemetry-collector-contrib/gpumetric")
+	temperature = metric.Must(meter).NewInt64ValueRecorder("temperature")
+	powerUsage = metric.Must(meter).NewInt64ValueRecorder("powerusage")
+	pcieThroughputRxBytes = metric.Must(meter).NewInt64ValueRecorder("throughput.rx")
+	pcieThroughputTxBytes = metric.Must(meter).NewInt64ValueRecorder("throughput.tx")
+	pcieThroughputCount = metric.Must(meter).NewInt64ValueRecorder("throughput.count")
+	return meter
 }
 
 type device struct {
@@ -100,24 +108,22 @@ func newGPUDevice() (*device, error) {
 	}, nil
 }
 
-func (d *device) StartScraping() {
+func (d *device) StartScraping(ctx context.Context) {
 	status := NVMLInit()
 	if status != NVMLSuccess {
 		log.Printf("could not get GPU device: status=%d", status)
 		return
 	}
-	go func() {
-		ticker := time.NewTicker(d.scrapeInterval)
-		for {
-			select {
-			case <-ticker.C:
-				d.scrapeAndExport()
+	ticker := time.NewTicker(d.scrapeInterval)
+	for {
+		select {
+		case <-ticker.C:
+			d.scrapeAndExport(ctx)
 
-			case <-d.done:
-				return
-			}
+		case <-d.done:
+			return
 		}
-	}()
+	}
 }
 
 func (d *device) StopScraping() {
@@ -130,16 +136,16 @@ func (d *device) StopScraping() {
 }
 
 // scrapeAndExport updates all package global metrics.
-func (d *device) scrapeAndExport() {
+func (d *device) scrapeAndExport(ctx context.Context) {
 	temp := d.d.Temperature()
-	power := d.d.PowerUsage()
+	pu := d.d.PowerUsage()
 	pcieTx := d.d.PCIeThroughput(PCIeUtilTXBytes)
 	pcieRx := d.d.PCIeThroughput(PCIeUtilTXBytes)
 	pcieCount := d.d.PCIeThroughput(PCIeUtilCount)
 
-	gpuTemp.Set(float64(temp))
-	powerUsage.Set(float64(power))
-	gpuPCIeThroughputRxBytes.Set(float64(pcieTx))
-	gpuPCIeThroughputTxBytes.Set(float64(pcieRx))
-	gpuPCIeThroughputCount.Add(float64(pcieCount))
+	temperature.Record(ctx, int64(temp))
+	powerUsage.Record(ctx, int64(pu))
+	pcieThroughputRxBytes.Record(ctx, int64(pcieRx))
+	pcieThroughputTxBytes.Record(ctx, int64(pcieTx))
+	pcieThroughputCount.Record(ctx, int64(pcieCount))
 }
