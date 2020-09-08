@@ -220,8 +220,8 @@ func TestResourceProcessor(t *testing.T) {
 
 			err = rmp.Start(context.Background(), componenttest.NewNopHost())
 
-			if tt.expectedNewError != "" {
-				assert.EqualError(t, err, tt.expectedNewError)
+			if tt.expectedStartError != "" {
+				assert.EqualError(t, err, tt.expectedStartError)
 				return
 			}
 
@@ -234,6 +234,40 @@ func TestResourceProcessor(t *testing.T) {
 			}))
 			require.NoError(t, err)
 			got = tmn.AllMetrics()[0].ResourceMetrics().At(0).Resource()
+
+			tt.expectedResource.Attributes().Sort()
+			got.Attributes().Sort()
+			assert.Equal(t, tt.expectedResource, got)
+
+			// Test logs consumer
+			tln := &exportertest.SinkLogsExporter{}
+			rlp, err := factory.createLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tln)
+
+			if tt.expectedNewError != "" {
+				assert.EqualError(t, err, tt.expectedNewError)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.True(t, rlp.GetCapabilities().MutatesConsumedData)
+
+			err = rlp.Start(context.Background(), componenttest.NewNopHost())
+
+			if tt.expectedStartError != "" {
+				assert.EqualError(t, err, tt.expectedStartError)
+				return
+			}
+
+			require.NoError(t, err)
+			defer func() { assert.NoError(t, rlp.Shutdown(context.Background())) }()
+
+			ld := pdata.NewLogs()
+			ld.ResourceLogs().Resize(1)
+			tt.sourceResource.CopyTo(ld.ResourceLogs().At(0).Resource())
+
+			err = rlp.ConsumeLogs(context.Background(), ld)
+			require.NoError(t, err)
+			got = tln.AllLogs()[0].ResourceLogs().At(0).Resource()
 
 			tt.expectedResource.Attributes().Sort()
 			got.Attributes().Sort()
@@ -297,4 +331,26 @@ func BenchmarkConsumeMetricsDefault(b *testing.B) {
 func BenchmarkConsumeMetricsAll(b *testing.B) {
 	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gce.TypeStr}}
 	benchmarkConsumeMetrics(b, cfg)
+}
+
+func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
+	factory := NewFactory()
+	sink := &exportertest.SinkLogsExporter{}
+	processor, _ := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		// TODO use testbed.PerfTestDataProvider here once that includes resources
+		processor.ConsumeLogs(context.Background(), pdata.NewLogs())
+	}
+}
+
+func BenchmarkConsumeLogsDefault(b *testing.B) {
+	cfg := NewFactory().CreateDefaultConfig()
+	benchmarkConsumeLogs(b, cfg.(*Config))
+}
+
+func BenchmarkConsumeLogsAll(b *testing.B) {
+	cfg := &Config{Override: true, Detectors: []string{env.TypeStr, gce.TypeStr}}
+	benchmarkConsumeLogs(b, cfg)
 }
