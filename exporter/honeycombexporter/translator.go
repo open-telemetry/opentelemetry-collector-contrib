@@ -109,8 +109,14 @@ func getTraceLevelFields(node *commonpb.Node, resource *resourcepb.Resource, sou
 			if len(process.HostName) != 0 {
 				fields["process.hostname"] = process.HostName
 			}
-			fields["process.pid"] = process.Pid
-			fields["opencensus.start_timestamp"] = timestampToTime(process.StartTimestamp)
+			if process.Pid != 0 {
+				fields["process.pid"] = process.Pid
+			}
+
+			startTime := timestampToTime(process.StartTimestamp)
+			if startTime != (time.Time{}) {
+				fields["opencensus.start_timestamp"] = startTime
+			}
 		}
 	}
 
