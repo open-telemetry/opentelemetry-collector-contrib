@@ -6,8 +6,10 @@ processors:
 
 exporters:
   logzio:
+  logzio/2:
     account_token: "logzioTESTtoken"
     region: "eu"
+    custom_listener_address: "https://some-url.com:8888"
 
 service:
   pipelines:
