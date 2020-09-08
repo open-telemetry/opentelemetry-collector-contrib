@@ -91,7 +91,6 @@ func TestPushTraceData(tester *testing.T) {
 		Spans: testSpans,
 	}
 	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
-	//time.Sleep(time.Second * 10)
 	requests := strings.Split(string(recordedRequests), "\n")
 	var logzioSpan objects.LogzioSpan
 	assert.NoError(tester, json.Unmarshal([]byte(requests[0]), &logzioSpan))
