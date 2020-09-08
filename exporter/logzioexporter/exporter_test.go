@@ -53,6 +53,11 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 
 func TestNullExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	defer func() {
+		if r := recover(); r == nil {
+			tester.Errorf("Null exporter config should produce panic")
+		}
+	}()
 	_, err := createTraceExporter(context.Background(), params, nil)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
