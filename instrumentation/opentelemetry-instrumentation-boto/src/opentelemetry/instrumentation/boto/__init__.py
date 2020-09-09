@@ -126,13 +126,15 @@ class BotoInstrumentor(BaseInstrumentor):
             if args:
                 http_method = args[0]
                 span.resource = Resource(
-                    labels={
+                    attributes={
                         "endpoint": endpoint_name,
                         "http_method": http_method.lower(),
                     }
                 )
             else:
-                span.resource = Resource(labels={"endpoint": endpoint_name})
+                span.resource = Resource(
+                    attributes={"endpoint": endpoint_name}
+                )
 
             add_span_arg_tags(
                 span, endpoint_name, args, args_name, traced_args,

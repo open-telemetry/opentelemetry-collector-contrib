@@ -73,7 +73,7 @@ class TestBotoInstrumentor(TestBase):
         self.assertEqual(
             span.resource,
             Resource(
-                labels={"endpoint": "ec2", "http_method": "runinstances"}
+                attributes={"endpoint": "ec2", "http_method": "runinstances"}
             ),
         )
         self.assertEqual(span.attributes["http.method"], "POST")
@@ -131,7 +131,7 @@ class TestBotoInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "s3", "http_method": "head"}),
+            Resource(attributes={"endpoint": "s3", "http_method": "head"}),
         )
         self.assertEqual(span.attributes["http.method"], "HEAD")
         self.assertEqual(span.attributes["aws.operation"], "head_bucket")
@@ -146,7 +146,7 @@ class TestBotoInstrumentor(TestBase):
             span = spans[2]
             self.assertEqual(
                 span.resource,
-                Resource(labels={"endpoint": "s3", "http_method": "head"}),
+                Resource(attributes={"endpoint": "s3", "http_method": "head"}),
             )
 
     @mock_s3_deprecated
@@ -166,13 +166,13 @@ class TestBotoInstrumentor(TestBase):
         assert_span_http_status_code(spans[0], 200)
         self.assertEqual(
             spans[0].resource,
-            Resource(labels={"endpoint": "s3", "http_method": "put"}),
+            Resource(attributes={"endpoint": "s3", "http_method": "put"}),
         )
         # get bucket
         self.assertEqual(spans[1].attributes["aws.operation"], "head_bucket")
         self.assertEqual(
             spans[1].resource,
-            Resource(labels={"endpoint": "s3", "http_method": "head"}),
+            Resource(attributes={"endpoint": "s3", "http_method": "head"}),
         )
         # put object
         self.assertEqual(
@@ -180,7 +180,7 @@ class TestBotoInstrumentor(TestBase):
         )
         self.assertEqual(
             spans[2].resource,
-            Resource(labels={"endpoint": "s3", "http_method": "put"}),
+            Resource(attributes={"endpoint": "s3", "http_method": "put"}),
         )
 
     @mock_lambda_deprecated
@@ -223,7 +223,7 @@ class TestBotoInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "lambda", "http_method": "get"}),
+            Resource(attributes={"endpoint": "lambda", "http_method": "get"}),
         )
         self.assertEqual(span.attributes["http.method"], "GET")
         self.assertEqual(span.attributes["aws.region"], "us-east-2")
@@ -241,7 +241,10 @@ class TestBotoInstrumentor(TestBase):
         self.assertEqual(
             span.resource,
             Resource(
-                labels={"endpoint": "sts", "http_method": "getfederationtoken"}
+                attributes={
+                    "endpoint": "sts",
+                    "http_method": "getfederationtoken",
+                }
             ),
         )
         self.assertEqual(span.attributes["aws.region"], "us-west-2")
@@ -268,6 +271,6 @@ class TestBotoInstrumentor(TestBase):
         assert spans
         span = spans[0]
         self.assertEqual(
-            span.resource, Resource(labels={"endpoint": "elasticcache"})
+            span.resource, Resource(attributes={"endpoint": "elasticcache"})
         )
         self.assertEqual(span.attributes["aws.region"], "us-west-2")
