@@ -22,7 +22,7 @@ import opentelemetry.instrumentation.requests
 from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk import resources
-from opentelemetry.test.mock_httptextformat import MockHTTPTextFormat
+from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCanonicalCode
 
@@ -148,28 +148,28 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assert_span(num_spans=0)
 
     def test_distributed_context(self):
-        previous_propagator = propagators.get_global_httptextformat()
+        previous_propagator = propagators.get_global_textmap()
         try:
-            propagators.set_global_httptextformat(MockHTTPTextFormat())
+            propagators.set_global_textmap(MockTextMapPropagator())
             result = self.perform_request(self.URL)
             self.assertEqual(result.text, "Hello!")
 
             span = self.assert_span()
 
             headers = dict(httpretty.last_request().headers)
-            self.assertIn(MockHTTPTextFormat.TRACE_ID_KEY, headers)
+            self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
             self.assertEqual(
                 str(span.get_context().trace_id),
-                headers[MockHTTPTextFormat.TRACE_ID_KEY],
+                headers[MockTextMapPropagator.TRACE_ID_KEY],
             )
-            self.assertIn(MockHTTPTextFormat.SPAN_ID_KEY, headers)
+            self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
             self.assertEqual(
                 str(span.get_context().span_id),
-                headers[MockHTTPTextFormat.SPAN_ID_KEY],
+                headers[MockTextMapPropagator.SPAN_ID_KEY],
             )
 
         finally:
-            propagators.set_global_httptextformat(previous_propagator)
+            propagators.set_global_textmap(previous_propagator)
 
     def test_span_callback(self):
         RequestsInstrumentor().uninstrument()
