@@ -207,7 +207,7 @@ class TestJaegerSpanExporter(unittest.TestCase):
         otel_spans[0].set_attribute("key_float", 111.22)
         otel_spans[0].set_attribute("key_tuple", ("tuple_element",))
         otel_spans[0].resource = Resource(
-            labels={"key_resource": "some_resource"}
+            attributes={"key_resource": "some_resource"}
         )
         otel_spans[0].set_status(
             Status(StatusCanonicalCode.UNKNOWN, "Example description")
