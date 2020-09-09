@@ -64,14 +64,15 @@ func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) {
 	require.NoError(t, err)
 }
 
+func TestNullTraceExporterConfig(tester *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := newLogzioTraceExporter(nil, params)
+	assert.Error(tester, err, "Null exporter config should produce error")
+}
+
 func TestNullExporterConfig(tester *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	defer func() {
-		if r := recover(); r == nil {
-			tester.Errorf("Null exporter config should produce panic")
-		}
-	}()
-	_, err := createTraceExporter(context.Background(), params, nil)
+	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
