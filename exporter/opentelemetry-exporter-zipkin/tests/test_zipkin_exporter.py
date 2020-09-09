@@ -177,14 +177,14 @@ class TestZipkinSpanExporter(unittest.TestCase):
 
         otel_spans[1].start(start_time=start_times[1])
         otel_spans[1].resource = Resource(
-            labels={"key_resource": "some_resource"}
+            attributes={"key_resource": "some_resource"}
         )
         otel_spans[1].end(end_time=end_times[1])
 
         otel_spans[2].start(start_time=start_times[2])
         otel_spans[2].set_attribute("key_string", "hello_world")
         otel_spans[2].resource = Resource(
-            labels={"key_resource": "some_resource"}
+            attributes={"key_resource": "some_resource"}
         )
         otel_spans[2].end(end_time=end_times[2])
 
