@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jaegertracing/jaeger/model"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/logzio/jaeger-logzio/store"
@@ -37,6 +38,9 @@ type logzioExporter struct {
 	writer       *store.LogzioSpanWriter
 	logger       hclog.Logger
 }
+
+// Overrides for testing
+var WriteSpanFunc func(span *model.Span) error
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
 	logger := hclog.New(&hclog.LoggerOptions{
@@ -71,6 +75,7 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 	if err != nil {
 		return nil, err
 	}
+	WriteSpanFunc = exporter.writer.WriteSpan
 	if err := config.validate(); err != nil {
 		return nil, err
 	}
@@ -90,7 +95,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
-			if err := exporter.writer.WriteSpan(span); err != nil {
+			if err := WriteSpanFunc(span); err != nil {
 				exporter.logger.Debug(fmt.Sprintf("dropped bad span: %s", span.String()))
 				droppedSpans++
 			}

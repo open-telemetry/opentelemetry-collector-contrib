@@ -17,6 +17,8 @@ package logzioexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"github.com/jaegertracing/jaeger/model"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -92,9 +94,31 @@ func TestEmptyNode(tester *testing.T) {
 	}
 	td := consumerdata.TraceData{
 		Node:  nil,
+		Spans: nil,
+	}
+
+	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
+}
+
+func TestWriteSpanError(tester *testing.T) {
+	oldFunc := WriteSpanFunc
+	defer func() { WriteSpanFunc = oldFunc }()
+
+	cfg := Config{
+		Token:  "test",
+		Region: "eu",
+	}
+	td := consumerdata.TraceData{
+		Node:  nil,
 		Spans: testSpans,
 	}
-	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, _ := newLogzioExporter(&cfg, params)
+	WriteSpanFunc = func(*model.Span) error {
+		return errors.New("fail")
+	}
+	droppedSpans, _ := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
+	assert.Equal(tester, 1, droppedSpans)
 }
 
 func TestPushTraceData(tester *testing.T) {
