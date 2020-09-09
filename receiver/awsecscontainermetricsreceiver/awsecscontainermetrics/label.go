@@ -15,51 +15,57 @@
 package awsecscontainermetrics
 
 import (
+	"strings"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
 func containerLabelKeysAndValues(cm ContainerMetadata) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
-	var labelKeys []*metricspb.LabelKey
-	var labelValues []*metricspb.LabelValue
+	labelKeys := make([]*metricspb.LabelKey, 0, 3)
+	labelValues := make([]*metricspb.LabelValue, 0, 3)
 
-	labelKeys = make([]*metricspb.LabelKey, 0, len(cm.Labels)+4)
-	labelValues = make([]*metricspb.LabelValue, 0, len(cm.Labels)+4)
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.container-name"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.ContainerName, HasValue: true})
 
-	for key, value := range cm.Labels {
-		labelKeys = append(labelKeys, &metricspb.LabelKey{Key: key})
-		labelValues = append(labelValues, &metricspb.LabelValue{Value: value})
-	}
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-id"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerId, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.name"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.ContainerName})
-
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.dockerId"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerId})
-
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.dockerName"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerName})
-
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.Image"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.Image})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-name"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerName, HasValue: true})
 
 	return labelKeys, labelValues
 }
 
 func taskLabelKeysAndValues(tm TaskMetadata) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
-	var labelKeys []*metricspb.LabelKey
-	var labelValues []*metricspb.LabelValue
+	labelKeys := make([]*metricspb.LabelKey, 0, 6)
+	labelValues := make([]*metricspb.LabelValue, 0, 6)
 
-	labelKeys = make([]*metricspb.LabelKey, 0, 4)
-	labelValues = make([]*metricspb.LabelValue, 0, 4)
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.cluster"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Cluster, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "task.Cluster"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Cluster})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-arn"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.TaskARN, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "task.TaskFamily"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Family})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-id"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: getTaskIDFromARN(tm.TaskARN), HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "task.TaskDefRevision"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Revision})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-definition-family"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Family, HasValue: true})
+
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-definition-version"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Revision, HasValue: true})
+
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.service"})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: "undefined", HasValue: true})
 
 	return labelKeys, labelValues
+}
+
+func getTaskIDFromARN(arn string) string {
+	if !strings.HasPrefix(arn, "arn:aws") || arn == "" {
+		return ""
+	}
+	splits := strings.Split(arn, "/")
+
+	return splits[len(splits)-1]
 }

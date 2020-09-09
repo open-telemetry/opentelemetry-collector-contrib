@@ -23,16 +23,19 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-type metricDataAccumulator struct {
-	md []*consumerdata.MetricsData
-}
-
 const (
 	taskPrefix      = "ecs.task."
 	containerPrefix = "ecs.container."
 	cpusInVCpu      = 1024
+	serviceName     = "awsecscontainermetrics"
 )
 
+// metricDataAccumulator defines the accumulator
+type metricDataAccumulator struct {
+	md []*consumerdata.MetricsData
+}
+
+// getMetricsData generates OT Metrics data from task metadata and docker stats
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
 
 	var taskMemLimit uint64
@@ -45,16 +48,13 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
-		taskMemLimit += *containerMetadata.Limits.Memory
-		taskCPULimit += *containerMetadata.Limits.CPU
+		taskMemLimit += containerMetrics.MemoryReserved
+		taskCPULimit += containerMetrics.CPUReserved
 
-		containerResource := containerResource(containerMetadata)
 		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
 
 		acc.accumulate(
 			timestampProto(time.Now()),
-			containerResource,
-
 			convertToOTMetrics(containerPrefix, containerMetrics, labelKeys, labelValues),
 		)
 
@@ -73,18 +73,15 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		taskMetrics.CPUReserved = *metadata.Limits.CPU
 	}
 
-	taskResource := taskResource(metadata)
 	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 	acc.accumulate(
 		timestampProto(time.Now()),
-		taskResource,
 		convertToOTMetrics(taskPrefix, taskMetrics, taskLabelKeys, taskLabelValues),
 	)
 }
 
 func (acc *metricDataAccumulator) accumulate(
 	startTime *timestamp.Timestamp,
-	r *resourcepb.Resource,
 	m ...[]*metricspb.Metric,
 ) {
 	var resourceMetrics []*metricspb.Metric
@@ -95,6 +92,14 @@ func (acc *metricDataAccumulator) accumulate(
 				resourceMetrics = append(resourceMetrics, metric)
 			}
 		}
+	}
+
+	resourceAttributes := map[string]string{}
+	resourceAttributes["service.name"] = serviceName
+
+	r := &resourcepb.Resource{
+		Type:   "ecs.telemetry",
+		Labels: resourceAttributes,
 	}
 
 	acc.md = append(acc.md, &consumerdata.MetricsData{

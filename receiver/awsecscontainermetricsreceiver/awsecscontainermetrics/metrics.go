@@ -22,9 +22,5 @@ func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetad
 	acc := &metricDataAccumulator{}
 	acc.getMetricsData(containerStatsMap, metadata)
 
-	for _, md := range acc.md {
-		// TODO this should prob go in core
-		md.Resource.Labels["receiver"] = typeStr
-	}
 	return acc.md
 }
