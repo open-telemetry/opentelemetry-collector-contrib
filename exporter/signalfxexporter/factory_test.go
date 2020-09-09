@@ -675,10 +675,10 @@ func TestDefaultCPUTranslations(t *testing.T) {
 	tr := testGetTranslator(t)
 	log := zap.NewNop()
 
-	// write prev points
+	// write 'prev' points from which to calculate deltas
 	_ = tr.TranslateDataPoints(log, pts1)
 
-	// calculate deltas
+	// calculate cpu utilization
 	translated2 := tr.TranslateDataPoints(log, pts2)
 
 	m := map[string][]*sfxpb.DataPoint{}
@@ -688,28 +688,8 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		m[pt.Metric] = pts
 	}
 
-	deltas := m["system.cpu.delta"]
-	require.Equal(t, len(pts1), len(deltas))
-	for _, dpt := range deltas {
-		if dpt.Dimensions[4].Value != "interrupt" {
-			require.Equal(t, 1.0, *dpt.Value.DoubleValue)
-		}
-	}
-
-	cpuUsage, ok := m["system.cpu.usage"]
-	require.True(t, ok)
-	require.Equal(t, 8, len(cpuUsage))
-	for _, pt := range cpuUsage {
-		require.Equal(t, 2.0, *pt.Value.DoubleValue)
-	}
-
-	cpuTotal, ok := m["system.cpu.total"]
-	require.True(t, ok)
-	require.Equal(t, 8, len(cpuTotal))
-
-	cpuUtil, ok := m["cpu.utilization"]
-	require.True(t, ok)
-	require.Equal(t, 8, len(cpuUtil))
+	cpuUtil := m["cpu.utilization"]
+	require.Equal(t, 1, len(cpuUtil))
 	const expectedCPUUtil = 2.0 / 3.0
 	for _, pt := range cpuUtil {
 		require.Equal(t, expectedCPUUtil, *pt.Value.DoubleValue)

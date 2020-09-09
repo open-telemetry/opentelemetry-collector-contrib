@@ -138,7 +138,7 @@ translation_rules:
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
 
-# cpu deltas
+# compute cpu utilization
 - action: delta_metric
   mapping:
     system.cpu.time: system.cpu.delta
@@ -147,14 +147,19 @@ translation_rules:
     system.cpu.delta: system.cpu.usage
   dimension_key: state
   dimension_values:
-    user: true
-    system: true
     interrupt: true
+    nice: true
+    softirq: true
+    steal: true
+    system: true
+    user: true
+    wait: true
 - action: aggregate_metric
   metric_name: system.cpu.usage
   aggregation_method: sum
   without_dimensions:
   - state
+  - cpu
 - action: copy_metrics
   mapping:
     system.cpu.delta: system.cpu.total
@@ -163,6 +168,7 @@ translation_rules:
   aggregation_method: sum
   without_dimensions:
   - state
+  - cpu
 - action: calculate_new_metric
   metric_name: cpu.utilization
   operand1_metric: system.cpu.usage
@@ -398,5 +404,8 @@ translation_rules:
     df_complex.used_total: true
     disk.summary_total: true
     disk.total: true
+    system.cpu.usage: true
+    system.cpu.total: true
+    system.cpu.delta: true
 `
 )
