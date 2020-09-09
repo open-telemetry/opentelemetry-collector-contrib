@@ -100,14 +100,16 @@ class BotocoreInstrumentor(BaseInstrumentor):
             if args:
                 operation = args[0]
                 span.resource = Resource(
-                    labels={
+                    attributes={
                         "endpoint": endpoint_name,
                         "operation": operation.lower(),
                     }
                 )
 
             else:
-                span.resource = Resource(labels={"endpoint": endpoint_name})
+                span.resource = Resource(
+                    attributes={"endpoint": endpoint_name}
+                )
 
             add_span_arg_tags(
                 span,
