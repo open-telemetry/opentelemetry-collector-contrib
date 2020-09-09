@@ -676,7 +676,7 @@ class TracerShim(Tracer):
         if format not in self._supported_formats:
             raise UnsupportedFormatException
 
-        propagator = propagators.get_global_httptextformat()
+        propagator = propagators.get_global_textmap()
 
         ctx = set_span_in_context(DefaultSpan(span_context.unwrap()))
         propagator.inject(type(carrier).__setitem__, carrier, context=ctx)
@@ -710,7 +710,7 @@ class TracerShim(Tracer):
             value = dict_object.get(key)
             return [value] if value is not None else []
 
-        propagator = propagators.get_global_httptextformat()
+        propagator = propagators.get_global_textmap()
         ctx = propagator.extract(get_as_list, carrier)
         span = get_current_span(ctx)
         if span is not None:

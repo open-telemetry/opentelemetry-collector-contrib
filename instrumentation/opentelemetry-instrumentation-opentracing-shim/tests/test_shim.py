@@ -29,9 +29,9 @@ from opentelemetry.instrumentation.opentracing_shim import (
     util,
 )
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.test.mock_httptextformat import (
-    MockHTTPTextFormat,
-    NOOPHTTPTextFormat,
+from opentelemetry.test.mock_textmap import (
+    MockTextMapPropagator,
+    NOOPTextMapPropagator,
 )
 
 
@@ -46,15 +46,15 @@ class TestShim(TestCase):
     @classmethod
     def setUpClass(cls):
         # Save current propagator to be restored on teardown.
-        cls._previous_propagator = propagators.get_global_httptextformat()
+        cls._previous_propagator = propagators.get_global_textmap()
 
         # Set mock propagator for testing.
-        propagators.set_global_httptextformat(MockHTTPTextFormat())
+        propagators.set_global_textmap(MockTextMapPropagator())
 
     @classmethod
     def tearDownClass(cls):
         # Restore previous propagator.
-        propagators.set_global_httptextformat(cls._previous_propagator)
+        propagators.set_global_textmap(cls._previous_propagator)
 
     def test_shim_type(self):
         # Verify shim is an OpenTracing tracer.
@@ -482,8 +482,10 @@ class TestShim(TestCase):
 
         headers = {}
         self.shim.inject(context, opentracing.Format.HTTP_HEADERS, headers)
-        self.assertEqual(headers[MockHTTPTextFormat.TRACE_ID_KEY], str(1220))
-        self.assertEqual(headers[MockHTTPTextFormat.SPAN_ID_KEY], str(7478))
+        self.assertEqual(
+            headers[MockTextMapPropagator.TRACE_ID_KEY], str(1220)
+        )
+        self.assertEqual(headers[MockTextMapPropagator.SPAN_ID_KEY], str(7478))
 
     def test_inject_text_map(self):
         """Test `inject()` method for Format.TEXT_MAP."""
@@ -496,8 +498,12 @@ class TestShim(TestCase):
         # Verify Format.TEXT_MAP
         text_map = {}
         self.shim.inject(context, opentracing.Format.TEXT_MAP, text_map)
-        self.assertEqual(text_map[MockHTTPTextFormat.TRACE_ID_KEY], str(1220))
-        self.assertEqual(text_map[MockHTTPTextFormat.SPAN_ID_KEY], str(7478))
+        self.assertEqual(
+            text_map[MockTextMapPropagator.TRACE_ID_KEY], str(1220)
+        )
+        self.assertEqual(
+            text_map[MockTextMapPropagator.SPAN_ID_KEY], str(7478)
+        )
 
     def test_inject_binary(self):
         """Test `inject()` method for Format.BINARY."""
@@ -515,8 +521,8 @@ class TestShim(TestCase):
         """Test `extract()` method for Format.HTTP_HEADERS."""
 
         carrier = {
-            MockHTTPTextFormat.TRACE_ID_KEY: 1220,
-            MockHTTPTextFormat.SPAN_ID_KEY: 7478,
+            MockTextMapPropagator.TRACE_ID_KEY: 1220,
+            MockTextMapPropagator.SPAN_ID_KEY: 7478,
         }
 
         ctx = self.shim.extract(opentracing.Format.HTTP_HEADERS, carrier)
@@ -527,22 +533,22 @@ class TestShim(TestCase):
         """In the case where the propagator cannot extract a
         SpanContext, extract should return and invalid span context.
         """
-        _old_propagator = propagators.get_global_httptextformat()
-        propagators.set_global_httptextformat(NOOPHTTPTextFormat())
+        _old_propagator = propagators.get_global_textmap()
+        propagators.set_global_textmap(NOOPTextMapPropagator())
         try:
             carrier = {}
 
             ctx = self.shim.extract(opentracing.Format.HTTP_HEADERS, carrier)
             self.assertEqual(ctx.unwrap(), trace.INVALID_SPAN_CONTEXT)
         finally:
-            propagators.set_global_httptextformat(_old_propagator)
+            propagators.set_global_textmap(_old_propagator)
 
     def test_extract_text_map(self):
         """Test `extract()` method for Format.TEXT_MAP."""
 
         carrier = {
-            MockHTTPTextFormat.TRACE_ID_KEY: 1220,
-            MockHTTPTextFormat.SPAN_ID_KEY: 7478,
+            MockTextMapPropagator.TRACE_ID_KEY: 1220,
+            MockTextMapPropagator.SPAN_ID_KEY: 7478,
         }
 
         ctx = self.shim.extract(opentracing.Format.TEXT_MAP, carrier)
