@@ -83,13 +83,13 @@ func (h httpForwarder) forwardRequests(writer http.ResponseWriter, request *http
 }
 
 func newHTTPForwarder(config *Config, logger *zap.Logger) (component.ServiceExtension, error) {
-	if config.ForwardTo == "" {
-		return nil, errors.New("'forward_to' config option cannot be empty")
+	if config.Upstream.Endpoint == "" {
+		return nil, errors.New("'upstream.endpoint' config option cannot be empty")
 	}
 
-	var url, err = url.Parse(config.ForwardTo)
+	var url, err = url.Parse(config.Upstream.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("enter a valid URL for 'forward_to': %w", err)
+		return nil, fmt.Errorf("enter a valid URL for 'upstream.endpoint': %w", err)
 	}
 
 	handler := http.NewServeMux()
@@ -101,9 +101,9 @@ func newHTTPForwarder(config *Config, logger *zap.Logger) (component.ServiceExte
 	h := &httpForwarder{
 		listenAt:  config.Endpoint,
 		forwardTo: url,
-		headers:   config.Headers,
+		headers:   config.Upstream.Headers,
 		httpClient: &http.Client{
-			Timeout: config.HTTPTimeout,
+			Timeout: config.Upstream.Timeout,
 		},
 		server: server,
 		logger: logger,

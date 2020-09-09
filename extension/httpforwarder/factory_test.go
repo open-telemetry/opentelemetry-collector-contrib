@@ -18,9 +18,11 @@ import (
 	"context"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
@@ -34,6 +36,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, expectType, cfg.Name())
 	require.Equal(t, configmodels.Type(expectType), cfg.Type())
 	require.Equal(t, ":6060", cfg.Endpoint)
+	require.Equal(t, 10*time.Second, cfg.Upstream.Timeout)
 
 	e, err := f.CreateExtension(
 		context.Background(),
@@ -42,7 +45,7 @@ func TestFactory(t *testing.T) {
 		},
 		cfg,
 	)
-	require.EqualError(t, err, "'forward_to' config option cannot be empty")
+	require.EqualError(t, err, "'upstream.endpoint' config option cannot be empty")
 	require.Nil(t, e)
 
 	// Test with invalid config.
@@ -51,7 +54,7 @@ func TestFactory(t *testing.T) {
 		component.ExtensionCreateParams{
 			Logger: zap.NewNop(),
 		},
-		&Config{ForwardTo: "123.456.7.89:9090"},
+		&Config{Upstream: confighttp.HTTPClientSettings{Endpoint: "123.456.7.89:9090"}},
 	)
 	require.Error(t, err)
 	require.Nil(t, e)
@@ -62,7 +65,7 @@ func TestFactory(t *testing.T) {
 		component.ExtensionCreateParams{
 			Logger: zap.NewNop(),
 		},
-		&Config{ForwardTo: "localhost:9090"},
+		&Config{Upstream: confighttp.HTTPClientSettings{Endpoint: "localhost:9090"}},
 	)
 	require.NoError(t, err)
 	require.NotNil(t, e)

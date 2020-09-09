@@ -49,7 +49,9 @@ func createDefaultConfig() configmodels.Extension {
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
-		HTTPTimeout: 10 * time.Second,
+		Upstream: confighttp.HTTPClientSettings{
+			Timeout: 10 * time.Second,
+		},
 	}
 }
 

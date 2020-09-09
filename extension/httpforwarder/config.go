@@ -15,8 +15,6 @@
 package httpforwarder
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
@@ -26,13 +24,6 @@ type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 	confighttp.HTTPServerSettings  `mapstructure:",squash"`
 
-	// URL to forward incoming HTTP requests to.
-	ForwardTo string `mapstructure:"forward_to"`
-
-	// Headers to add to all requests that pass through the forwarder.
-	Headers map[string]string `mapstructure:"headers"`
-
-	// HTTPTimeout is the timeout for forwarding HTTP request. The default value
-	// is 10 seconds.
-	HTTPTimeout time.Duration `mapstructure:"http_timeout"`
+	// Upstream holds config settings to use for forwarded requests.
+	Upstream confighttp.HTTPClientSettings `mapstructure:"upstream"`
 }

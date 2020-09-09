@@ -75,8 +75,10 @@ func TestExtension(t *testing.T) {
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: listenAt,
 				},
-				Headers: map[string]string{
-					"key": "value",
+				Upstream: confighttp.HTTPClientSettings{
+					Headers: map[string]string{
+						"key": "value",
+					},
 				},
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
@@ -92,8 +94,10 @@ func TestExtension(t *testing.T) {
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: listenAt,
 				},
-				Headers: map[string]string{
-					"key": "value",
+				Upstream: confighttp.HTTPClientSettings{
+					Headers: map[string]string{
+						"key": "value",
+					},
 				},
 			},
 			expectedbackendStatusCode:   http.StatusInternalServerError,
@@ -110,8 +114,10 @@ func TestExtension(t *testing.T) {
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: listenAt,
 				},
-				Headers: map[string]string{
-					"key": "value",
+				Upstream: confighttp.HTTPClientSettings{
+					Headers: map[string]string{
+						"key": "value",
+					},
 				},
 			},
 			expectedbackendStatusCode:   http.StatusBadGateway,
@@ -143,7 +149,7 @@ func TestExtension(t *testing.T) {
 				}
 
 				// Assert additional headers added by forwarder.
-				for k, v := range test.config.Headers {
+				for k, v := range test.config.Upstream.Headers {
 					got := r.Header.Get(k)
 					assert.Equal(t, v, got)
 				}
@@ -155,11 +161,11 @@ func TestExtension(t *testing.T) {
 
 			// Fill in final destination URL.
 			backendURL, _ := url.Parse(backend.URL)
-			test.config.ForwardTo = backendURL.String()
+			test.config.Upstream.Endpoint = backendURL.String()
 
 			// Setup forwarder with wrong final address to mock failures.
 			if test.requestErrorAtForwarder {
-				test.config.ForwardTo = "http://" + testutil.GetAvailableLocalAddress(t)
+				test.config.Upstream.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 			}
 
 			hf, err := newHTTPForwarder(test.config, zap.NewNop())
