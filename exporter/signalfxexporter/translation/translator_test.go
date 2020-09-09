@@ -1630,7 +1630,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    nil,
 			metric2: "metric2",
 			val2:    generateIntPtr(1),
-			wantErr: "calculate_new_metric: operand1 has no IntValue",
+			wantErr: "calculate_new_metric: operand1 has no numeric value",
 		},
 		{
 			name:    "operand2_nil",
@@ -1646,7 +1646,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    generateIntPtr(1),
 			metric2: "metric2",
 			val2:    nil,
-			wantErr: "calculate_new_metric: operand2 has no IntValue",
+			wantErr: "calculate_new_metric: operand2 has no numeric value",
 		},
 		{
 			name:    "divide_by_zero",
@@ -1998,6 +1998,68 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		}},
 	}
 	want := []*sfxpb.DataPoint{m1, m2, m1v2, m2v2, m3, m3v2}
+	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
+}
+
+func TestUnsupportedOperator(t *testing.T) {
+	_, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "*",
+	}}, 1)
+	require.Error(t, err)
+}
+
+func TestCalculateNewMetric_Double(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "/",
+	}}, 1)
+	require.NoError(t, err)
+	m1 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	dps := []*sfxpb.DataPoint{m1, m2}
+	translated := mt.TranslateDataPoints(zap.NewNop(), dps)
+	m3 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	want := []*sfxpb.DataPoint{m1, m2, m3}
 	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
 }
 
