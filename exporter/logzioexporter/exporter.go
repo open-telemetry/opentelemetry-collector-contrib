@@ -41,6 +41,7 @@ type logzioExporter struct {
 
 // Overrides for testing
 var WriteSpanFunc func(span *model.Span) error
+var InternalTracesToJaegerTraces = jaeger.InternalTracesToJaegerProto
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
 	logger := hclog.New(&hclog.LoggerOptions{
@@ -88,7 +89,7 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.Traces) (droppedSpansCount int, err error) {
 	droppedSpans := 0
-	batches, err := jaeger.InternalTracesToJaegerProto(traces)
+	batches, err := InternalTracesToJaegerTraces(traces)
 	if err != nil {
 		return traces.SpanCount(), err
 	}

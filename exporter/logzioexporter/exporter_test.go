@@ -121,6 +121,27 @@ func TestWriteSpanError(tester *testing.T) {
 	assert.Equal(tester, 1, droppedSpans)
 }
 
+func TestConversionTraceError(tester *testing.T) {
+	oldFunc := InternalTracesToJaegerTraces
+	defer func() { InternalTracesToJaegerTraces= oldFunc }()
+
+	cfg := Config{
+		Token:  "test",
+		Region: "eu",
+	}
+	td := consumerdata.TraceData{
+		Node:  nil,
+		Spans: testSpans,
+	}
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exporter, _ := newLogzioExporter(&cfg, params)
+	InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
+		return nil, errors.New("fail")
+	}
+	_, err := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
+	assert.Error(tester, err)
+}
+
 func TestPushTraceData(tester *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
