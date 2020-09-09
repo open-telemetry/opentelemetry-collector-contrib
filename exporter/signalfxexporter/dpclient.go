@@ -30,8 +30,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
@@ -53,7 +53,7 @@ func (s *sfxDPClient) pushMetricsData(
 	ctx context.Context,
 	md pdata.Metrics,
 ) (droppedTimeSeries int, err error) {
-	metricsData := pdatautil.MetricsToMetricsData(md)
+	metricsData := internaldata.MetricsToOC(md)
 	var numDroppedTimeseries int
 	var errs []error
 
@@ -96,7 +96,8 @@ func (s *sfxDPClient) pushMetricsData(
 func (s *sfxDPClient) pushMetricsDataForToken(
 	metricsData []consumerdata.MetricsData, accessToken string) (int, error) {
 	numTimeseries := timeseriesCount(metricsData)
-	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData)
+	sfxDataPoints := make([]*sfxpb.DataPoint, 0, numTimeseries)
+	sfxDataPoints, numDroppedTimeseries := s.converter.MetricDataToSignalFxV2(metricsData, sfxDataPoints)
 
 	body, compressed, err := s.encodeBody(sfxDataPoints)
 	if err != nil {

@@ -78,7 +78,7 @@ func TestStabilityMetricsSignalFx(t *testing.T) {
 		datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
 		datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      83,
+			ExpectedMaxCPU:      120,
 			ExpectedMaxRAM:      95,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},

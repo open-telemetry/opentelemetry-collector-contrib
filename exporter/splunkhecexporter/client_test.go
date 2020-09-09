@@ -33,7 +33,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -55,22 +54,20 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		metrics = append(metrics, metric)
 	}
 
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-		{
-			Node: &commonpb.Node{
-				Attributes: map[string]string{
-					"k/n0": "vn0",
-					"k/n1": "vn1",
-				},
+	return internaldata.OCToMetrics(consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			Attributes: map[string]string{
+				"k/n0": "vn0",
+				"k/n1": "vn1",
 			},
-			Resource: &resourcepb.Resource{
-				Labels: map[string]string{
-					"k/r0": "vr0",
-					"k/r1": "vr1",
-				},
-			},
-			Metrics: metrics,
 		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"k/r0": "vr0",
+				"k/r1": "vr1",
+			},
+		},
+		Metrics: metrics,
 	})
 }
 
