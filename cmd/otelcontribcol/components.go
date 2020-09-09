@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
@@ -64,6 +65,7 @@ func components() (component.Factories, error) {
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
 		hostobserver.NewFactory(),
+		httpforwarder.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
