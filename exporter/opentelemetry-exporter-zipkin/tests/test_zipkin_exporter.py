@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -43,54 +44,56 @@ class TestZipkinSpanExporter(unittest.TestCase):
         self._test_span.start()
         self._test_span.end()
 
-    def test_constructor_default(self):
+    def tearDown(self):
+        if "OTEL_EXPORTER_ZIPKIN_ENDPOINT" in os.environ:
+            del os.environ["OTEL_EXPORTER_ZIPKIN_ENDPOINT"]
+
+    def test_constructor_env_var(self):
         """Test the default values assigned by constructor."""
+        url = "https://foo:9911/path"
+        os.environ["OTEL_EXPORTER_ZIPKIN_ENDPOINT"] = url
         service_name = "my-service-name"
-        host_name = "localhost"
-        port = 9411
-        endpoint = "/api/v2/spans"
+        port = 9911
         exporter = ZipkinSpanExporter(service_name)
         ipv4 = None
         ipv6 = None
-        protocol = "http"
+
+        self.assertEqual(exporter.service_name, service_name)
+        self.assertEqual(exporter.ipv4, ipv4)
+        self.assertEqual(exporter.ipv6, ipv6)
+        self.assertEqual(exporter.url, url)
+        self.assertEqual(exporter.port, port)
+
+    def test_constructor_default(self):
+        """Test the default values assigned by constructor."""
+        service_name = "my-service-name"
+        port = 9411
+        exporter = ZipkinSpanExporter(service_name)
+        ipv4 = None
+        ipv6 = None
         url = "http://localhost:9411/api/v2/spans"
 
         self.assertEqual(exporter.service_name, service_name)
-        self.assertEqual(exporter.host_name, host_name)
         self.assertEqual(exporter.port, port)
-        self.assertEqual(exporter.endpoint, endpoint)
         self.assertEqual(exporter.ipv4, ipv4)
         self.assertEqual(exporter.ipv6, ipv6)
-        self.assertEqual(exporter.protocol, protocol)
         self.assertEqual(exporter.url, url)
 
     def test_constructor_explicit(self):
         """Test the constructor passing all the options."""
         service_name = "my-opentelemetry-zipkin"
-        host_name = "opentelemetry.io"
         port = 15875
-        endpoint = "/myapi/traces?format=zipkin"
         ipv4 = "1.2.3.4"
         ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334"
-        protocol = "https"
         url = "https://opentelemetry.io:15875/myapi/traces?format=zipkin"
         exporter = ZipkinSpanExporter(
-            service_name=service_name,
-            host_name=host_name,
-            port=port,
-            endpoint=endpoint,
-            ipv4=ipv4,
-            ipv6=ipv6,
-            protocol=protocol,
+            service_name=service_name, url=url, ipv4=ipv4, ipv6=ipv6,
         )
 
         self.assertEqual(exporter.service_name, service_name)
-        self.assertEqual(exporter.host_name, host_name)
         self.assertEqual(exporter.port, port)
-        self.assertEqual(exporter.endpoint, endpoint)
         self.assertEqual(exporter.ipv4, ipv4)
         self.assertEqual(exporter.ipv6, ipv6)
-        self.assertEqual(exporter.protocol, protocol)
         self.assertEqual(exporter.url, url)
 
     # pylint: disable=too-many-locals

@@ -24,6 +24,7 @@ This exporter always send traces to the configured Zipkin collector using HTTP.
 
 .. _Zipkin: https://zipkin.io/
 .. _OpenTelemetry: https://github.com/open-telemetry/opentelemetry-python/
+.. _Specification: https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/sdk-environment-variables.md#zipkin-exporter
 
 .. code:: python
 
@@ -39,10 +40,7 @@ This exporter always send traces to the configured Zipkin collector using HTTP.
     zipkin_exporter = zipkin.ZipkinSpanExporter(
         service_name="my-helloworld-service",
         # optional:
-        # host_name="localhost",
-        # port=9411,
-        # endpoint="/api/v2/spans",
-        # protocol="http",
+        # url="http://localhost:9411/api/v2/spans",
         # ipv4="",
         # ipv6="",
         # retry=False,
@@ -57,24 +55,25 @@ This exporter always send traces to the configured Zipkin collector using HTTP.
     with tracer.start_as_current_span("foo"):
         print("Hello world!")
 
+The exporter supports endpoint configuration via the OTEL_EXPORTER_ZIPKIN_ENDPOINT environment variables as defined in the `Specification`_
+
 API
 ---
 """
 
 import json
 import logging
+import os
 from typing import Optional, Sequence
+from urllib.parse import urlparse
 
 import requests
 
 from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 from opentelemetry.trace import Span, SpanContext, SpanKind
 
-DEFAULT_ENDPOINT = "/api/v2/spans"
-DEFAULT_HOST_NAME = "localhost"
-DEFAULT_PORT = 9411
-DEFAULT_PROTOCOL = "http"
 DEFAULT_RETRY = False
+DEFAULT_URL = "http://localhost:9411/api/v2/spans"
 ZIPKIN_HEADERS = {"Content-Type": "application/json"}
 
 SPAN_KIND_MAP = {
@@ -96,10 +95,7 @@ class ZipkinSpanExporter(SpanExporter):
     Args:
         service_name: Service that logged an annotation in a trace.Classifier
             when query for spans.
-        host_name: The host name of the Zipkin server
-        port: The port of the Zipkin server
-        endpoint: The endpoint of the Zipkin server
-        protocol: The protocol used for the request.
+        url: The Zipkin endpoint URL
         ipv4: Primary IPv4 address associated with this connection.
         ipv6: Primary IPv6 address associated with this connection.
         retry: Set to True to configure the exporter to retry on failure.
@@ -108,22 +104,21 @@ class ZipkinSpanExporter(SpanExporter):
     def __init__(
         self,
         service_name: str,
-        host_name: str = DEFAULT_HOST_NAME,
-        port: int = DEFAULT_PORT,
-        endpoint: str = DEFAULT_ENDPOINT,
-        protocol: str = DEFAULT_PROTOCOL,
+        url: str = None,
         ipv4: Optional[str] = None,
         ipv6: Optional[str] = None,
         retry: Optional[str] = DEFAULT_RETRY,
     ):
         self.service_name = service_name
-        self.host_name = host_name
-        self.port = port
-        self.endpoint = endpoint
-        self.protocol = protocol
-        self.url = "{}://{}:{}{}".format(
-            self.protocol, self.host_name, self.port, self.endpoint
-        )
+        if url is None:
+            self.url = os.environ.get(
+                "OTEL_EXPORTER_ZIPKIN_ENDPOINT", DEFAULT_URL
+            )
+        else:
+            self.url = url
+
+        self.port = urlparse(self.url).port
+
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.retry = retry

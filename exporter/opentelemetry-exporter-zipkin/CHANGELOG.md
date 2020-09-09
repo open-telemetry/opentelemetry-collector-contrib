@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add support for OTEL_EXPORTER_ZIPKIN_ENDPOINT env var. As part of this change, the 
+  configuration of the ZipkinSpanExporter exposes a `url` argument to replace `host_name`,
+  `port`, `protocol`, `endpoint`. This brings this implementation inline with other
+  implementations. 
+  ([#1064](https://github.com/open-telemetry/opentelemetry-python/pull/1064))
+
 ## Version 0.12b0
 
 Released 2020-08-14
