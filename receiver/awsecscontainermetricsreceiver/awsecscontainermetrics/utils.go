@@ -27,39 +27,11 @@ func timestampProto(t time.Time) *timestamp.Timestamp {
 	return out
 }
 
-func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
-	currentTime := timestampProto(t)
+func applyTimeStamp(metrics []*metricspb.Metric, t *timestamp.Timestamp) []*metricspb.Metric {
 	for _, metric := range metrics {
 		if metric != nil {
-			metric.Timeseries[0].Points[0].Timestamp = currentTime
+			metric.Timeseries[0].Points[0].Timestamp = t
 		}
 	}
 	return metrics
-}
-
-// todo put this in a common lib
-func labels(labels map[string]string, descriptions map[string]string) (
-	[]*metricspb.LabelKey, []*metricspb.LabelValue,
-) {
-	var keys []*metricspb.LabelKey
-	var values []*metricspb.LabelValue
-	for key, val := range labels {
-		labelKey := &metricspb.LabelKey{Key: key}
-		desc, hasDesc := descriptions[key]
-		if hasDesc {
-			labelKey.Description = desc
-		}
-		keys = append(keys, labelKey)
-		values = append(values, &metricspb.LabelValue{
-			Value:    val,
-			HasValue: true,
-		})
-	}
-	return keys, values
-}
-
-func applyLabels(metric *metricspb.Metric, attrs map[string]string) {
-	if metric != nil {
-		metric.MetricDescriptor.LabelKeys, metric.Timeseries[0].LabelValues = labels(attrs, nil)
-	}
 }

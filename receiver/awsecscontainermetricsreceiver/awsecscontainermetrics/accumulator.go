@@ -41,6 +41,8 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	var taskMemLimit uint64
 	var taskCPULimit float64
 	taskMetrics := ECSMetrics{}
+	timestamp := timestampProto(time.Now())
+	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerId]
@@ -52,10 +54,12 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		taskCPULimit += containerMetrics.CPUReserved
 
 		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
+		labelKeys = append(labelKeys, taskLabelKeys...)
+		labelValues = append(labelValues, taskLabelValues...)
 
 		acc.accumulate(
-			timestampProto(time.Now()),
-			convertToOTMetrics(containerPrefix, containerMetrics, labelKeys, labelValues),
+			timestamp,
+			convertToOTMetrics(containerPrefix, containerMetrics, labelKeys, labelValues, timestamp),
 		)
 
 		aggregateTaskMetrics(&taskMetrics, containerMetrics)
@@ -73,10 +77,9 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		taskMetrics.CPUReserved = *metadata.Limits.CPU
 	}
 
-	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 	acc.accumulate(
-		timestampProto(time.Now()),
-		convertToOTMetrics(taskPrefix, taskMetrics, taskLabelKeys, taskLabelValues),
+		timestamp,
+		convertToOTMetrics(taskPrefix, taskMetrics, taskLabelKeys, taskLabelValues, timestamp),
 	)
 }
 

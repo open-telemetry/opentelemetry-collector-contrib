@@ -15,14 +15,13 @@
 package awsecscontainermetrics
 
 import (
-	"time"
-
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue) []*metricspb.Metric {
+func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue, timestamp *timestamppb.Timestamp) []*metricspb.Metric {
 
-	return applyCurrentTime([]*metricspb.Metric{
+	return applyTimeStamp([]*metricspb.Metric{
 		intGauge(prefix+"memory_usage", "Bytes", &m.MemoryUsage, labelKeys, labelValues),
 		intGauge(prefix+"memory_maxusage", "Bytes", &m.MemoryMaxUsage, labelKeys, labelValues),
 		intGauge(prefix+"memory_limit", "Bytes", &m.MemoryLimit, labelKeys, labelValues),
@@ -52,5 +51,5 @@ func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.Labe
 
 		intGauge(prefix+"storage_read_bytes", "Bytes", &m.StorageReadBytes, labelKeys, labelValues),
 		intGauge(prefix+"storage_write_bytes", "Bytes", &m.StorageWriteBytes, labelKeys, labelValues),
-	}, time.Now())
+	}, timestamp)
 }
