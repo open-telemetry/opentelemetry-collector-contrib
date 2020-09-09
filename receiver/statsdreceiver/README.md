@@ -34,11 +34,11 @@ General format is:
 
 `<name>:<value>|c|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-<!-- ### Gauge
+### Gauge
 
 `<name>:<value>|g|@<sample-rate>|#<tag1-key>:<tag1-value>`
 
-### Timer/Histogram
+<!-- ### Timer/Histogram
 
 `<name>:<value>|<ms/h>|@<sample-rate>|#<tag1-key>:<tag1-value>` -->
 
@@ -66,4 +66,4 @@ service:
 
 A simple way to send a metric to `localhost:8125`:
 
-`echo "test.metric:1|c" | nc -w 1 -u localhost 8125`
+`echo "test.metric:42|c|#myKey:myVal" | nc -w 1 -u localhost 8125`
