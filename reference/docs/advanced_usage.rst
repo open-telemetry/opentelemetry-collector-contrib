@@ -390,7 +390,7 @@ Examples::
     ])
 
 The following rules apply:
-  - headers configuration is based on a whitelist. If a header does not appear in the whitelist, it won't be traced.
+  - headers configuration is based on a allowlist. If a header does not appear in the allowlist, it won't be traced.
   - headers configuration is case-insensitive.
   - if you configure a specific integration, e.g. 'requests', then such configuration overrides the default global
     configuration, only for the specific integration.

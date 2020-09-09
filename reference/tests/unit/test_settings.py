@@ -47,7 +47,7 @@ class TestHttpConfig(BaseTestCase):
         assert http_config.header_is_traced('some_header')
         assert not http_config.header_is_traced('some_other_header')
 
-    def test_trace_headers_whitelist_case_insensitive(self):
+    def test_trace_headers_allowlist_case_insensitive(self):
         http_config = HttpConfig()
         http_config.trace_headers('some_header')
         assert http_config.header_is_traced('sOmE_hEaDeR')

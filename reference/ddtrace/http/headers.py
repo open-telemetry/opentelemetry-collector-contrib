@@ -17,7 +17,7 @@ NORMALIZE_PATTERN = re.compile(r'([^a-z0-9_\-:/]){1}')
 def store_request_headers(headers, span, integration_config):
     """
     Store request headers as a span's tags
-    :param headers: All the request's http headers, will be filtered through the whitelist
+    :param headers: All the request's http headers, will be filtered through the allowlist
     :type headers: dict or list
     :param span: The Span instance where tags will be stored
     :type span: ddtrace.Span
@@ -30,7 +30,7 @@ def store_request_headers(headers, span, integration_config):
 def store_response_headers(headers, span, integration_config):
     """
     Store response headers as a span's tags
-    :param headers: All the response's http headers, will be filtered through the whitelist
+    :param headers: All the response's http headers, will be filtered through the allowlist
     :type headers: dict or list
     :param span: The Span instance where tags will be stored
     :type span: ddtrace.Span

@@ -1,8 +1,8 @@
 from ..utils.formats import flatten_dict
 
 
-BLACKLIST_ENDPOINT = ['kms', 'sts']
-BLACKLIST_ENDPOINT_TAGS = {
+DENYLIST_ENDPOINT = ['kms', 'sts']
+DENYLIST_ENDPOINT_TAGS = {
     's3': ['params.Body'],
 }
 
@@ -18,8 +18,8 @@ def truncate_arg_value(value, max_len=1024):
 
 
 def add_span_arg_tags(span, endpoint_name, args, args_names, args_traced):
-    if endpoint_name not in BLACKLIST_ENDPOINT:
-        blacklisted = BLACKLIST_ENDPOINT_TAGS.get(endpoint_name, [])
+    if endpoint_name not in DENYLIST_ENDPOINT:
+        denylisted = DENYLIST_ENDPOINT_TAGS.get(endpoint_name, [])
         tags = dict(
             (name, value)
             for (name, value) in zip(args_names, args)
@@ -29,7 +29,7 @@ def add_span_arg_tags(span, endpoint_name, args, args_names, args_traced):
         tags = {
             k: truncate_arg_value(v)
             for k, v in tags.items()
-            if k not in blacklisted
+            if k not in denylisted
         }
         span.set_tags(tags)
 

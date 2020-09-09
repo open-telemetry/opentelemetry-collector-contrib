@@ -11,30 +11,30 @@ class HttpConfig(object):
     """
 
     def __init__(self):
-        self._whitelist_headers = set()
+        self._allowlist_headers = set()
         self.trace_query_string = None
 
     @property
     def is_header_tracing_configured(self):
-        return len(self._whitelist_headers) > 0
+        return len(self._allowlist_headers) > 0
 
-    def trace_headers(self, whitelist):
+    def trace_headers(self, allowlist):
         """
         Registers a set of headers to be traced at global level or integration level.
-        :param whitelist: the case-insensitive list of traced headers
-        :type whitelist: list of str or str
+        :param allowlist: the case-insensitive list of traced headers
+        :type allowlist: list of str or str
         :return: self
         :rtype: HttpConfig
         """
-        if not whitelist:
+        if not allowlist:
             return
 
-        whitelist = [whitelist] if isinstance(whitelist, str) else whitelist
-        for whitelist_entry in whitelist:
-            normalized_header_name = normalize_header_name(whitelist_entry)
+        allowlist = [allowlist] if isinstance(allowlist, str) else allowlist
+        for allowlist_entry in allowlist:
+            normalized_header_name = normalize_header_name(allowlist_entry)
             if not normalized_header_name:
                 continue
-            self._whitelist_headers.add(normalized_header_name)
+            self._allowlist_headers.add(normalized_header_name)
 
         return self
 
@@ -46,9 +46,9 @@ class HttpConfig(object):
         :rtype: bool
         """
         normalized_header_name = normalize_header_name(header_name)
-        log.debug('Checking header \'%s\' tracing in whitelist %s', normalized_header_name, self._whitelist_headers)
-        return normalized_header_name in self._whitelist_headers
+        log.debug('Checking header \'%s\' tracing in allowlist %s', normalized_header_name, self._allowlist_headers)
+        return normalized_header_name in self._allowlist_headers
 
     def __repr__(self):
         return '<{} traced_headers={} trace_query_string={}>'.format(
-            self.__class__.__name__, self._whitelist_headers, self.trace_query_string)
+            self.__class__.__name__, self._allowlist_headers, self.trace_query_string)

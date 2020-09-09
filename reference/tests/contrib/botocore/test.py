@@ -117,7 +117,7 @@ class BotocoreTest(BaseTracerTestCase):
         self.assertEqual(spans[1].resource, 's3.putobject')
         self.assertEqual(spans[1].get_tag('params.Key'), stringify(params['Key']))
         self.assertEqual(spans[1].get_tag('params.Bucket'), stringify(params['Bucket']))
-        # confirm blacklisted
+        # confirm denylisted
         self.assertIsNone(spans[1].get_tag('params.Body'))
 
     @mock_sqs

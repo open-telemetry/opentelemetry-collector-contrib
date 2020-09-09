@@ -86,15 +86,15 @@ class Config(object):
         else:
             self._config[integration] = IntegrationConfig(self, integration, settings)
 
-    def trace_headers(self, whitelist):
+    def trace_headers(self, allowlist):
         """
         Registers a set of headers to be traced at global level or integration level.
-        :param whitelist: the case-insensitive list of traced headers
-        :type whitelist: list of str or str
+        :param allowlist: the case-insensitive list of traced headers
+        :type allowlist: list of str or str
         :return: self
         :rtype: HttpConfig
         """
-        self._http.trace_headers(whitelist)
+        self._http.trace_headers(allowlist)
         return self
 
     def header_is_traced(self, header_name):

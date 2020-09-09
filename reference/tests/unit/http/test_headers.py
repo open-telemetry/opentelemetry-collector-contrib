@@ -137,7 +137,7 @@ class TestHeaders(object):
         }, span, integration_config)
         assert span.get_tag('http.response.headers.content-type') == '   some;value   '
 
-    def test_no_whitelist(self, span, integration_config):
+    def test_no_allowlist(self, span, integration_config):
         """
         :type span: Span
         :type integration_config: IntegrationConfig
@@ -147,7 +147,7 @@ class TestHeaders(object):
         }, span, integration_config)
         assert span.get_tag('http.response.headers.content-type') is None
 
-    def test_whitelist_exact(self, span, integration_config):
+    def test_allowlist_exact(self, span, integration_config):
         """
         :type span: Span
         :type integration_config: IntegrationConfig
@@ -158,7 +158,7 @@ class TestHeaders(object):
         }, span, integration_config)
         assert span.get_tag('http.response.headers.content-type') == 'some;value'
 
-    def test_whitelist_case_insensitive(self, span, integration_config):
+    def test_allowlist_case_insensitive(self, span, integration_config):
         """
         :type span: Span
         :type integration_config: IntegrationConfig
