@@ -17,18 +17,18 @@ import typing
 from opentelemetry import trace
 from opentelemetry.context import Context
 from opentelemetry.trace import get_current_span, set_span_in_context
-from opentelemetry.trace.propagation.httptextformat import (
+from opentelemetry.trace.propagation.textmap import (
     Getter,
-    HTTPTextFormat,
-    HTTPTextFormatT,
     Setter,
+    TextMapPropagator,
+    TextMapPropagatorT,
 )
 
 # pylint:disable=relative-beyond-top-level
 from . import constants
 
 
-class DatadogFormat(HTTPTextFormat):
+class DatadogFormat(TextMapPropagator):
     """Propagator for the Datadog HTTP header format.
     """
 
@@ -39,8 +39,8 @@ class DatadogFormat(HTTPTextFormat):
 
     def extract(
         self,
-        get_from_carrier: Getter[HTTPTextFormatT],
-        carrier: HTTPTextFormatT,
+        get_from_carrier: Getter[TextMapPropagatorT],
+        carrier: TextMapPropagatorT,
         context: typing.Optional[Context] = None,
     ) -> Context:
         trace_id = extract_first_element(
@@ -81,8 +81,8 @@ class DatadogFormat(HTTPTextFormat):
 
     def inject(
         self,
-        set_in_carrier: Setter[HTTPTextFormatT],
-        carrier: HTTPTextFormatT,
+        set_in_carrier: Setter[TextMapPropagatorT],
+        carrier: TextMapPropagatorT,
         context: typing.Optional[Context] = None,
     ) -> None:
         span = get_current_span(context)
@@ -120,8 +120,8 @@ def format_span_id(span_id: int) -> str:
 
 
 def extract_first_element(
-    items: typing.Iterable[HTTPTextFormatT],
-) -> typing.Optional[HTTPTextFormatT]:
+    items: typing.Iterable[TextMapPropagatorT],
+) -> typing.Optional[TextMapPropagatorT]:
     if items is None:
         return None
     return next(iter(items), None)

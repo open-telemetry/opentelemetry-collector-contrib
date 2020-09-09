@@ -50,7 +50,7 @@ a distributed trace.
     trace.get_tracer_provider().add_span_processor(span_processor)
 
     # Optional: use Datadog format for propagation in distributed traces
-    propagators.set_global_httptextformat(DatadogFormat())
+    propagators.set_global_textmap(DatadogFormat())
 
     with tracer.start_as_current_span("foo"):
         print("Hello world!")
