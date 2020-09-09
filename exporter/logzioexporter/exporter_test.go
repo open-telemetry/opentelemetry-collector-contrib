@@ -84,7 +84,7 @@ func TestNullTokenConfig(tester *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	_, err := createTraceExporter(context.Background(), params, &cfg)
-	assert.Error(tester,  err, "Empty token should produce error")
+	assert.Error(tester, err, "Empty token should produce error")
 }
 
 func TestEmptyNode(tester *testing.T) {
@@ -123,7 +123,7 @@ func TestWriteSpanError(tester *testing.T) {
 
 func TestConversionTraceError(tester *testing.T) {
 	oldFunc := InternalTracesToJaegerTraces
-	defer func() { InternalTracesToJaegerTraces= oldFunc }()
+	defer func() { InternalTracesToJaegerTraces = oldFunc }()
 
 	cfg := Config{
 		Token:  "test",
