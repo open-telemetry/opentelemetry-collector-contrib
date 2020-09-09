@@ -74,7 +74,6 @@ translation_rules:
     container.memory.rss: container_memory_rss_bytes
     container.memory.usage: container_memory_usage_bytes
     container.memory.working_set: container_memory_working_set_bytes
-    k8s.node.cpu.utilization: cpu.utilization
 
     # k8s cluster receiver metrics
     k8s/container/cpu/limit: kubernetes.container_cpu_limit
