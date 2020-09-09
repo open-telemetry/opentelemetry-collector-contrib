@@ -172,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 39, len(config.TranslationRules))
+	assert.Equal(t, 44, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -687,9 +687,33 @@ func TestDefaultCPUTranslations(t *testing.T) {
 		pts = append(pts, pt)
 		m[pt.Metric] = pts
 	}
-	deltas, ok := m["system.cpu.delta"]
-	require.True(t, ok)
+
+	deltas := m["system.cpu.delta"]
 	require.Equal(t, len(pts1), len(deltas))
+	for _, dpt := range deltas {
+		if dpt.Dimensions[4].Value != "interrupt" {
+			require.Equal(t, 1.0, *dpt.Value.DoubleValue)
+		}
+	}
+
+	cpuUsage, ok := m["system.cpu.usage"]
+	require.True(t, ok)
+	require.Equal(t, 8, len(cpuUsage))
+	for _, pt := range cpuUsage {
+		require.Equal(t, 2.0, *pt.Value.DoubleValue)
+	}
+
+	cpuTotal, ok := m["system.cpu.total"]
+	require.True(t, ok)
+	require.Equal(t, 8, len(cpuTotal))
+
+	cpuUtil, ok := m["cpu.utilization"]
+	require.True(t, ok)
+	require.Equal(t, 8, len(cpuUtil))
+	const expectedCPUUtil = 2.0 / 3.0
+	for _, pt := range cpuUtil {
+		require.Equal(t, expectedCPUUtil, *pt.Value.DoubleValue)
+	}
 }
 
 func testReadJSON(f string, v interface{}) error {

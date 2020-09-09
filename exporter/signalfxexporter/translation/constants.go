@@ -142,6 +142,32 @@ translation_rules:
 - action: delta_metric
   mapping:
     system.cpu.time: system.cpu.delta
+- action: copy_metrics
+  mapping:
+    system.cpu.delta: system.cpu.usage
+  dimension_key: state
+  dimension_values:
+    user: true
+    system: true
+    interrupt: true
+- action: aggregate_metric
+  metric_name: system.cpu.usage
+  aggregation_method: sum
+  without_dimensions:
+  - state
+- action: copy_metrics
+  mapping:
+    system.cpu.delta: system.cpu.total
+- action: aggregate_metric
+  metric_name: system.cpu.total
+  aggregation_method: sum
+  without_dimensions:
+  - state
+- action: calculate_new_metric
+  metric_name: cpu.utilization
+  operand1_metric: system.cpu.usage
+  operand2_metric: system.cpu.total
+  operator: /
 
 # convert cpu metrics
 - action: split_metric
