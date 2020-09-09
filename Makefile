@@ -128,6 +128,9 @@ docker-otelcontribcol:
 otelcontribcol:
 	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
 
+.PHONY: gpumetric
+gpumetric:
+	GO111MODULE=on CGO_ENABELD=1 GOOS=linux GOARCH=amd64 go build -o ./bin/gpumetric ./cmd/gpumetric
 
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
