@@ -53,7 +53,10 @@ class TestBotocoreInstrumentor(TestBase):
         self.assertEqual(
             span.resource,
             Resource(
-                labels={"endpoint": "ec2", "operation": "describeinstances"}
+                attributes={
+                    "endpoint": "ec2",
+                    "operation": "describeinstances",
+                }
             ),
         )
         self.assertEqual(span.name, "ec2.command")
@@ -81,7 +84,9 @@ class TestBotocoreInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "s3", "operation": "listbuckets"}),
+            Resource(
+                attributes={"endpoint": "s3", "operation": "listbuckets"}
+            ),
         )
 
         # testing for span error
@@ -93,7 +98,9 @@ class TestBotocoreInstrumentor(TestBase):
         span = spans[2]
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "s3", "operation": "listobjects"}),
+            Resource(
+                attributes={"endpoint": "s3", "operation": "listobjects"}
+            ),
         )
 
     @mock_s3
@@ -111,12 +118,14 @@ class TestBotocoreInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "s3", "operation": "createbucket"}),
+            Resource(
+                attributes={"endpoint": "s3", "operation": "createbucket"}
+            ),
         )
         self.assertEqual(spans[1].attributes["aws.operation"], "PutObject")
         self.assertEqual(
             spans[1].resource,
-            Resource(labels={"endpoint": "s3", "operation": "putobject"}),
+            Resource(attributes={"endpoint": "s3", "operation": "putobject"}),
         )
         self.assertEqual(spans[1].attributes["params.Key"], str(params["Key"]))
         self.assertEqual(
@@ -139,7 +148,9 @@ class TestBotocoreInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "sqs", "operation": "listqueues"}),
+            Resource(
+                attributes={"endpoint": "sqs", "operation": "listqueues"}
+            ),
         )
 
     @mock_kinesis
@@ -160,7 +171,7 @@ class TestBotocoreInstrumentor(TestBase):
         self.assertEqual(
             span.resource,
             Resource(
-                labels={"endpoint": "kinesis", "operation": "liststreams"}
+                attributes={"endpoint": "kinesis", "operation": "liststreams"}
             ),
         )
 
@@ -205,7 +216,7 @@ class TestBotocoreInstrumentor(TestBase):
         self.assertEqual(
             span.resource,
             Resource(
-                labels={"endpoint": "lambda", "operation": "listfunctions"}
+                attributes={"endpoint": "lambda", "operation": "listfunctions"}
             ),
         )
 
@@ -224,7 +235,7 @@ class TestBotocoreInstrumentor(TestBase):
         assert_span_http_status_code(span, 200)
         self.assertEqual(
             span.resource,
-            Resource(labels={"endpoint": "kms", "operation": "listkeys"}),
+            Resource(attributes={"endpoint": "kms", "operation": "listkeys"}),
         )
 
         # checking for protection on sts against security leak
