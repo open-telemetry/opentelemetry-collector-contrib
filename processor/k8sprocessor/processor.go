@@ -18,12 +18,10 @@ import (
 	"context"
 	"net"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -33,6 +31,7 @@ import (
 const (
 	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
+	hostnameLabelName string = "host.hostname"
 )
 
 type kubernetesprocessor struct {
@@ -130,111 +129,79 @@ func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Trace
 			continue
 		}
 
-		var podIP string
-		resource := rs.Resource()
-
-		// check if the application, a collector/agent or a prior processor has already
-		// annotated the batch with IP.
-		if !resource.IsNil() {
-			podIP = kp.k8sIPFromAttributes(resource.Attributes())
-		}
-
-		// Check if the receiver detected client IP.
-		if podIP == "" {
-			if c, ok := client.FromContext(ctx); ok {
-				podIP = c.IP
-			}
-		}
-
-		if podIP != "" {
-			if resource.IsNil() {
-				resource.InitEmpty()
-			}
-			resource.Attributes().InsertString(k8sIPLabelName, podIP)
-		}
-
-		// Don't invoke any k8s client functionality in passthrough mode.
-		// Just tag the IP and forward the batch.
-		if kp.passthroughMode {
-			continue
-		}
-
-		// add k8s tags to resource
-		attrsToAdd := kp.getAttributesForPodIP(podIP)
-		if len(attrsToAdd) == 0 {
-			continue
-		}
-
-		if resource.IsNil() {
-			resource.InitEmpty()
-		}
-
-		attrs := resource.Attributes()
-		for k, v := range attrsToAdd {
-			attrs.InsertString(k, v)
-		}
+		_ = kp.processResource(ctx, rs.Resource(), false)
 	}
 
 	return kp.nextTraceConsumer.ConsumeTraces(ctx, td)
 }
 
 // ConsumeMetrics process metrics and add k8s metadata using resource hostname as pod origin.
-// TODO: Move to internal data model once it's available in contrib.
 func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
-	mds := internaldata.MetricsToOC(metrics)
-
-	for i := range mds {
-		md := &mds[i]
-		var podIP string
-
-		// Check if a collector/agent or a prior processor has already annotated the metrics with IP.
-		if md.Resource.GetLabels() != nil {
-			podIP = md.Resource.Labels[k8sIPLabelName]
-		}
-
-		// Most of the metric receivers uses "host.hostname" resource label (which is represented as
-		// Node.Identifier.HostName in OpenCensus format) to identify metrics origin.
-		// In k8s environment, it's set to a pod IP address. If the value doesn't represent
-		// an IP address, we skip it.
-		if podIP == "" && md.Node.GetIdentifier().GetHostName() != "" {
-			hostname := md.Node.Identifier.HostName
-			if net.ParseIP(hostname) != nil {
-				podIP = hostname
-
-				// Set pod IP as resource label.
-				if md.Resource == nil {
-					md.Resource = &resourcepb.Resource{}
-				}
-				if md.Resource.Labels == nil {
-					md.Resource.Labels = map[string]string{}
-				}
-				md.Resource.Labels[k8sIPLabelName] = podIP
-			}
-		}
-
-		// Ignore metrics if cannot infer IP address of the origin pod.
-		if podIP == "" {
+	mrs := metrics.ResourceMetrics()
+	for i := 0; i < mrs.Len(); i++ {
+		ms := mrs.At(i)
+		if ms.IsNil() {
 			continue
 		}
 
-		// Don't invoke any k8s client functionality in passthrough mode.
-		// Just tag the IP and forward the batch.
-		if kp.passthroughMode {
-			continue
-		}
+		_ = kp.processResource(ctx, ms.Resource(), true)
+	}
 
-		// Add k8s tags to resource.
-		attrsToAdd := kp.getAttributesForPodIP(podIP)
-		if len(attrsToAdd) == 0 {
-			continue
-		}
+	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, metrics)
+}
 
-		for k, v := range attrsToAdd {
-			md.Resource.Labels[k] = v
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, checkHostname bool) error {
+	var podIP string
+
+	// check if the application, a collector/agent or a prior processor has already
+	// annotated the batch with IP.
+	if !resource.IsNil() {
+		podIP = kp.k8sIPFromAttributes(resource.Attributes())
+	}
+
+	// Most of the metric receivers uses "host.hostname" resource label to identify metrics
+	// origin. In k8s environment, it's set to a pod IP address. If the value doesn't represent
+	// an IP address, we skip it.
+	if podIP == "" && !resource.IsNil() && checkHostname {
+		podIP = kp.k8sIPFromHostnameAttributes(resource.Attributes())
+	}
+
+	// Check if the receiver detected client IP.
+	if podIP == "" {
+		if c, ok := client.FromContext(ctx); ok {
+			podIP = c.IP
 		}
 	}
 
-	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, internaldata.OCSliceToMetrics(mds))
+	if podIP != "" {
+		if resource.IsNil() {
+			resource.InitEmpty()
+		}
+		resource.Attributes().InsertString(k8sIPLabelName, podIP)
+	}
+
+	// Don't invoke any k8s client functionality in passthrough mode.
+	// Just tag the IP and forward the batch.
+	if kp.passthroughMode {
+		return nil
+	}
+
+	// add k8s tags to resource
+	attrsToAdd := kp.getAttributesForPodIP(podIP)
+	if len(attrsToAdd) == 0 {
+		return nil
+	}
+
+	if resource.IsNil() {
+		resource.InitEmpty()
+	}
+
+	attrs := resource.Attributes()
+	for k, v := range attrsToAdd {
+		attrs.InsertString(k, v)
+	}
+
+	return nil
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
@@ -251,6 +218,15 @@ func (kp *kubernetesprocessor) k8sIPFromAttributes(attrs pdata.AttributeMap) str
 		ip = stringAttributeFromMap(attrs, clientIPLabelName)
 	}
 	return ip
+}
+
+func (kp *kubernetesprocessor) k8sIPFromHostnameAttributes(attrs pdata.AttributeMap) string {
+	hostname := stringAttributeFromMap(attrs, hostnameLabelName)
+	if net.ParseIP(hostname) != nil {
+		return hostname
+	} else {
+		return ""
+	}
 }
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {
