@@ -29,7 +29,3 @@ service:
       receivers: [opencensus, jaeger, zipkin]
       processors: [batch, queued_retry]
       exporters: [logzio]
-#    metrics:
-#      receivers: [opencensus]
-#      processors: [batch]
-#      exporters: [logging,opencensus]
