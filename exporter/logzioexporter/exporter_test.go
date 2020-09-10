@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jaegertracing/jaeger/model"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +26,7 @@ import (
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store/objects"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

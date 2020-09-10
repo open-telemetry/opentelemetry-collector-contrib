@@ -18,9 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jaegertracing/jaeger/model"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/jaegertracing/jaeger/model"
 	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -39,7 +39,6 @@ type logzioExporter struct {
 	logger       hclog.Logger
 }
 
-// Overrides for testing
 var WriteSpanFunc func(span *model.Span) error
 var InternalTracesToJaegerTraces = jaeger.InternalTracesToJaegerProto
 
