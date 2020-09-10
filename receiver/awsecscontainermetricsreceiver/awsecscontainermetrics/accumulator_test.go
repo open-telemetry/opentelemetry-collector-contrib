@@ -11,37 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package awsecscontainermetrics
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-type fakeRestClient struct {
-}
-
-func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	taskMetadata, err := ioutil.ReadFile("../testdata/task_metadata.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	return taskStats, taskMetadata, nil
-}
-
-func TestMetricSampleFile(t *testing.T) {
-	data, err := ioutil.ReadFile("../testdata/task_stats.json")
-	require.NoError(t, err)
-	require.NotNil(t, data)
-}
-
-func TestMetricData(t *testing.T) {
+func TestGetMetricsData(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
 
@@ -121,6 +101,11 @@ func TestMetricData(t *testing.T) {
 	cstats := make(map[string]ContainerStats)
 	cstats["001"] = containerStats
 
-	md := MetricsData(cstats, tm, "test-ecs-receiver")
-	require.Less(t, 0, len(md))
+	var mds []*consumerdata.MetricsData
+	acc := metricDataAccumulator{
+		md: mds,
+	}
+
+	acc.getMetricsData(cstats, tm)
+	require.Less(t, 0, len(acc.md))
 }

@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -38,8 +37,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
-	require.NoError(t, err)
-	require.NotNil(t, metricsReceiver)
+	require.Error(t, err, "No Env Variable Error")
+	require.Nil(t, metricsReceiver)
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
@@ -49,6 +48,8 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 		createDefaultConfig(),
 		nil,
 	)
+
+	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
-	require.Equal(t, err, componenterror.ErrNilNextConsumer)
+
 }

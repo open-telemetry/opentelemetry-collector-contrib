@@ -21,20 +21,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTimestampProto(t *testing.T) {
+func TestConvertToOTMetrics(t *testing.T) {
 	timestamp := timestampProto(time.Now())
+	m := ECSMetrics{}
 
-	require.NotNil(t, timestamp)
-}
+	m.MemoryUsage = 100
+	m.MemoryMaxUsage = 100
+	m.MemoryUtilized = 100
+	m.MemoryReserved = 100
+	m.CPUTotalUsage = 100
 
-func TestApplyTimestamp(t *testing.T) {
-	timestamp := timestampProto(time.Now())
-	m := []*metricspb.Metric{
-		createGaugeIntMetric(1),
+	labelKeys := []*metricspb.LabelKey{
+		&metricspb.LabelKey{Key: "label_key_1"},
+	}
+	labelValues := []*metricspb.LabelValue{
+		&metricspb.LabelValue{Value: "label_value_1"},
 	}
 
-	metrics := applyTimestamp(m, timestamp)
-
-	require.NotNil(t, metrics)
-	require.EqualValues(t, timestamp, metrics[0].Timeseries[0].Points[0].Timestamp)
+	metrics := convertToOTMetrics("container.", m, labelKeys, labelValues, timestamp)
+	require.EqualValues(t, 25, len(metrics))
 }

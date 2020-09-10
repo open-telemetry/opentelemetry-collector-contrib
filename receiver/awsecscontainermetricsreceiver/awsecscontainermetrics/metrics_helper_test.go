@@ -20,8 +20,130 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerateDummyMetrics(t *testing.T) {
-	data := GenerateDummyMetrics()
+func TestGetContainerAndTaskMetrics(t *testing.T) {
+	v := uint64(1)
+	f := float64(1.0)
 
-	require.NotNil(t, data)
+	memStats := make(map[string]uint64)
+	memStats["cache"] = v
+
+	mem := MemoryStats{
+		Usage:          &v,
+		MaxUsage:       &v,
+		Limit:          &v,
+		MemoryReserved: &v,
+		MemoryUtilized: &v,
+		Stats:          memStats,
+	}
+
+	disk := DiskStats{
+		IoServiceBytesRecursives: []IoServiceBytesRecursive{
+			{Op: "Read", Value: &v},
+			{Op: "Write", Value: &v},
+			{Op: "Total", Value: &v},
+		},
+	}
+
+	net := make(map[string]NetworkStats)
+	net["eth0"] = NetworkStats{
+		RxBytes:   &v,
+		RxPackets: &v,
+		RxErrors:  &v,
+		RxDropped: &v,
+		TxBytes:   &v,
+		TxPackets: &v,
+		TxErrors:  &v,
+		TxDropped: &v,
+	}
+
+	netRate := NetworkRateStats{
+		RxBytesPerSecond: &f,
+		TxBytesPerSecond: &f,
+	}
+
+	percpu := []*uint64{&v, &v}
+	cpuUsage := CPUUsage{
+		TotalUsage:        &v,
+		UsageInKernelmode: &v,
+		UsageInUserMode:   &v,
+		PerCpuUsage:       percpu,
+	}
+
+	cpuStats := CPUStats{
+		CpuUsage:       cpuUsage,
+		OnlineCpus:     &v,
+		SystemCpuUsage: &v,
+		CpuUtilized:    &v,
+		CpuReserved:    &v,
+	}
+	containerStats := ContainerStats{
+		Name:        "test",
+		Id:          "001",
+		Memory:      mem,
+		Disk:        disk,
+		Network:     net,
+		NetworkRate: netRate,
+		CPU:         cpuStats,
+	}
+
+	containerMetrics := getContainerMetrics(containerStats)
+	require.NotNil(t, containerMetrics)
+
+	taskMetrics := ECSMetrics{}
+	aggregateTaskMetrics(&taskMetrics, containerMetrics)
+	require.EqualValues(t, v, taskMetrics.MemoryUsage)
+	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
+	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
+}
+
+func TestGenerateDummyMetrics(t *testing.T) {
+	md := GenerateDummyMetrics()
+
+	require.EqualValues(t, 2, len(md.Metrics))
+}
+
+func TestCreateGaugeIntMetric(t *testing.T) {
+	m := createGaugeIntMetric(100)
+
+	require.EqualValues(t, 1, len(m.Timeseries))
+}
+
+func TestExtractStorageUsage(t *testing.T) {
+	var v uint64
+	v = 100
+	disk := &DiskStats{
+		IoServiceBytesRecursives: []IoServiceBytesRecursive{
+			{Op: "Read", Value: &v},
+			{Op: "Write", Value: &v},
+			{Op: "Total", Value: &v},
+		},
+	}
+	read, write := extractStorageUsage(disk)
+
+	require.EqualValues(t, v, read)
+	require.EqualValues(t, v, write)
+}
+
+func TestGetNetworkStats(t *testing.T) {
+	var v uint64
+	v = 100
+	stats := make(map[string]NetworkStats)
+	stats["eth0"] = NetworkStats{
+		RxBytes:   &v,
+		RxPackets: &v,
+		RxErrors:  &v,
+		RxDropped: &v,
+		TxBytes:   &v,
+		TxPackets: &v,
+		TxErrors:  &v,
+		TxDropped: &v,
+	}
+
+	net_array := getNetworkStats(stats)
+
+	sum := uint64(0)
+	for _, v := range net_array {
+		sum += v
+	}
+	require.EqualValues(t, 800, sum)
 }

@@ -136,29 +136,18 @@ func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
 	taskMetrics.StorageWriteBytes += conMetrics.StorageWriteBytes
 }
 
-// GenerateDummyMetrics generates some dummy metrics
+// GenerateDummyMetrics generates two dummy metrics
 func GenerateDummyMetrics() consumerdata.MetricsData {
-
-	// URL := "https://jsonplaceholder.typicode.com/todos/1"
-	// URL :=  os.Getenv("URL")
-
-	// resp, err := http.Get(URL)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer resp.Body.Close()
-	// body, err := ioutil.ReadAll(resp.Body)
-	// fmt.Println("get:\n", string(body))
-
 	md := consumerdata.MetricsData{}
 
 	for i := 0; i < 2; i++ {
-		md.Metrics = append(md.Metrics, createGagueIntMetric(i))
+		md.Metrics = append(md.Metrics, createGaugeIntMetric(i))
 	}
 	return md
 }
 
-func createGagueIntMetric(i int) *metricspb.Metric {
+// createGaugeIntMetric creates a int gauge metric
+func createGaugeIntMetric(i int) *metricspb.Metric {
 	ts := time.Now()
 	return metricstestutil.GaugeInt(
 		"test_metric_"+strconv.Itoa(i),
