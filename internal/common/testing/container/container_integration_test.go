@@ -64,6 +64,7 @@ func TestContainerIntegration(t *testing.T) {
 func TestRemoveContainerIntegration(t *testing.T) {
 	con := New(t)
 	nginx := con.StartImage("docker.io/library/nginx:1.17", WithPortReady(80))
+	require.Equal(t, 1, len(con.runningContainers))
 
 	err := con.RemoveContainer(nginx)
 	require.NoError(t, err)
