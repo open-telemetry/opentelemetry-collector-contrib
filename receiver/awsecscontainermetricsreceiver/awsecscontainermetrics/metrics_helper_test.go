@@ -139,10 +139,10 @@ func TestGetNetworkStats(t *testing.T) {
 		TxDropped: &v,
 	}
 
-	net_array := getNetworkStats(stats)
+	netArray := getNetworkStats(stats)
 
 	sum := uint64(0)
-	for _, v := range net_array {
+	for _, v := range netArray {
 		sum += v
 	}
 	require.EqualValues(t, 800, sum)

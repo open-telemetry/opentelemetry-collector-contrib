@@ -25,10 +25,10 @@ func TestIntGauge(t *testing.T) {
 	intValue = 100
 
 	labelKeys := []*metricspb.LabelKey{
-		&metricspb.LabelKey{Key: "label_key_1"},
+		{Key: "label_key_1"},
 	}
 	labelValues := []*metricspb.LabelValue{
-		&metricspb.LabelValue{Value: "label_value_1"},
+		{Value: "label_value_1"},
 	}
 
 	m := intGauge("cpu_utilized", "Count", &intValue, labelKeys, labelValues)
@@ -43,10 +43,10 @@ func TestDoubleGauge(t *testing.T) {
 	floatValue = 100.01
 
 	labelKeys := []*metricspb.LabelKey{
-		&metricspb.LabelKey{Key: "label_key_1"},
+		{Key: "label_key_1"},
 	}
 	labelValues := []*metricspb.LabelValue{
-		&metricspb.LabelValue{Value: "label_value_1"},
+		{Value: "label_value_1"},
 	}
 
 	m := doubleGauge("cpu_utilized", "Count", &floatValue, labelKeys, labelValues)

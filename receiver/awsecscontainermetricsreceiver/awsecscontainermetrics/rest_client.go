@@ -14,10 +14,6 @@
 
 package awsecscontainermetrics
 
-import (
-	"io/ioutil"
-)
-
 // RestClient is swappable for testing.
 type RestClient interface {
 	EndpointResponse() ([]byte, []byte, error)
@@ -36,15 +32,13 @@ func NewRestClient(client Client) *HTTPRestClient {
 
 // EndpointResponse gets the task metadata and docker stats from ECS Task Metadata Endpoint
 func (c *HTTPRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("/Users/hrayhan/Work/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/testdata/task_stats.json")
+	taskStats, err := c.client.Get("/task/stats")
 	if err != nil {
 		return nil, nil, err
 	}
-	taskMetadata, err := ioutil.ReadFile("/Users/hrayhan/Work/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/testdata/task_metadata.json")
+	taskMetadata, err := c.client.Get("/task")
 	if err != nil {
 		return nil, nil, err
 	}
 	return taskStats, taskMetadata, nil
-	//return ioutil.ReadFile("/Users/hrayhan/Work/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/testdata/task_stats.json")
-	// return c.client.Get("/stats/summary")
 }
