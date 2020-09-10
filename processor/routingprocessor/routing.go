@@ -146,7 +146,7 @@ func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 }
 
 func (e *processorImp) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
+	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
 func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TraceExporter) error {

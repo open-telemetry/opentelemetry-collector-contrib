@@ -6,7 +6,7 @@ This processor will read a header from the incoming HTTP request (gRPC or plain 
 
 This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one. Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all. All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
 
-Given that this processor depends on information provided by the client via HTTP headers, processors that aggregate data should not run before this processor, such as the `batch` or the `groupbytrace` processors.
+Given that this processor depends on information provided by the client via HTTP headers, processors that aggregate data like `batch` or `groupbytrace` should not be used when this processor is part of the pipeline.
 
 The following settings are required:
 

@@ -415,7 +415,7 @@ func TestProcessorCapabilities(t *testing.T) {
 	// verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, true, caps.MutatesConsumedData)
+	assert.Equal(t, false, caps.MutatesConsumedData)
 }
 
 type mockHost struct {
