@@ -236,7 +236,10 @@ EVENT_LOOP:
 					}
 				}
 
-				lastTime = time.Unix(0, event.TimeNano)
+				if event.TimeNano > lastTime.UnixNano() {
+					lastTime = time.Unix(0, event.TimeNano)
+				}
+
 			case err := <-errCh:
 				// We are only interested when the context hasn't been canceled
 				if ctx.Err() == nil {
