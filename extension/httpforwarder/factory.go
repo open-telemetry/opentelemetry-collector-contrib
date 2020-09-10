@@ -46,10 +46,10 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		Incoming: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
-		Upstream: confighttp.HTTPClientSettings{
+		Outgoing: confighttp.HTTPClientSettings{
 			Timeout: 10 * time.Second,
 		},
 	}
@@ -57,8 +57,9 @@ func createDefaultConfig() configmodels.Extension {
 
 func createExtension(
 	_ context.Context,
-	params component.ExtensionCreateParams,
-	cfg configmodels.Extension,
+	_ component.ExtensionCreateParams,
+	_ configmodels.Extension,
 ) (component.ServiceExtension, error) {
-	return newHTTPForwarder(cfg.(*Config), params.Logger)
+	// TODO: Return httpForwarder
+	return nil, nil
 }

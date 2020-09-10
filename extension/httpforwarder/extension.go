@@ -16,22 +16,11 @@ package httpforwarder
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"net/http"
-	"net/url"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 )
 
 type httpForwarder struct {
-	listenAt   string
-	forwardTo  *url.URL
-	headers    map[string]string
-	httpClient *http.Client
-	server     *http.Server
-	logger     *zap.Logger
 }
 
 var _ component.ServiceExtension = (*httpForwarder)(nil)
@@ -44,38 +33,4 @@ func (h httpForwarder) Start(_ context.Context, _ component.Host) error {
 func (h httpForwarder) Shutdown(_ context.Context) error {
 	// TODO: Shutdown HTTP server
 	return nil
-}
-
-func newHTTPForwarder(config *Config, logger *zap.Logger) (component.ServiceExtension, error) {
-	if config.Upstream.Endpoint == "" {
-		return nil, errors.New("'upstream.endpoint' config option cannot be empty")
-	}
-
-	var url, err = url.Parse(config.Upstream.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("enter a valid URL for 'upstream.endpoint': %w", err)
-	}
-
-	handler := http.NewServeMux()
-	server := &http.Server{
-		Addr:    config.Endpoint,
-		Handler: handler,
-	}
-
-	httpClient, err := config.Upstream.ToClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
-	}
-
-	h := &httpForwarder{
-		listenAt:   config.Endpoint,
-		forwardTo:  url,
-		headers:    config.Upstream.Headers,
-		httpClient: httpClient,
-		server:     server,
-		logger:     logger,
-	}
-	// TODO: Register handler method
-
-	return h, nil
 }

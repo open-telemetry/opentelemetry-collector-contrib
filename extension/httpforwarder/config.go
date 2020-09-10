@@ -22,8 +22,10 @@ import (
 // Config defines configuration for http forwarder extension.
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
-	confighttp.HTTPServerSettings  `mapstructure:",squash"`
 
-	// Upstream holds config settings to use for forwarded requests.
-	Upstream confighttp.HTTPClientSettings `mapstructure:"upstream"`
+	// Incoming holds config settings for HTTP server listening for requests.
+	Incoming confighttp.HTTPServerSettings `mapstructure:"incoming"`
+
+	// Outgoing holds config settings to use for forwarded requests.
+	Outgoing confighttp.HTTPClientSettings `mapstructure:"outgoing"`
 }
