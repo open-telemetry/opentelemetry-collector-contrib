@@ -1,7 +1,7 @@
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
-ALL_SRC := $(shell find . -name \( '*.go' -not 'cuda*.go' \) \
+ALL_SRC := $(shell find . -name '*.go' -and -not -namd 'cuda*.go' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
