@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- add initial docker stats receiver, without sourcing in top level components (#495)
+- add initial jmx metrics extension structure, without sourcing in top level components (#740)
+
 ## v0.9.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.9.0 (Beta) 🎉

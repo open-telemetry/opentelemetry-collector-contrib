@@ -27,9 +27,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -133,10 +133,10 @@ func TestCollectDServer(t *testing.T) {
 				},
 				Timeseries: []*metricspb.TimeSeries{{
 					LabelValues: []*metricspb.LabelValue{
-						{Value: "memory"},
-						{Value: "i-b13d1e5f"},
-						{Value: "value"},
-						{Value: "attr1val"},
+						{Value: "memory", HasValue: true},
+						{Value: "i-b13d1e5f", HasValue: true},
+						{Value: "value", HasValue: true},
+						{Value: "attr1val", HasValue: true},
 					},
 					Points: []*metricspb.Point{{
 						Timestamp: &timestamppb.Timestamp{Seconds: 1415062577, Nanos: 494999808},
@@ -197,7 +197,7 @@ func TestCollectDServer(t *testing.T) {
 			})
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			got := pdatautil.MetricsToMetricsData(mds[0])
+			got := internaldata.MetricsToOC(mds[0])
 			assertMetricsDataAreEqual(t, got, tt.wantData)
 		})
 	}

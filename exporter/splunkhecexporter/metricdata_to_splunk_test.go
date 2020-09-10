@@ -26,8 +26,8 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -59,16 +59,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 		tsUnix,
 		values,
 		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
-
-	summaryTimeSeries := metricstestutil.Timeseries(
-		tsUnix,
-		values,
-		metricstestutil.SummPt(
-			tsUnix,
-			11,
-			111,
-			[]float64{90, 95, 99, 99.9},
-			[]float64{100, 6, 4, 1}))
 
 	tests := []struct {
 		name                     string
@@ -156,30 +146,19 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() consumerdata.MetricsData {
 				return consumerdata.MetricsData{
 					Metrics: []*metricspb.Metric{
-						metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
+						// metricstestutil.GaugeDist("gauge_distrib", keys, distributionTimeSeries),
 						metricstestutil.CumulativeDist("cumulative_distrib", keys, distributionTimeSeries),
 					},
 				}
 			},
-			wantSplunkMetrics: append(
-				expectedFromDistribution("gauge_distrib", tsMSecs, keys, values, distributionTimeSeries),
-				expectedFromDistribution("cumulative_distrib", tsMSecs, keys, values, distributionTimeSeries)...),
-		},
-		{
-			name: "summary",
-			metricsDataFn: func() consumerdata.MetricsData {
-				return consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Summary("summary", keys, summaryTimeSeries),
-					},
-				}
-			},
-			wantSplunkMetrics: expectedFromSummary("summary", tsMSecs, keys, values, summaryTimeSeries),
+			wantSplunkMetrics:
+			// expectedFromDistribution("gauge_distrib", tsMSecs, keys, values, distributionTimeSeries),
+			expectedFromDistribution("cumulative_distrib", tsMSecs, keys, values, distributionTimeSeries),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{tt.metricsDataFn()})
+			md := internaldata.OCToMetrics(tt.metricsDataFn())
 			gotMetrics, gotNumDroppedTimeSeries, err := metricDataToSplunk(logger, md, &Config{})
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantNumDroppedTimeseries, gotNumDroppedTimeSeries)
@@ -266,37 +245,6 @@ func expectedFromDistribution(
 				values,
 				distributionValue.Buckets[i].Count))
 	}
-	return dps
-}
-
-func expectedFromSummary(
-	metricName string,
-	ts float64,
-	keys []string,
-	values []string,
-	summaryTimeSeries *metricspb.TimeSeries,
-) []*splunk.Metric {
-	summaryValue := summaryTimeSeries.Points[0].GetSummaryValue()
-
-	// Two additional data points: one for count and one for sum.
-	const extraDataPoints = 2
-	dps := make([]*splunk.Metric, 0, len(summaryValue.Snapshot.PercentileValues)+extraDataPoints)
-
-	dps = append(dps,
-		commonSplunkMetric(metricName+".count", ts, keys, values,
-			summaryValue.Count.Value),
-		commonSplunkMetric(metricName, ts, keys, values,
-			summaryValue.Sum.Value))
-
-	percentiles := summaryValue.Snapshot.GetPercentileValues()
-	for _, percentile := range percentiles {
-		dps = append(dps,
-			commonSplunkMetric(fmt.Sprintf("%s.quantile.%s", metricName, float64ToDimValue(percentile.Percentile)), ts,
-				keys,
-				values,
-				percentile.Value))
-	}
-
 	return dps
 }
 

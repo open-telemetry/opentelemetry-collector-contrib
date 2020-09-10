@@ -25,7 +25,6 @@ import (
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go/aws"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
 
@@ -85,7 +84,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
-		isThrottled                            = !span.Status().IsNil() && otlptrace.Status_StatusCode(span.Status().Code()) == otlptrace.Status_ResourceExhausted
+		isThrottled                            = !span.Status().IsNil() && span.Status().Code() == pdata.StatusCodeResourceExhausted
 		origin                                 = determineAwsOrigin(resource)
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
 		service                                = makeService(resource)

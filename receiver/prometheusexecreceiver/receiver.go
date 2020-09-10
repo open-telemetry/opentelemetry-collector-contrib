@@ -181,7 +181,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 			return
 		}
 
-		crashCount = per.computeCrashCount(ctx, elapsed, crashCount)
+		crashCount = per.computeCrashCount(elapsed, crashCount)
 		per.computeDelayAndSleep(elapsed, crashCount)
 
 		// Exit loop if shutdown was signaled
@@ -270,7 +270,7 @@ func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, c
 }
 
 // computeCrashCount will compute crashCount according to runtime
-func (per *prometheusExecReceiver) computeCrashCount(ctx context.Context, elapsed time.Duration, crashCount int) int {
+func (per *prometheusExecReceiver) computeCrashCount(elapsed time.Duration, crashCount int) int {
 	if elapsed > healthyProcessTime {
 		return 1
 	}

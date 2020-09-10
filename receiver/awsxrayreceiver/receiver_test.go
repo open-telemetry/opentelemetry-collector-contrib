@@ -22,6 +22,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -201,6 +202,9 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 // TODO: Update this test to assert on the format of traces
 // once the transformation from X-Ray segments -> OTLP is done.
 func TestSegmentsPassedToConsumer(t *testing.T) {
+	if runtime.GOOS == "darwin" {
+		t.Skip("skipping test on darwin")
+	}
 	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
 	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
 	defer doneFn()

@@ -19,8 +19,8 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,7 +92,7 @@ func (r *runnable) Run() error {
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, detailedPVCLabelsSetter(r.k8sAPIClient))
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
-	metrics := pdatautil.MetricsFromMetricsData(mds)
+	metrics := internaldata.OCSliceToMetrics(mds)
 
 	var numTimeSeries, numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
@@ -101,7 +101,7 @@ func (r *runnable) Run() error {
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 	} else {
-		numTimeSeries, numPoints = pdatautil.MetricAndDataPointCount(metrics)
+		numTimeSeries, numPoints = metrics.MetricAndDataPointCount()
 	}
 	obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
 

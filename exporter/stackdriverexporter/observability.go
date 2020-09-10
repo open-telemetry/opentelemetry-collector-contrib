@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	pointCount = stats.Int64("otelcol/googlecloudmonitoring/point_count", "Count of metric points written to Cloud Monitoring.", "1")
+	pointCount = stats.Int64("googlecloudmonitoring/point_count", "Count of metric points written to Cloud Monitoring.", "1")
 	statusKey  = tag.MustNewKey("status")
 )
 
@@ -44,7 +44,7 @@ func recordPointCount(ctx context.Context, success, dropped int, grpcErr error) 
 	}
 
 	if dropped > 0 {
-		var st string
+		st := "UNKNOWN"
 		s, ok := status.FromError(grpcErr)
 		if ok {
 			st = statusCodeToString(s)

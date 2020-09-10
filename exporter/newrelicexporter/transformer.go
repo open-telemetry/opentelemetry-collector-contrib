@@ -228,7 +228,9 @@ func (t *transformer) MetricAttributes(metric *metricspb.Metric) map[string]inte
 
 	attrs[collectorNameKey] = name
 	attrs[collectorVersionKey] = version
-	attrs[serviceNameKey] = t.ServiceName
+	if t.ServiceName != "" {
+		attrs[serviceNameKey] = t.ServiceName
+	}
 
 	return attrs
 }

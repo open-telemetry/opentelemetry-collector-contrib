@@ -87,8 +87,8 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
 				output, localErr := xrayClient.PutTraceSegments(&input)
-				if localErr != nil && !config.(*Config).LocalMode {
-					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
+				if localErr != nil {
+					err = wrapErrorIfBadRequest(&localErr) // record error
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
