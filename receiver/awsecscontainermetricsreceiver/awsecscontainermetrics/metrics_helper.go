@@ -152,22 +152,24 @@ func GenerateDummyMetrics() consumerdata.MetricsData {
 
 	md := consumerdata.MetricsData{}
 
-	ts := time.Now()
-	for i := 0; i < 5; i++ {
-		md.Metrics = append(md.Metrics,
-			metricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			),
-		)
+	for i := 0; i < 2; i++ {
+		md.Metrics = append(md.Metrics, createGagueIntMetric(i))
 	}
 	return md
+}
+
+func createGagueIntMetric(i int) *metricspb.Metric {
+	ts := time.Now()
+	return metricstestutil.GaugeInt(
+		"test_metric_"+strconv.Itoa(i),
+		[]string{"label_key_0", "label_key_1"},
+		metricstestutil.Timeseries(
+			time.Now(),
+			[]string{"label_value_0", "label_value_1"},
+			&metricspb.Point{
+				Timestamp: metricstestutil.Timestamp(ts),
+				Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
+			},
+		),
+	)
 }

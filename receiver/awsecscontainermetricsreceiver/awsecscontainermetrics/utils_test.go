@@ -11,30 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package awsecscontainermetrics
 
 import (
+	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/stretchr/testify/require"
 )
 
-func timestampProto(t time.Time) *timestamp.Timestamp {
-	out, err := ptypes.TimestampProto(t)
-	if err != nil {
-		return nil
-	}
-	return out
+func TestTimestampProto(t *testing.T) {
+	timestamp := timestampProto(time.Now())
+
+	require.NotNil(t, timestamp)
 }
 
-func applyTimestamp(metrics []*metricspb.Metric, t *timestamp.Timestamp) []*metricspb.Metric {
-	for _, metric := range metrics {
-		if metric != nil {
-			metric.Timeseries[0].Points[0].Timestamp = t
-		}
+func TestApplyTimestamp(t *testing.T) {
+	timestamp := timestampProto(time.Now())
+	m := []*metricspb.Metric{
+		createGagueIntMetric(1),
 	}
-	return metrics
+
+	metrics := applyTimestamp(m, timestamp)
+
+	require.NotNil(t, metrics)
+	require.EqualValues(t, timestamp, metrics[0].Timeseries[0].Points[0].Timestamp)
 }

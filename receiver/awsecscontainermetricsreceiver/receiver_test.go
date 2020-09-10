@@ -16,6 +16,7 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,12 +25,28 @@ import (
 	"go.uber.org/zap"
 )
 
+type fakeRestClient struct {
+}
+
+func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
+	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	taskMetadata, err := ioutil.ReadFile("../testdata/task_metadata.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	return taskStats, taskMetadata, nil
+}
+
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
+	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
 		exportertest.NewNopMetricsExporter(),
+		&fakeRestClient{},
 	)
 
 	require.NoError(t, err)
@@ -47,10 +64,11 @@ func TestReceiver(t *testing.T) {
 
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
+	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
 		new(exportertest.SinkMetricsExporter),
+		&fakeRestClient{},
 	)
 
 	require.NoError(t, err)
@@ -59,6 +77,6 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx)
+	err = r.collectDataFromEndpoint(ctx, "")
 	require.NoError(t, err)
 }

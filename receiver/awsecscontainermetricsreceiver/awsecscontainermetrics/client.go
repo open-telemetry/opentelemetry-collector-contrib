@@ -53,13 +53,11 @@ func defaultClient(
 	logger *zap.Logger,
 ) (*clientImpl, error) {
 	return &clientImpl{
-		baseURL:    "https://" + endpoint,
+		baseURL:    endpoint,
 		httpClient: http.Client{},
 		logger:     logger,
 	}, nil
 }
-
-// clientImpl
 
 var _ Client = (*clientImpl)(nil)
 
@@ -81,7 +79,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	defer func() {
 		closeErr := resp.Body.Close()
 		if closeErr != nil {
-			c.logger.Warn("failed to close response body", zap.Error(closeErr))
+			c.logger.Warn("Failed to close response body", zap.Error(closeErr))
 		}
 	}()
 	body, err := ioutil.ReadAll(resp.Body)

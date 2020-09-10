@@ -21,7 +21,7 @@ import (
 
 func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue, timestamp *timestamppb.Timestamp) []*metricspb.Metric {
 
-	return applyTimeStamp([]*metricspb.Metric{
+	return applyTimestamp([]*metricspb.Metric{
 		intGauge(prefix+"memory_usage", "Bytes", &m.MemoryUsage, labelKeys, labelValues),
 		intGauge(prefix+"memory_maxusage", "Bytes", &m.MemoryMaxUsage, labelKeys, labelValues),
 		intGauge(prefix+"memory_limit", "Bytes", &m.MemoryLimit, labelKeys, labelValues),

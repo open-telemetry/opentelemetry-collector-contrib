@@ -23,18 +23,18 @@ type RestClient interface {
 	EndpointResponse() ([]byte, []byte, error)
 }
 
-// RestClient is a thin wrapper around an ecs task metadata client, encapsulating endpoints
+// HTTPRestClient is a thin wrapper around an ecs task metadata client, encapsulating endpoints
 // and their corresponding http methods.
 type HTTPRestClient struct {
 	client Client
 }
 
-// Creates a new copy of the Rest Client
+// NewRestClient creates a new copy of the Rest Client
 func NewRestClient(client Client) *HTTPRestClient {
 	return &HTTPRestClient{client: client}
 }
 
-// Gets the task metadata and docker stats from ECS Task Metadata
+// EndpointResponse gets the task metadata and docker stats from ECS Task Metadata Endpoint
 func (c *HTTPRestClient) EndpointResponse() ([]byte, []byte, error) {
 	taskStats, err := ioutil.ReadFile("/Users/hrayhan/Work/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/testdata/task_stats.json")
 	if err != nil {

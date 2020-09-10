@@ -101,7 +101,7 @@ func (acc *metricDataAccumulator) accumulate(
 	resourceAttributes["service.name"] = serviceName
 
 	r := &resourcepb.Resource{
-		Type:   "ecs.telemetry",
+		Type:   "ecs.aoc.metrics",
 		Labels: resourceAttributes,
 	}
 
