@@ -34,8 +34,7 @@ type Config struct {
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
 
-	// Realm is the SignalFx realm where data is going to be sent to. The
-	// default value is "us0"
+	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
