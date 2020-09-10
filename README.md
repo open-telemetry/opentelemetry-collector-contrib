@@ -83,8 +83,8 @@ contributors.
   collector to take a limited sets of dependencies - so run `go mod` commands
   as appropriate for your component.
 - Implement the needed interface on your component by importing the appropriate
-  component from the core repo.  Follow the pattern of existing components
-  regarding config and factory source files and tests. 
+  component from the core repo. Follow the pattern of existing components
+  regarding config and factory source files and tests.
 - Implement your component as appropriate. Provide end-to-end tests (or mock
   backend/client as appropriate). Target is to get 80% or more of code
   coverage.
@@ -139,38 +139,44 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 
 #### Exporters
 
-| Exporter | Reviewer(s) |
-| -------- | ----------- |
-| alibabacloudlogserviceexporter | @shabicheng |
-| awsxrayexporter | @kbrockhoff @anuraaga |
-| azuremonitorexporter | @pcwiese |
-| carbonexporter | @pjanotti |
-| elasticexporter | @axw |
-| honeycombexporter | @paulosman @lizthegrey |
-| jaegerthrifthttpexporter | @jpkrohling @pavolloffay |
-| kinesisexporter | @owais |
-| newrelicexporter | @MrAlias |
-| sapmexporter | @owais @dmitryax |
-| sentryexporter | @AbhiPrasad |
-| signalfxexporter | @pmcollins @asuresh4 |
-| splunkhecexporter | @atoulme |
-| stackdriverexporter | @nilebox @james-bebbington |
+| Exporter                       | Reviewer(s)                |
+| ------------------------------ | -------------------------- |
+| alibabacloudlogserviceexporter | @shabicheng                |
+| awsxrayexporter                | @kbrockhoff @anuraaga      |
+| azuremonitorexporter           | @pcwiese                   |
+| carbonexporter                 | @pjanotti                  |
+| elasticexporter                | @axw                       |
+| honeycombexporter              | @paulosman @lizthegrey     |
+| jaegerthrifthttpexporter       | @jpkrohling @pavolloffay   |
+| kinesisexporter                | @owais                     |
+| newrelicexporter               | @MrAlias                   |
+| sapmexporter                   | @owais @dmitryax           |
+| sentryexporter                 | @AbhiPrasad                |
+| signalfxexporter               | @pmcollins @asuresh4       |
+| splunkhecexporter              | @atoulme                   |
+| stackdriverexporter            | @nilebox @james-bebbington |
 
 #### Receivers
 
-| Receiver | Reviewer(s) |
-| -------- | ----------- |
-| awsecscontainermetricsreceiver | @kbrockhoff @anuraaga |
-| awsxrayreceiver | @kbrockhoff @anuraaga |
-| carbonreceiver | @pjanotti |
-| collectdreceiver | @owais |
-| k8sclusterreceiver | @asuresh4 |
-| kubeletstatsreceiver | @pmcollins @asuresh4 |
-| prometheusexecreceiver | @keitwb @james-bebbington |
-| receivercreator | @jrcamp |
-| redisreceiver | @pmcollins @jrcamp |
-| sapmreceiver | @owais |
-| signalfxreceiver | @pjanotti @asuresh4 |
-| simpleprometheusreceiver | @asuresh4 |
-| statsdreceiver | @keitwb @jmacd |
-| wavefrontreceiver | @pjanotti |
+| Receiver                       | Reviewer(s)               |
+| ------------------------------ | ------------------------- |
+| awsecscontainermetricsreceiver | @kbrockhoff @anuraaga     |
+| awsxrayreceiver                | @kbrockhoff @anuraaga     |
+| carbonreceiver                 | @pjanotti                 |
+| collectdreceiver               | @owais                    |
+| k8sclusterreceiver             | @asuresh4                 |
+| kubeletstatsreceiver           | @pmcollins @asuresh4      |
+| prometheusexecreceiver         | @keitwb @james-bebbington |
+| receivercreator                | @jrcamp                   |
+| redisreceiver                  | @pmcollins @jrcamp        |
+| sapmreceiver                   | @owais                    |
+| signalfxreceiver               | @pjanotti @asuresh4       |
+| simpleprometheusreceiver       | @asuresh4                 |
+| statsdreceiver                 | @keitwb @jmacd            |
+| wavefrontreceiver              | @pjanotti                 |
+
+#### Processors
+
+| Processor                      | Reviewer(s)               |
+| ------------------------------ | ------------------------- |
+| routing                        | @jpkrohling               |
