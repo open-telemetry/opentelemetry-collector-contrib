@@ -346,7 +346,7 @@ func TestNode(t *testing.T) {
 				"trace.trace_id":                         "01",
 				"opencensus.resourcetype":                "container",
 				"opencensus.same_process_as_parent_span": true,
-				"opencensus.start_timestamp":             "2020-09-08T16:15:12-04:00",
+				"opencensus.start_timestamp":             "2020-09-08T20:15:12Z",
 				"process.hostname":                       "my-host",
 				"process.pid":                            float64(123),
 				"service_name":                           "test_service",
