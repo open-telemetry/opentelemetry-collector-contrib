@@ -95,17 +95,13 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 	}
 
 	mds := awsecscontainermetrics.MetricsData(stats, metadata, typeStr)
-
 	for _, md := range mds {
-		err := aecmr.nextConsumer.ConsumeMetrics(ctx, pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md}))
+		metrics := internaldata.OCToMetrics(*md)
+		err := aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)
 		if err != nil {
 			return err
 		}
 	}
 
-<<<<<<< HEAD
-	err := aecmr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-=======
->>>>>>> create translator and new data structure
 	return err
 }
