@@ -396,6 +396,7 @@ translation_rules:
 - action: multiply_float
   scale_factors_float:
     memory.utilization: 100
+    cpu.utilization: 100
 
 # remove redundant metrics
 - action: drop_metrics

@@ -690,9 +690,8 @@ func TestDefaultCPUTranslations(t *testing.T) {
 
 	cpuUtil := m["cpu.utilization"]
 	require.Equal(t, 1, len(cpuUtil))
-	const expectedCPUUtil = 2.0 / 3.0
 	for _, pt := range cpuUtil {
-		require.Equal(t, expectedCPUUtil, *pt.Value.DoubleValue)
+		require.Equal(t, 66, int(*pt.Value.DoubleValue))
 	}
 }
 
