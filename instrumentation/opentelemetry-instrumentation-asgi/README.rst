@@ -1,5 +1,5 @@
-OpenTelemetry ASGI Middleware
-=============================
+OpenTelemetry ASGI Instrumentation
+==================================
 
 |pypi|
 
@@ -52,6 +52,17 @@ Modify the application's ``asgi.py`` file as shown below.
 
     application = get_asgi_application()
     application = OpenTelemetryMiddleware(application)
+
+
+Usage (Raw ASGI)
+----------------
+
+.. code-block:: python
+
+    from opentelemetry.instrumentation.asgi import OpenTelemetryMiddleware
+
+    app = ...  # An ASGI application.
+    app = OpenTelemetryMiddleware(app)
 
 
 References
