@@ -81,7 +81,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 
 	r.obsCtx = obsreport.ReceiverContext(ctx, typeStr, r.transport, r.config.Name())
 
-	r.runnerCtx, r.runnerCancel = context.WithCancel(ctx)
+	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
 
 	go func() {
