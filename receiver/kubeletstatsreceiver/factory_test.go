@@ -17,8 +17,12 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -30,22 +34,22 @@ import (
 )
 
 func TestType(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	ft := factory.Type()
 	require.EqualValues(t, "kubeletstats", ft)
 }
 
 func TestValidConfig(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	err := configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraceReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -54,10 +58,10 @@ func TestCreateTraceReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		tlsConfig(),
 		&testbed.MockMetricConsumer{},
 	)
@@ -66,13 +70,13 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := Config{
 		ExtraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabel("invalid-label")},
 	}
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		zap.NewNop(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
 		&cfg,
 		&testbed.MockMetricConsumer{},
 	)
@@ -82,7 +86,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 }
 
 func TestFactoryBadAuthType(t *testing.T) {
-	factory := &Factory{}
+	factory := NewFactory()
 	cfg := &Config{
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -90,12 +94,16 @@ func TestFactoryBadAuthType(t *testing.T) {
 			},
 		},
 	}
-	_, err := factory.CreateMetricsReceiver(context.Background(), zap.NewNop(), cfg, &testbed.MockMetricConsumer{})
+	_, err := factory.CreateMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg,
+		&testbed.MockMetricConsumer{},
+	)
 	require.Error(t, err)
 }
 
 func TestRestClientErr(t *testing.T) {
-	f := &Factory{}
 	cfg := &Config{
 		ClientConfig: kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -103,7 +111,7 @@ func TestRestClientErr(t *testing.T) {
 			},
 		},
 	}
-	_, err := f.restClient(zap.NewNop(), cfg)
+	_, err := restClient(zap.NewNop(), cfg)
 	require.Error(t, err)
 }
 
@@ -119,5 +127,91 @@ func tlsConfig() *Config {
 				KeyFile:  "testdata/testkey.key",
 			},
 		},
+	}
+}
+
+func TestCustomUnmarshaller(t *testing.T) {
+	type args struct {
+		sourceViperSection *viper.Viper
+		intoCfg            interface{}
+	}
+	tests := []struct {
+		name                  string
+		args                  args
+		result                *Config
+		mockUnmarshallFailure bool
+		configOverride        map[string]interface{}
+		wantErr               bool
+	}{
+		{
+			name:    "No config",
+			wantErr: false,
+		},
+		{
+			name: "Fail initial unmarshal",
+			args: args{
+				sourceViperSection: viper.New(),
+			},
+			wantErr: true,
+		},
+		{
+			name: "metric_group unset",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg:            &Config{},
+			},
+			result: &Config{
+				MetricGroupsToCollect: defaultMetricGroups,
+			},
+		},
+		{
+			name: "fail to unmarshall metric_groups",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg:            &Config{},
+			},
+			mockUnmarshallFailure: true,
+			wantErr:               true,
+		},
+		{
+			name: "successfully override metric_group",
+			args: args{
+				sourceViperSection: viper.New(),
+				intoCfg: &Config{
+					CollectionInterval: 10 * time.Second,
+				},
+			},
+			configOverride: map[string]interface{}{
+				"metric_groups":       []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+				"collection_interval": 20 * time.Second,
+			},
+			result: &Config{
+				CollectionInterval:    20 * time.Second,
+				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.mockUnmarshallFailure {
+				// some arbitrary failure.
+				tt.args.sourceViperSection.Set(metricGroupsConfig, map[string]string{})
+			}
+
+			// Mock some config overrides.
+			if tt.configOverride != nil {
+				for k, v := range tt.configOverride {
+					tt.args.sourceViperSection.Set(k, v)
+				}
+			}
+
+			if err := customUnmarshaller(tt.args.sourceViperSection, tt.args.intoCfg); (err != nil) != tt.wantErr {
+				t.Errorf("customUnmarshaller() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if tt.result != nil {
+				assert.Equal(t, tt.result, tt.args.intoCfg)
+			}
+		})
 	}
 }

@@ -16,6 +16,8 @@ package translation
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -27,6 +29,8 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
+	// The rule can be applied only to particular metrics if MetricNames are provided,
+	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
 	// ActionRenameMetrics renames metrics using Rule.Mapping.
@@ -69,17 +73,18 @@ const (
 	// k8s.pod.network.io{direction="transmit"} -> pod_network_transmit_bytes_total{}
 	ActionSplitMetric Action = "split_metric"
 
-	// ActionAggregateMetric aggregates metrics by dimensions provided in tr.Dimensions.
+	// ActionAggregateMetric aggregates metrics excluding dimensions set in tr.WithoutDimensions.
+	// This method is equivalent of "without" clause in Prometheus aggregation:
+	// https://prometheus.io/docs/prometheus/latest/querying/operators/#aggregation-operators
 	// It takes datapoints with name tr.MetricName and aggregates them to a smaller set keeping the same name.
-	// It drops all other dimensions other then those that match tr.Dimensions.
-	// If a datapoint doesn't have a dimension matchin tr.Dimensions, the datapoint will be dropped.
+	// It drops the dimensions provided in tr.WithoutDimensions and keeps others as is.
 	// tr.AggregationMethod is used to specify a method to aggregate the values.
 	// For example, having the following translation rule:
 	// - action: aggregate_metric
 	//   metric_name: machine_cpu_cores
 	//   aggregation_method: count
-	//   dimensions:
-	// 	 - host
+	//   without_dimensions:
+	//   - cpu
 	// The following translations will be performed:
 	// Original datapoints:
 	//   machine_cpu_cores{cpu="cpu1",host="host1"} 0.22
@@ -89,6 +94,30 @@ const (
 	//   machine_cpu_cores{host="host1"} 2
 	//   machine_cpu_cores{host="host2"} 1
 	ActionAggregateMetric Action = "aggregate_metric"
+
+	// ActionCalculateNewMetric calculates a new metric based on two existing metrics.
+	// It takes two operand metrics, an operator, and a metric name and produces a new metric with the given
+	// metric name, but with the attributes of the first operand metric.
+	// For example, for the following translation rule:
+	// - action: calculate_new_metric
+	//  metric_name: memory.utilization
+	//  operand1_metric: memory.used
+	//  operand2_metric: memory.total
+	//  operator: /
+	// the integer value of the 'memory.used' metric will be divided by the integer value of 'memory.total'. The
+	// result will be a new float metric with the name 'memory.utilization' and the value of the quotient. The
+	// new metric will also get any attributes of the 'memory.used' metric except for its value and metric name.
+	// Currently only integer inputs are handled and only division is supported.
+	ActionCalculateNewMetric Action = "calculate_new_metric"
+
+	// ActionDropMetrics drops datapoints with metric name defined in "metric_names".
+	ActionDropMetrics Action = "drop_metrics"
+)
+
+type MetricOperator string
+
+const (
+	MetricOperatorDivision MetricOperator = "/"
 )
 
 // MetricValueType is the enum to capture valid metric value types that can be converted
@@ -147,10 +176,16 @@ type Rule struct {
 	// AggregationMethod specifies method used by "aggregate_metric" translation rule
 	AggregationMethod AggregationMethod `mapstructure:"aggregation_method"`
 
-	// Dimensions is used by "aggregate_metric" translation rule to specify dimension keys
-	// that will be used to aggregate the metric across.
-	// Datapoints that don't have all the dimensions will be dropped.
-	Dimensions []string `mapstructure:"dimensions"`
+	// WithoutDimensions used by "aggregate_metric" translation rule to specify dimensions to be
+	// excluded by aggregation.
+	WithoutDimensions []string `mapstructure:"without_dimensions"`
+
+	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
+	MetricNames map[string]bool `mapstructure:"metric_names"`
+
+	Operand1Metric string         `mapstructure:"operand1_metric"`
+	Operand2Metric string         `mapstructure:"operand2_metric"`
+	Operator       MetricOperator `mapstructure:"operator"`
 }
 
 type MetricTranslator struct {
@@ -173,17 +208,19 @@ func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
 }
 
 func validateTranslationRules(rules []Rule) error {
-	var renameDimentionKeysFound bool
+	var renameDimensionKeysFound bool
 	for _, tr := range rules {
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
 			}
-			if renameDimentionKeysFound {
-				return fmt.Errorf("only one %q translation rule can be specified", tr.Action)
+			if len(tr.MetricNames) == 0 {
+				if renameDimensionKeysFound {
+					return fmt.Errorf("only one %q translation rule without \"metric_names\" can be specified", tr.Action)
+				}
+				renameDimensionKeysFound = true
 			}
-			renameDimentionKeysFound = true
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
@@ -230,13 +267,25 @@ func validateTranslationRules(rules []Rule) error {
 				}
 			}
 		case ActionAggregateMetric:
-			if tr.MetricName == "" || tr.AggregationMethod == "" || len(tr.Dimensions) == 0 {
-				return fmt.Errorf("fields \"metric_name\", \"dimensions\", and \"aggregation_method\" "+
+			if tr.MetricName == "" || tr.AggregationMethod == "" || len(tr.WithoutDimensions) == 0 {
+				return fmt.Errorf("fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" "+
 					"are required for %q translation rule", tr.Action)
 			}
 			if tr.AggregationMethod != "count" && tr.AggregationMethod != "sum" {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
+			}
+		case ActionCalculateNewMetric:
+			if tr.MetricName == "" || tr.Operand1Metric == "" || tr.Operand2Metric == "" || tr.Operator == "" {
+				return fmt.Errorf(`fields "metric_name", "operand1_metric", "operand2_metric", and "operator" are `+
+					"required for %q translation rule", tr.Action)
+			}
+			if tr.Operator != MetricOperatorDivision {
+				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
+			}
+		case ActionDropMetrics:
+			if len(tr.MetricNames) == 0 {
+				return fmt.Errorf(`field "metric_names" is required for %q translation rule`, tr.Action)
 			}
 
 		default:
@@ -267,6 +316,9 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		switch tr.Action {
 		case ActionRenameDimensionKeys:
 			for _, dp := range processedDataPoints {
+				if len(tr.MetricNames) > 0 && !tr.MetricNames[dp.Metric] {
+					continue
+				}
 				for _, d := range dp.Dimensions {
 					if newKey, ok := tr.Mapping[d.Key]; ok {
 						d.Key = newKey
@@ -327,6 +379,16 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					convertMetricValue(logger, dp, newType)
 				}
 			}
+		case ActionCalculateNewMetric:
+			pairs := calcNewMetricInputPairs(processedDataPoints, tr)
+			for _, pair := range pairs {
+				newPt := calculateNewMetric(logger, pair[0], pair[1], tr)
+				if newPt == nil {
+					continue
+				}
+				processedDataPoints = append(processedDataPoints, newPt)
+			}
+
 		case ActionAggregateMetric:
 			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint
 			// represents only one metric and all the datapoints can be aggregated together.
@@ -347,12 +409,117 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 					otherDps = append(otherDps, dp)
 				}
 			}
-			aggregatedDps := aggregateDatapoints(logger, dpsToAggregate, tr.Dimensions, tr.AggregationMethod)
+			aggregatedDps := aggregateDatapoints(dpsToAggregate, tr.WithoutDimensions, tr.AggregationMethod)
 			processedDataPoints = append(otherDps, aggregatedDps...)
+
+		case ActionDropMetrics:
+			resultSliceLen := 0
+			for i, dp := range processedDataPoints {
+				if match := tr.MetricNames[dp.Metric]; !match {
+					if resultSliceLen < i {
+						processedDataPoints[resultSliceLen] = dp
+					}
+					resultSliceLen++
+				}
+			}
+			processedDataPoints = processedDataPoints[:resultSliceLen]
 		}
 	}
 
 	return processedDataPoints
+}
+
+func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
+	var operand1Pts, operand2Pts []*sfxpb.DataPoint
+	for _, dp := range processedDataPoints {
+		if dp.Metric == tr.Operand1Metric {
+			operand1Pts = append(operand1Pts, dp)
+		} else if dp.Metric == tr.Operand2Metric {
+			operand2Pts = append(operand2Pts, dp)
+		}
+	}
+	var out [][2]*sfxpb.DataPoint
+	for _, o1 := range operand1Pts {
+		for _, o2 := range operand2Pts {
+			if dimensionsEqual(o1.Dimensions, o2.Dimensions) {
+				pair := [2]*sfxpb.DataPoint{o1, o2}
+				out = append(out, pair)
+			}
+		}
+	}
+	return out
+}
+
+func dimensionsEqual(d1 []*sfxpb.Dimension, d2 []*sfxpb.Dimension) bool {
+	if d1 == nil && d2 == nil {
+		return true
+	}
+	if len(d1) != len(d2) {
+		return false
+	}
+	// avoid allocating a map
+	for _, dim1 := range d1 {
+		matched := false
+		for _, dim2 := range d2 {
+			if dim1.Key == dim2.Key && dim1.Value == dim2.Value {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
+	return true
+}
+
+func calculateNewMetric(
+	logger *zap.Logger,
+	operand1 *sfxpb.DataPoint,
+	operand2 *sfxpb.DataPoint,
+	tr Rule,
+) *sfxpb.DataPoint {
+	if operand1.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand1 has no IntValue",
+			zap.String("tr.Operand1Metric", tr.Operand1Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if operand2.Value.IntValue == nil {
+		logger.Warn(
+			"calculate_new_metric: operand2 has no IntValue",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+		logger.Warn(
+			"calculate_new_metric: attempt to divide by zero, skipping",
+			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			zap.String("tr.MetricName", tr.MetricName),
+		)
+		return nil
+	}
+
+	newPt := proto.Clone(operand1).(*sfxpb.DataPoint)
+	newPt.Metric = tr.MetricName
+	var newPtVal float64
+	switch tr.Operator {
+	// only supporting divide operator for now
+	case MetricOperatorDivision:
+		// only supporting int values for now
+		newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+	default:
+		logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
+		return nil
+	}
+	newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
+	return newPt
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {
@@ -365,9 +532,8 @@ func (mp *MetricTranslator) TranslateDimension(orig string) string {
 // aggregateDatapoints aggregates datapoints assuming that they have
 // the same Timestamp, MetricType, Metric and Source fields.
 func aggregateDatapoints(
-	logger *zap.Logger,
 	dps []*sfxpb.DataPoint,
-	dimensionsKeys []string,
+	withoutDimensions []string,
 	aggregation AggregationMethod,
 ) []*sfxpb.DataPoint {
 	if len(dps) == 0 {
@@ -377,11 +543,7 @@ func aggregateDatapoints(
 	// group datapoints by dimension values
 	dimValuesToDps := make(map[string][]*sfxpb.DataPoint, len(dps))
 	for i, dp := range dps {
-		aggregationKey, err := getAggregationKey(dp.Dimensions, dimensionsKeys)
-		if err != nil {
-			logger.Debug("datapoint is dropped", zap.String("metric", dp.Metric), zap.Error(err))
-			continue
-		}
+		aggregationKey := getAggregationKey(dp.Dimensions, withoutDimensions)
 		if _, ok := dimValuesToDps[aggregationKey]; !ok {
 			// set slice capacity to the possible maximum = len(dps)-i to avoid reallocations
 			dimValuesToDps[aggregationKey] = make([]*sfxpb.DataPoint, 0, len(dps)-i)
@@ -393,7 +555,7 @@ func aggregateDatapoints(
 	result := make([]*sfxpb.DataPoint, 0, len(dimValuesToDps))
 	for _, dps := range dimValuesToDps {
 		dp := proto.Clone(dps[0]).(*sfxpb.DataPoint)
-		dp.Dimensions = filterDimensions(dp.Dimensions, dimensionsKeys)
+		dp.Dimensions = filterDimensions(dp.Dimensions, withoutDimensions)
 		switch aggregation {
 		case AggregationMethodCount:
 			gauge := sfxpb.MetricType_GAUGE
@@ -424,44 +586,42 @@ func aggregateDatapoints(
 	return result
 }
 
-// getAggregationKey composes an aggregation key based on provided dimensions.
-// If all the dimensions found, the function returns an aggregationkey.
-// If any dimension os not found the function returns an error.
-func getAggregationKey(dimensions []*sfxpb.Dimension, dimensionsKeys []string) (string, error) {
+// getAggregationKey composes an aggregation key based on dimensions that left after excluding withoutDimensions.
+// The key composed from dimensions has the following form: dim1:val1//dim2:val2
+func getAggregationKey(dimensions []*sfxpb.Dimension, withoutDimensions []string) string {
 	const aggregationKeyDelimiter = "//"
-	var aggregationKey string
-	for _, dk := range dimensionsKeys {
-		var dimensionFound bool
-		for _, d := range dimensions {
-			if d.Key == dk {
-				// compose an aggregation key with "//" as delimiter
-				aggregationKey += d.Value + aggregationKeyDelimiter
-				dimensionFound = true
-				continue
-			}
-		}
-		if !dimensionFound {
-			return "", fmt.Errorf("dimension to aggregate by is not found: %q", dk)
+	var aggregationKeyParts = make([]string, 0, len(dimensions))
+	for _, d := range dimensions {
+		if !dimensionIn(d, withoutDimensions) {
+			aggregationKeyParts = append(aggregationKeyParts, fmt.Sprintf("%s:%s", d.Key, d.Value))
 		}
 	}
-	return aggregationKey, nil
+	sort.Strings(aggregationKeyParts)
+	return strings.Join(aggregationKeyParts, aggregationKeyDelimiter)
 }
 
-// filterDimensions returns list of dimension filtered by dimensionsKeys
-func filterDimensions(dimensions []*sfxpb.Dimension, dimensionsKeys []string) []*sfxpb.Dimension {
-	if len(dimensions) == 0 || len(dimensionsKeys) == 0 {
+// filterDimensions returns list of dimension excluding withoutDimensions
+func filterDimensions(dimensions []*sfxpb.Dimension, withoutDimensions []string) []*sfxpb.Dimension {
+	if len(dimensions) == 0 || len(dimensions)-len(withoutDimensions) <= 0 {
 		return nil
 	}
-	result := make([]*sfxpb.Dimension, 0, len(dimensionsKeys))
-	for _, dk := range dimensionsKeys {
-		for _, d := range dimensions {
-			if d.Key == dk {
-				result = append(result, d)
-				continue
-			}
+	result := make([]*sfxpb.Dimension, 0, len(dimensions)-len(withoutDimensions))
+	for _, d := range dimensions {
+		if !dimensionIn(d, withoutDimensions) {
+			result = append(result, d)
 		}
 	}
 	return result
+}
+
+// dimensionIn checks if the dimension found in the dimensionsKeysFilter
+func dimensionIn(dimension *sfxpb.Dimension, dimensionsKeysFilter []string) bool {
+	for _, dk := range dimensionsKeysFilter {
+		if dimension.Key == dk {
+			return true
+		}
+	}
+	return false
 }
 
 // splitMetric renames a metric with "dimension key" == dimensionKey to mapping["dimension value"],

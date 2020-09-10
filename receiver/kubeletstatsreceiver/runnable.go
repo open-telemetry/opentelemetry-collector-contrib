@@ -16,11 +16,15 @@ package kubeletstatsreceiver
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 	// todo replace with scraping lib when it's ready
@@ -30,31 +34,34 @@ import (
 var _ interval.Runnable = (*runnable)(nil)
 
 type runnable struct {
-	ctx                 context.Context
-	receiverName        string
-	statsProvider       *kubelet.StatsProvider
-	metadataProvider    *kubelet.MetadataProvider
-	consumer            consumer.MetricsConsumerOld
-	logger              *zap.Logger
-	restClient          kubelet.RestClient
-	extraMetadataLabels []kubelet.MetadataLabel
+	ctx                   context.Context
+	receiverName          string
+	statsProvider         *kubelet.StatsProvider
+	metadataProvider      *kubelet.MetadataProvider
+	consumer              consumer.MetricsConsumer
+	logger                *zap.Logger
+	restClient            kubelet.RestClient
+	extraMetadataLabels   []kubelet.MetadataLabel
+	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	k8sAPIClient          kubernetes.Interface
 }
 
 func newRunnable(
 	ctx context.Context,
-	receiverName string,
-	consumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 	restClient kubelet.RestClient,
-	extraMetadataLabels []kubelet.MetadataLabel,
 	logger *zap.Logger,
+	rOptions *receiverOptions,
 ) *runnable {
 	return &runnable{
-		ctx:                 ctx,
-		receiverName:        receiverName,
-		consumer:            consumer,
-		restClient:          restClient,
-		logger:              logger,
-		extraMetadataLabels: extraMetadataLabels,
+		ctx:                   ctx,
+		receiverName:          rOptions.name,
+		consumer:              consumer,
+		restClient:            restClient,
+		logger:                logger,
+		extraMetadataLabels:   rOptions.extraMetadataLabels,
+		metricGroupsToCollect: rOptions.metricGroupsToCollect,
+		k8sAPIClient:          rOptions.k8sAPIClient,
 	}
 }
 
@@ -83,19 +90,47 @@ func (r *runnable) Run() error {
 		}
 	}
 
-	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata)
-	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr)
+	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, detailedPVCLabelsSetter(r.k8sAPIClient))
+	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
+	metrics := pdatautil.MetricsFromMetricsData(mds)
+
+	var numTimeSeries, numPoints int
 	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
-	for _, md := range mds {
-		ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
-		err = r.consumer.ConsumeMetricsData(ctx, *md)
-		var numTimeSeries, numPoints int
-		if err != nil {
-			r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
-		} else {
-			numTimeSeries, numPoints = obsreport.CountMetricPoints(*md)
-		}
-		obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
+	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
+	err = r.consumer.ConsumeMetrics(ctx, metrics)
+	if err != nil {
+		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
+	} else {
+		numTimeSeries, numPoints = pdatautil.MetricAndDataPointCount(metrics)
 	}
+	obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
+
 	return nil
+}
+
+func detailedPVCLabelsSetter(k8sAPIClient kubernetes.Interface) func(volumeClaim, namespace string, labels map[string]string) error {
+	return func(volumeClaim, namespace string, labels map[string]string) error {
+		if k8sAPIClient == nil {
+			return nil
+		}
+
+		ctx := context.Background()
+		pvc, err := k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeClaim, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		volName := pvc.Spec.VolumeName
+		if volName == "" {
+			return fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
+		}
+
+		pv, err := k8sAPIClient.CoreV1().PersistentVolumes().Get(ctx, volName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		kubelet.GetPersistentVolumeLabels(pv.Spec.PersistentVolumeSource, labels)
+		return nil
+	}
 }

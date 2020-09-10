@@ -2,6 +2,85 @@
 
 ## Unreleased
 
+## v0.9.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.9.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.9.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🛑 Breaking changes 🛑
+- Remove deprecated `lightstep` exporter (#828)
+
+## 🚀 New components 🚀
+- `statsd` receiver for ingesting StatsD messages (#566)
+
+## 💡 Enhancements 💡
+- `signalfx` exporter
+   - Add disk usage translations (#760)
+   - Add disk utilization translations (#782)
+   - Add translation rule to drop redundant metrics (#809)
+- `kubeletstats` receiver
+  - Sync available volume metadata from /pods endpoint (#690)
+  - Add ability to collect detailed data from PVC (#743)
+- `awsxray` exporter: Translate SDK name/version into xray model (#755)
+- `elastic` exporter: Translate semantic conventions to Elastic destination fields (#671)
+- `stackdriver` exporter: Add point count metric (#757)
+- `awsxray` receiver
+  - Ported the TCP proxy from the X-Ray daemon (#774)
+  - Convert to OTEL trace format (#691)
+
+## 🧰 Bug fixes 🧰
+- `kubeletstats` receiver: Do not break down metrics batch (#754)
+- `host` observer: Fix issue on darwin where ports listening on all interfaces are not correctly accounted for (#582)
+- `newrelic` exporter: Fix panic on missing span status (#775)
+
+## v0.8.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.8.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.8.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- Receivers
+  - `prometheusexec` subprocess manager (##499)
+
+## 💡 Enhancements 💡
+
+- `signalfx` exporter
+  - Add/Update metric translations (#579, #584, #639, #640, #652, #662)
+  - Add support for calculate new metric translator (#644)
+  - Add renaming rules for load metrics (#664)
+  - Update `container.name` to `k8s.container.name` in default translation rule (#683)
+  - Rename working-set and page-fault metrics (#679)
+- `awsxray` exporter
+  - Translate exception event into xray exception (#577)
+  - Add ingestion of X-Ray segments via UDP (#502)
+  - Parse Java stacktrace and populate in xray cause (#687)
+- `kubeletstats` receiver
+  - Add metric_groups option (#648)
+  - Set datapoint timestamp in receiver (#661)
+  - Change `container.name` label to `k8s.container.name` (#680)
+  - Add working-set and page-fault metrics (#666)
+  - Add basic support for volume metrics (#667)
+- `stackdriver` trace exporter: Move to new interface and pdata (#486)
+- `metricstranform` processor: Keep timeseries and points in order after aggregation (#663)
+- `k8scluster` receiver: Change `container.spec.name` label to `k8s.container.name` (#681)
+- Migrate receiver creator to internal data model (#701)
+- Add ec2 support to `resourcedetection` processor (#587)
+- Enable timeout, sending queue and retry for SAPM exporter (#707)
+
+## 🧰 Bug fixes 🧰
+
+- `azuremonitor` exporter: Correct HTTP status code success mapping (#588)
+- `k8scluster` receiver: Fix owner reference in metadata updates (#649)
+- `awsxray` exporter: Fix handling of db system (#697)
+
+## 🚀 New components 🚀
+
+- Skeleton for AWS ECS container metrics receiver (#463)
+- `prometheus_exec` receiver (#655)
+
 ## v0.7.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.7.0 (Beta) 🎉

@@ -21,12 +21,12 @@ import (
 
 func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
 	// todo s.RxErrors s.TxErrors?
-	return applyCurrentTime([]*metricspb.Metric{
+	return []*metricspb.Metric{
 		rxBytesMetric(prefix, s),
 		txBytesMetric(prefix, s),
 		rxErrorsMetric(prefix, s),
 		txErrorsMetric(prefix, s),
-	}, s.Time.Time)
+	}
 }
 
 const directionLabel = "direction"

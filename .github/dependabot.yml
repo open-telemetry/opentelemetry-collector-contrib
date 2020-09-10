@@ -46,6 +46,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/prometheusexecreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/receivercreator"
     schedule:
       interval: "weekly"
@@ -66,11 +70,27 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/statsdreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/common"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleapp"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleserver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -115,10 +135,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/kinesisexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/lightstepexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

@@ -17,19 +17,21 @@ package stackdriverexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -53,6 +55,9 @@ func TestLoadConfig(t *testing.T) {
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 20 * time.Second,
+			},
 			ResourceMappings: []ResourceMapping{
 				{
 					SourceType: "source.resource1",

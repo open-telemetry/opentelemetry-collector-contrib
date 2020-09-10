@@ -15,43 +15,64 @@
 package stackdriverexporter
 
 import (
+	"context"
+	"sync"
+	"time"
+
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr = "stackdriver"
+	typeStr        = "stackdriver"
+	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
-// Factory is the factory for Stackdriver exporter.
-type Factory struct {
+var once sync.Once
+
+// NewFactory creates a factory for the stackdriver exporter
+func NewFactory() component.ExporterFactory {
+	// register view for self-observability
+	once.Do(func() {
+		view.Register(viewPointCount)
+	})
+
+	return exporterhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+	)
 }
 
-// Type gets the type of the Exporter config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CreateDefaultConfig creates the default configuration for exporter.
-func (f *Factory) CreateDefaultConfig() configmodels.Exporter {
+// createDefaultConfig creates the default configuration for exporter.
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 	}
 }
 
-// CreateTraceExporter creates a trace exporter based on this config.
-func (f *Factory) CreateTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporterOld, error) {
+// createTraceExporter creates a trace exporter based on this config.
+func createTraceExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter) (component.TraceExporter, error) {
 	eCfg := cfg.(*Config)
 	return newStackdriverTraceExporter(eCfg)
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
-func (f *Factory) CreateMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.MetricsExporterOld, error) {
+// createMetricsExporter creates a metrics exporter based on this config.
+func createMetricsExporter(
+	_ context.Context,
+	_ component.ExporterCreateParams,
+	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
 	return newStackdriverMetricsExporter(eCfg)
 }

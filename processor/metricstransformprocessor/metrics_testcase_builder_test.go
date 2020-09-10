@@ -16,7 +16,7 @@ package metricstransformprocessor
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type builder struct {
@@ -61,7 +61,7 @@ func (b builder) addTimeseries(startTimestamp int64, labelValuesVal []string) bu
 		}
 	}
 	timeseries := &metricspb.TimeSeries{
-		StartTimestamp: &timestamp.Timestamp{
+		StartTimestamp: &timestamppb.Timestamp{
 			Seconds: startTimestamp,
 			Nanos:   0,
 		},
@@ -81,7 +81,7 @@ func (b builder) setDataType(dataType metricspb.MetricDescriptor_Type) builder {
 // addInt64Point adds a int64 point to the tidx-th timseries
 func (b builder) addInt64Point(tidx int, val int64, timestampVal int64) builder {
 	point := &metricspb.Point{
-		Timestamp: &timestamp.Timestamp{
+		Timestamp: &timestamppb.Timestamp{
 			Seconds: timestampVal,
 			Nanos:   0,
 		},
@@ -97,7 +97,7 @@ func (b builder) addInt64Point(tidx int, val int64, timestampVal int64) builder 
 // addDoublePoint adds a double point to the tidx-th timseries
 func (b builder) addDoublePoint(tidx int, val float64, timestampVal int64) builder {
 	point := &metricspb.Point{
-		Timestamp: &timestamp.Timestamp{
+		Timestamp: &timestamppb.Timestamp{
 			Seconds: timestampVal,
 			Nanos:   0,
 		},
@@ -119,7 +119,7 @@ func (b builder) addDistributionPoints(tidx int, timestampVal int64, count int64
 		}
 	}
 	point := &metricspb.Point{
-		Timestamp: &timestamp.Timestamp{
+		Timestamp: &timestamppb.Timestamp{
 			Seconds: timestampVal,
 			Nanos:   0,
 		},

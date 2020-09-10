@@ -1,0 +1,3 @@
+# HELP timestamp_now Unix timestamp
+# TYPE timestamp_now gauge
+timestamp_now 1597863713483774000

@@ -17,6 +17,7 @@ package kubelet
 import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/collector/translator/conventions"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -33,9 +34,9 @@ func podResource(s stats.PodStats) *resourcepb.Resource {
 	return &resourcepb.Resource{
 		Type: "k8s", // k8s/pod
 		Labels: map[string]string{
-			labelPodUID:        s.PodRef.UID,
-			labelPodName:       s.PodRef.Name,
-			labelNamespaceName: s.PodRef.Namespace,
+			conventions.AttributeK8sPodUID:    s.PodRef.UID,
+			conventions.AttributeK8sPod:       s.PodRef.Name,
+			conventions.AttributeK8sNamespace: s.PodRef.Namespace,
 		},
 	}
 }
@@ -46,14 +47,53 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 		labels[k] = v
 	}
 	// augment the container resource with pod labels
-	labels[labelContainerName] = s.Name
-	err := metadata.setExtraLabels(labels, labels[labelPodUID], labels[labelContainerName])
+	labels[conventions.AttributeK8sContainer] = s.Name
+	err := metadata.setExtraLabels(
+		labels, labels[conventions.AttributeK8sPodUID],
+		MetadataLabelContainerID, labels[conventions.AttributeK8sContainer],
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
 
 	}
 	return &resourcepb.Resource{
 		Type:   "k8s", // k8s/pod/container
+		Labels: labels,
+	}, nil
+}
+
+func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Metadata) (*resourcepb.Resource, error) {
+	labels := map[string]string{
+		labelVolumeName: vs.Name,
+	}
+
+	err := metadata.setExtraLabels(
+		labels, pod.Labels[conventions.AttributeK8sPodUID],
+		MetadataLabelVolumeType, labels[labelVolumeName],
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
+
+	}
+
+	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
+		err = metadata.DetailedPVCLabelsSetter(
+			labels[labelPersistentVolumeClaimName],
+			pod.Labels[conventions.AttributeK8sNamespace], labels,
+		)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
+
+		}
+	}
+
+	// Collect relevant Pod labels to be able to associate the volume to it.
+	labels[conventions.AttributeK8sPodUID] = pod.Labels[conventions.AttributeK8sPodUID]
+	labels[conventions.AttributeK8sPod] = pod.Labels[conventions.AttributeK8sPod]
+	labels[conventions.AttributeK8sNamespace] = pod.Labels[conventions.AttributeK8sNamespace]
+
+	return &resourcepb.Resource{
+		Type:   "k8s",
 		Labels: labels,
 	}, nil
 }

@@ -20,7 +20,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.uber.org/zap"
 )
@@ -30,57 +29,39 @@ type badConfig struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
 }
 
-func TestExporterTypeKey(t *testing.T) {
-	factory := Factory{}
-
-	assert.Equal(t, configmodels.Type(typeStr), factory.Type())
-}
-
-func TestCreateMetricsExporter(t *testing.T) {
-	factory := Factory{}
-
-	ctx := context.Background()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := factory.CreateMetricsExporter(ctx, params, &Config{})
-
-	// unsupported
-	assert.Nil(t, exporter)
-	assert.Equal(t, configerror.ErrDataTypeIsNotSupported, err)
-}
-
 func TestCreateTraceExporterUsingSpecificTransportChannel(t *testing.T) {
 	// mock transport channel creation
-	factory := Factory{TransportChannel: &mockTransportChannel{}}
+	f := factory{tChannel: &mockTransportChannel{}}
 	ctx := context.Background()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := factory.CreateTraceExporter(ctx, params, factory.CreateDefaultConfig())
+	exporter, err := f.createTraceExporter(ctx, params, createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
 }
 
 func TestCreateTraceExporterUsingDefaultTransportChannel(t *testing.T) {
-	// We get the default transport channel creation, if we don't specify one during factory creation
-	factory := Factory{}
-	assert.Nil(t, factory.TransportChannel)
+	// We get the default transport channel creation, if we don't specify one during f creation
+	f := factory{}
+	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
 	logger, _ := zap.NewDevelopment()
 	params := component.ExporterCreateParams{Logger: logger}
-	exporter, err := factory.CreateTraceExporter(ctx, params, factory.CreateDefaultConfig())
+	exporter, err := f.createTraceExporter(ctx, params, createDefaultConfig())
 	assert.NotNil(t, exporter)
 	assert.Nil(t, err)
-	assert.NotNil(t, factory.TransportChannel)
+	assert.NotNil(t, f.tChannel)
 }
 
 func TestCreateTraceExporterUsingBadConfig(t *testing.T) {
 	// We get the default transport channel creation, if we don't specify one during factory creation
-	factory := Factory{}
-	assert.Nil(t, factory.TransportChannel)
+	f := factory{}
+	assert.Nil(t, f.tChannel)
 	ctx := context.Background()
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	badConfig := &badConfig{}
 
-	exporter, err := factory.CreateTraceExporter(ctx, params, badConfig)
+	exporter, err := f.createTraceExporter(ctx, params, badConfig)
 	assert.Nil(t, exporter)
 	assert.NotNil(t, err)
 }

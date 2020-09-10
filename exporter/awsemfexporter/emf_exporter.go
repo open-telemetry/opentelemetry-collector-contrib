@@ -148,19 +148,14 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string) {
-	imd := pdatautil.MetricsToInternalMetrics(metric)
-	rms := imd.ResourceMetrics()
+	mds := pdatautil.MetricsToMetricsData(metric)
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
 	var namespace string
 	var totalDroppedMetrics int
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
+	for _, md := range mds{
 		// translate OT metric datapoints into CWMetricLists
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm)
+		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&md)
 		if cwm == nil {
 			return nil, totalDroppedMetrics, ""
 		}

@@ -19,10 +19,11 @@ import (
 	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"sort"
 	"time"
 
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
@@ -76,20 +77,20 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(md *consumerdata.MetricsData) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	namespace := defaultNameSpace
 	svcAttrMode := ServiceNotDefined
 	totalDroppedMetrics := 0
 
-	if !rm.Resource().IsNil() {
-		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
-		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
+	if attributes := md.Resource.GetLabels(); attributes != nil {
+		serviceName, svcNameOk := attributes[conventions.AttributeServiceName]
+		serviceNamespace, svcNsOk := attributes[conventions.AttributeServiceNamespace]
 
-		if svcNameOk && serviceName.Type() == pdata.AttributeValueSTRING {
+		if svcNameOk {
 			svcAttrMode = ServiceNameOnly
 		}
-		if svcNsOk && serviceNamespace.Type() == pdata.AttributeValueSTRING {
+		if svcNsOk {
 			if ServiceNameOnly == svcAttrMode {
 				svcAttrMode = ServiceNameAndNamespace
 			} else {
@@ -98,39 +99,35 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, int) {
 		}
 		switch svcAttrMode {
 		case ServiceNameAndNamespace:
-			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
+			namespace = fmt.Sprintf("%s/%s", serviceNamespace, serviceName)
 		case ServiceNameOnly:
-			namespace = serviceName.StringVal()
+			namespace = serviceName
 		case ServiceNamespaceOnly:
-			namespace = serviceNamespace.StringVal()
+			namespace = serviceNamespace
 		case ServiceNotDefined:
 		default:
 		}
 	}
-	ilms := rm.InstrumentationLibraryMetrics()
-	for j := 0; j < ilms.Len(); j++ {
-		ilm := ilms.At(j)
-		if ilm.IsNil() {
+	//ilms := md.InstrumentationLibraryMetrics()
+	//for j := 0; j < ilms.Len(); j++ {
+	for _, metric := range md.Metrics {
+		if metric == nil || metric.MetricDescriptor == nil {
+			totalDroppedMetrics += len(metric.GetTimeseries())
 			continue
 		}
-		if ilm.InstrumentationLibrary().IsNil() {
-			ilm.InstrumentationLibrary().InitEmpty()
-			ilm.InstrumentationLibrary().SetName(noInstrumentationLibraryName)
+		//TODO: Handle OTLib when it's supported in new metric model
+		//if ilm.InstrumentationLibrary().IsNil() {
+		//	ilm.InstrumentationLibrary().InitEmpty()
+		//	ilm.InstrumentationLibrary().SetName(noInstrumentationLibraryName)
+		//}
+		//OTLib := ilm.InstrumentationLibrary().Name()
+		OTLib := noInstrumentationLibraryName
+		cwMetricList, err := getMeasurements(metric, namespace, OTLib)
+		if err != nil {
+			totalDroppedMetrics += len(metric.GetTimeseries())
+			continue
 		}
-		OTLib := ilm.InstrumentationLibrary().Name()
-		metrics := ilm.Metrics()
-		for k := 0; k < metrics.Len(); k++ {
-			metric := metrics.At(k)
-			if metric.IsNil() {
-				continue
-			}
-			cwMetricList, err := getMeasurements(&metric, namespace, OTLib)
-			if err != nil {
-				totalDroppedMetrics++
-				continue
-			}
-			cwMetricLists = append(cwMetricLists, cwMetricList...)
-		}
+		cwMetricLists = append(cwMetricLists, cwMetricList...)
 	}
 	return cwMetricLists, totalDroppedMetrics
 }
@@ -163,215 +160,307 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	return ples
 }
 
-func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) ([]*CWMetrics, error) {
-	// Histogram data are not supported for now
-	if metric.Int64DataPoints().Len() == 0 && metric.DoubleDataPoints().Len() == 0 && metric.SummaryDataPoints().Len() == 0 {
-		return nil, nil
-	}
-	mDesc := metric.MetricDescriptor()
-	if mDesc.IsNil() {
-		return nil, nil
-	}
-
+func getMeasurements(metric *metricspb.Metric, namespace string, OTLib string) ([]*CWMetrics, error) {
 	var result []*CWMetrics
 	// metric measure data from OT
 	metricMeasure := make(map[string]string)
+
+	descriptor := metric.MetricDescriptor
+
 	// metric measure slice could include multiple metric measures
 	metricSlice := []map[string]string{}
-	metricMeasure["Name"] = mDesc.Name()
-	metricMeasure["Unit"] = mDesc.Unit()
+	metricMeasure["Name"] = descriptor.Name
+	metricMeasure["Unit"] = descriptor.Unit
 	metricSlice = append(metricSlice, metricMeasure)
 
+
+	for _, series := range metric.Timeseries {
+		// fields contains metric and dimensions key/value pairs
+		fieldsPairs := make(map[string]interface{})
+		var dimensionArray [][]string
+		// Dimensions Slice
+		var dimensionSlice []string
+
+		labelCount := len(descriptor.LabelKeys)
+		if len(series.LabelValues) < len(descriptor.LabelKeys) {
+			labelCount = len(series.LabelValues)
+		}
+		for i := 0; i < labelCount; i++ {
+			fieldsPairs[descriptor.LabelKeys[i].GetKey()] = series.LabelValues[i].GetValue()
+			dimensionSlice = append(dimensionSlice, descriptor.LabelKeys[i].GetKey())
+		}
+		// add OTLib as an additional dimension
+		fieldsPairs[OtlibDimensionKey] = OTLib
+		dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+
+
+
+		for _, dp := range series.Points {
+
+			//var nsec int64
+			//if dp.Timestamp != nil {
+			//	nsec = dp.Timestamp.Seconds*1e9 + int64(dp.Timestamp.Nanos)
+			//} else {
+			//	//numDroppedTimeSeries++
+			//	continue
+			//}
+
+			switch pv := dp.Value.(type) {
+			case *metricspb.Point_Int64Value:
+				fieldsPairs[descriptor.Name] = pv.Int64Value
+			case *metricspb.Point_DoubleValue:
+				fieldsPairs[descriptor.Name] = pv.DoubleValue
+			case *metricspb.Point_DistributionValue:
+				continue
+			case *metricspb.Point_SummaryValue:
+				continue
+				//logs, err = appendSummaryValues(
+				//	logs,
+				//	labels,
+				//	nsec,
+				//	metricNameContent,
+				//	labelsContent,
+				//	timeContent,
+				//	pv.SummaryValue)
+				//if err != nil {
+				//	numDroppedTimeSeries++
+				//	logger.Warn(
+				//		"Timeseries for summary metric dropped",
+				//		zap.Error(err),
+				//		zap.String("Metric", descriptor.Name))
+				//}
+			default:
+				continue
+				//numDroppedTimeSeries++
+				//logger.Warn(
+				//	"Timeseries dropped to unexpected metric type",
+				//	zap.String("Metric", descriptor.Name))
+			}
+
+			timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+			metricVal := calculateRate(fieldsPairs, fieldsPairs[descriptor.Name], timestamp)
+			if metricVal == nil {
+				//return nil
+			}
+			fieldsPairs[descriptor.Name] = metricVal
+
+			// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+			//"Zero" dimension rollup
+			dimensionZero := []string{OtlibDimensionKey}
+			if len(dimensionSlice) > 0 {
+				dimensionArray = append(dimensionArray, dimensionZero)
+			}
+			//"One" dimension rollup
+			for _, dimensionKey := range dimensionSlice {
+				dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+			}
+
+			cwMeasurement := &CwMeasurement{
+				Namespace:  namespace,
+				Dimensions: dimensionArray,
+				Metrics:    metricSlice,
+			}
+			metricList := make([]CwMeasurement, 1)
+			metricList[0] = *cwMeasurement
+			cwMetric := &CWMetrics{
+				Measurements: metricList,
+				Timestamp:    timestamp,
+				Fields:       fieldsPairs,
+			}
+			result = append(result, cwMetric)
+		}
+	}
+
 	// get all double datapoints
-	ddp := metric.DoubleDataPoints()
-	for m := 0; m < ddp.Len(); m++ {
-		dp := ddp.At(m)
-		if dp.IsNil() {
-			continue
-		}
-		cwMetric := buildCWMetricFromDDP(dp, mDesc, namespace, metricSlice, OTLib)
-		if cwMetric != nil {
-			result = append(result, cwMetric)
-		}
-	}
+	//ddp := metric.DoubleDataPoints()
+	//for m := 0; m < ddp.Len(); m++ {
+	//	dp := ddp.At(m)
+	//	if dp.IsNil() {
+	//		continue
+	//	}
+	//	cwMetric := buildCWMetricFromDDP(dp, mDesc, namespace, metricSlice, OTLib)
+	//	if cwMetric != nil {
+	//		result = append(result, cwMetric)
+	//	}
+	//}
 	// get all int64 datapoints
-	idp := metric.Int64DataPoints()
-	for m := 0; m < idp.Len(); m++ {
-		dp := idp.At(m)
-		if dp.IsNil() {
-			continue
-		}
-		cwMetric := buildCWMetricFromIDP(dp, mDesc, namespace, metricSlice, OTLib)
-		if cwMetric != nil {
-			result = append(result, cwMetric)
-		}
-	}
+	//idp := metric.Int64DataPoints()
+	//for m := 0; m < idp.Len(); m++ {
+	//	dp := idp.At(m)
+	//	if dp.IsNil() {
+	//		continue
+	//	}
+	//	cwMetric := buildCWMetricFromIDP(dp, mDesc, namespace, metricSlice, OTLib)
+	//	if cwMetric != nil {
+	//		result = append(result, cwMetric)
+	//	}
+	//}
 	// get all summary datapoints
-	sdp := metric.SummaryDataPoints()
-	for m := 0; m < sdp.Len(); m++ {
-		dp := sdp.At(m)
-		if dp.IsNil() {
-			continue
-		}
-		cwMetric := buildCWMetricFromSDP(dp, mDesc, namespace, metricSlice, OTLib)
-		if cwMetric != nil {
-			result = append(result, cwMetric)
-		}
-	}
+	//sdp := metric.SummaryDataPoints()
+	//for m := 0; m < sdp.Len(); m++ {
+	//	dp := sdp.At(m)
+	//	if dp.IsNil() {
+	//		continue
+	//	}
+	//	cwMetric := buildCWMetricFromSDP(dp, mDesc, namespace, metricSlice, OTLib)
+	//	if cwMetric != nil {
+	//		result = append(result, cwMetric)
+	//	}
+	//}
 	return result, nil
 }
-
-func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
-
-	// fields contains metric and dimensions key/value pairs
-	fieldsPairs := make(map[string]interface{})
-	var dimensionArray [][]string
-	// Dimensions Slice
-	var dimensionSlice []string
-	dimensionKV := metric.LabelsMap()
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fieldsPairs[k] = v.Value()
-		dimensionSlice = append(dimensionSlice, k)
-	})
-	// add OTLib as an additional dimension
-	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
-
-	fieldsPairs[mDesc.Name()] = metric.Value()
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	metricVal := calculateRate(fieldsPairs, metric.Value(), timestamp)
-	if metricVal == nil {
-		return nil
-	}
-	fieldsPairs[mDesc.Name()] = metricVal
-
-	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	//"Zero" dimension rollup
-	dimensionZero := []string{OtlibDimensionKey}
-	if len(dimensionSlice) > 0 {
-		dimensionArray = append(dimensionArray, dimensionZero)
-	}
-	//"One" dimension rollup
-	for _, dimensionKey := range dimensionSlice {
-		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
-	}
-
-	cwMeasurement := &CwMeasurement{
-		Namespace:  namespace,
-		Dimensions: dimensionArray,
-		Metrics:    metricSlice,
-	}
-	metricList := make([]CwMeasurement, 1)
-	metricList[0] = *cwMeasurement
-	cwMetric := &CWMetrics{
-		Measurements: metricList,
-		Timestamp:    timestamp,
-		Fields:       fieldsPairs,
-	}
-	return cwMetric
-}
-
-func buildCWMetricFromIDP(metric pdata.Int64DataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
-
-	// fields contains metric and dimensions key/value pairs
-	fieldsPairs := make(map[string]interface{})
-	// Dimensions Array
-	var dimensionArray [][]string
-	var dimensionSlice []string
-	dimensionKV := metric.LabelsMap()
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fieldsPairs[k] = v.Value()
-		dimensionSlice = append(dimensionSlice, k)
-	})
-	// add OTLib as an additional dimension
-	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
-
-	fieldsPairs[mDesc.Name()] = metric.Value()
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	metricVal := calculateRate(fieldsPairs, metric.Value(), timestamp)
-	if metricVal == nil {
-		return nil
-	}
-	fieldsPairs[mDesc.Name()] = metricVal
-
-	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	//"Zero" dimension rollup
-	dimensionZero := []string{OtlibDimensionKey}
-	if len(dimensionSlice) > 0 {
-		dimensionArray = append(dimensionArray, dimensionZero)
-	}
-	//"One" dimension rollup
-	for _, dimensionKey := range dimensionSlice {
-		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
-	}
-
-	cwMeasurement := &CwMeasurement{
-		Namespace:  namespace,
-		Dimensions: dimensionArray,
-		Metrics:    metricSlice,
-	}
-	metricList := make([]CwMeasurement, 1)
-	metricList[0] = *cwMeasurement
-	cwMetric := &CWMetrics{
-		Measurements: metricList,
-		Timestamp:    timestamp,
-		Fields:       fieldsPairs,
-	}
-	return cwMetric
-}
-
-func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
-
-	// fields contains metric and dimensions key/value pairs
-	fieldsPairs := make(map[string]interface{})
-	var dimensionArray [][]string
-	// Dimensions Slice
-	var dimensionSlice []string
-	dimensionKV := metric.LabelsMap()
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fieldsPairs[k] = v.Value()
-		dimensionSlice = append(dimensionSlice, k)
-	})
-	// add OTLib as an additional dimension
-	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
-
-	summaryValueAtPercentileSlice := metric.ValueAtPercentiles()
-	metricStats := &CWMetricStats{
-		Min:   summaryValueAtPercentileSlice.At(0).Value(),
-		Max:   summaryValueAtPercentileSlice.At(summaryValueAtPercentileSlice.Len() - 1).Value(),
-		Count: metric.Count(),
-		Sum:   metric.Sum(),
-	}
-	fieldsPairs[mDesc.Name()] = metricStats
-	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-
-	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	//"Zero" dimension rollup
-	dimensionZero := []string{OtlibDimensionKey}
-	if len(dimensionSlice) > 0 {
-		dimensionArray = append(dimensionArray, dimensionZero)
-	}
-	//"One" dimension rollup
-	for _, dimensionKey := range dimensionSlice {
-		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
-	}
-
-	cwMeasurement := &CwMeasurement{
-		Namespace:  namespace,
-		Dimensions: dimensionArray,
-		Metrics:    metricSlice,
-	}
-	metricList := make([]CwMeasurement, 1)
-	metricList[0] = *cwMeasurement
-	cwMetric := &CWMetrics{
-		Measurements: metricList,
-		Timestamp:    timestamp,
-		Fields:       fieldsPairs,
-	}
-	return cwMetric
-}
+//
+//func buildCWMetricFromDDP(metric pdata.DoubleDataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
+//
+//	// fields contains metric and dimensions key/value pairs
+//	fieldsPairs := make(map[string]interface{})
+//	var dimensionArray [][]string
+//	// Dimensions Slice
+//	var dimensionSlice []string
+//	dimensionKV := metric.LabelsMap()
+//	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
+//		fieldsPairs[k] = v.Value()
+//		dimensionSlice = append(dimensionSlice, k)
+//	})
+//	// add OTLib as an additional dimension
+//	fieldsPairs[OtlibDimensionKey] = OTLib
+//	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+//
+//	fieldsPairs[mDesc.Name()] = metric.Value()
+//	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+//	metricVal := calculateRate(fieldsPairs, metric.Value(), timestamp)
+//	if metricVal == nil {
+//		return nil
+//	}
+//	fieldsPairs[mDesc.Name()] = metricVal
+//
+//	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+//	//"Zero" dimension rollup
+//	dimensionZero := []string{OtlibDimensionKey}
+//	if len(dimensionSlice) > 0 {
+//		dimensionArray = append(dimensionArray, dimensionZero)
+//	}
+//	//"One" dimension rollup
+//	for _, dimensionKey := range dimensionSlice {
+//		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+//	}
+//
+//	cwMeasurement := &CwMeasurement{
+//		Namespace:  namespace,
+//		Dimensions: dimensionArray,
+//		Metrics:    metricSlice,
+//	}
+//	metricList := make([]CwMeasurement, 1)
+//	metricList[0] = *cwMeasurement
+//	cwMetric := &CWMetrics{
+//		Measurements: metricList,
+//		Timestamp:    timestamp,
+//		Fields:       fieldsPairs,
+//	}
+//	return cwMetric
+//}
+//
+//func buildCWMetricFromIDP(metric pdata.Int64DataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
+//
+//	// fields contains metric and dimensions key/value pairs
+//	fieldsPairs := make(map[string]interface{})
+//	// Dimensions Array
+//	var dimensionArray [][]string
+//	var dimensionSlice []string
+//	dimensionKV := metric.LabelsMap()
+//	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
+//		fieldsPairs[k] = v.Value()
+//		dimensionSlice = append(dimensionSlice, k)
+//	})
+//	// add OTLib as an additional dimension
+//	fieldsPairs[OtlibDimensionKey] = OTLib
+//	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+//
+//	fieldsPairs[mDesc.Name()] = metric.Value()
+//	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+//	metricVal := calculateRate(fieldsPairs, metric.Value(), timestamp)
+//	if metricVal == nil {
+//		return nil
+//	}
+//	fieldsPairs[mDesc.Name()] = metricVal
+//
+//	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+//	//"Zero" dimension rollup
+//	dimensionZero := []string{OtlibDimensionKey}
+//	if len(dimensionSlice) > 0 {
+//		dimensionArray = append(dimensionArray, dimensionZero)
+//	}
+//	//"One" dimension rollup
+//	for _, dimensionKey := range dimensionSlice {
+//		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+//	}
+//
+//	cwMeasurement := &CwMeasurement{
+//		Namespace:  namespace,
+//		Dimensions: dimensionArray,
+//		Metrics:    metricSlice,
+//	}
+//	metricList := make([]CwMeasurement, 1)
+//	metricList[0] = *cwMeasurement
+//	cwMetric := &CWMetrics{
+//		Measurements: metricList,
+//		Timestamp:    timestamp,
+//		Fields:       fieldsPairs,
+//	}
+//	return cwMetric
+//}
+//
+//func buildCWMetricFromSDP(metric pdata.SummaryDataPoint, mDesc pdata.MetricDescriptor, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
+//
+//	// fields contains metric and dimensions key/value pairs
+//	fieldsPairs := make(map[string]interface{})
+//	var dimensionArray [][]string
+//	// Dimensions Slice
+//	var dimensionSlice []string
+//	dimensionKV := metric.LabelsMap()
+//	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
+//		fieldsPairs[k] = v.Value()
+//		dimensionSlice = append(dimensionSlice, k)
+//	})
+//	// add OTLib as an additional dimension
+//	fieldsPairs[OtlibDimensionKey] = OTLib
+//	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+//
+//	summaryValueAtPercentileSlice := metric.ValueAtPercentiles()
+//	metricStats := &CWMetricStats{
+//		Min:   summaryValueAtPercentileSlice.At(0).Value(),
+//		Max:   summaryValueAtPercentileSlice.At(summaryValueAtPercentileSlice.Len() - 1).Value(),
+//		Count: metric.Count(),
+//		Sum:   metric.Sum(),
+//	}
+//	fieldsPairs[mDesc.Name()] = metricStats
+//	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+//
+//	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
+//	//"Zero" dimension rollup
+//	dimensionZero := []string{OtlibDimensionKey}
+//	if len(dimensionSlice) > 0 {
+//		dimensionArray = append(dimensionArray, dimensionZero)
+//	}
+//	//"One" dimension rollup
+//	for _, dimensionKey := range dimensionSlice {
+//		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+//	}
+//
+//	cwMeasurement := &CwMeasurement{
+//		Namespace:  namespace,
+//		Dimensions: dimensionArray,
+//		Metrics:    metricSlice,
+//	}
+//	metricList := make([]CwMeasurement, 1)
+//	metricList[0] = *cwMeasurement
+//	cwMetric := &CWMetrics{
+//		Measurements: metricList,
+//		Timestamp:    timestamp,
+//		Fields:       fieldsPairs,
+//	}
+//	return cwMetric
+//}
 
 // rate is calculated by valDelta / timeDelta
 func calculateRate(fields map[string]interface{}, val interface{}, timestamp int64) interface{} {

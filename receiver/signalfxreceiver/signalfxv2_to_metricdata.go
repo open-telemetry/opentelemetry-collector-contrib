@@ -20,10 +20,10 @@ import (
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var (
@@ -36,18 +36,18 @@ var (
 	errSFxNoDatumValue               = errors.New("no datum value present for data-point")
 )
 
-// SignalFxV2ToMetricsData converts SignalFx proto data points to
+// signalFxV2ToMetricsData converts SignalFx proto data points to
 // consumerdata.MetricsData. Returning the converted data and the number of
 // dropped time series.
-func SignalFxV2ToMetricsData(
+func signalFxV2ToMetricsData(
 	logger *zap.Logger,
 	sfxDataPoints []*sfxpb.DataPoint,
-) (*consumerdata.MetricsData, int) {
+) (consumerdata.MetricsData, int) {
 
 	// TODO: not optimized at all, basically regenerating everything for each
 	// 	data point.
 	numDroppedTimeSeries := 0
-	md := &consumerdata.MetricsData{}
+	md := consumerdata.MetricsData{}
 	metrics := make([]*metricspb.Metric, 0, len(sfxDataPoints))
 	for _, sfxDataPoint := range sfxDataPoints {
 		if sfxDataPoint == nil {
@@ -177,12 +177,12 @@ func buildPoint(
 	return p, nil
 }
 
-func convertTimestamp(msec int64) *timestamp.Timestamp {
+func convertTimestamp(msec int64) *timestamppb.Timestamp {
 	if msec == 0 {
 		return nil
 	}
 
-	ts := &timestamp.Timestamp{
+	ts := &timestamppb.Timestamp{
 		Seconds: msec / 1e3,
 		Nanos:   int32(msec%1e3) * 1e6,
 	}

@@ -16,26 +16,16 @@ package translator
 
 import (
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
-// SQLData provides the shape for unmarshalling sql data.
-type SQLData struct {
-	ConnectionString string `json:"connection_string,omitempty"`
-	URL              string `json:"url,omitempty"` // host:port/database
-	DatabaseType     string `json:"database_type,omitempty"`
-	DatabaseVersion  string `json:"database_version,omitempty"`
-	DriverVersion    string `json:"driver_version,omitempty"`
-	User             string `json:"user,omitempty"`
-	Preparation      string `json:"preparation,omitempty"` // "statement" / "call"
-	SanitizedQuery   string `json:"sanitized_query,omitempty"`
-}
-
-func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
+func makeSQL(attributes map[string]string) (map[string]string, *awsxray.SQLData) {
 	var (
 		filtered    = make(map[string]string)
-		sqlData     SQLData
+		sqlData     awsxray.SQLData
 		dbURL       string
-		dbType      string
+		dbSystem    string
 		dbInstance  string
 		dbStatement string
 		dbUser      string
@@ -46,7 +36,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		case semconventions.AttributeDBConnectionString:
 			dbURL = value
 		case semconventions.AttributeDBSystem:
-			dbType = value
+			dbSystem = value
 		case semconventions.AttributeDBName:
 			dbInstance = value
 		case semconventions.AttributeDBStatement:
@@ -58,7 +48,7 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		}
 	}
 
-	if dbType != "sql" {
+	if !isSQL(dbSystem) {
 		// Either no DB attributes or this is not an SQL DB.
 		return attributes, nil
 	}
@@ -67,11 +57,40 @@ func makeSQL(attributes map[string]string) (map[string]string, *SQLData) {
 		dbURL = "localhost"
 	}
 	url := dbURL + "/" + dbInstance
-	sqlData = SQLData{
-		URL:            url,
-		DatabaseType:   dbType,
-		User:           dbUser,
-		SanitizedQuery: dbStatement,
+	sqlData = awsxray.SQLData{
+		URL:            awsxray.String(url),
+		DatabaseType:   awsxray.String(dbSystem),
+		User:           awsxray.String(dbUser),
+		SanitizedQuery: awsxray.String(dbStatement),
 	}
 	return filtered, &sqlData
+}
+
+func isSQL(system string) bool {
+	switch system {
+	case "db2":
+		fallthrough
+	case "derby":
+		fallthrough
+	case "hive":
+		fallthrough
+	case "mariadb":
+		fallthrough
+	case "mssql":
+		fallthrough
+	case "mysql":
+		fallthrough
+	case "oracle":
+		fallthrough
+	case "postgresql":
+		fallthrough
+	case "sqlite":
+		fallthrough
+	case "teradata":
+		fallthrough
+	case "other_sql":
+		return true
+	default:
+	}
+	return false
 }

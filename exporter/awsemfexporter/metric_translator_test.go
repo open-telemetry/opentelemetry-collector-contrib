@@ -16,18 +16,19 @@ package awsemfexporter
 
 import (
 	"fmt"
-	"io/ioutil"
-	"testing"
-	"time"
-
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"io/ioutil"
+	"sort"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTranslateOtToCWMetric(t *testing.T) {
@@ -38,7 +39,8 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 		},
 		Resource: &resourcepb.Resource{
 			Labels: map[string]string{
-				"resource": "R1",
+				conventions.AttributeServiceName: "myServiceName",
+				conventions.AttributeServiceNamespace: "myServiceNS",
 			},
 		},
 		Metrics: []*metricspb.Metric{
@@ -149,18 +151,11 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 			},
 		},
 	}
-	metric := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
-	imd := pdatautil.MetricsToInternalMetrics(metric)
-	rms := imd.ResourceMetrics()
-	assert.NotNil(t, rms)
 
-	rm := rms.At(0)
-	assert.NotNil(t, rm)
-
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&md)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 3, len(cwm))
+	assert.Equal(t, 2, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -168,12 +163,14 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 	fmt.Printf("spancounter type is %T\n", (met.Fields["spanCounter"]))
 	assert.Equal(t, met.Fields["spanCounter"], int64(0))
 
-	assert.Equal(t, met.Measurements[0].Namespace, "test-emf")
-	assert.Equal(t, len(met.Measurements[0].Dimensions), 1)
-	assert.Equal(t, met.Measurements[0].Dimensions[0], []string{OtlibDimensionKey})
-	assert.Equal(t, len(met.Measurements[0].Metrics), 1)
-	assert.Equal(t, met.Measurements[0].Metrics[0]["Name"], "spanCounter")
-	assert.Equal(t, met.Measurements[0].Metrics[0]["Unit"], "Count")
+	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
+	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
+	dimensions := met.Measurements[0].Dimensions[0]
+	sort.Strings(dimensions)
+	assert.Equal(t, []string{OtlibDimensionKey, "isItAnError", "spanName"}, dimensions)
+	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
+	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
+	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
 }
 
 func TestTranslateCWMetricToEMF(t *testing.T) {

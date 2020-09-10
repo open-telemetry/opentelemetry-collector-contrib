@@ -16,10 +16,12 @@ package collection
 
 import (
 	"sync"
+	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -77,15 +79,31 @@ func (ms *metricsStore) remove(obj runtime.Object) error {
 }
 
 // getMetricData returns metricsCache stored in the cache at a given point in time.
-func (ms *metricsStore) getMetricData() []consumerdata.MetricsData {
+func (ms *metricsStore) getMetricData(currentTime time.Time) []consumerdata.MetricsData {
 	ms.RLock()
 	defer ms.RUnlock()
 
 	var out []consumerdata.MetricsData
 
 	for _, mds := range ms.metricsCache {
-		out = append(out, mds...)
+		for _, md := range mds {
+			// Set datapoint timestamp to be time of retrieval from cache.
+			applyCurrentTime(md.Metrics, currentTime)
+			out = append(out, md)
+		}
 	}
 
 	return out
+}
+
+func applyCurrentTime(metrics []*metricspb.Metric, t time.Time) []*metricspb.Metric {
+	currentTime := timestamppb.New(t)
+	for _, metric := range metrics {
+		if metric != nil {
+			for i := range metric.Timeseries {
+				metric.Timeseries[i].Points[0].Timestamp = currentTime
+			}
+		}
+	}
+	return metrics
 }

@@ -17,9 +17,10 @@ package metricstransformprocessor
 import (
 	"math"
 	"math/rand"
+	"sort"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // timeseriesAndLabelValues is a data structure for grouping timeseries that will be aggregated
@@ -50,8 +51,8 @@ func (mtp *metricsTransformProcessor) mergeTimeseries(groupedTimeseries map[stri
 
 // groupPointsByTimestamp groups points by timestamp
 // Returns a map of grouped points and the minimum start timestamp
-func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamp.Timestamp) {
-	var startTimestamp *timestamp.Timestamp
+func (mtp *metricsTransformProcessor) groupPointsByTimestamp(timeseries []*metricspb.TimeSeries) (map[int64][]*metricspb.Point, *timestamppb.Timestamp) {
+	var startTimestamp *timestamppb.Timestamp
 	timestampToPoints := make(map[int64][]*metricspb.Point)
 	for _, ts := range timeseries {
 		if startTimestamp == nil {
@@ -101,6 +102,9 @@ func (mtp *metricsTransformProcessor) mergePoints(timestampToPoints map[int64][]
 
 		}
 	}
+	sort.Slice(newPoints, func(i, j int) bool {
+		return mtp.compareTimestamps(newPoints[i].Timestamp, newPoints[j].Timestamp)
+	})
 	return newPoints
 }
 

@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -185,11 +186,11 @@ func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
-		tags[tagPodName] = pod.Name
+		tags[conventions.AttributeK8sPod] = pod.Name
 	}
 
 	if c.Rules.Namespace {
-		tags[tagNamespaceName] = pod.GetNamespace()
+		tags[conventions.AttributeK8sNamespace] = pod.GetNamespace()
 	}
 
 	if c.Rules.StartTime {
@@ -201,14 +202,14 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.PodUID {
 		uid := pod.GetUID()
-		tags[tagPodUID] = string(uid)
+		tags[conventions.AttributeK8sPodUID] = string(uid)
 	}
 
 	if c.Rules.Deployment {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
-			tags[tagDeploymentName] = parts[1]
+			tags[conventions.AttributeK8sDeployment] = parts[1]
 		}
 	}
 
@@ -219,7 +220,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.Cluster {
 		clusterName := pod.GetClusterName()
 		if clusterName != "" {
-			tags[tagClusterName] = clusterName
+			tags[conventions.AttributeK8sCluster] = clusterName
 		}
 	}
 

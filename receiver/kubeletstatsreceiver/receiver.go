@@ -16,10 +16,12 @@ package kubeletstatsreceiver
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -28,17 +30,36 @@ import (
 var _ component.MetricsReceiver = (*receiver)(nil)
 
 type receiver struct {
-	cfg      *Config
+	options  *receiverOptions
 	logger   *zap.Logger
-	consumer consumer.MetricsConsumerOld
+	consumer consumer.MetricsConsumer
 	runner   *interval.Runner
 	rest     kubelet.RestClient
 }
 
+type receiverOptions struct {
+	name                  string
+	collectionInterval    time.Duration
+	extraMetadataLabels   []kubelet.MetadataLabel
+	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	k8sAPIClient          kubernetes.Interface
+}
+
+func newReceiver(rOptions *receiverOptions,
+	logger *zap.Logger, rest kubelet.RestClient,
+	next consumer.MetricsConsumer) (*receiver, error) {
+	return &receiver{
+		options:  rOptions,
+		logger:   logger,
+		consumer: next,
+		rest:     rest,
+	}, nil
+}
+
 // Creates and starts the kubelet stats runnable.
 func (r *receiver) Start(ctx context.Context, host component.Host) error {
-	runnable := newRunnable(ctx, r.cfg.Name(), r.consumer, r.rest, r.cfg.ExtraMetadataLabels, r.logger)
-	r.runner = interval.NewRunner(r.cfg.CollectionInterval, runnable)
+	runnable := newRunnable(ctx, r.consumer, r.rest, r.logger, r.options)
+	r.runner = interval.NewRunner(r.options.collectionInterval, runnable)
 
 	go func() {
 		if err := r.runner.Start(); err != nil {

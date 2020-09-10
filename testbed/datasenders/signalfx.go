@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -28,12 +28,12 @@ import (
 
 // SFxMetricsDataSender implements MetricDataSender for SignalFx metrics protocol.
 type SFxMetricsDataSender struct {
-	exporter component.MetricsExporterOld
+	exporter component.MetricsExporter
 	port     int
 }
 
 // Ensure SFxMetricsDataSender implements MetricDataSenderOld.
-var _ testbed.MetricDataSenderOld = (*SFxMetricsDataSender)(nil)
+var _ testbed.MetricDataSender = (*SFxMetricsDataSender)(nil)
 
 // NewSFxMetricDataSender creates a new SignalFx metric protocol sender that will send
 // to the specified port after Start is called.
@@ -49,8 +49,9 @@ func (sf *SFxMetricsDataSender) Start() error {
 		AccessToken: "access_token",
 	}
 
-	factory := signalfxexporter.Factory{}
-	exporter, err := factory.CreateMetricsExporter(zap.L(), cfg)
+	factory := signalfxexporter.NewFactory()
+	params := component.ExporterCreateParams{Logger: zap.L()}
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
@@ -61,8 +62,8 @@ func (sf *SFxMetricsDataSender) Start() error {
 }
 
 // SendMetrics sends metrics. Can be called after Start.
-func (sf *SFxMetricsDataSender) SendMetrics(metrics consumerdata.MetricsData) error {
-	return sf.exporter.ConsumeMetricsData(context.Background(), metrics)
+func (sf *SFxMetricsDataSender) SendMetrics(metrics pdata.Metrics) error {
+	return sf.exporter.ConsumeMetrics(context.Background(), metrics)
 }
 
 // Flush previously sent metrics.

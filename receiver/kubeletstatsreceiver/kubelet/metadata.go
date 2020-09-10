@@ -19,6 +19,7 @@ import (
 	"regexp"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/collector/translator/conventions"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -26,11 +27,13 @@ import (
 type MetadataLabel string
 
 const (
-	MetadataLabelContainerID MetadataLabel = labelContainerID
+	MetadataLabelContainerID MetadataLabel = conventions.AttributeContainerID
+	MetadataLabelVolumeType  MetadataLabel = labelVolumeType
 )
 
 var supportedLabels = map[MetadataLabel]bool{
 	MetadataLabelContainerID: true,
+	MetadataLabelVolumeType:  true,
 }
 
 // ValidateMetadataLabelsConfig validates that provided list of metadata labels is supported
@@ -50,28 +53,54 @@ func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 }
 
 type Metadata struct {
-	Labels       []MetadataLabel
-	PodsMetadata *v1.PodList
+	Labels                  map[MetadataLabel]bool
+	PodsMetadata            *v1.PodList
+	DetailedPVCLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error
 }
 
-func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList) Metadata {
+func NewMetadata(
+	labels []MetadataLabel, podsMetadata *v1.PodList,
+	detailedPVCLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error) Metadata {
 	return Metadata{
-		Labels:       labels,
-		PodsMetadata: podsMetadata,
+		Labels:                  getLabelsMap(labels),
+		PodsMetadata:            podsMetadata,
+		DetailedPVCLabelsSetter: detailedPVCLabelsSetter,
 	}
 }
 
-// setExtraLabels sets extra labels in `lables` map based on available metadata
-func (m *Metadata) setExtraLabels(labels map[string]string, podUID string, containerName string) error {
-	for _, label := range m.Labels {
-		switch label {
-		case MetadataLabelContainerID:
-			containerID, err := m.getContainerID(podUID, containerName)
-			if err != nil {
-				return err
-			}
-			labels[labelContainerID] = containerID
-			return nil
+func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
+	out := make(map[MetadataLabel]bool, len(metadataLabels))
+	for _, l := range metadataLabels {
+		out[l] = true
+	}
+	return out
+}
+
+// setExtraLabels sets extra labels in `labels` map based on provided metadata label.
+func (m *Metadata) setExtraLabels(
+	labels map[string]string, podUID string,
+	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
+	// Ensure MetadataLabel exists before proceeding.
+	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
+		return nil
+	}
+
+	// Cannot proceed, if metadata is unavailable.
+	if m.PodsMetadata == nil {
+		return errors.New("pods metadata were not fetched")
+	}
+
+	switch extraMetadataLabel {
+	case MetadataLabelContainerID:
+		containerID, err := m.getContainerID(podUID, extraMetadataFrom)
+		if err != nil {
+			return err
+		}
+		labels[conventions.AttributeContainerID] = containerID
+	case MetadataLabelVolumeType:
+		err := m.setExtraVolumeMetadata(podUID, extraMetadataFrom, labels)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -80,12 +109,9 @@ func (m *Metadata) setExtraLabels(labels map[string]string, podUID string, conta
 // getContainerID retrieves container id from metadata for given pod UID and container name,
 // returns an error if no container found in the metadata that matches the requirements.
 func (m *Metadata) getContainerID(podUID string, containerName string) (string, error) {
-	if m.PodsMetadata == nil {
-		return "", errors.New("pods metadata were not fetched")
-	}
-
+	uid := types.UID(podUID)
 	for _, pod := range m.PodsMetadata.Items {
-		if pod.UID == types.UID(podUID) {
+		if pod.UID == uid {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerName == containerStatus.Name {
 					return stripContainerID(containerStatus.ContainerID), nil
@@ -102,4 +128,20 @@ var containerSchemeRegexp = regexp.MustCompile(`^[\w_-]+://`)
 // stripContainerID returns a pure container id without the runtime scheme://
 func stripContainerID(id string) string {
 	return containerSchemeRegexp.ReplaceAllString(id, "")
+}
+
+func (m *Metadata) setExtraVolumeMetadata(podUID string, volumeName string, labels map[string]string) error {
+	uid := types.UID(podUID)
+	for _, pod := range m.PodsMetadata.Items {
+		if pod.UID == uid {
+			for _, volume := range pod.Spec.Volumes {
+				if volumeName == volume.Name {
+					getLabelsFromVolume(volume, labels)
+					return nil
+				}
+			}
+		}
+	}
+
+	return fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }
