@@ -1,7 +1,7 @@
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
-ALL_SRC := $(shell find . -name '*.go' \
+ALL_SRC := $(shell find . -name \( '*.go' -not 'cuda*.go' \) \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
@@ -121,6 +121,6 @@ misspell-correction:
 impi:
 	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
-.PHONY: dep 
+.PHONY: dep
 dep:
 	go mod download
