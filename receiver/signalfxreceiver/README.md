@@ -1,4 +1,4 @@
-# SignalFx Receiver 
+# SignalFx Receiver
 
 The SignalFx receiver accepts metrics in the [SignalFx proto
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf). This allows
@@ -20,12 +20,11 @@ The following settings are optional:
   tandem with identical configuration option for [SignalFx
   exporter](../../exporter/signalfxexporter/README.md) to preserve datapoint
   origin.
-* `tls_settings` (no default): This is an optional object used to specify if TLS should be used for
-  incoming connections.
+* `tls_settings` (no default): This is an optional object used to specify if
+  TLS should be used for incoming connections. Both `key_file` and `cert_file`
+  are required to support incoming TLS connections.
     * `cert_file`: Specifies the certificate file to use for TLS connection.
-      Note: Both `key_file` and `cert_file` are required for TLS connection.
-    * `key_file`: Specifies the key file to use for TLS connection. Note: Both
-      `key_file` and `cert_file` are required for TLS connection.
+    * `key_file`: Specifies the key file to use for TLS connection.
 
 Example:
 
