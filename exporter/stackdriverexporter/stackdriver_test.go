@@ -66,7 +66,10 @@ func TestStackdriverTraceExport(t *testing.T) {
 
 	go srv.Serve(lis)
 
-	sde, err := newStackdriverTraceExporter(&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true})
+	sde, err := newStackdriverTraceExporter(
+		&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true},
+		"v0.0.1",
+	)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
@@ -152,12 +155,12 @@ func TestStackdriverMetricExport(t *testing.T) {
 	}
 
 	sde, err := newStackdriverMetricsExporter(&Config{
-		ProjectID: "idk",
-		Endpoint: "127.0.0.1:8080",
-		UserAgent: "MyAgent {{version}}",
+		ProjectID:   "idk",
+		Endpoint:    "127.0.0.1:8080",
+		UserAgent:   "MyAgent {{version}}",
 		UseInsecure: true,
 		GetClientOptions: func() []option.ClientOption {
-			 return clientOptions
+			return clientOptions
 		},
 	}, "v0.0.1")
 	require.NoError(t, err)

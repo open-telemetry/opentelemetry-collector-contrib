@@ -65,7 +65,8 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func generateClientOptions(cfg *Config, userAgent string) ([]option.ClientOption, error) {
+func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, error) {
+	userAgent := strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
 	var copts []option.ClientOption
 	if userAgent != "" {
 		copts = append(copts, option.WithUserAgent(userAgent))
@@ -92,12 +93,12 @@ func generateClientOptions(cfg *Config, userAgent string) ([]option.ClientOption
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 		cloudtrace.WithTimeout(cfg.Timeout),
 	}
-	copts, err := generateClientOptions(cfg, "")
+	copts, err := generateClientOptions(cfg, version)
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +137,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 		Timeout: cfg.Timeout,
 	}
 
-	userAgent := strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
-	copts, err := generateClientOptions(cfg, userAgent)
+	copts, err := generateClientOptions(cfg, version)
 	if err != nil {
 		return nil, err
 	}
