@@ -16,19 +16,19 @@ package awsemfexporter
 
 import (
 	"fmt"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"io/ioutil"
 	"sort"
 	"testing"
 	"time"
 
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func TestTranslateOtToCWMetric(t *testing.T) {
@@ -39,7 +39,7 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 		},
 		Resource: &resourcepb.Resource{
 			Labels: map[string]string{
-				conventions.AttributeServiceName: "myServiceName",
+				conventions.AttributeServiceName:      "myServiceName",
 				conventions.AttributeServiceNamespace: "myServiceNS",
 			},
 		},
@@ -161,7 +161,7 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 	met := cwm[0]
 	assert.Equal(t, met.Fields[OtlibDimensionKey], noInstrumentationLibraryName)
 	fmt.Printf("spancounter type is %T\n", (met.Fields["spanCounter"]))
-	assert.Equal(t, met.Fields["spanCounter"], int64(0))
+	assert.Equal(t, met.Fields["spanCounter"], 0)
 
 	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
 	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))

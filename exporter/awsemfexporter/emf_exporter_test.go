@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -85,7 +85,7 @@ func TestPushMetricsData(t *testing.T) {
 			},
 		},
 	}
-	md := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{mdata})
+	md := internaldata.OCToMetrics(mdata)
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 }

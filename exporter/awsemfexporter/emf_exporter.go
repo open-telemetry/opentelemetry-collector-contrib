@@ -26,8 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -148,12 +148,13 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string) {
-	mds := pdatautil.MetricsToMetricsData(metric)
+	mds := internaldata.MetricsToOC(metric)
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
 	var namespace string
 	var totalDroppedMetrics int
-	for _, md := range mds{
+	for i := 0; i < len(mds); i++ {
+		md := mds[i]
 		// translate OT metric datapoints into CWMetricLists
 		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&md)
 		if cwm == nil {

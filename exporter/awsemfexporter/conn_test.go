@@ -16,8 +16,6 @@ package awsemfexporter
 
 import (
 	"errors"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
 	"os"
 	"path"
 	"strings"
@@ -26,6 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
 )
 
