@@ -241,11 +241,19 @@ EVENT_LOOP:
 				}
 
 			case err := <-errCh:
-				// We are only interested when the context hasn't been canceled
+				// We are only interested when the context hasn't been canceled since requests made
+				// with a closed context are guaranteed to fail.
 				if ctx.Err() == nil {
 					dc.logger.Error("Error watching docker container events", zap.Error(err))
-					time.Sleep(3 * time.Second)
-					continue EVENT_LOOP
+					// Either decoding or connection error has occurred, so we should resume the event loop after
+					// waiting a moment.  In cases of extended daemon unavailability this will retry until
+					// collector teardown or background context is closed.
+					select {
+					case <-time.After(3 * time.Second):
+						continue EVENT_LOOP
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 		}

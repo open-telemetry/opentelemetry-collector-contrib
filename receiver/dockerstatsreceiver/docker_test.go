@@ -24,6 +24,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -206,7 +207,14 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 }
 
 func TestEventLoopHandlesError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte{}) }))
+	wg := sync.WaitGroup{}
+	wg.Add(2) // confirm retry occurs
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/events") {
+			wg.Done()
+		}
+		w.Write([]byte{})
+	}))
 	defer srv.Close()
 
 	observed, logs := observer.New(zapcore.WarnLevel)
@@ -228,4 +236,16 @@ func TestEventLoopHandlesError(t *testing.T) {
 		}
 		return len(logs.All()) > 0
 	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
+
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		wg.Wait()
+	}()
+	select {
+	case <-time.After(5 * time.Second):
+		t.Fatal("failed to retry events endpoint after error")
+	case <-finished:
+		return
+	}
 }
