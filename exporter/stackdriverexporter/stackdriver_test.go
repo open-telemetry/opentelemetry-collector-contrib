@@ -156,7 +156,9 @@ func TestStackdriverMetricExport(t *testing.T) {
 		Endpoint: "127.0.0.1:8080",
 		UserAgent: "MyAgent {{version}}",
 		UseInsecure: true,
-		ClientOptions: clientOptions,
+		GetClientOptions: func() []option.ClientOption {
+			 return clientOptions
+		},
 	}, "v0.0.1")
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()

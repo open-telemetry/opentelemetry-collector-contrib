@@ -76,10 +76,8 @@ func generateClientOptions(cfg *Config, dialOpts ...grpc.DialOption) ([]option.C
 	} else {
 		copts = append(copts, option.WithEndpoint(cfg.Endpoint))
 	}
-	if len(cfg.ClientOptions) > 0 {
-		for _, opt := range cfg.ClientOptions {
-			copts = append(copts, opt)
-		}
+	if cfg.GetClientOptions != nil {
+		copts = append(copts, cfg.GetClientOptions()...)
 	}
 	return copts, nil
 }

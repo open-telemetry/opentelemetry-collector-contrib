@@ -34,11 +34,11 @@ type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	ResourceMappings               []ResourceMapping        `mapstructure:"resource_mappings"`
-	// ClientOptions are additional options to be passed
-	// to the underlying Cloud Monitoring API client.
+	// GetClientOptions returns additional options to be passed
+	// to the underlying Google Cloud API client.
 	// Must be set programmatically (no support via declarative config).
 	// Optional.
-	ClientOptions []option.ClientOption
+	GetClientOptions func() []option.ClientOption
 }
 
 // ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
