@@ -172,7 +172,7 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 38, len(config.TranslationRules))
+	assert.Equal(t, 44, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
 }
@@ -618,21 +618,11 @@ func testMetricsData() []consumerdata.MetricsData {
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {
-	file, err := os.Open("testdata/json/system.filesystem.usage.json")
-	require.NoError(t, err)
-	defer func() { require.NoError(t, file.Close()) }()
-	bytes, err := ioutil.ReadAll(file)
-	require.NoError(t, err)
 	var pts []*sfxpb.DataPoint
-	err = json.Unmarshal(bytes, &pts)
+	err := testReadJSON("testdata/json/system.filesystem.usage.json", &pts)
 	require.NoError(t, err)
 
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
-	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 1)
-	require.NoError(t, err)
-
+	tr := testGetTranslator(t)
 	translated := tr.TranslateDataPoints(zap.NewNop(), pts)
 	require.NotNil(t, translated)
 
@@ -662,4 +652,58 @@ func TestDefaultDiskTranslations(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, 3, len(dsu[0].Dimensions))
 	require.True(t, *dsu[0].Value.DoubleValue > 1)
+}
+
+func testGetTranslator(t *testing.T) *translation.MetricTranslator {
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(t, err)
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 3600)
+	require.NoError(t, err)
+	return tr
+}
+
+func TestDefaultCPUTranslations(t *testing.T) {
+	var pts1 []*sfxpb.DataPoint
+	err := testReadJSON("testdata/json/system.cpu.time.1.json", &pts1)
+	require.NoError(t, err)
+
+	var pts2 []*sfxpb.DataPoint
+	err = testReadJSON("testdata/json/system.cpu.time.2.json", &pts2)
+	require.NoError(t, err)
+
+	tr := testGetTranslator(t)
+	log := zap.NewNop()
+
+	// write 'prev' points from which to calculate deltas
+	_ = tr.TranslateDataPoints(log, pts1)
+
+	// calculate cpu utilization
+	translated2 := tr.TranslateDataPoints(log, pts2)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated2 {
+		pts := m[pt.Metric]
+		pts = append(pts, pt)
+		m[pt.Metric] = pts
+	}
+
+	cpuUtil := m["cpu.utilization"]
+	require.Equal(t, 1, len(cpuUtil))
+	for _, pt := range cpuUtil {
+		require.Equal(t, 66, int(*pt.Value.DoubleValue))
+	}
+}
+
+func testReadJSON(f string, v interface{}) error {
+	file, err := os.Open(f)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = file.Close() }()
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bytes, &v)
 }
