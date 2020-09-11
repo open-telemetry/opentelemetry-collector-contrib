@@ -10,9 +10,9 @@ require (
 	go.opentelemetry.io/collector v0.9.1-0.20200903224024-3eb3b664a832
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
-	k8s.io/client-go v0.19.0
+	k8s.io/api v0.19.1
+	k8s.io/apimachinery v0.19.1
+	k8s.io/client-go v0.19.1
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../internal/k8sconfig
