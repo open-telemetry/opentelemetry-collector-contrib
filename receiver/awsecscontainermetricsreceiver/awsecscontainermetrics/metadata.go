@@ -27,7 +27,7 @@ type TaskMetadata struct {
 
 // ContainerMetadata defines container metadata for a container
 type ContainerMetadata struct {
-	DockerId      string            `json:"DockerId,omitempty"`
+	DockerID      string            `json:"DockerId,omitempty"`
 	ContainerName string            `json:"Name,omitempty"`
 	DockerName    string            `json:"DockerName,omitempty"`
 	Image         string            `json:"Image,omitempty"`

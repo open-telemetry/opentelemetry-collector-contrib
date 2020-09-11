@@ -17,7 +17,7 @@ package awsecscontainermetrics
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {
 	Name string `json:"name"`
-	Id   string `json:"id"`
+	ID   string `json:"id"`
 
 	Memory      MemoryStats             `json:"memory_stats,omitempty"`
 	Disk        DiskStats               `json:"blkio_stats,omitempty"`
@@ -72,16 +72,16 @@ type CPUUsage struct {
 	TotalUsage        *uint64   `json:"total_usage,omitempty"`
 	UsageInKernelmode *uint64   `json:"usage_in_kernelmode,omitempty"`
 	UsageInUserMode   *uint64   `json:"usage_in_usermode,omitempty"`
-	PerCpuUsage       []*uint64 `json:"percpu_usage,omitempty"`
+	PerCPUUsage       []*uint64 `json:"percpu_usage,omitempty"`
 }
 
 // CPUStats defines Cpu stats
 type CPUStats struct {
-	CpuUsage       CPUUsage `json:"cpu_usage,omitempty"`
+	CPUUsage       CPUUsage `json:"cpu_usage,omitempty"`
 	OnlineCpus     *uint64  `json:"online_cpus,omitempty"`
-	SystemCpuUsage *uint64  `json:"system_cpu_usage,omitempty"`
-	CpuUtilized    *uint64
-	CpuReserved    *uint64
+	SystemCPUUsage *uint64  `json:"system_cpu_usage,omitempty"`
+	CPUUtilized    *uint64
+	CPUReserved    *uint64
 }
 
 // TaskStats defines the stats for a task
@@ -89,7 +89,7 @@ type TaskStats struct {
 	Memory            MemoryStats
 	NetworkRate       NetworkRateStats
 	Network           NetworkStats
-	Cpu               CPUStats
+	CPU               CPUStats
 	StorageReadBytes  *uint64
 	StorageWriteBytes *uint64
 }

@@ -45,7 +45,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
-		stats := containerStatsMap[containerMetadata.DockerId]
+		stats := containerStatsMap[containerMetadata.DockerID]
 		containerMetrics := getContainerMetrics(stats)
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU

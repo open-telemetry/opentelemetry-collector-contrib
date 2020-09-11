@@ -32,10 +32,10 @@ func TestConvertToOTMetrics(t *testing.T) {
 	m.CPUTotalUsage = 100
 
 	labelKeys := []*metricspb.LabelKey{
-		&metricspb.LabelKey{Key: "label_key_1"},
+		{Key: "label_key_1"},
 	}
 	labelValues := []*metricspb.LabelValue{
-		&metricspb.LabelValue{Value: "label_value_1"},
+		{Value: "label_value_1"},
 	}
 
 	metrics := convertToOTMetrics("container.", m, labelKeys, labelValues, timestamp)

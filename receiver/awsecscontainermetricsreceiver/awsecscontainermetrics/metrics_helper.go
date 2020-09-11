@@ -31,8 +31,8 @@ const (
 func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
 
-	numOfCores := (uint64)(len(stats.CPU.CpuUsage.PerCpuUsage))
-	cpuUtilized := (float64)(*stats.CPU.CpuUsage.TotalUsage / numOfCores / 1024)
+	numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
+	cpuUtilized := (float64)(*stats.CPU.CPUUsage.TotalUsage / numOfCores / 1024)
 
 	netStatArray := getNetworkStats(stats.Network)
 
@@ -45,12 +45,12 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	m.MemoryLimit = *stats.Memory.Limit
 	m.MemoryUtilized = memoryUtilizedInMb
 
-	m.CPUTotalUsage = *stats.CPU.CpuUsage.TotalUsage
-	m.CPUUsageInKernelmode = *stats.CPU.CpuUsage.UsageInKernelmode
-	m.CPUUsageInUserMode = *stats.CPU.CpuUsage.UsageInUserMode
+	m.CPUTotalUsage = *stats.CPU.CPUUsage.TotalUsage
+	m.CPUUsageInKernelmode = *stats.CPU.CPUUsage.UsageInKernelmode
+	m.CPUUsageInUserMode = *stats.CPU.CPUUsage.UsageInUserMode
 	m.NumOfCPUCores = numOfCores
 	m.CPUOnlineCpus = *stats.CPU.OnlineCpus
-	m.SystemCPUUsage = *stats.CPU.SystemCpuUsage
+	m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
 	m.CPUUtilized = cpuUtilized
 
 	m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond

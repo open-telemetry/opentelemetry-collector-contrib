@@ -23,10 +23,7 @@ import (
 )
 
 func timestampProto(t time.Time) *timestamp.Timestamp {
-	out, err := ptypes.TimestampProto(t)
-	if err != nil {
-		return nil
-	}
+	out, _ := ptypes.TimestampProto(t)
 	return out
 }
 

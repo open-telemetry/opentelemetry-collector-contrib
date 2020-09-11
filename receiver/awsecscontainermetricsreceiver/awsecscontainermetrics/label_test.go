@@ -23,7 +23,7 @@ import (
 func TestContainerLabelKeysAndValues(t *testing.T) {
 	cm := ContainerMetadata{
 		ContainerName: "container-1",
-		DockerId:      "001",
+		DockerID:      "001",
 		DockerName:    "docker-container-1",
 	}
 	k, v := containerLabelKeysAndValues(cm)

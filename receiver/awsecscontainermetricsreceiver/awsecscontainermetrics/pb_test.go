@@ -21,8 +21,7 @@ import (
 )
 
 func TestIntGauge(t *testing.T) {
-	var intValue uint64
-	intValue = 100
+	intValue := uint64(100)
 
 	labelKeys := []*metricspb.LabelKey{
 		{Key: "label_key_1"},
@@ -39,8 +38,7 @@ func TestIntGauge(t *testing.T) {
 }
 
 func TestDoubleGauge(t *testing.T) {
-	var floatValue float64
-	floatValue = 100.01
+	floatValue := float64(100.01)
 
 	labelKeys := []*metricspb.LabelKey{
 		{Key: "label_key_1"},

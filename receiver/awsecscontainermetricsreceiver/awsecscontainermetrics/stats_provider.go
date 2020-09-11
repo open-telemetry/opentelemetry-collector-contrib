@@ -16,42 +16,33 @@ package awsecscontainermetrics
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
-// StatsProvider wraps a RestClient, returning an unmarshaled
-// stats.Summary struct from the kubelet API.
+// StatsProvider wraps a RestClient, returning an unmarshaled metadata and docker stats
 type StatsProvider struct {
 	rc RestClient
 }
 
+// NewStatsProvider returns a new stats provider
 func NewStatsProvider(rc RestClient) *StatsProvider {
 	return &StatsProvider{rc: rc}
 }
 
-// GetStats calls the ecs task metadata endpoint and unmarshals the
-// results into a stats.TaskStats struct.
+// GetStats calls the ecs task metadata endpoint and unmarshals the data
 func (p *StatsProvider) GetStats() (map[string]ContainerStats, TaskMetadata, error) {
 	stats := make(map[string]ContainerStats)
 	var metadata TaskMetadata
 
 	taskStats, taskMetadata, err := p.rc.EndpointResponse()
-	// fmt.Println(string(taskStats))
 	if err != nil {
 		return stats, metadata, err
 	}
-	//var out Model
 
 	err = json.Unmarshal(taskStats, &stats)
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
 		return stats, metadata, err
 	}
 
 	err = json.Unmarshal(taskMetadata, &metadata)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return stats, metadata, err
-	}
-	return stats, metadata, nil
+	return stats, metadata, err
 }

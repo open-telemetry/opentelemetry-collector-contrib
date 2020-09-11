@@ -28,7 +28,7 @@ func containerLabelKeysAndValues(cm ContainerMetadata) ([]*metricspb.LabelKey, [
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.ContainerName, HasValue: true})
 
 	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-id"})
-	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerId, HasValue: true})
+	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerID, HasValue: true})
 
 	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-name"})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerName, HasValue: true})

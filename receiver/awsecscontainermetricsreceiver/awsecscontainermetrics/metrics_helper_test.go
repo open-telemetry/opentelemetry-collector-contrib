@@ -66,19 +66,19 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		TotalUsage:        &v,
 		UsageInKernelmode: &v,
 		UsageInUserMode:   &v,
-		PerCpuUsage:       percpu,
+		PerCPUUsage:       percpu,
 	}
 
 	cpuStats := CPUStats{
-		CpuUsage:       cpuUsage,
+		CPUUsage:       cpuUsage,
 		OnlineCpus:     &v,
-		SystemCpuUsage: &v,
-		CpuUtilized:    &v,
-		CpuReserved:    &v,
+		SystemCPUUsage: &v,
+		CPUUtilized:    &v,
+		CPUReserved:    &v,
 	}
 	containerStats := ContainerStats{
 		Name:        "test",
-		Id:          "001",
+		ID:          "001",
 		Memory:      mem,
 		Disk:        disk,
 		Network:     net,
@@ -109,8 +109,7 @@ func TestCreateGaugeIntMetric(t *testing.T) {
 }
 
 func TestExtractStorageUsage(t *testing.T) {
-	var v uint64
-	v = 100
+	v := uint64(100)
 	disk := &DiskStats{
 		IoServiceBytesRecursives: []IoServiceBytesRecursive{
 			{Op: "Read", Value: &v},
@@ -125,8 +124,7 @@ func TestExtractStorageUsage(t *testing.T) {
 }
 
 func TestGetNetworkStats(t *testing.T) {
-	var v uint64
-	v = 100
+	v := uint64(100)
 	stats := make(map[string]NetworkStats)
 	stats["eth0"] = NetworkStats{
 		RxBytes:   &v,

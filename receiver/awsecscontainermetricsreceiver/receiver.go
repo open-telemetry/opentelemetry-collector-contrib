@@ -97,7 +97,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 	mds := awsecscontainermetrics.MetricsData(stats, metadata, typeStr)
 	for _, md := range mds {
 		metrics := internaldata.OCToMetrics(*md)
-		err := aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)
+		err = aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)
 		if err != nil {
 			return err
 		}

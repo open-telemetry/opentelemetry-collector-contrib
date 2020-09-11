@@ -67,19 +67,19 @@ func TestGetMetricsData(t *testing.T) {
 		TotalUsage:        &v,
 		UsageInKernelmode: &v,
 		UsageInUserMode:   &v,
-		PerCpuUsage:       percpu,
+		PerCPUUsage:       percpu,
 	}
 
 	cpuStats := CPUStats{
-		CpuUsage:       cpuUsage,
+		CPUUsage:       cpuUsage,
 		OnlineCpus:     &v,
-		SystemCpuUsage: &v,
-		CpuUtilized:    &v,
-		CpuReserved:    &v,
+		SystemCPUUsage: &v,
+		CPUUtilized:    &v,
+		CPUReserved:    &v,
 	}
 	containerStats := ContainerStats{
 		Name:        "test",
-		Id:          "001",
+		ID:          "001",
 		Memory:      mem,
 		Disk:        disk,
 		Network:     net,
@@ -93,7 +93,7 @@ func TestGetMetricsData(t *testing.T) {
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
 		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerId: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
 		},
 		Limits: Limit{CPU: &f, Memory: &v},
 	}

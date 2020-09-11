@@ -20,13 +20,13 @@ import (
 	"os"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
 
 // Factory for awscontainermetrics
@@ -57,17 +57,6 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
-// CreateTraceReceiver returns error as trace receiver is not applicable to aws ecs container metrics receiver.
-func createTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
-) (component.TraceReceiver, error) {
-	// Amazon ECS Task Metadata Endpoint does not support traces.
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
 // CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
 	ctx context.Context,
@@ -77,7 +66,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	ecsTaskMetadataEndpointV4 := os.Getenv("ECS_CONTAINER_METADATA_URI_V4")
 	if ecsTaskMetadataEndpointV4 == "" {
-		return nil, fmt.Errorf("Could not get environment variable- ECS_CONTAINER_METADATA_URI_V4")
+		return nil, fmt.Errorf("no environment variable found for ecs task metadata endpoint v4")
 	}
 
 	rest, err := restClient(params.Logger, ecsTaskMetadataEndpointV4)

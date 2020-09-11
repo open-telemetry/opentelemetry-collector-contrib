@@ -20,21 +20,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type fakeRestClient struct {
-}
-
-func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	taskMetadata, err := ioutil.ReadFile("../testdata/task_metadata.json")
-	if err != nil {
-		return nil, nil, err
-	}
-	return taskStats, taskMetadata, nil
-}
-
 func TestMetricSampleFile(t *testing.T) {
 	data, err := ioutil.ReadFile("../testdata/task_stats.json")
 	require.NoError(t, err)
@@ -87,19 +72,19 @@ func TestMetricData(t *testing.T) {
 		TotalUsage:        &v,
 		UsageInKernelmode: &v,
 		UsageInUserMode:   &v,
-		PerCpuUsage:       percpu,
+		PerCPUUsage:       percpu,
 	}
 
 	cpuStats := CPUStats{
-		CpuUsage:       cpuUsage,
+		CPUUsage:       cpuUsage,
 		OnlineCpus:     &v,
-		SystemCpuUsage: &v,
-		CpuUtilized:    &v,
-		CpuReserved:    &v,
+		SystemCPUUsage: &v,
+		CPUUtilized:    &v,
+		CPUReserved:    &v,
 	}
 	containerStats := ContainerStats{
 		Name:        "test",
-		Id:          "001",
+		ID:          "001",
 		Memory:      mem,
 		Disk:        disk,
 		Network:     net,
@@ -113,7 +98,7 @@ func TestMetricData(t *testing.T) {
 		Family:   "task-def-family-1",
 		Revision: "task-def-version",
 		Containers: []ContainerMetadata{
-			{ContainerName: "container-1", DockerId: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
 		},
 		Limits: Limit{CPU: &f, Memory: &v},
 	}
