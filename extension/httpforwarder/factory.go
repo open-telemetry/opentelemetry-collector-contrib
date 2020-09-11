@@ -46,10 +46,10 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: string(typeStr),
 		},
-		Incoming: confighttp.HTTPServerSettings{
+		Ingress: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
-		Outgoing: confighttp.HTTPClientSettings{
+		Egress: confighttp.HTTPClientSettings{
 			Timeout: 10 * time.Second,
 		},
 	}

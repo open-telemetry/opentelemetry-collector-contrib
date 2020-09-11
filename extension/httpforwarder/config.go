@@ -23,9 +23,9 @@ import (
 type Config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
 
-	// Incoming holds config settings for HTTP server listening for requests.
-	Incoming confighttp.HTTPServerSettings `mapstructure:"incoming"`
+	// Ingress holds config settings for HTTP server listening for requests.
+	Ingress confighttp.HTTPServerSettings `mapstructure:"ingress"`
 
-	// Outgoing holds config settings to use for forwarded requests.
-	Outgoing confighttp.HTTPClientSettings `mapstructure:"outgoing"`
+	// Egress holds config settings to use for forwarded requests.
+	Egress confighttp.HTTPClientSettings `mapstructure:"egress"`
 }
