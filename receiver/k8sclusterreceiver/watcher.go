@@ -15,6 +15,7 @@
 package k8sclusterreceiver
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -37,12 +38,15 @@ import (
 )
 
 type resourceWatcher struct {
-	client                kubernetes.Interface
-	sharedInformerFactory informers.SharedInformerFactory
-	dataCollector         *collection.DataCollector
-	logger                *zap.Logger
-	metadataConsumers     []metadataConsumer
-	informersHaveSynced   *atomic.Bool
+	client                     kubernetes.Interface
+	sharedInformerFactory      informers.SharedInformerFactory
+	dataCollector              *collection.DataCollector
+	logger                     *zap.Logger
+	metadataConsumers          []metadataConsumer
+	initialTimeout             time.Duration
+	timedContextForInitialSync context.Context
+	initialSyncDone            *atomic.Bool
+	initialSyncTimedOut        *atomic.Bool
 }
 
 type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
@@ -50,12 +54,14 @@ type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) erro
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface,
-	nodeConditionTypesToReport []string) *resourceWatcher {
+	nodeConditionTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
 	rw := &resourceWatcher{
 		client:              client,
 		logger:              logger,
 		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport),
-		informersHaveSynced: atomic.NewBool(false),
+		initialSyncDone:     atomic.NewBool(false),
+		initialSyncTimedOut: atomic.NewBool(false),
+		initialTimeout:      initialSyncTimeout,
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -89,18 +95,21 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 }
 
 // startWatchingResources starts up all informers.
-func (rw *resourceWatcher) startWatchingResources(stopper <-chan struct{}) {
+func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
+	var cancel context.CancelFunc
+	rw.timedContextForInitialSync, cancel = context.WithTimeout(ctx, rw.initialTimeout)
+
 	// Start off individual informers in the factory.
-	rw.sharedInformerFactory.Start(stopper)
+	rw.sharedInformerFactory.Start(ctx.Done())
 
 	// Ensure cache is synced with initial state, once informers are started up.
 	// Note that the event handler can start receiving events as soon as the informers
 	// are started. So it's required to ensure that the receiver does not start
 	// collecting data before the cache sync since all data may not be available.
-	// This synchronization is achieved using rw.informersHaveSynced.
-	rw.sharedInformerFactory.WaitForCacheSync(stopper)
-	rw.informersHaveSynced.Store(true)
-	rw.logger.Info("Information caches synced.")
+	// This method will block either till the timeout set on the context or until
+	// the initial sync is complete.
+	rw.sharedInformerFactory.WaitForCacheSync(rw.timedContextForInitialSync.Done())
+	cancel()
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
@@ -147,18 +156,16 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	rw.syncMetadataUpdate(oldMetadata, newMetadata)
 }
 
-// waitForInitialInformerSync waits for initial cache sync, after the informers
-// are started up. This is achieved by resourceWatcher.informersHaveSynced. This
-// method is intended to be used by the ResourceEventHandler callbacks to ensure
-// that data sync does not start until the cache is synced as the events could be
-// received by the handler even before the informer caches being synced.
 func (rw *resourceWatcher) waitForInitialInformerSync() {
-	// Return immediately if already synced.
-	if rw.informersHaveSynced.Load() {
+	if rw.initialSyncDone.Load() || rw.initialSyncTimedOut.Load() {
 		return
 	}
 
-	for !rw.informersHaveSynced.Load() {
+	// Wait till initial sync is complete or timeout.
+	for !rw.initialSyncDone.Load() {
+		if rw.initialSyncTimedOut.Load() {
+			return
+		}
 		time.Sleep(100 * time.Millisecond)
 	}
 }

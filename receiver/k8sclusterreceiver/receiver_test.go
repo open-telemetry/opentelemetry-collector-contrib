@@ -36,7 +36,7 @@ func TestReceiver(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	consumer := &exportertest.SinkMetricsExporter{}
 
-	r, err := setupReceiver(client, consumer)
+	r, err := setupReceiver(client, consumer, 10*time.Second)
 
 	require.NoError(t, err)
 
@@ -74,11 +74,29 @@ func TestReceiver(t *testing.T) {
 	r.Shutdown(ctx)
 }
 
+func TestReceiverTimesOutAfterStartup(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	consumer := &exportertest.SinkMetricsExporter{}
+
+	// Mock initial cache sync timing out, using a small timeout.
+	r, err := setupReceiver(client, consumer, 1*time.Millisecond)
+	require.NoError(t, err)
+
+	createPods(t, client, 1)
+
+	ctx := context.Background()
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		return r.resourceWatcher.initialSyncTimedOut.Load()
+	}, 10*time.Second, 100*time.Millisecond)
+	require.NoError(t, r.Shutdown(ctx))
+}
+
 func TestReceiverWithManyResources(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	consumer := &exportertest.SinkMetricsExporter{}
 
-	r, err := setupReceiver(client, consumer)
+	r, err := setupReceiver(client, consumer, 10*time.Second)
 	require.NoError(t, err)
 
 	numPods := 1000
@@ -104,10 +122,10 @@ var consumeMetadataInvocation = func() {
 
 func TestReceiverWithMetadata(t *testing.T) {
 	client := fake.NewSimpleClientset()
-	consumer := &mockExporterWithK8sMetadata{}
+	consumer := &mockExporterWithK8sMetadata{SinkMetricsExporter: &exportertest.SinkMetricsExporter{}}
 	numCalls = atomic.NewInt32(0)
 
-	r, err := setupReceiver(client, consumer)
+	r, err := setupReceiver(client, consumer, 10*time.Second)
 	require.NoError(t, err)
 	r.config.MetadataExporters = []string{"exampleexporter/withmetadata"}
 
@@ -120,6 +138,9 @@ func TestReceiverWithMetadata(t *testing.T) {
 	// Mock an update on the Pod object. It appears that the fake clientset
 	// does not pass on events for updates to resources.
 	require.Len(t, pods, 1)
+	require.Eventually(t, func() bool {
+		return r.resourceWatcher.timedContextForInitialSync != nil
+	}, 10*time.Second, 100*time.Millisecond)
 	updatedPod := getUpdatedPod(pods[0])
 	r.resourceWatcher.onUpdate(pods[0], updatedPod)
 
@@ -153,7 +174,8 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 
 func setupReceiver(
 	client *fake.Clientset,
-	consumer consumer.MetricsConsumer) (*kubernetesReceiver, error) {
+	consumer consumer.MetricsConsumer,
+	initialSyncTimeout time.Duration) (*kubernetesReceiver, error) {
 
 	logger := zap.NewNop()
 	config := &Config{
@@ -161,7 +183,7 @@ func setupReceiver(
 		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, initialSyncTimeout)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{
