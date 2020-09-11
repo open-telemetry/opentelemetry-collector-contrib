@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.0.0-20200518175917-05cf2ea24e6c
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.9.1-0.20200903224024-3eb3b664a832
+	go.opentelemetry.io/collector v0.9.1-0.20200911183545-c0b3c61876d7
 	go.uber.org/zap v1.16.0
 )
 
