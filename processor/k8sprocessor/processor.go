@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -35,58 +34,12 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger              *zap.Logger
-	apiConfig           k8sconfig.APIConfig
-	kc                  kube.Client
-	passthroughMode     bool
-	rules               kube.ExtractionRules
-	filters             kube.Filters
-	nextTraceConsumer   consumer.TraceConsumer
-	nextMetricsConsumer consumer.MetricsConsumer
-}
-
-var _ (component.TraceProcessor) = (*kubernetesprocessor)(nil)
-var _ (component.MetricsProcessor) = (*kubernetesprocessor)(nil)
-
-// newTraceProcessor returns a component.TraceProcessor that adds the WithAttributeMap(attributes) to all spans
-// passed to it.
-func newTraceProcessor(
-	logger *zap.Logger,
-	nextTraceConsumer consumer.TraceConsumer,
-	kubeClient kube.ClientProvider,
-	options ...Option,
-) (component.TraceProcessor, error) {
-	kp := &kubernetesprocessor{logger: logger, nextTraceConsumer: nextTraceConsumer}
-	for _, opt := range options {
-		if err := opt(kp); err != nil {
-			return nil, err
-		}
-	}
-	err := kp.initKubeClient(logger, kubeClient)
-	if err != nil {
-		return nil, err
-	}
-	return kp, nil
-}
-
-// newMetricsProcessor returns a component.MetricProcessor that adds the k8s attributes to metrics passed to it.
-func newMetricsProcessor(
-	logger *zap.Logger,
-	nextMetricsConsumer consumer.MetricsConsumer,
-	kubeClient kube.ClientProvider,
-	options ...Option,
-) (component.MetricsProcessor, error) {
-	kp := &kubernetesprocessor{logger: logger, nextMetricsConsumer: nextMetricsConsumer}
-	for _, opt := range options {
-		if err := opt(kp); err != nil {
-			return nil, err
-		}
-	}
-	err := kp.initKubeClient(logger, kubeClient)
-	if err != nil {
-		return nil, err
-	}
-	return kp, nil
+	logger          *zap.Logger
+	apiConfig       k8sconfig.APIConfig
+	kc              kube.Client
+	passthroughMode bool
+	rules           kube.ExtractionRules
+	filters         kube.Filters
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -103,10 +56,6 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 	return nil
 }
 
-func (kp *kubernetesprocessor) GetCapabilities() component.ProcessorCapabilities {
-	return component.ProcessorCapabilities{MutatesConsumedData: true}
-}
-
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
 	if !kp.passthroughMode {
 		go kp.kc.Start()
@@ -121,7 +70,8 @@ func (kp *kubernetesprocessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+// ProcessTraces process traces and add k8s metadata using resource IP or incoming IP as pod origin.
+func (kp *kubernetesprocessor) ProcessTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -132,14 +82,14 @@ func (kp *kubernetesprocessor) ConsumeTraces(ctx context.Context, td pdata.Trace
 		_ = kp.processResource(ctx, rs.Resource(), false)
 	}
 
-	return kp.nextTraceConsumer.ConsumeTraces(ctx, td)
+	return td, nil
 }
 
-// ConsumeMetrics process metrics and add k8s metadata using resource hostname as pod origin.
-func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata.Metrics) error {
-	mrs := metrics.ResourceMetrics()
-	for i := 0; i < mrs.Len(); i++ {
-		ms := mrs.At(i)
+// ProcessMetrics process metrics and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
+func (kp *kubernetesprocessor) ProcessMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+	rm := md.ResourceMetrics()
+	for i := 0; i < rm.Len(); i++ {
+		ms := rm.At(i)
 		if ms.IsNil() {
 			continue
 		}
@@ -147,7 +97,22 @@ func (kp *kubernetesprocessor) ConsumeMetrics(ctx context.Context, metrics pdata
 		_ = kp.processResource(ctx, ms.Resource(), true)
 	}
 
-	return kp.nextMetricsConsumer.ConsumeMetrics(ctx, metrics)
+	return md, nil
+}
+
+// ProcessLogs process metrics and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
+func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	lm := ld.ResourceLogs()
+	for i := 0; i < lm.Len(); i++ {
+		ls := lm.At(i)
+		if ls.IsNil() {
+			continue
+		}
+
+		_ = kp.processResource(ctx, ls.Resource(), true)
+	}
+
+	return ld, nil
 }
 
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, checkHostname bool) error {
@@ -224,9 +189,8 @@ func (kp *kubernetesprocessor) k8sIPFromHostnameAttributes(attrs pdata.Attribute
 	hostname := stringAttributeFromMap(attrs, hostnameLabelName)
 	if net.ParseIP(hostname) != nil {
 		return hostname
-	} else {
-		return ""
 	}
+	return ""
 }
 
 func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {

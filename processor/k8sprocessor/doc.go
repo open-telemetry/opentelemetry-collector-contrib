@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package k8sprocessor allow automatic tagging of spans and metrics with k8s metadata.
+// Package k8sprocessor allow automatic tagging of spans, metrics and logs with k8s metadata.
 //
 // The processor automatically discovers k8s resources (pods), extracts metadata from them and adds the
-// extracted metadata to the relevant spans and metrics. The processor use the kubernetes API to discover all pods
-// running in a cluster, keeps a record of their IP addresses and interesting metadata. Upon receiving spans,
+// extracted metadata to the relevant telemetry data. The processor use the kubernetes API to discover all pods
+// running in a cluster, keeps a record of their IP addresses and interesting metadata. Upon receiving data,
 // the processor tries to identify the source IP address of the service that sent the spans and matches
 // it with the in memory data. To find a k8s pod producing metrics, the processor looks at "host.hostname"
 // resource attribute which is set by prometheus receiver and some metrics instrumentation libraries.
@@ -36,8 +36,8 @@
 //
 // As an agent
 //
-// When running as an agent, the processor detects IP addresses of pods sending spans or metrics to the agent and uses
-// this information to extract metadata from pods. When running as an agent, it is important to apply
+// When running as an agent, the processor detects IP addresses of pods sending spans, metrics or logs to the agent
+// and uses this information to extract metadata from pods. When running as an agent, it is important to apply
 // a discovery filter so that the processor only discovers pods from the same host that it is running on. Not using
 // such a filter can result in unnecessary resource usage especially on very large clusters. Once the filter is applied,
 // each processor will only query the k8s API for pods running on it's own node.

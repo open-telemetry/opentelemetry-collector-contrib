@@ -26,7 +26,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -37,43 +40,195 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func TestNewTraceProcessor(t *testing.T) {
-	_, err := newTraceProcessor(
-		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
-		newFakeClient,
+func newTraceProcessor(cfg configmodels.Processor, nextTraceConsumer consumer.TraceConsumer, options ...Option) (component.TraceProcessor, error) {
+	opts := append(options, withKubeClientProvider(newFakeClient))
+	return createTraceProcessorWithOptions(
+		context.Background(),
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextTraceConsumer,
+		opts...,
 	)
-	require.NoError(t, err)
 }
 
-func TestTraceProcessorBadOption(t *testing.T) {
-	opt := func(p *kubernetesprocessor) error {
-		return fmt.Errorf("bad option")
+func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consumer.MetricsConsumer, options ...Option) (component.MetricsProcessor, error) {
+	opts := append(options, withKubeClientProvider(newFakeClient))
+	return createMetricsProcessorWithOptions(
+		context.Background(),
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextMetricsConsumer,
+		opts...,
+	)
+}
+
+func newLogsProcessor(cfg configmodels.Processor, nextLogsConsumer consumer.LogsConsumer, options ...Option) (component.LogsProcessor, error) {
+	opts := append(options, withKubeClientProvider(newFakeClient))
+	return createLogsProcessorWithOptions(
+		context.Background(),
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextLogsConsumer,
+		opts...,
+	)
+}
+
+// withKubeClientProvider sets the specific implementation for getting K8s Client instances
+func withKubeClientProvider(kcp kube.ClientProvider) Option {
+	return func(p *kubernetesprocessor) error {
+		return p.initKubeClient(p.logger, kcp)
 	}
-	p, err := newTraceProcessor(
-		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
-		newFakeClient,
-		opt,
-	)
-	assert.Nil(t, p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "bad option")
 }
 
-func TestTraceProcessorBadClientProvider(t *testing.T) {
+// withExtractKubernetesProcessorInto allows to pull the internal model easily even when processorhelper factory is used
+func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) Option {
+	return func(p *kubernetesprocessor) error {
+		*kp = p
+		return nil
+	}
+}
+
+type multiTest struct {
+	t *testing.T
+
+	tp component.TraceProcessor
+	mp component.MetricsProcessor
+	lp component.LogsProcessor
+
+	nextTrace   *exportertest.SinkTraceExporter
+	nextMetrics *exportertest.SinkMetricsExporter
+	nextLogs    *exportertest.SinkLogsExporter
+
+	kpTrace   *kubernetesprocessor
+	kpMetrics *kubernetesprocessor
+	kpLogs    *kubernetesprocessor
+}
+
+func newMultiTest(
+	t *testing.T,
+	cfg configmodels.Processor,
+	errFunc func(err error),
+	options ...Option,
+) *multiTest {
+	m := &multiTest{
+		t:           t,
+		nextTrace:   &exportertest.SinkTraceExporter{},
+		nextMetrics: &exportertest.SinkMetricsExporter{},
+		nextLogs:    &exportertest.SinkLogsExporter{},
+	}
+
+	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
+	if errFunc == nil {
+		assert.NotNil(t, tp)
+		require.NoError(t, err)
+	} else {
+		assert.Nil(t, tp)
+		errFunc(err)
+	}
+
+	mp, err := newMetricsProcessor(cfg, m.nextMetrics, append(options, withExtractKubernetesProcessorInto(&m.kpMetrics))...)
+	if errFunc == nil {
+		assert.NotNil(t, mp)
+		require.NoError(t, err)
+	} else {
+		assert.Nil(t, mp)
+		errFunc(err)
+	}
+
+	lp, err := newLogsProcessor(cfg, m.nextLogs, append(options, withExtractKubernetesProcessorInto(&m.kpLogs))...)
+	if errFunc == nil {
+		assert.NotNil(t, lp)
+		require.NoError(t, err)
+	} else {
+		assert.Nil(t, lp)
+		errFunc(err)
+	}
+
+	m.tp = tp
+	m.mp = mp
+	m.lp = lp
+	return m
+}
+
+func (m *multiTest) testConsume(
+	ctx context.Context,
+	traces pdata.Traces,
+	metrics pdata.Metrics,
+	logs pdata.Logs,
+	errFunc func(err error),
+) {
+	errs := []error{
+		m.tp.ConsumeTraces(ctx, traces),
+		m.mp.ConsumeMetrics(ctx, metrics),
+		m.lp.ConsumeLogs(ctx, logs),
+	}
+
+	for _, err := range errs {
+		if errFunc != nil {
+			errFunc(err)
+		}
+	}
+}
+
+func (m *multiTest) kubernetesProcessorOperation(kpOp func(kp *kubernetesprocessor)) {
+	kpOp(m.kpTrace)
+	kpOp(m.kpMetrics)
+	kpOp(m.kpLogs)
+}
+
+func (m *multiTest) assertBatchesLen(batchesLen int) {
+	require.Len(m.t, m.nextTrace.AllTraces(), batchesLen)
+	require.Len(m.t, m.nextMetrics.AllMetrics(), batchesLen)
+	require.Len(m.t, m.nextLogs.AllLogs(), batchesLen)
+}
+
+func (m *multiTest) assertResourceObjectLen(batchNo int, rsObjectLen int) {
+	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len(), rsObjectLen)
+	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len(), rsObjectLen)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len(), rsObjectLen)
+}
+
+func (m *multiTest) assertResourceAttributesLen(batchNo int, resourceObjectNo int, attrsLen int) {
+	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
+}
+
+func (m *multiTest) assertResource(batchNum int, resourceXNum int, resourceFunc func(res pdata.Resource)) {
+	rss := m.nextTrace.AllTraces()[batchNum].ResourceSpans()
+	r := rss.At(resourceXNum).Resource()
+
+	if resourceFunc != nil {
+		resourceFunc(r)
+	}
+}
+
+func TestNewProcessor(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+
+	newMultiTest(t, cfg, nil)
+}
+
+func TestProcessorBadConfig(t *testing.T) {
+	cfg := NewFactory().CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Extract.Metadata = []string{"bad-attribute"}
+
+	newMultiTest(t, cfg, func(err error) {
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "\"bad-attribute\" is not a supported metadata field")
+	})
+}
+
+func TestProcessorBadClientProvider(t *testing.T) {
 	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
-	p, err := newTraceProcessor(
-		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
-		clientProvider,
-	)
 
-	assert.Nil(t, p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "bad client error")
+	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
+		assert.Error(t, err)
+		assert.Equal(t, err.Error(), "bad client error")
+	}, withKubeClientProvider(clientProvider))
 }
 
 func generateTraces() pdata.Traces {
@@ -88,119 +243,158 @@ func generateTraces() pdata.Traces {
 	return t
 }
 
+func generateMetrics() pdata.Metrics {
+	m := pdata.NewMetrics()
+	ms := m.ResourceMetrics()
+	ms.Resize(1)
+	ms.At(0).InitEmpty()
+	ms.At(0).InstrumentationLibraryMetrics().Resize(1)
+	ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	metric := ms.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric.SetName("foobar")
+	return m
+}
+
+func generateLogs() pdata.Logs {
+	l := pdata.NewLogs()
+	ls := l.ResourceLogs()
+	ls.Resize(1)
+	ls.At(0).InitEmpty()
+	ls.At(0).InstrumentationLibraryLogs().Resize(1)
+	ls.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	log := ls.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	log.SetName("foobar")
+	return l
+}
+
 func TestIPDetection(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
-	kp, err := newTraceProcessor(
-		zap.NewNop(),
-		next,
-		newFakeClient,
-	)
-	require.NoError(t, err)
+	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
 
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
-	err = kp.ConsumeTraces(ctx, generateTraces())
-	require.NoError(t, err)
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
 
-	require.Len(t, next.AllTraces(), 1)
-	rss := next.AllTraces()[0].ResourceSpans()
-	assert.Equal(t, 1, rss.Len())
-
-	r := rss.At(0).Resource()
-	require.False(t, r.IsNil())
-	assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0, 1)
+	m.assertResource(0, 0, func(r pdata.Resource) {
+		require.False(t, r.IsNil())
+		assertResourceHasStringAttribute(t, r, "k8s.pod.ip", "1.1.1.1")
+	})
 }
 
 func TestNilBatch(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
-	kp, err := newTraceProcessor(
-		zap.NewNop(),
-		next,
-		newFakeClient,
-	)
-	require.NoError(t, err)
+	m := newMultiTest(t, NewFactory().CreateDefaultConfig(), nil)
+	m.testConsume(
+		context.Background(),
+		pdata.NewTraces(),
+		pdata.NewMetrics(),
+		pdata.NewLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
 
-	err = kp.ConsumeTraces(context.Background(), pdata.NewTraces())
-	require.NoError(t, err)
-	require.Len(t, next.AllTraces(), 1)
+	m.assertBatchesLen(1)
 }
 
 func TestTraceProcessorNoAttrs(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
-	p, err := newTraceProcessor(
-		zap.NewNop(),
-		next,
-		newFakeClient,
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
 		WithExtractMetadata(metadataPodName),
 	)
-	require.NoError(t, err)
-	kp := p.(*kubernetesprocessor)
-	kc := kp.kc.(*fakeClient)
+
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
 
 	// pod doesn't have attrs to add
-	kc.Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
-	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
-	require.Len(t, next.AllTraces(), 1)
-	rss := next.AllTraces()[0]
-	rs := rss.ResourceSpans()
-	assert.Equal(t, 1, rs.Len())
-	assert.Equal(t, 1, rs.At(0).Resource().Attributes().Len())
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Pods["1.1.1.1"] = &kube.Pod{Name: "PodA"}
+	})
+
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0, 1)
+	m.assertResourceAttributesLen(0, 0, 1)
 
 	// attrs should be added now
-	kc.Pods["1.1.1.1"] = &kube.Pod{
-		Name: "PodA",
-		Attributes: map[string]string{
-			"k":  "v",
-			"1":  "2",
-			"aa": "b",
-		},
-	}
-	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
-	require.NoError(t, err)
-	require.Len(t, next.AllTraces(), 2)
-	rss = next.AllTraces()[1]
-	rs = rss.ResourceSpans()
-	assert.Equal(t, 1, rs.Len())
-	assert.Equal(t, 4, rs.At(0).Resource().Attributes().Len())
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.kc.(*fakeClient).Pods["1.1.1.1"] = &kube.Pod{
+			Name: "PodA",
+			Attributes: map[string]string{
+				"k":  "v",
+				"1":  "2",
+				"aa": "b",
+			},
+		}
+	})
+
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
+
+	m.assertBatchesLen(2)
+	m.assertResourceObjectLen(1, 1)
+	m.assertResourceAttributesLen(1, 0, 4)
 
 	// passthrough doesn't add attrs
-	kp.passthroughMode = true
-	assert.NoError(t, p.ConsumeTraces(ctx, generateTraces()))
-	require.Len(t, next.AllTraces(), 3)
-	rss = next.AllTraces()[2]
-	rs = rss.ResourceSpans()
-	assert.Equal(t, 1, rs.Len())
-	assert.Equal(t, 1, rs.At(0).Resource().Attributes().Len())
+	m.kubernetesProcessorOperation(func(kp *kubernetesprocessor) {
+		kp.passthroughMode = true
+	})
+	m.testConsume(
+		ctx,
+		generateTraces(),
+		generateMetrics(),
+		generateLogs(),
+		func(err error) {
+			assert.NoError(t, err)
+		})
 
+	m.assertBatchesLen(3)
+	m.assertResourceObjectLen(2, 1)
+	m.assertResourceAttributesLen(2, 0, 1)
 }
 
 func TestNoIP(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
-	kp, err := newTraceProcessor(
-		zap.NewNop(),
-		next,
-		newFakeClient,
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
 	)
-	require.NoError(t, err)
 
-	err = kp.ConsumeTraces(context.Background(), generateTraces())
-	require.NoError(t, err)
+	m.testConsume(context.Background(), generateTraces(), generateMetrics(), generateLogs(), nil)
 
-	require.Len(t, next.AllTraces(), 1)
-	rss := next.AllTraces()[0]
-	rs := rss.ResourceSpans()
-	assert.Equal(t, 1, rs.Len())
-	assert.True(t, rs.At(0).Resource().IsNil())
+	m.assertBatchesLen(1)
+	m.assertResourceObjectLen(0, 1)
+	m.assertResource(0, 0, func(res pdata.Resource) {
+		assert.True(t, res.IsNil())
+	})
 }
 
 func TestIPSource(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
-	kp, err := newTraceProcessor(
-		zap.NewNop(),
-		next,
-		newFakeClient,
+	m := newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		nil,
 	)
-	require.NoError(t, err)
 
 	type testCase struct {
 		name, resourceIP, resourceK8SIP, contextIP, out string
@@ -233,38 +427,51 @@ func TestIPSource(t *testing.T) {
 			if tc.contextIP != "" {
 				ctx = client.NewContext(context.Background(), &client.Client{IP: tc.contextIP})
 			}
+
 			traces := generateTraces()
-			resource := traces.ResourceSpans().At(0).Resource()
-			if resource.IsNil() {
-				resource.InitEmpty()
+			metrics := generateMetrics()
+			logs := generateLogs()
+
+			resources := []pdata.Resource{
+				traces.ResourceSpans().At(0).Resource(),
+				metrics.ResourceMetrics().At(0).Resource(),
+				logs.ResourceLogs().At(0).Resource(),
 			}
-			if tc.resourceK8SIP != "" {
-				resource.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
+
+			for _, res := range resources {
+				if res.IsNil() {
+					res.InitEmpty()
+				}
+				if tc.resourceK8SIP != "" {
+					res.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
+				}
+				if tc.resourceIP != "" {
+					res.Attributes().InsertString(clientIPLabelName, tc.resourceIP)
+				}
 			}
-			if tc.resourceIP != "" {
-				resource.Attributes().InsertString(clientIPLabelName, tc.resourceIP)
-			}
-			err := kp.ConsumeTraces(ctx, traces)
-			require.NoError(t, err)
-			res := next.AllTraces()[i].ResourceSpans().At(0).Resource()
-			require.Len(t, next.AllTraces(), i+1)
-			require.False(t, res.IsNil())
-			assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
+
+			m.testConsume(ctx, traces, metrics, logs, nil)
+			m.assertBatchesLen(i + 1)
+			m.assertResource(i, 0, func(res pdata.Resource) {
+				require.False(t, res.IsNil())
+				assertResourceHasStringAttribute(t, res, "k8s.pod.ip", tc.out)
+			})
 		})
 	}
 }
 
 func TestTraceProcessorAddLabels(t *testing.T) {
 	next := &exportertest.SinkTraceExporter{}
+	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
+	require.NotNil(t, p)
 
-	kp, ok := p.(*kubernetesprocessor)
-	assert.True(t, ok)
+	assert.NotNil(t, kp)
 	kc, ok := kp.kc.(*fakeClient)
 	assert.True(t, ok)
 
@@ -305,9 +512,8 @@ func TestPassthroughStart(t *testing.T) {
 	opts := []Option{WithPassthrough()}
 
 	p, err := newTraceProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
 		opts...,
 	)
 	require.NoError(t, err)
@@ -318,38 +524,43 @@ func TestPassthroughStart(t *testing.T) {
 }
 
 func TestRealClient(t *testing.T) {
-	p, err := newTraceProcessor(
-		zap.NewNop(),
-		exportertest.NewNopTraceExporter(),
-		nil,
+	newMultiTest(
+		t,
+		NewFactory().CreateDefaultConfig(),
+		func(err error) {
+			assert.Error(t, err)
+			assert.Equal(t, err.Error(), "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
+		},
+		withKubeClientProvider(kubeClientProvider),
 		WithAPIConfig(k8sconfig.APIConfig{AuthType: "none"}),
 	)
-	assert.Nil(t, p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "unable to load k8s config, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 }
 
 func TestCapabilities(t *testing.T) {
-	p, err := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), newFakeClient)
+	p, err := newTraceProcessor(
+		NewFactory().CreateDefaultConfig(),
+		exportertest.NewNopTraceExporter(),
+	)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
 	assert.True(t, caps.MutatesConsumedData)
 }
 
 func TestStartStop(t *testing.T) {
+	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		exportertest.NewNopTraceExporter(),
-		newFakeClient,
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
 
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
-	pr := p.(*kubernetesprocessor)
-	client := pr.kc.(*fakeClient)
-	controller := client.Informer.GetController().(*kube.FakeController)
+	assert.NotNil(t, kp)
+	kc := kp.kc.(*fakeClient)
+	controller := kc.Informer.GetController().(*kube.FakeController)
 
 	assert.False(t, controller.HasStopped())
 	assert.NoError(t, p.Shutdown(context.Background()))
@@ -357,55 +568,16 @@ func TestStartStop(t *testing.T) {
 	assert.True(t, controller.HasStopped())
 }
 
-func TestNewMetricsProcessor(t *testing.T) {
-	_, err := newMetricsProcessor(
-		zap.NewNop(),
-		exportertest.NewNopMetricsExporter(),
-		newFakeClient,
-	)
-	require.NoError(t, err)
-}
-
-func TestMetricsProcessorBadOption(t *testing.T) {
-	opt := func(p *kubernetesprocessor) error {
-		return fmt.Errorf("bad option")
-	}
-	p, err := newMetricsProcessor(
-		zap.NewNop(),
-		exportertest.NewNopMetricsExporter(),
-		newFakeClient,
-		opt,
-	)
-	assert.Nil(t, p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "bad option")
-}
-
-func TestMetricsProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
-		return nil, fmt.Errorf("bad client error")
-	}
-	p, err := newMetricsProcessor(
-		zap.NewNop(),
-		exportertest.NewNopMetricsExporter(),
-		clientProvider,
-	)
-
-	assert.Nil(t, p)
-	assert.Error(t, err)
-	assert.Equal(t, err.Error(), "bad client error")
-}
-
 func TestMetricsProcessorNoAttrs(t *testing.T) {
 	next := &exportertest.SinkMetricsExporter{}
+	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
 		WithExtractMetadata(metadataPodName),
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
-	kp := p.(*kubernetesprocessor)
 	kc := kp.kc.(*fakeClient)
 
 	// pod doesn't have attrs to add
@@ -458,14 +630,14 @@ func TestMetricsProcessorNoAttrs(t *testing.T) {
 
 func TestMetricsProcessorPicksUpPassthoughPodIp(t *testing.T) {
 	next := &exportertest.SinkMetricsExporter{}
+	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
 		WithExtractMetadata(metadataPodName),
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
-	kp := p.(*kubernetesprocessor)
 	kc := kp.kc.(*fakeClient)
 	kc.Pods["2.2.2.2"] = &kube.Pod{
 		Name: "PodA",
@@ -490,14 +662,14 @@ func TestMetricsProcessorPicksUpPassthoughPodIp(t *testing.T) {
 
 func TestMetricsProcessorInvalidIP(t *testing.T) {
 	next := &exportertest.SinkMetricsExporter{}
+	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
 		WithExtractMetadata(metadataPodName),
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
-	kp := p.(*kubernetesprocessor)
 	kc := kp.kc.(*fakeClient)
 
 	// invalid ip should not be used to lookup k8s pod
@@ -524,15 +696,15 @@ func TestMetricsProcessorInvalidIP(t *testing.T) {
 
 func TestMetricsProcessorAddLabels(t *testing.T) {
 	next := &exportertest.SinkMetricsExporter{}
+	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
-		zap.NewNop(),
+		NewFactory().CreateDefaultConfig(),
 		next,
-		newFakeClient,
+		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
 
-	kp, ok := p.(*kubernetesprocessor)
-	assert.True(t, ok)
+	assert.NotNil(t, kp)
 	kc, ok := kp.kc.(*fakeClient)
 	assert.True(t, ok)
 
