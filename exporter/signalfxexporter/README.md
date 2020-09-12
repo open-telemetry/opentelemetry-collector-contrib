@@ -43,10 +43,9 @@ The following configuration options can also be configured:
   translated to a format backward-compatible with SignalFx naming conventions.
 - `timeout` (default = 5s): Amount of time to wait for a send operation to
   complete.
-- `translation_rules`: Set of rules on how to translate metrics to a SignalFx
-  compatible format If not provided explicitly, the rules defined in
-  `translations/config/default.yaml` are used. Used only when
-  `send_compatible_metrics` is set to `true`.
+- `translation_rules`: Set of rules on how to translate metrics to a SignalFx 
+  compatible format. Rules defined in `translation/constants.go` are used by 
+  default. Applicable only when `send_compatible_metrics` set to `true`.
 
 Example:
 
