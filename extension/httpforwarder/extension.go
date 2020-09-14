@@ -64,7 +64,7 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 	rawURL := fmt.Sprintf("%s://%s%s", h.forwardTo.Scheme, h.forwardTo.Host, request.RequestURI)
 	url, _ := url.Parse(rawURL)
 
-	forwarderRequest := request.Clone(context.Background())
+	forwarderRequest := request.Clone(request.Context())
 	forwarderRequest.URL = url
 	forwarderRequest.Host = url.Host
 	// Clear RequestURI to avoid getting "http: Request.RequestURI can't be set in client requests" error.
