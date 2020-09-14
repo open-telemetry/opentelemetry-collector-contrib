@@ -56,7 +56,8 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 	dimKey := stringifyDimensions(currPt.Dimensions, nil)
 	fullKey := currPt.Metric + ":" + dimKey
 	v := t.prevPts.Get(fullKey)
-	t.prevPts.Put(fullKey, currPt)
+	// without proto.Clone here, points' DoubleValue are converted into IntValues, presumably by other translators
+	t.prevPts.Put(fullKey, proto.Clone(currPt))
 	if v == nil {
 		// no previous point, so we can't calculate a delta
 		return nil

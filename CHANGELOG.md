@@ -2,8 +2,10 @@
 
 ## Unreleased
 
+## 🚀 New components 🚀
 - add initial docker stats receiver, without sourcing in top level components (#495)
 - add initial jmx metrics extension structure, without sourcing in top level components (#740)
+- `routing` processor for routing spans based on HTTP headers (#907)
 
 ## v0.9.0
 
