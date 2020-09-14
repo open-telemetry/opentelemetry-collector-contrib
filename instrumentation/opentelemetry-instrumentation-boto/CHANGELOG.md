@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## Unreleased  
+
+- Drop support for Python 3.4
+  ([#1099](https://github.com/open-telemetry/opentelemetry-python/pull/1099))
 
 ## Version 0.12b0
 
