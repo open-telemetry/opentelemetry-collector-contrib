@@ -22,6 +22,7 @@ from opentelemetry.exporter.zipkin import ZipkinSpanExporter
 from opentelemetry.sdk import trace
 from opentelemetry.sdk.trace import Resource
 from opentelemetry.sdk.trace.export import SpanExportResult
+from opentelemetry.sdk.util.instrumentation import InstrumentationInfo
 from opentelemetry.trace import TraceFlags
 
 
@@ -191,6 +192,9 @@ class TestZipkinSpanExporter(unittest.TestCase):
         otel_spans[3].start(start_time=start_times[3])
         otel_spans[3].resource = Resource({})
         otel_spans[3].end(end_time=end_times[3])
+        otel_spans[3].instrumentation_info = InstrumentationInfo(
+            name="name", version="version"
+        )
 
         service_name = "test-service"
         local_endpoint = {"serviceName": service_name, "port": 9411}
@@ -252,7 +256,10 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "duration": durations[3] // 10 ** 3,
                 "localEndpoint": local_endpoint,
                 "kind": None,
-                "tags": {},
+                "tags": {
+                    "otel.instrumentation_library.name": "name",
+                    "otel.instrumentation_library.version": "version",
+                },
                 "annotations": None,
             },
         ]

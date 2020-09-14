@@ -175,6 +175,14 @@ class ZipkinSpanExporter(SpanExporter):
                 "annotations": _extract_annotations_from_events(span.events),
             }
 
+            if span.instrumentation_info is not None:
+                zipkin_span["tags"][
+                    "otel.instrumentation_library.name"
+                ] = span.instrumentation_info.name
+                zipkin_span["tags"][
+                    "otel.instrumentation_library.version"
+                ] = span.instrumentation_info.version
+
             if context.trace_flags.sampled:
                 zipkin_span["debug"] = True
 

@@ -7,6 +7,8 @@
   `port`, `protocol`, `endpoint`. This brings this implementation inline with other
   implementations. 
   ([#1064](https://github.com/open-telemetry/opentelemetry-python/pull/1064))
+- Zipkin exporter report instrumentation info. 
+  ([#1097](https://github.com/open-telemetry/opentelemetry-python/pull/1097))  
 
 ## Version 0.12b0
 
