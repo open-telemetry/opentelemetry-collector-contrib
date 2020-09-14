@@ -6,7 +6,6 @@ jobs:
   build:
     env:
       # We use these variables to convert between tox and GHA version literals
-      py34: 3.4
       py35: 3.5
       py36: 3.6
       py37: 3.7
@@ -16,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
       matrix:
-        python-version: [ py34, py35, py36, py37, py38, pypy3 ]
+        python-version: [ py35, py36, py37, py38, pypy3 ]
         package: ["instrumentation", "core", "exporter"]
         os: [ ubuntu-latest ]
         include:
