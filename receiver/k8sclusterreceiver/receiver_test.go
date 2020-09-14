@@ -138,9 +138,6 @@ func TestReceiverWithMetadata(t *testing.T) {
 	// Mock an update on the Pod object. It appears that the fake clientset
 	// does not pass on events for updates to resources.
 	require.Len(t, pods, 1)
-	require.Eventually(t, func() bool {
-		return r.resourceWatcher.timedContextForInitialSync != nil
-	}, 10*time.Second, 100*time.Millisecond)
 	updatedPod := getUpdatedPod(pods[0])
 	r.resourceWatcher.onUpdate(pods[0], updatedPod)
 

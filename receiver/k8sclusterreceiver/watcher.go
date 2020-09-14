@@ -106,8 +106,8 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
 	// Note that the event handler can start receiving events as soon as the informers
 	// are started. So it's required to ensure that the receiver does not start
 	// collecting data before the cache sync since all data may not be available.
-	// This method will block either till the timeout set on the context or until
-	// the initial sync is complete.
+	// This method will block either till the timeout set on the context, until
+	// the initial sync is complete or the parent context is cancelled.
 	rw.sharedInformerFactory.WaitForCacheSync(rw.timedContextForInitialSync.Done())
 	cancel()
 }
