@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "type": "object",
+  "title": "Values",
+  "properties": {
+    "telemetry": {
+      "description": "Enabled telemetry pipelines",
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": ["enabled"]
+        },
+        "traces": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "required": ["enabled"]
+        }
+      }
+    },
+    "output": {
+      "description": "Telemetry output",
+      "type": "object",
+      "properties": {
+        "type": {
+           "type": "string",
+           "enum": ["logging"]
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "standaloneCollector": {
+      "description": "Configuration for standalone OpenTelemetry Collector deployment",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "agentCollector": {
+      "description": "Configuration for OpenTelemetry Collector daemonset",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"]
+    }
+  },
+  "anyOf": [
+    {"properties": {"standaloneCollector": {"properties": {"enabled": {"const": true}}}}},
+    {"properties": {"agentCollector": {"properties": {"enabled": {"const": true}}}}}
+  ]
+}

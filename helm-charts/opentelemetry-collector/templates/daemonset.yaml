@@ -1,0 +1,27 @@
+{{- if .Values.agentCollector.enabled -}}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "opentelemetry-collector.fullname" . }}-agent
+  labels:
+    {{- include "opentelemetry-collector.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "opentelemetry-collector.selectorLabels" . | nindent 6 }}
+      component: agent-collector
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "opentelemetry-collector.selectorLabels" . | nindent 8 }}
+        component: agent-collector
+    spec:
+      {{- $podValues := .Values | deepCopy | mustMergeOverwrite .Values.agentCollector }}
+      {{- $podData := dict "Values" $podValues "configmapSuffix" "-agent" "isAgent" true }}
+      {{- include "opentelemetry-collector.pod" (. | deepCopy | mustMergeOverwrite $podData) | nindent 6 }}
+{{- end }}

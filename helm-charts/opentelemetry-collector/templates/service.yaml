@@ -1,0 +1,24 @@
+{{- if .Values.standaloneCollector.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "opentelemetry-collector.fullname" . }}
+  labels:
+    {{- include "opentelemetry-collector.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{ toYaml . | trim | indent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    {{- range $key, $port := .Values.ports }}
+    - name: {{ $key }}
+      port: {{ $port.servicePort }}
+      targetPort: {{ $key }}
+      protocol: {{ $port.protocol }}
+    {{- end }}
+  selector:
+    {{- include "opentelemetry-collector.selectorLabels" . | nindent 4 }}
+    component: standalone-collector
+{{- end }}

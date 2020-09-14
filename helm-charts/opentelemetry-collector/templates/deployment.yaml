@@ -1,0 +1,30 @@
+{{- if .Values.standaloneCollector.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "opentelemetry-collector.fullname" . }}
+  labels:
+    {{- include "opentelemetry-collector.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.standaloneCollector.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "opentelemetry-collector.selectorLabels" . | nindent 6 }}
+      component: standalone-collector
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "opentelemetry-collector.selectorLabels" . | nindent 8 }}
+        component: standalone-collector
+    spec:
+      {{- $podValues := .Values | deepCopy | mustMergeOverwrite .Values.standaloneCollector }}
+      {{- $podData := dict "Values" $podValues "configmapSuffix" "" "isAgent" false }}
+      {{- include "opentelemetry-collector.pod" (. | deepCopy | mustMergeOverwrite $podData) | nindent 6 }}
+{{- end }}

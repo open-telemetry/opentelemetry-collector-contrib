@@ -1,0 +1,111 @@
+# Default values for opentelemetry-collector.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Basic parameters that used to compose configmaps
+telemetry:
+  metrics:
+    enabled: true
+  traces:
+    enabled: true
+output:
+  enabled: true
+  type: logging
+  logLevel: info
+
+# Shared params for agentCollector daemonset and standaloneCollector deployment pods.
+# Can be overriden here or for any component independantly.
+image:
+  repository: otel/opentelemetry-collector-contrib
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+imagePullSecrets: []
+
+# OpenTelemetry Collector executable
+command:
+  name: otelcontribcol
+  extraArgs: []
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Configuration for ports, shared between agentCollector, standaloneCollector and service.
+# Can be overriden here or for agentCollector and standaloneCollector independently.
+# Any port can be disabled by setting to null.
+ports:
+  otlp:
+    containerPort: 55680
+    servicePort: 55680
+    hostPort: 55680
+    protocol: TCP
+  jaeger-thrift:
+    containerPort: 14268
+    servicePort: 14268
+    hostPort: 14268
+    protocol: TCP
+  jaeger-grpc:
+    containerPort: 14250
+    servicePort: 14250
+    hostPort: 14250
+    protocol: TCP
+  zipkin:
+    containerPort: 9411
+    servicePort: 9411
+    hostPort: 9411
+    protocol: TCP
+
+# Configuration for agent OpenTelemetry Collector daemonset, enabled by default
+agentCollector:
+  enabled: false
+
+  resources:
+    limits:
+      cpu: 256m
+      memory: 512Mi
+
+  # Configuration override that will be merged into the agent collector default config
+  configOverride: {}
+
+# Configuration for standalone OpenTelemetry Collector deployment, disabled by default
+standaloneCollector:
+  enabled: true
+
+  replicaCount: 1
+
+  resources:
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+  # Configuration override that will be merged into the standalone collector default config
+  configOverride: {}
+
+service:
+  type: ClusterIP
+  annotations: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
