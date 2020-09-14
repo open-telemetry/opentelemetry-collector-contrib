@@ -147,6 +147,23 @@ class RequestsIntegrationTestBase(abc.ABC):
 
         self.assert_span(num_spans=0)
 
+    def test_not_recording(self):
+        with mock.patch("opentelemetry.trace.INVALID_SPAN") as mock_span:
+            RequestsInstrumentor().uninstrument()
+            # original_tracer_provider returns a default tracer provider, which
+            # in turn will return an INVALID_SPAN, which is always not recording
+            RequestsInstrumentor().instrument(
+                tracer_provider=self.original_tracer_provider
+            )
+            mock_span.is_recording.return_value = False
+            result = self.perform_request(self.URL)
+            self.assertEqual(result.text, "Hello!")
+            self.assert_span(None, 0)
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
+
     def test_distributed_context(self):
         previous_propagator = propagators.get_global_textmap()
         try:

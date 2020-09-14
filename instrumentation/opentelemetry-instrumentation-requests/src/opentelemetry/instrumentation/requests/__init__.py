@@ -56,8 +56,8 @@ _SUPPRESS_REQUESTS_INSTRUMENTATION_KEY = "suppress_requests_instrumentation"
 # pylint: disable=unused-argument
 def _instrument(tracer_provider=None, span_callback=None):
     """Enables tracing of all requests calls that go through
-      :code:`requests.session.Session.request` (this includes
-      :code:`requests.get`, etc.)."""
+    :code:`requests.session.Session.request` (this includes
+    :code:`requests.get`, etc.)."""
 
     # Since
     # https://github.com/psf/requests/commit/d72d1162142d1bf8b1b5711c664fbbd674f349d1
@@ -121,9 +121,10 @@ def _instrument(tracer_provider=None, span_callback=None):
         with get_tracer(
             __name__, __version__, tracer_provider
         ).start_as_current_span(span_name, kind=SpanKind.CLIENT) as span:
-            span.set_attribute("component", "http")
-            span.set_attribute("http.method", method.upper())
-            span.set_attribute("http.url", url)
+            if span.is_recording():
+                span.set_attribute("component", "http")
+                span.set_attribute("http.method", method.upper())
+                span.set_attribute("http.url", url)
 
             headers = get_or_create_headers()
             propagators.inject(type(headers).__setitem__, headers)
@@ -139,13 +140,13 @@ def _instrument(tracer_provider=None, span_callback=None):
             finally:
                 context.detach(token)
 
-            if exception is not None:
+            if exception is not None and span.is_recording():
                 span.set_status(
                     Status(_exception_to_canonical_code(exception))
                 )
                 span.record_exception(exception)
 
-            if result is not None:
+            if result is not None and span.is_recording():
                 span.set_attribute("http.status_code", result.status_code)
                 span.set_attribute("http.status_text", result.reason)
                 span.set_status(
