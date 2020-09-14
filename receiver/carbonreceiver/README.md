@@ -21,7 +21,7 @@ The following settings are required:
 The following setting are optional:
 
 * `tcp_idle_timeout` (default = `30s`): The maximum duration that a tcp
-  connection will idle wait for new data. This value is ignored is the
+  connection will idle wait for new data. This value is ignored if the
   transport is not `tcp`.
 
 In addition, a `parser` section can be defined with the following settings:
