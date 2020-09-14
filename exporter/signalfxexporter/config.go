@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -41,7 +40,7 @@ type Config struct {
 	// intended for tests and debugging. The value of Realm is ignored if the
 	// URL is specified. If a path is not included the exporter will
 	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will use the one set by the config.
+	// If a path is specified it will act as a prefix.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -132,7 +131,7 @@ func (cfg *Config) validateConfig() error {
 
 func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 	if cfg.IngestURL == "" {
-		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com/v2/datapoint", cfg.Realm))
+		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
 		if err != nil {
 			return out, err
 		}
@@ -141,9 +140,6 @@ func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 		out, err = url.Parse(cfg.IngestURL)
 		if err != nil {
 			return out, err
-		}
-		if out.Path == "" || out.Path == "/" {
-			out.Path = path.Join(out.Path, "v2/datapoint")
 		}
 	}
 
