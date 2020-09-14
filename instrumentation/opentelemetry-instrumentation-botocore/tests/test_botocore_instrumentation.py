@@ -104,35 +104,36 @@ class TestBotocoreInstrumentor(TestBase):
         )
 
     # Comment test for issue 1088
-    # @mock_s3
-    # def test_s3_put(self):
-    #     params = dict(Key="foo", Bucket="mybucket", Body=b"bar")
-    #     s3 = self.session.create_client("s3", region_name="us-west-2")
-    #     s3.create_bucket(Bucket="mybucket")
-    #     s3.put_object(**params)
+    @mock_s3
+    def test_s3_put(self):
+        params = dict(Key="foo", Bucket="mybucket", Body=b"bar")
+        s3 = self.session.create_client("s3", region_name="us-west-2")
+        location = {"LocationConstraint": "us-west-2"}
+        s3.create_bucket(Bucket="mybucket", CreateBucketConfiguration=location)
+        s3.put_object(**params)
 
-    #     spans = self.memory_exporter.get_finished_spans()
-    #     assert spans
-    #     span = spans[0]
-    #     self.assertEqual(len(spans), 2)
-    #     self.assertEqual(span.attributes["aws.operation"], "CreateBucket")
-    #     assert_span_http_status_code(span, 200)
-    #     self.assertEqual(
-    #         span.resource,
-    #         Resource(
-    #             attributes={"endpoint": "s3", "operation": "createbucket"}
-    #         ),
-    #     )
-    #     self.assertEqual(spans[1].attributes["aws.operation"], "PutObject")
-    #     self.assertEqual(
-    #         spans[1].resource,
-    #         Resource(attributes={"endpoint": "s3", "operation": "putobject"}),
-    #     )
-    #     self.assertEqual(spans[1].attributes["params.Key"], str(params["Key"]))
-    #     self.assertEqual(
-    #         spans[1].attributes["params.Bucket"], str(params["Bucket"])
-    #     )
-    #     self.assertTrue("params.Body" not in spans[1].attributes.keys())
+        spans = self.memory_exporter.get_finished_spans()
+        assert spans
+        span = spans[0]
+        self.assertEqual(len(spans), 2)
+        self.assertEqual(span.attributes["aws.operation"], "CreateBucket")
+        assert_span_http_status_code(span, 200)
+        self.assertEqual(
+            span.resource,
+            Resource(
+                attributes={"endpoint": "s3", "operation": "createbucket"}
+            ),
+        )
+        self.assertEqual(spans[1].attributes["aws.operation"], "PutObject")
+        self.assertEqual(
+            spans[1].resource,
+            Resource(attributes={"endpoint": "s3", "operation": "putobject"}),
+        )
+        self.assertEqual(spans[1].attributes["params.Key"], str(params["Key"]))
+        self.assertEqual(
+            spans[1].attributes["params.Bucket"], str(params["Bucket"])
+        )
+        self.assertTrue("params.Body" not in spans[1].attributes.keys())
 
     @mock_sqs
     def test_sqs_client(self):
