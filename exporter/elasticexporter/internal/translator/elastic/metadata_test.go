@@ -66,6 +66,14 @@ func TestMetadataServiceInstance(t *testing.T) {
 	}, out.service.Node)
 }
 
+func TestMetadataServiceEnvironment(t *testing.T) {
+	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
+		"deployment.environment": pdata.NewAttributeValueString("foo"),
+	})
+	out := metadataWithResource(t, resource)
+	assert.Equal(t, "foo", out.service.Environment)
+}
+
 func TestMetadataSystemHostname(t *testing.T) {
 	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
 		"host.hostname": pdata.NewAttributeValueString("foo"),
