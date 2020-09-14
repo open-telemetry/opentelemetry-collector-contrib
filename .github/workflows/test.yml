@@ -1,0 +1,78 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    env:
+      # We use these variables to convert between tox and GHA version literals
+      py34: 3.4
+      py35: 3.5
+      py36: 3.6
+      py37: 3.7
+      py38: 3.8
+      pypy3: pypy3
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false  # ensures the entire test matrix is run, even if one permutation fails
+      matrix:
+        python-version: [ py34, py35, py36, py37, py38, pypy3 ]
+        package: ["instrumentation", "core", "exporter"]
+        os: [ ubuntu-latest ]
+        include:
+          - python-version: py38
+            package: "tracecontext"
+            os: ubuntu-latest
+          - python-version: py38
+            package: "mypy"
+            os: ubuntu-latest
+          - python-version: py38
+            package: "mypyinstalled"
+            os: ubuntu-latest
+          # py35-instrumentation segfaults on 18.04 so we instead run on 20.04
+          - python-version: py35
+            package: instrumentation
+            os: ubuntu-20.04
+        exclude:
+          - os: ubuntu-latest
+            python-version: py35
+            package: instrumentation
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ env[matrix.python-version] }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env[matrix.python-version] }}
+      - name: Install tox
+        run: pip install -U tox-factor
+      - name: Cache tox environment
+        # Preserves .tox directory between runs for faster installs
+        uses: actions/cache@v2
+        with:
+          path: .tox
+          key: tox-cache-${{ matrix.python-version }}-${{ matrix.package }}-${{ matrix.os }}-${{ hashFiles('tox.ini', 'dev-requirements.txt') }}
+      - name: run tox
+        run: tox -f ${{ matrix.python-version }}-${{ matrix.package }}
+  misc:
+    strategy:
+      fail-fast: false
+      matrix:
+        tox-environment: [ "docker-tests", "lint", "docs" ]
+    name: ${{ matrix.tox-environment }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install tox
+        run: pip install -U tox
+      - name: Cache tox environment
+        # Preserves .tox directory between runs for faster installs
+        uses: actions/cache@v2
+        with:
+          path: .tox
+          key: tox-cache-${{ matrix.tox-environment }}-${{ hashFiles('tox.ini', 'dev-requirements.txt') }}
+      - name: run tox
+        run: tox -e ${{ matrix.tox-environment }}
