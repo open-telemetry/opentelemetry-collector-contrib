@@ -16,6 +16,8 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -29,12 +31,14 @@ type fakeRestClient struct {
 }
 
 func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
-	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
+	taskStats, err := ioutil.ReadFile("testdata/task_stats.json")
 	if err != nil {
+		fmt.Println(err)
 		return nil, nil, err
 	}
-	taskMetadata, err := ioutil.ReadFile("../testdata/task_metadata.json")
+	taskMetadata, err := ioutil.ReadFile("testdata/task_metadata.json")
 	if err != nil {
+		fmt.Println(err)
 		return nil, nil, err
 	}
 	return taskStats, taskMetadata, nil
@@ -62,6 +66,19 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestReceiverForNilConsumer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		nil,
+		&fakeRestClient{},
+	)
+
+	require.NotNil(t, err)
+	require.Nil(t, metricsReceiver)
+}
+
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := New(
@@ -79,4 +96,64 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 
 	err = r.collectDataFromEndpoint(ctx, "")
 	require.NoError(t, err)
+}
+
+func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	sme := new(exportertest.SinkMetricsExporter)
+	e := errors.New("Test Error for Metrics Consumer")
+	sme.SetConsumeMetricsError(e)
+
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		sme,
+		&fakeRestClient{},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx, "")
+	require.EqualError(t, err, "Test Error for Metrics Consumer")
+}
+
+type invalidFakeClient struct {
+}
+
+func (f invalidFakeClient) EndpointResponse() ([]byte, []byte, error) {
+	taskStats, err := ioutil.ReadFile("testdata/wrong_file.json")
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil, err
+	}
+	taskMetadata, err := ioutil.ReadFile("testdata/wrong_file.json")
+	if err != nil {
+		fmt.Println(err)
+		return nil, nil, err
+	}
+	return taskStats, taskMetadata, nil
+}
+
+func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		new(exportertest.SinkMetricsExporter),
+		&invalidFakeClient{},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx, "")
+	require.Error(t, err)
 }

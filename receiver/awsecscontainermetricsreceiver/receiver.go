@@ -91,7 +91,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 
 	if err != nil {
 		aecmr.logger.Error("Failed to collect stats", zap.Error(err))
-		return nil
+		return err
 	}
 
 	mds := awsecscontainermetrics.MetricsData(stats, metadata, typeStr)
@@ -103,5 +103,5 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 		}
 	}
 
-	return err
+	return nil
 }

@@ -16,6 +16,7 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,6 +42,20 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	require.Nil(t, metricsReceiver)
 }
 
+func TestCreateMetricsReceiverWithEnv(t *testing.T) {
+	os.Setenv("ECS_CONTAINER_METADATA_URI_V4", "TEST_ENV_VAR")
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		&testbed.MockMetricConsumer{},
+	)
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+}
+
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -52,4 +67,10 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
 
+}
+
+func TestRestClient(t *testing.T) {
+	rest := restClient(nil, "")
+
+	require.NotNil(t, rest)
 }

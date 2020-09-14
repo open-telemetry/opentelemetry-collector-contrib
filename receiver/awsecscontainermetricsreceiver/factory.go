@@ -69,23 +69,17 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("no environment variable found for ecs task metadata endpoint v4")
 	}
 
-	rest, err := restClient(params.Logger, ecsTaskMetadataEndpointV4)
-	if err != nil {
-		return nil, err
-	}
+	rest := restClient(params.Logger, ecsTaskMetadataEndpointV4)
+
 	rCfg := baseCfg.(*Config)
 	return New(params.Logger, rCfg, consumer, rest)
 }
 
-func restClient(logger *zap.Logger, endpoint string) (awsecscontainermetrics.RestClient, error) {
-	clientProvider, err := awsecscontainermetrics.NewClientProvider(endpoint, logger)
-	if err != nil {
-		return nil, err
-	}
-	client, err := clientProvider.BuildClient()
-	if err != nil {
-		return nil, err
-	}
+func restClient(logger *zap.Logger, endpoint string) awsecscontainermetrics.RestClient {
+	clientProvider := awsecscontainermetrics.NewClientProvider(endpoint, logger)
+
+	client := clientProvider.BuildClient()
 	rest := awsecscontainermetrics.NewRestClient(client)
-	return rest, nil
+
+	return rest
 }

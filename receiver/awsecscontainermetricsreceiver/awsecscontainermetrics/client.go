@@ -21,19 +21,22 @@ import (
 	"go.uber.org/zap"
 )
 
+// Client defines the rest client interface
 type Client interface {
 	Get(path string) ([]byte, error)
 }
 
-func NewClientProvider(endpoint string, logger *zap.Logger) (ClientProvider, error) {
+// NewClientProvider creates the default rest client provider
+func NewClientProvider(endpoint string, logger *zap.Logger) ClientProvider {
 	return &defaultClientProvider{
 		endpoint: endpoint,
 		logger:   logger,
-	}, nil
+	}
 }
 
+// ClientProvider defines
 type ClientProvider interface {
-	BuildClient() (Client, error)
+	BuildClient() Client
 }
 
 type defaultClientProvider struct {
@@ -41,7 +44,7 @@ type defaultClientProvider struct {
 	logger   *zap.Logger
 }
 
-func (dcp *defaultClientProvider) BuildClient() (Client, error) {
+func (dcp *defaultClientProvider) BuildClient() Client {
 	return defaultClient(
 		dcp.endpoint,
 		dcp.logger,
@@ -51,12 +54,12 @@ func (dcp *defaultClientProvider) BuildClient() (Client, error) {
 func defaultClient(
 	endpoint string,
 	logger *zap.Logger,
-) (*clientImpl, error) {
+) *clientImpl {
 	return &clientImpl{
 		baseURL:    endpoint,
 		httpClient: http.Client{},
 		logger:     logger,
-	}, nil
+	}
 }
 
 var _ Client = (*clientImpl)(nil)
