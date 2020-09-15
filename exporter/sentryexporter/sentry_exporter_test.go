@@ -537,7 +537,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := pdata.NewResourceSpans()
-				traces.ResourceSpans().Append(&resourceSpans)
+				traces.ResourceSpans().Append(resourceSpans)
 				return traces
 			}(),
 			called: false,
@@ -548,7 +548,6 @@ func TestPushTraceData(t *testing.T) {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.Resize(1)
-				resourceSpans.At(0).InitEmpty()
 				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 				return traces
 			}(),

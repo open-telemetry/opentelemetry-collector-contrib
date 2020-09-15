@@ -45,7 +45,7 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 func TestTraceDataIterationResourceSpansIsNil(t *testing.T) {
 	traces := pdata.NewTraces()
 	resourceSpans := pdata.NewResourceSpans()
-	traces.ResourceSpans().Append(&resourceSpans)
+	traces.ResourceSpans().Append(resourceSpans)
 
 	visitor := getMockVisitor(true)
 
@@ -74,7 +74,7 @@ func TestTraceDataIterationInstrumentationLibrarySpansIsNil(t *testing.T) {
 	r := rs.Resource()
 	r.InitEmpty()
 	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
-	rs.InstrumentationLibrarySpans().Append(&instrumentationLibrarySpans)
+	rs.InstrumentationLibrarySpans().Append(instrumentationLibrarySpans)
 
 	visitor := getMockVisitor(true)
 
@@ -90,9 +90,7 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 	rs := traces.ResourceSpans().At(0)
 	r := rs.Resource()
 	r.InitEmpty()
-	instrumentationLibrarySpans := pdata.NewInstrumentationLibrarySpans()
-	instrumentationLibrarySpans.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(&instrumentationLibrarySpans)
+	rs.InstrumentationLibrarySpans().Resize(1)
 
 	visitor := getMockVisitor(true)
 
@@ -111,7 +109,7 @@ func TestTraceDataIterationSpanIsNil(t *testing.T) {
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ilss := rs.InstrumentationLibrarySpans().At(0)
 	span := pdata.NewSpan()
-	ilss.Spans().Append(&span)
+	ilss.Spans().Append(span)
 
 	visitor := getMockVisitor(true)
 

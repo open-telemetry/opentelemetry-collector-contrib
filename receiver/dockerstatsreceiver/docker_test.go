@@ -20,8 +20,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -186,7 +189,6 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 		},
 	}
 
-	// EOF should not signify error
 	statsJSON, err := cli.toStatsJSON(
 		dtypes.ContainerStats{
 			Body: ioutil.NopCloser(strings.NewReader("")),
@@ -202,4 +204,48 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 	)
 	assert.Nil(t, statsJSON)
 	require.Error(t, err)
+}
+
+func TestEventLoopHandlesError(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(2) // confirm retry occurs
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/events") {
+			wg.Done()
+		}
+		w.Write([]byte{})
+	}))
+	defer srv.Close()
+
+	observed, logs := observer.New(zapcore.WarnLevel)
+	config := &Config{
+		Endpoint: srv.URL,
+		Timeout:  50 * time.Millisecond,
+	}
+
+	cli, err := newDockerClient(config, zap.New(observed))
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	go cli.ContainerEventLoop(context.Background())
+
+	assert.Eventually(t, func() bool {
+		for _, l := range logs.All() {
+			assert.Contains(t, l.Message, "Error watching docker container events")
+			assert.Contains(t, l.ContextMap()["error"], "EOF")
+		}
+		return len(logs.All()) > 0
+	}, 1*time.Second, 1*time.Millisecond, "failed to find desired error logs.")
+
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		wg.Wait()
+	}()
+	select {
+	case <-time.After(5 * time.Second):
+		t.Fatal("failed to retry events endpoint after error")
+	case <-finished:
+		return
+	}
 }
