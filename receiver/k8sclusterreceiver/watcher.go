@@ -42,7 +42,7 @@ type resourceWatcher struct {
 	metadataConsumers     []metadataConsumer
 }
 
-type metadataConsumer func(metadata []*collection.KubernetesMetadataUpdate) error
+type metadataConsumer func(metadata []*collection.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
@@ -146,11 +146,11 @@ func (rw *resourceWatcher) setupMetadataExporters(
 		if !metadataExportersSet[cfg.Name()] {
 			continue
 		}
-		kme, ok := exp.(collection.KubernetesMetadataExporter)
+		kme, ok := exp.(collection.MetadataExporter)
 		if !ok {
-			return fmt.Errorf("%s exporter does not implement KubernetesMetadataExporter", cfg.Name())
+			return fmt.Errorf("%s exporter does not implement MetadataExporter", cfg.Name())
 		}
-		out = append(out, kme.ConsumeKubernetesMetadata)
+		out = append(out, kme.ConsumeMetadata)
 		rw.logger.Info("Configured Kubernetes MetadataExporter",
 			zap.String("exporter_name", cfg.Name()),
 		)
@@ -180,13 +180,13 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
 	newMetadata map[collection.ResourceID]*collection.KubernetesMetadata) {
 
-	kubernetesMetadataUpdate := collection.GetKubernetesMetadataUpdate(oldMetadata, newMetadata)
-	if len(kubernetesMetadataUpdate) == 0 {
+	metadataUpdate := collection.GetMetadataUpdate(oldMetadata, newMetadata)
+	if len(metadataUpdate) == 0 {
 		return
 	}
 
 	// TODO: Asynchronously invoke consumers
 	for _, consume := range rw.metadataConsumers {
-		consume(kubernetesMetadataUpdate)
+		consume(metadataUpdate)
 	}
 }

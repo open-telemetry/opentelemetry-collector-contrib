@@ -69,11 +69,11 @@ following interface. If an exporter that does not implement the interface is lis
 startup will fail.
 
 ```yaml
-type KubernetesMetadataExporter interface {
-  ConsumeKubernetesMetadata(metadata []*KubernetesMetadataUpdate) error
+type MetadataExporter interface {
+  ConsumeMetadata(metadata []*MetadataUpdate) error
 }
 
-type KubernetesMetadataUpdate struct {
+type MetadataUpdate struct {
   ResourceIDKey string
   ResourceID    ResourceID
   MetadataDelta

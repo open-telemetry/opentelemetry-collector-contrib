@@ -33,7 +33,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		},
 	}, 1)
 	type args struct {
-		metadata         collection.KubernetesMetadataUpdate
+		metadata         collection.MetadataUpdate
 		metricTranslator *translation.MetricTranslator
 	}
 	tests := []struct {
@@ -44,7 +44,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test tags update",
 			args{
-				metadata: collection.KubernetesMetadataUpdate{
+				metadata: collection.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
 					MetadataDelta: collection.MetadataDelta{
@@ -72,7 +72,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test properties update",
 			args{
-				metadata: collection.KubernetesMetadataUpdate{
+				metadata: collection.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
 					MetadataDelta: collection.MetadataDelta{
@@ -105,7 +105,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test with unsupported characters",
 			args{
-				metadata: collection.KubernetesMetadataUpdate{
+				metadata: collection.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
 					MetadataDelta: collection.MetadataDelta{
@@ -143,7 +143,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 		{
 			"Test dimensions translation",
 			args{
-				metadata: collection.KubernetesMetadataUpdate{
+				metadata: collection.MetadataUpdate{
 					ResourceIDKey: "name",
 					ResourceID:    "val",
 					MetadataDelta: collection.MetadataDelta{

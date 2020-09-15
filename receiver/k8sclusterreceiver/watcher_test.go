@@ -51,7 +51,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 		{
 			"Supported exporter",
 			fields{
-				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeKubernetesMetadata},
+				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
 			args{exporters: map[configmodels.Exporter]component.Exporter{
 				mockExporterConfig{ExporterName: "exampleexporter"}: mockExporterWithK8sMetadata{},
