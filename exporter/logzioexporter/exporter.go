@@ -105,6 +105,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces pdata.
 }
 
 func (exporter *logzioExporter) Shutdown(ctx context.Context) error {
+	exporter.logger.Info("Closing logzio exporter..")
 	exporter.writer.Close()
 	return nil
 }
