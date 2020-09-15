@@ -23,6 +23,7 @@ from opentelemetry import trace as trace_api
 from opentelemetry.exporter.jaeger.gen.jaeger import ttypes as jaeger
 from opentelemetry.sdk import trace
 from opentelemetry.sdk.trace import Resource
+from opentelemetry.sdk.util.instrumentation import InstrumentationInfo
 from opentelemetry.trace.status import Status, StatusCanonicalCode
 
 
@@ -221,6 +222,9 @@ class TestJaegerSpanExporter(unittest.TestCase):
         otel_spans[2].start(start_time=start_times[2])
         otel_spans[2].resource = Resource({})
         otel_spans[2].end(end_time=end_times[2])
+        otel_spans[2].instrumentation_info = InstrumentationInfo(
+            name="name", version="version"
+        )
 
         # pylint: disable=protected-access
         spans = jaeger_exporter._translate_to_jaeger(otel_spans)
@@ -334,7 +338,33 @@ class TestJaegerSpanExporter(unittest.TestCase):
                 startTime=start_times[2] // 10 ** 3,
                 duration=durations[2] // 10 ** 3,
                 flags=0,
-                tags=default_tags,
+                tags=[
+                    jaeger.Tag(
+                        key="status.code",
+                        vType=jaeger.TagType.LONG,
+                        vLong=StatusCanonicalCode.OK.value,
+                    ),
+                    jaeger.Tag(
+                        key="status.message",
+                        vType=jaeger.TagType.STRING,
+                        vStr=None,
+                    ),
+                    jaeger.Tag(
+                        key="span.kind",
+                        vType=jaeger.TagType.STRING,
+                        vStr=trace_api.SpanKind.INTERNAL.name,
+                    ),
+                    jaeger.Tag(
+                        key="otel.instrumentation_library.name",
+                        vType=jaeger.TagType.STRING,
+                        vStr="name",
+                    ),
+                    jaeger.Tag(
+                        key="otel.instrumentation_library.version",
+                        vType=jaeger.TagType.STRING,
+                        vStr="version",
+                    ),
+                ],
             ),
         ]
 

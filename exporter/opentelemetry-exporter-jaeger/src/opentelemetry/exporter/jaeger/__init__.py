@@ -214,6 +214,20 @@ def _translate_to_jaeger(spans: Span):
             ]
         )
 
+        if span.instrumentation_info is not None:
+            tags.extend(
+                [
+                    _get_string_tag(
+                        "otel.instrumentation_library.name",
+                        span.instrumentation_info.name,
+                    ),
+                    _get_string_tag(
+                        "otel.instrumentation_library.version",
+                        span.instrumentation_info.version,
+                    ),
+                ]
+            )
+
         # Ensure that if Status.Code is not OK, that we set the "error" tag on the Jaeger span.
         if status.canonical_code is not StatusCanonicalCode.OK:
             tags.append(_get_bool_tag("error", True))
