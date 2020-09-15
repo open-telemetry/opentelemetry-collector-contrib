@@ -68,7 +68,7 @@ type Config struct {
 	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
-	// If not provided explicitly, the rules defined in translations/config/default.yaml are used.
+	// Rules defined in translation/constants.go are used by default.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
