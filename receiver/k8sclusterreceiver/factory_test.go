@@ -17,6 +17,7 @@ package k8sclusterreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -41,7 +42,7 @@ func TestFactory(t *testing.T) {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		CollectionInterval:         defaultCollectionInterval,
+		CollectionInterval:         10 * time.Second,
 		NodeConditionTypesToReport: defaultNodeConditionsToReport,
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
@@ -75,6 +76,9 @@ func TestFactory(t *testing.T) {
 	require.NotNil(t, r)
 
 	// Test metadata exporters setup.
+	ctx := context.Background()
+	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
+	require.NoError(t, r.Shutdown(ctx))
 	rCfg.MetadataExporters = []string{"exampleexporter/withoutmetadata"}
 	require.Error(t, r.Start(context.Background(), nopHostWithExporters{}))
 }
@@ -100,6 +104,7 @@ func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[confi
 	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
 		configmodels.MetricsDataType: {
 			mockExporterConfig{ExporterName: "exampleexporter/withoutmetadata"}: MockExporter{},
+			mockExporterConfig{ExporterName: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
 		},
 	}
 }

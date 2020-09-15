@@ -19,6 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
@@ -58,6 +59,7 @@ func (m MockExporter) Shutdown(context.Context) error {
 var _ component.Exporter = (*mockExporterWithK8sMetadata)(nil)
 
 type mockExporterWithK8sMetadata struct {
+	*exportertest.SinkMetricsExporter
 }
 
 func (m mockExporterWithK8sMetadata) Start(context.Context, component.Host) error {
@@ -69,5 +71,6 @@ func (m mockExporterWithK8sMetadata) Shutdown(context.Context) error {
 }
 
 func (m mockExporterWithK8sMetadata) ConsumeMetadata([]*collection.MetadataUpdate) error {
+	consumeMetadataInvocation()
 	return nil
 }
