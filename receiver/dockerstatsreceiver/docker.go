@@ -21,6 +21,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	dfilters "github.com/docker/docker/api/types/filters"
@@ -154,7 +155,7 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 	}
 
 	statsJSON, err := dc.toStatsJSON(containerStats, &container)
-	if err != nil { // results have been sent in converter
+	if err != nil {
 		return nil, err
 	}
 
@@ -167,7 +168,6 @@ func (dc *dockerClient) FetchContainerStatsAndConvertToMetrics(
 		)
 		return nil, err
 	}
-
 	return md, nil
 }
 
@@ -194,6 +194,72 @@ func (dc *dockerClient) toStatsJSON(
 	return &statsJSON, nil
 }
 
+func (dc *dockerClient) ContainerEventLoop(ctx context.Context) {
+	filters := dfilters.NewArgs([]dfilters.KeyValuePair{
+		{Key: "type", Value: "container"},
+		{Key: "event", Value: "destroy"},
+		{Key: "event", Value: "die"},
+		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "stop"},
+		{Key: "event", Value: "start"},
+		{Key: "event", Value: "unpause"},
+		{Key: "event", Value: "update"},
+	}...)
+	lastTime := time.Now()
+
+EVENT_LOOP:
+	for {
+		options := dtypes.EventsOptions{
+			Filters: filters,
+			Since:   lastTime.Format(time.RFC3339Nano),
+		}
+		eventCh, errCh := dc.client.Events(ctx, options)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event := <-eventCh:
+				switch event.Action {
+				case "destroy":
+					dc.logger.Debug("Docker container was destroyed:", zap.String("id", event.ID))
+					dc.removeContainer(event.ID)
+				default:
+					dc.logger.Debug(
+						"Docker container update:",
+						zap.String("id", event.ID),
+						zap.String("action", event.Action),
+					)
+
+					if container, ok := dc.inspectedContainerIsOfInterest(ctx, event.ID); ok {
+						dc.persistContainer(container)
+					}
+				}
+
+				if event.TimeNano > lastTime.UnixNano() {
+					lastTime = time.Unix(0, event.TimeNano)
+				}
+
+			case err := <-errCh:
+				// We are only interested when the context hasn't been canceled since requests made
+				// with a closed context are guaranteed to fail.
+				if ctx.Err() == nil {
+					dc.logger.Error("Error watching docker container events", zap.Error(err))
+					// Either decoding or connection error has occurred, so we should resume the event loop after
+					// waiting a moment.  In cases of extended daemon unavailability this will retry until
+					// collector teardown or background context is closed.
+					select {
+					case <-time.After(3 * time.Second):
+						continue EVENT_LOOP
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}
+	}
+}
+
 // Queries inspect api and returns *ContainerJSON and true when container should be queried for stats,
 // nil and false otherwise.
 func (dc *dockerClient) inspectedContainerIsOfInterest(ctx context.Context, cid string) (*dtypes.ContainerJSON, bool) {
@@ -216,8 +282,17 @@ func (dc *dockerClient) persistContainer(containerJSON *dtypes.ContainerJSON) {
 	if containerJSON == nil {
 		return
 	}
+
 	cid := containerJSON.ID
+	if !containerJSON.State.Running || containerJSON.State.Paused {
+		dc.logger.Debug("Docker container not running.  Will not persist.", zap.String("id", cid))
+		dc.removeContainer(cid)
+		return
+	}
+
 	dc.logger.Debug("Monitoring Docker container", zap.String("id", cid))
+	dc.containersLock.Lock()
+	defer dc.containersLock.Unlock()
 	dc.containers[cid] = DockerContainer{
 		ContainerJSON: containerJSON,
 		EnvMap:        containerEnvToMap(containerJSON.Config.Env),

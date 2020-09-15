@@ -81,7 +81,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 
 	r.obsCtx = obsreport.ReceiverContext(ctx, typeStr, r.transport, r.config.Name())
 
-	r.runnerCtx, r.runnerCancel = context.WithCancel(ctx)
+	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
 
 	go func() {
@@ -101,10 +101,13 @@ func (r *Receiver) Shutdown(ctx context.Context) error {
 
 func (r *Receiver) Setup() error {
 	err := r.client.LoadContainerList(r.runnerCtx)
-	if err == nil {
-		r.successfullySetup = true
+	if err != nil {
+		return err
 	}
-	return err
+
+	go r.client.ContainerEventLoop(r.runnerCtx)
+	r.successfullySetup = true
+	return nil
 }
 
 type result struct {
