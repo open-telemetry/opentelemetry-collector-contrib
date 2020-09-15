@@ -109,7 +109,7 @@ func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
 	// This method will block either till the timeout set on the context, until
 	// the initial sync is complete or the parent context is cancelled.
 	rw.sharedInformerFactory.WaitForCacheSync(rw.timedContextForInitialSync.Done())
-	cancel()
+	defer cancel()
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
