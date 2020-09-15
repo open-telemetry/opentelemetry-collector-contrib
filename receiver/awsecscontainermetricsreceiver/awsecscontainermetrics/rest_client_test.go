@@ -24,7 +24,7 @@ func TestRestClient(t *testing.T) {
 	rest := NewRestClient(&fakeClient{})
 	stats, metadata, err := rest.EndpointResponse()
 
-	require.NotNil(t, err)
+	require.Nil(t, err)
 	require.Equal(t, "/task/stats", string(stats))
 	require.Equal(t, "/task", string(metadata))
 }
