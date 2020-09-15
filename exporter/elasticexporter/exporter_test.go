@@ -56,6 +56,35 @@ func TestTraceExporter(t *testing.T) {
 	assert.Equal(t, "foobar", payloads.Transactions[0].Name)
 }
 
+func TestMetricsExporter(t *testing.T) {
+	factory := NewFactory()
+	recorder, cfg := newRecorder(t)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, me, "failed to create metrics exporter")
+
+	metrics := pdata.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics()
+	resourceMetrics.Resize(1)
+	resourceMetrics.At(0).InitEmpty()
+	resourceMetrics.At(0).InstrumentationLibraryMetrics().Resize(1)
+	resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(1)
+	metric := resourceMetrics.At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0)
+	metric.SetName("foobar")
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	metric.DoubleGauge().InitEmpty()
+	metric.DoubleGauge().DataPoints().Resize(1)
+	metric.DoubleGauge().DataPoints().At(0).SetValue(123)
+
+	err = me.ConsumeMetrics(context.Background(), metrics)
+	assert.NoError(t, err)
+
+	payloads := recorder.Payloads()
+	require.Len(t, payloads.Metrics, 1)
+	assert.Contains(t, payloads.Metrics[0].Samples, "foobar")
+}
+
 // newRecorder returns a go.elastic.co/apm/transport/transporrtest.RecorderTransport,
 // and an exporter config that sends to an HTTP server that will record events in the
 // Elastic APM format.
