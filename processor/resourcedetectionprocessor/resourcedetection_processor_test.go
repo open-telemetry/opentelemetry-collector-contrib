@@ -292,7 +292,7 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := &exportertest.SinkTraceExporter{}
-	processor, _ := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, sink, cfg)
+	processor, _ := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -314,7 +314,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
 	sink := &exportertest.SinkMetricsExporter{}
-	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, sink, cfg)
+	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
