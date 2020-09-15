@@ -28,6 +28,9 @@ IMPI=impi
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
+all-modules:
+	@echo $(ALL_MODULES) | tr ' ' '\n' | sort
+
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
 
