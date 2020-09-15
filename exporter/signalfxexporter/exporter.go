@@ -35,9 +35,9 @@ import (
 )
 
 type signalfxExporter struct {
-	logger                 *zap.Logger
-	pushMetricsData        func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushKubernetesMetadata func(metadata []*collection.KubernetesMetadataUpdate) error
+	logger          *zap.Logger
+	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushMetadata    func(metadata []*collection.MetadataUpdate) error
 }
 
 type exporterOptions struct {
@@ -102,9 +102,9 @@ func newSignalFxExporter(
 	dimClient.Start()
 
 	return signalfxExporter{
-		logger:                 logger,
-		pushMetricsData:        dpClient.pushMetricsData,
-		pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
+		logger:          logger,
+		pushMetricsData: dpClient.pushMetricsData,
+		pushMetadata:    dimClient.PushMetadata,
 	}, nil
 }
 
@@ -125,6 +125,6 @@ func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics)
 	return err
 }
 
-func (se signalfxExporter) ConsumeKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
-	return se.pushKubernetesMetadata(metadata)
+func (se signalfxExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
+	return se.pushMetadata(metadata)
 }

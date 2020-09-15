@@ -30,7 +30,7 @@ var propNameSanitizer = strings.NewReplacer(
 	"/", "_")
 
 func getDimensionUpdateFromMetadata(
-	metadata collection.KubernetesMetadataUpdate,
+	metadata collection.MetadataUpdate,
 	metricTranslator *translation.MetricTranslator,
 ) *DimensionUpdate {
 
@@ -53,7 +53,7 @@ func getDimensionUpdateFromMetadata(
 }
 
 func getPropertiesAndTags(
-	kmu collection.KubernetesMetadataUpdate,
+	kmu collection.MetadataUpdate,
 	translate func(string) string,
 ) (map[string]*string, map[string]bool) {
 	properties := map[string]*string{}
@@ -105,7 +105,7 @@ func getPropertiesAndTags(
 	return properties, tags
 }
 
-func (dc *DimensionClient) PushKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
+func (dc *DimensionClient) PushMetadata(metadata []*collection.MetadataUpdate) error {
 	var errs []error
 	for _, m := range metadata {
 		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricTranslator)
