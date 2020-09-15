@@ -78,6 +78,13 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
+	logExp, err := factory.CreateLogsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
+	assert.NoError(t, err)
+	require.NotNil(t, logExp)
+
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
