@@ -461,9 +461,9 @@ func generateLargeBatch() pdata.Metrics {
 	return internaldata.OCSliceToMetrics(mds)
 }
 
-func TestConsumeKubernetesMetadata(t *testing.T) {
+func TestConsumeMetadata(t *testing.T) {
 	type args struct {
-		metadata []*collection.KubernetesMetadataUpdate
+		metadata []*collection.MetadataUpdate
 	}
 	type fields struct {
 		payLoad map[string]interface{}
@@ -488,7 +488,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -522,7 +522,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -557,7 +557,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -650,11 +650,11 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 			dimClient.Start()
 
 			se := signalfxExporter{
-				logger:                 logger,
-				pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
+				logger:       logger,
+				pushMetadata: dimClient.PushMetadata,
 			}
 
-			err = se.ConsumeKubernetesMetadata(tt.args.metadata)
+			err = se.ConsumeMetadata(tt.args.metadata)
 
 			// Wait for requests to be handled by the mocked server before assertion.
 			wg.Wait()
