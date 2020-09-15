@@ -63,10 +63,10 @@ func createDefaultConfig() configmodels.Exporter {
 // createTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.TraceExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverTraceExporter(eCfg)
+	return newStackdriverTraceExporter(eCfg, params.ApplicationStartInfo.Version)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
