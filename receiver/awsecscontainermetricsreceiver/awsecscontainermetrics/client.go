@@ -15,9 +15,11 @@
 package awsecscontainermetrics
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -55,11 +57,16 @@ func defaultClient(
 	endpoint string,
 	logger *zap.Logger,
 ) *clientImpl {
+	tr := defaultTransport()
 	return &clientImpl{
 		baseURL:    endpoint,
-		httpClient: http.Client{},
+		httpClient: http.Client{Transport: tr},
 		logger:     logger,
 	}
+}
+
+func defaultTransport() *http.Transport {
+	return http.DefaultTransport.(*http.Transport).Clone()
 }
 
 var _ Client = (*clientImpl)(nil)
@@ -87,7 +94,12 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	}()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to read Task Metadata Endpoint response body")
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("task metadata endpoint request GET %s failed - %q, response: %q",
+			req.URL.String(), resp.Status, string(body))
 	}
 	return body, nil
 }
