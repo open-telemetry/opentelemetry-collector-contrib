@@ -15,10 +15,13 @@
 package k8sclusterreceiver
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/autoscaling/v2beta1"
@@ -35,11 +38,15 @@ import (
 )
 
 type resourceWatcher struct {
-	client                kubernetes.Interface
-	sharedInformerFactory informers.SharedInformerFactory
-	dataCollector         *collection.DataCollector
-	logger                *zap.Logger
-	metadataConsumers     []metadataConsumer
+	client                     kubernetes.Interface
+	sharedInformerFactory      informers.SharedInformerFactory
+	dataCollector              *collection.DataCollector
+	logger                     *zap.Logger
+	metadataConsumers          []metadataConsumer
+	initialTimeout             time.Duration
+	timedContextForInitialSync context.Context
+	initialSyncDone            *atomic.Bool
+	initialSyncTimedOut        *atomic.Bool
 }
 
 type metadataConsumer func(metadata []*collection.MetadataUpdate) error
@@ -47,11 +54,14 @@ type metadataConsumer func(metadata []*collection.MetadataUpdate) error
 // newResourceWatcher creates a Kubernetes resource watcher.
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface,
-	nodeConditionTypesToReport []string) *resourceWatcher {
+	nodeConditionTypesToReport []string, initialSyncTimeout time.Duration) *resourceWatcher {
 	rw := &resourceWatcher{
-		client:        client,
-		logger:        logger,
-		dataCollector: collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		client:              client,
+		logger:              logger,
+		dataCollector:       collection.NewDataCollector(logger, nodeConditionTypesToReport),
+		initialSyncDone:     atomic.NewBool(false),
+		initialSyncTimedOut: atomic.NewBool(false),
+		initialTimeout:      initialSyncTimeout,
 	}
 
 	rw.prepareSharedInformerFactory()
@@ -85,8 +95,21 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() {
 }
 
 // startWatchingResources starts up all informers.
-func (rw *resourceWatcher) startWatchingResources(stopper <-chan struct{}) {
-	rw.sharedInformerFactory.Start(stopper)
+func (rw *resourceWatcher) startWatchingResources(ctx context.Context) {
+	var cancel context.CancelFunc
+	rw.timedContextForInitialSync, cancel = context.WithTimeout(ctx, rw.initialTimeout)
+
+	// Start off individual informers in the factory.
+	rw.sharedInformerFactory.Start(ctx.Done())
+
+	// Ensure cache is synced with initial state, once informers are started up.
+	// Note that the event handler can start receiving events as soon as the informers
+	// are started. So it's required to ensure that the receiver does not start
+	// collecting data before the cache sync since all data may not be available.
+	// This method will block either till the timeout set on the context, until
+	// the initial sync is complete or the parent context is cancelled.
+	rw.sharedInformerFactory.WaitForCacheSync(rw.timedContextForInitialSync.Done())
+	defer cancel()
 }
 
 // setupInformers adds event handlers to informers and setups a metadataStore.
@@ -100,6 +123,7 @@ func (rw *resourceWatcher) setupInformers(o runtime.Object, informer cache.Share
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
+	rw.waitForInitialInformerSync()
 	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
@@ -112,10 +136,12 @@ func (rw *resourceWatcher) onAdd(obj interface{}) {
 }
 
 func (rw *resourceWatcher) onDelete(obj interface{}) {
+	rw.waitForInitialInformerSync()
 	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
+	rw.waitForInitialInformerSync()
 	// Sync metrics from the new object
 	rw.dataCollector.SyncMetrics(newObj)
 
@@ -128,6 +154,20 @@ func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	newMetadata := rw.dataCollector.SyncMetadata(newObj)
 
 	rw.syncMetadataUpdate(oldMetadata, newMetadata)
+}
+
+func (rw *resourceWatcher) waitForInitialInformerSync() {
+	if rw.initialSyncDone.Load() || rw.initialSyncTimedOut.Load() {
+		return
+	}
+
+	// Wait till initial sync is complete or timeout.
+	for !rw.initialSyncDone.Load() {
+		if rw.initialSyncTimedOut.Load() {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (rw *resourceWatcher) setupMetadataExporters(
@@ -185,7 +225,6 @@ func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
 		return
 	}
 
-	// TODO: Asynchronously invoke consumers
 	for _, consume := range rw.metadataConsumers {
 		consume(metadataUpdate)
 	}
