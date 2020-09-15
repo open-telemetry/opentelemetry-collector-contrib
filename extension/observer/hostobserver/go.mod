@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v2.20.6+incompatible
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.10.1-0.20200915175721-6c77fdb14909
+	go.opentelemetry.io/collector v0.10.1-0.20200915193938-b3a5ceaefa96
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )

@@ -37,22 +37,22 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), params, nil, cfg)
+	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), params, nil, cfg)
+	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 }
