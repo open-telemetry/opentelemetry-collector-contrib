@@ -39,6 +39,10 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
 		AWS: AWSConfig{
 			Region: "us-west-2",
 		},
