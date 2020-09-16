@@ -18,32 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
-
-type mockExporterConfig struct {
-	ExporterName string
-	ExporterType configmodels.Type
-}
-
-func (m mockExporterConfig) Name() string {
-	return m.ExporterName
-}
-
-func (m mockExporterConfig) SetName(name string) {
-	m.ExporterName = name
-}
-
-func (m mockExporterConfig) Type() configmodels.Type {
-	return m.ExporterType
-}
-
-func (m mockExporterConfig) SetType(typeStr configmodels.Type) {
-	m.ExporterType = typeStr
-}
 
 type MockExporter struct {
 }

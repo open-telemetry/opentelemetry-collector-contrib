@@ -42,7 +42,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[configmodels.Exporter]component.Exporter{
-					mockExporterConfig{ExporterName: "exampleexporter"}: MockExporter{},
+					&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"exampleexporter"},
 			},
@@ -54,7 +54,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
 			args{exporters: map[configmodels.Exporter]component.Exporter{
-				mockExporterConfig{ExporterName: "exampleexporter"}: mockExporterWithK8sMetadata{},
+				&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"exampleexporter"},
 			},
@@ -66,7 +66,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{},
 			},
 			args{exporters: map[configmodels.Exporter]component.Exporter{
-				mockExporterConfig{ExporterName: "exampleexporter"}: mockExporterWithK8sMetadata{},
+				&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter"}: mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"exampleexporter/1"},
 			},
