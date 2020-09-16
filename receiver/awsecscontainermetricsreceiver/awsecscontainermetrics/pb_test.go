@@ -54,3 +54,21 @@ func TestDoubleGauge(t *testing.T) {
 	require.Nil(t, m)
 
 }
+
+func TestIntCumulative(t *testing.T) {
+	floatValue := uint64(100)
+
+	labelKeys := []*metricspb.LabelKey{
+		{Key: "label_key_1"},
+	}
+	labelValues := []*metricspb.LabelValue{
+		{Value: "label_value_1"},
+	}
+
+	m := intCumulative("cpu_utilized", "Count", &floatValue, labelKeys, labelValues)
+	require.NotNil(t, m)
+
+	m = intCumulative("cpu_utilized", "Count", nil, labelKeys, labelValues)
+	require.Nil(t, m)
+
+}
