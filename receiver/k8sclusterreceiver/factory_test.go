@@ -103,8 +103,8 @@ func (n nopHostWithExporters) GetExtensions() map[configmodels.Extension]compone
 func (n nopHostWithExporters) GetExporters() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
 	return map[configmodels.DataType]map[configmodels.Exporter]component.Exporter{
 		configmodels.MetricsDataType: {
-			mockExporterConfig{ExporterName: "exampleexporter/withoutmetadata"}: MockExporter{},
-			mockExporterConfig{ExporterName: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
+			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withoutmetadata"}: MockExporter{},
+			&configmodels.ExporterSettings{TypeVal: "exampleexporter", NameVal: "exampleexporter/withmetadata"}:    mockExporterWithK8sMetadata{},
 		},
 	}
 }
