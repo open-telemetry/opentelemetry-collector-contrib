@@ -79,7 +79,7 @@ func (kp *kubernetesprocessor) ProcessTraces(ctx context.Context, td pdata.Trace
 			continue
 		}
 
-		_ = kp.processResource(ctx, rs.Resource(), k8sIPFromAttributes())
+		kp.processResource(ctx, rs.Resource(), k8sIPFromAttributes())
 	}
 
 	return td, nil
@@ -94,19 +94,20 @@ func (kp *kubernetesprocessor) ProcessMetrics(ctx context.Context, md pdata.Metr
 			continue
 		}
 
-		_ = kp.processResource(ctx, ms.Resource(), k8sIPFromAttributes(), k8sIPFromHostnameAttributes())
+		kp.processResource(ctx, ms.Resource(), k8sIPFromAttributes(), k8sIPFromHostnameAttributes())
 	}
 
 	return md, nil
 }
 
-func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, attributeExtractors ...ipExtractor) error {
+func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, attributeExtractors ...ipExtractor) {
 	var podIP string
 
 	if !resource.IsNil() {
 		for _, extractor := range attributeExtractors {
-			if podIP == "" {
-				podIP = extractor(resource.Attributes())
+			podIP = extractor(resource.Attributes())
+			if podIP != "" {
+				break
 			}
 		}
 	}
@@ -118,35 +119,32 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		}
 	}
 
-	if podIP != "" {
-		if resource.IsNil() {
-			resource.InitEmpty()
-		}
-		resource.Attributes().InsertString(k8sIPLabelName, podIP)
+	// If IP is still not available by this point, nothing can be tagged here. Return.
+	if podIP == "" {
+		return
 	}
+
+	if resource.IsNil() {
+		resource.InitEmpty()
+	}
+	resource.Attributes().InsertString(k8sIPLabelName, podIP)
 
 	// Don't invoke any k8s client functionality in passthrough mode.
 	// Just tag the IP and forward the batch.
 	if kp.passthroughMode {
-		return nil
+		return
 	}
 
 	// add k8s tags to resource
 	attrsToAdd := kp.getAttributesForPodIP(podIP)
 	if len(attrsToAdd) == 0 {
-		return nil
-	}
-
-	if resource.IsNil() {
-		resource.InitEmpty()
+		return
 	}
 
 	attrs := resource.Attributes()
 	for k, v := range attrsToAdd {
 		attrs.InsertString(k, v)
 	}
-
-	return nil
 }
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
