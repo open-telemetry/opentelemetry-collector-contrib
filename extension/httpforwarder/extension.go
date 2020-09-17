@@ -39,7 +39,7 @@ var _ component.ServiceExtension = (*httpForwarder)(nil)
 func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	listener, err := h.config.Ingress.ToListener()
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %w", h.config.Egress.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", h.config.Ingress.Endpoint, err)
 	}
 
 	handler := http.NewServeMux()
