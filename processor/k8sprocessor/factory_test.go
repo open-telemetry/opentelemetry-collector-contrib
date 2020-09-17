@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
@@ -33,26 +34,32 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
+
+	realClient := kubeClientProvider
 	kubeClientProvider = newFakeClient
+
 	cfg := factory.CreateDefaultConfig()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, nil)
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, nil)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, nil)
+	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, nil)
+	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
+
+	// Switch it back so other tests run afterwards will not fail on unexpected state
+	kubeClientProvider = realClient
 }
