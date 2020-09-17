@@ -22,8 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -156,8 +155,8 @@ func TestConfigBuilderFunctions(t *testing.T) {
 							JobName:         "prometheus_exec",
 							HonorLabels:     false,
 							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:9104")},
@@ -205,8 +204,8 @@ func TestConfigBuilderFunctions(t *testing.T) {
 							JobName:         "mysqld",
 							HonorLabels:     false,
 							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:9104")},
@@ -259,8 +258,8 @@ func TestConfigBuilderFunctions(t *testing.T) {
 							JobName:         "postgres/test",
 							HonorLabels:     false,
 							HonorTimestamps: true,
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:0")},
