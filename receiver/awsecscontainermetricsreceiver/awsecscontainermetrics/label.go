@@ -24,10 +24,10 @@ func containerLabelKeysAndValues(cm ContainerMetadata) ([]*metricspb.LabelKey, [
 	labelKeys := make([]*metricspb.LabelKey, 0, 3)
 	labelValues := make([]*metricspb.LabelValue, 0, 3)
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.container-name"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.name"})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.ContainerName, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-id"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.id"})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerID, HasValue: true})
 
 	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-name"})
