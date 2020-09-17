@@ -72,6 +72,10 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 		forwarderRequest.Header.Add(k, v)
 	}
 
+	// Add "Via" header for tracking purposes on both the outgoing requests and responses.
+	// See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Via.
+	addViaHeader(forwarderRequest.Header, request.Proto, request.Host)
+
 	response, err := h.httpClient.Do(forwarderRequest)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusBadGateway)
@@ -83,8 +87,9 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 	for k := range response.Header {
 		writer.Header().Set(k, response.Header.Get(k))
 	}
-	writer.WriteHeader(response.StatusCode)
+	addViaHeader(writer.Header(), response.Proto, request.Host)
 
+	writer.WriteHeader(response.StatusCode)
 	written, err := io.Copy(writer, response.Body)
 	if err != nil {
 		h.logger.Warn("Error writing HTTP response message", zap.Error(err))
@@ -93,6 +98,10 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 	if response.ContentLength != written {
 		h.logger.Warn("Response from target not fully copied, body might be corrupted")
 	}
+}
+
+func addViaHeader(header http.Header, protocol string, host string) {
+	header.Add("Via", fmt.Sprintf("%s %s", protocol, host))
 }
 
 func newHTTPForwarder(config *Config, logger *zap.Logger) (component.ServiceExtension, error) {

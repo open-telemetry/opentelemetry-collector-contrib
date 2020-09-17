@@ -171,6 +171,9 @@ func TestExtension(t *testing.T) {
 					assert.Equal(t, v, got)
 				}
 
+				// Assert Via header added by the forwarder on all requests.
+				assert.Equal(t, fmt.Sprintf("%s %s", r.Proto, listenAt), r.Header.Get("Via"))
+
 				for k, v := range test.expectedHeaders {
 					w.Header().Set(k, v)
 				}
@@ -210,6 +213,7 @@ func TestExtension(t *testing.T) {
 			assert.Equal(t, test.expectedbackendStatusCode, response.StatusCode)
 			if !test.requestErrorAtForwarder {
 				assert.Equal(t, string(test.expectedBackendResponseBody), string(readBody(response.Body)))
+				assert.Equal(t, fmt.Sprintf("%s %s", response.Proto, listenAt), response.Header.Get("Via"))
 			}
 
 			// Assert headers from target exist in response.
