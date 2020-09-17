@@ -119,9 +119,10 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 		},
 	}
 
-	receiverSettings := &configmodels.ReceiverSettings{}
-	receiverSettings.SetType(typeStr)
-	receiverSettings.SetName(cfg.Name())
+	receiverSettings := &configmodels.ReceiverSettings{
+		TypeVal: typeStr,
+		NameVal: cfg.Name(),
+	}
 
 	return &prometheusreceiver.Config{
 		ReceiverSettings: *receiverSettings,
