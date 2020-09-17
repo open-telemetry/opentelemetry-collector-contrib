@@ -47,6 +47,7 @@ func TestExtension(t *testing.T) {
 		config                      *Config
 		expectedbackendStatusCode   int
 		expectedBackendResponseBody []byte
+		expectedHeaders             map[string]string
 		httpErrorFromBackend        bool
 		requestErrorAtForwarder     bool
 		clientRequestArgs           clientRequestArgs
@@ -61,6 +62,9 @@ func TestExtension(t *testing.T) {
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world"),
+			expectedHeaders: map[string]string{
+				"header": "value",
+			},
 			clientRequestArgs: clientRequestArgs{
 				method: "GET",
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
@@ -84,6 +88,9 @@ func TestExtension(t *testing.T) {
 			},
 			expectedbackendStatusCode:   http.StatusAccepted,
 			expectedBackendResponseBody: []byte("hello world with additional headers"),
+			expectedHeaders: map[string]string{
+				"header": "value",
+			},
 			clientRequestArgs: clientRequestArgs{
 				method: "PUT",
 				url:    fmt.Sprintf("http://%s/api/dosomething", listenAt),
@@ -164,6 +171,9 @@ func TestExtension(t *testing.T) {
 					assert.Equal(t, v, got)
 				}
 
+				for k, v := range test.expectedHeaders {
+					w.Header().Set(k, v)
+				}
 				w.WriteHeader(test.expectedbackendStatusCode)
 				w.Write(test.expectedBackendResponseBody)
 			}))
@@ -200,6 +210,12 @@ func TestExtension(t *testing.T) {
 			assert.Equal(t, test.expectedbackendStatusCode, response.StatusCode)
 			if !test.requestErrorAtForwarder {
 				assert.Equal(t, string(test.expectedBackendResponseBody), string(readBody(response.Body)))
+			}
+
+			// Assert headers from target exist in response.
+			for k, v := range test.expectedHeaders {
+				got := response.Header.Get(k)
+				assert.Equal(t, v, got)
 			}
 
 			require.NoError(t, hf.Shutdown(ctx))

@@ -60,13 +60,10 @@ func (h *httpForwarder) Shutdown(_ context.Context) error {
 }
 
 func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *http.Request) {
-	// Prepare new URL with value of final destination.
-	rawURL := fmt.Sprintf("%s://%s%s", h.forwardTo.Scheme, h.forwardTo.Host, request.RequestURI)
-	url, _ := url.Parse(rawURL)
-
 	forwarderRequest := request.Clone(request.Context())
-	forwarderRequest.URL = url
-	forwarderRequest.Host = url.Host
+	forwarderRequest.URL.Host = h.forwardTo.Host
+	forwarderRequest.URL.Scheme = h.forwardTo.Scheme
+	forwarderRequest.Host = h.forwardTo.Host
 	// Clear RequestURI to avoid getting "http: Request.RequestURI can't be set in client requests" error.
 	forwarderRequest.RequestURI = ""
 
@@ -83,10 +80,18 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 	defer response.Body.Close()
 
 	// Copy over response from the final destination.
+	for k := range response.Header {
+		writer.Header().Set(k, response.Header.Get(k))
+	}
 	writer.WriteHeader(response.StatusCode)
-	_, err = io.Copy(writer, response.Body)
+
+	written, err := io.Copy(writer, response.Body)
 	if err != nil {
 		h.logger.Warn("Error writing HTTP response message", zap.Error(err))
+	}
+
+	if response.ContentLength != written {
+		h.logger.Warn("Response from target not fully copied, body might be corrupted")
 	}
 }
 
