@@ -22,8 +22,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	promconfig "github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -90,8 +89,8 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 						JobName:         "test",
 						HonorLabels:     false,
 						HonorTimestamps: true,
-						ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-							StaticConfigs: []*targetgroup.Group{
+						ServiceDiscoveryConfigs: discovery.Configs{
+							&discovery.StaticConfig{
 								{
 									Targets: []model.LabelSet{
 										{model.AddressLabel: model.LabelValue("localhost:9104")},
