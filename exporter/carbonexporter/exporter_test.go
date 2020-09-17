@@ -80,6 +80,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
+	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
 	smallBatch := internaldata.OCToMetrics(consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge(
