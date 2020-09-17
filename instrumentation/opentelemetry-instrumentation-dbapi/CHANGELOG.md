@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.13b0
+
+Released 2020-09-17
+
 - bugfix: cursors and connections now produce spans when used with context managers
   ([#1028](https://github.com/open-telemetry/opentelemetry-python/pull/1028))
 - Drop support for Python 3.4
