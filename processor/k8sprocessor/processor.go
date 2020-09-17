@@ -16,12 +16,10 @@ package k8sprocessor
 
 import (
 	"context"
-	"net"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -153,40 +151,4 @@ func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]strin
 		return nil
 	}
 	return pod.Attributes
-}
-
-type ipExtractor func(attrs pdata.AttributeMap) string
-
-// k8sIPFromAttributes checks if the application, a collector/agent or a prior
-// processor has already annotated the batch with IP and if so, uses it
-func k8sIPFromAttributes() ipExtractor {
-	return func(attrs pdata.AttributeMap) string {
-		ip := stringAttributeFromMap(attrs, k8sIPLabelName)
-		if ip == "" {
-			ip = stringAttributeFromMap(attrs, clientIPLabelName)
-		}
-		return ip
-	}
-}
-
-// k8sIPFromHostnameAttributes leverages the observation that most of the metric receivers
-// uses "host.hostname" resource label to identify metrics origin. In k8s environment,
-// it's set to a pod IP address. If the value doesn't represent an IP address, we skip it.
-func k8sIPFromHostnameAttributes() ipExtractor {
-	return func(attrs pdata.AttributeMap) string {
-		hostname := stringAttributeFromMap(attrs, conventions.AttributeHostHostname)
-		if net.ParseIP(hostname) != nil {
-			return hostname
-		}
-		return ""
-	}
-}
-
-func stringAttributeFromMap(attrs pdata.AttributeMap, key string) string {
-	if val, ok := attrs.Get(key); ok {
-		if val.Type() == pdata.AttributeValueSTRING {
-			return val.StringVal()
-		}
-	}
-	return ""
 }
