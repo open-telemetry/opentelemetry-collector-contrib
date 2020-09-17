@@ -23,8 +23,7 @@ import (
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -102,8 +101,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 							HonorTimestamps: true,
 							Scheme:          "http",
 							MetricsPath:     "/metric",
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -144,8 +143,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},
@@ -188,8 +187,8 @@ func TestGetPrometheusConfig(t *testing.T) {
 							ScrapeTimeout:   model.Duration(10 * time.Second),
 							MetricsPath:     "/metrics",
 							Scheme:          "https",
-							ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-								StaticConfigs: []*targetgroup.Group{
+							ServiceDiscoveryConfigs: discovery.Configs{
+								&discovery.StaticConfig{
 									{
 										Targets: []model.LabelSet{
 											{model.AddressLabel: model.LabelValue("localhost:1234")},

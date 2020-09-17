@@ -26,8 +26,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -109,8 +108,8 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig.HonorTimestamps = true
 
 	// Set the proper target by creating one target inside a single target group (this is how Prometheus wants its scrape config)
-	scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
-		StaticConfigs: []*targetgroup.Group{
+	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+		&discovery.StaticConfig{
 			{
 				Targets: []model.LabelSet{
 					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.Port))},
@@ -206,7 +205,8 @@ func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, h
 			return nil, fmt.Errorf("generateRandomPort() error - killing this single process/receiver: %w", err)
 		}
 
-		per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
+		staticConfig := per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfigs[0].(*discovery.StaticConfig)
+		(*staticConfig)[0].Targets = []model.LabelSet{
 			{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", currentPort))},
 		}
 	}
