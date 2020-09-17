@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.13b0
+
+Released 2020-09-17
+
 - Add support for OTEL_EXPORTER_ZIPKIN_ENDPOINT env var. As part of this change, the 
   configuration of the ZipkinSpanExporter exposes a `url` argument to replace `host_name`,
   `port`, `protocol`, `endpoint`. This brings this implementation inline with other
