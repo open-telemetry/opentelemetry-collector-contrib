@@ -29,6 +29,10 @@ func TestContainerLabelKeysAndValues(t *testing.T) {
 	k, v := containerLabelKeysAndValues(cm)
 	require.EqualValues(t, ContainerMetricsLabelLen, len(k))
 	require.EqualValues(t, ContainerMetricsLabelLen, len(v))
+
+	require.EqualValues(t, "container-1", v[0].Value)
+	require.EqualValues(t, "001", v[1].Value)
+	require.EqualValues(t, "docker-container-1", v[2].Value)
 }
 
 func TestTaskLabelKeysAndValues(t *testing.T) {
@@ -36,11 +40,17 @@ func TestTaskLabelKeysAndValues(t *testing.T) {
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
-		Revision: "task-def-version",
+		Revision: "task-def-version-1",
 	}
 	k, v := taskLabelKeysAndValues(tm)
 	require.EqualValues(t, TaskMetricsLabelLen, len(k))
 	require.EqualValues(t, TaskMetricsLabelLen, len(v))
+
+	require.EqualValues(t, "cluster-1", v[0].Value)
+	require.EqualValues(t, "arn:aws:some-value/001", v[1].Value)
+	require.EqualValues(t, "001", v[2].Value)
+	require.EqualValues(t, "task-def-family-1", v[3].Value)
+	require.EqualValues(t, "task-def-version-1", v[4].Value)
 }
 
 func TestGetTaskIDFromARN(t *testing.T) {
