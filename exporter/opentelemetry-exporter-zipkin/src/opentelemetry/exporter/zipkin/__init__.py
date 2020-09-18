@@ -183,6 +183,15 @@ class ZipkinSpanExporter(SpanExporter):
                     "otel.instrumentation_library.version"
                 ] = span.instrumentation_info.version
 
+            if span.status is not None:
+                zipkin_span["tags"][
+                    "otel.status_code"
+                ] = span.status.canonical_code.value
+                if span.status.description is not None:
+                    zipkin_span["tags"][
+                        "otel.status_description"
+                    ] = span.status.description
+
             if context.trace_flags.sampled:
                 zipkin_span["debug"] = True
 

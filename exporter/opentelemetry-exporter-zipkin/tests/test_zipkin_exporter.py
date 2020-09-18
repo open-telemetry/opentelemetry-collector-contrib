@@ -24,6 +24,7 @@ from opentelemetry.sdk.trace import Resource
 from opentelemetry.sdk.trace.export import SpanExportResult
 from opentelemetry.sdk.util.instrumentation import InstrumentationInfo
 from opentelemetry.trace import TraceFlags
+from opentelemetry.trace.status import Status, StatusCanonicalCode
 
 
 class MockResponse:
@@ -174,6 +175,9 @@ class TestZipkinSpanExporter(unittest.TestCase):
         otel_spans[0].set_attribute("key_bool", False)
         otel_spans[0].set_attribute("key_string", "hello_world")
         otel_spans[0].set_attribute("key_float", 111.22)
+        otel_spans[0].set_status(
+            Status(StatusCanonicalCode.UNKNOWN, "Example description")
+        )
         otel_spans[0].end(end_time=end_times[0])
 
         otel_spans[1].start(start_time=start_times[1])
@@ -213,6 +217,8 @@ class TestZipkinSpanExporter(unittest.TestCase):
                     "key_bool": "False",
                     "key_string": "hello_world",
                     "key_float": "111.22",
+                    "otel.status_code": 2,
+                    "otel.status_description": "Example description",
                 },
                 "annotations": [
                     {
@@ -231,7 +237,10 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "duration": durations[1] // 10 ** 3,
                 "localEndpoint": local_endpoint,
                 "kind": None,
-                "tags": {"key_resource": "some_resource"},
+                "tags": {
+                    "key_resource": "some_resource",
+                    "otel.status_code": 0,
+                },
                 "annotations": None,
             },
             {
@@ -245,6 +254,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "tags": {
                     "key_string": "hello_world",
                     "key_resource": "some_resource",
+                    "otel.status_code": 0,
                 },
                 "annotations": None,
             },
@@ -259,6 +269,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "tags": {
                     "otel.instrumentation_library.name": "name",
                     "otel.instrumentation_library.version": "version",
+                    "otel.status_code": 0,
                 },
                 "annotations": None,
             },
@@ -324,7 +335,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "duration": duration // 10 ** 3,
                 "localEndpoint": local_endpoint,
                 "kind": None,
-                "tags": {},
+                "tags": {"otel.status_code": 0},
                 "annotations": None,
                 "debug": True,
                 "parentId": "0aaaaaaaaaaaaaaa",
