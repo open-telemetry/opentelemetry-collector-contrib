@@ -18,51 +18,52 @@ import (
 	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 func containerLabelKeysAndValues(cm ContainerMetadata) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
-	labelKeys := make([]*metricspb.LabelKey, 0, 3)
-	labelValues := make([]*metricspb.LabelValue, 0, 3)
+	labelKeys := make([]*metricspb.LabelKey, 0, ContainerMetricsLabelLen)
+	labelValues := make([]*metricspb.LabelValue, 0, ContainerMetricsLabelLen)
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.name"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: conventions.AttributeContainerName})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.ContainerName, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "container.id"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: conventions.AttributeContainerID})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerID, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.docker-name"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSDockerName})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: cm.DockerName, HasValue: true})
 
 	return labelKeys, labelValues
 }
 
 func taskLabelKeysAndValues(tm TaskMetadata) ([]*metricspb.LabelKey, []*metricspb.LabelValue) {
-	labelKeys := make([]*metricspb.LabelKey, 0, 6)
-	labelValues := make([]*metricspb.LabelValue, 0, 6)
+	labelKeys := make([]*metricspb.LabelKey, 0, TaskMetricsLabelLen)
+	labelValues := make([]*metricspb.LabelValue, 0, TaskMetricsLabelLen)
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.cluster"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSCluster})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Cluster, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-arn"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSTaskARN})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.TaskARN, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-id"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSTaskID})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: getTaskIDFromARN(tm.TaskARN), HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-definition-family"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSTaskFamily})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Family, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.task-definition-version"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSTaskRevesion})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: tm.Revision, HasValue: true})
 
-	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: "ecs.service"})
+	labelKeys = append(labelKeys, &metricspb.LabelKey{Key: AttributeECSServiceName})
 	labelValues = append(labelValues, &metricspb.LabelValue{Value: "undefined", HasValue: true})
 
 	return labelKeys, labelValues
 }
 
 func getTaskIDFromARN(arn string) string {
-	if !strings.HasPrefix(arn, "arn:aws") || arn == "" {
+	if arn == "" || !strings.HasPrefix(arn, "arn:aws") {
 		return ""
 	}
 	splits := strings.Split(arn, "/")

@@ -27,8 +27,8 @@ func TestContainerLabelKeysAndValues(t *testing.T) {
 		DockerName:    "docker-container-1",
 	}
 	k, v := containerLabelKeysAndValues(cm)
-	require.EqualValues(t, 3, len(k))
-	require.EqualValues(t, 3, len(v))
+	require.EqualValues(t, ContainerMetricsLabelLen, len(k))
+	require.EqualValues(t, ContainerMetricsLabelLen, len(v))
 }
 
 func TestTaskLabelKeysAndValues(t *testing.T) {
@@ -39,8 +39,8 @@ func TestTaskLabelKeysAndValues(t *testing.T) {
 		Revision: "task-def-version",
 	}
 	k, v := taskLabelKeysAndValues(tm)
-	require.EqualValues(t, 6, len(k))
-	require.EqualValues(t, 6, len(v))
+	require.EqualValues(t, TaskMetricsLabelLen, len(k))
+	require.EqualValues(t, TaskMetricsLabelLen, len(v))
 }
 
 func TestGetTaskIDFromARN(t *testing.T) {
