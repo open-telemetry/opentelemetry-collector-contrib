@@ -26,7 +26,13 @@ from opentelemetry.sdk.trace.export import SpanExporter, SpanExportResult
 from opentelemetry.trace.status import StatusCanonicalCode
 
 # pylint:disable=relative-beyond-top-level
-from .constants import DD_ORIGIN, ENV_KEY, SAMPLE_RATE_METRIC_KEY, VERSION_KEY
+from .constants import (
+    DD_ORIGIN,
+    ENV_KEY,
+    SAMPLE_RATE_METRIC_KEY,
+    SERVICE_NAME_TAG,
+    VERSION_KEY,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +113,7 @@ class DatadogSpanExporter(SpanExporter):
             self.agent_writer.stop()
             self.agent_writer.join(self.agent_writer.exit_timeout)
 
+    # pylint: disable=too-many-locals
     def _translate_to_datadog(self, spans):
         datadog_spans = []
 
@@ -119,10 +126,16 @@ class DatadogSpanExporter(SpanExporter):
             # duration.
             tracer = None
 
+            # extract resource attributes to be used as tags as well as potential service name
+            [
+                resource_tags,
+                resource_service_name,
+            ] = _extract_tags_from_resource(span.resource)
+
             datadog_span = DatadogSpan(
                 tracer,
                 _get_span_name(span),
-                service=self.service,
+                service=resource_service_name or self.service,
                 resource=_get_resource(span),
                 span_type=_get_span_type(span),
                 trace_id=trace_id,
@@ -140,7 +153,12 @@ class DatadogSpanExporter(SpanExporter):
                     datadog_span.set_tag("error.msg", exc_val)
                     datadog_span.set_tag("error.type", exc_type)
 
-            datadog_span.set_tags(span.attributes)
+            # combine resource attributes and span attributes, don't modify existing span attributes
+            combined_span_tags = {}
+            combined_span_tags.update(resource_tags)
+            combined_span_tags.update(span.attributes)
+
+            datadog_span.set_tags(combined_span_tags)
 
             # add configured env tag
             if self.env is not None:
@@ -282,3 +300,19 @@ def _parse_tags_str(tags_str):
             parsed_tags[key] = value
 
     return parsed_tags
+
+
+def _extract_tags_from_resource(resource):
+    """Parse tags from resource.attributes, except service.name which
+    has special significance within datadog"""
+    tags = {}
+    service_name = None
+    if not (resource and getattr(resource, "attributes", None)):
+        return [tags, service_name]
+
+    for attribute_key, attribute_value in resource.attributes.items():
+        if attribute_key == SERVICE_NAME_TAG:
+            service_name = attribute_value
+        else:
+            tags[attribute_key] = attribute_value
+    return [tags, service_name]

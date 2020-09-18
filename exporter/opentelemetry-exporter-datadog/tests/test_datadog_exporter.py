@@ -23,7 +23,7 @@ from ddtrace.internal.writer import AgentWriter
 from opentelemetry import trace as trace_api
 from opentelemetry.exporter import datadog
 from opentelemetry.sdk import trace
-from opentelemetry.sdk.trace import sampling
+from opentelemetry.sdk.trace import Resource, sampling
 from opentelemetry.sdk.util.instrumentation import InstrumentationInfo
 
 
@@ -144,6 +144,17 @@ class TestDatadogSpanExporter(unittest.TestCase):
         # pylint: disable=invalid-name
         self.maxDiff = None
 
+        resource = Resource(
+            attributes={
+                "key_resource": "some_resource",
+                "service.name": "resource_service_name",
+            }
+        )
+
+        resource_without_service = Resource(
+            attributes={"conflicting_key": "conflicting_value"}
+        )
+
         span_names = ("test1", "test2", "test3")
         trace_id = 0x6E0C63257DE34C926F9EFCD03927272E
         trace_id_low = 0x6F9EFCD03927272E
@@ -183,17 +194,24 @@ class TestDatadogSpanExporter(unittest.TestCase):
                 parent=parent_context,
                 kind=trace_api.SpanKind.CLIENT,
                 instrumentation_info=instrumentation_info,
+                resource=Resource({}),
             ),
             trace.Span(
                 name=span_names[1],
                 context=parent_context,
                 parent=None,
                 instrumentation_info=instrumentation_info,
+                resource=resource_without_service,
             ),
             trace.Span(
-                name=span_names[2], context=other_context, parent=None,
+                name=span_names[2],
+                context=other_context,
+                parent=None,
+                resource=resource,
             ),
         ]
+
+        otel_spans[1].set_attribute("conflicting_key", "original_value")
 
         otel_spans[0].start(start_time=start_times[0])
         otel_spans[0].end(end_time=end_times[0])
@@ -234,7 +252,12 @@ class TestDatadogSpanExporter(unittest.TestCase):
                 duration=durations[1],
                 error=0,
                 service="test-service",
-                meta={"env": "test", "team": "testers", "version": "0.0.1"},
+                meta={
+                    "env": "test",
+                    "team": "testers",
+                    "version": "0.0.1",
+                    "conflicting_key": "original_value",
+                },
             ),
             dict(
                 trace_id=trace_id_low,
@@ -245,8 +268,13 @@ class TestDatadogSpanExporter(unittest.TestCase):
                 start=start_times[2],
                 duration=durations[2],
                 error=0,
-                service="test-service",
-                meta={"env": "test", "team": "testers", "version": "0.0.1"},
+                service="resource_service_name",
+                meta={
+                    "env": "test",
+                    "team": "testers",
+                    "version": "0.0.1",
+                    "key_resource": "some_resource",
+                },
             ),
         ]
 
