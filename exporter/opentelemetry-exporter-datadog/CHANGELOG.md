@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add support for span resource labels and service name 
+
 ## Version 0.12b0
 
 Released 2020-08-14
