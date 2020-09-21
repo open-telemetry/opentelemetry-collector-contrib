@@ -1,0 +1,50 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  datadog/api:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    metrics:
+      mode: agentless
+      namespace: opentelemetry
+      report_percentiles: false
+
+  datadog/dogstatsd:
+    metrics:
+      mode: dogstatsd
+
+  datadog/dogstatsd/config:
+    metrics:
+      mode: dogstatsd
+      dogstatsd:
+        endpoint: "localhost:5000"
+        telemetry: false
+        
+  datadog/invalid:
+    metrics:
+      mode: invalid
+
+  datadog/agentless/invalid:
+    metrics:
+      mode: agentless
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog/api, datadog/dogstatsd]
