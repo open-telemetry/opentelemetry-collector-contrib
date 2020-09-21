@@ -139,6 +139,24 @@ func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) er
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (emf *emfExporter) Shutdown(ctx context.Context) error {
+	emf.pusherMapLock.Lock()
+	defer emf.pusherMapLock.Unlock()
+
+	var err error
+	for _, streamToPusherMap := range emf.groupStreamToPusherMap {
+		for _, pusher := range streamToPusherMap {
+			if pusher != nil {
+				returnError := pusher.ForceFlush()
+				if returnError != nil && !emf.config.(*Config).LocalMode {
+					err = wrapErrorIfBadRequest(&returnError)
+				}
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -141,8 +141,6 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 		logEvent := NewLogEvent(
 			metricCreationTime,
 			string(pleMsg),
-			"",
-			0,
 		)
 		logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 		ples = append(ples, logEvent)

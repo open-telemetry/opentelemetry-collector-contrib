@@ -14,13 +14,13 @@ The following exporter configuration parameters are supported.
 
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
-| `log_group_name`  | Customized log group name                                              |         |
-| `log_stream_name` | Customized log stream name                                             |         |
-| `namespace`       | Customized CloudWatch metrics namespace                                |         |
+| `log_group_name`  | Customized log group name                                              |"/metrics/default"|
+| `log_stream_name` | Customized log stream name                                             |"otel-stream"|
+| `namespace`       | Customized CloudWatch metrics namespace                                | "default" |
 | `endpoint`        | Optionally override the default CloudWatch service endpoint.           |         |
 | `no_verify_ssl`   | Enable or disable TLS certificate verification.                        | false   |
 | `proxy_address`   | Upload Structured Logs to AWS CloudWatch through a proxy.              |         |
-| `region`          | Send Structured Logs to AWS CloudWatch in a specific region.           |         |
+| `region`          | Send Structured Logs to AWS CloudWatch in a specific region.           | determined by metadata |
 | `local_mode`      | Local mode to skip EC2 instance metadata check.                        | false   |
 | `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |

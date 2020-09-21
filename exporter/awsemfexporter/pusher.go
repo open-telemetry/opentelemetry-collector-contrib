@@ -42,10 +42,6 @@ const (
 //Struct to present a log event.
 type LogEvent struct {
 	InputLogEvent *cloudwatchlogs.InputLogEvent
-	//The file name where this log event comes from
-	FileName string
-	//The offset for the input file
-	FilePosition int64
 	//The time which log generated.
 	LogGeneratedTime time.Time
 }
@@ -68,13 +64,11 @@ func (logEvent *LogEvent) truncateIfNeeded() bool {
 
 //Create a new log event
 //logType will be propagated to logEventBatch and used by pusher to determine which client to call PutLogEvent
-func NewLogEvent(timestampInMillis int64, message string, filename string, position int64) *LogEvent {
+func NewLogEvent(timestampInMillis int64, message string) *LogEvent {
 	logEvent := &LogEvent{
 		InputLogEvent: &cloudwatchlogs.InputLogEvent{
 			Timestamp: aws.Int64(timestampInMillis),
 			Message:   aws.String(message)},
-		FileName:     filename,
-		FilePosition: position,
 	}
 	return logEvent
 }
@@ -82,10 +76,6 @@ func NewLogEvent(timestampInMillis int64, message string, filename string, posit
 //Struct to present a log event batch
 type LogEventBatch struct {
 	PutLogEventsInput *cloudwatchlogs.PutLogEventsInput
-	//the lastest file name for this log event.
-	FileName string
-	//the latest offset for this log file.
-	FilePosition int64
 	//the total bytes already in this log event batch
 	byteTotal int
 	//min timestamp recorded in this log event batch (ms)
@@ -303,7 +293,7 @@ func (p *pusher) addLogEvent(logEvent *LogEvent) error {
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*1e6).UTC()
 	duration := currentTime.Sub(utcTime).Hours()
 	if duration > 24*14 || duration < -2 {
-		log.Printf("E! logpusher: the log entry in (%v/%v) with timestamp (%v) comparing to the current time (%v) is older than 14 days or more than 2 hours in the future. Discard the log entry.", p.logGroupName, logEvent.FileName, utcTime, currentTime)
+		log.Printf("E! logpusher: the log entry in (%v) with timestamp (%v) comparing to the current time (%v) is older than 14 days or more than 2 hours in the future. Discard the log entry.", p.logGroupName, utcTime, currentTime)
 		return err
 	}
 
@@ -315,8 +305,6 @@ func (p *pusher) addLogEvent(logEvent *LogEvent) error {
 
 	logEventBatch.PutLogEventsInput.LogEvents = append(logEventBatch.PutLogEventsInput.LogEvents, logEvent.InputLogEvent)
 	logEventBatch.byteTotal += logEvent.eventPayloadBytes()
-	logEventBatch.FileName = logEvent.FileName
-	logEventBatch.FilePosition = logEvent.FilePosition
 	if logEventBatch.minTimestampInMillis == 0 || logEventBatch.minTimestampInMillis > *logEvent.InputLogEvent.Timestamp {
 		logEventBatch.minTimestampInMillis = *logEvent.InputLogEvent.Timestamp
 	}

@@ -99,7 +99,6 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 					e.Message(),
 					e.Error(),
 					e))
-				backoffSleep(i)
 				token = e.ExpectedSequenceToken
 				continue
 			case *cloudwatchlogs.DataAlreadyAcceptedException: //Skip batch if DataAlreadyAcceptedException happens
@@ -133,7 +132,6 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 						token = &tmpToken
 					}
 				}
-				backoffSleep(i)
 				continue
 			default:
 				// ThrottlingException is handled here because the type cloudwatch.ThrottlingException is not yet available in public SDK
