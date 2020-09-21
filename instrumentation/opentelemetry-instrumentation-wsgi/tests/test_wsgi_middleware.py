@@ -125,6 +125,23 @@ class TestWsgiApplication(WsgiTestBase):
         response = app(self.environ, self.start_response)
         self.validate_response(response)
 
+    def test_wsgi_not_recording(self):
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = mock_span
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            app = otel_wsgi.OpenTelemetryMiddleware(simple_wsgi)
+            # pylint: disable=W0612
+            response = app(self.environ, self.start_response)  # noqa: F841
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
+
     def test_wsgi_iterable(self):
         original_response = Response()
         iter_wsgi = create_iter_wsgi(original_response)
