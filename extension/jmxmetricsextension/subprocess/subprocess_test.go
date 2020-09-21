@@ -31,11 +31,27 @@ func TestSubprocessAndConfig(t *testing.T) {
 	require.Same(t, config, subprocess.config)
 	require.Same(t, logger, subprocess.logger)
 	require.NotNil(t, subprocess.Stdout)
+
+	require.Equal(t, *config.ShutdownTimeout, 5*time.Second)
+	require.Equal(t, *config.RestartDelay, 5*time.Second)
+}
+
+func TestConfigDurations(t *testing.T) {
+	logger := zap.NewNop()
+	restartDelay := 100 * time.Second
+	shutdownTimeout := 200 * time.Second
+	config := &Config{RestartDelay: &restartDelay, ShutdownTimeout: &shutdownTimeout}
+	subprocess := NewSubprocess(config, logger)
+	require.NotNil(t, subprocess)
+	require.Equal(t, *config.ShutdownTimeout, shutdownTimeout)
+	require.Equal(t, *config.RestartDelay, restartDelay)
 }
 
 func TestShutdownTimeout(t *testing.T) {
 	logger := zap.NewNop()
-	subprocess := NewSubprocess(nil, logger)
+	timeout := 10 * time.Millisecond
+	config := &Config{ShutdownTimeout: &timeout}
+	subprocess := NewSubprocess(config, logger)
 	require.NotNil(t, subprocess)
 
 	_, cancel := context.WithCancel(context.Background())
@@ -46,5 +62,6 @@ func TestShutdownTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	elapsed := int64(time.Since(t0))
-	require.GreaterOrEqual(t, elapsed, int64(5*time.Second))
+	require.GreaterOrEqual(t, elapsed, int64(10*time.Millisecond))
+	require.GreaterOrEqual(t, int64(20*time.Millisecond), elapsed)
 }

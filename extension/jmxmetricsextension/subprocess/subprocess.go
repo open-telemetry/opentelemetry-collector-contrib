@@ -36,6 +36,8 @@ type Config struct {
 	EnvironmentVariables map[string]string `mapstructure:"environment_variables"`
 	StdInContents        string            `mapstructure:"stdin_contents"`
 	RestartOnError       bool              `mapstructure:"restart_on_error"`
+	RestartDelay         *time.Duration    `mapstructure:"restart_delay"`
+	ShutdownTimeout      *time.Duration    `mapstructure:"shutdown_timeout"`
 }
 
 // exported to be used by jmx metrics extension
@@ -74,6 +76,15 @@ func (subprocess *Subprocess) Pid() int {
 
 // exported to be used by jmx metrics extension
 func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
+	if conf.RestartDelay == nil {
+		defaultRestartDelay := 5 * time.Second
+		conf.RestartDelay = &defaultRestartDelay
+	}
+	if conf.ShutdownTimeout == nil {
+		defaultShutdownTimeout := 5 * time.Second
+		conf.ShutdownTimeout = &defaultShutdownTimeout
+	}
+
 	return &Subprocess{
 		Stdout:         make(chan string),
 		pid:            &pid{pid: -1, pidLock: sync.Mutex{}},
@@ -83,9 +94,6 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 		sendToStdIn:    sendToStdIn,
 	}
 }
-
-// A global var that is available only for testing
-var restartDelay = 5 * time.Second
 
 const (
 	Starting     = "Starting"
@@ -115,7 +123,7 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 // Shutdown is invoked during service shutdown.
 func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	subprocess.cancel()
-	t := time.NewTimer(5 * time.Second)
+	t := time.NewTimer(*subprocess.config.ShutdownTimeout)
 
 	// Wait for the subprocess to exit or the timeout period to elapse
 	select {
@@ -127,6 +135,41 @@ func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+// A synchronization helper to ensure that signalWhenProcessReturned
+// doesn't write to a closed channel
+type processReturned struct {
+	ReturnedChan chan error
+	isOpenValue  *atomic.Value
+	lock         *sync.Mutex
+}
+
+func newProcessReturned() *processReturned {
+	pr := processReturned{
+		ReturnedChan: make(chan error),
+		isOpenValue:  &atomic.Value{},
+		lock:         &sync.Mutex{},
+	}
+	pr.isOpenValue.Store(true)
+	return &pr
+}
+
+func (pr *processReturned) signal(err error) {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	if pr.isOpenValue.Load().(bool) {
+		pr.ReturnedChan <- err
+	}
+}
+
+func (pr *processReturned) close() {
+	pr.lock.Lock()
+	defer pr.lock.Unlock()
+	if pr.isOpenValue.Load().(bool) {
+		close(pr.ReturnedChan)
+		pr.isOpenValue.Store(false)
+	}
+}
+
 // Core event loop
 func (subprocess *Subprocess) run(ctx context.Context) {
 	var cmd *exec.Cmd
@@ -135,10 +178,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 	var stdout io.ReadCloser
 
 	// writer is signalWhenProcessReturned() and closer is this loop, so we need synchronization
-	processReturned := make(chan error)
-	processReturnedOpen := &atomic.Value{}
-	processReturnedOpen.Store(true)
-	processReturnedLock := &sync.Mutex{}
+	processReturned := newProcessReturned()
 
 	state := Starting
 	for {
@@ -152,7 +192,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 				subprocess.envVars,
 			)
 
-			go collectStdout(stdout, subprocess.Stdout, subprocess.logger)
+			go collectStdout(bufio.NewScanner(stdout), subprocess.Stdout, subprocess.logger)
 
 			subprocess.logger.Debug("starting subprocess", zap.String("command", cmd.String()))
 			err = cmd.Start()
@@ -162,7 +202,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 			}
 			subprocess.pid.setPid(cmd.Process.Pid)
 
-			go signalWhenProcessReturned(cmd, processReturned, processReturnedLock, processReturnedOpen)
+			go signalWhenProcessReturned(cmd, processReturned)
 
 			state = Running
 		case Running:
@@ -174,7 +214,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 			}
 
 			select {
-			case err = <-processReturned:
+			case err = <-processReturned.ReturnedChan:
 				if err != nil && ctx.Err() == nil {
 					err = fmt.Errorf("unexpected shutdown: %w", err)
 					// We aren't supposed to shutdown yet so this is an error state.
@@ -182,10 +222,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 					continue
 				}
 				// We must close this channel or can wait indefinitely at ShuttingDown
-				processReturnedLock.Lock()
-				close(processReturned)
-				processReturnedOpen.Store(false)
-				processReturnedLock.Unlock()
+				processReturned.close()
 				state = ShuttingDown
 			case <-ctx.Done(): // context-based cancel.
 				state = ShuttingDown
@@ -197,24 +234,21 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 				state = Restarting
 			} else {
 				// We must close this channel or can wait indefinitely at ShuttingDown
-				processReturnedLock.Lock()
-				close(processReturned)
-				processReturnedOpen.Store(false)
-				processReturnedLock.Unlock()
+				processReturned.close()
 				state = ShuttingDown
 			}
 		case ShuttingDown:
 			if cmd.Process != nil {
 				cmd.Process.Signal(syscall.SIGTERM)
 			}
-			<-processReturned
+			<-processReturned.ReturnedChan
 			stdout.Close()
 			subprocess.pid.setPid(-1)
 			state = Stopped
 		case Restarting:
 			stdout.Close()
 			stdin.Close()
-			time.Sleep(restartDelay)
+			time.Sleep(*subprocess.config.RestartDelay)
 			state = Starting
 		case Stopped:
 			return
@@ -222,22 +256,14 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 	}
 }
 
-func signalWhenProcessReturned(cmd *exec.Cmd, processReturned chan<- error, lock *sync.Mutex, open *atomic.Value) {
+func signalWhenProcessReturned(cmd *exec.Cmd, pr *processReturned) {
 	err := cmd.Wait()
-	// we cannot close here as we may need to restart and channel persists in loop.
-	// here we ensure we only write to open channel
-	lock.Lock()
-	defer lock.Unlock()
-	if open.Load().(bool) {
-		processReturned <- err
-	}
+	pr.signal(err)
 }
 
-func collectStdout(stdout io.Reader, stdoutChan chan<- string, logger *zap.Logger) {
-	scanner := bufio.NewScanner(stdout)
-
-	for scanner.Scan() {
-		text := scanner.Text()
+func collectStdout(stdoutScanner *bufio.Scanner, stdoutChan chan<- string, logger *zap.Logger) {
+	for stdoutScanner.Scan() {
+		text := stdoutScanner.Text()
 		if text != "" {
 			stdoutChan <- text
 			logger.Debug(text)

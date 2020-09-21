@@ -43,16 +43,14 @@ sleep 60
 // prepareSubprocess will create a Subprocess based on a temporary script.
 // It returns a pointer to the pointer to psutil process info and a closure to set its
 // value from the running process once started.
-func prepareSubprocess(t *testing.T, conf *Config) (*Subprocess, **process.Process, func() bool, func()) {
+func prepareSubprocess(t *testing.T, conf *Config) (*Subprocess, **process.Process, func() bool) {
 	logCore, _ := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
 	scriptFile, err := ioutil.TempFile("", "subproc")
 	require.NoError(t, err)
 
-	cleanup := func() {
-		os.Remove(scriptFile.Name())
-	}
+	t.Cleanup(func() { os.Remove(scriptFile.Name()) })
 
 	_, err = scriptFile.Write([]byte(scriptContents))
 	require.NoError(t, err)
@@ -81,7 +79,7 @@ func prepareSubprocess(t *testing.T, conf *Config) (*Subprocess, **process.Proce
 		return false
 	}
 
-	return subprocess, &procInfo, findProcessInfo, cleanup
+	return subprocess, &procInfo, findProcessInfo
 }
 
 func requireDesiredStdout(t *testing.T, subprocess *Subprocess, desired string) {
@@ -105,13 +103,11 @@ func TestHappyPathIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo, cleanup := prepareSubprocess(t, &Config{})
-	defer cleanup()
-
+	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
-	require.Eventually(t, findProcessInfo, 30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	cmdline, err := (*procInfo).Cmdline()
@@ -124,13 +120,11 @@ func TestWithArgsIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo, cleanup := prepareSubprocess(t, &Config{Args: []string{"myArgs"}})
-	defer cleanup()
-
+	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{Args: []string{"myArgs"}})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
-	require.Eventually(t, findProcessInfo, 30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	cmdline, err := (*procInfo).Cmdline()
@@ -150,12 +144,10 @@ func TestWithEnvVarsIntegration(t *testing.T) {
 		},
 	}
 
-	subprocess, procInfo, findProcessInfo, cleanup := prepareSubprocess(t, config)
-	defer cleanup()
-
+	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, config)
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
-	require.Eventually(t, findProcessInfo, 30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	stdout := <-subprocess.Stdout
@@ -169,13 +161,12 @@ func TestWithAutoRestartIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo, cleanup := prepareSubprocess(t, &Config{RestartOnError: true})
-	defer cleanup()
-
+	restartDelay := 100 * time.Millisecond
+	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{RestartOnError: true, RestartDelay: &restartDelay})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
-	require.Eventually(t, findProcessInfo, 30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	cmdline, err := (*procInfo).Cmdline()
@@ -187,7 +178,7 @@ func TestWithAutoRestartIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should be restarted
-	require.Eventually(t, findProcessInfo, restartDelay+30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, restartDelay+5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	require.NotEqual(t, (*procInfo).Pid, oldProcPid)
@@ -198,13 +189,11 @@ func TestSendingStdinIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo, cleanup := prepareSubprocess(t, &Config{StdInContents: "mystdincontents"})
-	defer cleanup()
-
+	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{StdInContents: "mystdincontents"})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
-	require.Eventually(t, findProcessInfo, 30*time.Second, 10*time.Millisecond)
+	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	requireDesiredStdout(t, subprocess, "Stdin: mystdincontents")
@@ -246,7 +235,6 @@ func TestSubprocessBadExecIntegration(t *testing.T) {
 	logger := zap.New(logCore)
 
 	subprocess := NewSubprocess(&Config{ExecutablePath: "/does/not/exist"}, logger)
-
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
@@ -262,8 +250,10 @@ func TestSubprocessSuccessfullyReturnsIntegration(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, zap.NewNop())
-
+	// There is a race condition between writing from the stdout scanner and the closing of the stdout channel on
+	// process exit. Here we sleep before returning, but this will need to be addressed if short lived processes
+	// become an intended use case without forcing users to read stdout before closing.
+	subprocess := NewSubprocess(&Config{ExecutablePath: "sh", Args: []string{"-c", "echo finished; sleep .1"}}, zap.NewNop())
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
