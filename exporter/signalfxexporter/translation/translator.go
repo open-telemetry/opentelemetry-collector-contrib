@@ -185,6 +185,10 @@ type Rule struct {
 	// excluded by aggregation.
 	WithoutDimensions []string `mapstructure:"without_dimensions"`
 
+	// AddDimensions used by "rename_metrics" translation rule to add dimensions that are necessary for
+	// existing SFx content for desired metric name
+	AddDimensions map[string]string `mapstructure:"add_dimensions"`
+
 	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
 
@@ -337,9 +341,19 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 		case ActionRenameMetrics:
+			var additionalDimensions []*sfxpb.Dimension
+			if tr.AddDimensions != nil {
+				for k, v := range tr.AddDimensions {
+					additionalDimensions = append(additionalDimensions, &sfxpb.Dimension{Key: k, Value: v})
+				}
+			}
+
 			for _, dp := range processedDataPoints {
 				if newKey, ok := tr.Mapping[dp.Metric]; ok {
 					dp.Metric = newKey
+					if len(additionalDimensions) > 0 {
+						dp.Dimensions = append(dp.Dimensions, additionalDimensions...)
+					}
 				}
 			}
 		case ActionMultiplyInt:
