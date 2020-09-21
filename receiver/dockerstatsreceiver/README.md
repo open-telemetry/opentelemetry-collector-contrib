@@ -51,3 +51,6 @@ receivers:
       - another-*-container
     provide_per_core_cpu_metrics: true
 ```
+
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).

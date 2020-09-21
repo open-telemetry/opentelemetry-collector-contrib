@@ -17,6 +17,7 @@ package container
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -36,7 +37,7 @@ type ID string
 // Containers holds the set of running containers during the test.
 type Containers struct {
 	cli               client.CommonAPIClient
-	runningContainers []ID
+	runningContainers map[ID]Container
 	t                 *testing.T
 }
 
@@ -79,7 +80,7 @@ func New(t *testing.T) *Containers {
 		t.Fatalf("failed creating docker client from environment: %v", err)
 	}
 
-	ctx := &Containers{cli: cli, t: t}
+	ctx := &Containers{cli: cli, runningContainers: make(map[ID]Container), t: t}
 
 	t.Cleanup(func() {
 		ctx.Cleanup()
@@ -92,14 +93,8 @@ func New(t *testing.T) *Containers {
 // if called from New() but can also be called manually if needed. It is idempotent.
 func (c *Containers) Cleanup() {
 	for _, con := range c.runningContainers {
-		if err := c.cli.ContainerRemove(context.Background(), string(con), types.ContainerRemoveOptions{
-			RemoveVolumes: true,
-			Force:         true,
-		}); err != nil {
-			c.t.Logf("failed removing container %v: %v", con, err)
-		}
+		c.RemoveContainer(con)
 	}
-	c.runningContainers = nil
 	if err := c.cli.Close(); err != nil {
 		c.t.Logf("failed closing Docker connection: %v", err)
 	}
@@ -186,8 +181,8 @@ func (c *Containers) waitForPorts(con Container) {
 func (c *Containers) StartImage(image string, opts ...Option) Container {
 	c.pullImage(image)
 	created := c.createContainer(image)
-	c.runningContainers = append(c.runningContainers, ID(created.ID))
 	con := c.startContainer(created)
+	c.runningContainers[con.ID] = con
 
 	for _, opt := range opts {
 		opt(&con)
@@ -196,4 +191,19 @@ func (c *Containers) StartImage(image string, opts ...Option) Container {
 	c.waitForPorts(con)
 
 	return con
+}
+
+func (c *Containers) RemoveContainer(container Container) error {
+	err := c.cli.ContainerRemove(context.Background(), string(container.ID), types.ContainerRemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	})
+	if err != nil {
+		err = fmt.Errorf("failed removing container %v: %w", container.ID, err)
+		c.t.Log(err.Error())
+		return err
+	}
+	c.t.Logf("Removed container %v", container.ID)
+	delete(c.runningContainers, container.ID)
+	return nil
 }

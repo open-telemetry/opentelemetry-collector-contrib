@@ -83,17 +83,17 @@ func mergeKubernetesMetadataMaps(maps ...map[ResourceID]*KubernetesMetadata) map
 	return out
 }
 
-// KubernetesMetadataExporter provides an interface to implement
-// ConsumeKubernetesMetadata in Exporters that support metadata.
-type KubernetesMetadataExporter interface {
-	// ConsumeKubernetesMetadata will be invoked every time there's an
-	// update to a resource that results in one or more KubernetesMetadataUpdate.
-	ConsumeKubernetesMetadata(metadata []*KubernetesMetadataUpdate) error
+// MetadataExporter provides an interface to implement
+// ConsumeMetadata in Exporters that support metadata.
+type MetadataExporter interface {
+	// ConsumeMetadata will be invoked every time there's an
+	// update to a resource that results in one or more MetadataUpdate.
+	ConsumeMetadata(metadata []*MetadataUpdate) error
 }
 
-// KubernetesMetadataUpdate provides a delta view of metadata on a resource between
+// MetadataUpdate provides a delta view of metadata on a resource between
 // two revisions of a resource.
-type KubernetesMetadataUpdate struct {
+type MetadataUpdate struct {
 	// ResourceIDKey is the label key of UID label for the resource.
 	ResourceIDKey string
 	// ResourceID is the Kubernetes UID of the resource. In case of
@@ -102,17 +102,17 @@ type KubernetesMetadataUpdate struct {
 	MetadataDelta
 }
 
-// GetKubernetesMetadataUpdate processes kubernetes metadata updates and returns
+// GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetKubernetesMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*KubernetesMetadataUpdate {
-	var out []*KubernetesMetadataUpdate
+func GetMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []*MetadataUpdate {
+	var out []*MetadataUpdate
 
 	for id, oldMetadata := range old {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
 		if newMetadata, ok := new[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.metadata, newMetadata.metadata); metadataDelta != nil {
-				out = append(out, &KubernetesMetadataUpdate{
+				out = append(out, &MetadataUpdate{
 					ResourceIDKey: oldMetadata.resourceIDKey,
 					ResourceID:    id,
 					MetadataDelta: *metadataDelta,
@@ -126,7 +126,7 @@ func GetKubernetesMetadataUpdate(old, new map[ResourceID]*KubernetesMetadata) []
 	for id, km := range new {
 		// if an id is seen for the first time, all metadata need to be added.
 		if _, ok := old[id]; !ok {
-			out = append(out, &KubernetesMetadataUpdate{
+			out = append(out, &MetadataUpdate{
 				ResourceIDKey: km.resourceIDKey,
 				ResourceID:    id,
 				MetadataDelta: MetadataDelta{MetadataToAdd: km.metadata},

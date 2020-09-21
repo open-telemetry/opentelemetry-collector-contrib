@@ -34,8 +34,7 @@ type Config struct {
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
 
-	// Realm is the SignalFx realm where data is going to be sent to. The
-	// default value is "us0"
+	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
@@ -69,7 +68,7 @@ type Config struct {
 	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
-	// If not provided explicitly, the rules defined in translations/config/default.yaml are used.
+	// Rules defined in translation/constants.go are used by default.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any

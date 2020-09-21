@@ -57,6 +57,7 @@ gofmt:
 
 .PHONY: for-all
 for-all:
+	@echo "running $${CMD} in root"
 	@$${CMD}
 	@set -e; for dir in $(ALL_MODULES); do \
 	  (cd "$${dir}" && \

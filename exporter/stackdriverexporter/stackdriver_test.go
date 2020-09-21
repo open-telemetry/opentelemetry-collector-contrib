@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
 	cloudmonitoringpb "google.golang.org/genproto/googleapis/monitoring/v3"
@@ -65,7 +66,10 @@ func TestStackdriverTraceExport(t *testing.T) {
 
 	go srv.Serve(lis)
 
-	sde, err := newStackdriverTraceExporter(&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true})
+	sde, err := newStackdriverTraceExporter(
+		&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true},
+		"v0.0.1",
+	)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
@@ -144,7 +148,21 @@ func TestStackdriverMetricExport(t *testing.T) {
 
 	go srv.Serve(lis)
 
-	sde, err := newStackdriverMetricsExporter(&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UserAgent: "MyAgent {{version}}", UseInsecure: true}, "v0.0.1")
+	// Example with overridden client options
+	clientOptions := []option.ClientOption{
+		option.WithoutAuthentication(),
+		option.WithTelemetryDisabled(),
+	}
+
+	sde, err := newStackdriverMetricsExporter(&Config{
+		ProjectID:   "idk",
+		Endpoint:    "127.0.0.1:8080",
+		UserAgent:   "MyAgent {{version}}",
+		UseInsecure: true,
+		GetClientOptions: func() []option.ClientOption {
+			return clientOptions
+		},
+	}, "v0.0.1")
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 

@@ -80,8 +80,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
+	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
 	smallBatch := internaldata.OCToMetrics(consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			metricstestutil.Gauge(
@@ -137,6 +136,7 @@ func TestConsumeMetricsData(t *testing.T) {
 		testName := fmt.Sprintf(
 			"%s_createServer_%t_acceptClient_%t", tt.name, tt.createServer, tt.acceptClient)
 		t.Run(testName, func(t *testing.T) {
+			addr := testutil.GetAvailableLocalAddress(t)
 			var ln *net.TCPListener
 			if tt.createServer {
 				laddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -146,7 +146,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				defer ln.Close()
 			}
 
-			config := &Config{Endpoint: addr, Timeout: 500 * time.Millisecond}
+			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
 			exp, err := newCarbonExporter(config)
 			require.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			_, mpc := tt.md.MetricAndDataPointCount()
 			wg.Add(mpc)
 			go func() {
-				ln.SetDeadline(time.Now().Add(time.Second))
+				assert.NoError(t, ln.SetDeadline(time.Now().Add(time.Second)))
 				conn, err := ln.AcceptTCP()
 				require.NoError(t, err)
 				defer conn.Close()
@@ -194,6 +194,8 @@ func TestConsumeMetricsData(t *testing.T) {
 					wg.Done()
 				}
 			}()
+
+			<-time.After(100 * time.Millisecond)
 
 			require.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
 			assert.NoError(t, exp.Shutdown(context.Background()))

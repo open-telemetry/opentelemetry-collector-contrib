@@ -161,7 +161,7 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[ResourceID]*Kubernete
 	km := map[ResourceID]*KubernetesMetadata{}
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		km = getMetadataForPod(o, dc.metadataStore)
+		km = getMetadataForPod(o, dc.metadataStore, dc.logger)
 	case *corev1.Node:
 		km = getMetadataForNode(o)
 	case *corev1.ReplicationController:

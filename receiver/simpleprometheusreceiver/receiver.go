@@ -22,8 +22,7 @@ import (
 	configutil "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
@@ -97,8 +96,8 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 		HonorTimestamps: true,
 		Scheme:          scheme,
 		MetricsPath:     cfg.MetricsPath,
-		ServiceDiscoveryConfig: sdconfig.ServiceDiscoveryConfig{
-			StaticConfigs: []*targetgroup.Group{
+		ServiceDiscoveryConfigs: discovery.Configs{
+			&discovery.StaticConfig{
 				{
 					Targets: []model.LabelSet{
 						{model.AddressLabel: model.LabelValue(cfg.Endpoint)},

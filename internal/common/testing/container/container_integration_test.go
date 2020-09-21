@@ -18,6 +18,7 @@ package container
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -53,9 +54,23 @@ func TestContainerIntegration(t *testing.T) {
 
 	con.Cleanup()
 
-	assert.Nil(t, con.runningContainers, "started containers should be empty after cleanup")
+	assert.Zero(t, len(con.runningContainers), "started containers should be empty after cleanup")
 
 	_, err = cli.ContainerInspect(context.Background(), string(started.ID))
 	require.Error(t, err, "inspect should have returned an error")
 	require.True(t, client.IsErrNotFound(err), "inspect error should have been of type not found")
+}
+
+func TestRemoveContainerIntegration(t *testing.T) {
+	con := New(t)
+	nginx := con.StartImage("docker.io/library/nginx:1.17", WithPortReady(80))
+	require.Equal(t, 1, len(con.runningContainers))
+
+	err := con.RemoveContainer(nginx)
+	require.NoError(t, err)
+	require.Zero(t, len(con.runningContainers))
+
+	err = con.RemoveContainer(nginx)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), fmt.Sprintf("failed removing container %v", nginx.ID))
 }

@@ -1,7 +1,8 @@
 # Splunk HEC Receiver 
 
-The Splunk HEC receiver accepts metrics in the [Splunk HEC format](https://docs.splunk.com/Documentation/Splunk/8.0.5/Data/FormateventsforHTTPEventCollector). This allows
-the collector to receive metrics, traces and logs.
+The Splunk HEC receiver accepts metrics in the [Splunk HEC
+format](https://docs.splunk.com/Documentation/Splunk/8.0.5/Data/FormateventsforHTTPEventCollector).
+This allows the collector to receive metrics, traces and logs.
 
 ## Configuration
 
@@ -12,7 +13,7 @@ The following settings are required:
 
 The following settings are optional:
 
-* `access_token_passthrough`: (default = `false`) Whether to preserve incoming
+* `access_token_passthrough` (default = `false`): Whether to preserve incoming
   access token (`Splunk` header value) as
   `"com.splunk.hec.access_token"` metric resource label.  Can be used in
   tandem with identical configuration option for [Splunk HEC
@@ -36,3 +37,6 @@ receivers:
       cert_file: /test.crt
       key_file: /test.key
 ```
+
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
