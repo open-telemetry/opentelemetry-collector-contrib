@@ -109,8 +109,6 @@ func newMockPusher() (*pusher, string) {
 
 var timestampInMillis = time.Now().UnixNano() / 1e6
 var msg = "test log message"
-var fileName = "/tmp/logfile.log"
-var fileOffset = int64(123)
 
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p, tmpFolder := newMockPusher()
