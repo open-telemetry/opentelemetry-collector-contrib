@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `dockerstats` receiver as top level component (#1081)
+
 ## v0.10.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.10.0 (Beta) 🎉

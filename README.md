@@ -108,6 +108,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | awsxrayreceiver                | @kbrockhoff @anuraaga     |
 | carbonreceiver                 | @pjanotti                 |
 | collectdreceiver               | @owais                    |
+| dockerstatsreceiver            | @rmfitzpatrick            |
 | k8sclusterreceiver             | @asuresh4                 |
 | kubeletstatsreceiver           | @pmcollins @asuresh4      |
 | prometheusexecreceiver         | @keitwb @james-bebbington |
