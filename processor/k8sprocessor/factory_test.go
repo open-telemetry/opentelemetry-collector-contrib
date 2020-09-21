@@ -49,6 +49,10 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
+	lp, err := factory.CreateLogsProcessor(context.Background(), params, cfg, exportertest.NewNopLogsExporter())
+	assert.NotNil(t, lp)
+	assert.NoError(t, err)
+
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
@@ -58,6 +62,10 @@ func TestCreateProcessor(t *testing.T) {
 
 	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
 	assert.NotNil(t, mp)
+	assert.NoError(t, err)
+
+	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, exportertest.NewNopLogsExporter())
+	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
 	// Switch it back so other tests run afterwards will not fail on unexpected state
