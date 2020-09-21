@@ -45,6 +45,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
+	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opentelemetry.io/collector v0.10.1-0.20200917170114-639b9a80ed46
 	golang.org/x/sys v0.0.0-20200821140526-fda516888d29
 	honnef.co/go/tools v0.0.1-2020.1.5
