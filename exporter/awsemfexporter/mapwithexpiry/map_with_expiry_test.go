@@ -15,6 +15,7 @@
 package mapwithexpiry
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -49,4 +50,36 @@ func TestMapWithExpiry_cleanup(t *testing.T) {
 	assert.Equal(t, false, ok)
 	assert.Equal(t, nil, val)
 	assert.Equal(t, 0, store.Size())
+}
+
+func TestMapWithExpiry_concurrency(t *testing.T) {
+	store := NewMapWithExpiry(time.Second)
+	store.Set("sum", 0)
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		for i := 0; i < 30; i++ {
+			store.Lock()
+			sum, _ := store.Get("sum")
+			newSum := sum.(int) + 1
+			store.Set("sum", newSum)
+			store.Unlock()
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		for i := 0; i < 30; i++ {
+			store.Lock()
+			sum, _ := store.Get("sum")
+			newSum := sum.(int) - 1
+			store.Set("sum", newSum)
+			store.Unlock()
+		}
+		wg.Done()
+	}()
+	wg.Wait()
+	sum, _ := store.Get("sum")
+	assert.Equal(t, 0, sum)
 }

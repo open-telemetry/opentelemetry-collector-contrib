@@ -17,8 +17,10 @@ package awsemfexporter
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/stretchr/testify/assert"
@@ -170,6 +172,90 @@ func TestPutLogEvents_DataAlreadyAcceptedException(t *testing.T) {
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
 }
 
+func TestPutLogEvents_OperationAbortedException(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
+}
+
+func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
+}
+
+func TestPutLogEvents_UnknownException(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	unknownException := awserr.New("unknownException", "", nil)
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
+}
+
+func TestPutLogEvents_ThrottlingException(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	throttlingException := awserr.New(ErrCodeThrottlingException, "", nil)
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
+}
+
 func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
@@ -256,4 +342,25 @@ func TestLogUnknownError(t *testing.T) {
 	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", err.Code(), err.Message(), err.OrigErr(), err)
 	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &awsemfexporter.UnknownError{otherField:\"otherFieldValue\"}"
 	assert.Equal(t, expectedLog, actualLog)
+}
+
+func TestBackoffSleep(t *testing.T) {
+	for i := 0; i <= defaultRetryCount; i++ {
+		now := time.Now()
+		backoffSleep(i)
+		assert.True(
+			t,
+			(time.Since(now)-sleeps[i]).Seconds() < 1)
+	}
+
+	i := defaultRetryCount + 1
+	now := time.Now()
+	backoffSleep(i)
+	duration := time.Since(now)
+	assert.True(
+		t,
+		duration.Milliseconds() > 750)
+	assert.True(
+		t,
+		duration.Milliseconds() < 850)
 }

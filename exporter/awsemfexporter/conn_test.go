@@ -85,6 +85,18 @@ func TestRegionEnv(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
+	logger := zap.NewNop()
+	session, _ := session.NewSession()
+
+	regions := []string{"us-east-1", "us-gov-east-1", "cn-north-1"}
+
+	for _, region := range regions {
+		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region)
+		assert.NotNil(t, creds)
+	}
+}
+
 func loadExporterConfig(t *testing.T) *Config {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
