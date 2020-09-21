@@ -43,7 +43,7 @@ func (h *httpForwarder) Start(_ context.Context, host component.Host) error {
 	}
 
 	handler := http.NewServeMux()
-	handler.HandleFunc("/", h.forwardRequests)
+	handler.HandleFunc("/", h.forwardRequest)
 
 	h.server = h.config.Ingress.ToServer(handler)
 	go func() {
@@ -59,7 +59,7 @@ func (h *httpForwarder) Shutdown(_ context.Context) error {
 	return h.server.Close()
 }
 
-func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *http.Request) {
+func (h *httpForwarder) forwardRequest(writer http.ResponseWriter, request *http.Request) {
 	forwarderRequest := request.Clone(request.Context())
 	forwarderRequest.URL.Host = h.forwardTo.Host
 	forwarderRequest.URL.Scheme = h.forwardTo.Scheme
@@ -79,6 +79,9 @@ func (h *httpForwarder) forwardRequests(writer http.ResponseWriter, request *htt
 	response, err := h.httpClient.Do(forwarderRequest)
 	if err != nil {
 		http.Error(writer, err.Error(), http.StatusBadGateway)
+	}
+
+	if response == nil {
 		return
 	}
 	defer response.Body.Close()

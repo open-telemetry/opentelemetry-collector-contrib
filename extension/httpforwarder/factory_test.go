@@ -53,9 +53,10 @@ func TestFactory(t *testing.T) {
 			wantErrMessage: "'egress.endpoint' config option cannot be empty",
 		},
 		{
-			name:    "Invalid config",
-			config:  &Config{Egress: confighttp.HTTPClientSettings{Endpoint: "123.456.7.89:9090"}},
-			wantErr: true,
+			name:           "Invalid config",
+			config:         &Config{Egress: confighttp.HTTPClientSettings{Endpoint: "123.456.7.89:9090"}},
+			wantErr:        true,
+			wantErrMessage: "enter a valid URL for 'egress.endpoint': parse \"123.456.7.89:9090\": first path segment in URL cannot",
 		},
 		{
 			name: "Invalid config - HTTP Client creation fails",
