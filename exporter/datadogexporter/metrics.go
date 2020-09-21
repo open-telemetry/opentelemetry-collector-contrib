@@ -20,8 +20,8 @@ import (
 	"math"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -42,10 +42,10 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (MetricsExporter, error
 	case AgentlessMode:
 		return newMetricsAPIExporter(logger, cfg)
 	case NoneMode:
-		return nil, fmt.Errorf("Metrics exporter disabled for Datadog exporter")
+		return nil, fmt.Errorf("metrics exporter disabled for Datadog exporter")
 	}
 
-	return nil, fmt.Errorf("Unsupported mode: '%s'", cfg.Metrics.Mode)
+	return nil, fmt.Errorf("unsupported mode: '%s'", cfg.Metrics.Mode)
 }
 
 const (
@@ -79,17 +79,11 @@ type Series struct {
 	metrics []datadog.Metric
 }
 
-func NewSeries() Series {
-	return Series{}
-}
-
 func (m *Series) Add(metric datadog.Metric) {
 	m.metrics = append(m.metrics, metric)
 }
 
-func MapMetrics(exp MetricsExporter, md pdata.Metrics) (series Series, droppedTimeSeries int) {
-	// Transform it into OpenCensus format
-	data := pdatautil.MetricsToMetricsData(md)
+func MapMetrics(exp MetricsExporter, data []consumerdata.MetricsData) (series Series, droppedTimeSeries int) {
 	logger := exp.GetLogger()
 
 	for _, metricsData := range data {

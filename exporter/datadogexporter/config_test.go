@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtest"
 )
 
@@ -41,10 +42,10 @@ func TestLoadConfig(t *testing.T) {
 	err = apiConfig.Sanitize()
 
 	require.NoError(t, err)
-	assert.Equal(t, apiConfig, &Config{
+	assert.Equal(t, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: "datadog/api",
-			TypeVal: "datadog",
+			TypeVal: typeStr,
 		},
 
 		TagsConfig: TagsConfig{
@@ -71,19 +72,21 @@ func TestLoadConfig(t *testing.T) {
 			},
 
 			Agentless: AgentlessConfig{
-				Endpoint: "https://api.datadoghq.eu",
+				confignet.TCPAddr{
+					Endpoint: "https://api.datadoghq.eu",
+				},
 			},
 		},
-	})
+	}, apiConfig)
 
 	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
 	err = dogstatsdConfig.Sanitize()
 
 	require.NoError(t, err)
-	assert.Equal(t, dogstatsdConfig, &Config{
+	assert.Equal(t, &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: "datadog/dogstatsd",
-			TypeVal: "datadog",
+			TypeVal: typeStr,
 		},
 
 		TagsConfig: TagsConfig{},
@@ -96,10 +99,8 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:  "127.0.0.1:8125",
 				Telemetry: true,
 			},
-
-			Agentless: AgentlessConfig{},
 		},
-	})
+	}, dogstatsdConfig)
 
 	invalidConfig := cfg.Exporters["datadog/invalid"].(*Config)
 	err = invalidConfig.Sanitize()
@@ -109,6 +110,28 @@ func TestLoadConfig(t *testing.T) {
 	err = invalidConfig2.Sanitize()
 	require.Error(t, err)
 
+}
+
+func TestTags(t *testing.T) {
+	tc := TagsConfig{
+		Hostname: "customhost",
+		Env:      "customenv",
+		Service:  "customservice",
+		Version:  "customversion",
+		Tags:     []string{"key1:val1", "key2:val2"},
+	}
+
+	assert.ElementsMatch(t,
+		[]string{
+			"host:customhost",
+			"env:customenv",
+			"service:customservice",
+			"version:customversion",
+			"key1:val1",
+			"key2:val2",
+		},
+		tc.GetTags(true), // get host
+	)
 }
 
 // TestOverrideMetricsURL tests that the metrics URL is overridden
@@ -121,7 +144,7 @@ func TestOverrideMetricsURL(t *testing.T) {
 		API: APIConfig{Key: "notnull", Site: DefaultSite},
 		Metrics: MetricsConfig{
 			Mode:      AgentlessMode,
-			Agentless: AgentlessConfig{Endpoint: DebugEndpoint},
+			Agentless: AgentlessConfig{confignet.TCPAddr{Endpoint: DebugEndpoint}},
 		},
 	}
 

@@ -33,7 +33,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, cfg, &Config{
+	assert.Equal(t, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
 		API: APIConfig{Site: "datadoghq.com"},
 		Metrics: MetricsConfig{
 			Mode:        DogStatsDMode,
@@ -43,7 +47,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Telemetry: true,
 			},
 		},
-	}, "failed to create default config")
+	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
@@ -92,6 +96,31 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	)
 
 	// Not implemented
+	assert.NotNil(t, err)
+	assert.Nil(t, exp)
+}
+
+func TestCreateInvalidMetricsExporter(t *testing.T) {
+	logger := zap.NewNop()
+
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	ctx := context.Background()
+	exp, err := factory.CreateMetricsExporter(
+		ctx,
+		component.ExporterCreateParams{Logger: logger},
+		cfg.Exporters["datadog/dogstatsd/invalid"],
+	)
+
+	// The address is invalid
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 }

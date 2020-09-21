@@ -22,11 +22,9 @@ func GetHost(cfg *Config) *string {
 		return &cfg.TagsConfig.Hostname
 	}
 
-	if host, err := os.Hostname(); err == nil && host != "" {
-		return &host
-	} else {
+	host, err := os.Hostname()
+	if err != nil || host == "" {
 		host = "unknown"
-		return &host
 	}
-
+	return &host
 }

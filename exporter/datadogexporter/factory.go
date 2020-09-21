@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -28,16 +29,6 @@ const (
 
 	// DefaultSite is the default site of the Datadog intake to send data to
 	DefaultSite = "datadoghq.com"
-
-	// List the different sending methods
-	AgentMode   = "agent"
-	APIMode     = "api"
-	DefaultMode = APIMode
-)
-
-var (
-	// DefaultTags is the default set of tags to add to every metric or trace
-	DefaultTags = []string{}
 )
 
 // NewFactory creates a Datadog exporter factory
@@ -45,14 +36,19 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(CreateMetricsExporter),
-		exporterhelper.WithTraces(CreateTracesExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+
 		API: APIConfig{
 			Key:  "", // must be set if using API
 			Site: "datadoghq.com",
@@ -68,14 +64,16 @@ func createDefaultConfig() configmodels.Exporter {
 			},
 
 			Agentless: AgentlessConfig{
-				Endpoint: "", // set during config sanitization
+				confignet.TCPAddr{
+					Endpoint: "", // set during config sanitization
+				},
 			},
 		},
 	}
 }
 
 // CreateMetricsExporter creates a metrics exporter based on this config.
-func CreateMetricsExporter(
+func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
@@ -102,7 +100,7 @@ func CreateMetricsExporter(
 }
 
 // CreateTracesExporter creates a traces exporter based on this config.
-func CreateTracesExporter(
+func createTracesExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter) (component.TraceExporter, error) {

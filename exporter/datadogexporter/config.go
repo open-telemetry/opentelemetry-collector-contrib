@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 )
 
 var (
@@ -54,12 +55,13 @@ func (api *APIConfig) GetCensoredKey() string {
 
 // DogStatsDConfig defines the DogStatsd related configuration
 type DogStatsDConfig struct {
+	// FIXME Use confignet.NetAddr
 	// Endpoint is the DogStatsD address.
 	// The default value is 127.0.0.1:8125
 	// A Unix address is supported
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Telemetry states whether to send metrics
+	// Telemetry states whether to send internal telemetry metrics from the statsd client
 	Telemetry bool `mapstructure:"telemetry"`
 }
 
@@ -67,7 +69,7 @@ type DogStatsDConfig struct {
 type AgentlessConfig struct {
 	// Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
-	Endpoint string `mapstructure:"endpoint"`
+	confignet.TCPAddr `mapstructure:",squash"`
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -180,7 +182,7 @@ type Config struct {
 func (c *Config) Sanitize() error {
 
 	if c.Metrics.Mode != AgentlessMode && c.Metrics.Mode != DogStatsDMode {
-		return fmt.Errorf("Metrics mode '%s' is not recognized", c.Metrics.Mode)
+		return fmt.Errorf("metrics mode '%s' is not recognized", c.Metrics.Mode)
 	}
 
 	// Get info from environment variables
