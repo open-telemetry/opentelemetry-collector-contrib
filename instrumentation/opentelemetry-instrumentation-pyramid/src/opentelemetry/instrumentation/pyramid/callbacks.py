@@ -74,20 +74,21 @@ def _before_traversal(event):
     )
     tracer = trace.get_tracer(__name__, __version__)
 
-    attributes = otel_wsgi.collect_request_attributes(environ)
-
     if request.matched_route:
         span_name = request.matched_route.pattern
-        attributes["http.route"] = request.matched_route.pattern
     else:
         span_name = otel_wsgi.get_default_span_name(environ)
 
     span = tracer.start_span(
-        span_name,
-        kind=trace.SpanKind.SERVER,
-        attributes=attributes,
-        start_time=start_time,
+        span_name, kind=trace.SpanKind.SERVER, start_time=start_time,
     )
+
+    if span.is_recording():
+        attributes = otel_wsgi.collect_request_attributes(environ)
+        if request.matched_route:
+            attributes["http.route"] = request.matched_route.pattern
+        for key, value in attributes.items():
+            span.set_attribute(key, value)
 
     activation = tracer.use_span(span, end_on_exit=True)
     activation.__enter__()
