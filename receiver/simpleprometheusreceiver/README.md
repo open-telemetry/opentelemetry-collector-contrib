@@ -14,12 +14,12 @@ metrics should be scraped.
 
 The following settings are optional:
 
-- `collection_interval` (default `10s`): The internal at which metrics should
+- `collection_interval` (default = `10s`): The internal at which metrics should
 be emitted by this receiver.
-- `metrics_path` (default `/metrics`): The path to the metrics endpoint.
-- `use_service_account` (default `false`): Whether or not to use the
+- `metrics_path` (default = `/metrics`): The path to the metrics endpoint.
+- `use_service_account` (default = `false`): Whether or not to use the
 Kubernetes Pod service account for authentication.
-- `tls_enabled` (default `false`): Whether or not to use TLS. Only if
+- `tls_enabled` (default = `false`): Whether or not to use TLS. Only if
 `tls_enabled` is set to `true`, the values under `tls_config` are accounted
 for.
 
@@ -31,7 +31,7 @@ certificate.
 required connections.
 - `key_file` (no default): Path to the client TLS key to use for TLS required
 connections.
-- `insecure_skip_verify` (default `false`): Whether or not to skip
+- `insecure_skip_verify` (default = `false`): Whether or not to skip
 certificate verification.
 
 Example:

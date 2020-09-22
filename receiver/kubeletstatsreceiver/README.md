@@ -155,8 +155,8 @@ receivers:
 
 The following parameters can also be specified:
 
-- `collection_interval` (default `10s`): The interval at which to collect data.
-- `insecure_skip_verify` (default `false`): Whether or not to skip certificate verification.
+- `collection_interval` (default = `10s`): The interval at which to collect data.
+- `insecure_skip_verify` (default = `false`): Whether or not to skip certificate verification.
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
