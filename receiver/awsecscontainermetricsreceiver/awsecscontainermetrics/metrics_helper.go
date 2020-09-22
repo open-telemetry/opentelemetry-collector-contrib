@@ -14,11 +14,6 @@
 
 package awsecscontainermetrics
 
-const (
-	// BytesInMiB is the number of bytes in a MebiByte.
-	BytesInMiB = 1024 * 1024
-)
-
 // getContainerMetrics generate ECS Container metrics from Container stats
 func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB

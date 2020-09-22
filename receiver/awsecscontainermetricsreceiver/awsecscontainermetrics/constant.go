@@ -23,8 +23,16 @@ const (
 	AttributeECSTaskRevesion = "ecs.task-definition-version"
 	AttributeECSServiceName  = "ecs.service"
 
+	CPUsInVCpu               = 1024
+	BytesInMiB               = 1024 * 1024
 	ContainerMetricsLabelLen = 3
 	TaskMetricsLabelLen      = 6
+
+	TaskPrefix                        = "ecs.task."
+	ContainerPrefix                   = "container."
+	ResourceAttributeServiceNameKey   = "service.name"
+	ResourceAttributeServiceNameValue = "awsecscontainermetrics"
+	MetricResourceType                = "aoc.ecs"
 
 	AttributeMemoryUsage    = "memory.usage"
 	AttributeMemoryMaxUsage = "memory.usage.max"
