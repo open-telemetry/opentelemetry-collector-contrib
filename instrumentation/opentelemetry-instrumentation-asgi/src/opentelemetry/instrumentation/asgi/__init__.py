@@ -156,15 +156,16 @@ class OpenTelemetryMiddleware:
             propagators.extract(get_header_from_scope, scope)
         )
         span_name, additional_attributes = self.span_details_callback(scope)
-        attributes = collect_request_attributes(scope)
-        attributes.update(additional_attributes)
 
         try:
             with self.tracer.start_as_current_span(
-                span_name + " asgi",
-                kind=trace.SpanKind.SERVER,
-                attributes=attributes,
-            ):
+                span_name + " asgi", kind=trace.SpanKind.SERVER,
+            ) as span:
+                if span.is_recording():
+                    attributes = collect_request_attributes(scope)
+                    attributes.update(additional_attributes)
+                    for key, value in attributes.items():
+                        span.set_attribute(key, value)
 
                 @wraps(receive)
                 async def wrapped_receive():
@@ -172,9 +173,10 @@ class OpenTelemetryMiddleware:
                         span_name + " asgi." + scope["type"] + ".receive"
                     ) as receive_span:
                         message = await receive()
-                        if message["type"] == "websocket.receive":
-                            set_status_code(receive_span, 200)
-                        receive_span.set_attribute("type", message["type"])
+                        if receive_span.is_recording():
+                            if message["type"] == "websocket.receive":
+                                set_status_code(receive_span, 200)
+                            receive_span.set_attribute("type", message["type"])
                     return message
 
                 @wraps(send)
@@ -182,12 +184,13 @@ class OpenTelemetryMiddleware:
                     with self.tracer.start_as_current_span(
                         span_name + " asgi." + scope["type"] + ".send"
                     ) as send_span:
-                        if message["type"] == "http.response.start":
-                            status_code = message["status"]
-                            set_status_code(send_span, status_code)
-                        elif message["type"] == "websocket.send":
-                            set_status_code(send_span, 200)
-                        send_span.set_attribute("type", message["type"])
+                        if send_span.is_recording():
+                            if message["type"] == "http.response.start":
+                                status_code = message["status"]
+                                set_status_code(send_span, status_code)
+                            elif message["type"] == "websocket.send":
+                                set_status_code(send_span, 200)
+                            send_span.set_attribute("type", message["type"])
                         await send(message)
 
                 await self.app(scope, wrapped_receive, wrapped_send)
