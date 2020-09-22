@@ -164,6 +164,23 @@ class TestAsgiApplication(AsgiTestBase):
         outputs = self.get_all_output()
         self.validate_outputs(outputs)
 
+    def test_wsgi_not_recording(self):
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_as_current_span.return_value = mock_span
+        mock_tracer.start_as_current_span.return_value.__enter__ = mock_span
+        mock_tracer.start_as_current_span.return_value.__exit__ = mock_span
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            app = otel_asgi.OpenTelemetryMiddleware(simple_asgi)
+            self.seed_app(app)
+            self.send_default_request()
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
+
     def test_asgi_exc_info(self):
         """Test that exception information is emitted as expected."""
         app = otel_asgi.OpenTelemetryMiddleware(error_asgi)
