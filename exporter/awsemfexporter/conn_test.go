@@ -103,7 +103,18 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestNewAWSSession(t *testing.T) {
+func TestGetAWSConfigSessionWithEC2Region(t *testing.T) {
+	logger := zap.NewNop()
+	emfExporterCfg := loadExporterConfig(t)
+	emfExporterCfg.Region = ""
+	conn := &Conn{}
+	cfg, s, err := GetAWSConfigSession(logger, conn, emfExporterCfg)
+	assert.NotNil(t, cfg)
+	assert.NotNil(t, s)
+	assert.Nil(t, err)
+}
+
+func TestNewAWSSessionWithErr(t *testing.T) {
 	logger := zap.NewNop()
 	roleArn := "fake_arn"
 	region := "fake_region"
@@ -112,6 +123,10 @@ func TestNewAWSSession(t *testing.T) {
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
 	se, err := conn.newAWSSession(logger, roleArn, region)
+	assert.NotNil(t, err)
+	assert.Nil(t, se)
+	roleArn = ""
+	se, err = conn.newAWSSession(logger, roleArn, region)
 	assert.NotNil(t, err)
 	assert.Nil(t, se)
 }

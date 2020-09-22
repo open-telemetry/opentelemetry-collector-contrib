@@ -304,6 +304,31 @@ func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
 }
 
+func TestPutLogEvents_AllRetriesFail(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &emptySequenceToken,
+	}
+
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: nil}
+	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
+
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Twice()
+
+	svc.On("CreateLogStream",
+		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Twice()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Nil(t, tokenP)
+}
+
 func TestCreateStream_HappyCase(t *testing.T) {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)

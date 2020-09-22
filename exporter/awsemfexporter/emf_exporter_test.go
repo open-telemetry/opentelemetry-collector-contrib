@@ -25,6 +25,7 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -33,7 +34,29 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestPushMetricsData(t *testing.T) {
+type mockPusher struct {
+	mock.Mock
+}
+
+func (p *mockPusher) AddLogEntry(logEvent *LogEvent) error {
+	args := p.Called(nil)
+	errorStr := args.String(0)
+	if errorStr != "" {
+		return awserr.NewRequestFailure(nil, 400, "").(error)
+	}
+	return nil
+}
+
+func (p *mockPusher) ForceFlush() error {
+	args := p.Called(nil)
+	errorStr := args.String(0)
+	if errorStr != "" {
+		return awserr.NewRequestFailure(nil, 400, "").(error)
+	}
+	return nil
+}
+
+func TestConsumeMetrics(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -93,7 +116,7 @@ func TestPushMetricsData(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 }
 
-func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
+func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -116,6 +139,43 @@ func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
 	pusher, ok := streamToPusherMap["test-logStreamName"]
 	assert.True(t, ok)
 	assert.NotNil(t, pusher)
+}
+
+func TestPushMetricsDataWithErr(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.LocalMode = true
+	expCfg.LogGroupName = "test-logGroupName"
+	expCfg.LogStreamName = "test-logStreamName"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	exp.(*emfExporter).config.(*Config).LocalMode = false
+
+	pusher := new(mockPusher)
+	pusher.On("AddLogEntry", nil).Return("some error").Once()
+	pusher.On("AddLogEntry", nil).Return("").Twice()
+	pusher.On("ForceFlush", nil).Return("some error").Twice()
+	pusher.On("ForceFlush", nil).Return("").Once()
+	pusher.On("ForceFlush", nil).Return("some error").Once()
+	streamToPusherMap := map[string]Pusher{"test-logStreamName": pusher}
+	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
+	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
+
+	mdata := consumerdata.MetricsData{}
+	md := internaldata.OCToMetrics(mdata)
+	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
+	assert.NotNil(t, err)
+	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
+	assert.NotNil(t, err)
+	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
+	assert.Nil(t, err)
+	err = exp.(*emfExporter).Shutdown(ctx)
+	assert.NotNil(t, err)
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {
