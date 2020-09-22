@@ -162,8 +162,8 @@ func TestAwsFromEksResource(t *testing.T) {
 	assert.NotNil(t, awsData.EKS)
 	assert.Equal(t, &awsxray.EKSMetadata{
 		ClusterName: aws.String("production"),
-		Pod: aws.String("my-deployment-65dcf7d447-ddjnl"),
-		ContainerID:   aws.String(containerID),
+		Pod:         aws.String("my-deployment-65dcf7d447-ddjnl"),
+		ContainerID: aws.String(containerID),
 	}, awsData.EKS)
 }
 

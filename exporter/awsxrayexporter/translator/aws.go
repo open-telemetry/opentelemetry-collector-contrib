@@ -15,10 +15,11 @@
 package translator
 
 import (
+	"strconv"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	"strconv"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
@@ -45,9 +46,9 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		sdkLanguage  string
 		sdkVersion   string
 		autoVersion  string
-		containerId  string
+		containerID  string
 		clusterName  string
-		podUID	     string
+		podUID       string
 		ec2          *awsxray.EC2Metadata
 		ecs          *awsxray.ECSMetadata
 		ebs          *awsxray.BeanstalkMetadata
@@ -91,7 +92,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			case semconventions.AttributeTelemetryAutoVersion:
 				autoVersion = value.StringVal()
 			case semconventions.AttributeContainerID:
-				containerId = value.StringVal()
+				containerID = value.StringVal()
 			case semconventions.AttributeK8sCluster:
 				clusterName = value.StringVal()
 			}
@@ -140,7 +141,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	if container != "" {
 		ecs = &awsxray.ECSMetadata{
 			ContainerName: awsxray.String(container),
-			ContainerID:   awsxray.String(containerId),
+			ContainerID:   awsxray.String(containerID),
 		}
 	}
 	if deployID != "" {
@@ -158,7 +159,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		eks = &awsxray.EKSMetadata{
 			ClusterName: awsxray.String(clusterName),
 			Pod:         awsxray.String(podUID),
-			ContainerID: awsxray.String(containerId),
+			ContainerID: awsxray.String(containerID),
 		}
 	}
 
