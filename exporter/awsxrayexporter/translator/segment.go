@@ -36,6 +36,7 @@ const (
 	OriginEC2 = "AWS::EC2::Instance"
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS = "AWS::EKS::Container"
 )
 
 var (
@@ -212,9 +213,13 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	// EB > ECS > EC2
+	// EKS > EB > ECS > EC2
 	if resource.IsNil() {
 		return OriginEC2
+	}
+	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
+	if eks {
+		return OriginEKS
 	}
 	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
 	if eb {
