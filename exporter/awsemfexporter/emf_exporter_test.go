@@ -99,7 +99,7 @@ func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	expCfg.LocalMode = false
+	expCfg.LocalMode = true
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
