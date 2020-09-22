@@ -40,6 +40,14 @@ func (dps byContent) Less(i, j int) bool {
 }
 func (dps byContent) Swap(i, j int) { dps[i], dps[j] = dps[j], dps[i] }
 
+type byDimensions []*sfxpb.Dimension
+
+func (dims byDimensions) Len() int { return len(dims) }
+func (dims byDimensions) Less(i, j int) bool {
+	return dims[i].Key < dims[j].Key
+}
+func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
+
 func TestNewMetricTranslator(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -654,6 +662,43 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
 					Dimensions: []*sfxpb.Dimension{},
 				},
 			},
@@ -665,7 +710,51 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
-					Dimensions: []*sfxpb.Dimension{},
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add with existing dimension",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim1", Value: "val1"},
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
 				},
 			},
 		},
@@ -1580,6 +1669,16 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 	if action == ActionAggregateMetric {
 		sort.Sort(byContent(want))
 		sort.Sort(byContent(got))
+	}
+
+	if action == ActionRenameMetrics {
+		for _, dp := range want {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
+
+		for _, dp := range got {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
 	}
 
 	assert.EqualValues(t, want, got)
