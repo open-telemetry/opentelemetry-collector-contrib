@@ -138,6 +138,23 @@ class TestPymongo(TestBase):
             trace_api.status.StatusCanonicalCode.UNKNOWN,
         )
 
+    def test_int_command(self):
+        command_attrs = {
+            "command_name": 123,
+        }
+        mock_event = MockEvent(command_attrs)
+
+        command_tracer = CommandTracer(self.tracer)
+        command_tracer.started(event=mock_event)
+        command_tracer.succeeded(event=mock_event)
+
+        spans_list = self.memory_exporter.get_finished_spans()
+
+        self.assertEqual(len(spans_list), 1)
+        span = spans_list[0]
+
+        self.assertEqual(span.name, "mongodb.command_name.123")
+
 
 class MockCommand:
     def __init__(self, command_attrs):
