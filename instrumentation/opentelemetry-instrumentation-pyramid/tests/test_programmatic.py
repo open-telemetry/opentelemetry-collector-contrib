@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from pyramid.config import Configurator
 
@@ -86,6 +86,22 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.assertEqual(span_list[0].name, "/hello/{helloid}")
         self.assertEqual(span_list[0].kind, trace.SpanKind.SERVER)
         self.assertEqual(span_list[0].attributes, expected_attrs)
+
+    def test_not_recording(self):
+        mock_tracer = Mock()
+        mock_span = Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = mock_span
+        with patch("opentelemetry.trace.get_tracer"):
+            self.client.get("/hello/123")
+            span_list = self.memory_exporter.get_finished_spans()
+            self.assertEqual(len(span_list), 0)
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
 
     def test_404(self):
         expected_attrs = expected_attributes(
