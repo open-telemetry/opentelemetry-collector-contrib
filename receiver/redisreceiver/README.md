@@ -1,14 +1,12 @@
 # Redis Receiver
 
-### Overview
-
 The Redis receiver is designed to retrieve Redis INFO data from a single Redis
 instance, build metrics from that data, and send them to the next consumer at a
 configurable interval.
 
-Status: beta
+> :construction: This receiver is currently in **BETA**.
 
-### Details
+## Details
 
 The Redis INFO command returns information and statistics about a Redis
 server (see [https://redis.io/commands/info](https://redis.io/commands/info) for
@@ -34,57 +32,33 @@ func usedCPUSys() *redisMetric {
 }
 ```
 
-with a metric name of "redis/cpu/time" and a units value of "s" (seconds).
+with a metric name of `redis/cpu/time` and a units value of `s` (seconds).
 
-# Configuration
+## Configuration
 
-Note: this receiver is in beta and configuration fields are subject to change.
+> :information_source: This receiver is in beta and configuration fields are subject to change.
 
-Example configuration:
+The following settings are required:
 
-```yaml
-receivers:
-  redis:
-    endpoint: "localhost:6379"
-    service_name: "my-test-redis"
-    collection_interval: 10s
-    password: $REDIS_PASSWORD
-```
+- `endpoint` (no default): The hostname and port of the Redis instance,
+separated by a colon.
+- `service_name` (no default): The logical name of the Redis server. This
+value will be added as a `service_name` Resource label and may end up as a
+dimension on exported metrics, depending on the exporter.
 
-### endpoint
+The following settings are optional:
 
-The hostname and port of the Redis instance, separated by a colon.
+- `collection_interval` (default = `10s`): This receiver runs on an interval.
+Each time it runs, it queries Redis, creates metrics, and sends them to the
+next consumer. The `collection_interval` configuration option tells this
+receiver the duration between runs. This value must be a string readable by
+Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
+`ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `password` (no default): The password used to access the Redis instance;
+must match the password specified in the `requirepass` server configuration
+option.
 
-_Required._
-
-### collection_interval (default: 10s)
-
-This receiver runs on an interval. Each time it runs, it queries Redis, creates
-metrics, and sends them to the next consumer. The `collection_interval`
-configuration option tells this receiver the duration between runs.
-
-This value must be a string readable by Golang's `ParseDuration` function:
-e.g. "1h30m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
-
-_Required._
-
-### service_name
-
-The logical name of the Redis server. This value will be added as a
-`service_name` Resource label and may end up as a dimension on exported
-metrics, depending on the exporter.
-
-_Required._
-
-### password
-
-The password used to access the Redis instance; must match the password
-specified in the `requirepass` server configuration option.
-
-Note: as with all Open Telemetry configuration values, a reference to an
-environment variable is supported. For example, to pick up the value of
-an environment variable `REDIS_PASSWORD`, you could use a configuration like
-the following:
+Example:
 
 ```yaml
 receivers:
@@ -95,4 +69,19 @@ receivers:
     password: $REDIS_PASSWORD
 ```
 
-_Optional._
+> :information_source: As with all Open Telemetry configuration values, a
+reference to an environment variable is supported. For example, to pick up
+the value of an environment variable `REDIS_PASSWORD`, you could use a
+configuration like the following:
+
+```yaml
+receivers:
+  redis:
+    endpoint: "localhost:6379"
+    service_name: "my-test-redis"
+    collection_interval: 10s
+    password: $REDIS_PASSWORD
+```
+
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
