@@ -128,6 +128,27 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
 }
 
+func TestPutLogEvents_InvalidParameterException(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	invalidParameterException := &cloudwatchlogs.InvalidParameterException{}
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, invalidParameterException).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
+}
+
 func TestPutLogEvents_InvalidSequenceTokenException(t *testing.T) {
 	logger := zap.NewNop()
 	svc := new(mockCloudWatchLogsClient)
@@ -306,6 +327,27 @@ func TestCreateStream_CreateLogStream_ResourceAlreadyExists(t *testing.T) {
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
 		new(cloudwatchlogs.CreateLogStreamOutput), resourceAlreadyExistsException)
+
+	client := newCloudWatchLogClient(svc, logger)
+	token, err := client.CreateStream(&logGroup, &logStreamName)
+
+	svc.AssertExpectations(t)
+	assert.NoError(t, err)
+	assert.Equal(t, emptySequenceToken, token)
+}
+
+func TestCreateStream_CreateLogStream_ResourceNotFound(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+
+	resourceNotFoundException := &cloudwatchlogs.ResourceNotFoundException{}
+	svc.On("CreateLogStream",
+		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
+		new(cloudwatchlogs.CreateLogStreamOutput), resourceNotFoundException)
+
+	svc.On("CreateLogGroup",
+		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(
+		new(cloudwatchlogs.CreateLogGroupOutput), nil)
 
 	client := newCloudWatchLogClient(svc, logger)
 	token, err := client.CreateStream(&logGroup, &logStreamName)

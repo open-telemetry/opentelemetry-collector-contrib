@@ -15,7 +15,6 @@
 package awsemfexporter
 
 import (
-	"fmt"
 	"io/ioutil"
 	"sort"
 	"testing"
@@ -160,7 +159,6 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 
 	met := cwm[0]
 	assert.Equal(t, met.Fields[OtlibDimensionKey], noInstrumentationLibraryName)
-	fmt.Printf("spancounter type is %T\n", (met.Fields["spanCounter"]))
 	assert.Equal(t, met.Fields["spanCounter"], 0)
 
 	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
@@ -171,6 +169,75 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
 	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
 	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
+}
+
+func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName: "myServiceName",
+			},
+		},
+		Metrics: []*metricspb.Metric{},
+	}
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&md)
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.Nil(t, cwm)
+	assert.Equal(t, 0, len(cwm))
+	md = consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceNamespace: "myServiceNS",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&md)
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 1, len(cwm))
+
+	met := cwm[0]
+	assert.Equal(t, "myServiceNS", met.Measurements[0].Namespace)
 }
 
 func TestTranslateCWMetricToEMF(t *testing.T) {
