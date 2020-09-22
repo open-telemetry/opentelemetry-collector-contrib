@@ -16,6 +16,8 @@ package awsemfexporter
 
 import (
 	"context"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"testing"
 
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
@@ -88,4 +90,77 @@ func TestPushMetricsData(t *testing.T) {
 	md := internaldata.OCToMetrics(mdata)
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
+}
+
+func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.LocalMode = false
+	expCfg.LogGroupName = "test-logGroupName"
+	expCfg.LogStreamName = "test-logStreamName"
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.Shutdown(ctx))
+	pusher := exp.(*emfExporter).getPusher("test-logGroupName", "test-logStreamName")
+	assert.NotNil(t, pusher)
+}
+
+func TestWrapErrorIfBadRequest(t *testing.T) {
+	awsErr := awserr.NewRequestFailure(nil, 400, "").(error)
+	err := wrapErrorIfBadRequest(&awsErr)
+	assert.True(t, consumererror.IsPermanent(err))
+	awsErr = awserr.NewRequestFailure(nil, 500, "").(error)
+	err = wrapErrorIfBadRequest(&awsErr)
+	assert.False(t, consumererror.IsPermanent(err))
 }
