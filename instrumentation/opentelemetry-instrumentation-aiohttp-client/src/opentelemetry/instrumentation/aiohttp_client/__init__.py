@@ -133,16 +133,19 @@ def create_trace_config(
             request_span_name = str(trace_config_ctx.span_name)
 
         trace_config_ctx.span = trace_config_ctx.tracer.start_span(
-            request_span_name,
-            kind=SpanKind.CLIENT,
-            attributes={
+            request_span_name, kind=SpanKind.CLIENT,
+        )
+
+        if trace_config_ctx.span.is_recording():
+            attributes = {
                 "component": "http",
                 "http.method": http_method,
                 "http.url": trace_config_ctx.url_filter(params.url)
                 if callable(trace_config_ctx.url_filter)
                 else str(params.url),
-            },
-        )
+            }
+            for key, value in attributes.items():
+                trace_config_ctx.span.set_attribute(key, value)
 
         trace_config_ctx.token = context_api.attach(
             trace.set_span_in_context(trace_config_ctx.span)
@@ -155,15 +158,18 @@ def create_trace_config(
         trace_config_ctx: types.SimpleNamespace,
         params: aiohttp.TraceRequestEndParams,
     ):
-        trace_config_ctx.span.set_status(
-            Status(http_status_to_canonical_code(int(params.response.status)))
-        )
-        trace_config_ctx.span.set_attribute(
-            "http.status_code", params.response.status
-        )
-        trace_config_ctx.span.set_attribute(
-            "http.status_text", params.response.reason
-        )
+        if trace_config_ctx.span.is_recording():
+            trace_config_ctx.span.set_status(
+                Status(
+                    http_status_to_canonical_code(int(params.response.status))
+                )
+            )
+            trace_config_ctx.span.set_attribute(
+                "http.status_code", params.response.status
+            )
+            trace_config_ctx.span.set_attribute(
+                "http.status_text", params.response.reason
+            )
         _end_trace(trace_config_ctx)
 
     async def on_request_exception(
@@ -171,21 +177,22 @@ def create_trace_config(
         trace_config_ctx: types.SimpleNamespace,
         params: aiohttp.TraceRequestExceptionParams,
     ):
-        if isinstance(
-            params.exception,
-            (aiohttp.ServerTimeoutError, aiohttp.TooManyRedirects),
-        ):
-            status = StatusCanonicalCode.DEADLINE_EXCEEDED
-        # Assume any getaddrinfo error is a DNS failure.
-        elif isinstance(
-            params.exception, aiohttp.ClientConnectorError
-        ) and isinstance(params.exception.os_error, socket.gaierror):
-            # DNS resolution failed
-            status = StatusCanonicalCode.UNKNOWN
-        else:
-            status = StatusCanonicalCode.UNAVAILABLE
+        if trace_config_ctx.span.is_recording():
+            if isinstance(
+                params.exception,
+                (aiohttp.ServerTimeoutError, aiohttp.TooManyRedirects),
+            ):
+                status = StatusCanonicalCode.DEADLINE_EXCEEDED
+            # Assume any getaddrinfo error is a DNS failure.
+            elif isinstance(
+                params.exception, aiohttp.ClientConnectorError
+            ) and isinstance(params.exception.os_error, socket.gaierror):
+                # DNS resolution failed
+                status = StatusCanonicalCode.UNKNOWN
+            else:
+                status = StatusCanonicalCode.UNAVAILABLE
 
-        trace_config_ctx.span.set_status(Status(status))
+            trace_config_ctx.span.set_status(Status(status))
         _end_trace(trace_config_ctx)
 
     def _trace_config_ctx_factory(**kwargs):
