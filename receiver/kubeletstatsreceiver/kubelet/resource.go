@@ -15,6 +15,8 @@
 package kubelet
 
 import (
+	"fmt"
+
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -73,17 +75,16 @@ func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Met
 	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
-
 	}
 
 	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
+		volCacheID := fmt.Sprintf("%s/%s", pod.Labels[conventions.AttributeK8sPodUID], vs.Name)
 		err = metadata.DetailedPVCLabelsSetter(
-			labels[labelPersistentVolumeClaimName],
+			volCacheID, labels[labelPersistentVolumeClaimName],
 			pod.Labels[conventions.AttributeK8sNamespace], labels,
 		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
-
 		}
 	}
 
