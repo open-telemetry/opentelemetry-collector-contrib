@@ -66,8 +66,8 @@ class CommandTracer(monitoring.CommandListener):
         name = DATABASE_TYPE + "." + event.command_name
         statement = event.command_name
         if command:
-            name += "." + command
-            statement += " " + command
+            name += "." + str(command)
+            statement += " " + str(command)
 
         try:
             span = self._tracer.start_span(name, kind=SpanKind.CLIENT)
