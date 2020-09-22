@@ -106,53 +106,14 @@ func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 
-	mdata := consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"resource": "R1",
-			},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-							{Value: "false"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	mdata := consumerdata.MetricsData{}
 	md := internaldata.OCToMetrics(mdata)
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	pusher := exp.(*emfExporter).getPusher("test-logGroupName", "test-logStreamName")
+	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
+	assert.True(t, ok)
+	pusher, ok := streamToPusherMap["test-logStreamName"]
+	assert.True(t, ok)
 	assert.NotNil(t, pusher)
 }
 
