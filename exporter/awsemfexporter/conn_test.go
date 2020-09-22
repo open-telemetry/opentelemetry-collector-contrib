@@ -85,16 +85,71 @@ func TestRegionEnv(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
+	logger := zap.NewNop()
+	emfExporterCfg := loadExporterConfig(t)
+	emfExporterCfg.Region = ""
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	m := new(mockConn)
+	m.On("getEC2Region", nil).Return("").Once()
+	var expectedSession *session.Session
+	expectedSession, _ = session.NewSession()
+	m.sn = expectedSession
+	cfg, s, err := GetAWSConfigSession(logger, m, emfExporterCfg)
+	assert.Nil(t, cfg)
+	assert.Nil(t, s)
+	assert.NotNil(t, err)
+}
+
+func TestNewAWSSession(t *testing.T) {
+	logger := zap.NewNop()
+	roleArn := "fake_arn"
+	region := "fake_region"
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	conn := &Conn{}
+	se, err := conn.newAWSSession(logger, roleArn, region)
+	assert.NotNil(t, err)
+	assert.Nil(t, se)
+}
+
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	logger := zap.NewNop()
 	session, _ := session.NewSession()
 
-	regions := []string{"us-east-1", "us-gov-east-1", "cn-north-1"}
+	regions := []string{"us-east-1", "us-gov-west-1", "cn-north-1"}
 
 	for _, region := range regions {
 		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region)
 		assert.NotNil(t, creds)
 	}
+	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "fake_region")
+	assert.Nil(t, creds)
+}
+
+func TestGetDefaultSession(t *testing.T) {
+	logger := zap.NewNop()
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	_, err := getDefaultSession(logger)
+	assert.NotNil(t, err)
+}
+
+func TestGetSTSCreds(t *testing.T) {
+	logger := zap.NewNop()
+	region := "fake_region"
+	roleArn := ""
+	_, err := getSTSCreds(logger, region, roleArn)
+	assert.Nil(t, err)
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+	_, err = getSTSCreds(logger, region, roleArn)
+	assert.NotNil(t, err)
 }
 
 func loadExporterConfig(t *testing.T) *Config {

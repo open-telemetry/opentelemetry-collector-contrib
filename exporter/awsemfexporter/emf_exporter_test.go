@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -115,6 +116,24 @@ func TestPushMetricsDataWithLogGroupStreamConfig(t *testing.T) {
 	pusher, ok := streamToPusherMap["test-logStreamName"]
 	assert.True(t, ok)
 	assert.NotNil(t, pusher)
+}
+
+func TestNewExporterWithoutConfig(t *testing.T) {
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.NotNil(t, err)
+	assert.Nil(t, exp)
+}
+
+func TestNewExporterWithoutSession(t *testing.T) {
+	exp, err := New(nil, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.NotNil(t, err)
+	assert.Nil(t, exp)
 }
 
 func TestWrapErrorIfBadRequest(t *testing.T) {

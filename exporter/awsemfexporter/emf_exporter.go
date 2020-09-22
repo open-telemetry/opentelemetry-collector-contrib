@@ -175,9 +175,6 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string)
 		md := mds[i]
 		// translate OT metric datapoints into CWMetricLists
 		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&md)
-		if cwm == nil {
-			return nil, totalDroppedMetrics, ""
-		}
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}
