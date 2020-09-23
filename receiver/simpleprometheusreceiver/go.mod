@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simple
 go 1.14
 
 require (
-	github.com/prometheus/common v0.13.0
+	github.com/prometheus/common v0.14.0
 	github.com/prometheus/prometheus v1.8.2-0.20200827201422-1195cc24e3c8
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.10.1-0.20200922190504-eb2127131b29
