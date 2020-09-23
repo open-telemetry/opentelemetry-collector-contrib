@@ -19,37 +19,16 @@ exporters:
       site: datadoghq.eu
 
     metrics:
-      mode: agentless
       namespace: opentelemetry
       report_percentiles: false
 
-  datadog/dogstatsd:
-    metrics:
-      mode: dogstatsd
-
-  datadog/dogstatsd/config:
-    metrics:
-      mode: dogstatsd
-      dogstatsd:
-        endpoint: "localhost:5000"
-        telemetry: false
-
-  datadog/dogstatsd/invalid:
-    metrics:
-      dogstatsd:
-        endpoint: "invalid:"
-        
   datadog/invalid:
     metrics:
-      mode: invalid
-
-  datadog/agentless/invalid:
-    metrics:
-      mode: agentless
+      endpoint: "invalid:"
 
 service:
   pipelines:
     metrics:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
-      exporters: [datadog/api, datadog/dogstatsd]
+      exporters: [datadog/api, datadog/invalid]

@@ -15,8 +15,6 @@
 package datadogexporter
 
 import (
-	"context"
-	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -25,37 +23,10 @@ import (
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	metricstest "go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
-
-type MockMetricsExporter struct {
-	cfg *Config
-}
-
-func (m *MockMetricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	return 0, fmt.Errorf("Mock metrics exporter")
-}
-
-func (m *MockMetricsExporter) GetLogger() *zap.Logger {
-	return zap.NewNop()
-}
-
-func (m *MockMetricsExporter) GetConfig() *Config {
-	return m.cfg
-}
-
-func (m *MockMetricsExporter) GetQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.CreateDefaultQueueSettings()
-}
-
-func (m *MockMetricsExporter) GetRetrySettings() exporterhelper.RetrySettings {
-	return exporterhelper.CreateDefaultRetrySettings()
-
-}
 
 func TestMetricValue(t *testing.T) {
 	var (
@@ -74,11 +45,11 @@ func TestMetricValue(t *testing.T) {
 }
 
 var (
-	testHost     = "unknown"
-	mockExporter = &MockMetricsExporter{cfg: &Config{}}
-	testKeys     = [...]string{"key1", "key2", "key3"}
-	testValues   = [...]string{"val1", "val2", ""}
-	testTags     = [...]string{"key1:val1", "key2:val2", "key3:n/a"}
+	testHost   = "unknown"
+	testKeys   = [...]string{"key1", "key2", "key3"}
+	testValues = [...]string{"val1", "val2", ""}
+	testTags   = [...]string{"key1:val1", "key2:val2", "key3:n/a"}
+	logger     = zap.NewNop()
 )
 
 func NewMetricsData(metrics []*v1.Metric) []consumerdata.MetricsData {
@@ -113,7 +84,7 @@ func TestMapNumericMetric(t *testing.T) {
 			metricstest.Timeseries(ts, testValues[:], intValue)),
 	})
 
-	series, droppedTimeSeries := MapMetrics(mockExporter, md)
+	series, droppedTimeSeries := MapMetrics(logger, MetricsConfig{}, md)
 
 	assert.Equal(t, 0, droppedTimeSeries)
 	assert.ElementsMatch(t,
@@ -160,7 +131,8 @@ func TestMapDistributionMetric(t *testing.T) {
 	})
 
 	series, _ := MapMetrics(
-		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Buckets: true}}},
+		logger,
+		MetricsConfig{Buckets: true},
 		md,
 	)
 
@@ -226,8 +198,9 @@ func TestMapSummaryMetric(t *testing.T) {
 	})
 
 	series, _ := MapMetrics(
+		logger,
 		// Enable percentiles for test
-		&MockMetricsExporter{cfg: &Config{Metrics: MetricsConfig{Percentiles: true}}},
+		MetricsConfig{Percentiles: true},
 		md,
 	)
 
@@ -289,7 +262,7 @@ func TestMapInvalid(t *testing.T) {
 			ts, []string{}, metricstest.Double(ts, 0.0))},
 	}})
 
-	metrics, droppedTimeSeries := MapMetrics(mockExporter, md)
+	metrics, droppedTimeSeries := MapMetrics(logger, MetricsConfig{}, md)
 
 	assert.Equal(t, droppedTimeSeries, 1)
 	assert.Equal(t, metrics, Series{})

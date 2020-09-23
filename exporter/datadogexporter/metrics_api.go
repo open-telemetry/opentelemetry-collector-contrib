@@ -19,22 +19,21 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
 
-type metricsAPIExporter struct {
+type metricsExporter struct {
 	logger *zap.Logger
 	cfg    *Config
 	client *datadog.Client
 	tags   []string
 }
 
-func newMetricsAPIExporter(logger *zap.Logger, cfg *Config) (*metricsAPIExporter, error) {
+func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
-	client.SetBaseUrl(cfg.Metrics.Agentless.TCPAddr.Endpoint)
+	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
 
 	if ok, err := client.Validate(); err != nil {
 		logger.Warn("Error when validating API key", zap.Error(err))
@@ -47,26 +46,26 @@ func newMetricsAPIExporter(logger *zap.Logger, cfg *Config) (*metricsAPIExporter
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
 
-	return &metricsAPIExporter{logger, cfg, client, tags}, nil
+	return &metricsExporter{logger, cfg, client, tags}, nil
 
 }
 
-func (exp *metricsAPIExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	data := internaldata.MetricsToOC(md)
-	series, droppedTimeSeries := MapMetrics(exp, data)
+	series, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, data)
 
-	addNamespace := exp.GetConfig().Metrics.Namespace != ""
-	overrideHostname := exp.GetConfig().Hostname != ""
+	addNamespace := exp.cfg.Metrics.Namespace != ""
+	overrideHostname := exp.cfg.Hostname != ""
 	addTags := len(exp.tags) > 0
 
 	for i := range series.metrics {
 		if addNamespace {
-			newName := exp.GetConfig().Metrics.Namespace + *series.metrics[i].Metric
+			newName := exp.cfg.Metrics.Namespace + *series.metrics[i].Metric
 			series.metrics[i].Metric = &newName
 		}
 
 		if overrideHostname || series.metrics[i].GetHost() == "" {
-			series.metrics[i].Host = GetHost(exp.GetConfig())
+			series.metrics[i].Host = GetHost(exp.cfg)
 		}
 
 		if addTags {
@@ -77,20 +76,4 @@ func (exp *metricsAPIExporter) PushMetricsData(ctx context.Context, md pdata.Met
 
 	err := exp.client.PostMetrics(series.metrics)
 	return droppedTimeSeries, err
-}
-
-func (exp *metricsAPIExporter) GetLogger() *zap.Logger {
-	return exp.logger
-}
-
-func (exp *metricsAPIExporter) GetConfig() *Config {
-	return exp.cfg
-}
-
-func (exp *metricsAPIExporter) GetQueueSettings() exporterhelper.QueueSettings {
-	return exporterhelper.CreateDefaultQueueSettings()
-}
-
-func (exp *metricsAPIExporter) GetRetrySettings() exporterhelper.RetrySettings {
-	return exporterhelper.CreateDefaultRetrySettings()
 }

@@ -15,38 +15,14 @@
 package datadogexporter
 
 import (
-	"context"
 	"fmt"
 	"math"
 
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
-
-type MetricsExporter interface {
-	PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error)
-	GetLogger() *zap.Logger
-	GetConfig() *Config
-	GetQueueSettings() exporterhelper.QueueSettings
-	GetRetrySettings() exporterhelper.RetrySettings
-}
-
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (MetricsExporter, error) {
-	switch cfg.Metrics.Mode {
-	case DogStatsDMode:
-		return newDogStatsDExporter(logger, cfg)
-	case AgentlessMode:
-		return newMetricsAPIExporter(logger, cfg)
-	case NoneMode:
-		return nil, fmt.Errorf("metrics exporter disabled for Datadog exporter")
-	}
-
-	return nil, fmt.Errorf("unsupported mode: '%s'", cfg.Metrics.Mode)
-}
 
 const (
 	Gauge string = "gauge"
@@ -83,8 +59,7 @@ func (m *Series) Add(metric datadog.Metric) {
 	m.metrics = append(m.metrics, metric)
 }
 
-func MapMetrics(exp MetricsExporter, data []consumerdata.MetricsData) (series Series, droppedTimeSeries int) {
-	logger := exp.GetLogger()
+func MapMetrics(logger *zap.Logger, metricsCfg MetricsConfig, data []consumerdata.MetricsData) (series Series, droppedTimeSeries int) {
 
 	for _, metricsData := range data {
 		// The hostname provided by OpenTelemetry
@@ -176,7 +151,7 @@ func MapMetrics(exp MetricsExporter, data []consumerdata.MetricsData) (series Se
 							series.Add(NewGauge(host, fullName, ts, value, tags))
 						}
 
-						if exp.GetConfig().Metrics.Buckets {
+						if metricsCfg.Buckets {
 							// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
 							// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
 							fullName := fmt.Sprintf("%s.count_per_bucket", name)
@@ -210,7 +185,7 @@ func MapMetrics(exp MetricsExporter, data []consumerdata.MetricsData) (series Se
 							series.Add(NewGauge(host, fullName, ts, sum.GetValue(), tags))
 						}
 
-						if exp.GetConfig().Metrics.Percentiles {
+						if metricsCfg.Percentiles {
 							snapshot := point.GetSummaryValue().GetSnapshot()
 							for _, pair := range snapshot.GetPercentileValues() {
 								var fullName string

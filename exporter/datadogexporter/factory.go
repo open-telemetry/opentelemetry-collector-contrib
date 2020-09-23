@@ -17,7 +17,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,7 +36,6 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
-		exporterhelper.WithTraces(createTracesExporter),
 	)
 }
 
@@ -55,24 +53,15 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 
 		Metrics: MetricsConfig{
-			Mode:        DogStatsDMode,
 			Percentiles: true,
-
-			DogStatsD: DogStatsDConfig{
-				Endpoint:  "127.0.0.1:8125",
-				Telemetry: true,
-			},
-
-			Agentless: AgentlessConfig{
-				confignet.TCPAddr{
-					Endpoint: "", // set during config sanitization
-				},
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "", // set during config sanitization
 			},
 		},
 	}
 }
 
-// CreateMetricsExporter creates a metrics exporter based on this config.
+// createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
@@ -94,24 +83,7 @@ func createMetricsExporter(
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		exp.PushMetricsData,
-		exporterhelper.WithQueue(exp.GetQueueSettings()),
-		exporterhelper.WithRetry(exp.GetRetrySettings()),
+		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
+		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
 	)
-}
-
-// CreateTracesExporter creates a traces exporter based on this config.
-func createTracesExporter(
-	_ context.Context,
-	params component.ExporterCreateParams,
-	c configmodels.Exporter) (component.TraceExporter, error) {
-
-	cfg := c.(*Config)
-
-	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
-	if err := cfg.Sanitize(); err != nil {
-		return nil, err
-	}
-
-	// Traces are not yet supported
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

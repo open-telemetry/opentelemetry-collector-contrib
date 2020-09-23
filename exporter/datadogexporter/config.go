@@ -28,12 +28,6 @@ var (
 	errUnsetAPIKey = errors.New("the Datadog API key is unset")
 )
 
-const (
-	NoneMode      = "none"
-	AgentlessMode = "agentless"
-	DogStatsDMode = "dogstatsd"
-)
-
 // APIConfig defines the API configuration options
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
@@ -50,26 +44,7 @@ func (api *APIConfig) GetCensoredKey() string {
 	if len(api.Key) <= 5 {
 		return api.Key
 	}
-	return strings.Repeat("*", len(api.Key)-5) + api.Key[:len(api.Key)-5]
-}
-
-// DogStatsDConfig defines the DogStatsd related configuration
-type DogStatsDConfig struct {
-	// FIXME Use confignet.NetAddr
-	// Endpoint is the DogStatsD address.
-	// The default value is 127.0.0.1:8125
-	// A Unix address is supported
-	Endpoint string `mapstructure:"endpoint"`
-
-	// Telemetry states whether to send internal telemetry metrics from the statsd client
-	Telemetry bool `mapstructure:"telemetry"`
-}
-
-// AgentlessConfig defines the Agentless related configuration
-type AgentlessConfig struct {
-	// Endpoint is the host of the Datadog intake server to send metrics to.
-	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	return strings.Repeat("*", len(api.Key)-5) + api.Key[len(api.Key)-5:]
 }
 
 // MetricsConfig defines the metrics exporter specific configuration options
@@ -78,9 +53,6 @@ type MetricsConfig struct {
 	// By default metrics are not namespaced
 	Namespace string `mapstructure:"namespace"`
 
-	// Mode is the metrics sending mode: either 'dogstatsd' or 'agentless'
-	Mode string `mapstructure:"mode"`
-
 	// Percentiles states whether to report percentiles for summary metrics,
 	// including the minimum and maximum
 	Percentiles bool `mapstructure:"report_percentiles"`
@@ -88,11 +60,9 @@ type MetricsConfig struct {
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
-	// DogStatsD defines the DogStatsD configuration options.
-	DogStatsD DogStatsDConfig `mapstructure:"dogstatsd"`
-
-	// Agentless defines the Agentless configuration options.
-	Agentless AgentlessConfig `mapstructure:"agentless"`
+	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
+	// If unset, the value is obtained from the Site.
+	confignet.TCPAddr `mapstructure:",squash"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -180,33 +150,24 @@ type Config struct {
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
-
-	if c.Metrics.Mode != AgentlessMode && c.Metrics.Mode != DogStatsDMode {
-		return fmt.Errorf("metrics mode '%s' is not recognized", c.Metrics.Mode)
-	}
-
 	// Get info from environment variables
 	// if unset
 	c.TagsConfig.UpdateWithEnv()
 
 	// Add '.' at the end of namespace
-	// to have the same behavior on DogStatsD and the API
 	if c.Metrics.Namespace != "" && !strings.HasSuffix(c.Metrics.Namespace, ".") {
 		c.Metrics.Namespace = c.Metrics.Namespace + "."
 	}
 
-	// Exactly one configuration for metrics must be set
-	if c.Metrics.Mode == AgentlessMode {
-		if c.API.Key == "" {
-			return errUnsetAPIKey
-		}
+	if c.API.Key == "" {
+		return errUnsetAPIKey
+	}
 
-		c.API.Key = strings.TrimSpace(c.API.Key)
+	c.API.Key = strings.TrimSpace(c.API.Key)
 
-		// Set the endpoint based on the Site
-		if c.Metrics.Agentless.Endpoint == "" {
-			c.Metrics.Agentless.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
-		}
+	// Set the endpoint based on the Site
+	if c.Metrics.TCPAddr.Endpoint == "" {
+		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
 
 	return nil

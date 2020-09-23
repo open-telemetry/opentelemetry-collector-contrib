@@ -62,51 +62,15 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Metrics: MetricsConfig{
-			Mode:        AgentlessMode,
 			Namespace:   "opentelemetry.",
 			Percentiles: false,
-
-			DogStatsD: DogStatsDConfig{
-				Endpoint:  "127.0.0.1:8125",
-				Telemetry: true,
-			},
-
-			Agentless: AgentlessConfig{
-				confignet.TCPAddr{
-					Endpoint: "https://api.datadoghq.eu",
-				},
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.eu",
 			},
 		},
 	}, apiConfig)
 
-	dogstatsdConfig := cfg.Exporters["datadog/dogstatsd"].(*Config)
-	err = dogstatsdConfig.Sanitize()
-
-	require.NoError(t, err)
-	assert.Equal(t, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "datadog/dogstatsd",
-			TypeVal: typeStr,
-		},
-
-		TagsConfig: TagsConfig{},
-		API:        APIConfig{Site: "datadoghq.com"},
-
-		Metrics: MetricsConfig{
-			Mode:        DogStatsDMode,
-			Percentiles: true,
-			DogStatsD: DogStatsDConfig{
-				Endpoint:  "127.0.0.1:8125",
-				Telemetry: true,
-			},
-		},
-	}, dogstatsdConfig)
-
-	invalidConfig := cfg.Exporters["datadog/invalid"].(*Config)
-	err = invalidConfig.Sanitize()
-	require.Error(t, err)
-
-	invalidConfig2 := cfg.Exporters["datadog/agentless/invalid"].(*Config)
+	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*Config)
 	err = invalidConfig2.Sanitize()
 	require.Error(t, err)
 
@@ -143,12 +107,13 @@ func TestOverrideMetricsURL(t *testing.T) {
 	cfg := Config{
 		API: APIConfig{Key: "notnull", Site: DefaultSite},
 		Metrics: MetricsConfig{
-			Mode:      AgentlessMode,
-			Agentless: AgentlessConfig{confignet.TCPAddr{Endpoint: DebugEndpoint}},
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: DebugEndpoint,
+			},
 		},
 	}
 
 	err := cfg.Sanitize()
 	require.NoError(t, err)
-	assert.Equal(t, cfg.Metrics.Agentless.Endpoint, DebugEndpoint)
+	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
 }

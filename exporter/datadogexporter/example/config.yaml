@@ -57,17 +57,6 @@ exporters:
     ## Metric exporter specific configuration.
     #
     # metrics:
-      ## @param mode - string - optional - default: dogstatsd
-      ## The mode with which to send metrics.
-      ## It can be one of
-      ## - 'none' (to explicitly disable it)
-      ## - 'dogstatsd' (to send metrics to a DogStatsD endpoint)
-      ## - 'agentless' (to send metrics directly through the API)
-      ##
-      ## If the mode is 'agentless' the API key must be set.
-      #
-      # mode: dogstatsd
-
       ## @param namespace - string - optional
       ## The namespace with which to prefix all metrics.
       ## By default metrics are not namespaced.
@@ -87,29 +76,12 @@ exporters:
       #
       # report_buckets: false
 
-      ## @param dogstatsd - custom object - optional
-      ## DogStatSD mode specific configuration.
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send metrics to.
+      ## If unset the value is obtained through the `site` parameter in the `api` section.
       #
-      # dogstatsd:
-        ## @param endpoint - string - default: 127.0.0.1:8125
-        ## The DogStatsD endpoint. It can be an UDP or UDS endpoint
-        #
-        # endpoint: 127.0.0.1:8125
+      # endpoint: https://api.datadoghq.com
 
-        ## @param telemetry - boolean - default: true
-        ## Whether to send telemetry metrics about the number of custom metrics sent.
-        #
-        # telemetry: true
-
-      ## @param agentless - custom object - optional
-      ## Agentless metrics exporter specific configuration
-      #
-      # agentless:
-        ## @param endpoint - string - optional
-        ## The host of the Datadog intake server to send metrics to.
-        ## If unset the value is obtained through the `site` parameter in the `api` section.
-        #
-        # endpoint: https://api.datadoghq.com
 service:
   pipelines:
     traces:

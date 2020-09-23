@@ -3,7 +3,6 @@ module github.com/DataDog/opentelemetry-collector-contrib/exporter/datadogexport
 go 1.15
 
 require (
-	github.com/DataDog/datadog-go v4.0.0+incompatible
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.6.1
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
