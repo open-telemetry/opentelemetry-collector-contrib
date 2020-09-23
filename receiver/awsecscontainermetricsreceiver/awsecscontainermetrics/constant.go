@@ -23,10 +23,8 @@ const (
 	AttributeECSTaskRevesion = "ecs.task-definition-version"
 	AttributeECSServiceName  = "ecs.service"
 
-	CPUsInVCpu               = 1024
-	BytesInMiB               = 1024 * 1024
-	ContainerMetricsLabelLen = 3
-	TaskMetricsLabelLen      = 6
+	CPUsInVCpu = 1024
+	BytesInMiB = 1024 * 1024
 
 	TaskPrefix                        = "ecs.task."
 	ContainerPrefix                   = "container."

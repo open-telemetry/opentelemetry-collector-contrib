@@ -16,10 +16,10 @@ package awsecscontainermetrics
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/golang/protobuf/ptypes/timestamp"
 )
 
-func convertToOTMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue, timestamp *timestamppb.Timestamp) []*metricspb.Metric {
+func convertToOCMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.LabelKey, labelValues []*metricspb.LabelValue, timestamp *timestamp.Timestamp) []*metricspb.Metric {
 
 	return applyTimestamp([]*metricspb.Metric{
 		intGauge(prefix+AttributeMemoryUsage, UnitBytes, &m.MemoryUsage, labelKeys, labelValues),

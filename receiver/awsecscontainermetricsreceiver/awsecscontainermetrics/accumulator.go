@@ -19,7 +19,6 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
@@ -31,11 +30,9 @@ type metricDataAccumulator struct {
 // getMetricsData generates OT Metrics data from task metadata and docker stats
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
 
-	var taskMemLimit uint64
-	var taskCPULimit float64
 	taskMetrics := ECSMetrics{}
 	timestamp := timestampProto(time.Now())
-	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
+	taskResources := taskResources(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerID]
@@ -43,16 +40,14 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
-		taskMemLimit += containerMetrics.MemoryReserved
-		taskCPULimit += containerMetrics.CPUReserved
-
-		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
-		labelKeys = append(labelKeys, taskLabelKeys...)
-		labelValues = append(labelValues, taskLabelValues...)
+		containerResources := containerResources(containerMetadata)
+		for k, v := range taskResources.Labels {
+			containerResources.Labels[k] = v
+		}
 
 		acc.accumulate(
-			timestamp,
-			convertToOTMetrics(ContainerPrefix, containerMetrics, labelKeys, labelValues, timestamp),
+			containerResources,
+			convertToOCMetrics(ContainerPrefix, containerMetrics, nil, nil, timestamp),
 		)
 
 		aggregateTaskMetrics(&taskMetrics, containerMetrics)
@@ -71,32 +66,25 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	}
 
 	acc.accumulate(
-		timestamp,
-		convertToOTMetrics(TaskPrefix, taskMetrics, taskLabelKeys, taskLabelValues, timestamp),
+		taskResources,
+		convertToOCMetrics(TaskPrefix, taskMetrics, nil, nil, timestamp),
 	)
 }
 
 func (acc *metricDataAccumulator) accumulate(
-	startTime *timestamp.Timestamp,
+	r *resourcepb.Resource,
 	m ...[]*metricspb.Metric,
 ) {
 	var resourceMetrics []*metricspb.Metric
 	for _, metrics := range m {
 		for _, metric := range metrics {
 			if metric != nil {
-				metric.Timeseries[0].StartTimestamp = startTime
 				resourceMetrics = append(resourceMetrics, metric)
 			}
 		}
 	}
 
-	resourceAttributes := map[string]string{}
-	resourceAttributes[ResourceAttributeServiceNameKey] = ResourceAttributeServiceNameValue
-
-	r := &resourcepb.Resource{
-		Type:   MetricResourceType,
-		Labels: resourceAttributes,
-	}
+	r.Labels[ResourceAttributeServiceNameKey] = ResourceAttributeServiceNameValue
 
 	acc.md = append(acc.md, &consumerdata.MetricsData{
 		Metrics:  resourceMetrics,

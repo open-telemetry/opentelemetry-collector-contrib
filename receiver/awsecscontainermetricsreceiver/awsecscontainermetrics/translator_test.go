@@ -38,7 +38,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 		{Value: "label_value_1"},
 	}
 
-	metrics := convertToOTMetrics("container.", m, labelKeys, labelValues, timestamp)
+	metrics := convertToOCMetrics("container.", m, labelKeys, labelValues, timestamp)
 	require.EqualValues(t, 25, len(metrics))
 }
 
