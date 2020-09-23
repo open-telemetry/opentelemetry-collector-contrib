@@ -117,7 +117,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				ingestURL: &url.URL{
 					Scheme: "https",
 					Host:   "ingest.us1.signalfx.com",
-					Path:   "/v2/datapoint",
+					Path:   "/",
 				},
 				apiURL: &url.URL{
 					Scheme: "https",
@@ -140,7 +140,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				ingestURL: &url.URL{
 					Scheme: "https",
 					Host:   "ingest.us0.signalfx.com",
-					Path:   "/v2/datapoint",
+					Path:   "",
 				},
 				apiURL: &url.URL{
 					Scheme: "https",
