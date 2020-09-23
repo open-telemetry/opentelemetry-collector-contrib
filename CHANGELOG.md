@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Add `dockerstats` receiver as top level component (#1081)
+## 🚀 New components 🚀
+- add `dockerstats` receiver as top level component (#1081)
+- add `tracegen` utility (#956)
 
 ## v0.10.0
 
