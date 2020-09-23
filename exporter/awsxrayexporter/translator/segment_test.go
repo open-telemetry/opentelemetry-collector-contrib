@@ -392,6 +392,19 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	assert.Equal(t, 0, len(segment.Metadata["default"]))
 }
 
+func TestSpanWithOrigin(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEKS, *segment.Origin)
+}
+
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
