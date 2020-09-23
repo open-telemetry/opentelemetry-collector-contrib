@@ -15,7 +15,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.10.1-0.20200922190504-eb2127131b29
+	go.opentelemetry.io/collector v0.10.1-0.20200917170114-639b9a80ed46
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	gotest.tools v1.4.0 // indirect
