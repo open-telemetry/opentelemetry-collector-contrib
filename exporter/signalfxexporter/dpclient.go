@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 	"sync"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -38,13 +40,36 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
+type sfxClientBase struct {
+	ingestURL *url.URL
+	headers   map[string]string
+	client    *http.Client
+	zippers   sync.Pool
+}
+
+// avoid attempting to compress things that fit into a single ethernet frame
+func (s *sfxClientBase) getReader(b []byte) (io.Reader, bool, error) {
+	var err error
+	if len(b) > 1500 {
+		buf := new(bytes.Buffer)
+		w := s.zippers.Get().(*gzip.Writer)
+		defer s.zippers.Put(w)
+		w.Reset(buf)
+		_, err = w.Write(b)
+		if err == nil {
+			err = w.Close()
+			if err == nil {
+				return buf, true, nil
+			}
+		}
+	}
+	return bytes.NewReader(b), false, err
+}
+
 // sfxDPClient sends the data to the SignalFx backend.
 type sfxDPClient struct {
-	ingestURL              *url.URL
-	headers                map[string]string
-	client                 *http.Client
+	sfxClientBase
 	logger                 *zap.Logger
-	zippers                sync.Pool
 	accessTokenPassthrough bool
 	converter              *translation.MetricsConverter
 }
@@ -104,7 +129,11 @@ func (s *sfxDPClient) pushMetricsDataForToken(
 		return numTimeseries, consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", s.ingestURL.String(), body)
+	datapointURL := *s.ingestURL
+	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
+		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
+	}
+	req, err := http.NewRequest("POST", datapointURL.String(), body)
 	if err != nil {
 		return numTimeseries, consumererror.Permanent(err)
 	}
@@ -198,23 +227,4 @@ func (s *sfxDPClient) retrieveAccessToken(md consumerdata.MetricsData) string {
 		delete(labels, splunk.SFxAccessTokenLabel)
 	}
 	return accessToken
-}
-
-// avoid attempting to compress things that fit into a single ethernet frame
-func (s *sfxDPClient) getReader(b []byte) (io.Reader, bool, error) {
-	var err error
-	if len(b) > 1500 {
-		buf := new(bytes.Buffer)
-		w := s.zippers.Get().(*gzip.Writer)
-		defer s.zippers.Put(w)
-		w.Reset(buf)
-		_, err = w.Write(b)
-		if err == nil {
-			err = w.Close()
-			if err == nil {
-				return buf, true, nil
-			}
-		}
-	}
-	return bytes.NewReader(b), false, err
 }
