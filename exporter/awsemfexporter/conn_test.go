@@ -103,15 +103,19 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestGetAWSConfigSessionWithEC2Region(t *testing.T) {
+func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 	logger := zap.NewNop()
 	emfExporterCfg := loadExporterConfig(t)
 	emfExporterCfg.Region = ""
-	conn := &Conn{}
-	cfg, s, err := GetAWSConfigSession(logger, conn, emfExporterCfg)
-	assert.NotNil(t, cfg)
-	assert.NotNil(t, s)
-	assert.Nil(t, err)
+	m := new(mockConn)
+	m.On("getEC2Region", nil).Return("some error").Once()
+	var expectedSession *session.Session
+	expectedSession, _ = session.NewSession()
+	m.sn = expectedSession
+	cfg, s, err := GetAWSConfigSession(logger, m, emfExporterCfg)
+	assert.Nil(t, cfg)
+	assert.Nil(t, s)
+	assert.NotNil(t, err)
 }
 
 func TestNewAWSSessionWithErr(t *testing.T) {
