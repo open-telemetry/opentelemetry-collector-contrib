@@ -15,7 +15,7 @@ Each line received represents a Wavefront metric in the following format:
 
 ```<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]```
 
-> IMPORTANT: The `wavefront` receiver is based on Carbon and binds to the
+> :information_source: The `wavefront` receiver is based on Carbon and binds to the
 same port by default. This means the `carbon` and `wavefront` receivers
 cannot both be enabled with their respective default configurations. To
 support running both receivers in parallel, change the `endpoint` port on one
@@ -25,15 +25,15 @@ of the receivers.
 
 The following settings are required:
 
-* `endpoint` (default = `0.0.0.0:2003`): Address and port that the 
+- `endpoint` (default = `0.0.0.0:2003`): Address and port that the
   receiver should bind to.
 
 The following setting are optional:
 
-* `extract_collectd_tags` (default = `false`): Instructs the Wavefront
+- `extract_collectd_tags` (default = `false`): Instructs the Wavefront
   receiver to attempt to extract tags in the CollectD format from the
   metric name.
-* `tcp_idle_timeout` (default = `30s`): The maximum duration that a tcp
+- `tcp_idle_timeout` (default = `30s`): The maximum duration that a tcp
   connection will idle wait for new data.
 
 Example:
