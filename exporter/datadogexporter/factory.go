@@ -36,6 +36,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithTraces(createTraceExporter),
 	)
 }
 
@@ -54,6 +55,13 @@ func createDefaultConfig() configmodels.Exporter {
 
 		Metrics: MetricsConfig{
 			Percentiles: true,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "", // set during config sanitization
+			},
+		},
+
+		Traces: TracesConfig{
+			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
@@ -85,5 +93,29 @@ func createMetricsExporter(
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+	)
+}
+
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	c configmodels.Exporter,
+) (component.TraceExporter, error) {
+
+	cfg := c.(*Config)
+
+	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(); err != nil {
+		return nil, err
+	}
+
+	exp, err := newTraceExporter(cfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		exp.pushTraceData,
 	)
 }
