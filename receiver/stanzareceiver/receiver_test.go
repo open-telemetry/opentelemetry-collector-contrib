@@ -33,6 +33,6 @@ func TestStart(t *testing.T) {
 
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
-	
+
 	require.NoError(t, receiver.Shutdown(context.Background()), "receiver shutdown failed")
 }
