@@ -216,10 +216,18 @@ func TestExtension(t *testing.T) {
 				assert.Equal(t, fmt.Sprintf("%s %s", response.Proto, listenAt), response.Header.Get("Via"))
 			}
 
-			// Assert headers from target exist in response.
-			for k, v := range test.expectedHeaders {
+			for k := range response.Header {
 				got := response.Header.Get(k)
-				assert.Equal(t, v, got)
+				header := strings.ToLower(k)
+				if want, ok := test.expectedHeaders[header]; ok {
+					assert.Equal(t, want, got)
+				} else if k == "Content-Length" || k == "Content-Type" || k == "X-Content-Type-Options" || k == "Date" || k == "Via" {
+					// Content-Length, Content-Type, X-Content-Type-Options and Date are certain headers added by default.
+					// Assertion for Via is done above.
+					continue
+				} else {
+					t.Error("unexpected header found in response: ", k)
+				}
 			}
 
 			require.NoError(t, hf.Shutdown(ctx))
