@@ -24,6 +24,7 @@ import (
 
 const typeStr = "logzio"
 
+// NewFactory creates a factory for Logz.io exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,

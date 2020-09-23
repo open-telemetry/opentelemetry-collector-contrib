@@ -21,11 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const (
-	loggerName = "logzio-exporter"
-)
-
-// exporter exporters OpenTelemetry Collector data to New Relic.
+// logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
 	accountToken string
 	writer       *store.LogzioSpanWriter

@@ -20,16 +20,17 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
+// Config contains Logz.io specific configuration such as Account Token, Region, etc.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
-	Token                         string `mapstructure:"account_token"`
-	Region                        string `mapstructure:"region"`
-	CustomListenerAddress         string `mapstructure:"custom_listener_address"`
+	Token                         string `mapstructure:"account_token"`				// Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
+	Region                        string `mapstructure:"region"`					// Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
+	CustomListenerAddress         string `mapstructure:"custom_listener_address"`	// Custom endpoint to ship traces to. Use only for dev and tests.
 }
 
 func (c *Config) validate() error {
 	if c.Token == "" {
-		return errors.New("`Account Token` not specified")
+		return errors.New("`account_token` not specified")
 	}
 	return nil
 }
