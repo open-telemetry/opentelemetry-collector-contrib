@@ -2,25 +2,32 @@
 
 StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
 
-## Status
-
-This plugin is still being developed and is **not** ready to be used in a production grade environment.
+> :construction: This receiver is currently in **BETA**.
 
 ## Configuration
+
+The following settings are required:
+
+- `endpoint` (default = `localhost:8125`): Address and port to listen on.
+
+Example:
 
 ```yaml
 receivers:
   statsd:
-    endpoint: "localhost:8125" # default
+  statsd/2:
+    endpoint: "localhost:8127"
 ```
 
-### endpoint
-
-The `"<host>:<port>"` to listen on. By default listen on `"localhost:8125"`.
+The full list of settings exposed for this receiver are documented [here](./config.go)
+with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Aggregation
 
-Currently the `statsdreceiver` is not providing any aggregation. There are ideas such as the [Metrics Transform Processor Proposal](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/332) that intend to enable control over Metric aggregation in a processor.
+Currently the `statsdreceiver` is not providing any aggregation. There are
+ideas such as the [Metrics Transform Processor
+Proposal](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/332)
+that intend to enable control over Metric aggregation in a processor.
 
 An alternative will be to implement some simple aggregation in this receiver.
 
