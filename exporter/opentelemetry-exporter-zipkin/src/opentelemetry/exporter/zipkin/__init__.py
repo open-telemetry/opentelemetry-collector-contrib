@@ -184,9 +184,9 @@ class ZipkinSpanExporter(SpanExporter):
                 ] = span.instrumentation_info.version
 
             if span.status is not None:
-                zipkin_span["tags"][
-                    "otel.status_code"
-                ] = span.status.canonical_code.value
+                zipkin_span["tags"]["otel.status_code"] = str(
+                    span.status.canonical_code.value
+                )
                 if span.status.description is not None:
                     zipkin_span["tags"][
                         "otel.status_description"
