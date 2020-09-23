@@ -15,30 +15,11 @@
 package stanzareceiver
 
 import (
-	"context"
-	"testing"
-	"time"
-
 	"github.com/observiq/stanza/entry"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func TestLogEmitter(t *testing.T) {
-
-	emitter := NewLogEmitter(zaptest.NewLogger(t).Sugar())
-	defer emitter.Stop()
-
-	in := entry.New()
-
-	go func() {
-		require.NoError(t, emitter.Process(context.Background(), in))
-	}()
-
-	select {
-	case out := <-emitter.logChan:
-		require.Equal(t, in, out)
-	case <-time.After(time.Second):
-		require.FailNow(t, "Timed out waiting for output")
-	}
+// TODO
+func convert(obsLog *entry.Entry) pdata.Logs {
+	return pdata.NewLogs()
 }

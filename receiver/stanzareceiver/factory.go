@@ -55,10 +55,6 @@ func createLogsReceiver(
 
 	obsConfig := cfg.(*Config)
 
-	/*
-		The emitter is a stanza operator that is automatically placed at the end of
-		any stanza pipeline. All it does is pass logs to the receiver via a channel.
-	*/
 	emitter := NewLogEmitter(params.Logger.Sugar())
 
 	logAgent, err := stanza.NewBuilder(&stanza.Config{Pipeline: obsConfig.Pipeline}, params.Logger.Sugar()).

@@ -16,6 +16,7 @@ package stanzareceiver
 
 import (
 	"context"
+	"sync"
 
 	"github.com/observiq/stanza/entry"
 	"github.com/observiq/stanza/operator/helper"
@@ -25,6 +26,8 @@ import (
 // LogEmitter is a stanza operator that emits log entries to a channel
 type LogEmitter struct {
 	helper.OutputOperator
+	logChan  chan *entry.Entry
+	stopOnce sync.Once
 }
 
 // NewLogEmitter creates a new receiver output
@@ -37,17 +40,23 @@ func NewLogEmitter(logger *zap.SugaredLogger) *LogEmitter {
 				SugaredLogger: logger,
 			},
 		},
+		logChan: make(chan *entry.Entry),
 	}
 }
 
 // Process will emit an entry to the output channel
 func (e *LogEmitter) Process(ctx context.Context, ent *entry.Entry) error {
-	// TODO
+	select {
+	case e.logChan <- ent:
+	case <-ctx.Done():
+	}
 	return nil
 }
 
 // Stop will close the log channel
 func (e *LogEmitter) Stop() error {
-	// TODO
+	e.stopOnce.Do(func() {
+		close(e.logChan)
+	})
 	return nil
 }
