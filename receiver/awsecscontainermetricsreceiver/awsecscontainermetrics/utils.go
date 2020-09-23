@@ -26,6 +26,7 @@ import (
 )
 
 // GenerateDummyMetrics generates two dummy metrics
+// TODO: Remove once this is replaced with actuall metrics generation code
 func GenerateDummyMetrics() consumerdata.MetricsData {
 	md := consumerdata.MetricsData{}
 
