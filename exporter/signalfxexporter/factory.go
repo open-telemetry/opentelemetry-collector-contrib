@@ -41,7 +41,8 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -95,4 +96,14 @@ func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	}
 
 	return config.TranslationRules, nil
+}
+
+func createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogsExporter, error) {
+	oCfg := cfg.(*Config)
+
+	return NewEventExporter(oCfg, params.Logger)
 }

@@ -174,7 +174,7 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeM
 	return attrs
 }
 
-func newTraceID() []byte {
+func newTraceID() pdata.TraceID {
 	var r [16]byte
 	epoch := time.Now().Unix()
 	binary.BigEndian.PutUint32(r[0:4], uint32(epoch))
@@ -182,7 +182,7 @@ func newTraceID() []byte {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewTraceID(r[:])
 }
 
 func newSegmentID() []byte {
