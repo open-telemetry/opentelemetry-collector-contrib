@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Zipkin exporter now accepts a ``max_tag_value_length`` attribute to customize the
+  maximum allowed size a tag value can have. ([#1151](https://github.com/open-telemetry/opentelemetry-python/pull/1151)) 
+
 ## Version 0.13b0
 
 Released 2020-09-17

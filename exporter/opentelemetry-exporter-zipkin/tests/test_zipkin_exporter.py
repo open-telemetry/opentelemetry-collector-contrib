@@ -361,3 +361,50 @@ class TestZipkinSpanExporter(unittest.TestCase):
         exporter = ZipkinSpanExporter("test-service")
         status = exporter.export(spans)
         self.assertEqual(SpanExportResult.FAILURE, status)
+
+    def test_max_tag_length(self):
+        service_name = "test-service"
+
+        span_context = trace_api.SpanContext(
+            0x0E0C63257DE34C926F9EFCD03927272E,
+            0x04BF92DEEFC58C92,
+            is_remote=False,
+            trace_flags=TraceFlags(TraceFlags.SAMPLED),
+        )
+
+        span = trace.Span(name="test-span", context=span_context,)
+
+        span.start()
+        span.resource = Resource({})
+        # added here to preserve order
+        span.set_attribute("k1", "v" * 500)
+        span.set_attribute("k2", "v" * 50)
+        span.set_status(
+            Status(StatusCanonicalCode.UNKNOWN, "Example description")
+        )
+        span.end()
+
+        exporter = ZipkinSpanExporter(service_name)
+        mock_post = MagicMock()
+        with patch("requests.post", mock_post):
+            mock_post.return_value = MockResponse(200)
+            status = exporter.export([span])
+            self.assertEqual(SpanExportResult.SUCCESS, status)
+
+        _, kwargs = mock_post.call_args  # pylint: disable=E0633
+
+        tags = json.loads(kwargs["data"])[0]["tags"]
+        self.assertEqual(len(tags["k1"]), 128)
+        self.assertEqual(len(tags["k2"]), 50)
+
+        exporter = ZipkinSpanExporter(service_name, max_tag_value_length=2)
+        mock_post = MagicMock()
+        with patch("requests.post", mock_post):
+            mock_post.return_value = MockResponse(200)
+            status = exporter.export([span])
+            self.assertEqual(SpanExportResult.SUCCESS, status)
+
+        _, kwargs = mock_post.call_args  # pylint: disable=E0633
+        tags = json.loads(kwargs["data"])[0]["tags"]
+        self.assertEqual(len(tags["k1"]), 2)
+        self.assertEqual(len(tags["k2"]), 2)
