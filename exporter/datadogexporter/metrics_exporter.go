@@ -50,10 +50,7 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 
 }
 
-func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	data := internaldata.MetricsToOC(md)
-	series, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, data)
-
+func (exp *metricsExporter) processMetrics(series *Series) {
 	addNamespace := exp.cfg.Metrics.Namespace != ""
 	overrideHostname := exp.cfg.Hostname != ""
 	addTags := len(exp.tags) > 0
@@ -73,6 +70,12 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		}
 
 	}
+}
+
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+	data := internaldata.MetricsToOC(md)
+	series, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, data)
+	exp.processMetrics(&series)
 
 	err := exp.client.PostMetrics(series.metrics)
 	return droppedTimeSeries, err

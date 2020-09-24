@@ -15,6 +15,7 @@
 package datadogexporter
 
 import (
+	"os"
 	"path"
 	"testing"
 
@@ -116,4 +117,50 @@ func TestOverrideMetricsURL(t *testing.T) {
 	err := cfg.Sanitize()
 	require.NoError(t, err)
 	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
+}
+
+func TestAPIKeyUnset(t *testing.T) {
+	cfg := Config{}
+	err := cfg.Sanitize()
+	assert.Equal(t, err, errUnsetAPIKey)
+}
+
+func TestCensorAPIKey(t *testing.T) {
+	cfg := APIConfig{
+		Key: "ddog_32_characters_long_api_key1",
+	}
+
+	assert.Equal(
+		t,
+		"***************************_key1",
+		cfg.GetCensoredKey(),
+	)
+}
+
+func TestUpdateWithEnv(t *testing.T) {
+	cfg := TagsConfig{
+		Hostname: "test_host",
+		Env:      "test_env",
+	}
+
+	// Should be ignored since they were set
+	// on config
+	os.Setenv("DD_HOST", "env_host")
+	os.Setenv("DD_ENV", "env_env")
+
+	// Should be picked up
+	os.Setenv("DD_SERVICE", "env_service")
+	os.Setenv("DD_VERSION", "env_version")
+
+	cfg.UpdateWithEnv()
+
+	assert.Equal(t,
+		TagsConfig{
+			Hostname: "test_host",
+			Env:      "test_env",
+			Service:  "env_service",
+			Version:  "env_version",
+		},
+		cfg,
+	)
 }
