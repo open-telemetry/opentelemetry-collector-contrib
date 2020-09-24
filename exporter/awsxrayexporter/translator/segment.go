@@ -212,10 +212,15 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	// EB > ECS > EC2
 	if resource.IsNil() {
-		return OriginEC2
+		return ""
 	}
+	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
+		if provider.StringVal() != "aws" {
+			return ""
+		}
+	}
+	// EB > ECS > EC2
 	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
 	if eb {
 		return OriginEB
