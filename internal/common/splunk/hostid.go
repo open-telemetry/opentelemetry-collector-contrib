@@ -17,7 +17,6 @@ package splunk
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -60,7 +59,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	}
 
 	switch provider {
-	case resourcedetectionprocessor.CloudProviderAWS:
+	case cloud.ProviderAWS:
 		if hostID == "" || region == "" || cloudAccount == "" {
 			break
 		}
@@ -68,7 +67,7 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 			Key: HostIDKeyAWS,
 			ID:  fmt.Sprintf("%s_%s_%s", hostID, region, cloudAccount),
 		}, true
-	case resourcedetectionprocessor.CloudProviderGCP:
+	case cloud.ProviderGCP:
 		if cloudAccount == "" || hostID == "" {
 			break
 		}

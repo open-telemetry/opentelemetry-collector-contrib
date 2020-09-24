@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
@@ -25,8 +26,7 @@ import (
 )
 
 const (
-	TypeStr          = "ec2"
-	CloudProviderAWS = "aws"
+	TypeStr = "ec2"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -57,7 +57,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, CloudProviderAWS)
+	attr.InsertString(conventions.AttributeCloudProvider, cloud.ProviderAWS)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudZone, meta.AvailabilityZone)

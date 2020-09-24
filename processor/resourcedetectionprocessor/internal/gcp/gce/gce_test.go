@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 )
 
 type mockMetadata struct {
@@ -87,7 +88,7 @@ func TestDetectTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: CloudProviderGCP,
+		conventions.AttributeCloudProvider: cloud.ProviderGCP,
 		conventions.AttributeCloudAccount:  "1",
 		conventions.AttributeCloudZone:     "zone",
 
@@ -128,7 +129,7 @@ func TestDetectError(t *testing.T) {
 
 	assert.EqualError(t, err, "[err1; err2; err3; err4; err5; err6]")
 
-	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: CloudProviderGCP})
+	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: cloud.ProviderGCP})
 
 	res.Attributes().Sort()
 	expected.Attributes().Sort()
