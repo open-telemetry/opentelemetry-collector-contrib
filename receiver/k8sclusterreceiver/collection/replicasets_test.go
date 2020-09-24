@@ -65,8 +65,7 @@ func newReplicaSet(id string) *appsv1.ReplicaSet {
 		},
 		Spec: appsv1.ReplicaSetSpec{
 			Replicas: func() *int32 {
-				var out int32
-				out = 3
+				var out int32 = 3
 				return &out
 			}(),
 		},
