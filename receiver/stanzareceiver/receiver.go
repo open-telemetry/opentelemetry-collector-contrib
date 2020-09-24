@@ -34,7 +34,6 @@ type stanzareceiver struct {
 	cancel    context.CancelFunc
 
 	agent    *stanza.LogAgent
-	emitter  *LogEmitter
 	consumer consumer.LogsConsumer
 	logger   *zap.Logger
 }
