@@ -2,9 +2,28 @@
 
 ## Unreleased
 
+## v0.11.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.11.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.11.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
 ## 🚀 New components 🚀
 - add `dockerstats` receiver as top level component (#1081)
 - add `tracegen` utility (#956)
+
+## 💡 Enhancements 💡
+- `stackdriver` exporter: Allow overriding client options via config (#1010)
+- `k8scluster` receiver: Ensure informer caches are synced before initial data sync (#842)
+- `elastic` exporter: Translate `deployment.environment` resource attribute to Elastic APM's semantically equivalent `service.environment` (#1022)
+- `k8s` processor: Add logs support (#1051)
+- `awsxray` exporter: Log response error with zap (#1050)
+- `signalfx` exporter
+  - Add dimensions to renamed metrics (#1041)
+  - Add translation rules for `disk_ops.total` and `disk_ops.pending` metrics (#1082)
+  - Add event support (#1036)
+- `kubeletstats` receiver: Cache detailed PVC labels to reduce API calls (#1052)
+- `signalfx` receiver: Add event support (#1035)
 
 ## v0.10.0
 
