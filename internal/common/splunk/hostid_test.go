@@ -27,7 +27,7 @@ var (
 		res := pdata.NewResource()
 		res.InitEmpty()
 		attr := res.Attributes()
-		attr.InsertString(conventions.AttributeCloudProvider, "ec2")
+		attr.InsertString(conventions.AttributeCloudProvider, "aws")
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
 		attr.InsertString(conventions.AttributeCloudRegion, "us-west-2")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
@@ -37,7 +37,7 @@ var (
 		res := pdata.NewResource()
 		res.InitEmpty()
 		attr := res.Attributes()
-		attr.InsertString(conventions.AttributeCloudProvider, "ec2")
+		attr.InsertString(conventions.AttributeCloudProvider, "aws")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()
@@ -45,7 +45,7 @@ var (
 		res := pdata.NewResource()
 		res.InitEmpty()
 		attr := res.Attributes()
-		attr.InsertString(conventions.AttributeCloudProvider, "gce")
+		attr.InsertString(conventions.AttributeCloudProvider, "gcp")
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
@@ -54,7 +54,7 @@ var (
 		res := pdata.NewResource()
 		res.InitEmpty()
 		attr := res.Attributes()
-		attr.InsertString(conventions.AttributeCloudProvider, "gce")
+		attr.InsertString(conventions.AttributeCloudProvider, "gcp")
 		attr.InsertString(conventions.AttributeCloudAccount, "1234")
 		return res
 	}()

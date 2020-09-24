@@ -26,7 +26,7 @@ import (
 
 const (
 	TypeStr          = "ec2"
-	cloudProviderAWS = "aws"
+	CloudProviderAWS = "aws"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -57,7 +57,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderAWS)
+	attr.InsertString(conventions.AttributeCloudProvider, CloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudZone, meta.AvailabilityZone)

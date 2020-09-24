@@ -17,6 +17,7 @@ package splunk
 import (
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
@@ -26,9 +27,9 @@ type HostIDKey string
 
 const (
 	// AWS
-	AWS HostIDKey = "AWSUniqueId"
+	HostIDKeyAWS HostIDKey = "AWSUniqueId"
 	// GCP
-	GCP HostIDKey = "gcp_id"
+	HostIDKeyGCP HostIDKey = "gcp_id"
 )
 
 // HostID is a unique key and value (usually used as a dimension) to uniquely identify a host.
@@ -59,21 +60,20 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	}
 
 	switch provider {
-	// TODO: Should these be defined as constants in resourcedetector module that we import or somewhere else?
-	case "ec2":
+	case resourcedetectionprocessor.CloudProviderAWS:
 		if hostID == "" || region == "" || cloudAccount == "" {
 			break
 		}
 		return HostID{
-			Key: AWS,
+			Key: HostIDKeyAWS,
 			ID:  fmt.Sprintf("%s_%s_%s", hostID, region, cloudAccount),
 		}, true
-	case "gce":
+	case resourcedetectionprocessor.CloudProviderGCP:
 		if cloudAccount == "" || hostID == "" {
 			break
 		}
 		return HostID{
-			Key: GCP,
+			Key: HostIDKeyGCP,
 			ID:  fmt.Sprintf("%s_%s", cloudAccount, hostID),
 		}, true
 	}

@@ -87,7 +87,7 @@ func TestDetectTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: cloudProviderGCP,
+		conventions.AttributeCloudProvider: CloudProviderGCP,
 		conventions.AttributeCloudAccount:  "1",
 		conventions.AttributeCloudZone:     "zone",
 
@@ -128,7 +128,7 @@ func TestDetectError(t *testing.T) {
 
 	assert.EqualError(t, err, "[err1; err2; err3; err4; err5; err6]")
 
-	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: cloudProviderGCP})
+	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: CloudProviderGCP})
 
 	res.Attributes().Sort()
 	expected.Attributes().Sort()

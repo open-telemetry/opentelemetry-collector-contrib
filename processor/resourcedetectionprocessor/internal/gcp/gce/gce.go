@@ -28,7 +28,7 @@ import (
 
 const (
 	TypeStr          = "gce"
-	cloudProviderGCP = "gcp"
+	CloudProviderGCP = "gcp"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -58,7 +58,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
-	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderGCP)
+	attr.InsertString(conventions.AttributeCloudProvider, CloudProviderGCP)
 
 	var errors []error
 
