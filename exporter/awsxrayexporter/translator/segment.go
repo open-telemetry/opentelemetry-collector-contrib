@@ -198,7 +198,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewTraceID(r[:])
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
@@ -251,7 +251,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	var (
 		content  = [traceIDLength]byte{}
 		epochNow = time.Now().Unix()
-		epoch    = int64(binary.BigEndian.Uint32(traceID[0:4]))
+		epoch    = int64(binary.BigEndian.Uint32(traceID.Bytes()[0:4]))
 		b        = [4]byte{}
 	)
 
@@ -271,7 +271,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
 	content[10] = '-'
-	hex.Encode(content[identifierOffset:], traceID[4:16]) // overwrite with identifier
+	hex.Encode(content[identifierOffset:], traceID.Bytes()[4:16]) // overwrite with identifier
 
 	return string(content[0:traceIDLength])
 }

@@ -748,7 +748,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	span.SetTraceID(defaultTraceID)
+	span.SetTraceID(pdata.NewTraceID(defaultTraceID))
 	span.SetSpanID(defaultSpanID)
 	span.SetParentSpanID(defaultParentSpanID)
 	span.SetName(spanName)
