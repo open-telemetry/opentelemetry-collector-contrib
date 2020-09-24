@@ -67,22 +67,22 @@ API
 import collections
 import logging
 import re
-from typing import Sequence
+from typing import Iterable, Optional, Sequence, Union
 
-from prometheus_client import start_http_server
 from prometheus_client.core import (
     REGISTRY,
-    CollectorRegistry,
     CounterMetricFamily,
+    SummaryMetricFamily,
     UnknownMetricFamily,
 )
 
-from opentelemetry.metrics import Counter, Metric, ValueRecorder
+from opentelemetry.metrics import Counter, ValueRecorder
 from opentelemetry.sdk.metrics.export import (
     MetricRecord,
     MetricsExporter,
     MetricsExportResult,
 )
+from opentelemetry.sdk.metrics.export.aggregate import MinMaxSumCountAggregator
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +110,8 @@ class PrometheusMetricsExporter(MetricsExporter):
 
 
 class CustomCollector:
-    """ CustomCollector represents the Prometheus Collector object
-        https://github.com/prometheus/client_python#custom-collectors
+    """CustomCollector represents the Prometheus Collector object
+    https://github.com/prometheus/client_python#custom-collectors
     """
 
     def __init__(self, prefix: str = ""):
@@ -121,7 +121,7 @@ class CustomCollector:
             r"[^\w]", re.UNICODE | re.IGNORECASE
         )
 
-    def add_metrics_data(self, metric_records: Sequence[MetricRecord]):
+    def add_metrics_data(self, metric_records: Sequence[MetricRecord]) -> None:
         self._metrics_to_export.append(metric_records)
 
     def collect(self):
@@ -152,25 +152,35 @@ class CustomCollector:
             metric_name = self._prefix + "_"
         metric_name += self._sanitize(metric_record.instrument.name)
 
+        description = getattr(metric_record.instrument, "description", "")
         if isinstance(metric_record.instrument, Counter):
             prometheus_metric = CounterMetricFamily(
-                name=metric_name,
-                documentation=metric_record.instrument.description,
-                labels=label_keys,
+                name=metric_name, documentation=description, labels=label_keys
             )
             prometheus_metric.add_metric(
                 labels=label_values, value=metric_record.aggregator.checkpoint
             )
         # TODO: Add support for histograms when supported in OT
         elif isinstance(metric_record.instrument, ValueRecorder):
-            prometheus_metric = UnknownMetricFamily(
-                name=metric_name,
-                documentation=metric_record.instrument.description,
-                labels=label_keys,
-            )
-            prometheus_metric.add_metric(
-                labels=label_values, value=metric_record.aggregator.checkpoint
-            )
+            value = metric_record.aggregator.checkpoint
+            if isinstance(metric_record.aggregator, MinMaxSumCountAggregator):
+                prometheus_metric = SummaryMetricFamily(
+                    name=metric_name,
+                    documentation=description,
+                    labels=label_keys,
+                )
+                prometheus_metric.add_metric(
+                    labels=label_values,
+                    count_value=value.count,
+                    sum_value=value.sum,
+                )
+            else:
+                prometheus_metric = UnknownMetricFamily(
+                    name=metric_name,
+                    documentation=description,
+                    labels=label_keys,
+                )
+                prometheus_metric.add_metric(labels=label_values, value=value)
 
         else:
             logger.warning(
@@ -178,8 +188,8 @@ class CustomCollector:
             )
         return prometheus_metric
 
-    def _sanitize(self, key):
-        """ sanitize the given metric name or label according to Prometheus rule.
+    def _sanitize(self, key: str) -> str:
+        """sanitize the given metric name or label according to Prometheus rule.
         Replace all characters other than [A-Za-z0-9_] with '_'.
         """
         return self._non_letters_nor_digits_re.sub("_", key)
