@@ -30,28 +30,28 @@ const (
 )
 
 var statefulSetReplicasDesiredMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/stateful_set/desired_pods",
+	Name:        "k8s.statefulset.desired_pods",
 	Description: "Number of desired pods in the stateful set (the `spec.replicas` field)",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/stateful_set/ready_pods",
+	Name:        "k8s.statefulset.ready_pods",
 	Description: "Number of pods created by the stateful set that have the `Ready` condition",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasCurrentMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/stateful_set/current_pods",
+	Name:        "k8s.statefulset.current_pods",
 	Description: "The number of pods created by the StatefulSet controller from the StatefulSet version",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var statefulSetReplicasUpdatedMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/stateful_set/updated_pods",
+	Name:        "k8s.statefulset.updated_pods",
 	Description: "Number of pods created by the StatefulSet controller from the StatefulSet version",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,

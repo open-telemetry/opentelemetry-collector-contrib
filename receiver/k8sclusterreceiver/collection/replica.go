@@ -26,7 +26,7 @@ func getReplicaMetrics(resource string, desired, available int32) []*metricspb.M
 	return []*metricspb.Metric{
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        fmt.Sprintf("k8s/%s/desired", resource),
+				Name:        fmt.Sprintf("k8s.%s.desired", resource),
 				Description: fmt.Sprintf("Number of desired pods in this %s", resource),
 				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 				Unit:        "1",
@@ -35,7 +35,7 @@ func getReplicaMetrics(resource string, desired, available int32) []*metricspb.M
 		},
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        fmt.Sprintf("k8s/%s/available", resource),
+				Name:        fmt.Sprintf("k8s.%s.available", resource),
 				Description: fmt.Sprintf("Total number of available pods (ready for at least minReadySeconds) targeted by this %s", resource),
 				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 				Unit:        "1",
