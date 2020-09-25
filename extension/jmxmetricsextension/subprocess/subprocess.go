@@ -22,10 +22,10 @@ import (
 	"os"
 	"os/exec"
 	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -123,13 +123,16 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 // Shutdown is invoked during service shutdown.
 func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	subprocess.cancel()
-	t := time.NewTimer(*subprocess.config.ShutdownTimeout)
+	timeout := *subprocess.config.ShutdownTimeout
+	t := time.NewTimer(timeout)
 
 	// Wait for the subprocess to exit or the timeout period to elapse
 	select {
 	case <-ctx.Done():
 	case <-subprocess.shutdownSignal:
 	case <-t.C:
+		subprocess.logger.Warn("subprocess hasn't returned within shutdown timeout. May be zombied.",
+			zap.String("timeout", fmt.Sprintf("%v", timeout)))
 	}
 
 	return nil
@@ -139,24 +142,23 @@ func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 // doesn't write to a closed channel
 type processReturned struct {
 	ReturnedChan chan error
-	isOpenValue  *atomic.Value
+	isOpen       *atomic.Bool
 	lock         *sync.Mutex
 }
 
 func newProcessReturned() *processReturned {
 	pr := processReturned{
 		ReturnedChan: make(chan error),
-		isOpenValue:  &atomic.Value{},
+		isOpen:       atomic.NewBool(true),
 		lock:         &sync.Mutex{},
 	}
-	pr.isOpenValue.Store(true)
 	return &pr
 }
 
 func (pr *processReturned) signal(err error) {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
-	if pr.isOpenValue.Load().(bool) {
+	if pr.isOpen.Load() {
 		pr.ReturnedChan <- err
 	}
 }
@@ -164,9 +166,9 @@ func (pr *processReturned) signal(err error) {
 func (pr *processReturned) close() {
 	pr.lock.Lock()
 	defer pr.lock.Unlock()
-	if pr.isOpenValue.Load().(bool) {
+	if pr.isOpen.Load() {
 		close(pr.ReturnedChan)
-		pr.isOpenValue.Store(false)
+		pr.isOpen.Store(false)
 	}
 }
 
