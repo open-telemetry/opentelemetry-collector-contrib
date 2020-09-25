@@ -18,9 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-func TestGetContainerAndTaskMetrics(t *testing.T) {
+func TestGetMetricsData(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
 
@@ -86,50 +87,25 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		CPU:         cpuStats,
 	}
 
-	containerMetrics := getContainerMetrics(containerStats)
-	require.NotNil(t, containerMetrics)
-
-	taskMetrics := ECSMetrics{}
-	aggregateTaskMetrics(&taskMetrics, containerMetrics)
-	require.EqualValues(t, v, taskMetrics.MemoryUsage)
-	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
-	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
-}
-
-func TestExtractStorageUsage(t *testing.T) {
-	v := uint64(100)
-	disk := &DiskStats{
-		IoServiceBytesRecursives: []IoServiceBytesRecursive{
-			{Op: "Read", Value: &v},
-			{Op: "Write", Value: &v},
-			{Op: "Total", Value: &v},
+	tm := TaskMetadata{
+		Cluster:  "cluster-1",
+		TaskARN:  "arn:aws:some-value/001",
+		Family:   "task-def-family-1",
+		Revision: "task-def-version",
+		Containers: []ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
 		},
-	}
-	read, write := extractStorageUsage(disk)
-
-	require.EqualValues(t, v, read)
-	require.EqualValues(t, v, write)
-}
-
-func TestGetNetworkStats(t *testing.T) {
-	v := uint64(100)
-	stats := make(map[string]NetworkStats)
-	stats["eth0"] = NetworkStats{
-		RxBytes:   &v,
-		RxPackets: &v,
-		RxErrors:  &v,
-		RxDropped: &v,
-		TxBytes:   &v,
-		TxPackets: &v,
-		TxErrors:  &v,
-		TxDropped: &v,
+		Limits: Limit{CPU: &f, Memory: &v},
 	}
 
-	netArray := getNetworkStats(stats)
+	cstats := make(map[string]ContainerStats)
+	cstats["001"] = containerStats
 
-	sum := uint64(0)
-	for _, v := range netArray {
-		sum += v
+	var mds []*consumerdata.MetricsData
+	acc := metricDataAccumulator{
+		md: mds,
 	}
-	require.EqualValues(t, 800, sum)
+
+	acc.getMetricsData(cstats, tm)
+	require.Less(t, 0, len(acc.md))
 }
