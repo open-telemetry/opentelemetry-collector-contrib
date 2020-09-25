@@ -32,7 +32,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 
 	taskMetrics := ECSMetrics{}
 	timestamp := timestampProto(time.Now())
-	taskResources := taskResources(metadata)
+	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerID]
@@ -40,13 +40,13 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
-		containerResources := containerResources(containerMetadata)
-		for k, v := range taskResources.Labels {
-			containerResources.Labels[k] = v
+		containerResource := containerResource(containerMetadata)
+		for k, v := range taskResource.Labels {
+			containerResource.Labels[k] = v
 		}
 
 		acc.accumulate(
-			containerResources,
+			containerResource,
 			convertToOCMetrics(ContainerPrefix, containerMetrics, nil, nil, timestamp),
 		)
 
@@ -66,7 +66,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	}
 
 	acc.accumulate(
-		taskResources,
+		taskResource,
 		convertToOCMetrics(TaskPrefix, taskMetrics, nil, nil, timestamp),
 	)
 }

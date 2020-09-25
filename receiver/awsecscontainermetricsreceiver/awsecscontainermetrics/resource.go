@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func containerResources(cm ContainerMetadata) *resourcepb.Resource {
+func containerResource(cm ContainerMetadata) *resourcepb.Resource {
 	labels := map[string]string{}
 
 	labels[conventions.AttributeContainerName] = cm.ContainerName
@@ -33,7 +33,7 @@ func containerResources(cm ContainerMetadata) *resourcepb.Resource {
 	}
 }
 
-func taskResources(tm TaskMetadata) *resourcepb.Resource {
+func taskResource(tm TaskMetadata) *resourcepb.Resource {
 	labels := map[string]string{}
 
 	labels[AttributeECSCluster] = tm.Cluster

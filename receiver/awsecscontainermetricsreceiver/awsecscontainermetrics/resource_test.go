@@ -27,7 +27,7 @@ func TestContainerResource(t *testing.T) {
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
 	}
-	r := containerResources(cm)
+	r := containerResource(cm)
 	require.NotNil(t, r)
 
 	labels := r.Labels
@@ -45,7 +45,7 @@ func TestTaskResource(t *testing.T) {
 		Family:   "task-def-family-1",
 		Revision: "task-def-version-1",
 	}
-	r := taskResources(tm)
+	r := taskResource(tm)
 	require.NotNil(t, r)
 
 	labels := r.Labels
