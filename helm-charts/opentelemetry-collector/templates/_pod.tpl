@@ -35,7 +35,7 @@ containers:
           fieldRef:
             apiVersion: v1
             fieldPath: status.podIP
-      {{- if and .isAgent .Values.telemetry.metrics.enabled }}
+      {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
       # Env variables for host metrics receiver
       - name: HOST_PROC
         value: /hostfs/proc
@@ -63,7 +63,7 @@ containers:
     volumeMounts:
       - mountPath: /conf
         name: {{ .Chart.Name }}-configmap
-      {{- if and .isAgent .Values.telemetry.metrics.enabled }}
+      {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
       - mountPath: /hostfs
         name: hostfs
         readOnly: true
@@ -76,7 +76,7 @@ volumes:
       items:
         - key: relay
           path: relay.yaml
-  {{- if and .isAgent .Values.telemetry.metrics.enabled }}
+  {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
   - name: hostfs
     hostPath:
       path: /

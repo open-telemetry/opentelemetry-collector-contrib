@@ -5,13 +5,15 @@
 nameOverride: ""
 fullnameOverride: ""
 
-# Basic parameters that used to compose configmaps
+# Basic parameters that used to compose default configmaps
 telemetry:
   metrics:
     enabled: true
     exporter:
       type: logging
       config: {}
+    # scraping host metrics disabled by default
+    hostMetricsEnabled: false
 
   traces:
     enabled: true
