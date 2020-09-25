@@ -33,7 +33,8 @@ const (
 	HostIDKeyGCP HostIDKey = "gcp_id"
 )
 
-// HostID is a unique key and value (usually used as a dimension) to uniquely identify a host.
+// HostID is a unique key and value (usually used as a dimension) to uniquely identify a host
+// using metadata about a cloud instance.
 type HostID struct {
 	// Key is the key name/type.
 	Key HostIDKey
@@ -41,9 +42,8 @@ type HostID struct {
 	ID string
 }
 
-// resourceAttributesToDimensions will return a set of dimension from the
-// resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
-// if it can be constructed from the provided metadata.
+// ResourceToHostID returns a boolean determining whether or not a HostID was able to be
+// computed or not.
 func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	var cloudAccount, region, hostID, provider string
 
