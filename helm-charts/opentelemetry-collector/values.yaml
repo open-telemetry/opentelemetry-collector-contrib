@@ -75,7 +75,7 @@ ports:
 
 # Configuration for agent OpenTelemetry Collector daemonset, enabled by default
 agentCollector:
-  enabled: false
+  enabled: true
 
   resources:
     limits:
@@ -87,7 +87,7 @@ agentCollector:
 
 # Configuration for standalone OpenTelemetry Collector deployment, disabled by default
 standaloneCollector:
-  enabled: true
+  enabled: false
 
   replicaCount: 1
 
