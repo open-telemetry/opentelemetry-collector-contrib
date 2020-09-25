@@ -98,6 +98,12 @@ func TestResourceToHostID(t *testing.T) {
 		ok   bool
 	}{
 		{
+			name: "nil resource",
+			args: args{pdata.NewResource()},
+			want: HostID{},
+			ok:   false,
+		},
+		{
 			name: "ec2",
 			args: args{ec2Resource},
 			want: HostID{

@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -71,6 +72,17 @@ func TestLoadConfig(t *testing.T) {
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+			},
+			Correlation: CorrelationConfig{
+				StaleServiceTimeout: 5 * time.Minute,
+				Config: correlations.Config{
+					MaxRequests:         20,
+					MaxBuffered:         10_000,
+					MaxRetries:          2,
+					LogDimensionUpdates: false,
+					SendDelay:           30 * time.Second,
+					PurgeInterval:       1 * time.Minute,
+				},
 			},
 		})
 }
