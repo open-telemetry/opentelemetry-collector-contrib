@@ -30,6 +30,7 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -132,7 +133,7 @@ func TestConsumeMetrics(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeBatch(),
+			md:               generateLargeDPBatch(t),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -152,15 +153,17 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			dpClient := &sfxDPClient{
-				ingestURL: serverURL,
-				headers:   map[string]string{"test_header_": "test"},
-				client: &http.Client{
-					Timeout: 1 * time.Second,
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers:   map[string]string{"test_header_": "test"},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: sync.Pool{New: func() interface{} {
+						return gzip.NewWriter(nil)
+					}},
 				},
-				logger: zap.NewNop(),
-				zippers: sync.Pool{New: func() interface{} {
-					return gzip.NewWriter(nil)
-				}},
+				logger:    zap.NewNop(),
 				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
@@ -394,18 +397,20 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			dpClient := &sfxDPClient{
-				ingestURL: serverURL,
-				headers: map[string]string{
-					"test_header_": "test",
-					"X-Sf-Token":   fromHeaders,
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers: map[string]string{
+						"test_header_": "test",
+						"X-Sf-Token":   fromHeaders,
+					},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: sync.Pool{New: func() interface{} {
+						return gzip.NewWriter(nil)
+					}},
 				},
-				client: &http.Client{
-					Timeout: 1 * time.Second,
-				},
-				logger: zap.NewNop(),
-				zippers: sync.Pool{New: func() interface{} {
-					return gzip.NewWriter(nil)
-				}},
+				logger:                 zap.NewNop(),
 				accessTokenPassthrough: tt.accessTokenPassthrough,
 				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
@@ -433,7 +438,263 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() pdata.Metrics {
+func TestNewEventExporter(t *testing.T) {
+	got, err := NewEventExporter(nil, zap.NewNop())
+	assert.EqualError(t, err, "nil config")
+	assert.Nil(t, got)
+
+	config := &Config{
+		AccessToken: "someToken",
+		IngestURL:   "asdf://:%",
+		Timeout:     1 * time.Second,
+		Headers:     nil,
+	}
+
+	got, err = NewEventExporter(config, zap.NewNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, got)
+
+	config = &Config{
+		AccessToken: "someToken",
+		Realm:       "xyz",
+		Timeout:     1 * time.Second,
+		Headers:     nil,
+	}
+
+	got, err = NewEventExporter(config, zap.NewNop())
+	assert.NoError(t, err)
+	require.NotNil(t, got)
+
+	// This is expected to fail.
+	rls := makeSampleResourceLogs()
+	ld := pdata.NewLogs()
+	ld.ResourceLogs().Append(rls)
+	err = got.ConsumeLogs(context.Background(), ld)
+	assert.Error(t, err)
+}
+
+func makeSampleResourceLogs() pdata.ResourceLogs {
+	logSlice := pdata.NewLogSlice()
+
+	logSlice.Resize(1)
+	l := logSlice.At(0)
+
+	l.SetName("shutdown")
+	l.SetTimestamp(pdata.TimestampUnixNano(1000))
+	attrs := l.Attributes()
+
+	attrs.InitFromMap(map[string]pdata.AttributeValue{
+		"k0": pdata.NewAttributeValueString("v0"),
+		"k1": pdata.NewAttributeValueString("v1"),
+		"k2": pdata.NewAttributeValueString("v2"),
+	})
+
+	propMap := pdata.NewAttributeMap()
+	propMap.InitFromMap(map[string]pdata.AttributeValue{
+		"env":      pdata.NewAttributeValueString("prod"),
+		"isActive": pdata.NewAttributeValueBool(true),
+		"rack":     pdata.NewAttributeValueInt(5),
+		"temp":     pdata.NewAttributeValueDouble(40.5),
+	})
+	propMap.Sort()
+	propMapVal := pdata.NewAttributeValueMap()
+	propMapVal.SetMapVal(propMap)
+	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
+	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+
+	l.Attributes().Sort()
+
+	out := pdata.NewResourceLogs()
+	out.InitEmpty()
+	out.Resource().InitEmpty()
+	out.InstrumentationLibraryLogs().Resize(1)
+	out.InstrumentationLibraryLogs().At(0).InitEmpty()
+	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
+
+	return out
+}
+
+func TestConsumeEventData(t *testing.T) {
+	tests := []struct {
+		name                 string
+		resourceLogs         pdata.ResourceLogs
+		reqTestFunc          func(t *testing.T, r *http.Request)
+		httpResponseCode     int
+		numDroppedLogRecords int
+		wantErr              bool
+	}{
+		{
+			name:             "happy_path",
+			resourceLogs:     makeSampleResourceLogs(),
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+		{
+			name: "no_event_attribute",
+			resourceLogs: func() pdata.ResourceLogs {
+				out := makeSampleResourceLogs()
+				out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				return out
+			}(),
+			reqTestFunc:          nil,
+			numDroppedLogRecords: 1,
+			httpResponseCode:     http.StatusAccepted,
+		},
+		{
+			name: "nonconvertible_log_attrs",
+			resourceLogs: func() pdata.ResourceLogs {
+				out := makeSampleResourceLogs()
+
+				attrs := out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
+				mapAttr := pdata.NewAttributeValueMap()
+				attrs.Insert("map", mapAttr)
+
+				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
+				propsAttrs.MapVal().Insert("map", mapAttr)
+
+				return out
+			}(),
+			reqTestFunc: nil,
+			// The log does go through, just without that prop
+			numDroppedLogRecords: 0,
+			httpResponseCode:     http.StatusAccepted,
+		},
+		{
+			name:                 "response_forbidden",
+			resourceLogs:         makeSampleResourceLogs(),
+			reqTestFunc:          nil,
+			httpResponseCode:     http.StatusForbidden,
+			numDroppedLogRecords: 1,
+			wantErr:              true,
+		},
+		{
+			name:             "large_batch",
+			resourceLogs:     generateLargeEventBatch(t),
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				if tt.reqTestFunc != nil {
+					tt.reqTestFunc(t, r)
+				}
+				w.WriteHeader(tt.httpResponseCode)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			eventClient := &sfxEventClient{
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers:   map[string]string{"test_header_": "test"},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: newGzipPool(),
+				},
+				logger: zap.NewNop(),
+			}
+
+			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), tt.resourceLogs)
+			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
+	fromHeaders := "AccessTokenFromClientHeaders"
+	fromLabels := "AccessTokenFromLabel"
+
+	newLogData := func(includeToken bool) pdata.ResourceLogs {
+		out := makeSampleResourceLogs()
+
+		if includeToken {
+			res := out.Resource()
+			res.InitEmpty()
+			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+		}
+		return out
+	}
+
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		includedInLogData      bool
+		expectedToken          string
+	}{
+		{
+			name:                   "passthrough access token and included in logs",
+			accessTokenPassthrough: true,
+			includedInLogData:      true,
+			expectedToken:          fromLabels,
+		},
+		{
+			name:                   "passthrough access token and not included in logs",
+			accessTokenPassthrough: true,
+			includedInLogData:      false,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and included in logs",
+			accessTokenPassthrough: false,
+			includedInLogData:      true,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and not included in logs",
+			accessTokenPassthrough: false,
+			includedInLogData:      false,
+			expectedToken:          fromHeaders,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			eventClient := &sfxEventClient{
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers: map[string]string{
+						"test_header_": "test",
+						"X-Sf-Token":   fromHeaders,
+					},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: newGzipPool(),
+				},
+				logger:                 zap.NewNop(),
+				accessTokenPassthrough: tt.accessTokenPassthrough,
+			}
+
+			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), newLogData(tt.includedInLogData))
+			assert.Equal(t, 0, numDroppedLogRecords)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func generateLargeDPBatch(t *testing.T) pdata.Metrics {
 	mds := make([]consumerdata.MetricsData, 65000)
 
 	ts := time.Now()
@@ -459,6 +720,26 @@ func generateLargeBatch() pdata.Metrics {
 	}
 
 	return internaldata.OCSliceToMetrics(mds)
+}
+
+func generateLargeEventBatch(t *testing.T) pdata.ResourceLogs {
+	out := pdata.NewResourceLogs()
+	out.InitEmpty()
+	out.InstrumentationLibraryLogs().Resize(1)
+	logs := out.InstrumentationLibraryLogs().At(0).Logs()
+
+	batchSize := 65000
+	logs.Resize(batchSize)
+	ts := time.Now()
+	for i := 0; i < batchSize; i++ {
+		lr := logs.At(i)
+		lr.SetName("test_" + strconv.Itoa(i))
+		lr.Attributes().InsertString("k0", "k1")
+		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
+		lr.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+	}
+
+	return out
 }
 
 func TestConsumeMetadata(t *testing.T) {
@@ -679,14 +960,16 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	assert.NoError(b, err)
 
 	dpClient := &sfxDPClient{
-		ingestURL: serverURL,
-		client: &http.Client{
-			Timeout: 1 * time.Second,
+		sfxClientBase: sfxClientBase{
+			ingestURL: serverURL,
+			client: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			zippers: sync.Pool{New: func() interface{} {
+				return gzip.NewWriter(nil)
+			}},
 		},
-		logger: zap.NewNop(),
-		zippers: sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
+		logger:    zap.NewNop(),
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
 	metrics := internaldata.OCSliceToMetrics(mds)

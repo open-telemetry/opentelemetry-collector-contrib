@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,14 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package stanzareceiver
+// +build !linux
 
-import (
-	"github.com/observiq/stanza/entry"
-	"go.opentelemetry.io/collector/consumer/pdata"
-)
+// Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host-not-linux.go as is.
 
-// TODO
-func convert(obsLog *entry.Entry) pdata.Logs {
-	return pdata.NewLogs()
+package hostmetadata
+
+func fillPlatformSpecificOSData(info *hostOS) error {
+	return nil
+}
+
+func fillPlatformSpecificCPUData(info *hostCPU) error {
+	return nil
 }

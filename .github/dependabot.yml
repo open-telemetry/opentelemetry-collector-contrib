@@ -181,3 +181,7 @@ updates:
     directory: "/exporter/stackdriverexporter"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/tracegen"
+    schedule:
+      interval: "weekly"

@@ -20,9 +20,11 @@ import (
 	"sync"
 
 	stanza "github.com/observiq/stanza/agent"
+	"github.com/observiq/stanza/entry"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +36,7 @@ type stanzareceiver struct {
 	cancel    context.CancelFunc
 
 	agent    *stanza.LogAgent
+	emitter  *LogEmitter
 	consumer consumer.LogsConsumer
 	logger   *zap.Logger
 }
@@ -90,4 +93,9 @@ func (r *stanzareceiver) Shutdown(context.Context) error {
 		r.wg.Wait()
 	})
 	return err
+}
+
+func convert(obsLog *entry.Entry) pdata.Logs {
+	// TODO
+	return pdata.NewLogs()
 }

@@ -266,9 +266,9 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
-	traceID := []byte(span.TraceID())
+	traceID := span.TraceID().Bytes()
 	traceID[0] = 0x11
-	span.SetTraceID(traceID)
+	span.SetTraceID(pdata.NewTraceID(traceID))
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
 
@@ -285,7 +285,7 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
 	TempTraceID := newTraceID()
-	binary.BigEndian.PutUint32(TempTraceID[0:4], uint32(ExpiredEpoch))
+	binary.BigEndian.PutUint32(TempTraceID.Bytes()[0:4], uint32(ExpiredEpoch))
 
 	PrevEpoch := uint32(time.Now().Unix())
 

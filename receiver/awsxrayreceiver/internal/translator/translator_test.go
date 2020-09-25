@@ -963,7 +963,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			sp.SetEndTime(pdata.TimestampUnixNano(*props.endTimeSec * float64(time.Second)))
 		}
 		sp.SetKind(props.spanKind)
-		sp.SetTraceID([]byte(props.traceID))
+		sp.SetTraceID(pdata.NewTraceID([]byte(props.traceID)))
 		sp.Status().InitEmpty()
 		sp.Status().SetMessage(props.spanStatus.message)
 		sp.Status().SetCode(props.spanStatus.code)
