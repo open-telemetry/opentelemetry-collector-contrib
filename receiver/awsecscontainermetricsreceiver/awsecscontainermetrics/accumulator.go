@@ -84,8 +84,6 @@ func (acc *metricDataAccumulator) accumulate(
 		}
 	}
 
-	r.Labels[ResourceAttributeServiceNameKey] = ResourceAttributeServiceNameValue
-
 	acc.md = append(acc.md, &consumerdata.MetricsData{
 		Metrics:  resourceMetrics,
 		Resource: r,

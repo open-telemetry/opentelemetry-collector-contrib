@@ -26,11 +26,9 @@ const (
 	CPUsInVCpu = 1024
 	BytesInMiB = 1024 * 1024
 
-	TaskPrefix                        = "ecs.task."
-	ContainerPrefix                   = "container."
-	ResourceAttributeServiceNameKey   = "service.name"
-	ResourceAttributeServiceNameValue = "awsecscontainermetrics"
-	MetricResourceType                = "aoc.ecs"
+	TaskPrefix         = "ecs.task."
+	ContainerPrefix    = "container."
+	MetricResourceType = "aoc.ecs"
 
 	AttributeMemoryUsage    = "memory.usage"
 	AttributeMemoryMaxUsage = "memory.usage.max"
