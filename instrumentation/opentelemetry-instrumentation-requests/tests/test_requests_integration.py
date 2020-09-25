@@ -22,6 +22,7 @@ import opentelemetry.instrumentation.requests
 from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk import resources
+from opentelemetry.sdk.util import get_dict_as_key
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace.status import StatusCanonicalCode
@@ -87,6 +88,27 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.check_span_instrumentation_info(
             span, opentelemetry.instrumentation.requests
         )
+
+        self.assertIsNotNone(RequestsInstrumentor().meter)
+        self.assertEqual(len(RequestsInstrumentor().meter.metrics), 1)
+        recorder = RequestsInstrumentor().meter.metrics.pop()
+        match_key = get_dict_as_key(
+            {
+                "http.flavor": "1.1",
+                "http.method": "GET",
+                "http.status_code": "200",
+                "http.status_text": "OK",
+                "http.url": "http://httpbin.org/status/200",
+            }
+        )
+        for key in recorder.bound_instruments.keys():
+            self.assertEqual(key, match_key)
+            # pylint: disable=protected-access
+            bound = recorder.bound_instruments.get(key)
+            for view_data in bound.view_datas:
+                self.assertEqual(view_data.labels, key)
+                self.assertEqual(view_data.aggregator.current.count, 1)
+                self.assertGreater(view_data.aggregator.current.sum, 0)
 
     def test_not_foundbasic(self):
         url_404 = "http://httpbin.org/status/404"
@@ -246,6 +268,23 @@ class RequestsIntegrationTestBase(abc.ABC):
             span.status.canonical_code, StatusCanonicalCode.UNKNOWN
         )
 
+        self.assertIsNotNone(RequestsInstrumentor().meter)
+        self.assertEqual(len(RequestsInstrumentor().meter.metrics), 1)
+        recorder = RequestsInstrumentor().meter.metrics.pop()
+        match_key = get_dict_as_key(
+            {
+                "http.method": "GET",
+                "http.url": "http://httpbin.org/status/200",
+            }
+        )
+        for key in recorder.bound_instruments.keys():
+            self.assertEqual(key, match_key)
+            # pylint: disable=protected-access
+            bound = recorder.bound_instruments.get(key)
+            for view_data in bound.view_datas:
+                self.assertEqual(view_data.labels, key)
+                self.assertEqual(view_data.aggregator.current.count, 1)
+
     mocked_response = requests.Response()
     mocked_response.status_code = 500
     mocked_response.reason = "Internal Server Error"
@@ -272,6 +311,24 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(
             span.status.canonical_code, StatusCanonicalCode.INTERNAL
         )
+        self.assertIsNotNone(RequestsInstrumentor().meter)
+        self.assertEqual(len(RequestsInstrumentor().meter.metrics), 1)
+        recorder = RequestsInstrumentor().meter.metrics.pop()
+        match_key = get_dict_as_key(
+            {
+                "http.method": "GET",
+                "http.status_code": "500",
+                "http.status_text": "Internal Server Error",
+                "http.url": "http://httpbin.org/status/200",
+            }
+        )
+        for key in recorder.bound_instruments.keys():
+            self.assertEqual(key, match_key)
+            # pylint: disable=protected-access
+            bound = recorder.bound_instruments.get(key)
+            for view_data in bound.view_datas:
+                self.assertEqual(view_data.labels, key)
+                self.assertEqual(view_data.aggregator.current.count, 1)
 
     @mock.patch("requests.adapters.HTTPAdapter.send", side_effect=Exception)
     def test_requests_basic_exception(self, *_, **__):
