@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -125,6 +126,26 @@ func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
 
 	svc.AssertExpectations(t)
 	assert.Equal(t, expectedNextSequenceToken, *tokenP)
+}
+
+func TestPutLogEvents_NonAWSError(t *testing.T) {
+	logger := zap.NewNop()
+	svc := new(mockCloudWatchLogsClient)
+	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
+		LogGroupName:  &logGroup,
+		LogStreamName: &logStreamName,
+		SequenceToken: &previousSequenceToken,
+	}
+	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
+		NextSequenceToken: &expectedNextSequenceToken}
+
+	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, errors.New("some random error")).Once()
+
+	client := newCloudWatchLogClient(svc, logger)
+	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
+
+	svc.AssertExpectations(t)
+	assert.Equal(t, previousSequenceToken, *tokenP)
 }
 
 func TestPutLogEvents_InvalidParameterException(t *testing.T) {

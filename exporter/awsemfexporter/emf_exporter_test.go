@@ -130,6 +130,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 
 	mdata := consumerdata.MetricsData{}
 	md := internaldata.OCToMetrics(mdata)
+	require.NoError(t, exp.Start(ctx, nil))
 	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
