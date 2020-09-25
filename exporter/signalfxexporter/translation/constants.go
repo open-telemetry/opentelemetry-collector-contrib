@@ -314,6 +314,18 @@ translation_rules:
     disk.summary_utilization: 100
 
 # convert disk I/O metrics
+- action: copy_metrics
+  mapping:
+    system.disk.ops: disk.ops
+- action: aggregate_metric
+  metric_name: disk.ops
+  aggregation_method: sum
+  without_dimensions:
+   - direction
+   - device
+- action: delta_metric
+  mapping:
+    disk.ops: disk_ops.total
 - action: rename_dimension_keys
   metric_names:
     system.disk.merged: true
@@ -346,6 +358,9 @@ translation_rules:
   mapping:
     read: disk_time.read
     write: disk_time.write
+- action: delta_metric
+  mapping:
+    system.disk.pending_operations: disk_ops.pending
 
 # convert network I/O metrics
 - action: copy_metrics
@@ -402,6 +417,7 @@ translation_rules:
 - action: drop_metrics
   metric_names:
     df_complex.used_total: true
+    disk.ops: true
     disk.summary_total: true
     disk.total: true
     system.cpu.usage: true

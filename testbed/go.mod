@@ -14,8 +14,8 @@ require (
 	github.com/shirou/gopsutil v2.20.9-0.20200913181322-4545a2176185+incompatible // indirect
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.10.1-0.20200917170114-639b9a80ed46
 	go.uber.org/multierr v1.6.0 // indirect
+	go.opentelemetry.io/collector v0.11.1-0.20200924160956-8690937037da
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20200917073148-efd3b9a0ff20 // indirect
 	golang.org/x/tools v0.0.0-20200828161849-5deb26317202 // indirect

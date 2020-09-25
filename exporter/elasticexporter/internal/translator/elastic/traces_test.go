@@ -76,7 +76,7 @@ func TestEncodeResourceSpan(t *testing.T) {
 	serverSpan.Status().SetCode(-1)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		span.SetTraceID(pdata.TraceID(traceID[:]))
+		span.SetTraceID(pdata.NewTraceID(traceID[:]))
 		span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
 		span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 	}
