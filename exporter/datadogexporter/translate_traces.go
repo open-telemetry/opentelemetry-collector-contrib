@@ -25,6 +25,7 @@ import (
 	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"go.opencensus.io/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
@@ -208,7 +209,7 @@ func convertSpan(s *octrace.Span) *pb.Span {
 	// 	setTag(span, key, val)
 	// }
 	for key, val := range s.GetAttributes().GetAttributeMap() {
-		setTag(span, key, val)
+		setTag(span, key, attributeValueToString(val))
 	}
 	return span
 }
@@ -312,4 +313,40 @@ func decodeAPMId(id string) uint64 {
 		return 0
 	}
 	return val
+}
+
+func attributeValueToString(v *tracepb.AttributeValue) string {
+	switch attribValue := v.Value.(type) {
+	case *tracepb.AttributeValue_StringValue:
+		return truncableStringToStr(attribValue.StringValue)
+	case *tracepb.AttributeValue_IntValue:
+		return strconv.FormatInt(attribValue.IntValue, 10)
+	case *tracepb.AttributeValue_BoolValue:
+		if attribValue.BoolValue {
+			return "true"
+		}
+		return "false"
+	case *tracepb.AttributeValue_DoubleValue:
+		return strconv.FormatFloat(attribValue.DoubleValue, 'g', -1, 64)
+	default:
+	}
+	return "<Unknown OpenCensus Attribute>"
+}
+
+// func spanKindToStr(spanKind tracepb.Span_SpanKind) string {
+
+// 	switch spanKind {
+// 	case tracepb.Span_CLIENT:
+// 		return string(tracetranslator.OpenTracingSpanKindClient)
+// 	case tracepb.Span_SERVER:
+// 		return string(tracetranslator.OpenTracingSpanKindServer)
+// 	}
+// 	return ""
+// }
+
+func truncableStringToStr(ts *tracepb.TruncatableString) string {
+	if ts == nil {
+		return ""
+	}
+	return ts.Value
 }
