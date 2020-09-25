@@ -26,7 +26,8 @@ telemetry:
       config: {}
 
 # Shared params for agentCollector daemonset and standaloneCollector deployment pods.
-# Can be overridden here or for any component independently.
+# Can be overridden here or for any component independently using the same keys.
+
 image:
   # repository: otel/opentelemetry-collector-contrib
   repository: otel/opentelemetry-collector
@@ -96,6 +97,19 @@ agentCollector:
   # Configuration override that will be merged into the agent collector default config
   configOverride: {}
 
+  # Any of the top level options can be overridden specifically for agent collector
+  # image: {}
+  # imagePullSecrets: []
+  # command: {}
+  # serviceAccount: {}
+  # podAnnotations: {}
+  # podSecurityContext: {}
+  # securityContext: {}
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # ports: {}
+
 # Configuration for standalone OpenTelemetry Collector deployment, disabled by default
 standaloneCollector:
   enabled: false
@@ -109,6 +123,19 @@ standaloneCollector:
 
   # Configuration override that will be merged into the standalone collector default config
   configOverride: {}
+
+  # Any of the top level options can be overridden specifically for standalone collector
+  # image: {}
+  # imagePullSecrets: []
+  # command: {}
+  # serviceAccount: {}
+  # podAnnotations: {}
+  # podSecurityContext: {}
+  # securityContext: {}
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+  # ports: {}
 
 service:
   type: ClusterIP
