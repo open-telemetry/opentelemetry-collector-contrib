@@ -115,6 +115,7 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 
 		}
 
+		//TODO: Should have metrics to provide visibility of these failures
 		if response != nil {
 			if response.RejectedLogEventsInfo != nil {
 				rejectedLogEventsInfo := response.RejectedLogEventsInfo

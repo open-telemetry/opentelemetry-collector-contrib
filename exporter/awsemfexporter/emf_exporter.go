@@ -123,7 +123,7 @@ func (emf *emfExporter) getPusher(logGroup, logStream string) Pusher {
 
 	var pusher Pusher
 	if pusher, ok = streamToPusherMap[logStream]; !ok {
-		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, emf.svcStructuredLog)
+		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, emf.svcStructuredLog, emf.logger)
 		streamToPusherMap[logStream] = pusher
 	}
 	return pusher
@@ -150,7 +150,7 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 					err = wrapErrorIfBadRequest(&returnError)
 				}
 				if err != nil {
-					emf.logger.Error("Experiences some errors when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
+					emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
 				}
 			}
 		}

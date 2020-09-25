@@ -15,12 +15,12 @@
 package awsemfexporter
 
 import (
-	"log"
 	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"go.uber.org/zap"
 )
 
 const (
@@ -37,6 +37,9 @@ const (
 
 	logEventBatchPushChanBufferSize = 2 // processing part does not need to be blocked by the current put log event request
 	TruncatedSuffix                 = "[Truncated...]"
+
+	LogEventTimestampLimitInPast   = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
+	LogEventTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
 )
 
 //Struct to present a log event.
@@ -51,9 +54,10 @@ func (logEvent *LogEvent) eventPayloadBytes() int {
 	return len(*logEvent.InputLogEvent.Message) + PerEventHeaderBytes
 }
 
-func (logEvent *LogEvent) truncateIfNeeded() bool {
+func (logEvent *LogEvent) truncateIfNeeded(logger *zap.Logger) bool {
 	if logEvent.eventPayloadBytes() > MaxEventPayloadBytes {
-		log.Printf("W! logpusher: the single log event size is %v, which is larger than the max event payload allowed %v. Truncate the log event.", logEvent.eventPayloadBytes(), MaxEventPayloadBytes)
+		logger.Warn("logpusher: the single log event size is larger than the max event payload allowed. Truncate the log event.",
+			zap.Int("SingleLogEventSize", logEvent.eventPayloadBytes()), zap.Int("MaxEventPayloadBytes", MaxEventPayloadBytes))
 		newPayload := (*logEvent.InputLogEvent.Message)[0:(MaxEventPayloadBytes - PerEventHeaderBytes - len(TruncatedSuffix))]
 		newPayload += TruncatedSuffix
 		logEvent.InputLogEvent.Message = &newPayload
@@ -132,6 +136,7 @@ type Pusher interface {
 
 //Struct of pusher implemented Pusher interface.
 type pusher struct {
+	logger *zap.Logger
 	//log group name for the current pusher
 	logGroupName *string
 	//log stream name for the current pusher
@@ -149,9 +154,9 @@ type pusher struct {
 
 //Create a pusher instance and start the instance afterwards
 func NewPusher(logGroupName, logStreamName *string, retryCnt int,
-	svcStructuredLog LogClient) Pusher {
+	svcStructuredLog LogClient, logger *zap.Logger) Pusher {
 
-	pusher := newPusher(logGroupName, logStreamName, svcStructuredLog)
+	pusher := newPusher(logGroupName, logStreamName, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
@@ -162,13 +167,14 @@ func NewPusher(logGroupName, logStreamName *string, retryCnt int,
 
 //Only create a pusher, but not start the instance.
 func newPusher(logGroupName, logStreamName *string,
-	svcStructuredLog LogClient) *pusher {
+	svcStructuredLog LogClient, logger *zap.Logger) *pusher {
 	pusher := &pusher{
 		logGroupName:     logGroupName,
 		logStreamName:    logStreamName,
 		svcStructuredLog: svcStructuredLog,
 		logEventChan:     make(chan *LogEvent, logEventChanBufferSize),
 		pushChan:         make(chan *LogEventBatch, logEventBatchPushChanBufferSize),
+		logger:           logger,
 	}
 
 	pusher.logEventBatch = pusher.newLogEventBatch()
@@ -184,7 +190,7 @@ func newPusher(logGroupName, logStreamName *string,
 func (p *pusher) AddLogEntry(logEvent *LogEvent) error {
 	var err error
 	if logEvent != nil {
-		logEvent.truncateIfNeeded()
+		logEvent.truncateIfNeeded(p.logger)
 		if *logEvent.InputLogEvent.Timestamp == int64(0) {
 			logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.LogGeneratedTime.UnixNano() / int64(time.Millisecond))
 		}
@@ -226,10 +232,10 @@ func (p *pusher) pushLogEventBatch(req interface{}) error {
 		return err
 	}
 
-	log.Printf("D! logpusher: publish %d log events with size %f KB in %d ms.",
-		len(putLogEventsInput.LogEvents),
-		float64(logEventBatch.byteTotal)/float64(1024),
-		time.Since(startTime).Nanoseconds()/int64(time.Millisecond))
+	p.logger.Debug("logpusher: publish log events successfully.",
+		zap.Int("NumOfLogEvents", len(putLogEventsInput.LogEvents)),
+		zap.Float64("LogEventsSize", float64(logEventBatch.byteTotal)/float64(1024)),
+		zap.Int64("Time", time.Since(startTime).Nanoseconds()/int64(time.Millisecond)))
 
 	if tmpToken != nil {
 		p.streamToken = *tmpToken
@@ -289,9 +295,10 @@ func (p *pusher) addLogEvent(logEvent *LogEvent) error {
 	//retention period of the log group.
 	currentTime := time.Now().UTC()
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
-	duration := currentTime.Sub(utcTime).Hours()
-	if duration > 24*14 || duration < -2 {
-		log.Printf("E! logpusher: the log entry in (%v) with timestamp (%v) comparing to the current time (%v) is older than 14 days or more than 2 hours in the future. Discard the log entry.", p.logGroupName, utcTime, currentTime)
+	duration := currentTime.Sub(utcTime)
+	if duration > LogEventTimestampLimitInPast || duration < LogEventTimestampLimitInFuture {
+		p.logger.Error("logpusher: the log entry's timestamp is older than 14 days or more than 2 hours in the future. Discard the log entry.",
+			zap.String("LogGroupName", *p.logGroupName), zap.String("LogEventTimestamp", utcTime.String()), zap.String("CurrentTime", currentTime.String()))
 		return err
 	}
 

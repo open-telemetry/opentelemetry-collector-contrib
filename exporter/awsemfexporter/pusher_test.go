@@ -26,6 +26,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 //
@@ -97,9 +98,10 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 // Need to remove the tmp state folder after testing.
 func newMockPusher() (*pusher, string) {
+	logger := zap.NewNop()
 	tmpfolder, _ := ioutil.TempDir("", "")
 	svc := NewAlwaysPassMockLogClient()
-	p := newPusher(&logGroup, &logStreamName, svc)
+	p := newPusher(&logGroup, &logStreamName, svc, logger)
 	return p, tmpfolder
 }
 
