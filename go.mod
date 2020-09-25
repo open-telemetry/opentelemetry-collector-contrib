@@ -3,6 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.14
 
 require (
+	github.com/DataDog/datadog-serverless-functions v0.0.0-20200922194139-3554ff4511ec // indirect
+	github.com/DataDog/viper v1.8.0 // indirect
+	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/client9/misspell v0.3.4
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
@@ -48,6 +51,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opentelemetry.io/collector v0.10.1-0.20200917170114-639b9a80ed46
 	golang.org/x/sys v0.0.0-20200821140526-fda516888d29
+	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5
 )
 

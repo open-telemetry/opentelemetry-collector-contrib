@@ -16,6 +16,9 @@ package datadogexporter
 
 import (
 	"context"
+	"fmt"
+
+	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -34,7 +37,27 @@ func (exp *traceExporter) pushTraceData(
 	td pdata.Traces,
 ) (int, error) {
 
-	// TODO: add implementation
+	// TODO: improve implementation
+	ddTraces := convertToDatadogTd(td)
+	
+	edgeConnection := apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false)
+
+	for _, ddTrace := range ddTraces {
+
+		err := edgeConnection.SendTraces(context.Background(), ddTrace, 3)
+
+		if err != nil {
+			fmt.Printf("Failed to send traces with error %v\n", err)
+			
+		}
+		
+		// TODO: logging for dev, remove later
+		for _, trace := range ddTrace.Traces {
+			for _, span := range trace.Spans {
+				exp.logger.Info(fmt.Sprintf("%#v\n", span))
+			}
+		}
+	}
 
 	return 0, nil
 }

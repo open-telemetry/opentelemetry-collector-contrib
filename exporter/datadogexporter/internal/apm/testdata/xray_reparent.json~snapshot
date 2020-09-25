@@ -1,0 +1,97 @@
+([]*pb.TracePayload) (len=1) {
+ (*pb.TracePayload)({
+  HostName: (string) "",
+  Env: (string) (len=4) "none",
+  Traces: ([]*pb.APITrace) (len=1) {
+   (*pb.APITrace)({
+    TraceID: (uint64) 5673508998968570243,
+    Spans: ([]*pb.Span) (len=2) {
+     (*pb.Span)({
+      Service: (string) (len=10) "aws.lambda",
+      Name: (string) (len=16) "requests.request",
+      Resource: (string) (len=16) "requests.request",
+      TraceID: (uint64) 5673508998968570243,
+      SpanID: (uint64) 15300116249758373965,
+      ParentID: (uint64) 4834147509824110201,
+      Start: (int64) 1586269922945357000,
+      Duration: (int64) 138997000,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=11) "http.method": (string) (len=3) "GET",
+       (string) (len=16) "http.status_code": (string) (len=3) "200",
+       (string) (len=8) "http.url": (string) (len=26) "https://www.datadoghq.com/"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_dd.measured": (float64) 1,
+       (string) (len=10) "_top_level": (float64) 1
+      },
+      Type: (string) (len=4) "http"
+     }),
+     (*pb.Span)({
+      Service: (string) (len=10) "aws.lambda",
+      Name: (string) (len=19) "handler.get_message",
+      Resource: (string) (len=19) "handler.get_message",
+      TraceID: (uint64) 5673508998968570243,
+      SpanID: (uint64) 9089086961342797587,
+      ParentID: (uint64) 4834147509824110201,
+      Start: (int64) 1586269923086220000,
+      Duration: (int64) 100232000,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=1) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda"
+      },
+      Metrics: (map[string]float64) (len=1) {
+       (string) (len=10) "_top_level": (float64) 1
+      },
+      Type: (string) ""
+     })
+    },
+    StartTime: (int64) 1586269922945357000,
+    EndTime: (int64) 0
+   })
+  },
+  Transactions: ([]*pb.Span) (len=2) {
+   (*pb.Span)({
+    Service: (string) (len=10) "aws.lambda",
+    Name: (string) (len=16) "requests.request",
+    Resource: (string) (len=16) "requests.request",
+    TraceID: (uint64) 5673508998968570243,
+    SpanID: (uint64) 15300116249758373965,
+    ParentID: (uint64) 4834147509824110201,
+    Start: (int64) 1586269922945357000,
+    Duration: (int64) 138997000,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=4) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+     (string) (len=11) "http.method": (string) (len=3) "GET",
+     (string) (len=16) "http.status_code": (string) (len=3) "200",
+     (string) (len=8) "http.url": (string) (len=26) "https://www.datadoghq.com/"
+    },
+    Metrics: (map[string]float64) (len=2) {
+     (string) (len=12) "_dd.measured": (float64) 1,
+     (string) (len=10) "_top_level": (float64) 1
+    },
+    Type: (string) (len=4) "http"
+   }),
+   (*pb.Span)({
+    Service: (string) (len=10) "aws.lambda",
+    Name: (string) (len=19) "handler.get_message",
+    Resource: (string) (len=19) "handler.get_message",
+    TraceID: (uint64) 5673508998968570243,
+    SpanID: (uint64) 9089086961342797587,
+    ParentID: (uint64) 4834147509824110201,
+    Start: (int64) 1586269923086220000,
+    Duration: (int64) 100232000,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=1) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda"
+    },
+    Metrics: (map[string]float64) (len=1) {
+     (string) (len=10) "_top_level": (float64) 1
+    },
+    Type: (string) ""
+   })
+  }
+ })
+}

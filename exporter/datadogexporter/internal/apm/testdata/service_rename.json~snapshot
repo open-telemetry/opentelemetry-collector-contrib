@@ -1,0 +1,384 @@
+([]*pb.TracePayload) (len=1) {
+ (*pb.TracePayload)({
+  HostName: (string) "",
+  Env: (string) (len=4) "demo",
+  Traces: ([]*pb.APITrace) (len=1) {
+   (*pb.APITrace)({
+    TraceID: (uint64) 5103530006739023076,
+    Spans: ([]*pb.Span) (len=10) {
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=23) "calculation-long-number",
+      Resource: (string) (len=23) "calculation-long-number",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 1123762281205937892,
+      ParentID: (uint64) 8724398882361056242,
+      Start: (int64) 1586269721581541000,
+      Duration: (int64) 555729248,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=7) "service": (string) (len=5) "hello"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=14) "recursive-func",
+      Resource: (string) (len=14) "recursive-func",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 4750344135526068708,
+      ParentID: (uint64) 3565567155188796372,
+      Start: (int64) 1586269722137387000,
+      Duration: (int64) 11963,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=7) "service": (string) (len=5) "hello"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=14) "recursive-func",
+      Resource: (string) (len=14) "recursive-func",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 3565567155188796372,
+      ParentID: (uint64) 5739572368760614333,
+      Start: (int64) 1586269722137368600,
+      Duration: (int64) 32959,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=7) "service": (string) (len=5) "hello"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=14) "recursive-func",
+      Resource: (string) (len=14) "recursive-func",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 5874215736244292336,
+      ParentID: (uint64) 5525176586920886957,
+      Start: (int64) 1586269722137421600,
+      Duration: (int64) 9033,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=7) "service": (string) (len=5) "hello"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=14) "recursive-func",
+      Resource: (string) (len=14) "recursive-func",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 5525176586920886957,
+      ParentID: (uint64) 5739572368760614333,
+      Start: (int64) 1586269722137407200,
+      Duration: (int64) 25391,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=4) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=7) "service": (string) (len=5) "hello"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=14) "recursive-func",
+      Resource: (string) (len=14) "recursive-func",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 5739572368760614333,
+      ParentID: (uint64) 8724398882361056242,
+      Start: (int64) 1586269722137314000,
+      Duration: (int64) 120117,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=3) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value"
+      },
+      Metrics: (map[string]float64) (len=2) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=9) "hello-dns",
+      Name: (string) (len=10) "dns.lookup",
+      Resource: (string) (len=14) "www.google.com",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 2324308998209298118,
+      ParentID: (uint64) 2349155073932244368,
+      Start: (int64) 1586269721581080000,
+      Duration: (int64) 556922119,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=5) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=11) "dns.address": (string) (len=13) "172.217.9.196",
+       (string) (len=12) "dns.hostname": (string) (len=14) "www.google.com",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=9) "span.kind": (string) (len=6) "client"
+      },
+      Metrics: (map[string]float64) (len=3) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2,
+       (string) (len=10) "_top_level": (float64) 1
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=9) "hello-tcp",
+      Name: (string) (len=11) "tcp.connect",
+      Resource: (string) (len=18) "www.google.com:443",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 2349155073932244368,
+      ParentID: (uint64) 8341655245557575377,
+      Start: (int64) 1586269721580981500,
+      Duration: (int64) 613575195,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=7) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=8) "out.host": (string) (len=14) "www.google.com",
+       (string) (len=9) "span.kind": (string) (len=6) "client",
+       (string) (len=10) "tcp.family": (string) (len=4) "IPv4",
+       (string) (len=17) "tcp.local.address": (string) (len=12) "169.254.76.1",
+       (string) (len=15) "tcp.remote.host": (string) (len=14) "www.google.com"
+      },
+      Metrics: (map[string]float64) (len=9) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 5.56922119e+08,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+       (string) (len=21) "_sublayers.span_count": (float64) 2,
+       (string) (len=10) "_top_level": (float64) 1,
+       (string) (len=8) "out.port": (float64) 443,
+       (string) (len=14) "tcp.local.port": (float64) 45862,
+       (string) (len=15) "tcp.remote.port": (float64) 443
+      },
+      Type: (string) ""
+     }),
+     (*pb.Span)({
+      Service: (string) (len=17) "hello-http-client",
+      Name: (string) (len=12) "http.request",
+      Resource: (string) (len=3) "GET",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 8341655245557575377,
+      ParentID: (uint64) 8724398882361056242,
+      Start: (int64) 1586269721580333800,
+      Duration: (int64) 654928711,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=6) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=11) "http.method": (string) (len=3) "GET",
+       (string) (len=16) "http.status_code": (string) (len=3) "200",
+       (string) (len=8) "http.url": (string) (len=23) "https://www.google.com/",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=9) "span.kind": (string) (len=6) "client"
+      },
+      Metrics: (map[string]float64) (len=8) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 5.56922119e+08,
+       (string) (len=87) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-http-client": (float64) 4.1353516e+07,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+       (string) (len=46) "_sublayers.duration.by_type.sublayer_type:http": (float64) 4.1353516e+07,
+       (string) (len=21) "_sublayers.span_count": (float64) 3,
+       (string) (len=10) "_top_level": (float64) 1
+      },
+      Type: (string) (len=4) "http"
+     }),
+     (*pb.Span)({
+      Service: (string) (len=5) "hello",
+      Name: (string) (len=10) "aws.lambda",
+      Resource: (string) (len=13) "handler.hello",
+      TraceID: (uint64) 5103530006739023076,
+      SpanID: (uint64) 8724398882361056242,
+      ParentID: (uint64) 7542207518265319746,
+      Start: (int64) 1586269721580143000,
+      Duration: (int64) 674647949,
+      Error: (int32) 0,
+      Meta: (map[string]string) (len=7) {
+       (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+       (string) (len=10) "cold_start": (string) (len=5) "false",
+       (string) (len=12) "function_arn": (string) (len=74) "arn:aws:lambda:us-east-1:172597598159:function:hello-dog-node-dev-hello10x",
+       (string) (len=8) "language": (string) (len=10) "javascript",
+       (string) (len=2) "my": (string) (len=5) "value",
+       (string) (len=10) "request_id": (string) (len=36) "5b5b7c5d-9963-4df5-a976-e54c11404bc9",
+       (string) (len=14) "resource_names": (string) (len=27) "hello-dog-node-dev-hello10x"
+      },
+      Metrics: (map[string]float64) (len=9) {
+       (string) (len=12) "_sample_rate": (float64) 1,
+       (string) (len=21) "_sampling_priority_v1": (float64) 2,
+       (string) (len=75) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x": (float64) 2.9764392e+08,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 2.78997436e+08,
+       (string) (len=87) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-http-client": (float64) 4.1353516e+07,
+       (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+       (string) (len=46) "_sublayers.duration.by_type.sublayer_type:http": (float64) 4.1353516e+07,
+       (string) (len=21) "_sublayers.span_count": (float64) 10,
+       (string) (len=10) "_top_level": (float64) 1
+      },
+      Type: (string) ""
+     })
+    },
+    StartTime: (int64) 1586269721580143000,
+    EndTime: (int64) 0
+   })
+  },
+  Transactions: ([]*pb.Span) (len=4) {
+   (*pb.Span)({
+    Service: (string) (len=9) "hello-dns",
+    Name: (string) (len=10) "dns.lookup",
+    Resource: (string) (len=14) "www.google.com",
+    TraceID: (uint64) 5103530006739023076,
+    SpanID: (uint64) 2324308998209298118,
+    ParentID: (uint64) 2349155073932244368,
+    Start: (int64) 1586269721581080000,
+    Duration: (int64) 556922119,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=5) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+     (string) (len=11) "dns.address": (string) (len=13) "172.217.9.196",
+     (string) (len=12) "dns.hostname": (string) (len=14) "www.google.com",
+     (string) (len=2) "my": (string) (len=5) "value",
+     (string) (len=9) "span.kind": (string) (len=6) "client"
+    },
+    Metrics: (map[string]float64) (len=3) {
+     (string) (len=12) "_sample_rate": (float64) 1,
+     (string) (len=21) "_sampling_priority_v1": (float64) 2,
+     (string) (len=10) "_top_level": (float64) 1
+    },
+    Type: (string) ""
+   }),
+   (*pb.Span)({
+    Service: (string) (len=9) "hello-tcp",
+    Name: (string) (len=11) "tcp.connect",
+    Resource: (string) (len=18) "www.google.com:443",
+    TraceID: (uint64) 5103530006739023076,
+    SpanID: (uint64) 2349155073932244368,
+    ParentID: (uint64) 8341655245557575377,
+    Start: (int64) 1586269721580981500,
+    Duration: (int64) 613575195,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=7) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+     (string) (len=2) "my": (string) (len=5) "value",
+     (string) (len=8) "out.host": (string) (len=14) "www.google.com",
+     (string) (len=9) "span.kind": (string) (len=6) "client",
+     (string) (len=10) "tcp.family": (string) (len=4) "IPv4",
+     (string) (len=17) "tcp.local.address": (string) (len=12) "169.254.76.1",
+     (string) (len=15) "tcp.remote.host": (string) (len=14) "www.google.com"
+    },
+    Metrics: (map[string]float64) (len=9) {
+     (string) (len=12) "_sample_rate": (float64) 1,
+     (string) (len=21) "_sampling_priority_v1": (float64) 2,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 5.56922119e+08,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+     (string) (len=21) "_sublayers.span_count": (float64) 2,
+     (string) (len=10) "_top_level": (float64) 1,
+     (string) (len=8) "out.port": (float64) 443,
+     (string) (len=14) "tcp.local.port": (float64) 45862,
+     (string) (len=15) "tcp.remote.port": (float64) 443
+    },
+    Type: (string) ""
+   }),
+   (*pb.Span)({
+    Service: (string) (len=17) "hello-http-client",
+    Name: (string) (len=12) "http.request",
+    Resource: (string) (len=3) "GET",
+    TraceID: (uint64) 5103530006739023076,
+    SpanID: (uint64) 8341655245557575377,
+    ParentID: (uint64) 8724398882361056242,
+    Start: (int64) 1586269721580333800,
+    Duration: (int64) 654928711,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=6) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+     (string) (len=11) "http.method": (string) (len=3) "GET",
+     (string) (len=16) "http.status_code": (string) (len=3) "200",
+     (string) (len=8) "http.url": (string) (len=23) "https://www.google.com/",
+     (string) (len=2) "my": (string) (len=5) "value",
+     (string) (len=9) "span.kind": (string) (len=6) "client"
+    },
+    Metrics: (map[string]float64) (len=8) {
+     (string) (len=12) "_sample_rate": (float64) 1,
+     (string) (len=21) "_sampling_priority_v1": (float64) 2,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 5.56922119e+08,
+     (string) (len=87) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-http-client": (float64) 4.1353516e+07,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+     (string) (len=46) "_sublayers.duration.by_type.sublayer_type:http": (float64) 4.1353516e+07,
+     (string) (len=21) "_sublayers.span_count": (float64) 3,
+     (string) (len=10) "_top_level": (float64) 1
+    },
+    Type: (string) (len=4) "http"
+   }),
+   (*pb.Span)({
+    Service: (string) (len=5) "hello",
+    Name: (string) (len=10) "aws.lambda",
+    Resource: (string) (len=13) "handler.hello",
+    TraceID: (uint64) 5103530006739023076,
+    SpanID: (uint64) 8724398882361056242,
+    ParentID: (uint64) 7542207518265319746,
+    Start: (int64) 1586269721580143000,
+    Duration: (int64) 674647949,
+    Error: (int32) 0,
+    Meta: (map[string]string) (len=7) {
+     (string) (len=10) "_dd.origin": (string) (len=6) "lambda",
+     (string) (len=10) "cold_start": (string) (len=5) "false",
+     (string) (len=12) "function_arn": (string) (len=74) "arn:aws:lambda:us-east-1:172597598159:function:hello-dog-node-dev-hello10x",
+     (string) (len=8) "language": (string) (len=10) "javascript",
+     (string) (len=2) "my": (string) (len=5) "value",
+     (string) (len=10) "request_id": (string) (len=36) "5b5b7c5d-9963-4df5-a976-e54c11404bc9",
+     (string) (len=14) "resource_names": (string) (len=27) "hello-dog-node-dev-hello10x"
+    },
+    Metrics: (map[string]float64) (len=9) {
+     (string) (len=12) "_sample_rate": (float64) 1,
+     (string) (len=21) "_sampling_priority_v1": (float64) 2,
+     (string) (len=75) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x": (float64) 2.9764392e+08,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-dns": (float64) 2.78997436e+08,
+     (string) (len=87) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-http-client": (float64) 4.1353516e+07,
+     (string) (len=79) "_sublayers.duration.by_service.sublayer_service:hello-dog-node-dev-hello10x-tcp": (float64) 5.6653076e+07,
+     (string) (len=46) "_sublayers.duration.by_type.sublayer_type:http": (float64) 4.1353516e+07,
+     (string) (len=21) "_sublayers.span_count": (float64) 10,
+     (string) (len=10) "_top_level": (float64) 1
+    },
+    Type: (string) ""
+   })
+  }
+ })
+}
