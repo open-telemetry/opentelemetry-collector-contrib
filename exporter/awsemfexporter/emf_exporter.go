@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 )
 
@@ -93,7 +92,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 	if pusher != nil {
 		for _, ple := range putLogEvents {
 			returnError := pusher.AddLogEntry(ple)
-			if returnError != nil && !emf.config.(*Config).LocalMode {
+			if returnError != nil {
 				err = wrapErrorIfBadRequest(&returnError)
 			}
 			if err != nil {
@@ -101,7 +100,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (dr
 			}
 		}
 		returnError := pusher.ForceFlush()
-		if returnError != nil && !emf.config.(*Config).LocalMode {
+		if returnError != nil {
 			err = wrapErrorIfBadRequest(&returnError)
 		}
 		if err != nil {
@@ -147,11 +146,11 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 		for _, pusher := range streamToPusherMap {
 			if pusher != nil {
 				returnError := pusher.ForceFlush()
-				if returnError != nil && !emf.config.(*Config).LocalMode {
+				if returnError != nil {
 					err = wrapErrorIfBadRequest(&returnError)
 				}
 				if err != nil {
-					return err
+					emf.logger.Error("Experiences some errors when gracefully shutting down emf_exporter. Skipping to next pusher.", zap.Error(err))
 				}
 			}
 		}
@@ -166,15 +165,18 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 }
 
 func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string) {
-	mds := internaldata.MetricsToOC(metric)
+	rms := metric.ResourceMetrics()
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
 	var namespace string
 	var totalDroppedMetrics int
-	for i := 0; i < len(mds); i++ {
-		md := mds[i]
-		// translate OT metric datapoints into CWMetricLists
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&md)
+
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm)
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}

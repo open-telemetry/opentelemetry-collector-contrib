@@ -17,7 +17,6 @@ package awsemfexporter
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -368,11 +367,15 @@ func TestCreateStream_CreateLogStream_ResourceNotFound(t *testing.T) {
 	resourceNotFoundException := &cloudwatchlogs.ResourceNotFoundException{}
 	svc.On("CreateLogStream",
 		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
-		new(cloudwatchlogs.CreateLogStreamOutput), resourceNotFoundException)
+		new(cloudwatchlogs.CreateLogStreamOutput), resourceNotFoundException).Once()
 
 	svc.On("CreateLogGroup",
 		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(
 		new(cloudwatchlogs.CreateLogGroupOutput), nil)
+
+	svc.On("CreateLogStream",
+		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
+		new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
 
 	client := newCloudWatchLogClient(svc, logger)
 	token, err := client.CreateStream(&logGroup, &logStreamName)
@@ -409,25 +412,4 @@ func TestLogUnknownError(t *testing.T) {
 	actualLog := fmt.Sprintf("E! cloudwatchlogs: code: %s, message: %s, original error: %+v, %#v", err.Code(), err.Message(), err.OrigErr(), err)
 	expectedLog := "E! cloudwatchlogs: code: Code, message: Message, original error: OrigErr, &awsemfexporter.UnknownError{otherField:\"otherFieldValue\"}"
 	assert.Equal(t, expectedLog, actualLog)
-}
-
-func TestBackoffSleep(t *testing.T) {
-	for i := 0; i <= defaultRetryCount; i++ {
-		now := time.Now()
-		backoffSleep(i)
-		assert.True(
-			t,
-			(time.Since(now)-sleeps[i]).Seconds() < 1)
-	}
-
-	i := defaultRetryCount + 1
-	now := time.Now()
-	backoffSleep(i)
-	duration := time.Since(now)
-	assert.True(
-		t,
-		duration.Milliseconds() > 750)
-	assert.True(
-		t,
-		duration.Milliseconds() < 850)
 }

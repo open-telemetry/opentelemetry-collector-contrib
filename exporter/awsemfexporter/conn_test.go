@@ -89,6 +89,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	logger := zap.NewNop()
 	emfExporterCfg := loadExporterConfig(t)
 	emfExporterCfg.Region = ""
+	emfExporterCfg.NoVerifySSL = false
 	env := stashEnv()
 	defer popEnv(env)
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
@@ -107,6 +108,7 @@ func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 	logger := zap.NewNop()
 	emfExporterCfg := loadExporterConfig(t)
 	emfExporterCfg.Region = ""
+	emfExporterCfg.NoVerifySSL = false
 	m := new(mockConn)
 	m.On("getEC2Region", nil).Return("some error").Once()
 	var expectedSession *session.Session

@@ -55,7 +55,6 @@ func TestLoadConfig(t *testing.T) {
 			NoVerifySSL:           false,
 			ProxyAddress:          "",
 			Region:                "us-west-2",
-			LocalMode:             true,
 			ResourceARN:           "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u",
 			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 		})

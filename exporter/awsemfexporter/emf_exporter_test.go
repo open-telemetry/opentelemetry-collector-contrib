@@ -63,7 +63,6 @@ func TestConsumeMetrics(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	expCfg.LocalMode = true
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
@@ -112,7 +111,7 @@ func TestConsumeMetrics(t *testing.T) {
 		},
 	}
 	md := internaldata.OCToMetrics(mdata)
-	require.NoError(t, exp.ConsumeMetrics(ctx, md))
+	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 }
 
@@ -123,7 +122,6 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	expCfg.LocalMode = true
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
@@ -148,13 +146,11 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = 0
-	expCfg.LocalMode = true
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
-	exp.(*emfExporter).config.(*Config).LocalMode = false
 
 	pusher := new(mockPusher)
 	pusher.On("AddLogEntry", nil).Return("some error").Once()
@@ -175,7 +171,7 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
 	assert.Nil(t, err)
 	err = exp.(*emfExporter).Shutdown(ctx)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 }
 
 func TestNewExporterWithoutConfig(t *testing.T) {

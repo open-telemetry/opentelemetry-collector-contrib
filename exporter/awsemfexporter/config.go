@@ -41,10 +41,6 @@ type Config struct {
 	ProxyAddress string `mapstructure:"proxy_address"`
 	// Region is the AWS region where the metric logs are sent to.
 	Region string `mapstructure:"region"`
-	// LocalMode determines whether the EC2 instance metadata endpoint
-	// will be called or not. Set to `true` to skip EC2 instance
-	// metadata check.
-	LocalMode bool `mapstructure:"local_mode"`
 	// Amazon Resource Name (ARN) of the AWS resource running the collector.
 	ResourceARN string `mapstructure:"resource_arn"`
 	// RoleARN is the IAM role used by the collector when communicating

@@ -60,7 +60,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn connAttr, cfg *Config) (*aws.Con
 	} else if cfg.Region != "" {
 		awsRegion = cfg.Region
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
-	} else if !cfg.NoVerifySSL || cfg.LocalMode {
+	} else if !cfg.NoVerifySSL {
 		var es *session.Session
 		es, err = getDefaultSession(logger)
 		if err != nil {

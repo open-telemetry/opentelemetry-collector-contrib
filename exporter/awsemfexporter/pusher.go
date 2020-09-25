@@ -153,8 +153,6 @@ func NewPusher(logGroupName, logStreamName *string, retryCnt int,
 
 	pusher := newPusher(logGroupName, logStreamName, svcStructuredLog)
 
-	// For blocking queue, assuming the log batch payload size is 1MB. Set queue size to 2
-	// For nonblocking queue, assuming the log batch payload size is much less than 1MB. Set queue size to 20
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
 		pusher.retryCnt = retryCnt
@@ -188,7 +186,7 @@ func (p *pusher) AddLogEntry(logEvent *LogEvent) error {
 	if logEvent != nil {
 		logEvent.truncateIfNeeded()
 		if *logEvent.InputLogEvent.Timestamp == int64(0) {
-			logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.LogGeneratedTime.UnixNano() / 1e6)
+			logEvent.InputLogEvent.Timestamp = aws.Int64(logEvent.LogGeneratedTime.UnixNano() / int64(time.Millisecond))
 		}
 		err = p.addLogEvent(logEvent)
 	}
@@ -231,7 +229,7 @@ func (p *pusher) pushLogEventBatch(req interface{}) error {
 	log.Printf("D! logpusher: publish %d log events with size %f KB in %d ms.",
 		len(putLogEventsInput.LogEvents),
 		float64(logEventBatch.byteTotal)/float64(1024),
-		time.Since(startTime).Nanoseconds()/1e6)
+		time.Since(startTime).Nanoseconds()/int64(time.Millisecond))
 
 	if tmpToken != nil {
 		p.streamToken = *tmpToken
@@ -290,7 +288,7 @@ func (p *pusher) addLogEvent(logEvent *LogEvent) error {
 	//* None of the log events in the batch can be older than 14 days or the
 	//retention period of the log group.
 	currentTime := time.Now().UTC()
-	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*1e6).UTC()
+	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
 	duration := currentTime.Sub(utcTime).Hours()
 	if duration > 24*14 || duration < -2 {
 		log.Printf("E! logpusher: the log entry in (%v) with timestamp (%v) comparing to the current time (%v) is older than 14 days or more than 2 hours in the future. Discard the log entry.", p.logGroupName, utcTime, currentTime)
