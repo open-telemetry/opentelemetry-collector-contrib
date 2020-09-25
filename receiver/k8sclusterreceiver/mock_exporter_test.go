@@ -18,31 +18,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
-
-type mockExporterConfig struct {
-	ExporterName string
-	ExporterType configmodels.Type
-}
-
-func (m mockExporterConfig) Name() string {
-	return m.ExporterName
-}
-
-func (m mockExporterConfig) SetName(name string) {
-	m.ExporterName = name
-}
-
-func (m mockExporterConfig) Type() configmodels.Type {
-	return m.ExporterType
-}
-
-func (m mockExporterConfig) SetType(typeStr configmodels.Type) {
-	m.ExporterType = typeStr
-}
 
 type MockExporter struct {
 }
@@ -58,6 +37,7 @@ func (m MockExporter) Shutdown(context.Context) error {
 var _ component.Exporter = (*mockExporterWithK8sMetadata)(nil)
 
 type mockExporterWithK8sMetadata struct {
+	*exportertest.SinkMetricsExporter
 }
 
 func (m mockExporterWithK8sMetadata) Start(context.Context, component.Host) error {
@@ -68,6 +48,7 @@ func (m mockExporterWithK8sMetadata) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m mockExporterWithK8sMetadata) ConsumeKubernetesMetadata([]*collection.KubernetesMetadataUpdate) error {
+func (m mockExporterWithK8sMetadata) ConsumeMetadata([]*collection.MetadataUpdate) error {
+	consumeMetadataInvocation()
 	return nil
 }

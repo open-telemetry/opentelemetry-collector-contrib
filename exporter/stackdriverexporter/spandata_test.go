@@ -99,7 +99,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	il.SetVersion("test_il_version")
 
 	spans := pdata.NewSpanSlice()
-	spans.Append(&span)
+	spans.Append(span)
 
 	ilss := pdata.NewInstrumentationLibrarySpansSlice()
 	ilss.Resize(1)

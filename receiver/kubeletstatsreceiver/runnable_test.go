@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
@@ -126,7 +126,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 			require.Equal(t, tt.dataLen, consumer.MetricsCount())
 
 			for _, metrics := range consumer.AllMetrics() {
-				md := pdatautil.MetricsToMetricsData(metrics)[0]
+				md := internaldata.MetricsToOC(metrics)[0]
 				for _, m := range md.Metrics {
 					if strings.HasPrefix(m.MetricDescriptor.GetName(), tt.metricPrefix) {
 						_, ok := md.Resource.Labels[tt.requiredLabel]
@@ -366,7 +366,7 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 			// If Kubernetes API is set, assert additional labels as well.
 			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {
 				for _, m := range consumer.AllMetrics() {
-					mds := pdatautil.MetricsToMetricsData(m)
+					mds := internaldata.MetricsToOC(m)
 					for _, md := range mds {
 						claimName, ok := md.Resource.Labels["k8s.persistentvolumeclaim.name"]
 						// claimName will be non empty only when PVCs are used, all test cases

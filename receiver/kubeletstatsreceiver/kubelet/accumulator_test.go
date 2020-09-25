@@ -42,7 +42,7 @@ func TestMetadataErrorCases(t *testing.T) {
 		numMDs                          int
 		numLogs                         int
 		logMessages                     []string
-		detailedPVCLabelsSetterOverride func(volumeClaim, namespace string, labels map[string]string) error
+		detailedPVCLabelsSetterOverride func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
 	}{
 		{
 			name: "Fails to get container metadata",
@@ -180,7 +180,7 @@ func TestMetadataErrorCases(t *testing.T) {
 					},
 				},
 			}, nil),
-			detailedPVCLabelsSetterOverride: func(volumeClaim, namespace string, labels map[string]string) error {
+			detailedPVCLabelsSetterOverride: func(volCacheID, volumeClaim, namespace string, labels map[string]string) error {
 				// Mock failure cases.
 				return errors.New("")
 			},

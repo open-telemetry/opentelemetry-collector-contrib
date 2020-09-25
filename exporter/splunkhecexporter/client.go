@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -55,7 +54,7 @@ func (c *client) pushMetricsData(
 
 	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(c.logger, md, c.config)
 	if err != nil {
-		return pdatautil.MetricPointCount(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 	if len(splunkDataPoints) == 0 {
 		return numDroppedTimeseries, nil
@@ -63,12 +62,12 @@ func (c *client) pushMetricsData(
 
 	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression)
 	if err != nil {
-		return pdatautil.MetricPointCount(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 
 	req, err := http.NewRequest("POST", c.url.String(), body)
 	if err != nil {
-		return pdatautil.MetricPointCount(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -81,7 +80,7 @@ func (c *client) pushMetricsData(
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return pdatautil.MetricPointCount(md), err
+		return numMetricPoint(md), err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
@@ -93,7 +92,7 @@ func (c *client) pushMetricsData(
 			"HTTP %d %q",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		return pdatautil.MetricPointCount(md), err
+		return numMetricPoint(md), err
 	}
 
 	return numDroppedTimeseries, nil
@@ -226,4 +225,9 @@ func (c *client) stop(context context.Context) error {
 
 func (c *client) start(context.Context, component.Host) (err error) {
 	return nil
+}
+
+func numMetricPoint(md pdata.Metrics) int {
+	_, numPoints := md.MetricAndDataPointCount()
+	return numPoints
 }

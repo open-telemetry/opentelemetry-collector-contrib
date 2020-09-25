@@ -188,7 +188,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		traceID := []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
+		traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 		spanID := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 		parentSpanID := []byte{8, 7, 6, 5, 4, 3, 2, 1}
 		name := "span_name"
@@ -537,7 +537,7 @@ func TestPushTraceData(t *testing.T) {
 			td: func() pdata.Traces {
 				traces := pdata.NewTraces()
 				resourceSpans := pdata.NewResourceSpans()
-				traces.ResourceSpans().Append(&resourceSpans)
+				traces.ResourceSpans().Append(resourceSpans)
 				return traces
 			}(),
 			called: false,
@@ -548,7 +548,6 @@ func TestPushTraceData(t *testing.T) {
 				traces := pdata.NewTraces()
 				resourceSpans := traces.ResourceSpans()
 				resourceSpans.Resize(1)
-				resourceSpans.At(0).InitEmpty()
 				resourceSpans.At(0).InstrumentationLibrarySpans().Resize(1)
 				return traces
 			}(),

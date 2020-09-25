@@ -17,6 +17,7 @@ OTEL_VERSION=master
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
+	receiver/dockerstatsreceiver \
 	receiver/redisreceiver \
 	internal/common
 
@@ -56,6 +57,7 @@ gofmt:
 
 .PHONY: for-all
 for-all:
+	@echo "running $${CMD} in root"
 	@$${CMD}
 	@set -e; for dir in $(ALL_MODULES); do \
 	  (cd "$${dir}" && \

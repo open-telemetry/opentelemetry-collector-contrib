@@ -26,8 +26,7 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
-	sdconfig "github.com/prometheus/prometheus/discovery/config"
-	"github.com/prometheus/prometheus/discovery/targetgroup"
+	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
@@ -109,8 +108,8 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 	scrapeConfig.HonorTimestamps = true
 
 	// Set the proper target by creating one target inside a single target group (this is how Prometheus wants its scrape config)
-	scrapeConfig.ServiceDiscoveryConfig = sdconfig.ServiceDiscoveryConfig{
-		StaticConfigs: []*targetgroup.Group{
+	scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
+		&discovery.StaticConfig{
 			{
 				Targets: []model.LabelSet{
 					{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", cfg.Port))},
@@ -119,9 +118,10 @@ func getPromReceiverConfig(cfg *Config) *prometheusreceiver.Config {
 		},
 	}
 
-	receiverSettings := &configmodels.ReceiverSettings{}
-	receiverSettings.SetType(typeStr)
-	receiverSettings.SetName(cfg.Name())
+	receiverSettings := &configmodels.ReceiverSettings{
+		TypeVal: typeStr,
+		NameVal: cfg.Name(),
+	}
 
 	return &prometheusreceiver.Config{
 		ReceiverSettings: *receiverSettings,
@@ -181,7 +181,7 @@ func (per *prometheusExecReceiver) manageProcess(ctx context.Context, host compo
 			return
 		}
 
-		crashCount = per.computeCrashCount(ctx, elapsed, crashCount)
+		crashCount = per.computeCrashCount(elapsed, crashCount)
 		per.computeDelayAndSleep(elapsed, crashCount)
 
 		// Exit loop if shutdown was signaled
@@ -205,7 +205,8 @@ func (per *prometheusExecReceiver) createAndStartReceiver(ctx context.Context, h
 			return nil, fmt.Errorf("generateRandomPort() error - killing this single process/receiver: %w", err)
 		}
 
-		per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfig.StaticConfigs[0].Targets = []model.LabelSet{
+		staticConfig := per.promReceiverConfig.PrometheusConfig.ScrapeConfigs[0].ServiceDiscoveryConfigs[0].(*discovery.StaticConfig)
+		(*staticConfig)[0].Targets = []model.LabelSet{
 			{model.AddressLabel: model.LabelValue(fmt.Sprintf("localhost:%v", currentPort))},
 		}
 	}
@@ -270,7 +271,7 @@ func (per *prometheusExecReceiver) computeDelayAndSleep(elapsed time.Duration, c
 }
 
 // computeCrashCount will compute crashCount according to runtime
-func (per *prometheusExecReceiver) computeCrashCount(ctx context.Context, elapsed time.Duration, crashCount int) int {
+func (per *prometheusExecReceiver) computeCrashCount(elapsed time.Duration, crashCount int) int {
 	if elapsed > healthyProcessTime {
 		return 1
 	}

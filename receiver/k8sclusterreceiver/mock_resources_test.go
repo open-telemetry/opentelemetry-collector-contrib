@@ -26,7 +26,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-func createPods(t *testing.T, client *fake.Clientset, numPods int) {
+func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod {
+	out := make([]*corev1.Pod, 0, numPods)
 	for i := 0; i < numPods; i++ {
 		p := &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
@@ -35,15 +36,16 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) {
 				Namespace: "test",
 			},
 		}
-		_, err := client.CoreV1().Pods(p.Namespace).Create(context.Background(), p, v1.CreateOptions{})
 
+		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(context.Background(), p, v1.CreateOptions{})
 		if err != nil {
 			t.Errorf("error creating pod: %v", err)
 			t.FailNow()
 		}
-
+		out = append(out, createdPod)
 		time.Sleep(2 * time.Millisecond)
 	}
+	return out
 }
 
 func deletePods(t *testing.T, client *fake.Clientset, numPods int) {

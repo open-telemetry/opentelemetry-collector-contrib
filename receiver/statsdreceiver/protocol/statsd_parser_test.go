@@ -20,15 +20,25 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_StatsDParser_Parse(t *testing.T) {
+	prevTimeNowFunc := timeNowFunc
+	timeNowFunc = func() int64 {
+		return 0
+	}
+	t.Cleanup(
+		func() {
+			timeNowFunc = prevTimeNowFunc
+		},
+	)
+
 	tests := []struct {
-		name            string
-		input           string
-		wantMetricName  string
-		wantMetricValue interface{}
-		err             error
+		name       string
+		input      string
+		wantMetric *metricspb.Metric
+		err        error
 	}{
 		{
 			name:  "empty input string",
@@ -51,21 +61,136 @@ func Test_StatsDParser_Parse(t *testing.T) {
 			err:   errors.New("empty metric value"),
 		},
 		{
-			name:            "integer counter",
-			input:           "test.metric:42|c",
-			wantMetricName:  "test.metric",
-			wantMetricValue: &metricspb.Point_Int64Value{Int64Value: 42},
+			name:  "integer counter",
+			input: "test.metric:42|c",
+			wantMetric: testMetric("test.metric",
+				metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				nil,
+				nil,
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_Int64Value{
+						Int64Value: 42,
+					},
+				}),
 		},
 		{
-			name:            "gracefully handle float counter value",
-			input:           "test.metric:42.0|c",
-			wantMetricName:  "test.metric",
-			wantMetricValue: &metricspb.Point_Int64Value{Int64Value: 42},
+			name:  "gracefully handle float counter value",
+			input: "test.metric:42.0|c",
+			wantMetric: testMetric("test.metric",
+				metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+				nil,
+				nil,
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_DoubleValue{
+						DoubleValue: 42,
+					},
+				}),
 		},
 		{
 			name:  "invalid metric value",
 			input: "test.metric:42.abc|c",
 			err:   errors.New("parse metric value string: 42.abc"),
+		},
+		{
+			name:  "unhandled metric type",
+			input: "test.metric:42|unhandled_type",
+			err:   errors.New("unsupported metric type: unhandled_type"),
+		},
+		{
+			name:  "counter metric with sample rate and tags",
+			input: "test.metric:42|c|@0.1|#key:value",
+			wantMetric: testMetric("test.metric",
+				metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				[]*metricspb.LabelKey{
+					{
+						Key: "key",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "value",
+						HasValue: true,
+					},
+				},
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_Int64Value{
+						Int64Value: 42,
+					},
+				}),
+		},
+		{
+			name:  "double gauge metric",
+			input: "test.gauge:42.0|g|@0.1|#key:value",
+			wantMetric: testMetric("test.gauge",
+				metricspb.MetricDescriptor_GAUGE_DOUBLE,
+				[]*metricspb.LabelKey{
+					{
+						Key: "key",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "value",
+						HasValue: true,
+					},
+				},
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_DoubleValue{
+						DoubleValue: 42,
+					},
+				}),
+		},
+		{
+			name:  "int gauge metric",
+			input: "test.gauge:42|g|@0.1|#key:value",
+			wantMetric: testMetric("test.gauge",
+				metricspb.MetricDescriptor_GAUGE_INT64,
+				[]*metricspb.LabelKey{
+					{
+						Key: "key",
+					},
+				},
+				[]*metricspb.LabelValue{
+					{
+						Value:    "value",
+						HasValue: true,
+					},
+				},
+				&metricspb.Point{
+					Timestamp: &timestamppb.Timestamp{
+						Seconds: 0,
+					},
+					Value: &metricspb.Point_Int64Value{
+						Int64Value: 42,
+					},
+				}),
+		},
+		{
+			name:  "invalid sample rate value",
+			input: "test.metric:42|c|@1.0a",
+			err:   errors.New("parse sample rate: 1.0a"),
+		},
+		{
+			name:  "invalid tag format",
+			input: "test.metric:42|c|#key1",
+			err:   errors.New("invalid tag format: [key1]"),
+		},
+		{
+			name:  "unrecognized message part",
+			input: "test.metric:42|c|$extra",
+			err:   errors.New("unrecognized message part: $extra"),
 		},
 	}
 
@@ -79,9 +204,30 @@ func Test_StatsDParser_Parse(t *testing.T) {
 				assert.Equal(t, err, tt.err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, got.GetTimeseries()[0].GetPoints()[0].GetValue(), tt.wantMetricValue)
-				assert.Equal(t, got.GetMetricDescriptor().GetName(), tt.wantMetricName)
+				assert.Equal(t, got, tt.wantMetric)
 			}
 		})
+	}
+}
+
+func testMetric(metricName string,
+	metricType metricspb.MetricDescriptor_Type,
+	lableKeys []*metricspb.LabelKey,
+	labelValues []*metricspb.LabelValue,
+	point *metricspb.Point) *metricspb.Metric {
+	return &metricspb.Metric{
+		MetricDescriptor: &metricspb.MetricDescriptor{
+			Name:      metricName,
+			Type:      metricType,
+			LabelKeys: lableKeys,
+		},
+		Timeseries: []*metricspb.TimeSeries{
+			{
+				LabelValues: labelValues,
+				Points: []*metricspb.Point{
+					point,
+				},
+			},
+		},
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -34,15 +33,14 @@ type Config struct {
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
 
-	// Realm is the SignalFx realm where data is going to be sent to. The
-	// default value is "us0"
+	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
 
 	// IngestURL is the destination to where SignalFx metrics will be sent to, it is
 	// intended for tests and debugging. The value of Realm is ignored if the
 	// URL is specified. If a path is not included the exporter will
 	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will use the one set by the config.
+	// If a path is specified it will act as a prefix.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -69,7 +67,7 @@ type Config struct {
 	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
-	// If not provided explicitly, the rules defined in translations/config/default.yaml are used.
+	// Rules defined in translation/constants.go are used by default.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
@@ -133,7 +131,7 @@ func (cfg *Config) validateConfig() error {
 
 func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 	if cfg.IngestURL == "" {
-		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com/v2/datapoint", cfg.Realm))
+		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
 		if err != nil {
 			return out, err
 		}
@@ -142,9 +140,6 @@ func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 		out, err = url.Parse(cfg.IngestURL)
 		if err != nil {
 			return out, err
-		}
-		if out.Path == "" || out.Path == "/" {
-			out.Path = path.Join(out.Path, "v2/datapoint")
 		}
 	}
 

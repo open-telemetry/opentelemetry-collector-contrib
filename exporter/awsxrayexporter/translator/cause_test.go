@@ -53,8 +53,8 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 
 	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeInternalError)
 	span.Status().SetMessage(errorMsg)
-	span.Events().Append(&event1)
-	span.Events().Append(&event2)
+	span.Events().Append(event1)
+	span.Events().Append(event2)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()

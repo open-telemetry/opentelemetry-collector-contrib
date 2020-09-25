@@ -17,6 +17,7 @@ package stackdriverexporter
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"google.golang.org/api/option"
 )
 
 // Config defines configuration for Stackdriver exporter.
@@ -33,6 +34,11 @@ type Config struct {
 	// Timeout for all API calls. If not set, defaults to 12 seconds.
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	ResourceMappings               []ResourceMapping        `mapstructure:"resource_mappings"`
+	// GetClientOptions returns additional options to be passed
+	// to the underlying Google Cloud API client.
+	// Must be set programmatically (no support via declarative config).
+	// Optional.
+	GetClientOptions func() []option.ClientOption
 }
 
 // ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).

@@ -30,13 +30,14 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
@@ -86,35 +87,28 @@ func TestNew(t *testing.T) {
 				require.NotNil(t, got)
 				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
 				require.NoError(t, got.Shutdown(context.Background()))
-
-				// This is expected to fail.
-				cErr := got.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{{}}))
-				assert.Error(t, cErr)
 			}
 		})
 	}
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	smallBatch := pdatautil.MetricsFromMetricsData(
-		[]consumerdata.MetricsData{
-			{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-				},
-				Resource: &resourcepb.Resource{Type: "test"},
-				Metrics: []*metricspb.Metric{
-					metricstestutil.Gauge(
-						"test_gauge",
-						[]string{"k0", "k1"},
-						metricstestutil.Timeseries(
-							time.Now(),
-							[]string{"v0", "v1"},
-							metricstestutil.Double(time.Now(), 123))),
-				},
+	smallBatch := internaldata.OCToMetrics(
+		consumerdata.MetricsData{
+			Node: &commonpb.Node{
+				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
 			},
-		},
-	)
+			Resource: &resourcepb.Resource{Type: "test"},
+			Metrics: []*metricspb.Metric{
+				metricstestutil.Gauge(
+					"test_gauge",
+					[]string{"k0", "k1"},
+					metricstestutil.Timeseries(
+						time.Now(),
+						[]string{"v0", "v1"},
+						metricstestutil.Double(time.Now(), 123))),
+			},
+		})
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
@@ -139,7 +133,7 @@ func TestConsumeMetrics(t *testing.T) {
 		},
 		{
 			name:             "large_batch",
-			md:               generateLargeBatch(),
+			md:               generateLargeDPBatch(t),
 			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
@@ -159,15 +153,17 @@ func TestConsumeMetrics(t *testing.T) {
 			assert.NoError(t, err)
 
 			dpClient := &sfxDPClient{
-				ingestURL: serverURL,
-				headers:   map[string]string{"test_header_": "test"},
-				client: &http.Client{
-					Timeout: 1 * time.Second,
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers:   map[string]string{"test_header_": "test"},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: sync.Pool{New: func() interface{} {
+						return gzip.NewWriter(nil)
+					}},
 				},
-				logger: zap.NewNop(),
-				zippers: sync.Pool{New: func() interface{} {
-					return gzip.NewWriter(nil)
-				}},
+				logger:    zap.NewNop(),
 				converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
 
@@ -212,7 +208,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		if !includeToken {
 			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
 		}
-		return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+		return internaldata.OCToMetrics(md)
 	}
 
 	tests := []struct {
@@ -270,20 +266,18 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		{
 			name:                   "use token from header when resource is nil",
 			accessTokenPassthrough: true,
-			metrics: pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-				{
-					Node: &commonpb.Node{
-						ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-					},
-					Metrics: []*metricspb.Metric{
-						metricstestutil.Gauge(
-							"test_gauge",
-							[]string{"k0", "k1"},
-							metricstestutil.Timeseries(
-								time.Now(),
-								[]string{"v0", "v1"},
-								metricstestutil.Double(time.Now(), 123))),
-					},
+			metrics: internaldata.OCToMetrics(consumerdata.MetricsData{
+				Node: &commonpb.Node{
+					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
+				},
+				Metrics: []*metricspb.Metric{
+					metricstestutil.Gauge(
+						"test_gauge",
+						[]string{"k0", "k1"},
+						metricstestutil.Timeseries(
+							time.Now(),
+							[]string{"v0", "v1"},
+							metricstestutil.Double(time.Now(), 123))),
 				},
 			}),
 			numPushDataCallsPerToken: map[string]int{
@@ -296,11 +290,10 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -315,12 +308,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -335,12 +327,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
 				moreForSecondToken := validMetricsWithToken(true, fromLabels[1])
 
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(3)
-				pdatautil.MetricsToInternalMetrics(moreForSecondToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(2))
+				forSecondToken.ResourceMetrics().Resize(3)
+				moreForSecondToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(2))
 
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -353,10 +344,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(false, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
@@ -369,10 +359,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			metrics: func() pdata.Metrics {
 				forFirstToken := validMetricsWithToken(true, fromLabels[0])
 				forSecondToken := validMetricsWithToken(true, fromLabels[1])
-				mds := pdatautil.MetricsToInternalMetrics(forSecondToken)
-				mds.ResourceMetrics().Resize(2)
-				pdatautil.MetricsToInternalMetrics(forFirstToken).ResourceMetrics().At(0).CopyTo(mds.ResourceMetrics().At(1))
-				return pdatautil.MetricsFromInternalMetrics(mds)
+				forSecondToken.ResourceMetrics().Resize(2)
+				forFirstToken.ResourceMetrics().At(0).CopyTo(forSecondToken.ResourceMetrics().At(1))
+				return forSecondToken
 			}(),
 			failHTTP:               true,
 			droppedTimeseriesCount: 2,
@@ -408,18 +397,20 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			assert.NoError(t, err)
 
 			dpClient := &sfxDPClient{
-				ingestURL: serverURL,
-				headers: map[string]string{
-					"test_header_": "test",
-					"X-Sf-Token":   fromHeaders,
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers: map[string]string{
+						"test_header_": "test",
+						"X-Sf-Token":   fromHeaders,
+					},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: sync.Pool{New: func() interface{} {
+						return gzip.NewWriter(nil)
+					}},
 				},
-				client: &http.Client{
-					Timeout: 1 * time.Second,
-				},
-				logger: zap.NewNop(),
-				zippers: sync.Pool{New: func() interface{} {
-					return gzip.NewWriter(nil)
-				}},
+				logger:                 zap.NewNop(),
 				accessTokenPassthrough: tt.accessTokenPassthrough,
 				converter:              translation.NewMetricsConverter(zap.NewNop(), nil),
 			}
@@ -447,7 +438,263 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	}
 }
 
-func generateLargeBatch() pdata.Metrics {
+func TestNewEventExporter(t *testing.T) {
+	got, err := NewEventExporter(nil, zap.NewNop())
+	assert.EqualError(t, err, "nil config")
+	assert.Nil(t, got)
+
+	config := &Config{
+		AccessToken: "someToken",
+		IngestURL:   "asdf://:%",
+		Timeout:     1 * time.Second,
+		Headers:     nil,
+	}
+
+	got, err = NewEventExporter(config, zap.NewNop())
+	assert.NotNil(t, err)
+	assert.Nil(t, got)
+
+	config = &Config{
+		AccessToken: "someToken",
+		Realm:       "xyz",
+		Timeout:     1 * time.Second,
+		Headers:     nil,
+	}
+
+	got, err = NewEventExporter(config, zap.NewNop())
+	assert.NoError(t, err)
+	require.NotNil(t, got)
+
+	// This is expected to fail.
+	rls := makeSampleResourceLogs()
+	ld := pdata.NewLogs()
+	ld.ResourceLogs().Append(rls)
+	err = got.ConsumeLogs(context.Background(), ld)
+	assert.Error(t, err)
+}
+
+func makeSampleResourceLogs() pdata.ResourceLogs {
+	logSlice := pdata.NewLogSlice()
+
+	logSlice.Resize(1)
+	l := logSlice.At(0)
+
+	l.SetName("shutdown")
+	l.SetTimestamp(pdata.TimestampUnixNano(1000))
+	attrs := l.Attributes()
+
+	attrs.InitFromMap(map[string]pdata.AttributeValue{
+		"k0": pdata.NewAttributeValueString("v0"),
+		"k1": pdata.NewAttributeValueString("v1"),
+		"k2": pdata.NewAttributeValueString("v2"),
+	})
+
+	propMap := pdata.NewAttributeMap()
+	propMap.InitFromMap(map[string]pdata.AttributeValue{
+		"env":      pdata.NewAttributeValueString("prod"),
+		"isActive": pdata.NewAttributeValueBool(true),
+		"rack":     pdata.NewAttributeValueInt(5),
+		"temp":     pdata.NewAttributeValueDouble(40.5),
+	})
+	propMap.Sort()
+	propMapVal := pdata.NewAttributeValueMap()
+	propMapVal.SetMapVal(propMap)
+	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
+	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+
+	l.Attributes().Sort()
+
+	out := pdata.NewResourceLogs()
+	out.InitEmpty()
+	out.Resource().InitEmpty()
+	out.InstrumentationLibraryLogs().Resize(1)
+	out.InstrumentationLibraryLogs().At(0).InitEmpty()
+	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
+
+	return out
+}
+
+func TestConsumeEventData(t *testing.T) {
+	tests := []struct {
+		name                 string
+		resourceLogs         pdata.ResourceLogs
+		reqTestFunc          func(t *testing.T, r *http.Request)
+		httpResponseCode     int
+		numDroppedLogRecords int
+		wantErr              bool
+	}{
+		{
+			name:             "happy_path",
+			resourceLogs:     makeSampleResourceLogs(),
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+		{
+			name: "no_event_attribute",
+			resourceLogs: func() pdata.ResourceLogs {
+				out := makeSampleResourceLogs()
+				out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes().Delete("com.splunk.signalfx.event_category")
+				return out
+			}(),
+			reqTestFunc:          nil,
+			numDroppedLogRecords: 1,
+			httpResponseCode:     http.StatusAccepted,
+		},
+		{
+			name: "nonconvertible_log_attrs",
+			resourceLogs: func() pdata.ResourceLogs {
+				out := makeSampleResourceLogs()
+
+				attrs := out.InstrumentationLibraryLogs().At(0).Logs().At(0).Attributes()
+				mapAttr := pdata.NewAttributeValueMap()
+				attrs.Insert("map", mapAttr)
+
+				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
+				propsAttrs.MapVal().Insert("map", mapAttr)
+
+				return out
+			}(),
+			reqTestFunc: nil,
+			// The log does go through, just without that prop
+			numDroppedLogRecords: 0,
+			httpResponseCode:     http.StatusAccepted,
+		},
+		{
+			name:                 "response_forbidden",
+			resourceLogs:         makeSampleResourceLogs(),
+			reqTestFunc:          nil,
+			httpResponseCode:     http.StatusForbidden,
+			numDroppedLogRecords: 1,
+			wantErr:              true,
+		},
+		{
+			name:             "large_batch",
+			resourceLogs:     generateLargeEventBatch(t),
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				if tt.reqTestFunc != nil {
+					tt.reqTestFunc(t, r)
+				}
+				w.WriteHeader(tt.httpResponseCode)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			eventClient := &sfxEventClient{
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers:   map[string]string{"test_header_": "test"},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: newGzipPool(),
+				},
+				logger: zap.NewNop(),
+			}
+
+			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), tt.resourceLogs)
+			assert.Equal(t, tt.numDroppedLogRecords, numDroppedLogRecords)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
+	fromHeaders := "AccessTokenFromClientHeaders"
+	fromLabels := "AccessTokenFromLabel"
+
+	newLogData := func(includeToken bool) pdata.ResourceLogs {
+		out := makeSampleResourceLogs()
+
+		if includeToken {
+			res := out.Resource()
+			res.InitEmpty()
+			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+		}
+		return out
+	}
+
+	tests := []struct {
+		name                   string
+		accessTokenPassthrough bool
+		includedInLogData      bool
+		expectedToken          string
+	}{
+		{
+			name:                   "passthrough access token and included in logs",
+			accessTokenPassthrough: true,
+			includedInLogData:      true,
+			expectedToken:          fromLabels,
+		},
+		{
+			name:                   "passthrough access token and not included in logs",
+			accessTokenPassthrough: true,
+			includedInLogData:      false,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and included in logs",
+			accessTokenPassthrough: false,
+			includedInLogData:      true,
+			expectedToken:          fromHeaders,
+		},
+		{
+			name:                   "don't passthrough access token and not included in logs",
+			accessTokenPassthrough: false,
+			includedInLogData:      false,
+			expectedToken:          fromHeaders,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "test", r.Header.Get("test_header_"))
+				assert.Equal(t, tt.expectedToken, r.Header.Get("x-sf-token"))
+				w.WriteHeader(http.StatusAccepted)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			eventClient := &sfxEventClient{
+				sfxClientBase: sfxClientBase{
+					ingestURL: serverURL,
+					headers: map[string]string{
+						"test_header_": "test",
+						"X-Sf-Token":   fromHeaders,
+					},
+					client: &http.Client{
+						Timeout: 1 * time.Second,
+					},
+					zippers: newGzipPool(),
+				},
+				logger:                 zap.NewNop(),
+				accessTokenPassthrough: tt.accessTokenPassthrough,
+			}
+
+			numDroppedLogRecords, err := eventClient.pushResourceLogs(context.Background(), newLogData(tt.includedInLogData))
+			assert.Equal(t, 0, numDroppedLogRecords)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func generateLargeDPBatch(t *testing.T) pdata.Metrics {
 	mds := make([]consumerdata.MetricsData, 65000)
 
 	ts := time.Now()
@@ -472,12 +719,32 @@ func generateLargeBatch() pdata.Metrics {
 		}
 	}
 
-	return pdatautil.MetricsFromMetricsData(mds)
+	return internaldata.OCSliceToMetrics(mds)
 }
 
-func TestConsumeKubernetesMetadata(t *testing.T) {
+func generateLargeEventBatch(t *testing.T) pdata.ResourceLogs {
+	out := pdata.NewResourceLogs()
+	out.InitEmpty()
+	out.InstrumentationLibraryLogs().Resize(1)
+	logs := out.InstrumentationLibraryLogs().At(0).Logs()
+
+	batchSize := 65000
+	logs.Resize(batchSize)
+	ts := time.Now()
+	for i := 0; i < batchSize; i++ {
+		lr := logs.At(i)
+		lr.SetName("test_" + strconv.Itoa(i))
+		lr.Attributes().InsertString("k0", "k1")
+		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
+		lr.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+	}
+
+	return out
+}
+
+func TestConsumeMetadata(t *testing.T) {
 	type args struct {
-		metadata []*collection.KubernetesMetadataUpdate
+		metadata []*collection.MetadataUpdate
 	}
 	type fields struct {
 		payLoad map[string]interface{}
@@ -502,7 +769,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -536,7 +803,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -571,7 +838,7 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 				},
 			},
 			args{
-				[]*collection.KubernetesMetadataUpdate{
+				[]*collection.MetadataUpdate{
 					{
 						ResourceIDKey: "key",
 						ResourceID:    "id",
@@ -664,11 +931,11 @@ func TestConsumeKubernetesMetadata(t *testing.T) {
 			dimClient.Start()
 
 			se := signalfxExporter{
-				logger:                 logger,
-				pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
+				logger:       logger,
+				pushMetadata: dimClient.PushMetadata,
 			}
 
-			err = se.ConsumeKubernetesMetadata(tt.args.metadata)
+			err = se.ConsumeMetadata(tt.args.metadata)
 
 			// Wait for requests to be handled by the mocked server before assertion.
 			wg.Wait()
@@ -693,17 +960,19 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	assert.NoError(b, err)
 
 	dpClient := &sfxDPClient{
-		ingestURL: serverURL,
-		client: &http.Client{
-			Timeout: 1 * time.Second,
+		sfxClientBase: sfxClientBase{
+			ingestURL: serverURL,
+			client: &http.Client{
+				Timeout: 1 * time.Second,
+			},
+			zippers: sync.Pool{New: func() interface{} {
+				return gzip.NewWriter(nil)
+			}},
 		},
-		logger: zap.NewNop(),
-		zippers: sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
+		logger:    zap.NewNop(),
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
-	metrics := pdatautil.MetricsFromMetricsData(mds)
+	metrics := internaldata.OCSliceToMetrics(mds)
 	for i := 0; i < b.N; i++ {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)

@@ -37,7 +37,13 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() configmodels.Receiver {
-	return &config{CollectionInterval: 10 * time.Second}
+	return &config{
+		ReceiverSettings: configmodels.ReceiverSettings{
+			TypeVal: typeStr,
+			NameVal: typeStr,
+		},
+		CollectionInterval: 10 * time.Second,
+	}
 }
 
 func createMetricsReceiver(
