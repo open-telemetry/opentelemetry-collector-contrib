@@ -99,8 +99,6 @@ func (client *cloudWatchLogClient) PutLogEvents(input *cloudwatchlogs.PutLogEven
 				if tmpErr == nil {
 					if tmpToken == "" {
 						token = nil
-					} else {
-						token = &tmpToken
 					}
 				}
 				continue

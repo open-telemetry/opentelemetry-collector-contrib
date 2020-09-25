@@ -155,14 +155,56 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	pusher := new(mockPusher)
 	pusher.On("AddLogEntry", nil).Return("some error").Once()
 	pusher.On("AddLogEntry", nil).Return("").Twice()
-	pusher.On("ForceFlush", nil).Return("some error").Twice()
+	pusher.On("ForceFlush", nil).Return("some error").Once()
 	pusher.On("ForceFlush", nil).Return("").Once()
 	pusher.On("ForceFlush", nil).Return("some error").Once()
 	streamToPusherMap := map[string]Pusher{"test-logStreamName": pusher}
 	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
-	mdata := consumerdata.MetricsData{}
+	mdata := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			ServiceInfo: &commonpb.ServiceInfo{Name: "test-emf"},
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				"resource": "R1",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+							{Value: "false"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 	md := internaldata.OCToMetrics(mdata)
 	_, err = exp.(*emfExporter).pushMetricsData(ctx, md)
 	assert.NotNil(t, err)
