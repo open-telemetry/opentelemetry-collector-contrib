@@ -17,7 +17,7 @@ output:
   logLevel: info
 
 # Shared params for agentCollector daemonset and standaloneCollector deployment pods.
-# Can be overriden here or for any component independantly.
+# Can be overridden here or for any component independently.
 image:
   repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
@@ -49,7 +49,7 @@ tolerations: []
 affinity: {}
 
 # Configuration for ports, shared between agentCollector, standaloneCollector and service.
-# Can be overriden here or for agentCollector and standaloneCollector independently.
+# Can be overridden here or for agentCollector and standaloneCollector independently.
 # Any port can be disabled by setting to null.
 ports:
   otlp:
