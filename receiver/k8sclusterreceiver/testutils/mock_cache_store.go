@@ -14,16 +14,32 @@
 
 package testutils
 
-import "k8s.io/client-go/tools/cache"
+import (
+	"errors"
+
+	"k8s.io/client-go/tools/cache"
+)
 
 type MockStore struct {
 	cache.Store
+	WantErr bool
+	Cache   map[string]interface{}
 }
 
 func (ms *MockStore) GetByKey(id string) (interface{}, bool, error) {
-	return nil, false, nil
+	if ms.WantErr {
+		return nil, false, errors.New("")
+	}
+	item, exits := ms.Cache[id]
+	return item, exits, nil
 }
 
 func (ms *MockStore) List() []interface{} {
-	return []interface{}{}
+	out := make([]interface{}, len(ms.Cache))
+	i := 0
+	for _, item := range ms.Cache {
+		out[i] = item
+		i++
+	}
+	return out
 }

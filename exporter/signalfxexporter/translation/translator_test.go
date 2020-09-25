@@ -40,6 +40,14 @@ func (dps byContent) Less(i, j int) bool {
 }
 func (dps byContent) Swap(i, j int) { dps[i], dps[j] = dps[j], dps[i] }
 
+type byDimensions []*sfxpb.Dimension
+
+func (dims byDimensions) Len() int { return len(dims) }
+func (dims byDimensions) Less(i, j int) bool {
+	return dims[i].Key < dims[j].Key
+}
+func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
+
 func TestNewMetricTranslator(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -654,6 +662,43 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
 					Dimensions: []*sfxpb.Dimension{},
 				},
 			},
@@ -665,7 +710,51 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
-					Dimensions: []*sfxpb.Dimension{},
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add with existing dimension",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim1", Value: "val1"},
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
 				},
 			},
 		},
@@ -1582,6 +1671,16 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 		sort.Sort(byContent(got))
 	}
 
+	if action == ActionRenameMetrics {
+		for _, dp := range want {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
+
+		for _, dp := range got {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
+	}
+
 	assert.EqualValues(t, want, got)
 }
 
@@ -1630,7 +1729,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    nil,
 			metric2: "metric2",
 			val2:    generateIntPtr(1),
-			wantErr: "calculate_new_metric: operand1 has no IntValue",
+			wantErr: "calculate_new_metric: operand1 has no numeric value",
 		},
 		{
 			name:    "operand2_nil",
@@ -1646,7 +1745,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    generateIntPtr(1),
 			metric2: "metric2",
 			val2:    nil,
-			wantErr: "calculate_new_metric: operand2 has no IntValue",
+			wantErr: "calculate_new_metric: operand2 has no numeric value",
 		},
 		{
 			name:    "divide_by_zero",
@@ -1998,6 +2097,68 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		}},
 	}
 	want := []*sfxpb.DataPoint{m1, m2, m1v2, m2v2, m3, m3v2}
+	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
+}
+
+func TestUnsupportedOperator(t *testing.T) {
+	_, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "*",
+	}}, 1)
+	require.Error(t, err)
+}
+
+func TestCalculateNewMetric_Double(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "/",
+	}}, 1)
+	require.NoError(t, err)
+	m1 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	dps := []*sfxpb.DataPoint{m1, m2}
+	translated := mt.TranslateDataPoints(zap.NewNop(), dps)
+	m3 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	want := []*sfxpb.DataPoint{m1, m2, m3}
 	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
 }
 

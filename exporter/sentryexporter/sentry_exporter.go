@@ -214,7 +214,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	}
 
 	sentrySpan = &sentry.Span{
-		TraceID:        span.TraceID().String(),
+		TraceID:        span.TraceID().HexString(),
 		SpanID:         span.SpanID().String(),
 		ParentSpanID:   parentSpanID,
 		Description:    description,

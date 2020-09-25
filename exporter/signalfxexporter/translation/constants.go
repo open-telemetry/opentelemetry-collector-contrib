@@ -74,7 +74,6 @@ translation_rules:
     container.memory.rss: container_memory_rss_bytes
     container.memory.usage: container_memory_usage_bytes
     container.memory.working_set: container_memory_working_set_bytes
-    k8s.node.cpu.utilization: cpu.utilization
 
     # k8s cluster receiver metrics
     k8s/container/cpu/limit: kubernetes.container_cpu_limit
@@ -137,6 +136,43 @@ translation_rules:
   mapping: 
     receive: pod_network_receive_errors_total
     transmit: pod_network_transmit_errors_total
+
+# compute cpu utilization
+- action: delta_metric
+  mapping:
+    system.cpu.time: system.cpu.delta
+- action: copy_metrics
+  mapping:
+    system.cpu.delta: system.cpu.usage
+  dimension_key: state
+  dimension_values:
+    interrupt: true
+    nice: true
+    softirq: true
+    steal: true
+    system: true
+    user: true
+    wait: true
+- action: aggregate_metric
+  metric_name: system.cpu.usage
+  aggregation_method: sum
+  without_dimensions:
+  - state
+  - cpu
+- action: copy_metrics
+  mapping:
+    system.cpu.delta: system.cpu.total
+- action: aggregate_metric
+  metric_name: system.cpu.total
+  aggregation_method: sum
+  without_dimensions:
+  - state
+  - cpu
+- action: calculate_new_metric
+  metric_name: cpu.utilization
+  operand1_metric: system.cpu.usage
+  operand2_metric: system.cpu.total
+  operator: /
 
 # convert cpu metrics
 - action: split_metric
@@ -278,6 +314,18 @@ translation_rules:
     disk.summary_utilization: 100
 
 # convert disk I/O metrics
+- action: copy_metrics
+  mapping:
+    system.disk.ops: disk.ops
+- action: aggregate_metric
+  metric_name: disk.ops
+  aggregation_method: sum
+  without_dimensions:
+   - direction
+   - device
+- action: delta_metric
+  mapping:
+    disk.ops: disk_ops.total
 - action: rename_dimension_keys
   metric_names:
     system.disk.merged: true
@@ -310,6 +358,9 @@ translation_rules:
   mapping:
     read: disk_time.read
     write: disk_time.write
+- action: delta_metric
+  mapping:
+    system.disk.pending_operations: disk_ops.pending
 
 # convert network I/O metrics
 - action: copy_metrics
@@ -360,12 +411,17 @@ translation_rules:
 - action: multiply_float
   scale_factors_float:
     memory.utilization: 100
+    cpu.utilization: 100
 
 # remove redundant metrics
 - action: drop_metrics
   metric_names:
     df_complex.used_total: true
+    disk.ops: true
     disk.summary_total: true
     disk.total: true
+    system.cpu.usage: true
+    system.cpu.total: true
+    system.cpu.delta: true
 `
 )

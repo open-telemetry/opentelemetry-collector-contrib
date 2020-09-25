@@ -23,8 +23,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
@@ -34,7 +36,7 @@ func TestReceiver(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	consumer := &exportertest.SinkMetricsExporter{}
 
-	r, err := setupReceiver(client, consumer)
+	r, err := setupReceiver(client, consumer, 10*time.Second)
 
 	require.NoError(t, err)
 
@@ -45,7 +47,7 @@ func TestReceiver(t *testing.T) {
 	createNodes(t, client, numNodes)
 
 	ctx := context.Background()
-	r.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	// Expects metric data from nodes and pods where each metric data
 	// struct corresponds to one resource.
@@ -72,19 +74,36 @@ func TestReceiver(t *testing.T) {
 	r.Shutdown(ctx)
 }
 
+func TestReceiverTimesOutAfterStartup(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	consumer := &exportertest.SinkMetricsExporter{}
+
+	// Mock initial cache sync timing out, using a small timeout.
+	r, err := setupReceiver(client, consumer, 1*time.Millisecond)
+	require.NoError(t, err)
+
+	createPods(t, client, 1)
+
+	ctx := context.Background()
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	require.Eventually(t, func() bool {
+		return r.resourceWatcher.initialSyncTimedOut.Load()
+	}, 10*time.Second, 100*time.Millisecond)
+	require.NoError(t, r.Shutdown(ctx))
+}
+
 func TestReceiverWithManyResources(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	consumer := &exportertest.SinkMetricsExporter{}
 
-	r, err := setupReceiver(client, consumer)
-
+	r, err := setupReceiver(client, consumer, 10*time.Second)
 	require.NoError(t, err)
 
 	numPods := 1000
 	createPods(t, client, numPods)
 
 	ctx := context.Background()
-	r.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
 		return consumer.MetricsCount() == numPods
@@ -94,9 +113,66 @@ func TestReceiverWithManyResources(t *testing.T) {
 	r.Shutdown(ctx)
 }
 
+var numCalls *atomic.Int32
+var consumeMetadataInvocation = func() {
+	if numCalls != nil {
+		numCalls.Inc()
+	}
+}
+
+func TestReceiverWithMetadata(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	consumer := &mockExporterWithK8sMetadata{SinkMetricsExporter: &exportertest.SinkMetricsExporter{}}
+	numCalls = atomic.NewInt32(0)
+
+	r, err := setupReceiver(client, consumer, 10*time.Second)
+	require.NoError(t, err)
+	r.config.MetadataExporters = []string{"exampleexporter/withmetadata"}
+
+	// Setup k8s resources.
+	pods := createPods(t, client, 1)
+
+	ctx := context.Background()
+	require.NoError(t, r.Start(ctx, nopHostWithExporters{}))
+
+	// Mock an update on the Pod object. It appears that the fake clientset
+	// does not pass on events for updates to resources.
+	require.Len(t, pods, 1)
+	updatedPod := getUpdatedPod(pods[0])
+	r.resourceWatcher.onUpdate(pods[0], updatedPod)
+
+	// Should not result in ConsumerKubernetesMetadata invocation.
+	r.resourceWatcher.onUpdate(pods[0], pods[0])
+
+	deletePods(t, client, 1)
+
+	// Ensure ConsumeKubernetesMetadata is called twice, once for the add and
+	// then for the update.
+	require.Eventually(t, func() bool {
+		return int(numCalls.Load()) == 2
+	}, 10*time.Second, 100*time.Millisecond,
+		"metadata not collected")
+
+	r.Shutdown(ctx)
+}
+
+func getUpdatedPod(pod *corev1.Pod) interface{} {
+	return &corev1.Pod{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      pod.Name,
+			Namespace: pod.Namespace,
+			UID:       pod.UID,
+			Labels: map[string]string{
+				"key": "value",
+			},
+		},
+	}
+}
+
 func setupReceiver(
 	client *fake.Clientset,
-	consumer consumer.MetricsConsumer) (*kubernetesReceiver, error) {
+	consumer consumer.MetricsConsumer,
+	initialSyncTimeout time.Duration) (*kubernetesReceiver, error) {
 
 	logger := zap.NewNop()
 	config := &Config{
@@ -104,7 +180,7 @@ func setupReceiver(
 		NodeConditionTypesToReport: []string{"Ready"},
 	}
 
-	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
+	rw := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, initialSyncTimeout)
 	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
 
 	return &kubernetesReceiver{

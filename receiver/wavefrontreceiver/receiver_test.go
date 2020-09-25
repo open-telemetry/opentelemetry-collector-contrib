@@ -27,9 +27,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -143,7 +143,7 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 		metrics := sink.AllMetrics()
 		var gotOldMetrics []*metricspb.Metric
 		for _, md := range metrics {
-			ocmds := pdatautil.MetricsToMetricsData(md)
+			ocmds := internaldata.MetricsToOC(md)
 			for _, ocmd := range ocmds {
 				gotOldMetrics = append(gotOldMetrics, ocmd.Metrics...)
 			}

@@ -50,7 +50,8 @@ func (sr *SFxMetricsDataReceiver) Start(_ consumer.TraceConsumer, mc consumer.Me
 		},
 	}
 	var err error
-	sr.receiver, err = signalfxreceiver.New(zap.L(), config, mc)
+	f := signalfxreceiver.NewFactory()
+	sr.receiver, err = f.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.L()}, &config, mc)
 	if err != nil {
 		return err
 	}
