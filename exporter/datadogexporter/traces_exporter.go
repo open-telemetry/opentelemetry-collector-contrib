@@ -26,10 +26,17 @@ import (
 
 type traceExporter struct {
 	logger *zap.Logger
+	edgeConnection apm.TraceEdgeConnection
 }
 
 func newTraceExporter(_ *Config, logger *zap.Logger) (*traceExporter, error) {
-	return &traceExporter{logger}, nil
+	
+	exporter := &traceExporter{
+		logger: logger,
+		edgeConnection: apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false),
+		}
+
+	return exporter, nil
 }
 
 func (exp *traceExporter) pushTraceData(
@@ -40,11 +47,11 @@ func (exp *traceExporter) pushTraceData(
 	// TODO: improve implementation
 	ddTraces := convertToDatadogTd(td)
 	
-	edgeConnection := apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false)
+	// edgeConnection := 
 
 	for _, ddTrace := range ddTraces {
 
-		err := edgeConnection.SendTraces(context.Background(), ddTrace, 3)
+		err := exp.edgeConnection.SendTraces(context.Background(), ddTrace, 3)
 
 		if err != nil {
 			fmt.Printf("Failed to send traces with error %v\n", err)
