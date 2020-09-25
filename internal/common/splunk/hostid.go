@@ -17,10 +17,10 @@ package splunk
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
-
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 )
 
 // HostIDKey represents a host identifier.
