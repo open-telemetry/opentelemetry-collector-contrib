@@ -374,6 +374,15 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 				},
 				Timeseries: []*metricspb.TimeSeries{},
 			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
 		},
 	}
 	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)

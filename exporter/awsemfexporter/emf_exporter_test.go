@@ -121,7 +121,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
+	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
 	expCfg.LogStreamName = "test-logStreamName"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
