@@ -2,21 +2,6 @@
 Default config override for agent collector deamonset
 */}}
 {{- define "opentelemetry-collector.agentConfigOverride" -}}
-receivers:
-  {{- if and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled }}
-  hostmetrics:
-    scrapers:
-      cpu:
-      disk:
-      filesystem:
-      memory:
-      network:
-      load:
-      processes:
-      swap:
-      process:
-  {{- end }}
-
 exporters:
   {{- if .Values.standaloneCollector.enabled }}
   otlp:
@@ -26,17 +11,9 @@ exporters:
 
 service:
   pipelines:
-    {{- if .Values.telemetry.metrics.enabled }}
+    {{- if and .Values.telemetry.metrics.enabled .Values.standaloneCollector.enabled }}
     metrics:
-      receivers: 
-        - prometheus
-        {{- if and .Values.telemetry.metrics.hostMetricsEnabled }}
-        - hostmetrics
-        {{- end }}
-
-      {{- if .Values.standaloneCollector.enabled }}
       exporters: [otlp]
-      {{- end }}
     {{- end }}
 
     {{- if and .Values.telemetry.traces.enabled .Values.standaloneCollector.enabled }}

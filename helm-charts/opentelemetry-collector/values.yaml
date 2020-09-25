@@ -12,8 +12,7 @@ telemetry:
     exporter:
       type: logging
       config: {}
-    # scraping host metrics disabled by default
-    hostMetricsEnabled: false
+        # logLevel: debug
 
   traces:
     enabled: true
@@ -96,10 +95,21 @@ agentCollector:
       cpu: 256m
       memory: 512Mi
 
-  # Configuration override that will be merged into the agent collector default config
+  # Configuration override that will be merged into the agent's default config
   configOverride: {}
-
-  # Any of the top level options can be overridden specifically for agent collector
+  # The following config override can be used to enable host receiver
+  #   receivers:
+  #     hostmetrics:
+  #       scrapers:
+  #         cpu:
+  #         disk:
+  #         filesystem:
+  #   service:
+  #     pipelines:
+  #       metrics: 
+  #         receivers: [prometheus, hostmetrics]
+  
+  # Any of the top level options can be overridden specifically for agent
   # image: {}
   # imagePullSecrets: []
   # command: {}
@@ -111,6 +121,26 @@ agentCollector:
   # tolerations: []
   # affinity: {}
   # ports: {}
+  # The following option overrides can be used with host receiver
+  # extraEnvs:
+  # - name: HOST_PROC
+  #   value: /hostfs/proc
+  # - name: HOST_SYS
+  #   value: /hostfs/sys
+  # - name: HOST_ETC
+  #   value: /hostfs/etc
+  # - name: HOST_VAR
+  #   value: /hostfs/var
+  # - name: HOST_RUN
+  #   value: /hostfs/run
+  # - name: HOST_DEV
+  #   value: /hostfs/dev
+  # extraHostPathMounts:
+  # - name: hostfs
+  #   hostPath: /
+  #   mountPath: /hostfs
+  #   readOnly: true
+  #   mountPropagation: HostToContainer
 
 # Configuration for standalone OpenTelemetry Collector deployment, disabled by default
 standaloneCollector:

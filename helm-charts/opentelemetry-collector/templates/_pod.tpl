@@ -35,20 +35,8 @@ containers:
           fieldRef:
             apiVersion: v1
             fieldPath: status.podIP
-      {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
-      # Env variables for host metrics receiver
-      - name: HOST_PROC
-        value: /hostfs/proc
-      - name: HOST_SYS
-        value: /hostfs/sys
-      - name: HOST_ETC
-        value: /hostfs/etc
-      - name: HOST_VAR
-        value: /hostfs/var
-      - name: HOST_RUN
-        value: /hostfs/run
-      - name: HOST_DEV
-        value: /hostfs/dev
+      {{- with .Values.extraEnvs }}
+      {{- . | toYaml | nindent 6 }}
       {{- end }}
     livenessProbe:
       httpGet:
@@ -63,11 +51,13 @@ containers:
     volumeMounts:
       - mountPath: /conf
         name: {{ .Chart.Name }}-configmap
-      {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
-      - mountPath: /hostfs
-        name: hostfs
-        readOnly: true
-        mountPropagation: HostToContainer
+      {{- range .Values.extraHostPathMounts }}
+      - name: {{ .name }}
+        mountPath: {{ .mountPath }}
+        readOnly: {{ .readOnly }}
+        {{- if .mountPropagation }}
+        mountPropagation: {{ .mountPropagation }}
+        {{- end }}
       {{- end }}
 volumes:
   - name: {{ .Chart.Name }}-configmap
@@ -76,10 +66,10 @@ volumes:
       items:
         - key: relay
           path: relay.yaml
-  {{- if and .isAgent (and .Values.telemetry.metrics.enabled .Values.telemetry.metrics.hostMetricsEnabled) }}
-  - name: hostfs
+  {{- range .Values.extraHostPathMounts }}
+  - name: {{ .name }}
     hostPath:
-      path: /
+      path: {{ .hostPath }}
   {{- end }}
 {{- with .Values.nodeSelector }}
 nodeSelector:
