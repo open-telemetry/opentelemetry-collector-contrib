@@ -9,18 +9,27 @@ fullnameOverride: ""
 telemetry:
   metrics:
     enabled: true
+    exporter:
+      type: logging
+      config: {}
+
   traces:
     enabled: true
-output:
-  enabled: true
-  type: logging
-  logLevel: info
+    exporter:
+      # type: jaeger
+      # config:
+      #   endpoint: jaeger-all-in-one:14250
+      # type: zipkin
+      # config:
+      #   endpoint: zipkin-all-in-one:14250
+      type: logging
+      config: {}
 
 # Shared params for agentCollector daemonset and standaloneCollector deployment pods.
 # Can be overridden here or for any component independently.
 image:
-  repository: otel/opentelemetry-collector
   # repository: otel/opentelemetry-collector-contrib
+  repository: otel/opentelemetry-collector
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""

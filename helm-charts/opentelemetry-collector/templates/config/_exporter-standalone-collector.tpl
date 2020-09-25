@@ -1,7 +1,7 @@
 {{/*
-Default output for agent collector pointed to standalone collector
+Default exporter for agent collector pointed to standalone collector
 */}}
-{{- define "opentelemetry-collector.standaloneCollectorOutputConfig" -}}
+{{- define "opentelemetry-collector.standaloneCollectorExporterConfig" -}}
 exporters:
   otlp:
     endpoint: {{ include "opentelemetry-collector.fullname" . }}:55680

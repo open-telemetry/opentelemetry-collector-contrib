@@ -27,20 +27,6 @@
         }
       }
     },
-    "output": {
-      "description": "Telemetry output",
-      "type": "object",
-      "properties": {
-        "type": {
-           "type": "string",
-           "enum": ["logging"]
-        },
-        "enabled": {
-          "type": "boolean"
-        }
-      },
-      "required": ["enabled"]
-    },
     "standaloneCollector": {
       "description": "Configuration for standalone OpenTelemetry Collector deployment",
       "type": "object",

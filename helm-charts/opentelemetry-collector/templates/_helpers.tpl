@@ -62,13 +62,13 @@ Create the name of the service account to use
 {{- end }}
 
 {{/*
-Build config file with pipelines but without output
+Build base config file with pipelines
 */}}
 {{- define "opentelemetry-collector.pipelinesConfig" -}}
 {{- $config := include "opentelemetry-collector.baseConfig" . | fromYaml -}}
 {{- range $telemetryName, $telemetryParams := .Values.telemetry }}
   {{- if index $telemetryParams "enabled" }}
-    {{- $config := include (printf "opentelemetry-collector.%sPipelineConfig" $telemetryName) $telemetryParams | fromYaml | mustMergeOverwrite $config }}
+    {{- $config := include (printf "opentelemetry-collector.%sPipelineConfig" $telemetryName) $ | fromYaml | mustMergeOverwrite $config }}
   {{- end }}
 {{- end }}
 {{- $config | toYaml }}
@@ -85,9 +85,7 @@ Build config file for agent OpenTelemetry Collector
   {{- $config := include "opentelemetry-collector.agentMetricsPipelineConfig" . | fromYaml | mustMergeOverwrite $config }}
 {{- end }}
 {{- if .Values.standaloneCollector.enabled }}
-  {{- $config := include "opentelemetry-collector.standaloneCollectorOutputConfig" . | fromYaml | mustMergeOverwrite $config }}
-{{- else }}
-  {{- $config := include (printf "opentelemetry-collector.%sOutputConfig" .Values.output.type) . | fromYaml | mustMergeOverwrite $config }}
+  {{- $config := include "opentelemetry-collector.standaloneCollectorExporterConfig" . | fromYaml | mustMergeOverwrite $config }}
 {{- end }}
 {{- $config | mustMergeOverwrite .Values.agentCollector.configOverride | toYaml }}
 {{- end }}
@@ -99,9 +97,6 @@ Build config file for standalone OpenTelemetry Collector
 {{- $values := .Values | deepCopy | mustMergeOverwrite .Values.standaloneCollector }}
 {{- $data := . | deepCopy | mustMergeOverwrite (dict "Values" $values) }}
 {{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml -}}
-{{- if .Values.output.enabled }}
-  {{- $config := include (printf "opentelemetry-collector.%sOutputConfig" .Values.output.type) . | fromYaml | mustMergeOverwrite $config }}
-{{- end }}
 {{- $config | mustMergeOverwrite .Values.standaloneCollector.configOverride | toYaml }}
 {{- end }}
 
