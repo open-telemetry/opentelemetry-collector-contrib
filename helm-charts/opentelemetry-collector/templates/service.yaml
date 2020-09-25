@@ -13,10 +13,12 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     {{- range $key, $port := .Values.ports }}
+    {{- if $port.enabled }}
     - name: {{ $key }}
       port: {{ $port.servicePort }}
       targetPort: {{ $key }}
       protocol: {{ $port.protocol }}
+    {{- end }}
     {{- end }}
   selector:
     {{- include "opentelemetry-collector.selectorLabels" . | nindent 4 }}

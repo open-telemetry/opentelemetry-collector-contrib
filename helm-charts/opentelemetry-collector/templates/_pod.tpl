@@ -22,12 +22,14 @@ containers:
     imagePullPolicy: {{ .Values.image.pullPolicy }}
     ports:
       {{- range $key, $port := .Values.ports }}
+      {{- if $port.enabled }}
       - name: {{ $key }}
         containerPort: {{ $port.containerPort }}
         protocol: {{ $port.protocol }}
         {{- if and $.isAgent $port.hostPort }}
         hostPort: {{ $port.hostPort }}
         {{- end }}
+      {{- end }}
       {{- end }}
     env:
       - name: MY_POD_IP

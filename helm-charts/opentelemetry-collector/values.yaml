@@ -17,21 +17,21 @@ telemetry:
   traces:
     enabled: true
     exporter:
-      # type: jaeger
-      # config:
-      #   endpoint: jaeger-all-in-one:14250
-      # type: zipkin
-      # config:
-      #   endpoint: zipkin-all-in-one:14250
       type: logging
       config: {}
+      # type: jaeger
+      #   config:
+      #     endpoint: jaeger-all-in-one:14250
+      #   type: zipkin
+      #   config:
+      #     endpoint: zipkin-all-in-one:14250
 
 # Shared params for agentCollector daemonset and standaloneCollector deployment pods.
 # Can be overridden here or for any component independently using the same keys.
 
 image:
-  # repository: otel/opentelemetry-collector-contrib
   repository: otel/opentelemetry-collector
+  # repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -61,26 +61,32 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 
+extraEnvs: []
+extraHostPathMounts: []
+
 # Configuration for ports, shared between agentCollector, standaloneCollector and service.
 # Can be overridden here or for agentCollector and standaloneCollector independently.
-# Any port can be disabled by setting to null.
 ports:
   otlp:
+    enabled: true
     containerPort: 55680
     servicePort: 55680
     hostPort: 55680
     protocol: TCP
   jaeger-thrift:
+    enabled: true
     containerPort: 14268
     servicePort: 14268
     hostPort: 14268
     protocol: TCP
   jaeger-grpc:
+    enabled: true
     containerPort: 14250
     servicePort: 14250
     hostPort: 14250
     protocol: TCP
   zipkin:
+    enabled: true
     containerPort: 9411
     servicePort: 9411
     hostPort: 9411
@@ -120,7 +126,7 @@ agentCollector:
   # nodeSelector: {}
   # tolerations: []
   # affinity: {}
-  # ports: {}
+
   # The following option overrides can be used with host receiver
   # extraEnvs:
   # - name: HOST_PROC
@@ -141,6 +147,15 @@ agentCollector:
   #   mountPath: /hostfs
   #   readOnly: true
   #   mountPropagation: HostToContainer
+
+  # The following example disables all jaeger ports and zipkin hostPort on the agent
+  # ports: 
+  #   jaeger-thrift:
+  #     enabled: false
+  #   jaeger-grpc:
+  #     enabled: false
+  #   zipkin:
+  #     hostPort: ""
 
 # Configuration for standalone OpenTelemetry Collector deployment, disabled by default
 standaloneCollector:
@@ -173,6 +188,7 @@ service:
   type: ClusterIP
   annotations: {}
 
+# autoscaling is used only if standaloneCollector enabled
 autoscaling:
   enabled: false
   minReplicas: 1
