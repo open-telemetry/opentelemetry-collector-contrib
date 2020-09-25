@@ -19,7 +19,8 @@ output:
 # Shared params for agentCollector daemonset and standaloneCollector deployment pods.
 # Can be overridden here or for any component independently.
 image:
-  repository: otel/opentelemetry-collector-contrib
+  repository: otel/opentelemetry-collector
+  # repository: otel/opentelemetry-collector-contrib
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -27,7 +28,8 @@ imagePullSecrets: []
 
 # OpenTelemetry Collector executable
 command:
-  name: otelcontribcol
+  name: otelcol
+  # name: otelcontribcol
   extraArgs: []
 
 serviceAccount:

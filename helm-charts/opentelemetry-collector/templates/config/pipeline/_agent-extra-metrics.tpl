@@ -15,13 +15,10 @@ receivers:
       # Virtual memory and system processes metrics disabled by default
       # swap:
       # process:
-processors:
-  resourcedetection:
-    detectors: [env]
 
 service:
   pipelines:
     metrics:
       receivers: [prometheus, hostmetrics]
-      processors: [memory_limiter, resourcedetection, batch, queued_retry]
+      processors: [memory_limiter, batch, queued_retry]
 {{- end }}
