@@ -106,10 +106,10 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
 	rl.InitEmpty()
-	logs.ResourceLogs().Append(&rl)
+	logs.ResourceLogs().Append(rl)
 	ill := pdata.NewInstrumentationLibraryLogs()
 	ill.InitEmpty()
-	rl.InstrumentationLibraryLogs().Append(&ill)
+	rl.InstrumentationLibraryLogs().Append(ill)
 
 	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < numberOfLogs; i++ {
@@ -121,7 +121,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
-		ill.Logs().Append(&logRecord)
+		ill.Logs().Append(logRecord)
 	}
 
 	return logs

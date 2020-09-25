@@ -196,10 +196,10 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
 	rl.InitEmpty()
-	logs.ResourceLogs().Append(&rl)
+	logs.ResourceLogs().Append(rl)
 	ill := pdata.NewInstrumentationLibraryLogs()
 	ill.InitEmpty()
-	rl.InstrumentationLibraryLogs().Append(&ill)
+	rl.InstrumentationLibraryLogs().Append(ill)
 
 	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < 65000; i++ {
