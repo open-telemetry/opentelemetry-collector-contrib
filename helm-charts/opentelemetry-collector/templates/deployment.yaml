@@ -24,7 +24,7 @@ spec:
         {{- include "opentelemetry-collector.selectorLabels" . | nindent 8 }}
         component: standalone-collector
     spec:
-      {{- $podValues := .Values | deepCopy | mustMergeOverwrite .Values.standaloneCollector }}
+      {{- $podValues := deepCopy .Values.standaloneCollector | mustMergeOverwrite (deepCopy .Values) }}
       {{- $podData := dict "Values" $podValues "configmapSuffix" "" "isAgent" false }}
-      {{- include "opentelemetry-collector.pod" (. | deepCopy | mustMergeOverwrite $podData) | nindent 6 }}
+      {{- include "opentelemetry-collector.pod" ($podData | mustMergeOverwrite (deepCopy .)) | nindent 6 }}
 {{- end }}

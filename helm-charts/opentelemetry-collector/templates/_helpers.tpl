@@ -78,10 +78,10 @@ Build base config file with pipelines
 Build config file for agent OpenTelemetry Collector
 */}}
 {{- define "opentelemetry-collector.agentCollectorConfig" -}}
-{{- $values := .Values | deepCopy | mustMergeOverwrite .Values.agentCollector }}
-{{- $data := . | deepCopy | mustMergeOverwrite (dict "Values" $values) }}
-{{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml -}}
-{{- $config := include "opentelemetry-collector.agentConfigOverride" . | fromYaml | mustMergeOverwrite $config }}
+{{- $values := deepCopy .Values.agentCollector | mustMergeOverwrite (deepCopy .Values)  }}
+{{- $data := dict "Values" $values | mustMergeOverwrite (deepCopy .) }}
+{{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml }}
+{{- $config := include "opentelemetry-collector.agentConfigOverride" $data | fromYaml | mustMergeOverwrite $config }}
 {{- .Values.agentCollector.configOverride | mustMergeOverwrite $config | toYaml }}
 {{- end }}
 
@@ -89,9 +89,9 @@ Build config file for agent OpenTelemetry Collector
 Build config file for standalone OpenTelemetry Collector
 */}}
 {{- define "opentelemetry-collector.standaloneCollectorConfig" -}}
-{{- $values := .Values | deepCopy | mustMergeOverwrite .Values.standaloneCollector }}
-{{- $data := . | deepCopy | mustMergeOverwrite (dict "Values" $values) }}
-{{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml -}}
+{{- $values := deepCopy .Values.standaloneCollector | mustMergeOverwrite (deepCopy .Values)  }}
+{{- $data := dict "Values" $values | mustMergeOverwrite (deepCopy .) }}
+{{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml }}
 {{- .Values.standaloneCollector.configOverride | mustMergeOverwrite $config | toYaml }}
 {{- end }}
 
