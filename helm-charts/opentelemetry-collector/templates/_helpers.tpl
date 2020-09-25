@@ -87,7 +87,7 @@ Build config file for agent OpenTelemetry Collector
 {{- if .Values.standaloneCollector.enabled }}
   {{- $config := include "opentelemetry-collector.standaloneCollectorExporterConfig" . | fromYaml | mustMergeOverwrite $config }}
 {{- end }}
-{{- $config | mustMergeOverwrite .Values.agentCollector.configOverride | toYaml }}
+{{- .Values.agentCollector.configOverride | mustMergeOverwrite $config | toYaml }}
 {{- end }}
 
 {{/*
@@ -97,7 +97,7 @@ Build config file for standalone OpenTelemetry Collector
 {{- $values := .Values | deepCopy | mustMergeOverwrite .Values.standaloneCollector }}
 {{- $data := . | deepCopy | mustMergeOverwrite (dict "Values" $values) }}
 {{- $config := include "opentelemetry-collector.pipelinesConfig" $data | fromYaml -}}
-{{- $config | mustMergeOverwrite .Values.standaloneCollector.configOverride | toYaml }}
+{{- .Values.standaloneCollector.configOverride | mustMergeOverwrite $config | toYaml }}
 {{- end }}
 
 {{/*
