@@ -47,7 +47,7 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 				if lr.IsNil() {
 					continue
 				}
-				ev := mapLogRecordToSplunkEvent(lr, config)
+				ev := mapLogRecordToSplunkEvent(lr, config, logger)
 				if ev == nil {
 					numDroppedLogs++
 				} else {
@@ -60,7 +60,7 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 	return splunkEvents, numDroppedLogs
 }
 
-func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent {
+func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunkEvent {
 	if lr.Body().IsNil() {
 		return nil
 	}
@@ -69,6 +69,10 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent 
 	var sourcetype string
 	fields := map[string]string{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		if v.Type() != pdata.AttributeValueSTRING {
+			logger.Debug("Failed to convert log record attribute value to Splunk property value, value is not a string", zap.String("key", k))
+			return
+		}
 		if k == conventions.AttributeHostHostname {
 			host = v.StringVal()
 		} else if k == conventions.AttributeServiceName {
@@ -92,14 +96,46 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config) *splunkEvent 
 		sourcetype = config.SourceType
 	}
 
+	eventValue := convertAttributeValue(lr.Body(), logger)
 	return &splunkEvent{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
 		Index:      config.Index,
-		Event:      lr.Body().StringVal(),
+		Event:      eventValue,
 		Fields:     fields,
+	}
+}
+
+func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
+	switch value.Type() {
+	case pdata.AttributeValueINT:
+		return value.IntVal()
+	case pdata.AttributeValueBOOL:
+		return value.BoolVal()
+	case pdata.AttributeValueDOUBLE:
+		return value.DoubleVal()
+	case pdata.AttributeValueSTRING:
+		return value.StringVal()
+	case pdata.AttributeValueMAP:
+		values := map[string]interface{}{}
+		value.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
+			values[k] = convertAttributeValue(v, logger)
+		})
+		return values
+	case pdata.AttributeValueARRAY:
+		arrayVal := value.ArrayVal()
+		values := make([]interface{}, arrayVal.Len())
+		for i := 0; i < arrayVal.Len(); i++ {
+			values[i] = convertAttributeValue(arrayVal.At(i), logger)
+		}
+		return values
+	case pdata.AttributeValueNULL:
+		return nil
+	default:
+		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
+		return value
 	}
 }
 
