@@ -202,7 +202,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	messagesReceived := 0
 	dec := json.NewDecoder(bytes.NewReader(body))
-	fmt.Println(string(body))
 
 	var decodeErr error
 	// while the array contains values
