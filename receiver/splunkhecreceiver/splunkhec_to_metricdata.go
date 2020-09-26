@@ -15,7 +15,6 @@
 package splunkhecreceiver
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -25,11 +24,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
-)
-
-var (
-	errSplunkNoDatumValue         = errors.New("no datum value for data-point")
-	errSplunkStringDatumNotNumber = errors.New("datum string cannot be parsed to a number")
 )
 
 // SplunkHecToMetricsData converts Splunk HEC metric points to

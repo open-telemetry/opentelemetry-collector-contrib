@@ -44,7 +44,6 @@ const (
 	responseInvalidContentType = "\"Content-Type\" must be \"application/json\""
 	responseInvalidEncoding    = "\"Content-Encoding\" must be \"gzip\" or empty"
 	responseErrGzipReader      = "Error on gzip body"
-	responseErrReadBody        = "Failed to read message body"
 	responseErrUnmarshalBody   = "Failed to unmarshal message body"
 	responseErrNextConsumer    = "Internal Server Error"
 
@@ -64,7 +63,6 @@ var (
 	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
 	invalidEncodingRespBody  = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody    = initJSONResponse(responseErrGzipReader)
-	errReadBodyRespBody      = initJSONResponse(responseErrReadBody)
 	errUnmarshalBodyRespBody = initJSONResponse(responseErrUnmarshalBody)
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 )
