@@ -411,25 +411,23 @@ func TestInvalidJsonClient(t *testing.T) {
 	badEvent := badJSON{
 		Foo: math.Inf(1),
 	}
-	syncPool := sync.Pool{New: func() interface{} {
-		return gzip.NewWriter(nil)
-	}}
 	evs := []*splunkEvent{
 		{
 			Event: badEvent,
 		},
 		nil,
 	}
-	c := client{url: nil, zippers: syncPool, config: &Config{Timeout: time.Microsecond}}
+	c := client{url: nil, zippers: sync.Pool{New: func() interface{} {
+		return gzip.NewWriter(nil)
+	}}, config: &Config{Timeout: time.Microsecond}}
 	err := c.sendSplunkEvents(evs)
 	assert.EqualError(t, err, "Permanent error: json: unsupported value: +Inf")
 }
 
 func TestInvalidURLClient(t *testing.T) {
-	syncPool := sync.Pool{New: func() interface{} {
+	c := client{url: &url.URL{Host: "in va lid"}, zippers: sync.Pool{New: func() interface{} {
 		return gzip.NewWriter(nil)
-	}}
-	c := client{url: &url.URL{Host: "in va lid"}, zippers: syncPool, config: &Config{Timeout: time.Microsecond}}
+	}}, config: &Config{Timeout: time.Microsecond}}
 	err := c.sendSplunkEvents([]*splunkEvent{})
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
 }
