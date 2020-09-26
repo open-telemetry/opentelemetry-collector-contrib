@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 	"net"
 	"net/http"
 	"net/url"
@@ -102,7 +103,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			"Connection":    "keep-alive",
 			"Content-Type":  "application/json",
 			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": "Splunk " + config.Token,
+			"Authorization": splunk.SplunkHECTokenHeader + " " + config.Token,
 		},
 		config: config,
 	}

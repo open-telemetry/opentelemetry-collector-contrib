@@ -209,13 +209,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		md, _ := SplunkHecToMetricsData(r.logger, &msg)
 
 		if r.config.AccessTokenPassthrough {
-			if accessToken := req.Header.Get("Splunk"); accessToken != "" {
+			if accessToken := req.Header.Get(splunk.SplunkHECTokenHeader); accessToken != "" {
 				for r := 0; r < md.ResourceMetrics().Len(); r++ {
 					resource := md.ResourceMetrics().At(r).Resource()
 					if resource.IsNil() {
 						resource.InitEmpty()
 					}
-					resource.Attributes().InsertString("com.splunk.hec.access_token", accessToken)
+					resource.Attributes().InsertString(splunk.SplunkHecTokenLabel, accessToken)
 				}
 			}
 		}
