@@ -163,6 +163,31 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return md
 			}(),
 		},
+
+		{
+			name: "double_counter_as_int",
+			splunkDataPoints: func() *splunk.Metric {
+				pt := buildDefaultSplunkDataPt()
+				pt.Fields["metric_name:single"] = float64Ptr(13)
+				return pt
+			}(),
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
+				metricPt.SetName("single")
+				metricPt.IntGauge().InitEmpty()
+				intPt := pdata.NewIntDataPoint()
+				intPt.InitEmpty()
+				intPt.SetValue(13)
+				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.IntGauge().DataPoints().Append(intPt)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
+				return md
+			}(),
+		},
 		{
 			name: "double_counter_as_string",
 			splunkDataPoints: func() *splunk.Metric {
@@ -217,6 +242,19 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			splunkDataPoints: func() *splunk.Metric {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = "foo"
+				return pt
+			}(),
+			wantMetricsData: func() pdata.Metrics {
+				return pdata.NewMetrics()
+			}(),
+			wantDroppedTimeseries: 1,
+		},
+		{
+			name: "cannot_convert_string",
+			splunkDataPoints: func() *splunk.Metric {
+				pt := buildDefaultSplunkDataPt()
+				value := "foo"
+				pt.Fields["metric_name:single"] = &value
 				return pt
 			}(),
 			wantMetricsData: func() pdata.Metrics {
