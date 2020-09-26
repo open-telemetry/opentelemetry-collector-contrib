@@ -15,13 +15,11 @@
 package splunkhecreceiver
 
 import (
-	"bytes"
 	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"sync"
@@ -190,25 +188,18 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	body, err := ioutil.ReadAll(bodyReader)
-	if err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, errReadBodyRespBody, err)
-		return
-	}
-	if len(body) == 0 {
+	if req.ContentLength == 0 {
 		resp.Write(okRespBody)
 		return
 	}
 
 	messagesReceived := 0
-	dec := json.NewDecoder(bytes.NewReader(body))
+	dec := json.NewDecoder(bodyReader)
 
 	var decodeErr error
-	// while the array contains values
 	for dec.More() {
 		var msg splunk.Metric
-		// decode an array value (Message)
-		err = dec.Decode(&msg)
+		err := dec.Decode(&msg)
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
 			return
@@ -241,7 +232,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		messagesReceived,
 		decodeErr)
 	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
 		resp.Write(okRespBody)

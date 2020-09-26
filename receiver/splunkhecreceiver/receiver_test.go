@@ -230,19 +230,6 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
-			name: "fail_to_read_body",
-			req: func() *http.Request {
-				req := httptest.NewRequest("POST", "http://localhost", nil)
-				req.Body = badReqBody{}
-				req.Header.Set("Content-Type", "application/json")
-				return req
-			}(),
-			assertResponse: func(t *testing.T, status int, body string) {
-				assert.Equal(t, http.StatusBadRequest, status)
-				assert.Equal(t, responseErrReadBody, body)
-			},
-		},
-		{
 			name: "bad_data_in_body",
 			req: func() *http.Request {
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader([]byte{1, 2, 3, 4}))
