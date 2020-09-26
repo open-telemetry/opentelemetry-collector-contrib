@@ -27,14 +27,10 @@ import (
 	"sync"
 	"time"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/gorilla/mux"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
@@ -82,9 +78,6 @@ type splunkReceiver struct {
 	config       *Config
 	nextConsumer consumer.MetricsConsumer
 	server       *http.Server
-
-	startOnce sync.Once
-	stopOnce  sync.Once
 }
 
 var _ component.MetricsReceiver = (*splunkReceiver)(nil)
@@ -126,34 +119,28 @@ func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStarted
-	r.startOnce.Do(func() {
-		err = nil
+	var ln net.Listener
+	// set up the listener
+	ln, err := r.config.HTTPServerSettings.ToListener()
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
+	}
 
-		var ln net.Listener
-		// set up the listener
-		ln, err = r.config.HTTPServerSettings.ToListener()
-		if err != nil {
-			err = fmt.Errorf("failed to bind to address %s: %w", r.config.Endpoint, err)
-			return
+	mx := mux.NewRouter()
+	mx.HandleFunc(hecPath, r.handleReq)
+
+	r.server = r.config.HTTPServerSettings.ToServer(mx)
+
+	// TODO: Evaluate what properties should be configurable, for now
+	//		set some hard-coded values.
+	r.server.ReadHeaderTimeout = defaultServerTimeout
+	r.server.WriteTimeout = defaultServerTimeout
+
+	go func() {
+		if errHTTP := r.server.Serve(ln); errHTTP != nil {
+			host.ReportFatalError(errHTTP)
 		}
-
-		mx := mux.NewRouter()
-		mx.HandleFunc(hecPath, r.handleReq)
-
-		r.server = r.config.HTTPServerSettings.ToServer(mx)
-
-		// TODO: Evaluate what properties should be configurable, for now
-		//		set some hard-coded values.
-		r.server.ReadHeaderTimeout = defaultServerTimeout
-		r.server.WriteTimeout = defaultServerTimeout
-
-		go func() {
-			if errHTTP := r.server.Serve(ln); errHTTP != nil {
-				host.ReportFatalError(errHTTP)
-			}
-		}()
-	})
+	}()
 
 	return err
 }
@@ -164,10 +151,8 @@ func (r *splunkReceiver) Shutdown(context.Context) error {
 	r.Lock()
 	defer r.Unlock()
 
-	err := componenterror.ErrAlreadyStopped
-	r.stopOnce.Do(func() {
-		err = r.server.Close()
-	})
+	err := r.server.Close()
+
 	return err
 }
 
@@ -217,6 +202,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 	messagesReceived := 0
 	dec := json.NewDecoder(bytes.NewReader(body))
+	fmt.Println(string(body))
 
 	var decodeErr error
 	// while the array contains values
@@ -234,17 +220,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 
 		if r.config.AccessTokenPassthrough {
 			if accessToken := req.Header.Get("Splunk"); accessToken != "" {
-				if md.Resource == nil {
-					md.Resource = &resourcepb.Resource{}
+				for r := 0; r < md.ResourceMetrics().Len(); r++ {
+					resource := md.ResourceMetrics().At(r).Resource()
+					if resource.IsNil() {
+						resource.InitEmpty()
+					}
+					resource.Attributes().InsertString("com.splunk.hec.access_token", accessToken)
 				}
-				if md.Resource.Labels == nil {
-					md.Resource.Labels = make(map[string]string, 1)
-				}
-				md.Resource.Labels["com.splunk.hec.access_token"] = accessToken
 			}
 		}
-		m := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{*md})
-		decodeErr = r.nextConsumer.ConsumeMetrics(ctx, m)
+		decodeErr = r.nextConsumer.ConsumeMetrics(ctx, md)
 		if decodeErr != nil {
 			break
 		}

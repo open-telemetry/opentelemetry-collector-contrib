@@ -31,21 +31,17 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
@@ -123,26 +119,53 @@ func Test_splunkhecreceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer r.Shutdown(context.Background())
-	require.Equal(t, componenterror.ErrAlreadyStarted, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
-	tsUnix := time.Unix(unixSecs, unixNSecs)
-	doubleVal := 1234.5678
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
-	int64Val := int64(123)
-	int64Pt := &metricspb.Point{
-		Timestamp: metricstestutil.Timestamp(tsUnix),
-		Value:     &metricspb.Point_Int64Value{Int64Value: int64Val},
-	}
-	want := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge("gauge_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-			metricstestutil.GaugeInt("gauge_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-			metricstestutil.Cumulative("cumulative_double_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-			metricstestutil.CumulativeInt("cumulative_int_with_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
-		},
-	}
+	want := pdata.NewMetrics()
+	rm := pdata.NewResourceMetrics()
+	rm.InitEmpty()
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.InitEmpty()
+	gaugeDoubleWithDims := pdata.NewMetric()
+	gaugeDoubleWithDims.InitEmpty()
+	gaugeDoubleWithDims.SetName("gauge_double_with_dims")
+	gaugeDoubleWithDims.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	gaugeDoubleWithDims.DoubleGauge().InitEmpty()
+	dbl := pdata.NewDoubleDataPoint()
+	dbl.InitEmpty()
+	dbl.SetTimestamp(pdata.TimestampUnixNano(unixSecs * 1e9 * unixNSecs))
+	dbl.SetValue(1234.5678)
+	gaugeDoubleWithDims.DoubleGauge().DataPoints().Append(dbl)
+	ilm.Metrics().Append(gaugeDoubleWithDims)
+	gaugeIntWithDims := pdata.NewMetric()
+	gaugeIntWithDims.InitEmpty()
+	gaugeIntWithDims.SetName("gauge_int_with_dims")
+	gaugeIntWithDims.SetDataType(pdata.MetricDataTypeIntGauge)
+	intPt := pdata.NewIntDataPoint()
+	intPt.InitEmpty()
+	intPt.SetTimestamp(pdata.TimestampUnixNano(unixSecs * 1e9 * unixNSecs))
+	intPt.SetValue(123)
+	gaugeIntWithDims.IntGauge().InitEmpty()
+	gaugeIntWithDims.IntGauge().DataPoints().Append(intPt)
+	ilm.Metrics().Append(gaugeIntWithDims)
+	cumulativeDoubleWithDims := pdata.NewMetric()
+	cumulativeDoubleWithDims.InitEmpty()
+	cumulativeDoubleWithDims.SetName("cumulative_double_with_dims")
+	cumulativeDoubleWithDims.SetDataType(pdata.MetricDataTypeDoubleSum)
+	cumulativeDoubleWithDims.DoubleSum().InitEmpty()
+	cumulativeDoubleWithDims.DoubleSum().DataPoints().Append(dbl)
+	ilm.Metrics().Append(cumulativeDoubleWithDims)
+	cumulativeIntWithDims := pdata.NewMetric()
+	cumulativeIntWithDims.InitEmpty()
+	cumulativeIntWithDims.SetName("cumulative_int_with_dims")
+	cumulativeIntWithDims.SetDataType(pdata.MetricDataTypeIntSum)
+	cumulativeIntWithDims.IntSum().InitEmpty()
+	cumulativeIntWithDims.IntSum().DataPoints().Append(intPt)
+	ilm.Metrics().Append(cumulativeIntWithDims)
+	rm.InstrumentationLibraryMetrics().Append(ilm)
+
+	want.ResourceMetrics().Append(rm)
 
 	expCfg := splunkhecexporter.NewFactory().CreateDefaultConfig().(*splunkhecexporter.Config)
 	expCfg.Endpoint = "http://" + addr + hecPath
@@ -151,34 +174,14 @@ func Test_splunkhecreceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	defer exp.Shutdown(context.Background())
-	require.NoError(t, exp.ConsumeMetrics(context.Background(), pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{want})))
-	// Description, unit and start time are expected to be dropped during conversions.
-	for _, metric := range want.Metrics {
-		metric.MetricDescriptor.Description = ""
-		metric.MetricDescriptor.Unit = ""
-		for _, ts := range metric.Timeseries {
-			ts.StartTimestamp = nil
-		}
-	}
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
 
 	got := sink.AllMetrics()
 	require.Equal(t, 4, len(got))
-	wantZero := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "gauge_double_with_dims",
-				Description: "", // TODO description is lost.
-				Unit:        "",
-				Type:        metricspb.MetricDescriptor_UNSPECIFIED,
-				LabelKeys:   []*metricspb.LabelKey{},
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				metricstestutil.Timeseries(tsUnix, nil, doublePt),
-			}}}}
-	assert.Equal(t, wantZero, pdatautil.MetricsToMetricsData(got[0])[0])
+
+	assert.Equal(t, 1234.5678, got[0].ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleGauge().DataPoints().At(0).Value())
 
 	assert.NoError(t, r.Shutdown(context.Background()))
-	assert.Equal(t, componenterror.ErrAlreadyStopped, r.Shutdown(context.Background()))
 }
 
 func Test_splunkhecReceiver_handleReq(t *testing.T) {
@@ -397,48 +400,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
-	want := consumerdata.MetricsData{
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name: "single",
-					Type: metricspb.MetricDescriptor_UNSPECIFIED,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						StartTimestamp: &timestamp.Timestamp{
-							Seconds: int64(sec),
-							Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-						},
-						LabelValues: []*metricspb.LabelValue{
-							{
-								Value:    "v0",
-								HasValue: true,
-							},
-							{
-								Value:    "v1",
-								HasValue: true,
-							},
-							{
-								Value:    "v2",
-								HasValue: true,
-							},
-						},
-						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
-								Seconds: int64(sec),
-								Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-							},
-							Value: &metricspb.Point_DoubleValue{DoubleValue: 13},
-						}},
-					},
-				},
-			},
-		},
-	}
+	want := buildDefaultMetricsData(int64(sec * 1e9))
 
 	t.Log("Sending Splunk HEC metric data Request")
 
@@ -471,7 +433,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	got := sink.AllMetrics()
 	require.Equal(t, 1, len(got))
-	assert.Equal(t, want, pdatautil.MetricsToMetricsData(got[0])[0])
+	assert.Equal(t, want, got[0])
 }
 
 func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
@@ -536,7 +498,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			assert.Equal(t, responseOK, bodyStr)
 
 			got := sink.AllMetrics()
-			metricData := pdatautil.MetricsToMetricsData(got[0])[0]
+			metricData := internaldata.MetricsToOC(got[0])[0]
 			require.Equal(t, 1, len(got))
 
 			tokenLabel := ""

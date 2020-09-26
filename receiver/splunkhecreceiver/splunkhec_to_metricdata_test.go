@@ -18,10 +18,8 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -32,6 +30,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
+	nanos := int64(sec * 1e9)
 
 	buildDefaultSplunkDataPt := func() *splunk.Metric {
 		return &splunk.Metric{
@@ -50,59 +49,16 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		}
 	}
 
-	buildDefaultMetricsData := func() *consumerdata.MetricsData {
-		return &consumerdata.MetricsData{
-			Metrics: []*metricspb.Metric{{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name: "single",
-					Type: metricspb.MetricDescriptor_UNSPECIFIED,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						StartTimestamp: &timestamp.Timestamp{
-							Seconds: int64(sec),
-							Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-						},
-						LabelValues: []*metricspb.LabelValue{
-							{
-								Value:    "v0",
-								HasValue: true,
-							},
-							{
-								Value:    "v1",
-								HasValue: true,
-							},
-							{
-								Value:    "v2",
-								HasValue: true,
-							},
-						},
-						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
-								Seconds: int64(sec),
-								Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-							},
-							Value: &metricspb.Point_Int64Value{Int64Value: 13},
-						}},
-					},
-				},
-			}},
-		}
-	}
-
 	tests := []struct {
 		name                  string
 		splunkDataPoints      *splunk.Metric
-		wantMetricsData       *consumerdata.MetricsData
+		wantMetricsData       pdata.Metrics
 		wantDroppedTimeseries int
 	}{
 		{
 			name:             "int_gauge",
 			splunkDataPoints: buildDefaultSplunkDataPt(),
-			wantMetricsData:  buildDefaultMetricsData(),
+			wantMetricsData:  buildDefaultMetricsData(nanos),
 		},
 		{
 			name: "multiple",
@@ -112,124 +68,34 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:yetanotherandanother"] = int64Ptr(15)
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := &consumerdata.MetricsData{
-					Metrics: []*metricspb.Metric{{
-						MetricDescriptor: &metricspb.MetricDescriptor{
-							Name: "single",
-							Type: metricspb.MetricDescriptor_UNSPECIFIED,
-							LabelKeys: []*metricspb.LabelKey{
-								{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-							},
-						},
-						Timeseries: []*metricspb.TimeSeries{
-							{
-								StartTimestamp: &timestamp.Timestamp{
-									Seconds: int64(sec),
-									Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-								},
-								LabelValues: []*metricspb.LabelValue{
-									{
-										Value:    "v0",
-										HasValue: true,
-									},
-									{
-										Value:    "v1",
-										HasValue: true,
-									},
-									{
-										Value:    "v2",
-										HasValue: true,
-									},
-								},
-								Points: []*metricspb.Point{{
-									Timestamp: &timestamp.Timestamp{
-										Seconds: int64(sec),
-										Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-									},
-									Value: &metricspb.Point_Int64Value{Int64Value: 13},
-								}},
-							},
-						},
-					},
-						{
-							MetricDescriptor: &metricspb.MetricDescriptor{
-								Name: "yetanother",
-								Type: metricspb.MetricDescriptor_UNSPECIFIED,
-								LabelKeys: []*metricspb.LabelKey{
-									{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-								},
-							},
-							Timeseries: []*metricspb.TimeSeries{
-								{
-									StartTimestamp: &timestamp.Timestamp{
-										Seconds: int64(sec),
-										Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-									},
-									LabelValues: []*metricspb.LabelValue{
-										{
-											Value:    "v0",
-											HasValue: true,
-										},
-										{
-											Value:    "v1",
-											HasValue: true,
-										},
-										{
-											Value:    "v2",
-											HasValue: true,
-										},
-									},
-									Points: []*metricspb.Point{{
-										Timestamp: &timestamp.Timestamp{
-											Seconds: int64(sec),
-											Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-										},
-										Value: &metricspb.Point_Int64Value{Int64Value: 14},
-									}},
-								},
-							},
-						},
-						{
-							MetricDescriptor: &metricspb.MetricDescriptor{
-								Name: "yetanotherandanother",
-								Type: metricspb.MetricDescriptor_UNSPECIFIED,
-								LabelKeys: []*metricspb.LabelKey{
-									{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-								},
-							},
-							Timeseries: []*metricspb.TimeSeries{
-								{
-									StartTimestamp: &timestamp.Timestamp{
-										Seconds: int64(sec),
-										Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-									},
-									LabelValues: []*metricspb.LabelValue{
-										{
-											Value:    "v0",
-											HasValue: true,
-										},
-										{
-											Value:    "v1",
-											HasValue: true,
-										},
-										{
-											Value:    "v2",
-											HasValue: true,
-										},
-									},
-									Points: []*metricspb.Point{{
-										Timestamp: &timestamp.Timestamp{
-											Seconds: int64(sec),
-											Nanos:   int32(int64(sec*1e3)%1e3) * 1e6,
-										},
-										Value: &metricspb.Point_Int64Value{Int64Value: 15},
-									}},
-								},
-							},
-						}},
-				}
-				return md
+			wantMetricsData: func() pdata.Metrics {
+				metrics := buildDefaultMetricsData(nanos)
+
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
+				metricPt.SetName("yetanother")
+				metricPt.IntGauge().InitEmpty()
+				intPt := pdata.NewIntDataPoint()
+				intPt.InitEmpty()
+				intPt.SetValue(14)
+				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.IntGauge().DataPoints().Append(intPt)
+				metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
+
+				metricPt2 := pdata.NewMetric()
+				metricPt2.InitEmpty()
+				metricPt2.SetDataType(pdata.MetricDataTypeIntGauge)
+				metricPt2.SetName("yetanotherandanother")
+				metricPt2.IntGauge().InitEmpty()
+				intPt2 := pdata.NewIntDataPoint()
+				intPt2.InitEmpty()
+				intPt2.SetValue(15)
+				intPt2.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt2.IntGauge().DataPoints().Append(intPt2)
+				metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt2)
+
+				return metrics
 			}(),
 		},
 		{
@@ -239,9 +105,20 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = float64Ptr(13.13)
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetName("single")
+				metricPt.DoubleGauge().InitEmpty()
+				doublePt := pdata.NewDoubleDataPoint()
+				doublePt.InitEmpty()
+				doublePt.SetValue(13.13)
+				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.DoubleGauge().DataPoints().Append(doublePt)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
 				return md
 			}(),
 		},
@@ -251,10 +128,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt := buildDefaultSplunkDataPt()
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				return md
-			}(),
+			wantMetricsData: buildDefaultMetricsData(nanos),
 		},
 		{
 			name: "int_counter",
@@ -263,10 +137,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = int64(13)
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				return md
-			}(),
+			wantMetricsData: buildDefaultMetricsData(nanos),
 		},
 		{
 			name: "double_counter",
@@ -275,9 +146,20 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = float64Ptr(13.13)
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetName("single")
+				metricPt.DoubleGauge().InitEmpty()
+				doublePt := pdata.NewDoubleDataPoint()
+				doublePt.InitEmpty()
+				doublePt.SetValue(13.13)
+				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.DoubleGauge().DataPoints().Append(doublePt)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
 				return md
 			}(),
 		},
@@ -288,24 +170,32 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = strPtr("13.13")
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetName("single")
+				metricPt.DoubleGauge().InitEmpty()
+				doublePt := pdata.NewDoubleDataPoint()
+				doublePt.InitEmpty()
+				doublePt.SetValue(13.13)
+				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.DoubleGauge().DataPoints().Append(doublePt)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
 				return md
 			}(),
 		},
 		{
-			name: "nil_timestamp",
+			name: "zero_timestamp",
 			splunkDataPoints: func() *splunk.Metric {
 				pt := buildDefaultSplunkDataPt()
 				pt.Time = 0
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].StartTimestamp = nil
-				md.Metrics[0].Timeseries[0].Points[0].Timestamp = nil
-				return md
+			wantMetricsData: func() pdata.Metrics {
+				return buildDefaultMetricsData(0)
 			}(),
 		},
 		{
@@ -315,10 +205,10 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["k0"] = ""
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].LabelValues[0].Value = ""
-				md.Metrics[0].Timeseries[0].LabelValues[0].HasValue = true
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				value, _ := md.ResourceMetrics().At(0).Resource().Attributes().Get("k0")
+				value.SetStringVal("")
 				return md
 			}(),
 		},
@@ -329,11 +219,10 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = "foo"
 				return pt
 			}(),
-			wantMetricsData: func() *consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics = md.Metrics[:len(md.Metrics)-1]
-				return md
+			wantMetricsData: func() pdata.Metrics {
+				return pdata.NewMetrics()
 			}(),
+			wantDroppedTimeseries: 1,
 		},
 		{
 			name: "nil_dimension_ignored",
@@ -344,7 +233,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["k6"] = nil
 				return pt
 			}(),
-			wantMetricsData: buildDefaultMetricsData(),
+			wantMetricsData: buildDefaultMetricsData(nanos),
 		},
 	}
 
@@ -357,46 +246,31 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 	}
 }
 
-func Test_buildPoint_errors(t *testing.T) {
-	type args struct {
-		splunkDataPoint *splunk.Metric
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *metricspb.Point
-		wantErr error
-	}{
-		{
-			name: "bad_value",
-			args: args{
-				splunkDataPoint: &splunk.Metric{
-					Fields: map[string]interface{}{
-						"metric_name:foo": strPtr("bar"),
-					},
-				},
-			},
-			wantErr: errSplunkStringDatumNotNumber,
-		},
-		{
-			name: "cannot_convert",
-			args: args{
-				splunkDataPoint: &splunk.Metric{
-					Fields: map[string]interface{}{
-						"metric_name:foo": nil,
-					},
-				},
-			},
-			wantErr: errSplunkNoDatumValue,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildPoint(zap.NewNop(), tt.args.splunkDataPoint, "foo", 0)
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.wantErr, err)
-		})
-	}
+func buildDefaultMetricsData(time int64) pdata.Metrics {
+	metrics := pdata.NewMetrics()
+	resourceMetrics := pdata.NewResourceMetrics()
+	resourceMetrics.InitEmpty()
+	metrics.ResourceMetrics().Append(resourceMetrics)
+	resourceMetrics.Resource().InitEmpty()
+	resourceMetrics.Resource().Attributes().InsertString("k0", "v0")
+	resourceMetrics.Resource().Attributes().InsertString("k1", "v1")
+	resourceMetrics.Resource().Attributes().InsertString("k2", "v2")
+
+	ilm := pdata.NewInstrumentationLibraryMetrics()
+	ilm.InitEmpty()
+	metricPt := pdata.NewMetric()
+	metricPt.InitEmpty()
+	metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
+	metricPt.SetName("single")
+	metricPt.IntGauge().InitEmpty()
+	intPt := pdata.NewIntDataPoint()
+	intPt.InitEmpty()
+	intPt.SetValue(13)
+	intPt.SetTimestamp(pdata.TimestampUnixNano(time))
+	metricPt.IntGauge().DataPoints().Append(intPt)
+	ilm.Metrics().Append(metricPt)
+	resourceMetrics.InstrumentationLibraryMetrics().Append(ilm)
+	return metrics
 }
 
 func strPtr(s string) *string {
