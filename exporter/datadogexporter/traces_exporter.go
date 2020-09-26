@@ -49,17 +49,23 @@ func (exp *traceExporter) pushTraceData(
 	
 	// edgeConnection := 
 
-	for _, ddTrace := range ddTraces {
+	for _, ddTracePayload := range ddTraces {
 
-		err := exp.edgeConnection.SendTraces(context.Background(), ddTrace, 3)
+		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)
 
 		if err != nil {
 			fmt.Printf("Failed to send traces with error %v\n", err)
-			
+		}
+
+		stats := apm.ComputeAPMStats(ddTracePayload)
+		err_stats := exp.edgeConnection.SendStats(context.Background(), stats, 3)		
+
+		if err_stats != nil {
+			fmt.Printf("Failed to send trace stats with error %v\n", err_stats)
 		}
 		
 		// TODO: logging for dev, remove later
-		for _, trace := range ddTrace.Traces {
+		for _, trace := range ddTracePayload.Traces {
 			for _, span := range trace.Spans {
 				exp.logger.Info(fmt.Sprintf("%#v\n", span))
 			}
