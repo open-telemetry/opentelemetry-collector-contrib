@@ -26,6 +26,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	octrace "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
@@ -83,13 +84,23 @@ var statusCodes = map[int32]codeDetails{
 	trace.StatusCodeUnauthenticated:    {message: "UNAUTHENTICATED", status: http.StatusUnauthorized},
 }
 
-func convertToDatadogTd(td pdata.Traces) []*pb.TracePayload {
+func convertToDatadogTd(td pdata.Traces, cfg *Config) []*pb.TracePayload {
+	overrideHostname := cfg.Hostname != ""
 	octds := internaldata.TraceDataToOC(td)
-	// ddTraces := make([]*pb.APITrace, 0, len(octds))
+
 	traces := []*pb.TracePayload{}
 
 	for _, octd := range octds {
-		// ddTrace := make([]*pb.Span, 0)
+		// surely there must be a cleaner way
+		var hostname string
+
+		if overrideHostname {
+			hostname = *GetHost(cfg)
+		} else {
+			hostname = extractHostName(octd.Node)
+		}
+
+
 		apiTraces := map[uint64]*pb.APITrace{}
 
 		for _, span := range octd.Spans {
@@ -114,7 +125,7 @@ func convertToDatadogTd(td pdata.Traces) []*pb.TracePayload {
 
 
 		payload := pb.TracePayload{
-			HostName:     "oteltesthost",
+			HostName:     hostname,
 			Env:          "oteltest",
 			Traces:       []*pb.APITrace{},
 			Transactions: []*pb.Span{},
@@ -349,4 +360,13 @@ func truncableStringToStr(ts *tracepb.TruncatableString) string {
 		return ""
 	}
 	return ts.Value
+}
+
+func extractHostName(node *commonpb.Node) string {
+	if process := node.GetIdentifier(); process != nil {
+		if len(process.HostName) != 0 {
+			return process.HostName
+		}
+	}
+	return ""
 }

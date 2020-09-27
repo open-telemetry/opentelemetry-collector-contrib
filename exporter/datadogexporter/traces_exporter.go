@@ -26,13 +26,15 @@ import (
 
 type traceExporter struct {
 	logger *zap.Logger
+	cfg    *Config
 	edgeConnection apm.TraceEdgeConnection
 }
 
-func newTraceExporter(_ *Config, logger *zap.Logger) (*traceExporter, error) {
+func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 	
 	exporter := &traceExporter{
 		logger: logger,
+		cfg: cfg,
 		edgeConnection: apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false),
 		}
 
@@ -40,15 +42,12 @@ func newTraceExporter(_ *Config, logger *zap.Logger) (*traceExporter, error) {
 }
 
 func (exp *traceExporter) pushTraceData(
-	_ context.Context,
+	ctx context.Context,
 	td pdata.Traces,
 ) (int, error) {
-
 	// TODO: improve implementation
-	ddTraces := convertToDatadogTd(td)
+	ddTraces := convertToDatadogTd(td, exp.cfg)
 	
-	// edgeConnection := 
-
 	for _, ddTracePayload := range ddTraces {
 
 		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)

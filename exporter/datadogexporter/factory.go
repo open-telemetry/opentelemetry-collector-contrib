@@ -109,7 +109,7 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	exp, err := newTraceExporter(cfg, params.Logger)
+	exp, err := newTraceExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err
 	}
