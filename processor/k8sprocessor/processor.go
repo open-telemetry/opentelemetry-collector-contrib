@@ -98,6 +98,21 @@ func (kp *kubernetesprocessor) ProcessMetrics(ctx context.Context, md pdata.Metr
 	return md, nil
 }
 
+// ProcessLogs process logs and add k8s metadata using resource IP, hostname or incoming IP as pod origin.
+func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+	rl := ld.ResourceLogs()
+	for i := 0; i < rl.Len(); i++ {
+		ls := rl.At(i)
+		if ls.IsNil() {
+			continue
+		}
+
+		kp.processResource(ctx, ls.Resource(), k8sIPFromAttributes())
+	}
+
+	return ld, nil
+}
+
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, attributeExtractors ...ipExtractor) {
 	var podIP string
 

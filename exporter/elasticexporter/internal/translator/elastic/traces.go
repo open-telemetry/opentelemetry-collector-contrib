@@ -35,7 +35,7 @@ func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w
 	var spanID, parentID model.SpanID
 	var traceID model.TraceID
 	copy(spanID[:], otlpSpan.SpanID())
-	copy(traceID[:], otlpSpan.TraceID())
+	copy(traceID[:], otlpSpan.TraceID().Bytes())
 	copy(parentID[:], otlpSpan.ParentSpanID())
 	root := parentID == model.SpanID{}
 

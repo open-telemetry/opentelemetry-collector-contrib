@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -42,6 +43,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
@@ -91,6 +93,7 @@ func components() (component.Factories, error) {
 		statsdreceiver.NewFactory(),
 		awsxrayreceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
+		dockerstatsreceiver.NewFactory(),
 	}
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
@@ -114,6 +117,7 @@ func components() (component.Factories, error) {
 		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		alibabacloudlogserviceexporter.NewFactory(),
+		awsemfexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

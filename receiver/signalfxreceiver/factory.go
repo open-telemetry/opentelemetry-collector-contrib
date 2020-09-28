@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -42,7 +43,8 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithLogs(createLogsReceiver))
 }
 
 func createDefaultConfig() configmodels.Receiver {
@@ -76,6 +78,10 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 
 // verify that the configured port is not 0
 func (rCfg *Config) validate() error {
+	if rCfg.Endpoint == "" {
+		return errEmptyEndpoint
+	}
+
 	_, err := extractPortFromEndpoint(rCfg.Endpoint)
 	if err != nil {
 		return err
@@ -83,14 +89,13 @@ func (rCfg *Config) validate() error {
 	return nil
 }
 
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
+// createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-
 	rCfg := cfg.(*Config)
 
 	err := rCfg.validate()
@@ -98,5 +103,45 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return New(params.Logger, *rCfg, consumer)
+	receiverLock.Lock()
+	r := receivers[rCfg]
+	if r == nil {
+		r = newReceiver(params.Logger, *rCfg)
+		receivers[rCfg] = r
+	}
+	receiverLock.Unlock()
+
+	r.RegisterMetricsConsumer(consumer)
+
+	return r, nil
 }
+
+// createLogsReceiver creates a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	rCfg := cfg.(*Config)
+
+	err := rCfg.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	receiverLock.Lock()
+	r := receivers[rCfg]
+	if r == nil {
+		r = newReceiver(params.Logger, *rCfg)
+		receivers[rCfg] = r
+	}
+	receiverLock.Unlock()
+
+	r.RegisterLogsConsumer(consumer)
+
+	return r, nil
+}
+
+var receiverLock sync.Mutex
+var receivers = map[*Config]*sfxReceiver{}
