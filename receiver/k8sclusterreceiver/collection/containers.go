@@ -37,7 +37,7 @@ const (
 )
 
 var containerRestartMetric = &metricspb.MetricDescriptor{
-	Name: "k8s/container/restarts",
+	Name: "k8s.container.restarts",
 	Description: "How many times the container has restarted in the recent past. " +
 		"This value is pulled directly from the K8s API and the value can go indefinitely high" +
 		" and be reset to 0 at any time depending on how your kubelet is configured to prune" +
@@ -50,7 +50,7 @@ var containerRestartMetric = &metricspb.MetricDescriptor{
 }
 
 var containerReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/container/ready",
+	Name:        "k8s.container.ready",
 	Description: "Whether a container has passed its readiness probe (0 for no, 1 for yes)",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
@@ -114,7 +114,7 @@ func getSpecMetricsForContainer(c corev1.Container) []*metricspb.Metric {
 			metrics = append(metrics,
 				&metricspb.Metric{
 					MetricDescriptor: &metricspb.MetricDescriptor{
-						Name:        fmt.Sprintf("k8s/container/%s/%s", k, t.typ),
+						Name:        fmt.Sprintf("k8s.container.%s_%s", k, t.typ),
 						Description: t.description,
 						Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 					},

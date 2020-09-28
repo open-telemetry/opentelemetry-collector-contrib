@@ -60,7 +60,7 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s/pod/phase",
+	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.pod.phase",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
 	rm = rms[1]
@@ -79,16 +79,16 @@ func TestPodAndContainerMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, rm.Metrics[0], "k8s/container/restarts",
+	testutils.AssertMetrics(t, rm.Metrics[0], "k8s.container.restarts",
 		metricspb.MetricDescriptor_GAUGE_INT64, 3)
 
-	testutils.AssertMetrics(t, rm.Metrics[1], "k8s/container/ready",
+	testutils.AssertMetrics(t, rm.Metrics[1], "k8s.container.ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, rm.Metrics[2], "k8s/container/cpu/request",
+	testutils.AssertMetrics(t, rm.Metrics[2], "k8s.container.cpu_request",
 		metricspb.MetricDescriptor_GAUGE_INT64, 10000)
 
-	testutils.AssertMetrics(t, rm.Metrics[3], "k8s/container/cpu/limit",
+	testutils.AssertMetrics(t, rm.Metrics[3], "k8s.container.cpu_limit",
 		metricspb.MetricDescriptor_GAUGE_INT64, 20000)
 }
 
