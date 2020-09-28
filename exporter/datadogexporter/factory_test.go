@@ -39,36 +39,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 		},
 		API: APIConfig{Site: "datadoghq.com"},
-		Metrics: MetricsConfig{
-			Percentiles: true,
-		},
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
-}
-
-func TestCreateAPIMetricsExporter(t *testing.T) {
-	logger := zap.NewNop()
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ctx := context.Background()
-	exp, err := factory.CreateMetricsExporter(
-		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
-	)
-
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
 }
 
 func TestCreateInvalidMetricsExporter(t *testing.T) {
