@@ -35,17 +35,15 @@ exporters:
     #
     # tags: []
 
-    ## @param api - custom object - optional.
-    ## Specific API configuration for the agentless exporters.
+    ## @param api - custom object - required.
+    ## Specific API configuration.
     #
-    # api:
-      ## @ param key - string - optional
+    api:
+      ## @ param key - string - required
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
-      ##
-      ## This is required if using any agentless exporter.
       #
-      # key: <YOUR API KEY>
+      key: "<YOUR API KEY>"
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
