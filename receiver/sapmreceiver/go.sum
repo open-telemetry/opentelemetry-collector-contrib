@@ -470,6 +470,8 @@ github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4/go.mod h1:Izgrg
 github.com/google/addlicense v0.0.0-20190510175307-22550fa7c1b0/go.mod h1:QtPG26W17m+OIQgE6gQ24gC1M6pUaMBAbFrTIDtwG/E=
 github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5 h1:m6Z1Cm53o4VecQFxKCnvULGfIT0Igo3MX131i+00IIo=
 github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5/go.mod h1:EMjYTRimagHs1FwlIqKyX3wAM0u3rA+McvlIIWmSamA=
+github.com/google/addlicense v0.0.0-20200906110928-a0294312aa76 h1:JypWNzPMSgH5yL0NvFoAIsDRlKFgL0AsS3GO5bg4Pto=
+github.com/google/addlicense v0.0.0-20200906110928-a0294312aa76/go.mod h1:EMjYTRimagHs1FwlIqKyX3wAM0u3rA+McvlIIWmSamA=
 github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/btree v1.0.0 h1:0udJVsspx3VBr5FwtLhQQtuAsVc79tTq0ocGIPAU6qo=
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
@@ -622,6 +624,7 @@ github.com/influxdata/roaring v0.4.13-0.20180809181101-fc520f41fab6/go.mod h1:bS
 github.com/influxdata/tdigest v0.0.0-20181121200506-bf2b5ad3c0a9/go.mod h1:Js0mqiSBE6Ffsg94weZZ2c+v/ciT8QRHFOap7EKDrR0=
 github.com/influxdata/usage-client v0.0.0-20160829180054-6d3895376368/go.mod h1:Wbbw6tYNvwa5dlB6304Sd+82Z3f7PmVZHVKU637d4po=
 github.com/jaegertracing/jaeger v1.15.1/go.mod h1:LUWPSnzNPGRubM8pk0inANGitpiMOOxihXx0+53llXI=
+github.com/jaegertracing/jaeger v1.19.1/go.mod h1:2GVHuF9OIfRw2N6ZMoEgRGL+GJxvDLVtALDWxOINqDk=
 github.com/jaegertracing/jaeger v1.19.2 h1:JX1ty1wlkk3JENyfXNMRAxGClwErTyzEKbQAFktYpOc=
 github.com/jaegertracing/jaeger v1.19.2/go.mod h1:2GVHuF9OIfRw2N6ZMoEgRGL+GJxvDLVtALDWxOINqDk=
 github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03/go.mod h1:MK8+TM0La+2rjBD4jE12Kj1pCCxK7d2LK/UM3ncEo0o=
@@ -981,6 +984,8 @@ github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd/go.mod h1:TrYk7fJV
 github.com/shurcooL/vfsgen v0.0.0-20200627165143-92b8a710ab6c/go.mod h1:TrYk7fJVaAttu97ZZKrO9UbRa8izdowaMIZcxYMbVaw=
 github.com/signalfx/sapm-proto v0.5.3 h1:1+YNMTQBCS3XXuwfXARAyk2PbsbZdMwRVb6Y7WgfGio=
 github.com/signalfx/sapm-proto v0.5.3/go.mod h1:irslr5i7XlHJTm1CpRy+llvf4COzF5K6Je05RkhetTE=
+github.com/signalfx/sapm-proto v0.6.0 h1:SpcBPBN7mllCaittxvTmXM4zCob79ytb9DEHsZ9jLF0=
+github.com/signalfx/sapm-proto v0.6.0/go.mod h1:2uHysA4VySJpaZKEvsceKew2aNclf5Bu45bfbNwgbhI=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
