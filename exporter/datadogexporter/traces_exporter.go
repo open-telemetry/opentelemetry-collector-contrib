@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
-
+	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -28,15 +28,31 @@ type traceExporter struct {
 	logger *zap.Logger
 	cfg    *Config
 	edgeConnection apm.TraceEdgeConnection
+	obfuscator     *obfuscate.Obfuscator
 }
 
 func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
+
+	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{
+		ES: obfuscate.JSONSettings{
+			Enabled: true,
+		},
+		Mongo: obfuscate.JSONSettings{
+			Enabled: true,
+		},
+		RemoveQueryString: true,
+		RemovePathDigits:  true,
+		RemoveStackTraces: true,
+		Redis:             true,
+		Memcached:         true,
+	})	
 	// TODO:
 	// use passed in config values for site and api key instead of hardcoded
 	exporter := &traceExporter{
 		logger: logger,
 		cfg: cfg,
 		edgeConnection: apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false),
+		obfuscator: obfuscator,
 		}
 
 	return exporter, nil
@@ -48,9 +64,11 @@ func (exp *traceExporter) pushTraceData(
 ) (int, error) {
 	// TODO: 
 	// improve implementation of conversion
-	// Apply agent Obfuscation Logic
 	ddTraces := convertToDatadogTd(td, exp.cfg)
 
+	// security/obfuscation for db, query strings, stack traces, pii, etc
+	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
+	apm.ObfuscatePayload(exp.obfuscator, ddTraces)
 	
 	for _, ddTracePayload := range ddTraces {
 

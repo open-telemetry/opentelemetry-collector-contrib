@@ -60,7 +60,7 @@ const (
 	keyStatus            = "opencensus.status"
 	keySpanName          = "span.name"
 	// keySamplingPriorityRate = "_sampling_priority_rate_v1"
-	instrumentationLibraryName    string = "instrumentation_library.name"
+	instrumentationLibraryName    string = "otel.instrumentation_library.name"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
