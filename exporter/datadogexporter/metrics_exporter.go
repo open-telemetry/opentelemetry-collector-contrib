@@ -16,7 +16,6 @@ package datadogexporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -35,19 +34,10 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
 
-	if ok, err := client.Validate(); err != nil {
-		logger.Warn("Error when validating API key", zap.Error(err))
-	} else if ok {
-		logger.Info("Provided Datadog API key is valid")
-	} else {
-		return nil, fmt.Errorf("provided Datadog API key is invalid: %s", cfg.API.GetCensoredKey())
-	}
-
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
 
 	return &metricsExporter{logger, cfg, client, tags}, nil
-
 }
 
 func (exp *metricsExporter) processMetrics(series *Series) {

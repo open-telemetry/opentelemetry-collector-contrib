@@ -15,74 +15,25 @@
 package datadogexporter
 
 import (
-	"errors"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 )
 
-func TestNewExporterValid(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("{\"valid\": true}"))
-	}))
-	defer ts.Close()
-
+func TestNewExporter(t *testing.T) {
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddr.Endpoint = ts.URL
 	logger := zap.NewNop()
 
 	// The client should have been created correctly
-	exp, err := newMetricsExporter(logger, cfg)
-	require.NoError(t, err)
-	assert.NotNil(t, exp)
-}
-
-func TestNewExporterInvalid(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("{\"valid\": false}"))
-	}))
-	defer ts.Close()
-
-	cfg := &Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddr.Endpoint = ts.URL
-	logger := zap.NewNop()
-
-	// An error should be raised
-	exp, err := newMetricsExporter(logger, cfg)
-	assert.Equal(t,
-		errors.New("provided Datadog API key is invalid: ***************************_key1"),
-		err,
-	)
-	assert.Nil(t, exp)
-}
-
-func TestNewExporterValidateError(t *testing.T) {
-	ts := httptest.NewServer(http.NotFoundHandler())
-	defer ts.Close()
-
-	cfg := &Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddr.Endpoint = ts.URL
-	logger := zap.NewNop()
-
-	// The client should have been created correctly
-	// with the error being ignored
 	exp, err := newMetricsExporter(logger, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
 func TestProcessMetrics(t *testing.T) {
-	ts := httptest.NewServer(http.NotFoundHandler())
-	defer ts.Close()
-
 	cfg := &Config{
 		TagsConfig: TagsConfig{
 			Hostname: "test_host",
@@ -90,7 +41,6 @@ func TestProcessMetrics(t *testing.T) {
 			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
-			TCPAddr:   confignet.TCPAddr{Endpoint: ts.URL},
 			Namespace: "test.",
 		},
 	}

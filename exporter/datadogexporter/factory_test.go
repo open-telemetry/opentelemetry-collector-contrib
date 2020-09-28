@@ -15,9 +15,6 @@ package datadogexporter
 
 import (
 	"context"
-	"errors"
-	"net/http"
-	"net/http/httptest"
 	"path"
 	"testing"
 
@@ -63,33 +60,8 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// Test with invalid API key
-
-	// Mock http server
-	tsInvalid := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("{\"valid\": false}"))
-	}))
-	defer tsInvalid.Close()
-	cfg.Exporters["datadog/api"].(*Config).Metrics.Endpoint = tsInvalid.URL
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
-		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/api"],
-	)
-
-	assert.Equal(t, errors.New("provided Datadog API key is invalid: ***************************aaaaa"), err)
-	assert.Nil(t, exp)
-
-	// Override endpoint to return that the API key is valid
-	tsValid := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("{\"valid\": true}"))
-	}))
-	defer tsValid.Close()
-	cfg.Exporters["datadog/api"].(*Config).Metrics.Endpoint = tsValid.URL
-
-	ctx = context.Background()
-	exp, err = factory.CreateMetricsExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
 		cfg.Exporters["datadog/api"],
