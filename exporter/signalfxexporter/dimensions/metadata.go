@@ -25,6 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
+// MetadataUpdateClient is an interface for pushing metadata updates
+type MetadataUpdateClient interface {
+	PushMetadata([]*collection.MetadataUpdate) error
+}
+
 var propNameSanitizer = strings.NewReplacer(
 	".", "_",
 	"/", "_")

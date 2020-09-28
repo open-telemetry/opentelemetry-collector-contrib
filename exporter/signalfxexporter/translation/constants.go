@@ -47,6 +47,7 @@ translation_rules:
     k8s.resourcequota.uid: kubernetes_uid
     k8s.statefulset.name: kubernetes_name
     k8s.statefulset.uid: kubernetes_uid
+    host.name: host
 
     # properties
     cronjob_uid: cronJob_uid
