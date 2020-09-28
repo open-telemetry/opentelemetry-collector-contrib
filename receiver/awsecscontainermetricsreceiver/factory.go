@@ -16,22 +16,29 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
 
+// Factory for awscontainermetrics
 const (
+	// Key to invoke this receiver (awsecscontainermetrics)
 	typeStr = "awsecscontainermetrics"
 
-	// Default collection interval
+	// Default collection interval. In every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
 
-// NewFactory creates a factory for Aws ECS Container Metrics receiver.
+// NewFactory creates a factory for AWS ECS Container Metrics receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
@@ -39,6 +46,7 @@ func NewFactory() component.ReceiverFactory {
 		receiverhelper.WithMetrics(createMetricsReceiver))
 }
 
+// createDefaultConfig returns a default config for the receiver.
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
@@ -49,12 +57,29 @@ func createDefaultConfig() configmodels.Receiver {
 	}
 }
 
+// CreateMetricsReceiver creates an AWS ECS Container Metrics receiver.
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params component.ReceiverCreateParams,
-	cfg configmodels.Receiver,
-	nextConsumer consumer.MetricsConsumer,
+	baseCfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	rCfg := cfg.(*Config)
-	return newAwsEcsContainerMetricsReceiver(params.Logger, rCfg, nextConsumer)
+	ecsTaskMetadataEndpointV4 := os.Getenv(awsecscontainermetrics.ENDPOINT)
+	if ecsTaskMetadataEndpointV4 == "" {
+		return nil, fmt.Errorf("no environment variable found for %s", awsecscontainermetrics.ENDPOINT)
+	}
+
+	rest := restClient(params.Logger, ecsTaskMetadataEndpointV4)
+
+	rCfg := baseCfg.(*Config)
+	return New(params.Logger, rCfg, consumer, rest)
+}
+
+func restClient(logger *zap.Logger, endpoint string) awsecscontainermetrics.RestClient {
+	clientProvider := awsecscontainermetrics.NewClientProvider(endpoint, logger)
+
+	client := clientProvider.BuildClient()
+	rest := awsecscontainermetrics.NewRestClient(client)
+
+	return rest
 }

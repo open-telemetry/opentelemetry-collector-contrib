@@ -16,11 +16,11 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
@@ -38,8 +38,22 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
+	require.Error(t, err, "No Env Variable Error")
+	require.Nil(t, metricsReceiver)
+}
+
+func TestCreateMetricsReceiverWithEnv(t *testing.T) {
+	os.Setenv("ECS_CONTAINER_METADATA_URI_V4", "TEST_ENV_VAR")
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		&testbed.MockMetricConsumer{},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
@@ -49,6 +63,14 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 		createDefaultConfig(),
 		nil,
 	)
+
+	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
-	require.Equal(t, err, componenterror.ErrNilNextConsumer)
+
+}
+
+func TestRestClient(t *testing.T) {
+	rest := restClient(nil, "")
+
+	require.NotNil(t, rest)
 }
