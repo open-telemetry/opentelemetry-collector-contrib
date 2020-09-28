@@ -8,7 +8,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
-	github.com/shirou/gopsutil v2.20.6+incompatible
+	github.com/shirou/gopsutil v2.20.8+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.11.1-0.20200924160956-8690937037da
