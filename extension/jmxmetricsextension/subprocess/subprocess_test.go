@@ -65,3 +65,16 @@ func TestShutdownTimeout(t *testing.T) {
 	require.GreaterOrEqual(t, elapsed, int64(10*time.Millisecond))
 	require.GreaterOrEqual(t, int64(20*time.Millisecond), elapsed)
 }
+
+func TestPidAccessors(t *testing.T) {
+	subprocess := &Subprocess{}
+	require.Equal(t, -1, subprocess.Pid())
+
+	subprocess = NewSubprocess(&Config{}, nil)
+	require.Equal(t, -1, subprocess.Pid())
+
+	subprocess.pid.setPid(123)
+	require.Equal(t, 123, subprocess.pid.getPid())
+	require.Equal(t, 123, subprocess.Pid())
+
+}

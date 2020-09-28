@@ -29,6 +29,12 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	defaultRestartDelay    = 5 * time.Second
+	defaultShutdownTimeout = 5 * time.Second
+	noPid                  = -1
+)
+
 // exported to be used by jmx metrics extension
 type Config struct {
 	ExecutablePath       string            `mapstructure:"executable_path"`
@@ -71,23 +77,26 @@ func (p *pid) getPid() int {
 }
 
 func (subprocess *Subprocess) Pid() int {
+	if subprocess.pid == nil {
+		return noPid
+	}
 	return subprocess.pid.getPid()
 }
 
 // exported to be used by jmx metrics extension
 func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	if conf.RestartDelay == nil {
-		defaultRestartDelay := 5 * time.Second
-		conf.RestartDelay = &defaultRestartDelay
+		restartDelay := defaultRestartDelay
+		conf.RestartDelay = &restartDelay
 	}
 	if conf.ShutdownTimeout == nil {
-		defaultShutdownTimeout := 5 * time.Second
-		conf.ShutdownTimeout = &defaultShutdownTimeout
+		shutdownTimeout := defaultShutdownTimeout
+		conf.ShutdownTimeout = &shutdownTimeout
 	}
 
 	return &Subprocess{
 		Stdout:         make(chan string),
-		pid:            &pid{pid: -1, pidLock: sync.Mutex{}},
+		pid:            &pid{pid: noPid, pidLock: sync.Mutex{}},
 		config:         conf,
 		logger:         logger,
 		shutdownSignal: make(chan struct{}),
@@ -123,7 +132,10 @@ func (subprocess *Subprocess) Start(ctx context.Context) error {
 // Shutdown is invoked during service shutdown.
 func (subprocess *Subprocess) Shutdown(ctx context.Context) error {
 	subprocess.cancel()
-	timeout := *subprocess.config.ShutdownTimeout
+	timeout := defaultShutdownTimeout
+	if subprocess.config.ShutdownTimeout != nil {
+		timeout = *subprocess.config.ShutdownTimeout
+	}
 	t := time.NewTimer(timeout)
 
 	// Wait for the subprocess to exit or the timeout period to elapse
