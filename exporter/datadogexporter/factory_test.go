@@ -43,28 +43,3 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
-
-func TestCreateInvalidMetricsExporter(t *testing.T) {
-	logger := zap.NewNop()
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ctx := context.Background()
-	exp, err := factory.CreateMetricsExporter(
-		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/invalid"],
-	)
-
-	// The address is invalid
-	assert.NotNil(t, err)
-	assert.Nil(t, exp)
-}
