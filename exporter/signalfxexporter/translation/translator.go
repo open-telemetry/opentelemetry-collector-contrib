@@ -189,6 +189,10 @@ type Rule struct {
 	// existing SFx content for desired metric name
 	AddDimensions map[string]string `mapstructure:"add_dimensions"`
 
+	// CopyDimensions used by "rename_metrics" translation rule to copy dimensions that are necessary for
+	// existing SFx content for desired metric name.  This will duplicate the dimension value and isn't a rename.
+	CopyDimensions map[string]string `mapstructure:"copy_dimensions"`
+
 	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
 
@@ -236,6 +240,13 @@ func validateTranslationRules(rules []Rule) error {
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
+			}
+			if tr.CopyDimensions != nil {
+				for k, v := range tr.CopyDimensions {
+					if k == "" || v == "" {
+						return fmt.Errorf("mapping \"copy_dimensions\" for %q translation rule must not contain empty string keys or values", tr.Action)
+					}
+				}
 			}
 		case ActionMultiplyInt:
 			if tr.ScaleFactorsInt == nil {
@@ -351,6 +362,14 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			for _, dp := range processedDataPoints {
 				if newKey, ok := tr.Mapping[dp.Metric]; ok {
 					dp.Metric = newKey
+					if tr.CopyDimensions != nil {
+						for _, d := range dp.Dimensions {
+							if k, ok := tr.CopyDimensions[d.Key]; ok {
+								dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: k, Value: d.Value})
+
+							}
+						}
+					}
 					if len(additionalDimensions) > 0 {
 						dp.Dimensions = append(dp.Dimensions, additionalDimensions...)
 					}
