@@ -14,18 +14,11 @@
 package datadogexporter
 
 import (
-	"context"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.uber.org/zap"
 )
 
 // Test that the factory creates the default configuration
