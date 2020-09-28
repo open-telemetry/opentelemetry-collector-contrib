@@ -31,7 +31,8 @@ type traceExporter struct {
 }
 
 func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
-	
+	// TODO:
+	// use passed in config values for site and api key instead of hardcoded
 	exporter := &traceExporter{
 		logger: logger,
 		cfg: cfg,
@@ -45,8 +46,11 @@ func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) (int, error) {
-	// TODO: improve implementation
+	// TODO: 
+	// improve implementation of conversion
+	// Apply agent Obfuscation Logic
 	ddTraces := convertToDatadogTd(td, exp.cfg)
+
 	
 	for _, ddTracePayload := range ddTraces {
 

@@ -60,6 +60,7 @@ const (
 	keyStatus            = "opencensus.status"
 	keySpanName          = "span.name"
 	// keySamplingPriorityRate = "_sampling_priority_rate_v1"
+	instrumentationLibraryName    string = "instrumentation_library.name"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -86,12 +87,15 @@ var statusCodes = map[int32]codeDetails{
 
 func convertToDatadogTd(td pdata.Traces, cfg *Config) []*pb.TracePayload {
 	overrideHostname := cfg.Hostname != ""
+
+	// TODO: move this over to using Otel internals directly rather than relying on OpenCensus
 	octds := internaldata.TraceDataToOC(td)
 
 	traces := []*pb.TracePayload{}
 
 	for _, octd := range octds {
 		// surely there must be a cleaner way
+		// This appears to not pull in a hostname?
 		var hostname string
 
 		if overrideHostname {
@@ -100,6 +104,13 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) []*pb.TracePayload {
 			hostname = extractHostName(octd.Node)
 		}
 
+
+		// fmt.Printf("HOSTNAME IS")
+		// fmt.Printf(hostname)
+		// fmt.Printf("get host returns")
+		// fmt.Printf(*GetHost(cfg))
+		// fmt.Printf("extractHostName returns")
+		// fmt.Printf(extractHostName(octd.Node))
 
 		apiTraces := map[uint64]*pb.APITrace{}
 
@@ -124,6 +135,7 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) []*pb.TracePayload {
 		}
 
 
+		// TODO: Use Env Config here, default to 'none'
 		payload := pb.TracePayload{
 			HostName:     hostname,
 			Env:          "oteltest",
@@ -149,10 +161,15 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) []*pb.TracePayload {
 func convertSpan(s *octrace.Span) *pb.Span {
 	startTime := pdata.TimestampToUnixNano(s.StartTime)
 	endTime := pdata.TimestampToUnixNano(s.EndTime)
+
+	// TODOs:
+	// span.Type
+	// Have span.Resource give better info for http spans
+
 	span := &pb.Span{
 		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceId[:])),
 		SpanID:  decodeAPMId(hex.EncodeToString(s.SpanId[:])),
-		Name:     "opentelemetry",
+		Name:     getSpanName(s),
 		Resource: s.Name.Value,
 		Service:  "service_example",
 		Start:    int64(startTime),
@@ -170,55 +187,60 @@ func convertSpan(s *octrace.Span) *pb.Span {
 		span.ParentID = 0
 	}
 
+	// TODO: figure out error code handling 
 	// fmt.Printf("%v", s.Status.Code)
 	// code, ok := statusCodes[s.Status.Code]
-	isErr := s.Status == nil
+	// isErr := s.Status == nil
 
-	if !isErr {
+	// if !isErr {
 
-		code, ok := statusCodes[trace.StatusCodeOK]
-		if !ok {
-			code = codeDetails{
-				message: "ERR_CODE_" + strconv.FormatInt(int64(s.Status.Code), 10),
-				status:  http.StatusInternalServerError,
-			}
-		}
+	// 	code, ok := statusCodes[trace.StatusCodeOK]
+	// 	if !ok {
+	// 		code = codeDetails{
+	// 			message: "ERR_CODE_" + strconv.FormatInt(int64(s.Status.Code), 10),
+	// 			status:  http.StatusInternalServerError,
+	// 		}
+	// 	}
 
-		switch s.Kind {
-		case trace.SpanKindClient:
-			span.Type = "client"
-			if code.status/100 == 4 {
-				span.Error = 1
-			}
-		case trace.SpanKindServer:
-			span.Type = "server"
-			fallthrough
-		default:
-			span.Type = "custom"
-			if code.status/100 == 5 {
-				span.Error = 1
-			}
-		}
+	// 	switch s.Kind {
+	// 	case trace.SpanKindClient:
+	// 		span.Type = "client"
+	// 		if code.status/100 == 4 {
+	// 			span.Error = 1
+	// 		}
+	// 	case trace.SpanKindServer:
+	// 		span.Type = "server"
+	// 		fallthrough
+	// 	default:
+	// 		span.Type = "custom"
+	// 		if code.status/100 == 5 {
+	// 			span.Error = 1
+	// 		}
+	// 	}
 
-		if span.Error == 1 {
-			span.Meta[ext.ErrorType] = code.message
-			if msg := s.Status.Message; msg != "" {
-				span.Meta[ext.ErrorMsg] = msg
-			}
-		}
+	// 	if span.Error == 1 {
+	// 		span.Meta[ext.ErrorType] = code.message
+	// 		if msg := s.Status.Message; msg != "" {
+	// 			span.Meta[ext.ErrorMsg] = msg
+	// 		}
+	// 	}
 
-		span.Meta[keyStatusCode] = strconv.Itoa(int(s.Status.Code))
-		span.Meta[keyStatus] = code.message
-		if msg := s.Status.Message; msg != "" {
-			span.Meta[keyStatusDescription] = msg
-		}
-	} else {
-		span.Type = ""
-	}
+	// 	span.Meta[keyStatusCode] = strconv.Itoa(int(s.Status.Code))
+	// 	span.Meta[keyStatus] = code.message
+	// 	if msg := s.Status.Message; msg != "" {
+	// 		span.Meta[keyStatusDescription] = msg
+	// 	}
+	// } else {
+	// 	span.Type = ""
+	// }
+	span.Type = ""
 
+	// TODO: Apply Config Tags
 	// for key, val := range e.opts.GlobalTags {
 	// 	setTag(span, key, val)
 	// }
+
+	// Set Attributes as Tags
 	for key, val := range s.GetAttributes().GetAttributeMap() {
 		setTag(span, key, attributeValueToString(val))
 	}
@@ -345,7 +367,6 @@ func attributeValueToString(v *tracepb.AttributeValue) string {
 }
 
 // func spanKindToStr(spanKind tracepb.Span_SpanKind) string {
-
 // 	switch spanKind {
 // 	case tracepb.Span_CLIENT:
 // 		return string(tracetranslator.OpenTracingSpanKindClient)
@@ -369,4 +390,24 @@ func extractHostName(node *commonpb.Node) string {
 		}
 	}
 	return ""
+}
+
+// TODO:
+// test this
+func getSpanName(s *octrace.Span) string {
+	// largely a port of logic here 
+	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
+	// Get span name by using instrumentation and kind while backing off to span.kind	
+	instrumentationlibrary := ""
+	for key, val := range s.GetAttributes().GetAttributeMap() {
+		if key == instrumentationLibraryName {
+			instrumentationlibrary = attributeValueToString(val)
+		}
+	}
+
+	if instrumentationlibrary != "" {
+		return fmt.Sprintf("%s.%s", instrumentationlibrary, s.Kind)
+	} else {
+		return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind)
+	}
 }
