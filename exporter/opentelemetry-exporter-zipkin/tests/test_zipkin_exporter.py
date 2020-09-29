@@ -98,9 +98,8 @@ class TestZipkinSpanExporter(unittest.TestCase):
         self.assertEqual(exporter.ipv6, ipv6)
         self.assertEqual(exporter.url, url)
 
-    # pylint: disable=too-many-locals
+    # pylint: disable=too-many-locals,too-many-statements
     def test_export(self):
-
         span_names = ("test1", "test2", "test3", "test4")
         trace_id = 0x6E0C63257DE34C926F9EFCD03927272E
         span_id = 0x34BF92DEEFC58C92
@@ -204,7 +203,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
         local_endpoint = {"serviceName": service_name, "port": 9411}
 
         exporter = ZipkinSpanExporter(service_name)
-        expected = [
+        expected_spans = [
             {
                 "traceId": format(trace_id, "x"),
                 "id": format(span_id, "x"),
@@ -220,22 +219,20 @@ class TestZipkinSpanExporter(unittest.TestCase):
                     "otel.status_code": "2",
                     "otel.status_description": "Example description",
                 },
+                "debug": True,
+                "parentId": format(parent_id, "x"),
                 "annotations": [
                     {
                         "timestamp": event_timestamp // 10 ** 3,
-                        "value": json.dumps(
-                            {
-                                "event0": {
-                                    "annotation_bool": True,
-                                    "annotation_string": "annotation_test",
-                                    "key_float": 0.3,
-                                }
+                        "value": {
+                            "event0": {
+                                "annotation_bool": True,
+                                "annotation_string": "annotation_test",
+                                "key_float": 0.3,
                             }
-                        ),
+                        },
                     }
                 ],
-                "debug": True,
-                "parentId": format(parent_id, "x"),
             },
             {
                 "traceId": format(trace_id, "x"),
@@ -289,11 +286,21 @@ class TestZipkinSpanExporter(unittest.TestCase):
             status = exporter.export(otel_spans)
             self.assertEqual(SpanExportResult.SUCCESS, status)
 
-        mock_post.assert_called_with(
-            url="http://localhost:9411/api/v2/spans",
-            data=json.dumps(expected),
-            headers={"Content-Type": "application/json"},
+        # pylint: disable=unsubscriptable-object
+        kwargs = mock_post.call_args[1]
+
+        self.assertEqual(kwargs["url"], "http://localhost:9411/api/v2/spans")
+        actual_spans = sorted(
+            json.loads(kwargs["data"]), key=lambda span: span["timestamp"]
         )
+        for expected, actual in zip(expected_spans, actual_spans):
+            expected_annotations = expected.pop("annotations", None)
+            actual_annotations = actual.pop("annotations", None)
+            if actual_annotations:
+                for annotation in actual_annotations:
+                    annotation["value"] = json.loads(annotation["value"])
+            self.assertEqual(expected, actual)
+            self.assertEqual(expected_annotations, actual_annotations)
 
     # pylint: disable=too-many-locals
     def test_zero_padding(self):
