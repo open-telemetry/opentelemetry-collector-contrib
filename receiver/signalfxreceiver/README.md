@@ -1,9 +1,14 @@
 # SignalFx Receiver
 
-The SignalFx receiver accepts metrics in the [SignalFx proto
-format](https://github.com/signalfx/com_signalfx_metrics_protobuf). This allows
-the collector to receiver metrics from other collectors or the SignalFx Smart
-Agent.
+The SignalFx receiver accepts:
+
+- Metrics in the [SignalFx proto
+format](https://github.com/signalfx/com_signalfx_metrics_protobuf).
+- Events (Logs) in the [SignalFx proto
+format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/proto/signalfx_metrics.proto#L137).
+More information about sending custom events can be found in the [SignalFx
+Developers
+Guide](https://developers.signalfx.com/ingest_data_reference.html#tag/Send-Custom-Events).
 
 ## Configuration
 
@@ -40,3 +45,18 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
+
+```yaml
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
+    logs:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
+```

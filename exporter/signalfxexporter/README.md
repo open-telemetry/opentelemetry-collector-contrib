@@ -1,6 +1,6 @@
 # SignalFx Metrics Exporter
 
-This exporter can be used to send metrics to SignalFx.
+This exporter can be used to send metrics and events to SignalFx.
 
 Apart from metrics, the exporter is also capable of sending metric metadata
 (properties and tags) to SignalFx. Currently, only metric metadata updates from
@@ -66,6 +66,21 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+```
+
+> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
+
+```yaml
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
+    logs:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,
