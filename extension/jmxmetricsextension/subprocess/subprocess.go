@@ -53,7 +53,7 @@ type Subprocess struct {
 	config         *Config
 	envVars        []string
 	logger         *zap.Logger
-	pid            *pid
+	pid            pid
 	shutdownSignal chan struct{}
 	// configurable for testing purposes
 	sendToStdIn func(string, io.Writer) error
@@ -77,10 +77,11 @@ func (p *pid) getPid() int {
 }
 
 func (subprocess *Subprocess) Pid() int {
-	if subprocess.pid == nil {
+	pid := subprocess.pid.getPid()
+	if pid == 0 {
 		return noPid
 	}
-	return subprocess.pid.getPid()
+	return pid
 }
 
 // exported to be used by jmx metrics extension
@@ -96,7 +97,7 @@ func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 
 	return &Subprocess{
 		Stdout:         make(chan string),
-		pid:            &pid{pid: noPid, pidLock: sync.Mutex{}},
+		pid:            pid{pid: noPid, pidLock: sync.Mutex{}},
 		config:         conf,
 		logger:         logger,
 		shutdownSignal: make(chan struct{}),
