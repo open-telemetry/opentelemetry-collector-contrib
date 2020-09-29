@@ -30,11 +30,20 @@ Usage
 
 .. code:: python
 
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
     from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
-    CeleryInstrumentor().instrument()
-
     from celery import Celery
+    from celery.signals import worker_process_init
+
+    @worker_process_init.connect(weak=False)
+    def init_celery_tracing(*args, **kwargs):
+        trace.set_tracer_provider(TracerProvider())
+        span_processor = BatchExportSpanProcessor(ConsoleSpanExporter())
+        trace.get_tracer_provider().add_span_processor(span_processor)
+        CeleryInstrumentor().instrument()
 
     app = Celery("tasks", broker="amqp://localhost")
 
@@ -50,13 +59,15 @@ API
 
 import logging
 import signal
+from collections.abc import Iterable
 
 from celery import signals  # pylint: disable=no-name-in-module
 
-from opentelemetry import trace
+from opentelemetry import propagators, trace
 from opentelemetry.instrumentation.celery import utils
 from opentelemetry.instrumentation.celery.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.trace.propagation import get_current_span
 from opentelemetry.trace.status import Status, StatusCanonicalCode
 
 logger = logging.getLogger(__name__)
@@ -106,9 +117,16 @@ class CeleryInstrumentor(BaseInstrumentor):
         if task is None or task_id is None:
             return
 
+        request = task.request
+        tracectx = propagators.extract(carrier_extractor, request) or {}
+        parent = get_current_span(tracectx)
+
         logger.debug("prerun signal start task_id=%s", task_id)
 
-        span = self._tracer.start_span(task.name, kind=trace.SpanKind.CONSUMER)
+        operation_name = "{0}/{1}".format(_TASK_RUN, task.name)
+        span = self._tracer.start_span(
+            operation_name, parent=parent, kind=trace.SpanKind.CONSUMER
+        )
 
         activation = self._tracer.use_span(span, end_on_exit=True)
         activation.__enter__()
@@ -146,7 +164,10 @@ class CeleryInstrumentor(BaseInstrumentor):
         if task is None or task_id is None:
             return
 
-        span = self._tracer.start_span(task.name, kind=trace.SpanKind.PRODUCER)
+        operation_name = "{0}/{1}".format(_TASK_APPLY_ASYNC, task.name)
+        span = self._tracer.start_span(
+            operation_name, kind=trace.SpanKind.PRODUCER
+        )
 
         # apply some attributes here because most of the data is not available
         span.set_attribute(_TASK_TAG_KEY, _TASK_APPLY_ASYNC)
@@ -157,6 +178,10 @@ class CeleryInstrumentor(BaseInstrumentor):
         activation = self._tracer.use_span(span, end_on_exit=True)
         activation.__enter__()
         utils.attach_span(task, task_id, (span, activation), is_publish=True)
+
+        headers = kwargs.get("headers")
+        if headers:
+            propagators.inject(type(headers).__setitem__, headers)
 
     @staticmethod
     def _trace_after_publish(*args, **kwargs):
@@ -221,3 +246,10 @@ class CeleryInstrumentor(BaseInstrumentor):
         # Use `str(reason)` instead of `reason.message` in case we get
         # something that isn't an `Exception`
         span.set_attribute(_TASK_RETRY_REASON_KEY, str(reason))
+
+
+def carrier_extractor(carrier, key):
+    value = getattr(carrier, key, [])
+    if isinstance(value, str) or not isinstance(value, Iterable):
+        value = (value,)
+    return value
