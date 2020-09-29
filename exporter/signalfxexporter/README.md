@@ -46,6 +46,13 @@ The following configuration options can also be configured:
 - `translation_rules`: Set of rules on how to translate metrics to a SignalFx 
   compatible format. Rules defined in `translation/constants.go` are used by 
   default. Applicable only when `send_compatible_metrics` set to `true`.
+- `sync_host_metadata`: Defines whether the exporter should scrape host metadata
+  and send it as property updates to SignalFx backend. Disabled by default.
+  IMPORTANT: Host metadata synchronization relies on `resourcedetection` 
+  processor. If this option is enabled make sure that `resourcedetection` 
+  processor is enabled in the pipeline with one of the cloud provider detectors
+  or environment variable detector setting a unique value to `host.name` attribute 
+  within your k8s cluster. And keep `override=true` in resourcedetection config.
 
 Example:
 

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -33,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
@@ -66,6 +68,7 @@ func components() (component.Factories, error) {
 	extensions := []component.ExtensionFactory{
 		k8sobserver.NewFactory(),
 		hostobserver.NewFactory(),
+		httpforwarder.NewFactory(),
 	}
 
 	for _, ext := range factories.Extensions {
@@ -116,6 +119,7 @@ func components() (component.Factories, error) {
 		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		alibabacloudlogserviceexporter.NewFactory(),
+		awsemfexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

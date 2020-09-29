@@ -73,6 +73,16 @@ func TestNew(t *testing.T) {
 				Headers:     nil,
 			},
 		},
+		{
+			name: "create exporter with host metadata syncer",
+			config: &Config{
+				AccessToken:      "someToken",
+				Realm:            "xyz",
+				Timeout:          1 * time.Second,
+				Headers:          nil,
+				SyncHostMetadata: true,
+			},
+		},
 	}
 
 	for _, tt := range tests {

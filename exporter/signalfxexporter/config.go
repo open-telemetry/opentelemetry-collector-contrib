@@ -73,6 +73,16 @@ type Config struct {
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
 	// `delta_metric` specified in TranslationRules. Default is 3600s.
 	DeltaTranslationTTL int64 `mapstructure:"delta_translation_ttl"`
+
+	// SyncHostMetadata defines if the exporter should scrape host metadata and
+	// sends it as property updates to SignalFx backend.
+	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
+	//            If this option is enabled make sure that `resourcedetection` processor
+	//            is enabled in the pipeline with one of the cloud provider detectors
+	//            or environment variable detector setting a unique value to
+	//            `host.name` attribute within your k8s cluster. Also keep override
+	//            And keep `override=true` in resourcedetection config.
+	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

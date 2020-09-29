@@ -44,7 +44,7 @@ with detailed sample configurations [here](./testdata/config.yaml).
 ### node_conditions_to_report
 
 For example, with the config below the receiver will emit two metrics
-`kubernetes/node/condition_ready` and `kubernetes/node/condition_memory_pressure`, one
+`k8s.node.condition_ready` and `k8s.node.condition_memory_pressure`, one
 for each condition in the config. The value will be `1` if the `ConditionStatus` for the
 corresponding `Condition` is `True`, `0` if it is `False` and -1 if it is `Unknown`.
 
