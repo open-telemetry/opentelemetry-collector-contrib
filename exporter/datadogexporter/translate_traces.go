@@ -15,16 +15,16 @@
 package datadogexporter
 
 import (
+	"encoding/hex"
+	"fmt"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	"encoding/hex"
 	"net/http"
 	"strconv"
-	"fmt"
 
-	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"go.opencensus.io/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
@@ -52,12 +52,12 @@ type ddSpan struct {
 }
 
 const (
-	keySamplingPriority  = "_sampling_priority_v1"
-	keySpanName          = "span.name"
+	keySamplingPriority               = "_sampling_priority_v1"
+	keySpanName                       = "span.name"
 	instrumentationLibraryName string = "otel.instrumentation_library.name"
-	httpStatusCode string = "http.status_code"
-	httpMethod string = "http.method"
-	httpRoute string = "http.route"
+	httpStatusCode             string = "http.status_code"
+	httpMethod                 string = "http.method"
+	httpRoute                  string = "http.route"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -86,14 +86,15 @@ var statusCodes = map[int32]codeDetails{
 func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*pb.TracePayload, error) {
 	// get hostname tag
 	// this is getting abstracted out to config
-	hostname := *GetHost(cfg)	
-	
+	hostname := *GetHost(cfg)
+
 	// get env tag
-	env := cfg.Env; if env == "" {
+	env := cfg.Env
+	if env == "" {
 		env = "none"
 	}
 
-	// TODO: 
+	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
 
@@ -116,9 +117,9 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 		if err != nil {
 			return traces, err
 		}
-		
+
 		traces = append(traces, &payload)
-		
+
 	}
 
 	// group the traces by env to reduce the number of flushes
@@ -171,7 +172,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 					}
 					apiTraces[apiTrace.TraceID] = apiTrace
 				}
-				
+
 				addToAPITrace(apiTrace, span)
 			}
 		}
@@ -187,9 +188,8 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 	return payload, nil
 }
 
-
 // convertSpan takes an internal span representation and returns a Datadog span.
-func spanToDatadogSpan(	s pdata.Span,
+func spanToDatadogSpan(s pdata.Span,
 	localServiceName string,
 	datadogTags map[string]string,
 ) (*pb.Span, error) {
@@ -214,7 +214,7 @@ func spanToDatadogSpan(	s pdata.Span,
 
 	span := &pb.Span{
 		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceID().Bytes()[:])),
-		SpanID:  decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
+		SpanID:   decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
 		Service:  "service_example",
@@ -222,7 +222,7 @@ func spanToDatadogSpan(	s pdata.Span,
 		Duration: int64(duration),
 		Metrics:  map[string]float64{},
 		Meta:     map[string]string{},
-		Type: datadogType,
+		Type:     datadogType,
 	}
 
 	// TODO: confirm parentId approach
@@ -257,7 +257,7 @@ func spanToDatadogSpan(	s pdata.Span,
 			} else {
 				tags[ext.ErrorMsg] = code.message
 			}
-		// otherwise no error
+			// otherwise no error
 		} else {
 			span.Error = 0
 		}
@@ -267,7 +267,6 @@ func spanToDatadogSpan(	s pdata.Span,
 	} else {
 		span.Error = 0
 	}
-
 
 	// TODO: Apply Config Tags
 	// for key, val := range e.opts.GlobalTags {
@@ -359,7 +358,6 @@ func spanKindToDatadogType(kind pdata.SpanKind) string {
 		return "custom"
 	}
 }
-
 
 func setTag(s *pb.Span, key string, val interface{}) {
 	if key == ext.Error {
@@ -462,18 +460,18 @@ func decodeAPMId(id string) uint64 {
 // TODO:
 // test this
 func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
-	// largely a port of logic here 
+	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
 	// Get span name by using instrumentation and kind while backing off to span.kind
 	if iln, ok := datadogTags[instrumentationLibraryName]; ok {
-	    return fmt.Sprintf("%s.%s", iln, s.Kind())
+		return fmt.Sprintf("%s.%s", iln, s.Kind())
 	}
 
 	return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind())
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
-	// largely a port of logic here 
+	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L229
 	// Get span resource name by checking for existence http.method + http.route 'GET /api'
 	// backing off to just http.method, and then span.name if unrelated to http
@@ -487,8 +485,6 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 
 	return s.Name()
 }
-
-
 
 func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
 	lookup := make(map[string]*pb.TracePayload)

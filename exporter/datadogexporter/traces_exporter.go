@@ -18,18 +18,18 @@ import (
 	"context"
 	"fmt"
 
-	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
+	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 type traceExporter struct {
-	logger *zap.Logger
-	cfg    *Config
+	logger         *zap.Logger
+	cfg            *Config
 	edgeConnection apm.TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
-	tags   []string
+	tags           []string
 }
 
 func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
@@ -54,12 +54,12 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 	// TODO:
 	// use passed in config values for site and api key instead of hardcoded
 	exporter := &traceExporter{
-		logger: logger,
-		cfg: cfg,
+		logger:         logger,
+		cfg:            cfg,
 		edgeConnection: apm.CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, false),
-		obfuscator: obfuscator,
-		tags: tags,
-		}
+		obfuscator:     obfuscator,
+		tags:           tags,
+	}
 
 	return exporter, nil
 }
@@ -68,7 +68,7 @@ func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) (int, error) {
-	
+
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
@@ -82,7 +82,7 @@ func (exp *traceExporter) pushTraceData(
 	// security/obfuscation for db, query strings, stack traces, pii, etc
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
 	apm.ObfuscatePayload(exp.obfuscator, ddTraces)
-	
+
 	for _, ddTracePayload := range ddTraces {
 
 		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)
@@ -93,7 +93,7 @@ func (exp *traceExporter) pushTraceData(
 
 		// this is for generating metrics like hits, errors, and latency, it uses a seperate endpoint than Traces
 		stats := apm.ComputeAPMStats(ddTracePayload)
-		err_stats := exp.edgeConnection.SendStats(context.Background(), stats, 3)		
+		err_stats := exp.edgeConnection.SendStats(context.Background(), stats, 3)
 
 		if err_stats != nil {
 			exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", err_stats))
