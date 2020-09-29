@@ -17,7 +17,7 @@ package datadogexporter
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	// "go.opentelemetry.io/collector/translator/internaldata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"encoding/hex"
 	"net/http"
@@ -26,7 +26,7 @@ import (
 
 	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	// tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
@@ -89,8 +89,7 @@ var statusCodes = map[int32]codeDetails{
 func convertToDatadogTd(td pdata.Traces, cfg *Config) ([]*pb.TracePayload, error) {
 	// this is getting abstracted out to config
 	// overrideHostname := cfg.Hostname != ""
-	var hostname string
-	hostname = *GetHost(cfg)
+	hostname := *GetHost(cfg)
 
 	resourceSpans := td.ResourceSpans()
 
@@ -106,27 +105,21 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) ([]*pb.TracePayload, error
 			continue
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs)
+		payload, err := resourceSpansToDatadogSpans(rs, hostname)
 		if err != nil {
 			return traces, err
 		}
-		if batch != nil {
-			traces = append(traces, payload)
-		}
+		
+		traces = append(traces, &payload)
+		
 	}
 
 	return traces, nil
 }
 
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans) (*pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string) (pb.TracePayload, error) {
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
-
-	if resource.IsNil() && ilss.Len() == 0 {
-		return nil, nil
-	}
-
-	localServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
 	// TODO: Use Env Config here, default to 'none'
 	payload := pb.TracePayload{
@@ -135,6 +128,12 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans) (*pb.TracePayload, erro
 		Traces:       []*pb.APITrace{},
 		Transactions: []*pb.Span{},
 	}
+
+	if resource.IsNil() && ilss.Len() == 0 {
+		return payload, nil
+	}
+
+	localServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
 	apiTraces := map[uint64]*pb.APITrace{}
 
@@ -174,11 +173,9 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans) (*pb.TracePayload, erro
 		apm.ComputeSublayerMetrics(apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
-	}		
+	}
 
-	traces = append(traces, &payload)
-
-	return apiTraces, nil
+	return payload, nil
 }
 
 func resourceToDatadogServiceNameAndAttributeMap(
@@ -239,10 +236,10 @@ func spanToDatadogSpan(	s pdata.Span,
 	}
 	startTime := s.StartTime()
 	endTime := s.EndTime()
-	duration int64 = 0
+	duration := int64(endTime) - int64(startTime)
 
-	if s.EndTime() != 0 {
-		duration = endTime - startTime
+	if s.EndTime() == 0 {
+		duration = int64(0)
 	}
 
 	datadogType := spanKindToDatadogType(s.Kind())
@@ -253,8 +250,8 @@ func spanToDatadogSpan(	s pdata.Span,
 	// Have span.Resource give better info for http spans
 
 	span := &pb.Span{
-		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceId().Bytes()[:])),
-		SpanID:  decodeAPMId(hex.EncodeToString(s.SpanId().Bytes()[:])),
+		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceID().Bytes()[:])),
+		SpanID:  decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
 		Name:     getSpanName(s, tags),
 		Resource: s.Name(),
 		Service:  "service_example",
@@ -266,8 +263,8 @@ func spanToDatadogSpan(	s pdata.Span,
 	}
 
 	// TODO: confirm parentId approach
-	if len(s.ParentSpanId) > 0 {
-		idVal := decodeAPMId(hex.EncodeToString(s.ParentSpanId().Bytes()[:]))
+	if len(s.ParentSpanID().Bytes()) > 0 {
+		idVal := decodeAPMId(hex.EncodeToString(s.ParentSpanID().Bytes()[:]))
 
 		span.ParentID = idVal
 	} else {
@@ -275,10 +272,10 @@ func spanToDatadogSpan(	s pdata.Span,
 	}
 
 	// Set Span Status and any response or error details
-	status := span.Status()
+	status := s.Status()
 	if !status.IsNil() {
 		// map to known msg + status
-		code, ok := statusCodes[status.Code()]
+		code, ok := statusCodes[int32(status.Code())]
 		if !ok {
 			code = codeDetails{
 				message: "ERR_CODE_" + strconv.FormatInt(int64(status.Code()), 10),
@@ -466,7 +463,7 @@ func extractHostName(node *commonpb.Node) string {
 
 // TODO:
 // test this
-func getSpanName(s *pdata.Span, datadogTags map[string]string) string {
+func getSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here 
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
 	// Get span name by using instrumentation and kind while backing off to span.kind	
