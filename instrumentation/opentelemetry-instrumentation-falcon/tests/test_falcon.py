@@ -171,3 +171,20 @@ class TestFalconInstrumentation(TestBase):
         self.client().simulate_get(path="/hello")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
+
+    def test_traced_request_attributes(self):
+        self.client().simulate_get(path="/hello?q=abc")
+        span = self.memory_exporter.get_finished_spans()[0]
+        self.assertNotIn("query_string", span.attributes)
+        self.memory_exporter.clear()
+
+        middleware = self.app._middleware[0][  # pylint:disable=W0212
+            0
+        ].__self__
+        with patch.object(
+            middleware, "_traced_request_attrs", ["query_string"]
+        ):
+            self.client().simulate_get(path="/hello?q=abc")
+            span = self.memory_exporter.get_finished_spans()[0]
+            self.assertIn("query_string", span.attributes)
+            self.assertEqual(span.attributes["query_string"], "q=abc")
