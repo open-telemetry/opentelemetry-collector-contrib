@@ -40,7 +40,6 @@ processors:
     #- key: environment
       #value: "YOUR_ENVIRONMENT_NAME"
       #action: insert
-  queued_retry:
   # Enabling the memory_limiter is strongly recommended for every pipeline.
   # Configuration is based on the amount of memory allocated to the collector.
   # The configuration below assumes 2GB of memory. In general, the ballast
@@ -76,5 +75,6 @@ service:
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
+      processors: [memory_limiter, batch]
       exporters: [signalfx]
   extensions: [health_check, zpages]

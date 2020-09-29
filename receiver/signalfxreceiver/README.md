@@ -4,7 +4,7 @@ The SignalFx receiver accepts:
 
 - Metrics in the [SignalFx proto
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf).
-- Logs (Events) in the [SignalFx proto
+- Events (Logs) in the [SignalFx proto
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/proto/signalfx_metrics.proto#L137).
 More information about sending custom events can be found in the [SignalFx
 Developers
@@ -57,5 +57,6 @@ service:
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
+      processors: [memory_limiter, batch]
       exporters: [signalfx]
 ```

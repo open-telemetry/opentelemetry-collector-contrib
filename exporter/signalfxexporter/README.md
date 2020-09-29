@@ -79,6 +79,7 @@ service:
       exporters: [signalfx]
     logs:
       receivers: [signalfx]
+      processors: [memory_limiter, batch]
       exporters: [signalfx]
 ```
 

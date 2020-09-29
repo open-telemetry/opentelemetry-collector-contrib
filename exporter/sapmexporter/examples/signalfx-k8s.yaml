@@ -50,7 +50,6 @@ data:
         #- key: environment
           #value: "YOUR_ENVIRONMENT_NAME"
           #action: insert
-      queued_retry:
       # Enabling the memory_limiter is strongly recommended for every pipeline.
       # Configuration is based on the amount of memory allocated to the collector.
       # The configuration below assumes 2GB of memory. In general, the ballast
@@ -79,7 +78,7 @@ data:
       pipelines:
         traces:
           receivers: [sapm, zipkin]
-          processors: [memory_limiter, batch, queued_retry]
+          processors: [memory_limiter, batch]
           exporters: [sapm]
         metrics:
           receivers: [signalfx, prometheus]
@@ -87,6 +86,7 @@ data:
           exporters: [signalfx]
         logs:
           receivers: [signalfx]
+          processors: [memory_limiter, batch]
           exporters: [signalfx]
 ---
 apiVersion: v1
