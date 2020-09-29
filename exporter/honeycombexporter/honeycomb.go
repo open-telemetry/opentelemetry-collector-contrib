@@ -16,6 +16,7 @@ package honeycombexporter
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
@@ -55,23 +56,23 @@ type event struct {
 
 // spanEvent represents an event attached to a specific span.¬
 type spanEvent struct {
-	Name       string `json:"name"`
-	TraceID    string `json:"trace.trace_id"`
-	ParentID   string `json:"trace.parent_id,omitempty"`
-	ParentName string `json:"trace.parent_name,omitempty"`
-	SpanType   string `json:"meta.span_type"`
+	Name           string `json:"name"`
+	TraceID        string `json:"trace.trace_id"`
+	ParentID       string `json:"trace.parent_id,omitempty"`
+	ParentName     string `json:"trace.parent_name,omitempty"`
+	AnnotationType string `json:"meta.annotation_type"`
 }
 
 // link represents a link to a trace and span that lives elsewhere.
 // TraceID and ParentID are used to identify the span with which the trace is associated
 // We are modeling Links for now as child spans rather than properties of the event.
 type link struct {
-	TraceID     string      `json:"trace.trace_id"`
-	ParentID    string      `json:"trace.parent_id,omitempty"`
-	LinkTraceID string      `json:"trace.link.trace_id"`
-	LinkSpanID  string      `json:"trace.link.span_id"`
-	SpanType    string      `json:"meta.span_type"`
-	RefType     spanRefType `json:"ref_type,omitempty"`
+	TraceID        string      `json:"trace.trace_id"`
+	ParentID       string      `json:"trace.parent_id,omitempty"`
+	LinkTraceID    string      `json:"trace.link.trace_id"`
+	LinkSpanID     string      `json:"trace.link.span_id"`
+	AnnotationType string      `json:"meta.annotation_type"`
+	RefType        spanRefType `json:"ref_type,omitempty"`
 }
 
 // spanRefType defines the relationship a Link has to a trace or a span. It can
@@ -176,6 +177,7 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 			e.sendMessageEvents(octd, span, tlf)
 			e.sendSpanLinks(span)
 
+			ev.AddField("span_kind", strings.ToLower(span.Kind.String()))
 			ev.AddField("status.code", getStatusCode(span.Status))
 			ev.AddField("status.message", getStatusMessage(span.Status))
 			ev.AddField("has_remote_parent", !span.GetSameProcessAsParentSpan().GetValue())
@@ -204,12 +206,12 @@ func (e *honeycombExporter) sendSpanLinks(span *tracepb.Span) {
 	for _, l := range links.GetLink() {
 		ev := e.builder.NewEvent()
 		ev.Add(link{
-			TraceID:     getHoneycombTraceID(span.GetTraceId()),
-			ParentID:    getHoneycombSpanID(span.GetSpanId()),
-			LinkTraceID: getHoneycombTraceID(l.GetTraceId()),
-			LinkSpanID:  getHoneycombSpanID(l.GetSpanId()),
-			SpanType:    "link",
-			RefType:     spanRefType(l.GetType()),
+			TraceID:        getHoneycombTraceID(span.GetTraceId()),
+			ParentID:       getHoneycombSpanID(span.GetSpanId()),
+			LinkTraceID:    getHoneycombTraceID(l.GetTraceId()),
+			LinkSpanID:     getHoneycombSpanID(l.GetSpanId()),
+			AnnotationType: "link",
+			RefType:        spanRefType(l.GetType()),
 		})
 		attrs := spanAttributesToMap(l.GetAttributes())
 		for k, v := range attrs {
@@ -256,11 +258,11 @@ func (e *honeycombExporter) sendMessageEvents(td consumerdata.TraceData, span *t
 		}
 		ev.Timestamp = ts
 		ev.Add(spanEvent{
-			Name:       name,
-			TraceID:    getHoneycombTraceID(span.GetTraceId()),
-			ParentID:   getHoneycombSpanID(span.GetSpanId()),
-			ParentName: truncatableStringAsString(span.GetName()),
-			SpanType:   "span_event",
+			Name:           name,
+			TraceID:        getHoneycombTraceID(span.GetTraceId()),
+			ParentID:       getHoneycombSpanID(span.GetSpanId()),
+			ParentName:     truncatableStringAsString(span.GetName()),
+			AnnotationType: "span_event",
 		})
 		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
