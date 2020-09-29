@@ -79,11 +79,14 @@ func (exp *traceExporter) pushTraceData(
 		return 0, err
 	}
 
+	// group the traces by env to reduce the number of flushes
+	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
+
 	// security/obfuscation for db, query strings, stack traces, pii, etc
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
-	apm.ObfuscatePayload(exp.obfuscator, ddTraces)
+	apm.ObfuscatePayload(exp.obfuscator, aggregatedTraces)
 
-	for _, ddTracePayload := range ddTraces {
+	for _, ddTracePayload := range aggregatedTraces {
 
 		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)
 
@@ -100,5 +103,5 @@ func (exp *traceExporter) pushTraceData(
 		}
 	}
 
-	return len(ddTraces), nil
+	return len(aggregatedTraces), nil
 }

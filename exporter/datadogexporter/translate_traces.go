@@ -35,29 +35,15 @@ type codeDetails struct {
 	status  int    // corresponding HTTP status code
 }
 
-// ddSpan represents the Datadog span definition.
-type ddSpan struct {
-	SpanID   uint64             `msg:"span_id"`
-	TraceID  uint64             `msg:"trace_id"`
-	ParentID uint64             `msg:"parent_id"`
-	Name     string             `msg:"name"`
-	Service  string             `msg:"service"`
-	Resource string             `msg:"resource"`
-	Type     string             `msg:"type"`
-	Start    int64              `msg:"start"`
-	Duration int64              `msg:"duration"`
-	Meta     map[string]string  `msg:"meta,omitempty"`
-	Metrics  map[string]float64 `msg:"metrics,omitempty"`
-	Error    int32              `msg:"error"`
-}
-
 const (
-	keySamplingPriority               = "_sampling_priority_v1"
-	keySpanName                       = "span.name"
+	deploymentEnv              string = "deployment.environment"
+	keySamplingPriority        string = "_sampling_priority_v1"
+	keySpanName                string = "span.name"
 	instrumentationLibraryName string = "otel.instrumentation_library.name"
 	httpStatusCode             string = "http.status_code"
 	httpMethod                 string = "http.method"
 	httpRoute                  string = "http.route"
+	versionTag                 string = "version"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -90,9 +76,8 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 
 	// get env tag
 	env := cfg.Env
-	if env == "" {
-		env = "none"
-	}
+	service := cfg.Service
+	version := cfg.Version
 
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
@@ -102,10 +87,6 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 
 	traces := []*pb.TracePayload{}
 
-	if resourceSpans.Len() == 0 {
-		return nil, nil
-	}
-
 	for i := 0; i < resourceSpans.Len(); i++ {
 		rs := resourceSpans.At(i)
 		if rs.IsNil() {
@@ -113,7 +94,7 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 		}
 
 		// TODO: Also pass in globalTags here when we know what to do with them
-		payload, err := resourceSpansToDatadogSpans(rs, hostname, env)
+		payload, err := resourceSpansToDatadogSpans(rs, hostname, env, service, version)
 		if err != nil {
 			return traces, err
 		}
@@ -122,12 +103,11 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 
 	}
 
-	// group the traces by env to reduce the number of flushes
-	return aggregateTracePayloadsByEnv(traces), nil
+	return traces, nil
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env string) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env string, service string, version string) (pb.TracePayload, error) {
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
@@ -145,6 +125,12 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 
 	localServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
+	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/deployment_environment.md#deployment
+	if resourceEnv, ok := datadogTags[deploymentEnv]; ok {
+		payload.Env = resourceEnv
+	}
+
 	apiTraces := map[uint64]*pb.APITrace{}
 
 	for i := 0; i < ilss.Len(); i++ {
@@ -155,26 +141,28 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToDatadogSpan(spans.At(j), localServiceName, datadogTags)
+			span, err := spanToDatadogSpan(spans.At(j), localServiceName, datadogTags, service, version)
 
 			if err != nil {
 				return payload, err
-			} else {
-				var apiTrace *pb.APITrace
-				var ok bool
-
-				if apiTrace, ok = apiTraces[span.TraceID]; !ok {
-					apiTrace = &pb.APITrace{
-						TraceID:   span.TraceID,
-						Spans:     []*pb.Span{},
-						StartTime: 0,
-						EndTime:   0,
-					}
-					apiTraces[apiTrace.TraceID] = apiTrace
-				}
-
-				addToAPITrace(apiTrace, span)
 			}
+
+			var apiTrace *pb.APITrace
+			var ok bool
+
+			if apiTrace, ok = apiTraces[span.TraceID]; !ok {
+				// we default these values to 0 and then calculate the appropriate StartTime
+				// and EndTime within addToAPITrace()
+				apiTrace = &pb.APITrace{
+					TraceID:   span.TraceID,
+					Spans:     []*pb.Span{},
+					StartTime: 0,
+					EndTime:   0,
+				}
+				apiTraces[apiTrace.TraceID] = apiTrace
+			}
+
+			addToAPITrace(apiTrace, span)
 		}
 	}
 
@@ -192,8 +180,17 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 func spanToDatadogSpan(s pdata.Span,
 	localServiceName string,
 	datadogTags map[string]string,
+	service string,
+	version string,
 ) (*pb.Span, error) {
 	tags := aggregateSpanTags(s, datadogTags)
+
+	// if no version tag exists, set it if provided via config
+	if version != "" {
+		if tagVersion := tags[versionTag]; tagVersion == "" {
+			tags[versionTag] = version
+		}
+	}
 
 	// get tracestate as just a general tag
 	if len(s.TraceState()) > 0 {
@@ -205,9 +202,9 @@ func spanToDatadogSpan(s pdata.Span,
 	endTime := s.EndTime()
 	duration := int64(endTime) - int64(startTime)
 
-	// it's possiblle end time is unset, so default to 0 rather than using a negative number
+	// it's possible end time is unset, so default to 0 rather than using a negative number
 	if s.EndTime() == 0 {
-		duration = int64(0)
+		duration = 0
 	}
 
 	datadogType := spanKindToDatadogType(s.Kind())
@@ -217,7 +214,7 @@ func spanToDatadogSpan(s pdata.Span,
 		SpanID:   decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
-		Service:  "service_example",
+		Service:  service,
 		Start:    int64(startTime),
 		Duration: int64(duration),
 		Metrics:  map[string]float64{},
@@ -258,14 +255,10 @@ func spanToDatadogSpan(s pdata.Span,
 				tags[ext.ErrorMsg] = code.message
 			}
 			// otherwise no error
-		} else {
-			span.Error = 0
 		}
 
 		// set tag as string for status code
 		tags[httpStatusCode] = status.Code().String()
-	} else {
-		span.Error = 0
 	}
 
 	// TODO: Apply Config Tags
