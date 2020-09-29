@@ -21,7 +21,7 @@ const (
 	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token"
 	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
-	SourcetypeLabel       = "source.type"
+	SourcetypeLabel       = "com.splunk.sourcetype"
 )
 
 type AccessTokenPassthroughConfig struct {
