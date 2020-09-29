@@ -64,7 +64,12 @@ func (exp *traceExporter) pushTraceData(
 ) (int, error) {
 	// TODO: 
 	// improve implementation of conversion
-	ddTraces := convertToDatadogTd(td, exp.cfg)
+	ddTraces, err := convertToDatadogTd(td, exp.cfg)
+
+	if err != nil {
+		fmt.Printf("Failed to convert traces with error %v\n", err)
+		return 0, nil
+	}
 
 	// security/obfuscation for db, query strings, stack traces, pii, etc
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
