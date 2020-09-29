@@ -15,10 +15,10 @@
 package awsecscontainermetrics
 
 import (
+	"fmt"
 	"io/ioutil"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +30,7 @@ type testRestClient struct {
 
 func (f testRestClient) EndpointResponse() ([]byte, []byte, error) {
 	if f.fail {
-		return []byte{}, []byte{}, errors.New("failed")
+		return []byte{}, []byte{}, fmt.Errorf("failed")
 	}
 	if f.invalidJSON {
 		return []byte("wrong-json-body"), []byte("wrong-json-body"), nil

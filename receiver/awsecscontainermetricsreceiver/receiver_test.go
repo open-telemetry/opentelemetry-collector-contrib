@@ -16,7 +16,7 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"testing"
 
@@ -99,7 +99,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	sme := new(exportertest.SinkMetricsExporter)
-	e := errors.New("Test Error for Metrics Consumer")
+	e := fmt.Errorf("Test Error for Metrics Consumer")
 	sme.SetConsumeMetricsError(e)
 
 	metricsReceiver, err := New(

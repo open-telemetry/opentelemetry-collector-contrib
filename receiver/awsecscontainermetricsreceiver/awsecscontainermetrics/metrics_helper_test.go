@@ -109,6 +109,11 @@ func TestExtractStorageUsage(t *testing.T) {
 
 	require.EqualValues(t, v, read)
 	require.EqualValues(t, v, write)
+
+	read, write = extractStorageUsage(nil)
+	v = uint64(0)
+	require.EqualValues(t, v, read)
+	require.EqualValues(t, v, write)
 }
 
 func TestGetNetworkStats(t *testing.T) {

@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -43,7 +45,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithEnv(t *testing.T) {
-	os.Setenv("ECS_CONTAINER_METADATA_URI_V4", "TEST_ENV_VAR")
+	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "TEST_ENV_VAR")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),

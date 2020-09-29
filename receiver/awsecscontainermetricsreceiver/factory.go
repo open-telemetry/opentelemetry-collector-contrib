@@ -34,7 +34,7 @@ const (
 	// Key to invoke this receiver (awsecscontainermetrics)
 	typeStr = "awsecscontainermetrics"
 
-	// Default collection interval. In every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
+	// Default collection interval. Every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
 
@@ -64,9 +64,9 @@ func createMetricsReceiver(
 	baseCfg configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	ecsTaskMetadataEndpointV4 := os.Getenv(awsecscontainermetrics.ENDPOINT)
+	ecsTaskMetadataEndpointV4 := os.Getenv(awsecscontainermetrics.EndpointEnvKey)
 	if ecsTaskMetadataEndpointV4 == "" {
-		return nil, fmt.Errorf("no environment variable found for %s", awsecscontainermetrics.ENDPOINT)
+		return nil, fmt.Errorf("no environment variable found for %s", awsecscontainermetrics.EndpointEnvKey)
 	}
 
 	rest := restClient(params.Logger, ecsTaskMetadataEndpointV4)

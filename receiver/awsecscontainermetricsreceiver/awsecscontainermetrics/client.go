@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -94,11 +93,11 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	}()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to read response body")
+		return nil, fmt.Errorf("failed to read response body %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("task metadata endpoint request GET %s failed - %q, response: %q",
+		return nil, fmt.Errorf("request GET %s failed - %q, response: %q",
 			req.URL.String(), resp.Status, string(body))
 	}
 	return body, nil

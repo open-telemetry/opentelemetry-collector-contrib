@@ -30,7 +30,7 @@ const (
 	ContainerPrefix    = "container."
 	MetricResourceType = "aoc.ecs"
 
-	ENDPOINT         = "ECS_CONTAINER_METADATA_URI_V4"
+	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
 	TaskStatsPath    = "/task/stats"
 	TaskMetadataPath = "/task"
 

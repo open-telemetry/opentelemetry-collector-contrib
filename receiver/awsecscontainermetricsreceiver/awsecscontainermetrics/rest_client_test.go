@@ -15,24 +15,56 @@
 package awsecscontainermetrics
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+type fakeClient struct{}
+
+func (f *fakeClient) Get(path string) ([]byte, error) {
+	return []byte(path), nil
+}
 
 func TestRestClient(t *testing.T) {
 	rest := NewRestClient(&fakeClient{})
 	stats, metadata, err := rest.EndpointResponse()
 
 	require.Nil(t, err)
-	require.Equal(t, "/task/stats", string(stats))
-	require.Equal(t, "/task", string(metadata))
+	require.Equal(t, TaskStatsPath, string(stats))
+	require.Equal(t, TaskMetadataPath, string(metadata))
 }
 
-var _ Client = (*fakeClient)(nil)
+type fakeErrorClient struct{}
 
-type fakeClient struct{}
+func (f *fakeErrorClient) Get(path string) ([]byte, error) {
+	return nil, fmt.Errorf("")
+}
 
-func (f *fakeClient) Get(path string) ([]byte, error) {
-	return []byte(path), nil
+func TestRestClientError(t *testing.T) {
+	rest := NewRestClient(&fakeErrorClient{})
+	stats, metadata, err := rest.EndpointResponse()
+
+	require.Error(t, err)
+	require.Nil(t, stats)
+	require.Nil(t, metadata)
+}
+
+type fakeMetadataErrorClient struct{}
+
+func (f *fakeMetadataErrorClient) Get(path string) ([]byte, error) {
+	if path == TaskStatsPath {
+		return []byte(path), nil
+	}
+	return nil, fmt.Errorf("")
+}
+
+func TestRestClientMetadataError(t *testing.T) {
+	rest := NewRestClient(&fakeMetadataErrorClient{})
+	stats, metadata, err := rest.EndpointResponse()
+
+	require.Error(t, err)
+	require.Nil(t, stats)
+	require.Nil(t, metadata)
 }
