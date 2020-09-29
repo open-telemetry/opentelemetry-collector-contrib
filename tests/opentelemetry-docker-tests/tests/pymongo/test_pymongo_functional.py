@@ -64,8 +64,7 @@ class TestFunctionalPymongo(TestBase):
         )
 
     def test_insert(self):
-        """Should create a child span for insert
-        """
+        """Should create a child span for insert"""
         with self._tracer.start_as_current_span("rootSpan"):
             self._collection.insert_one(
                 {"name": "testName", "value": "testValue"}
@@ -73,8 +72,7 @@ class TestFunctionalPymongo(TestBase):
         self.validate_spans()
 
     def test_update(self):
-        """Should create a child span for update
-        """
+        """Should create a child span for update"""
         with self._tracer.start_as_current_span("rootSpan"):
             self._collection.update_one(
                 {"name": "testName"}, {"$set": {"value": "someOtherValue"}}
@@ -82,15 +80,13 @@ class TestFunctionalPymongo(TestBase):
         self.validate_spans()
 
     def test_find(self):
-        """Should create a child span for find
-        """
+        """Should create a child span for find"""
         with self._tracer.start_as_current_span("rootSpan"):
             self._collection.find_one()
         self.validate_spans()
 
     def test_delete(self):
-        """Should create a child span for delete
-        """
+        """Should create a child span for delete"""
         with self._tracer.start_as_current_span("rootSpan"):
             self._collection.delete_one({"name": "testName"})
         self.validate_spans()
