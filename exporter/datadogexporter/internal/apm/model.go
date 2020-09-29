@@ -8,9 +8,6 @@
 package datadogexporter
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/event"
@@ -22,10 +19,6 @@ import (
 )
 
 type (
-	// TraceList is an incoming trace payload
-	traceList struct {
-		Traces [][]span `json:"traces"`
-	}
 	// Span contains span metadata
 	span struct {
 		Service  string             `json:"service"`
@@ -42,102 +35,6 @@ type (
 		Type     string             `json:"type"`
 	}
 )
-
-const (
-	originMetadataKey       = "_dd.origin"
-	parentSourceMetadataKey = "_dd.parent_source"
-	sourceXray              = "xray"
-)
-
-// ProcessTrace parses, applies tags, and obfuscates a trace
-func ProcessTrace(content string, obfuscator *obfuscate.Obfuscator, tags string) ([]*pb.TracePayload, error) {
-	tracePayloads, err := ParseTrace(content)
-	if err != nil {
-		fmt.Printf("Couldn't forward trace: %v", err)
-		return tracePayloads, err
-	}
-
-	AddTagsToTracePayloads(tracePayloads, tags)
-	ObfuscatePayload(obfuscator, tracePayloads)
-	return tracePayloads, nil
-}
-
-// ParseTrace reads a trace using the standard log format
-func ParseTrace(content string) ([]*pb.TracePayload, error) {
-	var tl traceList
-	err := json.Unmarshal([]byte(content), &tl)
-	traces := []*pb.TracePayload{}
-
-	if err != nil {
-		return traces, fmt.Errorf("couldn't parse trace, %v", err)
-	}
-	removedSpans := map[uint64]*pb.Span{}
-
-	for _, trace := range tl.Traces {
-		apiTraces := map[uint64]*pb.APITrace{}
-
-		for _, sp := range trace {
-			// Make sure the span is marked as comming from lambda,
-			// this will help the backend make sampling decisions
-			if sp.Meta == nil {
-				sp.Meta = map[string]string{}
-			}
-			sp.Meta[originMetadataKey] = "lambda"
-			pbSpan := convertSpanToPB(sp)
-			// We skip root dd-trace spans that are parented to X-Ray,
-			// since those root spans are placeholders for the X-Ray
-			// parent span.
-			if IsParentedToXray(pbSpan) {
-				removedSpans[pbSpan.SpanID] = pbSpan
-				continue
-			}
-			var apiTrace *pb.APITrace
-			var ok bool
-
-			// Reparent any spans that have been removed
-			if removedSpans[pbSpan.ParentID] != nil {
-				pbSpan.ParentID = removedSpans[pbSpan.ParentID].ParentID
-			}
-
-			if apiTrace, ok = apiTraces[pbSpan.TraceID]; !ok {
-				apiTrace = &pb.APITrace{
-					TraceID:   pbSpan.TraceID,
-					Spans:     []*pb.Span{},
-					StartTime: 0,
-					EndTime:   0,
-				}
-				apiTraces[apiTrace.TraceID] = apiTrace
-			}
-			addToAPITrace(apiTrace, pbSpan)
-		}
-
-		payload := pb.TracePayload{
-			HostName:     "",
-			Env:          "none",
-			Traces:       []*pb.APITrace{},
-			Transactions: []*pb.Span{},
-		}
-		for _, apiTrace := range apiTraces {
-			top := GetAnalyzedSpans(apiTrace.Spans)
-			ComputeSublayerMetrics(apiTrace.Spans)
-			payload.Transactions = append(payload.Transactions, top...)
-			payload.Traces = append(payload.Traces, apiTrace)
-		}
-
-		traces = append(traces, &payload)
-	}
-
-	return traces, nil
-}
-
-// IsParentedToXray detects whether the parent of a trace is an X-Ray span
-func IsParentedToXray(span *pb.Span) bool {
-	if span.Meta == nil {
-		return false
-	}
-	source := span.Meta[parentSourceMetadataKey]
-	return source == sourceXray
-}
 
 // AddTagsToTracePayloads takes a single string of tags, eg 'a:b,c:d', and applies them
 // to each span in a trace
@@ -223,46 +120,6 @@ func buildServiceLookup(tracePayloads []*pb.TracePayload, service string) map[st
 		}
 	}
 	return remappedServices
-}
-
-func convertSpanToPB(sp span) *pb.Span {
-	return &pb.Span{
-		Service:  sp.Service,
-		Name:     sp.Name,
-		Resource: sp.Resource,
-		TraceID:  decodeAPMId(sp.TraceID),
-		SpanID:   decodeAPMId(sp.SpanID),
-		ParentID: decodeAPMId(sp.ParentID),
-		Start:    sp.Start,
-		Duration: sp.Duration,
-		Error:    sp.Error,
-		Meta:     sp.Meta,
-		Metrics:  sp.Metrics,
-		Type:     sp.Type,
-	}
-}
-
-func addToAPITrace(apiTrace *pb.APITrace, sp *pb.Span) {
-	apiTrace.Spans = append(apiTrace.Spans, sp)
-	endTime := sp.Start + sp.Duration
-	if apiTrace.EndTime > endTime {
-		apiTrace.EndTime = endTime
-	}
-	if apiTrace.StartTime == 0 || apiTrace.StartTime > sp.Start {
-		apiTrace.StartTime = sp.Start
-	}
-
-}
-
-func decodeAPMId(id string) uint64 {
-	if len(id) > 16 {
-		id = id[len(id)-16:]
-	}
-	val, err := strconv.ParseUint(id, 16, 64)
-	if err != nil {
-		return 0
-	}
-	return val
 }
 
 // GetAnalyzedSpans finds all the analyzed spans in a trace, including top level spans

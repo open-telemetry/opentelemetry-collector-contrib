@@ -29,10 +29,12 @@ type traceExporter struct {
 	cfg    *Config
 	edgeConnection apm.TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
+	tags   []string
 }
 
 func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
-
+	// removes potentially sensitive info and PII, approach taken from serverless approach
+	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{
 		ES: obfuscate.JSONSettings{
 			Enabled: true,
@@ -45,14 +47,18 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 		RemoveStackTraces: true,
 		Redis:             true,
 		Memcached:         true,
-	})	
+	})
+
+	// Calculate tags at startup
+	tags := cfg.TagsConfig.GetTags(false)
 	// TODO:
 	// use passed in config values for site and api key instead of hardcoded
 	exporter := &traceExporter{
 		logger: logger,
 		cfg: cfg,
-		edgeConnection: apm.CreateTraceEdgeConnection("https://trace.agent.datadoghq.com", "<API_KEY>", false),
+		edgeConnection: apm.CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, false),
 		obfuscator: obfuscator,
+		tags: tags,
 		}
 
 	return exporter, nil
@@ -62,13 +68,15 @@ func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
 ) (int, error) {
-	// TODO: 
-	// improve implementation of conversion
-	ddTraces, err := convertToDatadogTd(td, exp.cfg)
+	
+	// convert traces to datadog traces and group trace payloads by env
+	// we largely apply the same logic as the serverless implementation, simplified a bit
+	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
+	ddTraces, err := convertToDatadogTd(td, exp.cfg, exp.tags)
 
 	if err != nil {
-		fmt.Printf("Failed to convert traces with error %v\n", err)
-		return 0, nil
+		exp.logger.Info(fmt.Sprintf("Failed to convert traces with error %v\n", err))
+		return 0, err
 	}
 
 	// security/obfuscation for db, query strings, stack traces, pii, etc
@@ -80,23 +88,17 @@ func (exp *traceExporter) pushTraceData(
 		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)
 
 		if err != nil {
-			fmt.Printf("Failed to send traces with error %v\n", err)
+			exp.logger.Info(fmt.Sprintf("Failed to send traces with error %v\n", err))
 		}
 
+		// this is for generating metrics like hits, errors, and latency, it uses a seperate endpoint than Traces
 		stats := apm.ComputeAPMStats(ddTracePayload)
 		err_stats := exp.edgeConnection.SendStats(context.Background(), stats, 3)		
 
 		if err_stats != nil {
-			fmt.Printf("Failed to send trace stats with error %v\n", err_stats)
-		}
-		
-		// TODO: logging for dev, remove later
-		for _, trace := range ddTracePayload.Traces {
-			for _, span := range trace.Spans {
-				exp.logger.Info(fmt.Sprintf("%#v\n", span))
-			}
+			exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", err_stats))
 		}
 	}
 
-	return 0, nil
+	return len(ddTraces), nil
 }

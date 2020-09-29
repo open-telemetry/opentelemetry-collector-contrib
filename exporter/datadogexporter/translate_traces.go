@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	// "go.opentelemetry.io/collector/translator/internaldata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"encoding/hex"
 	"net/http"
@@ -26,8 +25,6 @@ import (
 
 	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
-	// tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	"go.opencensus.io/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
@@ -56,12 +53,11 @@ type ddSpan struct {
 
 const (
 	keySamplingPriority  = "_sampling_priority_v1"
-	keyStatusDescription = "opencensus.status_description"
-	keyStatusCode        = "opencensus.status_code"
-	keyStatus            = "opencensus.status"
 	keySpanName          = "span.name"
 	instrumentationLibraryName string = "otel.instrumentation_library.name"
 	httpStatusCode string = "http.status_code"
+	httpMethod string = "http.method"
+	httpRoute string = "http.route"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -86,10 +82,20 @@ var statusCodes = map[int32]codeDetails{
 	trace.StatusCodeUnauthenticated:    {message: "UNAUTHENTICATED", status: http.StatusUnauthorized},
 }
 
-func convertToDatadogTd(td pdata.Traces, cfg *Config) ([]*pb.TracePayload, error) {
+// converts Traces into an array of datadog trace payloads grouped by env
+func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*pb.TracePayload, error) {
+	// get hostname tag
 	// this is getting abstracted out to config
-	// overrideHostname := cfg.Hostname != ""
-	hostname := *GetHost(cfg)
+	hostname := *GetHost(cfg)	
+	
+	// get env tag
+	env := cfg.Env; if env == "" {
+		env = "none"
+	}
+
+	// TODO: 
+	// do we apply other global tags, like version+service, to every span or only root spans of a service
+	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
 
 	resourceSpans := td.ResourceSpans()
 
@@ -105,7 +111,8 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) ([]*pb.TracePayload, error
 			continue
 		}
 
-		payload, err := resourceSpansToDatadogSpans(rs, hostname)
+		// TODO: Also pass in globalTags here when we know what to do with them
+		payload, err := resourceSpansToDatadogSpans(rs, hostname, env)
 		if err != nil {
 			return traces, err
 		}
@@ -114,17 +121,19 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config) ([]*pb.TracePayload, error
 		
 	}
 
-	return traces, nil
+	// group the traces by env to reduce the number of flushes
+	return aggregateTracePayloadsByEnv(traces), nil
 }
 
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string) (pb.TracePayload, error) {
+// converts a Trace's resource spans into a trace payload
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env string) (pb.TracePayload, error) {
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	// TODO: Use Env Config here, default to 'none'
+	// TODO: should we be getting env from the trace's spans itself? if so what's the tag+precedence order?
 	payload := pb.TracePayload{
 		HostName:     hostname,
-		Env:          "oteltest",
+		Env:          env,
 		Traces:       []*pb.APITrace{},
 		Transactions: []*pb.Span{},
 	}
@@ -178,52 +187,8 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string) (pb.Tr
 	return payload, nil
 }
 
-func resourceToDatadogServiceNameAndAttributeMap(
-	resource pdata.Resource,
-) (serviceName string, datadogTags map[string]string) {
 
-	datadogTags = make(map[string]string)
-	if resource.IsNil() {
-		return tracetranslator.ResourceNotSet, datadogTags
-	}
-
-	attrs := resource.Attributes()
-	if attrs.Len() == 0 {
-		return tracetranslator.ResourceNoAttrs, datadogTags
-	}
-
-	attrs.ForEach(func(k string, v pdata.AttributeValue) {
-		datadogTags[k] = tracetranslator.AttributeValueToString(v, false)
-	})
-
-	serviceName = extractDatadogServiceName(datadogTags)
-	return serviceName, datadogTags
-}
-
-func extractDatadogServiceName(datadogTags map[string]string) string {
-	var serviceName string
-	if sn, ok := datadogTags[conventions.AttributeServiceName]; ok {
-		serviceName = sn
-		delete(datadogTags, conventions.AttributeServiceName)
-	} else {
-		serviceName = tracetranslator.ResourceNoServiceName
-	}
-	return serviceName
-}
-
-func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
-	if il.IsNil() {
-		return
-	}
-	if ilName := il.Name(); ilName != "" {
-		datadogTags[tracetranslator.TagInstrumentationName] = ilName
-	}
-	if ilVer := il.Version(); ilVer != "" {
-		datadogTags[tracetranslator.TagInstrumentationVersion] = ilVer
-	}
-}
-
-// convertSpan takes an OpenCensus span and returns a Datadog span.
+// convertSpan takes an internal span representation and returns a Datadog span.
 func spanToDatadogSpan(	s pdata.Span,
 	localServiceName string,
 	datadogTags map[string]string,
@@ -234,26 +199,24 @@ func spanToDatadogSpan(	s pdata.Span,
 	if len(s.TraceState()) > 0 {
 		tags[tracetranslator.TagW3CTraceState] = string(s.TraceState())
 	}
+
+	// get start/end time to calc duration
 	startTime := s.StartTime()
 	endTime := s.EndTime()
 	duration := int64(endTime) - int64(startTime)
 
+	// it's possiblle end time is unset, so default to 0 rather than using a negative number
 	if s.EndTime() == 0 {
 		duration = int64(0)
 	}
 
 	datadogType := spanKindToDatadogType(s.Kind())
 
-
-	// TODOs:
-	// span.Type
-	// Have span.Resource give better info for http spans
-
 	span := &pb.Span{
 		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceID().Bytes()[:])),
 		SpanID:  decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
-		Name:     getSpanName(s, tags),
-		Resource: s.Name(),
+		Name:     getDatadogSpanName(s, tags),
+		Resource: getDatadogResourceName(s, tags),
 		Service:  "service_example",
 		Start:    int64(startTime),
 		Duration: int64(duration),
@@ -319,6 +282,51 @@ func spanToDatadogSpan(	s pdata.Span,
 	return span, nil
 }
 
+func resourceToDatadogServiceNameAndAttributeMap(
+	resource pdata.Resource,
+) (serviceName string, datadogTags map[string]string) {
+
+	datadogTags = make(map[string]string)
+	if resource.IsNil() {
+		return tracetranslator.ResourceNotSet, datadogTags
+	}
+
+	attrs := resource.Attributes()
+	if attrs.Len() == 0 {
+		return tracetranslator.ResourceNoAttrs, datadogTags
+	}
+
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		datadogTags[k] = tracetranslator.AttributeValueToString(v, false)
+	})
+
+	serviceName = extractDatadogServiceName(datadogTags)
+	return serviceName, datadogTags
+}
+
+func extractDatadogServiceName(datadogTags map[string]string) string {
+	var serviceName string
+	if sn, ok := datadogTags[conventions.AttributeServiceName]; ok {
+		serviceName = sn
+		delete(datadogTags, conventions.AttributeServiceName)
+	} else {
+		serviceName = tracetranslator.ResourceNoServiceName
+	}
+	return serviceName
+}
+
+func extractInstrumentationLibraryTags(il pdata.InstrumentationLibrary, datadogTags map[string]string) {
+	if il.IsNil() {
+		return
+	}
+	if ilName := il.Name(); ilName != "" {
+		datadogTags[tracetranslator.TagInstrumentationName] = ilName
+	}
+	if ilVer := il.Version(); ilVer != "" {
+		datadogTags[tracetranslator.TagInstrumentationVersion] = ilVer
+	}
+}
+
 func aggregateSpanTags(span pdata.Span, datadogTags map[string]string) map[string]string {
 	tags := make(map[string]string)
 	for key, val := range datadogTags {
@@ -339,6 +347,8 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	return rawMap
 }
 
+// TODO: determine why this always seems to be SPAN_KIND_UNSPECIFIED
+// even though span.kind is getting set at the app tracer level
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
@@ -387,10 +397,9 @@ func setMetric(s *pb.Span, key string, v float64) {
 
 func setStringTag(s *pb.Span, key, v string) {
 	switch key {
+	// if a span has `service.name` set as the tag
 	case ext.ServiceName:
 		s.Service = v
-	case ext.ResourceName:
-		s.Resource = v
 	case ext.SpanType:
 		s.Type = v
 	case ext.AnalyticsEvent:
@@ -399,8 +408,6 @@ func setStringTag(s *pb.Span, key, v string) {
 		} else {
 			setMetric(s, ext.EventSampleRate, 0)
 		}
-	case keySpanName:
-		s.Name = v
 	default:
 		s.Meta[key] = v
 	}
@@ -452,31 +459,59 @@ func decodeAPMId(id string) uint64 {
 	return val
 }
 
-func extractHostName(node *commonpb.Node) string {
-	if process := node.GetIdentifier(); process != nil {
-		if len(process.HostName) != 0 {
-			return process.HostName
-		}
-	}
-	return ""
-}
-
 // TODO:
 // test this
-func getSpanName(s pdata.Span, datadogTags map[string]string) string {
+func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here 
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
-	// Get span name by using instrumentation and kind while backing off to span.kind	
-	instrumentationlibrary := ""
-	for key, val := range datadogTags {
-		if key == instrumentationLibraryName {
-			instrumentationlibrary = val
-		}
+	// Get span name by using instrumentation and kind while backing off to span.kind
+	if iln, ok := datadogTags[instrumentationLibraryName]; ok {
+	    return fmt.Sprintf("%s.%s", iln, s.Kind())
 	}
 
-	if instrumentationlibrary != "" {
-		return fmt.Sprintf("%s.%s", instrumentationlibrary, s.Kind())
-	} else {
-		return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind())
+	return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind())
+}
+
+func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {
+	// largely a port of logic here 
+	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L229
+	// Get span resource name by checking for existence http.method + http.route 'GET /api'
+	// backing off to just http.method, and then span.name if unrelated to http
+	if method, methodOk := datadogTags[httpMethod]; methodOk {
+		if route, routeOk := datadogTags[httpRoute]; routeOk {
+			return fmt.Sprintf("%s %s", method, route)
+		}
+
+		return method
 	}
+
+	return s.Name()
+}
+
+
+
+func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePayload {
+	lookup := make(map[string]*pb.TracePayload)
+	for _, tracePayload := range tracePayloads {
+		key := fmt.Sprintf("%s|%s", tracePayload.HostName, tracePayload.Env)
+		var existingPayload *pb.TracePayload
+		if val, ok := lookup[key]; ok {
+			existingPayload = val
+		} else {
+			existingPayload = &pb.TracePayload{
+				HostName: tracePayload.HostName,
+				Env:      tracePayload.Env,
+				Traces:   make([]*pb.APITrace, 0),
+			}
+			lookup[key] = existingPayload
+		}
+		existingPayload.Traces = append(existingPayload.Traces, tracePayload.Traces...)
+	}
+
+	newPayloads := make([]*pb.TracePayload, 0)
+
+	for _, tracePayload := range lookup {
+		newPayloads = append(newPayloads, tracePayload)
+	}
+	return newPayloads
 }
