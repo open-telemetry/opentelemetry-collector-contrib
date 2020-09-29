@@ -106,6 +106,6 @@ func TestMetricData(t *testing.T) {
 	cstats := make(map[string]ContainerStats)
 	cstats["001"] = containerStats
 
-	md := MetricsData(cstats, tm, "test-ecs-receiver")
+	md := MetricsData(cstats, tm)
 	require.Less(t, 0, len(md))
 }

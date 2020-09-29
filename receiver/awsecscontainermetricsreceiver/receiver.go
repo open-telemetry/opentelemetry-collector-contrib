@@ -94,7 +94,8 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 		return err
 	}
 
-	mds := awsecscontainermetrics.MetricsData(stats, metadata, typeStr)
+	// TODO: report self metrics using obsreport
+	mds := awsecscontainermetrics.MetricsData(stats, metadata)
 	for _, md := range mds {
 		metrics := internaldata.OCToMetrics(*md)
 		err = aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)

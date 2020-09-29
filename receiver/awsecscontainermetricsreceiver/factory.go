@@ -17,6 +17,7 @@ package awsecscontainermetricsreceiver
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -69,13 +70,17 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("no environment variable found for %s", awsecscontainermetrics.EndpointEnvKey)
 	}
 
-	rest := restClient(params.Logger, ecsTaskMetadataEndpointV4)
+	endpoint, err := url.ParseRequestURI(ecsTaskMetadataEndpointV4)
+	if err != nil {
+		return nil, err
+	}
+	rest := restClient(params.Logger, *endpoint)
 
 	rCfg := baseCfg.(*Config)
 	return New(params.Logger, rCfg, consumer, rest)
 }
 
-func restClient(logger *zap.Logger, endpoint string) awsecscontainermetrics.RestClient {
+func restClient(logger *zap.Logger, endpoint url.URL) awsecscontainermetrics.RestClient {
 	clientProvider := awsecscontainermetrics.NewClientProvider(endpoint, logger)
 
 	client := clientProvider.BuildClient()

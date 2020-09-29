@@ -16,6 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"encoding/json"
+	"fmt"
 )
 
 // StatsProvider wraps a RestClient, returning an unmarshaled metadata and docker stats
@@ -35,14 +36,17 @@ func (p *StatsProvider) GetStats() (map[string]ContainerStats, TaskMetadata, err
 
 	taskStats, taskMetadata, err := p.rc.EndpointResponse()
 	if err != nil {
-		return stats, metadata, err
+		return stats, metadata, fmt.Errorf("cannot read data from task metadata endpoint: %w", err)
 	}
 
 	err = json.Unmarshal(taskStats, &stats)
 	if err != nil {
-		return stats, metadata, err
+		return stats, metadata, fmt.Errorf("cannot unmarshall task stats: %w", err)
 	}
 
 	err = json.Unmarshal(taskMetadata, &metadata)
-	return stats, metadata, err
+	if err != nil {
+		return stats, metadata, fmt.Errorf("cannot unmarshall task metadata: %w", err)
+	}
+	return stats, metadata, nil
 }

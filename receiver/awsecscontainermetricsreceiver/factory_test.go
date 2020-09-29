@@ -16,6 +16,7 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 }
 
 func TestCreateMetricsReceiverWithEnv(t *testing.T) {
-	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "TEST_ENV_VAR")
+	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "http://www.test.com")
 
 	metricsReceiver, err := createMetricsReceiver(
 		context.Background(),
@@ -55,7 +56,19 @@ func TestCreateMetricsReceiverWithEnv(t *testing.T) {
 	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
 
+func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
+	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "bad-url-format")
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		&testbed.MockMetricConsumer{},
+	)
+	require.Error(t, err)
+	require.Nil(t, metricsReceiver)
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
@@ -68,11 +81,11 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 
 	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
-
 }
 
 func TestRestClient(t *testing.T) {
-	rest := restClient(nil, "")
+	u, _ := url.Parse("http://www.test.com")
+	rest := restClient(nil, *u)
 
 	require.NotNil(t, rest)
 }

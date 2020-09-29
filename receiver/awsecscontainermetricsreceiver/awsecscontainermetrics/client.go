@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	"go.uber.org/zap"
 )
@@ -28,7 +29,7 @@ type Client interface {
 }
 
 // NewClientProvider creates the default rest client provider
-func NewClientProvider(endpoint string, logger *zap.Logger) ClientProvider {
+func NewClientProvider(endpoint url.URL, logger *zap.Logger) ClientProvider {
 	return &defaultClientProvider{
 		endpoint: endpoint,
 		logger:   logger,
@@ -41,7 +42,7 @@ type ClientProvider interface {
 }
 
 type defaultClientProvider struct {
-	endpoint string
+	endpoint url.URL
 	logger   *zap.Logger
 }
 
@@ -52,8 +53,9 @@ func (dcp *defaultClientProvider) BuildClient() Client {
 	)
 }
 
+// TODO: Try using config.HTTPClientSettings
 func defaultClient(
-	endpoint string,
+	endpoint url.URL,
 	logger *zap.Logger,
 ) *clientImpl {
 	tr := defaultTransport()
@@ -71,7 +73,7 @@ func defaultTransport() *http.Transport {
 var _ Client = (*clientImpl)(nil)
 
 type clientImpl struct {
-	baseURL    string
+	baseURL    url.URL
 	httpClient http.Client
 	logger     *zap.Logger
 }
@@ -97,14 +99,13 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request GET %s failed - %q, response: %q",
-			req.URL.String(), resp.Status, string(body))
+		return nil, fmt.Errorf("request GET %s failed - %q", req.URL.String(), resp.Status)
 	}
 	return body, nil
 }
 
 func (c *clientImpl) buildReq(path string) (*http.Request, error) {
-	url := c.baseURL + path
+	url := c.baseURL.String() + path
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err

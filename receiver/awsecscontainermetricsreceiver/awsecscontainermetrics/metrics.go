@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 )
 
-func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata, typeStr string) []*consumerdata.MetricsData {
+func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) []*consumerdata.MetricsData {
 	acc := &metricDataAccumulator{}
 	acc.getMetricsData(containerStatsMap, metadata)
 

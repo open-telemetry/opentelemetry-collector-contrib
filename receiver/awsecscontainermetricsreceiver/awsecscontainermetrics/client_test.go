@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -27,9 +28,9 @@ import (
 
 func TestClient(t *testing.T) {
 	tr := &fakeRoundTripper{}
-	baseURL := "http://localhost:8080"
+	baseURL, _ := url.Parse("http://localhost:8080")
 	client := &clientImpl{
-		baseURL:    baseURL,
+		baseURL:    *baseURL,
 		httpClient: http.Client{Transport: tr},
 	}
 	require.False(t, tr.closed)
@@ -37,32 +38,34 @@ func TestClient(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "hello", string(resp))
 	require.True(t, tr.closed)
-	require.Equal(t, baseURL+"/stats", tr.url)
+	require.Equal(t, baseURL.String()+"/stats", tr.url)
 	require.Equal(t, 1, len(tr.header))
 	require.Equal(t, "application/json", tr.header["Content-Type"][0])
 	require.Equal(t, "GET", tr.method)
 }
 
 func TestNewClientProvider(t *testing.T) {
-	provider := NewClientProvider("http://localhost:8080", zap.NewNop())
+	baseURL, _ := url.Parse("http://localhost:8080")
+	provider := NewClientProvider(*baseURL, zap.NewNop())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
 
 	client := provider.BuildClient()
-	require.Equal(t, "http://localhost:8080", string(client.(*clientImpl).baseURL))
+	require.Equal(t, "http://localhost:8080", client.(*clientImpl).baseURL.String())
 }
 
 func TestDefaultClient(t *testing.T) {
-	endpoint := "http://localhost:8080"
-	client := defaultClient(endpoint, zap.NewNop())
+	endpoint, _ := url.Parse("http://localhost:8080")
+	client := defaultClient(*endpoint, zap.NewNop())
 	require.NotNil(t, client.httpClient.Transport)
-	require.Equal(t, endpoint, client.baseURL)
+	require.Equal(t, "http://localhost:8080", client.baseURL.String())
 }
 
 func TestBuildReq(t *testing.T) {
+	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: "http://localhost:8080",
+		endpoint: *endpoint,
 		logger:   zap.NewNop(),
 	}
 	cl := p.BuildClient()
@@ -73,8 +76,9 @@ func TestBuildReq(t *testing.T) {
 }
 
 func TestBuildBadReq(t *testing.T) {
+	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: "http://localhost:8080",
+		endpoint: *endpoint,
 		logger:   zap.NewNop(),
 	}
 	cl := p.BuildClient()
@@ -83,8 +87,9 @@ func TestBuildBadReq(t *testing.T) {
 }
 
 func TestGetBad(t *testing.T) {
+	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
-		endpoint: "http://localhost:8080",
+		endpoint: *endpoint,
 		logger:   zap.NewNop(),
 	}
 	cl := p.BuildClient()
@@ -95,9 +100,9 @@ func TestGetBad(t *testing.T) {
 
 func TestFailedRT(t *testing.T) {
 	tr := &fakeRoundTripper{failOnRT: true}
-	baseURL := "http://localhost:8080"
+	endpoint, _ := url.Parse("http://localhost:8080")
 	client := &clientImpl{
-		baseURL:    baseURL,
+		baseURL:    *endpoint,
 		httpClient: http.Client{Transport: tr},
 	}
 	_, err := client.Get("/test")
@@ -106,9 +111,9 @@ func TestFailedRT(t *testing.T) {
 
 func TestErrOnRead(t *testing.T) {
 	tr := &fakeRoundTripper{errOnRead: true}
-	baseURL := "http://localhost:8080"
+	endpoint, _ := url.Parse("http://localhost:8080")
 	client := &clientImpl{
-		baseURL:    baseURL,
+		baseURL:    *endpoint,
 		httpClient: http.Client{Transport: tr},
 		logger:     zap.NewNop(),
 	}
@@ -119,9 +124,9 @@ func TestErrOnRead(t *testing.T) {
 
 func TestErrCode(t *testing.T) {
 	tr := &fakeRoundTripper{errCode: true}
-	baseURL := "http://localhost:9876"
+	endpoint, _ := url.Parse("http://localhost:8080")
 	client := &clientImpl{
-		baseURL:    baseURL,
+		baseURL:    *endpoint,
 		httpClient: http.Client{Transport: tr},
 		logger:     zap.NewNop(),
 	}

@@ -24,8 +24,9 @@ import (
 )
 
 type testRestClient struct {
-	fail        bool
-	invalidJSON bool
+	fail                bool
+	invalidJSON         bool
+	invalidTaskMetadata bool
 }
 
 func (f testRestClient) EndpointResponse() ([]byte, []byte, error) {
@@ -34,6 +35,11 @@ func (f testRestClient) EndpointResponse() ([]byte, []byte, error) {
 	}
 	if f.invalidJSON {
 		return []byte("wrong-json-body"), []byte("wrong-json-body"), nil
+	}
+
+	taskStats, _ := ioutil.ReadFile("../testdata/task_stats.json")
+	if f.invalidTaskMetadata {
+		return taskStats, []byte("wrong-json-body"), nil
 	}
 
 	taskStats, err := ioutil.ReadFile("../testdata/task_stats.json")
@@ -61,12 +67,17 @@ func TestGetStats(t *testing.T) {
 		{
 			name:      "failure",
 			client:    &testRestClient{fail: true},
-			wantError: "failed",
+			wantError: "cannot read data from task metadata endpoint: failed",
 		},
 		{
 			name:      "invalid-json",
 			client:    &testRestClient{invalidJSON: true},
-			wantError: "invalid character 'w' looking for beginning of value",
+			wantError: "cannot unmarshall task stats: invalid character 'w' looking for beginning of value",
+		},
+		{
+			name:      "invalid-task-metadata",
+			client:    &testRestClient{invalidTaskMetadata: true},
+			wantError: "cannot unmarshall task metadata: invalid character 'w' looking for beginning of value",
 		},
 	}
 	for _, tt := range tests {
