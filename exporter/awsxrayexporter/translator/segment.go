@@ -36,6 +36,7 @@ const (
 	OriginEC2 = "AWS::EC2::Instance"
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS = "AWS::EKS::Container"
 )
 
 var (
@@ -215,12 +216,17 @@ func determineAwsOrigin(resource pdata.Resource) string {
 	if resource.IsNil() {
 		return ""
 	}
+
 	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
 		if provider.StringVal() != "aws" {
 			return ""
 		}
 	}
-	// EB > ECS > EC2
+	// EKS > EB > ECS > EC2
+	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
+	if eks {
+		return OriginEKS
+	}
 	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
 	if eb {
 		return OriginEB

@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/service/defaultcomponents"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -116,6 +117,7 @@ func components() (component.Factories, error) {
 		splunkhecexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		alibabacloudlogserviceexporter.NewFactory(),
+		awsemfexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 	}
 	for _, exp := range factories.Exporters {

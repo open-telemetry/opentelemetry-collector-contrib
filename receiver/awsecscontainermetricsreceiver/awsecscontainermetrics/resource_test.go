@@ -18,39 +18,44 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func TestContainerLabelKeysAndValues(t *testing.T) {
+func TestContainerResource(t *testing.T) {
 	cm := ContainerMetadata{
 		ContainerName: "container-1",
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
 	}
-	k, v := containerLabelKeysAndValues(cm)
-	require.EqualValues(t, ContainerMetricsLabelLen, len(k))
-	require.EqualValues(t, ContainerMetricsLabelLen, len(v))
+	r := containerResource(cm)
+	require.NotNil(t, r)
 
-	require.EqualValues(t, "container-1", v[0].Value)
-	require.EqualValues(t, "001", v[1].Value)
-	require.EqualValues(t, "docker-container-1", v[2].Value)
+	labels := r.Labels
+	require.EqualValues(t, 3, len(labels))
+
+	require.EqualValues(t, "container-1", labels[conventions.AttributeContainerName])
+	require.EqualValues(t, "001", labels[conventions.AttributeContainerID])
+	require.EqualValues(t, "docker-container-1", labels[AttributeECSDockerName])
 }
 
-func TestTaskLabelKeysAndValues(t *testing.T) {
+func TestTaskResource(t *testing.T) {
 	tm := TaskMetadata{
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
 		Revision: "task-def-version-1",
 	}
-	k, v := taskLabelKeysAndValues(tm)
-	require.EqualValues(t, TaskMetricsLabelLen, len(k))
-	require.EqualValues(t, TaskMetricsLabelLen, len(v))
+	r := taskResource(tm)
+	require.NotNil(t, r)
 
-	require.EqualValues(t, "cluster-1", v[0].Value)
-	require.EqualValues(t, "arn:aws:some-value/001", v[1].Value)
-	require.EqualValues(t, "001", v[2].Value)
-	require.EqualValues(t, "task-def-family-1", v[3].Value)
-	require.EqualValues(t, "task-def-version-1", v[4].Value)
+	labels := r.Labels
+	require.EqualValues(t, 6, len(labels))
+
+	require.EqualValues(t, "cluster-1", labels[AttributeECSCluster])
+	require.EqualValues(t, "arn:aws:some-value/001", labels[AttributeECSTaskARN])
+	require.EqualValues(t, "001", labels[AttributeECSTaskID])
+	require.EqualValues(t, "task-def-family-1", labels[AttributeECSTaskFamily])
+	require.EqualValues(t, "task-def-version-1", labels[AttributeECSTaskRevesion])
 }
 
 func TestGetTaskIDFromARN(t *testing.T) {

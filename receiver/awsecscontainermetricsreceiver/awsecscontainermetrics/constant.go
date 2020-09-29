@@ -23,6 +23,47 @@ const (
 	AttributeECSTaskRevesion = "ecs.task-definition-version"
 	AttributeECSServiceName  = "ecs.service"
 
-	ContainerMetricsLabelLen = 3
-	TaskMetricsLabelLen      = 6
+	CPUsInVCpu = 1024
+	BytesInMiB = 1024 * 1024
+
+	TaskPrefix         = "ecs.task."
+	ContainerPrefix    = "container."
+	MetricResourceType = "aoc.ecs"
+
+	AttributeMemoryUsage    = "memory.usage"
+	AttributeMemoryMaxUsage = "memory.usage.max"
+	AttributeMemoryLimit    = "memory.usage.limit"
+	AttributeMemoryReserved = "memory.reserved"
+	AttributeMemoryUtilized = "memory.utilized"
+
+	AttributeCPUTotalUsage      = "cpu.usage.total"
+	AttributeCPUKernelModeUsage = "cpu.usage.kernelmode"
+	AttributeCPUUserModeUsage   = "cpu.usage.usermode"
+	AttributeCPUSystemUsage     = "cpu.usage.system"
+	AttributeCPUCores           = "cpu.cores"
+	AttributeCPUOnlines         = "cpu.onlines"
+	AttributeCPUReserved        = "cpu.reserved"
+	AttributeCPUUtilized        = "cpu.utilized"
+
+	AttributeNetworkRateRx = "network.rate.rx"
+	AttributeNetworkRateTx = "network.rate.tx"
+
+	AttributeNetworkRxBytes   = "network.io.usage.rx_bytes"
+	AttributeNetworkRxPackets = "network.io.usage.rx_packets"
+	AttributeNetworkRxErrors  = "network.io.usage.rx_errors"
+	AttributeNetworkRxDropped = "network.io.usage.rx_dropped"
+	AttributeNetworkTxBytes   = "network.io.usage.tx_bytes"
+	AttributeNetworkTxPackets = "network.io.usage.tx_packets"
+	AttributeNetworkTxErrors  = "network.io.usage.tx_errors"
+	AttributeNetworkTxDropped = "network.io.usage.tx_dropped"
+
+	AttributeStorageRead  = "storage.read_bytes"
+	AttributeStorageWrite = "storage.write_bytes"
+
+	UnitBytes       = "Bytes"
+	UnitMegaBytes   = "MB"
+	UnitNanoSecond  = "NS"
+	UnitBytesPerSec = "Bytes/Sec"
+	UnitCount       = "Count"
+	UnitVCpu        = "vCPU"
 )
