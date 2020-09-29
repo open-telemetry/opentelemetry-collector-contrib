@@ -50,6 +50,7 @@ import falcon
 
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import configuration, context, propagators, trace
+from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.falcon.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import http_status_to_canonical_code
@@ -92,13 +93,16 @@ class FalconInstrumentor(BaseInstrumentor):
 
 class _InstrumentedFalconAPI(falcon.API):
     def __init__(self, *args, **kwargs):
-        mw = kwargs.pop("middleware", [])
-        if not isinstance(mw, (list, tuple)):
-            mw = [mw]
+        middlewares = kwargs.pop("middleware", [])
+        if not isinstance(middlewares, (list, tuple)):
+            middlewares = [middlewares]
 
         self._tracer = trace.get_tracer(__name__, __version__)
-        mw.insert(0, _TraceMiddleware(self._tracer))
-        kwargs["middleware"] = mw
+        trace_middleware = _TraceMiddleware(
+            self._tracer, kwargs.get("traced_request_attributes")
+        )
+        middlewares.insert(0, trace_middleware)
+        kwargs["middleware"] = middlewares
         super().__init__(*args, **kwargs)
 
     def __call__(self, env, start_response):
@@ -144,8 +148,24 @@ class _InstrumentedFalconAPI(falcon.API):
 class _TraceMiddleware:
     # pylint:disable=R0201,W0613
 
-    def __init__(self, tracer=None):
+    def __init__(self, tracer=None, traced_request_attrs=None):
         self.tracer = tracer
+        self._traced_request_attrs = traced_request_attrs or [
+            attr.strip()
+            for attr in (
+                Configuration().FALCON_TRACED_REQUEST_ATTRS or ""
+            ).split(",")
+        ]
+
+    def process_request(self, req, resp):
+        span = req.env.get(_ENVIRON_SPAN_KEY)
+        if not span:
+            return
+
+        for attr in self._traced_request_attrs:
+            value = getattr(req, attr, None)
+            if value is not None:
+                span.set_attribute(attr, str(value))
 
     def process_resource(self, req, resp, resource, params):
         span = req.env.get(_ENVIRON_SPAN_KEY)
