@@ -392,6 +392,81 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	assert.Equal(t, 0, len(segment.Metadata["default"]))
 }
 
+func TestOriginNotAws(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "gcp")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.Origin)
+}
+
+func TestOriginEc2(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEC2, *segment.Origin)
+}
+
+func TestOriginEcs(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginECS, *segment.Origin)
+}
+
+func TestOriginEb(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEB, *segment.Origin)
+}
+
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
