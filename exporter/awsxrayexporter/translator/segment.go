@@ -213,10 +213,16 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	// EKS > EB > ECS > EC2
 	if resource.IsNil() {
-		return OriginEC2
+		return ""
 	}
+
+	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
+		if provider.StringVal() != "aws" {
+			return ""
+		}
+	}
+	// EKS > EB > ECS > EC2
 	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
 	if eks {
 		return OriginEKS
