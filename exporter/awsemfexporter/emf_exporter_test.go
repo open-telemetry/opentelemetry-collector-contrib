@@ -111,7 +111,7 @@ func TestConsumeMetrics(t *testing.T) {
 		},
 	}
 	md := internaldata.OCToMetrics(mdata)
-	require.Error(t, exp.ConsumeMetrics(ctx, md))
+	require.NoError(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
 }
 
