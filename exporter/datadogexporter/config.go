@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -86,26 +85,6 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// UpdateWithEnv gets the unified service tagging information
-// from the environment variables.
-func (t *TagsConfig) UpdateWithEnv() {
-	if t.Hostname == "" {
-		t.Hostname = os.Getenv("DD_HOST")
-	}
-
-	if t.Env == "" {
-		t.Env = os.Getenv("DD_ENV")
-	}
-
-	if t.Service == "" {
-		t.Service = os.Getenv("DD_SERVICE")
-	}
-
-	if t.Version == "" {
-		t.Version = os.Getenv("DD_VERSION")
-	}
-}
-
 // GetTags gets the default tags extracted from the configuration
 func (t *TagsConfig) GetTags(addHost bool) []string {
 	tags := make([]string, 0, 4)
@@ -146,10 +125,6 @@ type Config struct {
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
-	// Get info from environment variables
-	// if unset
-	c.TagsConfig.UpdateWithEnv()
-
 	// Add '.' at the end of namespace
 	if c.Metrics.Namespace != "" && !strings.HasSuffix(c.Metrics.Namespace, ".") {
 		c.Metrics.Namespace = c.Metrics.Namespace + "."

@@ -15,7 +15,6 @@
 package datadogexporter
 
 import (
-	"os"
 	"path"
 	"testing"
 
@@ -133,33 +132,5 @@ func TestCensorAPIKey(t *testing.T) {
 		t,
 		"***************************_key1",
 		cfg.GetCensoredKey(),
-	)
-}
-
-func TestUpdateWithEnv(t *testing.T) {
-	cfg := TagsConfig{
-		Hostname: "test_host",
-		Env:      "test_env",
-	}
-
-	// Should be ignored since they were set
-	// on config
-	os.Setenv("DD_HOST", "env_host")
-	os.Setenv("DD_ENV", "env_env")
-
-	// Should be picked up
-	os.Setenv("DD_SERVICE", "env_service")
-	os.Setenv("DD_VERSION", "env_version")
-
-	cfg.UpdateWithEnv()
-
-	assert.Equal(t,
-		TagsConfig{
-			Hostname: "test_host",
-			Env:      "test_env",
-			Service:  "env_service",
-			Version:  "env_version",
-		},
-		cfg,
 	)
 }
