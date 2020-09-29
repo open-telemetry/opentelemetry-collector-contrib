@@ -58,6 +58,13 @@ class _DjangoMiddleware(MiddlewareMixin):
     else:
         _excluded_urls = ExcludeList(_excluded_urls)
 
+    _traced_request_attrs = [
+        attr.strip()
+        for attr in (Configuration().DJANGO_TRACED_REQUEST_ATTRS or "").split(
+            ","
+        )
+    ]
+
     @staticmethod
     def _get_span_name(request):
         try:
@@ -95,6 +102,10 @@ class _DjangoMiddleware(MiddlewareMixin):
         tracer = get_tracer(__name__, __version__)
 
         attributes = collect_request_attributes(environ)
+        for attr in self._traced_request_attrs:
+            value = getattr(request, attr, None)
+            if value is not None:
+                attributes[attr] = str(value)
 
         span = tracer.start_span(
             self._get_span_name(request),

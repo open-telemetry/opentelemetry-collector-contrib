@@ -174,3 +174,30 @@ class TestMiddleware(WsgiTestBase):
 
         span = span_list[0]
         self.assertEqual(span.name, "HTTP GET")
+
+    def test_traced_request_attrs(self):
+        with patch(
+            "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._traced_request_attrs",
+            [],
+        ):
+            Client().get("/span_name/1234/", CONTENT_TYPE="test/ct")
+            span_list = self.memory_exporter.get_finished_spans()
+            self.assertEqual(len(span_list), 1)
+
+            span = span_list[0]
+            self.assertNotIn("path_info", span.attributes)
+            self.assertNotIn("content_type", span.attributes)
+            self.memory_exporter.clear()
+
+        with patch(
+            "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._traced_request_attrs",
+            ["path_info", "content_type", "non_existing_variable"],
+        ):
+            Client().get("/span_name/1234/", CONTENT_TYPE="test/ct")
+            span_list = self.memory_exporter.get_finished_spans()
+            self.assertEqual(len(span_list), 1)
+
+            span = span_list[0]
+            self.assertEqual(span.attributes["path_info"], "/span_name/1234/")
+            self.assertEqual(span.attributes["content_type"], "test/ct")
+            self.assertNotIn("non_existing_variable", span.attributes)
