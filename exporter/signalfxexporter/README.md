@@ -53,6 +53,9 @@ The following configuration options can also be configured:
   processor is enabled in the pipeline with one of the cloud provider detectors
   or environment variable detector setting a unique value to `host.name` attribute 
   within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `exclude_metrics`: metric names that will be excluded from sending
+  to Signalfx backend. If `send_compatible_metrics` or `translation_rules` 
+  options are enabled, the exclusion will be applied on translated metrics.
 
 Example:
 

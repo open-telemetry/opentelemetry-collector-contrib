@@ -83,6 +83,11 @@ type Config struct {
 	//            `host.name` attribute within your k8s cluster. Also keep override
 	//            And keep `override=true` in resourcedetection config.
 	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
+
+	// ExcludeMetrics defines metrics that will be excluded from sending to Signalfx
+	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
+	// options, the exclusion will be applied on translated metrics.
+	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

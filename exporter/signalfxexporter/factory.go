@@ -68,11 +68,9 @@ func createMetricsExporter(
 ) (exp component.MetricsExporter, err error) {
 
 	expCfg := config.(*Config)
-	if expCfg.SendCompatibleMetrics && expCfg.TranslationRules == nil {
-		expCfg.TranslationRules, err = loadDefaultTranslationRules()
-		if err != nil {
-			return nil, err
-		}
+	err = setTranslationRules(expCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	exp, err = newSignalFxExporter(expCfg, params.Logger)
@@ -82,6 +80,21 @@ func createMetricsExporter(
 	}
 
 	return exp, nil
+}
+
+func setTranslationRules(cfg *Config) error {
+	if cfg.SendCompatibleMetrics && cfg.TranslationRules == nil {
+		defaultRules, err := loadDefaultTranslationRules()
+		if err != nil {
+			return err
+		}
+		cfg.TranslationRules = defaultRules
+	}
+	if len(cfg.ExcludeMetrics) > 0 {
+		cfg.TranslationRules = append(cfg.TranslationRules,
+			translation.GetExcludeMetricsRule(cfg.ExcludeMetrics))
+	}
+	return nil
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
