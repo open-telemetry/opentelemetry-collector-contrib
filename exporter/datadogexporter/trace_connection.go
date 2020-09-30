@@ -99,14 +99,18 @@ func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TraceP
 	}
 
 	var sendErr error
+	var shouldRetry bool
 	// If error while sending to trace-edge, retry maximum maxRetries number of times
 	// NOTE: APM stores traces by trace id, however, Logs pipeline does NOT dedupe APM events,
 	// and retries may potentially cause duplicate APM events in Trace Search
 	for retries := 1; retries <= maxRetries; retries++ {
-		if sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.traceURL, con.InsecureSkipVerify); sendErr == nil {
+		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.traceURL, con.InsecureSkipVerify); sendErr == nil {
 			return nil
 		}
-		time.Sleep(traceEdgeRetryInterval)
+
+		if shouldRetry {
+			time.Sleep(traceEdgeRetryInterval)
+		}
 	}
 	return fmt.Errorf("failed to send trace payload to trace edge: %v", sendErr)
 }
@@ -134,32 +138,35 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 	}
 
 	var sendErr error
+	var shouldRetry bool
 	// If error while sending to trace-edge, retry maximum maxRetries number of times
 	// NOTE: APM does NOT dedupe, and retries may potentially cause duplicate/inaccurate stats
 	for retries := 1; retries <= maxRetries; retries++ {
-		if sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.statsURL, con.InsecureSkipVerify); sendErr == nil {
+		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.statsURL, con.InsecureSkipVerify); sendErr == nil {
 			return nil
 		}
-		time.Sleep(traceEdgeRetryInterval)
+		if shouldRetry {
+			time.Sleep(traceEdgeRetryInterval)
+		}
 	}
 	return fmt.Errorf("failed to send stats payload to trace edge: %v", sendErr)
 }
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
-func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string, InsecureSkipVerify bool) error {
+func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string, InsecureSkipVerify bool) (bool, error) {
 	// Create the request to be sent to the API
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload.Bytes))
 	req = req.WithContext(ctx)
 
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// userAgent is the computed user agent we'll use when
 	// communicating with Datadog
 	var userAgent = fmt.Sprintf(
 		"%s/%s/%s (+%s)",
-		"xray-converter", "0.1", "1", "http://localhost",
+		"opentelemetry-exporter", "0.1", "1", "http://localhost",
 	)
 
 	req.Header.Set("DD-Api-Key", apiKey)
@@ -170,7 +177,8 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return err
+		// in this case, the payload and client are malformed in some way, so we should not retry
+		return false, err
 	}
 	defer resp.Body.Close()
 
@@ -180,15 +188,15 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 		err := fmt.Errorf("request to %s responded with %s", url, resp.Status)
 		if resp.StatusCode/100 == 5 {
 			// 5xx errors are retriable
-			return err
+			return true, err
 		}
 
 		// All others aren't
-		return err
+		return false, err
 	}
 
 	// Everything went fine
-	return nil
+	return false, nil
 }
 
 // NewClient returns a http.Client configured with the Agent options.

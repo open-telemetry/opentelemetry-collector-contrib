@@ -47,8 +47,8 @@ func ComputeAPMStats(tracePayload *pb.TracePayload) *stats.Payload {
 				statsRawBuckets[bucketTS] = statsRawBucket
 			}
 
-			// Use weight 1, as xray sampling is not uniform, and its rate is unknown to us.
-			// In fact, for "low volume" Lambda functions, the sampling rate is typically 100%.
+			// Use weight 1, as sampling in opentelemetry would occur upstream in a processor.
+			// Generally we want to ship 100% of traces to the backend where more accurate tail based sampling can be performed.
 			// TopLevel is always "true" since we only compute stats for top-level spans.
 			weightedSpan := &stats.WeightedSpan{
 				Span:     span,
