@@ -23,8 +23,7 @@ The following exporter configuration parameters are supported.
 | `region`          | Send Structured Logs to AWS CloudWatch in a specific region. If this field is not present in config, environment variable "AWS_REGION" can then be used to set region.| determined by metadata |
 | `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
-| `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    5    |
-| `force_flush_interval`| Specifies in seconds the maximum amount of time that metrics remain in the memory buffer before being sent to the server.|    60   |
+| `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
 
 
 ## AWS Credential Configuration

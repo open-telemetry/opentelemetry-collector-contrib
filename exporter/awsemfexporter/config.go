@@ -50,4 +50,9 @@ type Config struct {
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// MaxRetries is the maximum number of retries before abandoning an attempt to post data.
 	MaxRetries int `mapstructure:"max_retries"`
+	// DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is 0.
+	// 0 - Enable both zero dimension rollup and single dimension rollup
+	// 1 - Enable single dimension rollup
+	// 2 - No dimension rollup (only keep original metrics which contain all dimensions)
+	DimensionRollupOption int `mapstructure:"dimension_rollup_option"`
 }

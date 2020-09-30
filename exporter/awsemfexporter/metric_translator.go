@@ -38,6 +38,11 @@ const (
 
 	// See: http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maximumLogEventsPerPut = 10000
+
+	// DimensionRollupOptions
+	ZeroAndSingleDimensionRollup = 0
+	SingleDimensionRollupOnly    = 1
+	NoDimensionRollup			 = 2
 )
 
 var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
@@ -70,7 +75,7 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption int) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	namespace := defaultNameSpace
 	totalDroppedMetrics := 0
@@ -106,7 +111,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics) ([]*CWMetrics, int) {
 				totalDroppedMetrics++
 				continue
 			}
-			cwMetricList := getMeasurements(&metric, namespace, OTLib)
+			cwMetricList := getMeasurements(&metric, namespace, OTLib, dimensionRollupOption)
 			cwMetricLists = append(cwMetricLists, cwMetricList...)
 		}
 	}
@@ -139,7 +144,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	return ples
 }
 
-func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CWMetrics {
+func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimensionRollupOption int) []*CWMetrics {
 	var result []*CWMetrics
 
 	// metric measure data from OT
@@ -161,7 +166,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -176,7 +181,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -191,7 +196,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -206,7 +211,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -221,7 +226,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromHistogram(dp, metric, namespace, metricSlice, OTLib)
+			cwMetric := buildCWMetricFromHistogram(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -230,7 +235,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string) []*CW
 	return result
 }
 
-func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
+func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption int) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -268,14 +273,18 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	fieldsPairs[pmd.Name()] = metricVal
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	//"Zero" dimension rollup
 	dimensionZero := []string{OtlibDimensionKey}
-	if len(dimensionSlice) > 0 {
-		dimensionArray = append(dimensionArray, dimensionZero)
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
+		//"Zero" dimension rollup
+		if len(dimensionSlice) > 0 {
+			dimensionArray = append(dimensionArray, dimensionZero)
+		}
 	}
-	//"One" dimension rollup
-	for _, dimensionKey := range dimensionSlice {
-		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
+		//"One" dimension rollup
+		for _, dimensionKey := range dimensionSlice {
+			dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+		}
 	}
 
 	cwMeasurement := &CwMeasurement{
@@ -293,7 +302,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	return cwMetric
 }
 
-func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string) *CWMetrics {
+func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption int) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -321,14 +330,18 @@ func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdat
 	fieldsPairs[pmd.Name()] = metricStats
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	//"Zero" dimension rollup
 	dimensionZero := []string{OtlibDimensionKey}
-	if len(dimensionSlice) > 0 {
-		dimensionArray = append(dimensionArray, dimensionZero)
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
+		//"Zero" dimension rollup
+		if len(dimensionSlice) > 0 {
+			dimensionArray = append(dimensionArray, dimensionZero)
+		}
 	}
-	//"One" dimension rollup
-	for _, dimensionKey := range dimensionSlice {
-		dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
+		//"One" dimension rollup
+		for _, dimensionKey := range dimensionSlice {
+			dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
+		}
 	}
 
 	cwMeasurement := &CwMeasurement{
