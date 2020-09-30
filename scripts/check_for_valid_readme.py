@@ -29,6 +29,7 @@ def main():
     error = False
 
     for path in map(Path, args.paths):
+
         readme = path / "README.rst"
         try:
             if not is_valid_rst(readme):
