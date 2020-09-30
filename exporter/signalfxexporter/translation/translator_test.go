@@ -1685,6 +1685,144 @@ func TestTranslateDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "aggregate_metric_mean",
+			trs: []Rule{
+				{
+					Action:            ActionAggregateMetric,
+					MetricName:        "metric1",
+					WithoutDimensions: []string{"dim3"},
+					AggregationMethod: "avg",
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "different",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.6),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.0),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "drop_metrics",
 			trs: []Rule{
 				{

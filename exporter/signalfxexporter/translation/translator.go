@@ -141,6 +141,7 @@ type AggregationMethod string
 const (
 	// AggregationMethodCount represents count aggregation method
 	AggregationMethodCount AggregationMethod = "count"
+	AggregationMethodAvg   AggregationMethod = "avg"
 	AggregationMethodSum   AggregationMethod = "sum"
 )
 
@@ -294,7 +295,9 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" "+
 					"are required for %q translation rule", tr.Action)
 			}
-			if tr.AggregationMethod != "count" && tr.AggregationMethod != "sum" {
+			if tr.AggregationMethod != AggregationMethodCount &&
+				tr.AggregationMethod != AggregationMethodSum &&
+				tr.AggregationMethod != AggregationMethodAvg {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
@@ -642,6 +645,20 @@ func aggregateDatapoints(
 				}
 			}
 			dp.Value = value
+		case AggregationMethodAvg:
+			var mean float64
+			for _, dp := range dps {
+				if dp.Value.IntValue != nil {
+					mean += float64(*dp.Value.IntValue)
+				}
+				if dp.Value.DoubleValue != nil {
+					mean += *dp.Value.DoubleValue
+				}
+			}
+			mean /= float64(len(dps))
+			dp.Value = sfxpb.Datum{
+				DoubleValue: &mean,
+			}
 		}
 		result = append(result, dp)
 	}
