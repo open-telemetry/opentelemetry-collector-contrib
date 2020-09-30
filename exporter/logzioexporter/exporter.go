@@ -21,4 +21,3 @@ import (
 func newLogzioTraceExporter(config *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
 	return nil, nil
 }
-
