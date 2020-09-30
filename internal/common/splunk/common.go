@@ -23,6 +23,7 @@ const (
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
 	SplunkHECTokenHeader  = "Splunk"
 	SplunkHecTokenLabel   = "com.splunk.hec.access_token"
+	SourcetypeLabel       = "com.splunk.sourcetype"
 )
 
 type AccessTokenPassthroughConfig struct {

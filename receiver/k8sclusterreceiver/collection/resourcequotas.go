@@ -26,7 +26,7 @@ import (
 )
 
 var resourceQuotaHardLimitMetric = &metricspb.MetricDescriptor{
-	Name: "k8s/resource_quota/hard_limt",
+	Name: "k8s.resource_quota.hard_limit",
 	Description: "The upper limit for a particular resource in a specific namespace." +
 		" Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores",
 	Type: metricspb.MetricDescriptor_GAUGE_INT64,
@@ -36,7 +36,7 @@ var resourceQuotaHardLimitMetric = &metricspb.MetricDescriptor{
 }
 
 var resourceQuotaUsedMetric = &metricspb.MetricDescriptor{
-	Name: "k8s/resource_quota/used",
+	Name: "k8s.resource_quota.used",
 	Description: "The usage for a particular resource in a specific namespace." +
 		" Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores",
 	Type: metricspb.MetricDescriptor_GAUGE_INT64,

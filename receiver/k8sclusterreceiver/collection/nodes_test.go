@@ -42,10 +42,10 @@ func TestNodeMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s/node/condition_ready",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.node.condition_ready",
 		metricspb.MetricDescriptor_GAUGE_INT64, 1)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s/node/condition_memory_pressure",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[1], "k8s.node.condition_memory_pressure",
 		metricspb.MetricDescriptor_GAUGE_INT64, 0)
 }
 
@@ -83,15 +83,15 @@ func TestGetNodeConditionMetric(t *testing.T) {
 	}{
 		{"Metric for Node condition Ready",
 			"Ready",
-			"k8s/node/condition_ready",
+			"k8s.node.condition_ready",
 		},
 		{"Metric for Node condition MemoryPressure",
 			"MemoryPressure",
-			"k8s/node/condition_memory_pressure",
+			"k8s.node.condition_memory_pressure",
 		},
 		{"Metric for Node condition DiskPressure",
 			"DiskPressure",
-			"k8s/node/condition_disk_pressure",
+			"k8s.node.condition_disk_pressure",
 		},
 	}
 

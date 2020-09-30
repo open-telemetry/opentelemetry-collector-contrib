@@ -30,7 +30,7 @@ const (
 )
 
 var activeJobs = &metricspb.MetricDescriptor{
-	Name:        "k8s/cronjob/active_jobs",
+	Name:        "k8s.cronjob.active_jobs",
 	Description: "The number of actively running jobs for a cronjob",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
