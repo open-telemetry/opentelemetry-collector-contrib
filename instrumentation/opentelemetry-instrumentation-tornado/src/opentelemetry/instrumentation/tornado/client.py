@@ -38,15 +38,17 @@ def fetch_async(tracer, func, _, args, kwargs):
     request = args[0]
 
     span = tracer.start_span(
-        request.method,
-        kind=trace.SpanKind.CLIENT,
-        attributes={
+        request.method, kind=trace.SpanKind.CLIENT, start_time=start_time,
+    )
+
+    if span.is_recording():
+        attributes = {
             "component": "tornado",
             "http.url": request.url,
             "http.method": request.method,
-        },
-        start_time=start_time,
-    )
+        }
+        for key, value in attributes.items():
+            span.set_attribute(key, value)
 
     with tracer.use_span(span):
         propagators.inject(type(request.headers).__setitem__, request.headers)
@@ -61,7 +63,7 @@ def _finish_tracing_callback(future, span):
     status_code = None
     description = None
     exc = future.exception()
-    if exc:
+    if span.is_recording() and exc:
         if isinstance(exc, HTTPError):
             status_code = exc.code
         description = "{}: {}".format(type(exc).__name__, exc)
