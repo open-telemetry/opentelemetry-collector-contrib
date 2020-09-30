@@ -23,5 +23,5 @@ type Config struct {
 	configmodels.ExporterSettings 		 `mapstructure:",squash"`
 	Token                         string `mapstructure:"account_token"`           // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
 	Region                        string `mapstructure:"region"`                  // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
-	CustomEndpoint                string `mapstructure:"custom_endpoint"` 		  // Custom endpoint to ship traces to. Use only for dev and tests. The will override the Region parameter
+	CustomEndpoint                string `mapstructure:"custom_endpoint"` 	      // Custom endpoint to ship traces to. Use only for dev and tests. The will override the Region parameter
 }
