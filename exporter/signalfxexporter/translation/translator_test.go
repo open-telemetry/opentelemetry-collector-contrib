@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -36,6 +39,14 @@ func (dps byContent) Less(i, j int) bool {
 	return string(ib) < string(jb)
 }
 func (dps byContent) Swap(i, j int) { dps[i], dps[j] = dps[j], dps[i] }
+
+type byDimensions []*sfxpb.Dimension
+
+func (dims byDimensions) Len() int { return len(dims) }
+func (dims byDimensions) Less(i, j int) bool {
+	return dims[i].Key < dims[j].Key
+}
+func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
 
 func TestNewMetricTranslator(t *testing.T) {
 	tests := []struct {
@@ -113,6 +124,38 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
+			name: "rename_metric_valid_add_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					AddDimensions: map[string]string{
+						"dim1": "val1",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
+			name: "rename_metric_valid_copy_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "dim2",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
 			name: "rename_metric_invalid",
 			trs: []Rule{
 				{
@@ -121,6 +164,22 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantDimensionsMap: nil,
 			wantError:         "field \"mapping\" is required for \"rename_metrics\" translation rule",
+		},
+		{
+			name: "rename_metric_invalid_copy_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         `mapping "copy_dimensions" for "rename_metrics" translation rule must not contain empty string keys or values`,
 		},
 		{
 			name: "rename_dimensions_and_metrics_valid",
@@ -460,11 +519,20 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantDimensionsMap: nil,
 			wantError:         `field "metric_names" is required for "drop_metrics" translation rule`,
 		},
+		{
+			name: "delta_metric_invalid",
+			trs: []Rule{
+				{
+					Action: ActionDeltaMetric,
+				},
+			},
+			wantError: `field "mapping" is required for "delta_metric" translation rule`,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs)
+			mt, err := NewMetricTranslator(tt.trs, 1)
 			if tt.wantError == "" {
 				require.NoError(t, err)
 				require.NotNil(t, mt)
@@ -472,7 +540,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				assert.Equal(t, tt.wantDimensionsMap, mt.dimensionsMap)
 			} else {
 				require.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				require.Nil(t, mt)
 			}
 		})
@@ -642,6 +710,43 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
 					Dimensions: []*sfxpb.Dimension{},
 				},
 			},
@@ -653,7 +758,91 @@ func TestTranslateDataPoints(t *testing.T) {
 						IntValue: generateIntPtr(13),
 					},
 					MetricType: &gaugeType,
-					Dimensions: []*sfxpb.Dimension{},
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_metric and add with existing dimension",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					AddDimensions: map[string]string{
+						"dim2": "val2",
+						"dim3": "val3",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim1", Value: "val1"},
+						{Key: "dim2", Value: "val2"},
+						{Key: "dim3", Value: "val3"},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_metric with copy dimension",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "copied1",
+						"dim2": "copied2",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim1", Value: "val1"},
+						{Key: "copied1", Value: "val1"},
+					},
 				},
 			},
 		},
@@ -1496,6 +1685,144 @@ func TestTranslateDataPoints(t *testing.T) {
 			},
 		},
 		{
+			name: "aggregate_metric_mean",
+			trs: []Rule{
+				{
+					Action:            ActionAggregateMetric,
+					MetricName:        "metric1",
+					WithoutDimensions: []string{"dim3"},
+					AggregationMethod: "avg",
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "different",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.6),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.0),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "drop_metrics",
 			trs: []Rule{
 				{
@@ -1546,7 +1873,7 @@ func TestTranslateDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs)
+			mt, err := NewMetricTranslator(tt.trs, 1)
 			require.NoError(t, err)
 			assert.NotEqualValues(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
@@ -1570,6 +1897,16 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 		sort.Sort(byContent(got))
 	}
 
+	if action == ActionRenameMetrics {
+		for _, dp := range want {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
+
+		for _, dp := range got {
+			sort.Sort(byDimensions(dp.Dimensions))
+		}
+	}
+
 	assert.EqualValues(t, want, got)
 }
 
@@ -1582,7 +1919,7 @@ func TestTestTranslateDimension(t *testing.T) {
 				"old.dimension": "new.dimension",
 			},
 		},
-	})
+	}, 1)
 	require.NoError(t, err)
 
 	assert.Equal(t, "new_dimension", mt.TranslateDimension("old_dimension"))
@@ -1590,7 +1927,7 @@ func TestTestTranslateDimension(t *testing.T) {
 	assert.Equal(t, "another_dimension", mt.TranslateDimension("another_dimension"))
 
 	// Test no rename_dimension_keys translation rule
-	mt, err = NewMetricTranslator([]Rule{})
+	mt, err = NewMetricTranslator([]Rule{}, 1)
 	require.NoError(t, err)
 	assert.Equal(t, "old_dimension", mt.TranslateDimension("old_dimension"))
 }
@@ -1618,7 +1955,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    nil,
 			metric2: "metric2",
 			val2:    generateIntPtr(1),
-			wantErr: "calculate_new_metric: operand1 has no IntValue",
+			wantErr: "calculate_new_metric: operand1 has no numeric value",
 		},
 		{
 			name:    "operand2_nil",
@@ -1634,7 +1971,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 			val1:    generateIntPtr(1),
 			metric2: "metric2",
 			val2:    nil,
-			wantErr: "calculate_new_metric: operand2 has no IntValue",
+			wantErr: "calculate_new_metric: operand2 has no numeric value",
 		},
 		{
 			name:    "divide_by_zero",
@@ -1681,7 +2018,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 				Operand1Metric: "metric1",
 				Operand2Metric: "metric2",
 				Operator:       MetricOperatorDivision,
-			}})
+			}}, 1)
 			require.NoError(t, err)
 			tr := mt.TranslateDataPoints(logger, dps)
 			require.Equal(t, 2, len(tr))
@@ -1702,7 +2039,7 @@ func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "*",
-	}})
+	}}, 1)
 	require.Errorf(
 		t,
 		err,
@@ -1858,7 +2195,7 @@ func TestCalculateNewMetric_MatchingDims_Single(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}})
+	}}, 1)
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -1909,7 +2246,7 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}})
+	}}, 1)
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -1986,6 +2323,68 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		}},
 	}
 	want := []*sfxpb.DataPoint{m1, m2, m1v2, m2v2, m3, m3v2}
+	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
+}
+
+func TestUnsupportedOperator(t *testing.T) {
+	_, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "*",
+	}}, 1)
+	require.Error(t, err)
+}
+
+func TestCalculateNewMetric_Double(t *testing.T) {
+	mt, err := NewMetricTranslator([]Rule{{
+		Action:         ActionCalculateNewMetric,
+		MetricName:     "metric3",
+		Operand1Metric: "metric1",
+		Operand2Metric: "metric2",
+		Operator:       "/",
+	}}, 1)
+	require.NoError(t, err)
+	m1 := &sfxpb.DataPoint{
+		Metric:     "metric1",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(1),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	m2 := &sfxpb.DataPoint{
+		Metric:     "metric2",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(2),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	dps := []*sfxpb.DataPoint{m1, m2}
+	translated := mt.TranslateDataPoints(zap.NewNop(), dps)
+	m3 := &sfxpb.DataPoint{
+		Metric:     "metric3",
+		Timestamp:  msec,
+		MetricType: &gaugeType,
+		Value: sfxpb.Datum{
+			DoubleValue: generateFloatPtr(0.5),
+		},
+		Dimensions: []*sfxpb.Dimension{{
+			Key:   "dim1",
+			Value: "val1",
+		}},
+	}
+	want := []*sfxpb.DataPoint{m1, m2, m3}
 	assertEqualPoints(t, translated, want, ActionCalculateNewMetric)
 }
 
@@ -2071,5 +2470,216 @@ func TestDimensionsEqual(t *testing.T) {
 			b := dimensionsEqual(test.d1, test.d2)
 			require.Equal(t, test.want, b)
 		})
+	}
+}
+
+func TestDeltaMetricDouble(t *testing.T) {
+	const delta1 = 3
+	const delta2 = 5
+	md1 := doubleMD(10, 0)
+	md2 := doubleMD(20, delta1)
+	md3 := doubleMD(30, delta1+delta2)
+
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, delta1, *pt.Value.DoubleValue)
+	}
+	for _, pt := range pts2 {
+		require.EqualValues(t, delta2, *pt.Value.DoubleValue)
+	}
+}
+
+func TestDeltaMetricInt(t *testing.T) {
+	const delta1 = 7
+	const delta2 = 11
+	md1 := intMD(10, 0)
+	md2 := intMD(20, delta1)
+	md3 := intMD(30, delta1+delta2)
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, delta1, *pt.Value.IntValue)
+	}
+	for _, pt := range pts2 {
+		require.EqualValues(t, delta2, *pt.Value.IntValue)
+	}
+}
+
+func TestNegativeDeltas(t *testing.T) {
+	md1 := intMD(10, 0)
+	md2 := intMD(20, 13)
+	md3 := intMDAfterReset(30, 5)
+	pts1, pts2 := requireDeltaMetricOk(t, md1, md2, md3)
+	for _, pt := range pts1 {
+		require.EqualValues(t, 13, *pt.Value.IntValue)
+	}
+	for _, pt := range pts2 {
+		// since the counter went down (assuming a reset), we expect a delta of the most recent value
+		require.EqualValues(t, 5, *pt.Value.IntValue)
+	}
+}
+
+func TestDeltaTranslatorNoMatchingMapping(t *testing.T) {
+	c := testConverter(t, map[string]string{"foo": "bar"})
+	md := intMD(1, 1)
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md}, nil)
+	idx := indexPts(pts)
+	require.Equal(t, 1, len(idx))
+}
+
+func TestDeltaTranslatorMismatchedValueTypes(t *testing.T) {
+	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
+	md1 := baseMD()
+	md1.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", 1, 1, 1),
+	}
+	_, _ = c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
+	md2 := baseMD()
+	md2.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		dblTS("cpu0", "user", 1, 1, 1),
+	}
+	pts, _ := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
+	idx := indexPts(pts)
+	require.Equal(t, 1, len(idx))
+}
+
+func requireDeltaMetricOk(t *testing.T, md1, md2, md3 consumerdata.MetricsData) (
+	[]*sfxpb.DataPoint, []*sfxpb.DataPoint,
+) {
+	c := testConverter(t, map[string]string{"system.cpu.time": "system.cpu.delta"})
+
+	dp1, dropped1 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md1}, nil)
+	require.Equal(t, 0, dropped1)
+	m1 := indexPts(dp1)
+	require.Equal(t, 1, len(m1))
+
+	dp2, dropped2 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md2}, nil)
+	require.Equal(t, 0, dropped2)
+	m2 := indexPts(dp2)
+	require.Equal(t, 2, len(m2))
+
+	origPts, ok := m2["system.cpu.time"]
+	require.True(t, ok)
+
+	deltaPts1, ok := m2["system.cpu.delta"]
+	require.True(t, ok)
+	require.Equal(t, len(origPts), len(deltaPts1))
+	counterType := sfxpb.MetricType_GAUGE
+	for _, pt := range deltaPts1 {
+		require.Equal(t, &counterType, pt.MetricType)
+	}
+
+	dp3, dropped3 := c.MetricDataToSignalFxV2([]consumerdata.MetricsData{md3}, nil)
+	require.Equal(t, 0, dropped3)
+	m3 := indexPts(dp3)
+	require.Equal(t, 2, len(m3))
+
+	deltaPts2, ok := m3["system.cpu.delta"]
+	require.True(t, ok)
+	require.Equal(t, len(origPts), len(deltaPts2))
+	for _, pt := range deltaPts2 {
+		require.Equal(t, &counterType, pt.MetricType)
+	}
+	return deltaPts1, deltaPts2
+}
+
+func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {
+	rules := []Rule{{
+		Action:  ActionDeltaMetric,
+		Mapping: mapping,
+	}}
+	tr, err := NewMetricTranslator(rules, 1)
+	require.NoError(t, err)
+
+	c := NewMetricsConverter(zap.NewNop(), tr)
+	return c
+}
+
+func indexPts(pts []*sfxpb.DataPoint) map[string][]*sfxpb.DataPoint {
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range pts {
+		l := m[pt.Metric]
+		m[pt.Metric] = append(l, pt)
+	}
+	return m
+}
+
+func doubleMD(secondsDelta int64, valueDelta float64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		dblTS("cpu0", "user", secondsDelta, 100, valueDelta),
+		dblTS("cpu0", "system", secondsDelta, 200, valueDelta),
+		dblTS("cpu0", "idle", secondsDelta, 300, valueDelta),
+		dblTS("cpu1", "user", secondsDelta, 111, valueDelta),
+		dblTS("cpu1", "system", secondsDelta, 222, valueDelta),
+		dblTS("cpu1", "idle", secondsDelta, 333, valueDelta),
+	}
+	return md
+}
+
+func intMD(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", secondsDelta, 100, valueDelta),
+		intTS("cpu0", "system", secondsDelta, 200, valueDelta),
+		intTS("cpu0", "idle", secondsDelta, 300, valueDelta),
+		intTS("cpu1", "user", secondsDelta, 111, valueDelta),
+		intTS("cpu1", "system", secondsDelta, 222, valueDelta),
+		intTS("cpu1", "idle", secondsDelta, 333, valueDelta),
+	}
+	return md
+}
+
+func intMDAfterReset(secondsDelta int64, valueDelta int64) consumerdata.MetricsData {
+	md := baseMD()
+	md.Metrics[0].Timeseries = []*metricspb.TimeSeries{
+		intTS("cpu0", "user", secondsDelta, 0, valueDelta),
+		intTS("cpu0", "system", secondsDelta, 0, valueDelta),
+		intTS("cpu0", "idle", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "user", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "system", secondsDelta, 0, valueDelta),
+		intTS("cpu1", "idle", secondsDelta, 0, valueDelta),
+	}
+	return md
+}
+
+func baseMD() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{{
+			MetricDescriptor: &metricspb.MetricDescriptor{
+				Name: "system.cpu.time",
+				Unit: "s",
+				Type: 5,
+				LabelKeys: []*metricspb.LabelKey{
+					{Key: "cpu"},
+					{Key: "state"},
+				},
+			},
+		}},
+	}
+}
+
+func dblTS(lbl0 string, lbl1 string, secondsDelta int64, v float64, valueDelta float64) *metricspb.TimeSeries {
+	ts := baseTS(lbl0, lbl1, secondsDelta)
+	ts.Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: v + valueDelta}
+	return ts
+}
+
+func intTS(lbl0 string, lbl1 string, secondsDelta int64, v int64, valueDelta int64) *metricspb.TimeSeries {
+	ts := baseTS(lbl0, lbl1, secondsDelta)
+	ts.Points[0].Value = &metricspb.Point_Int64Value{Int64Value: v + valueDelta}
+	return ts
+}
+
+func baseTS(lbl0 string, lbl1 string, secondsDelta int64) *metricspb.TimeSeries {
+	const startTime = 1600000000
+	return &metricspb.TimeSeries{
+		StartTimestamp: &timestamp.Timestamp{Seconds: startTime},
+		LabelValues: []*metricspb.LabelValue{
+			{Value: lbl0, HasValue: true},
+			{Value: lbl1, HasValue: true},
+		},
+		Points: []*metricspb.Point{{
+			Timestamp: &timestamp.Timestamp{Seconds: startTime + secondsDelta},
+		}},
 	}
 }

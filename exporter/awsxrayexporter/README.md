@@ -3,7 +3,7 @@
 This exporter converts OpenTelemetry spans to 
 [AWS X-Ray Segment Documents](https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html)
 and then sends them directly to X-Ray using the 
-[PutTraceSegements](https://docs.aws.amazon.com/xray/latest/api/API_PutTraceSegments.html) API.
+[PutTraceSegments](https://docs.aws.amazon.com/xray/latest/api/API_PutTraceSegments.html) API.
 
 ## Data Conversion
 

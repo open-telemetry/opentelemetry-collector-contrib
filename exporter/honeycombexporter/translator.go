@@ -68,7 +68,7 @@ func timestampToTime(ts *timestamppb.Timestamp) (t time.Time) {
 	if ts == nil {
 		return
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
+	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC()
 }
 
 // getStatusCode returns the status code
@@ -109,8 +109,14 @@ func getTraceLevelFields(node *commonpb.Node, resource *resourcepb.Resource, sou
 			if len(process.HostName) != 0 {
 				fields["process.hostname"] = process.HostName
 			}
-			fields["process.pid"] = process.Pid
-			fields["opencensus.start_timestamp"] = timestampToTime(process.StartTimestamp)
+			if process.Pid != 0 {
+				fields["process.pid"] = process.Pid
+			}
+
+			startTime := timestampToTime(process.StartTimestamp)
+			if startTime != (time.Time{}) {
+				fields["opencensus.start_timestamp"] = startTime
+			}
 		}
 	}
 

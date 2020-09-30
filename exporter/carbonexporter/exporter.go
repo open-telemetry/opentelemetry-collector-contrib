@@ -23,8 +23,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 // newCarbonExporter returns a new Carbon exporter.
@@ -58,7 +58,7 @@ type carbonSender struct {
 }
 
 func (cs *carbonSender) pushMetricsData(_ context.Context, md pdata.Metrics) (int, error) {
-	lines, converted, dropped := metricDataToPlaintext(pdatautil.MetricsToMetricsData(md))
+	lines, converted, dropped := metricDataToPlaintext(internaldata.MetricsToOC(md))
 
 	if _, err := cs.connPool.Write([]byte(lines)); err != nil {
 		// Use the sum of converted and dropped since the write failed for all.

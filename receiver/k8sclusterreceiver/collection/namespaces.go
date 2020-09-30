@@ -27,7 +27,7 @@ func getMetricsForNamespace(ns *corev1.Namespace) []*resourceMetrics {
 	metrics := []*metricspb.Metric{
 		{
 			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "k8s/namespace/phase",
+				Name:        "k8s.namespace.phase",
 				Description: "The current phase of namespaces (1 for active and 0 for terminating)",
 				Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 			},

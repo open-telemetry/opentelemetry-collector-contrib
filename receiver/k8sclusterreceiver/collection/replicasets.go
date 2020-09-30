@@ -29,7 +29,7 @@ func getMetricsForReplicaSet(rs *appsv1.ReplicaSet) []*resourceMetrics {
 		{
 			resource: getResourceForReplicaSet(rs),
 			metrics: getReplicaMetrics(
-				"replica_set",
+				"replicaset",
 				*rs.Spec.Replicas,
 				rs.Status.AvailableReplicas,
 			),

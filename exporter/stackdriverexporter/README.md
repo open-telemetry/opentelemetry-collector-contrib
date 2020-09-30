@@ -13,6 +13,8 @@ The following configuration options are supported:
 - `skip_create_metric_descriptor` (optional): Whether to skip creating the metric descriptor.
 - `resource_mappings` (optional): ResourceMapping defines mapping of resources from source (OpenCensus) to target (Stackdriver).
 - `label_mappings`.`optional` (optional): Optional flag signals whether we can proceed with transformation if a label is missing in the resource.
+- `user_agent` (optional): Override the user agent string sent on requests to Cloud Monitoring (currently only applies to metrics). Specify `{{version}}` to include the application version number. Defaults to `opentelemetry-collector-contrib {{version}}`.
+
 Example:
 
 ```yaml
@@ -22,6 +24,7 @@ exporters:
     project: my-project
     metric_prefix: prefix
     endpoint: test-endpoint
+    user_agent: my-collector {{version}}
     number_of_workers: 3
     skip_create_metric_descriptor: true
     use_insecure: true

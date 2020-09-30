@@ -41,7 +41,8 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -56,6 +57,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		SendCompatibleMetrics: false,
 		TranslationRules:      nil,
+		DeltaTranslationTTL:   3600,
 	}
 }
 
@@ -66,11 +68,9 @@ func createMetricsExporter(
 ) (exp component.MetricsExporter, err error) {
 
 	expCfg := config.(*Config)
-	if expCfg.SendCompatibleMetrics && expCfg.TranslationRules == nil {
-		expCfg.TranslationRules, err = loadDefaultTranslationRules()
-		if err != nil {
-			return nil, err
-		}
+	err = setTranslationRules(expCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	exp, err = newSignalFxExporter(expCfg, params.Logger)
@@ -80,6 +80,21 @@ func createMetricsExporter(
 	}
 
 	return exp, nil
+}
+
+func setTranslationRules(cfg *Config) error {
+	if cfg.SendCompatibleMetrics && cfg.TranslationRules == nil {
+		defaultRules, err := loadDefaultTranslationRules()
+		if err != nil {
+			return err
+		}
+		cfg.TranslationRules = defaultRules
+	}
+	if len(cfg.ExcludeMetrics) > 0 {
+		cfg.TranslationRules = append(cfg.TranslationRules,
+			translation.GetExcludeMetricsRule(cfg.ExcludeMetrics))
+	}
+	return nil
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
@@ -94,4 +109,14 @@ func loadDefaultTranslationRules() ([]translation.Rule, error) {
 	}
 
 	return config.TranslationRules, nil
+}
+
+func createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.LogsExporter, error) {
+	oCfg := cfg.(*Config)
+
+	return NewEventExporter(oCfg, params.Logger)
 }

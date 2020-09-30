@@ -12,14 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build integration
+package cloud
 
-package common
-
-import (
-	"testing"
+const (
+	// ProviderAWS is used in cloud.provider label for AWS.
+	ProviderAWS = "aws"
+	// ProviderGCP is used in cloud.provider label for GCP.
+	ProviderGCP = "gcp"
 )
-
-func TestIntegration(t *testing.T) {
-	t.Log("just for exercising integration coverage, remove in next PR")
-}

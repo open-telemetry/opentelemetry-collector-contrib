@@ -75,6 +75,10 @@ var (
 
 	// infinity bound dimension value is used on all histograms.
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
+
+	// TODO: expose the constants somewhere in the project and share with resource detector processor
+	cloudProviderAWS = "aws"
+	cloudProviderGCP = "gcp"
 )
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
@@ -412,6 +416,7 @@ func float64ToDimValue(f float64) string {
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
 func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr map[string]string) []*sfxpb.Dimension {
+	// TODO: Replace with internal/common/splunk/hostid.go once signalfxexporter is converted to pdata.
 	accountID := resourceAttr[conventions.AttributeCloudAccount]
 	region := resourceAttr[conventions.AttributeCloudRegion]
 	instanceID := resourceAttr[conventions.AttributeHostID]
@@ -420,8 +425,7 @@ func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr 
 	filter := func(k string) bool { return true }
 
 	switch provider {
-	// TODO: Should these be defined as constants in resourcedetector module that we import or somewhere else?
-	case "ec2":
+	case cloudProviderAWS:
 		if instanceID == "" || region == "" || accountID == "" {
 			break
 		}
@@ -435,7 +439,7 @@ func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr 
 			Key:   "AWSUniqueId",
 			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
 		})
-	case "gce":
+	case cloudProviderGCP:
 		if accountID == "" || instanceID == "" {
 			break
 		}

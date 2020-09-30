@@ -3,18 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.14
 
 require (
-	github.com/Azure/go-autorest/autorest/adal v0.9.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.9.1-0.20200828041256-df1879c6390f
-	go.uber.org/zap v1.15.0
-	k8s.io/api v0.19.0
-	k8s.io/apimachinery v0.19.0
-	k8s.io/client-go v0.19.0
-	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
+	go.opentelemetry.io/collector v0.11.1-0.20200924160956-8690937037da
+	go.uber.org/zap v1.16.0
+	k8s.io/api v0.19.2
+	k8s.io/apimachinery v0.19.2
+	k8s.io/client-go v0.19.2
+	k8s.io/utils v0.0.0-20200821003339-5e75c0163111
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../../internal/common
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../../internal/k8sconfig

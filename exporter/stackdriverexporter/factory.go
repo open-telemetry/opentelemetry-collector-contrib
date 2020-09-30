@@ -56,23 +56,24 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
+		UserAgent:       "opentelemetry-collector-contrib {{version}}",
 	}
 }
 
 // createTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.TraceExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverTraceExporter(eCfg)
+	return newStackdriverTraceExporter(eCfg, params.ApplicationStartInfo.Version)
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
 	_ context.Context,
-	_ component.ExporterCreateParams,
+	params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	eCfg := cfg.(*Config)
-	return newStackdriverMetricsExporter(eCfg)
+	return newStackdriverMetricsExporter(eCfg, params.ApplicationStartInfo.Version)
 }

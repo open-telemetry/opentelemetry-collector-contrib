@@ -34,9 +34,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
 func TestNew(t *testing.T) {
@@ -80,19 +80,16 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	addr := testutil.GetAvailableLocalAddress(t)
-
-	smallBatch := pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{
-		{
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Gauge(
-					"test_gauge",
-					[]string{"k0", "k1"},
-					metricstestutil.Timeseries(
-						time.Now(),
-						[]string{"v0", "v1"},
-						metricstestutil.Double(time.Now(), 123))),
-			},
+	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
+	smallBatch := internaldata.OCToMetrics(consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			metricstestutil.Gauge(
+				"test_gauge",
+				[]string{"k0", "k1"},
+				metricstestutil.Timeseries(
+					time.Now(),
+					[]string{"v0", "v1"},
+					metricstestutil.Double(time.Now(), 123))),
 		},
 	})
 
@@ -139,6 +136,7 @@ func TestConsumeMetricsData(t *testing.T) {
 		testName := fmt.Sprintf(
 			"%s_createServer_%t_acceptClient_%t", tt.name, tt.createServer, tt.acceptClient)
 		t.Run(testName, func(t *testing.T) {
+			addr := testutil.GetAvailableLocalAddress(t)
 			var ln *net.TCPListener
 			if tt.createServer {
 				laddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -148,7 +146,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				defer ln.Close()
 			}
 
-			config := &Config{Endpoint: addr, Timeout: 500 * time.Millisecond}
+			config := &Config{Endpoint: addr, Timeout: 1000 * time.Millisecond}
 			exp, err := newCarbonExporter(config)
 			require.NoError(t, err)
 
@@ -173,10 +171,10 @@ func TestConsumeMetricsData(t *testing.T) {
 			// Each metric point will generate one Carbon line, set up the wait
 			// for all of them.
 			var wg sync.WaitGroup
-			_, mpc := pdatautil.MetricAndDataPointCount(tt.md)
+			_, mpc := tt.md.MetricAndDataPointCount()
 			wg.Add(mpc)
 			go func() {
-				ln.SetDeadline(time.Now().Add(time.Second))
+				assert.NoError(t, ln.SetDeadline(time.Now().Add(time.Second)))
 				conn, err := ln.AcceptTCP()
 				require.NoError(t, err)
 				defer conn.Close()
@@ -196,6 +194,8 @@ func TestConsumeMetricsData(t *testing.T) {
 					wg.Done()
 				}
 			}()
+
+			<-time.After(100 * time.Millisecond)
 
 			require.NoError(t, exp.ConsumeMetrics(context.Background(), tt.md))
 			assert.NoError(t, exp.Shutdown(context.Background()))
@@ -230,7 +230,7 @@ func Test_connPool_Concurrency(t *testing.T) {
 	}(&doneFlag)
 
 	var recvWG sync.WaitGroup
-	recvWG.Add(concurrentWriters * writesPerRoutine * pdatautil.MetricCount(md))
+	recvWG.Add(concurrentWriters * writesPerRoutine * md.MetricCount())
 	go func() {
 		for {
 			conn, err := ln.AcceptTCP()
@@ -306,5 +306,5 @@ func generateLargeBatch() pdata.Metrics {
 		)
 	}
 
-	return pdatautil.MetricsFromMetricsData([]consumerdata.MetricsData{md})
+	return internaldata.OCToMetrics(md)
 }

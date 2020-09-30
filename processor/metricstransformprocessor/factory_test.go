@@ -91,8 +91,8 @@ func TestCreateProcessors(t *testing.T) {
 				tp, tErr := factory.CreateTraceProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					exportertest.NewNopTraceExporter(),
-					cfg)
+					cfg,
+					exportertest.NewNopTraceExporter())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -100,8 +100,8 @@ func TestCreateProcessors(t *testing.T) {
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					exportertest.NewNopMetricsExporter(),
-					cfg)
+					cfg,
+					exportertest.NewNopMetricsExporter())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
@@ -162,13 +162,18 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			NewName:    "new-name",
 			Operations: []Operation{
 				{
+					Action:   AddLabel,
+					NewLabel: "new-label",
+					NewValue: "new-value {{version}}",
+				},
+				{
 					Action:   UpdateLabel,
 					Label:    "label",
 					NewLabel: "new-label",
 					ValueActions: []ValueAction{
 						{
 							Value:    "value",
-							NewValue: "new/value",
+							NewValue: "new/value {{version}}",
 						},
 					},
 				},
@@ -196,17 +201,24 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			Operations: []internalOperation{
 				{
 					configOperation: Operation{
+						Action:   AddLabel,
+						NewLabel: "new-label",
+						NewValue: "new-value v0.0.1",
+					},
+				},
+				{
+					configOperation: Operation{
 						Action:   UpdateLabel,
 						Label:    "label",
 						NewLabel: "new-label",
 						ValueActions: []ValueAction{
 							{
 								Value:    "value",
-								NewValue: "new/value",
+								NewValue: "new/value v0.0.1",
 							},
 						},
 					},
-					valueActionsMapping: map[string]string{"value": "new/value"},
+					valueActionsMapping: map[string]string{"value": "new/value v0.0.1"},
 				},
 				{
 					configOperation: Operation{
@@ -236,7 +248,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms := buildHelperConfig(oCfg)
+	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]

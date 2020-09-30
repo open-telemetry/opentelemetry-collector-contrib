@@ -17,7 +17,7 @@ package kubelet
 import (
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 // Config for a kubelet client for talking to a kubelet HTTP endpoint.

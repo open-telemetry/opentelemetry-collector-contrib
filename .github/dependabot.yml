@@ -26,6 +26,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/routingprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
     schedule:
       interval: "weekly"
@@ -35,6 +39,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/dockerstatsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -74,6 +82,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/receiver/splunkhecreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/receiver/wavefrontreceiver"
     schedule:
       interval: "weekly"
@@ -86,11 +98,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/internal/k8sconfig"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/internal/awsxray/testdata/sampleapp"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/internal/awsxray/testdata/sampleserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/jmxmetricsextension"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -159,5 +179,9 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/stackdriverexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/tracegen"
     schedule:
       interval: "weekly"

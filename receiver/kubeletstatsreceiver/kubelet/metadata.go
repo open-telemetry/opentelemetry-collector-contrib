@@ -55,12 +55,12 @@ func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 type Metadata struct {
 	Labels                  map[MetadataLabel]bool
 	PodsMetadata            *v1.PodList
-	DetailedPVCLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error
+	DetailedPVCLabelsSetter func(volCacheID, volumeClaim, namespace string, labels map[string]string) error
 }
 
 func NewMetadata(
 	labels []MetadataLabel, podsMetadata *v1.PodList,
-	detailedPVCLabelsSetter func(volumeClaim, namespace string, labels map[string]string) error) Metadata {
+	detailedPVCLabelsSetter func(volCacheID, volumeClaim, namespace string, labels map[string]string) error) Metadata {
 	return Metadata{
 		Labels:                  getLabelsMap(labels),
 		PodsMetadata:            podsMetadata,

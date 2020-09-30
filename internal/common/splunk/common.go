@@ -17,8 +17,11 @@ package splunk
 import "strings"
 
 const (
-	SFxAccessTokenHeader = "X-Sf-Token"
-	SFxAccessTokenLabel  = "com.splunk.signalfx.access_token"
+	SFxAccessTokenHeader  = "X-Sf-Token"
+	SFxAccessTokenLabel   = "com.splunk.signalfx.access_token"
+	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
+	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
+	SourcetypeLabel       = "com.splunk.sourcetype"
 )
 
 type AccessTokenPassthroughConfig struct {

@@ -16,19 +16,22 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 )
 
 const (
 	transport = "http"
+
+	defaultInitialSyncTimeout = 10 * time.Minute
 )
 
 var _ component.MetricsReceiver = (*kubernetesReceiver)(nil)
@@ -53,7 +56,24 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	}
 
 	go func() {
-		kr.resourceWatcher.startWatchingResources(c.Done())
+		kr.logger.Info("Starting shared informers and wait for initial cache sync.")
+		kr.resourceWatcher.startWatchingResources(c)
+
+		// Wait till either the initial cache sync times out or until the cancel method
+		// corresponding to this context is called.
+		<-kr.resourceWatcher.timedContextForInitialSync.Done()
+
+		// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
+		// this timeout is 10 minutes, which appears to be long enough.
+		if kr.resourceWatcher.timedContextForInitialSync.Err() == context.DeadlineExceeded {
+			kr.resourceWatcher.initialSyncTimedOut.Store(true)
+			kr.logger.Error("Timed out waiting for initial cache sync.")
+			host.ReportFatalError(fmt.Errorf("failed to start receiver: %s", kr.config.NameVal))
+			return
+		}
+
+		kr.logger.Info("Completed syncing shared informer caches.")
+		kr.resourceWatcher.initialSyncDone.Store(true)
 
 		ticker := time.NewTicker(kr.config.CollectionInterval)
 		defer ticker.Stop()
@@ -79,11 +99,11 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
-	resourceMetrics := pdatautil.MetricsFromMetricsData(mds)
+	resourceMetrics := internaldata.OCSliceToMetrics(mds)
 
 	c := obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 
-	numTimeseries, numPoints := pdatautil.MetricAndDataPointCount(resourceMetrics)
+	numTimeseries, numPoints := resourceMetrics.MetricAndDataPointCount()
 
 	err := kr.consumer.ConsumeMetrics(c, resourceMetrics)
 	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, numTimeseries, err)
@@ -93,7 +113,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 func newReceiver(
 	logger *zap.Logger, config *Config, consumer consumer.MetricsConsumer,
 	client kubernetes.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport)
+	resourceWatcher := newResourceWatcher(logger, client, config.NodeConditionTypesToReport, defaultInitialSyncTimeout)
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,

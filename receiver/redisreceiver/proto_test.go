@@ -150,19 +150,19 @@ func getProtoMetric(t *testing.T, redisMetric *redisMetric, serverName string) *
 	return metric
 }
 
-func getMetricData(t *testing.T, metric *redisMetric, serverName string) *consumerdata.MetricsData {
+func getMetricData(t *testing.T, metric *redisMetric, serverName string) consumerdata.MetricsData {
 	md, warnings, err := getMetricDataErr(metric, serverName)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	return md
 }
 
-func getMetricDataErr(metric *redisMetric, serverName string) (*consumerdata.MetricsData, []error, error) {
+func getMetricDataErr(metric *redisMetric, serverName string) (consumerdata.MetricsData, []error, error) {
 	redisMetrics := []*redisMetric{metric}
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
 	if err != nil {
-		return nil, nil, err
+		return consumerdata.MetricsData{}, nil, err
 	}
 	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, getDefaultTimeBundle())
 	md := newMetricsData(protoMetrics, serverName)

@@ -45,6 +45,8 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 			case conventions.AttributeServiceInstance:
 				serviceNode.ConfiguredName = truncate(v.StringVal())
 				service.Node = &serviceNode
+			case conventions.AttributeDeploymentEnvironment:
+				service.Environment = truncate(v.StringVal())
 
 			case conventions.AttributeTelemetrySDKName:
 				agent.Name = truncate(v.StringVal())

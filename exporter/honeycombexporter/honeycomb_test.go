@@ -194,12 +194,12 @@ func TestExporter(t *testing.T) {
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
-				"meta.span_type":      "link",
-				"span_link_attr":      float64(12345),
-				"trace.trace_id":      "01",
-				"trace.parent_id":     "03",
-				"trace.link.span_id":  "05",
-				"trace.link.trace_id": "04",
+				"meta.annotation_type": "link",
+				"span_link_attr":       float64(12345),
+				"trace.trace_id":       "01",
+				"trace.parent_id":      "03",
+				"trace.link.span_id":   "05",
+				"trace.link.trace_id":  "04",
 			},
 		},
 		{
@@ -208,6 +208,7 @@ func TestExporter(t *testing.T) {
 				"has_remote_parent":                      false,
 				"name":                                   "client",
 				"service_name":                           "test_service",
+				"span_kind":                              "client",
 				"source_format":                          "otlp_trace",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -226,6 +227,7 @@ func TestExporter(t *testing.T) {
 				"has_remote_parent":                      true,
 				"name":                                   "server",
 				"service_name":                           "test_service",
+				"span_kind":                              "server",
 				"source_format":                          "otlp_trace",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
@@ -243,7 +245,7 @@ func TestExporter(t *testing.T) {
 				"A":                       "B",
 				"B":                       "D",
 				"attribute_name":          "Hello MessageEvent",
-				"meta.span_type":          "span_event",
+				"meta.annotation_type":    "span_event",
 				"name":                    "Some Description",
 				"opencensus.resourcetype": "override",
 				"service_name":            "test_service",
@@ -261,6 +263,7 @@ func TestExporter(t *testing.T) {
 				"service_name":                           "test_service",
 				"source_format":                          "otlp_trace",
 				"span_attr_name":                         "Span Attribute",
+				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
 				"trace.span_id":                          "02",
@@ -301,6 +304,7 @@ func TestEmptyNode(t *testing.T) {
 				"has_remote_parent":                      false,
 				"name":                                   "root",
 				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
 				"status.code":                            float64(0),
 				"status.message":                         "OK",
 				"trace.span_id":                          "02",
@@ -313,4 +317,125 @@ func TestEmptyNode(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("otel span: (-want +got):\n%s", diff)
 	}
+}
+
+type testNodeCase struct {
+	name       string
+	identifier *commonpb.ProcessIdentifier
+	expected   map[string]interface{}
+}
+
+func TestNode(t *testing.T) {
+
+	testcases := []testNodeCase{
+		{
+			name: "all_information",
+			identifier: &commonpb.ProcessIdentifier{
+				HostName: "my-host",
+				Pid:      123,
+				StartTimestamp: &timestamppb.Timestamp{
+					Seconds: 1599596112,
+					Nanos:   0,
+				},
+			},
+			expected: map[string]interface{}{
+				"B":                                      "C",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.resourcetype":                "container",
+				"opencensus.same_process_as_parent_span": true,
+				"opencensus.start_timestamp":             "2020-09-08T20:15:12Z",
+				"process.hostname":                       "my-host",
+				"process.pid":                            float64(123),
+				"service_name":                           "test_service",
+			},
+		},
+		{
+			name: "missing_pid_and_time",
+			identifier: &commonpb.ProcessIdentifier{
+				HostName: "my-host",
+			},
+			expected: map[string]interface{}{
+				"B":                                      "C",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.resourcetype":                "container",
+				"opencensus.same_process_as_parent_span": true,
+				"process.hostname":                       "my-host",
+				"service_name":                           "test_service",
+			},
+		},
+		{
+			name:       "nil_identifier",
+			identifier: nil,
+			expected: map[string]interface{}{
+				"B":                                      "C",
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.resourcetype":                "container",
+				"opencensus.same_process_as_parent_span": true,
+				"service_name":                           "test_service",
+			},
+		},
+	}
+
+	for _, test := range testcases {
+		t.Run(test.name, func(t *testing.T) {
+			td := consumerdata.TraceData{
+				Node: &commonpb.Node{
+					ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
+					Identifier:  test.identifier,
+				},
+				Resource: &resourcepb.Resource{
+					Type: "container",
+					Labels: map[string]string{
+						"B": "C",
+					},
+				},
+				Spans: []*tracepb.Span{
+					{
+						TraceId:                 []byte{0x01},
+						SpanId:                  []byte{0x02},
+						Name:                    &tracepb.TruncatableString{Value: "root"},
+						Kind:                    tracepb.Span_SERVER,
+						SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+					},
+				},
+			}
+
+			got := testTraceExporter(internaldata.OCToTraceData(td), t)
+
+			want := []honeycombData{
+				{
+					Data: test.expected,
+				},
+			}
+
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("otel span: (-want +got):\n%s", diff)
+			}
+		})
+	}
+
 }
