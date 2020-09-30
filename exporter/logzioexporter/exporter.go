@@ -15,25 +15,8 @@
 package logzioexporter
 
 import (
-	"errors"
-
-	"github.com/logzio/jaeger-logzio/store"
 	"go.opentelemetry.io/collector/component"
 )
-
-// logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
-type logzioExporter struct {
-	accountToken string
-	writer       *store.LogzioSpanWriter
-}
-
-func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
-
-	if config == nil {
-		return nil, errors.New("exporter config can't be null")
-	}
-	return &logzioExporter{}, nil
-}
 
 func newLogzioTraceExporter(config *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
 	return nil, nil
