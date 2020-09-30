@@ -97,7 +97,7 @@ class BotocoreInstrumentor(BaseInstrumentor):
         ) as span:
 
             operation = None
-            if args:
+            if args and span.is_recording():
                 operation = args[0]
                 span.resource = Resource(
                     attributes={
@@ -119,25 +119,28 @@ class BotocoreInstrumentor(BaseInstrumentor):
                 {"params", "path", "verb"},
             )
 
-            region_name = deep_getattr(instance, "meta.region_name")
+            if span.is_recording():
+                region_name = deep_getattr(instance, "meta.region_name")
 
-            meta = {
-                "aws.agent": "botocore",
-                "aws.operation": operation,
-                "aws.region": region_name,
-            }
-            for key, value in meta.items():
-                span.set_attribute(key, value)
+                meta = {
+                    "aws.agent": "botocore",
+                    "aws.operation": operation,
+                    "aws.region": region_name,
+                }
+                for key, value in meta.items():
+                    span.set_attribute(key, value)
 
             result = original_func(*args, **kwargs)
 
-            span.set_attribute(
-                "http.status_code",
-                result["ResponseMetadata"]["HTTPStatusCode"],
-            )
-            span.set_attribute(
-                "retry_attempts", result["ResponseMetadata"]["RetryAttempts"],
-            )
+            if span.is_recording():
+                span.set_attribute(
+                    "http.status_code",
+                    result["ResponseMetadata"]["HTTPStatusCode"],
+                )
+                span.set_attribute(
+                    "retry_attempts",
+                    result["ResponseMetadata"]["RetryAttempts"],
+                )
 
             return result
 
@@ -176,6 +179,9 @@ def add_span_arg_tags(span, endpoint_name, args, args_names, args_traced):
             if isinstance(dict_, dict)
             else {prefix: dict_}
         )
+
+    if not span.is_recording():
+        return
 
     if endpoint_name not in {"kms", "sts"}:
         tags = dict(
