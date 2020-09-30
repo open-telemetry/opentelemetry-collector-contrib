@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from unittest import skipUnless
+from unittest.mock import Mock, patch
 
 import boto.awslambda
 import boto.ec2
@@ -79,6 +80,23 @@ class TestBotoInstrumentor(TestBase):
         self.assertEqual(span.attributes["http.method"], "POST")
         self.assertEqual(span.attributes["aws.region"], "us-west-2")
         self.assertEqual(span.name, "ec2.command")
+
+    @mock_ec2_deprecated
+    def test_not_recording(self):
+        mock_tracer = Mock()
+        mock_span = Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = mock_span
+        with patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            ec2 = boto.ec2.connect_to_region("us-west-2")
+            ec2.get_all_instances()
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
 
     @mock_ec2_deprecated
     def test_analytics_enabled_with_rate(self):
