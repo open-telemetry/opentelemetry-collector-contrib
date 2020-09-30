@@ -73,11 +73,6 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 	// this is getting abstracted out to config
 	hostname := *GetHost(cfg)
 
-	// get env tag
-	env := cfg.Env
-	service := cfg.Service
-	version := cfg.Version
-
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -93,7 +88,7 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 		}
 
 		// TODO: Also pass in globalTags here when we know what to do with them
-		payload, err := resourceSpansToDatadogSpans(rs, hostname, env, service, version)
+		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
 		if err != nil {
 			return traces, err
 		}
@@ -106,11 +101,13 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env string, service string, version string) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *Config) (pb.TracePayload, error) {
+	// get env tag
+	env := cfg.Env
+
 	resource := rs.Resource()
 	ilss := rs.InstrumentationLibrarySpans()
 
-	// TODO: should we be getting env from the trace's spans itself? if so what's the tag+precedence order?
 	payload := pb.TracePayload{
 		HostName:     hostname,
 		Env:          env,
@@ -122,7 +119,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 		return payload, nil
 	}
 
-	localServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
+	resourceServiceName, datadogTags := resourceToDatadogServiceNameAndAttributeMap(resource)
 
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/deployment_environment.md#deployment
@@ -140,7 +137,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToDatadogSpan(spans.At(j), localServiceName, datadogTags, service, version)
+			span, err := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
 
 			if err != nil {
 				return payload, err
@@ -177,11 +174,17 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 
 // convertSpan takes an internal span representation and returns a Datadog span.
 func spanToDatadogSpan(s pdata.Span,
-	localServiceName string,
+	serviceName string,
 	datadogTags map[string]string,
-	service string,
-	version string,
+	cfg *Config,
 ) (*pb.Span, error) {
+	// otel specification resource service.name takes precedence
+	// and configuration DD_ENV as fallback if it exists
+	if serviceName == "" && cfg.Service != "" {
+		serviceName = cfg.Service
+	}
+
+	version := cfg.Version
 	tags := aggregateSpanTags(s, datadogTags)
 
 	// if no version tag exists, set it if provided via config
@@ -213,7 +216,7 @@ func spanToDatadogSpan(s pdata.Span,
 		SpanID:   decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
-		Service:  service,
+		Service:  serviceName,
 		Start:    int64(startTime),
 		Duration: int64(duration),
 		Metrics:  map[string]float64{},
@@ -262,12 +265,12 @@ func spanToDatadogSpan(s pdata.Span,
 
 	// TODO: Apply Config Tags
 	// for key, val := range e.opts.GlobalTags {
-	// 	setTag(span, key, val)
+	// 	setStringTag(span, key, val)
 	// }
 
 	// Set Attributes as Tags
 	for key, val := range tags {
-		setTag(span, key, val)
+		setStringTag(span, key, val)
 	}
 
 	return span, nil
@@ -351,31 +354,6 @@ func spanKindToDatadogType(kind pdata.SpanKind) string {
 	}
 }
 
-func setTag(s *pb.Span, key string, val interface{}) {
-	if key == ext.Error {
-		setError(s, val)
-		return
-	}
-	switch v := val.(type) {
-	case string:
-		setStringTag(s, key, v)
-	case bool:
-		if v {
-			setStringTag(s, key, "true")
-		} else {
-			setStringTag(s, key, "false")
-		}
-	case float64:
-		setMetric(s, key, v)
-	case int64:
-		setMetric(s, key, float64(v))
-	default:
-		// should never happen according to docs, nevertheless
-		// we should account for this to avoid exceptions
-		setStringTag(s, key, fmt.Sprintf("%v", v))
-	}
-}
-
 func setMetric(s *pb.Span, key string, v float64) {
 	switch key {
 	case ext.SamplingPriority:
@@ -400,30 +378,6 @@ func setStringTag(s *pb.Span, key, v string) {
 		}
 	default:
 		s.Meta[key] = v
-	}
-}
-
-func setError(s *pb.Span, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		s.Error = 1
-		s.Meta[ext.ErrorMsg] = v
-	case bool:
-		if v {
-			s.Error = 1
-		} else {
-			s.Error = 0
-		}
-	case int64:
-		if v > 0 {
-			s.Error = 1
-		} else {
-			s.Error = 0
-		}
-	case nil:
-		s.Error = 0
-	default:
-		s.Error = 1
 	}
 }
 

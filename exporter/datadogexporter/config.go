@@ -173,6 +173,10 @@ func (c *Config) Sanitize() error {
 		c.Metrics.Namespace = c.Metrics.Namespace + "."
 	}
 
+	if c.TagsConfig.Env == "" {
+		c.TagsConfig.Env = "none"
+	}
+
 	if c.API.Key == "" {
 		return errUnsetAPIKey
 	}
