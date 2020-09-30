@@ -17,15 +17,14 @@ package datadogexporter
 import (
 	"encoding/hex"
 	"fmt"
-	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"net/http"
 	"strconv"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
-	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"go.opencensus.io/trace"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 )
 
@@ -167,8 +166,8 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, env st
 	}
 
 	for _, apiTrace := range apiTraces {
-		top := apm.GetAnalyzedSpans(apiTrace.Spans)
-		apm.ComputeSublayerMetrics(apiTrace.Spans)
+		top := GetAnalyzedSpans(apiTrace.Spans)
+		ComputeSublayerMetrics(apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
 	}

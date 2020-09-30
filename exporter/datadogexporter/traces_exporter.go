@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
-	apm "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/apm"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -27,7 +26,7 @@ import (
 type traceExporter struct {
 	logger         *zap.Logger
 	cfg            *Config
-	edgeConnection apm.TraceEdgeConnection
+	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
 	tags           []string
 }
@@ -56,7 +55,7 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 	exporter := &traceExporter{
 		logger:         logger,
 		cfg:            cfg,
-		edgeConnection: apm.CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, false),
+		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, false),
 		obfuscator:     obfuscator,
 		tags:           tags,
 	}
@@ -84,7 +83,7 @@ func (exp *traceExporter) pushTraceData(
 
 	// security/obfuscation for db, query strings, stack traces, pii, etc
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
-	apm.ObfuscatePayload(exp.obfuscator, aggregatedTraces)
+	ObfuscatePayload(exp.obfuscator, aggregatedTraces)
 
 	for _, ddTracePayload := range aggregatedTraces {
 
@@ -94,12 +93,12 @@ func (exp *traceExporter) pushTraceData(
 			exp.logger.Info(fmt.Sprintf("Failed to send traces with error %v\n", err))
 		}
 
-		// this is for generating metrics like hits, errors, and latency, it uses a seperate endpoint than Traces
-		stats := apm.ComputeAPMStats(ddTracePayload)
-		err_stats := exp.edgeConnection.SendStats(context.Background(), stats, 3)
+		// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
+		stats := ComputeAPMStats(ddTracePayload)
+		errStats := exp.edgeConnection.SendStats(context.Background(), stats, 3)
 
-		if err_stats != nil {
-			exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", err_stats))
+		if errStats != nil {
+			exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", errStats))
 		}
 	}
 
