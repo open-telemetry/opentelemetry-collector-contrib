@@ -6,7 +6,7 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/go-lintpack/lintpack v0.5.2 // indirect
 	github.com/golangci/golangci-lint v1.31.0
-	github.com/google/addlicense v0.0.0-20200906110928-a0294312aa76
+	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
 	github.com/hashicorp/go-plugin v1.3.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
