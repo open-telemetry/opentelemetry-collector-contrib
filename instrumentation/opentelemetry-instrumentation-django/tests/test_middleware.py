@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from sys import modules
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from django import VERSION
 from django.conf import settings
@@ -88,6 +88,21 @@ class TestMiddleware(WsgiTestBase):
         self.assertEqual(span.attributes["http.scheme"], "http")
         self.assertEqual(span.attributes["http.status_code"], 200)
         self.assertEqual(span.attributes["http.status_text"], "OK")
+
+    def test_not_recording(self):
+        mock_tracer = Mock()
+        mock_span = Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = mock_span
+        with patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            Client().get("/traced/")
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
 
     def test_traced_post(self):
         Client().post("/traced/")
