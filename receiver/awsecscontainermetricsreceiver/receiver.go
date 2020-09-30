@@ -36,13 +36,16 @@ type awsEcsContainerMetricsReceiver struct {
 	nextConsumer consumer.MetricsConsumer
 	config       *Config
 	cancel       context.CancelFunc
+	restClient   awsecscontainermetrics.RestClient
+	provider     *awsecscontainermetrics.StatsProvider
 }
 
-// newAwsEcsContainerMetricsReceiver creates the aws ecs container metrics receiver with the given parameters.
-func newAwsEcsContainerMetricsReceiver(
+// New creates the aws ecs container metrics receiver with the given parameters.
+func New(
 	logger *zap.Logger,
 	config *Config,
-	nextConsumer consumer.MetricsConsumer) (component.MetricsReceiver, error) {
+	nextConsumer consumer.MetricsConsumer,
+	rest awsecscontainermetrics.RestClient) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
 		return nil, componenterror.ErrNilNextConsumer
 	}
@@ -51,6 +54,7 @@ func newAwsEcsContainerMetricsReceiver(
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
+		restClient:   rest,
 	}
 	return r, nil
 }
@@ -65,7 +69,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host com
 		for {
 			select {
 			case <-ticker.C:
-				aecmr.collectDataFromEndpoint(ctx)
+				aecmr.collectDataFromEndpoint(ctx, typeStr)
 			case <-ctx.Done():
 				return
 			}
@@ -81,10 +85,24 @@ func (aecmr *awsEcsContainerMetricsReceiver) Shutdown(context.Context) error {
 }
 
 // collectDataFromEndpoint collects container stats from Amazon ECS Task Metadata Endpoint
-// TODO: Replace with acutal logic.
-func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context) error {
-	md := awsecscontainermetrics.GenerateDummyMetrics()
+func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context.Context, typeStr string) error {
+	aecmr.provider = awsecscontainermetrics.NewStatsProvider(aecmr.restClient)
+	stats, metadata, err := aecmr.provider.GetStats()
 
-	err := aecmr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-	return err
+	if err != nil {
+		aecmr.logger.Error("Failed to collect stats", zap.Error(err))
+		return err
+	}
+
+	// TODO: report self metrics using obsreport
+	mds := awsecscontainermetrics.MetricsData(stats, metadata)
+	for _, md := range mds {
+		metrics := internaldata.OCToMetrics(*md)
+		err = aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

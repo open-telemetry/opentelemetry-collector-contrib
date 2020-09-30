@@ -11,16 +11,22 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package awsecscontainermetrics
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetContainerAndTaskMetrics(t *testing.T) {
+func TestMetricSampleFile(t *testing.T) {
+	data, err := ioutil.ReadFile("../testdata/task_stats.json")
+	require.NoError(t, err)
+	require.NotNil(t, data)
+}
+
+func TestMetricData(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
 
@@ -86,55 +92,20 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		CPU:         cpuStats,
 	}
 
-	containerMetrics := getContainerMetrics(containerStats)
-	require.NotNil(t, containerMetrics)
-
-	taskMetrics := ECSMetrics{}
-	aggregateTaskMetrics(&taskMetrics, containerMetrics)
-	require.EqualValues(t, v, taskMetrics.MemoryUsage)
-	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
-	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
-}
-
-func TestExtractStorageUsage(t *testing.T) {
-	v := uint64(100)
-	disk := &DiskStats{
-		IoServiceBytesRecursives: []IoServiceBytesRecursive{
-			{Op: "Read", Value: &v},
-			{Op: "Write", Value: &v},
-			{Op: "Total", Value: &v},
+	tm := TaskMetadata{
+		Cluster:  "cluster-1",
+		TaskARN:  "arn:aws:some-value/001",
+		Family:   "task-def-family-1",
+		Revision: "task-def-version",
+		Containers: []ContainerMetadata{
+			{ContainerName: "container-1", DockerID: "001", DockerName: "docker-container-1", Limits: Limit{CPU: &f, Memory: &v}},
 		},
-	}
-	read, write := extractStorageUsage(disk)
-
-	require.EqualValues(t, v, read)
-	require.EqualValues(t, v, write)
-
-	read, write = extractStorageUsage(nil)
-	v = uint64(0)
-	require.EqualValues(t, v, read)
-	require.EqualValues(t, v, write)
-}
-
-func TestGetNetworkStats(t *testing.T) {
-	v := uint64(100)
-	stats := make(map[string]NetworkStats)
-	stats["eth0"] = NetworkStats{
-		RxBytes:   &v,
-		RxPackets: &v,
-		RxErrors:  &v,
-		RxDropped: &v,
-		TxBytes:   &v,
-		TxPackets: &v,
-		TxErrors:  &v,
-		TxDropped: &v,
+		Limits: Limit{CPU: &f, Memory: &v},
 	}
 
-	netArray := getNetworkStats(stats)
+	cstats := make(map[string]ContainerStats)
+	cstats["001"] = containerStats
 
-	sum := uint64(0)
-	for _, v := range netArray {
-		sum += v
-	}
-	require.EqualValues(t, 800, sum)
+	md := MetricsData(cstats, tm)
+	require.Less(t, 0, len(md))
 }
