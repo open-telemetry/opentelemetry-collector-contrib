@@ -30,6 +30,10 @@ const (
 	ContainerPrefix    = "container."
 	MetricResourceType = "aoc.ecs"
 
+	EndpointEnvKey   = "ECS_CONTAINER_METADATA_URI_V4"
+	TaskStatsPath    = "/task/stats"
+	TaskMetadataPath = "/task"
+
 	AttributeMemoryUsage    = "memory.usage"
 	AttributeMemoryMaxUsage = "memory.usage.max"
 	AttributeMemoryLimit    = "memory.usage.limit"
