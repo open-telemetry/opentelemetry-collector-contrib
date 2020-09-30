@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	errUnsetAPIKey = errors.New("the Datadog API key is unset")
+	errUnsetAPIKey = errors.New("api.key is not set")
 )
 
 // APIConfig defines the API configuration options
