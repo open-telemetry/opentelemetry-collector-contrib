@@ -266,9 +266,9 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	span := constructClientSpan(nil, spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
-	traceID := []byte(span.TraceID())
+	traceID := span.TraceID().Bytes()
 	traceID[0] = 0x11
-	span.SetTraceID(traceID)
+	span.SetTraceID(pdata.NewTraceID(traceID))
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false)
 
@@ -285,7 +285,7 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
 	TempTraceID := newTraceID()
-	binary.BigEndian.PutUint32(TempTraceID[0:4], uint32(ExpiredEpoch))
+	binary.BigEndian.PutUint32(TempTraceID.Bytes()[0:4], uint32(ExpiredEpoch))
 
 	PrevEpoch := uint32(time.Now().Unix())
 
@@ -390,6 +390,81 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
 	assert.Equal(t, 0, len(segment.Metadata["default"]))
+}
+
+func TestOriginNotAws(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "gcp")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.Origin)
+}
+
+func TestOriginEc2(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEC2, *segment.Origin)
+}
+
+func TestOriginEcs(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginECS, *segment.Origin)
+}
+
+func TestOriginEb(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEB, *segment.Origin)
 }
 
 func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {

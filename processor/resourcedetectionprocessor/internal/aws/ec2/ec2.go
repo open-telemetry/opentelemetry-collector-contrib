@@ -21,12 +21,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (
-	TypeStr          = "ec2"
-	cloudProviderAWS = "aws"
+	TypeStr = "ec2"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -57,7 +57,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderAWS)
+	attr.InsertString(conventions.AttributeCloudProvider, cloud.ProviderAWS)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccount, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudZone, meta.AvailabilityZone)

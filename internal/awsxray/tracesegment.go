@@ -106,6 +106,7 @@ type AWSData struct {
 	Beanstalk *BeanstalkMetadata `json:"elastic_beanstalk,omitempty"`
 	ECS       *ECSMetadata       `json:"ecs,omitempty"`
 	EC2       *EC2Metadata       `json:"ec2,omitempty"`
+	EKS       *EKSMetadata       `json:"eks,omitempty"`
 	XRay      *XRayMetaData      `json:"xray,omitempty"`
 
 	// For both segment and subsegments
@@ -129,6 +130,7 @@ type EC2Metadata struct {
 // ECSMetadata represents the ECS metadata field
 type ECSMetadata struct {
 	ContainerName *string `json:"container"`
+	ContainerID   *string `json:"container_id"`
 }
 
 // BeanstalkMetadata represents the Elastic Beanstalk environment metadata field
@@ -136,6 +138,13 @@ type BeanstalkMetadata struct {
 	Environment  *string `json:"environment_name"`
 	VersionLabel *string `json:"version_label"`
 	DeploymentID *int64  `json:"deployment_id"`
+}
+
+// EKSMetadata represents the EkS metadata field
+type EKSMetadata struct {
+	ClusterName *string `json:"cluster_name"`
+	Pod         *string `json:"pod"`
+	ContainerID *string `json:"container_id"`
 }
 
 // CauseData is the container that contains the `cause` field

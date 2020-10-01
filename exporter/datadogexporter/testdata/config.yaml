@@ -1,0 +1,33 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  datadog/api:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+    metrics:
+      namespace: opentelemetry
+
+  datadog/invalid:
+    metrics:
+      endpoint: "invalid:"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog/api, datadog/invalid]

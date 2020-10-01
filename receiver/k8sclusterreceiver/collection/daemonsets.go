@@ -24,28 +24,28 @@ import (
 )
 
 var daemonSetCurrentScheduledMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/daemon_set/current_scheduled_nodes",
+	Name:        "k8s.daemonset.current_scheduled_nodes",
 	Description: "Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var daemonSetDesiredScheduledMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/daemon_set/desired_scheduled_nodes",
+	Name:        "k8s.daemonset.desired_scheduled_nodes",
 	Description: "Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var daemonSetMisScheduledMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/daemon_set/misscheduled_nodes",
+	Name:        "k8s.daemonset.misscheduled_nodes",
 	Description: "Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var daemonSetReadyMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/daemon_set/ready_nodes",
+	Name:        "k8s.daemonset.ready_nodes",
 	Description: "Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,

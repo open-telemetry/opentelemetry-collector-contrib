@@ -36,6 +36,7 @@ const (
 	OriginEC2 = "AWS::EC2::Instance"
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS = "AWS::EKS::Container"
 )
 
 var (
@@ -198,7 +199,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewTraceID(r[:])
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
@@ -212,9 +213,19 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	// EB > ECS > EC2
 	if resource.IsNil() {
-		return OriginEC2
+		return ""
+	}
+
+	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
+		if provider.StringVal() != "aws" {
+			return ""
+		}
+	}
+	// EKS > EB > ECS > EC2
+	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
+	if eks {
+		return OriginEKS
 	}
 	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
 	if eb {
@@ -251,7 +262,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	var (
 		content  = [traceIDLength]byte{}
 		epochNow = time.Now().Unix()
-		epoch    = int64(binary.BigEndian.Uint32(traceID[0:4]))
+		epoch    = int64(binary.BigEndian.Uint32(traceID.Bytes()[0:4]))
 		b        = [4]byte{}
 	)
 
@@ -271,7 +282,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
 	content[10] = '-'
-	hex.Encode(content[identifierOffset:], traceID[4:16]) // overwrite with identifier
+	hex.Encode(content[identifierOffset:], traceID.Bytes()[4:16]) // overwrite with identifier
 
 	return string(content[0:traceIDLength])
 }

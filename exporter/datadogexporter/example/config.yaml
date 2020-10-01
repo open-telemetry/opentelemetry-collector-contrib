@@ -1,0 +1,81 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  datadog:
+    ## @param hostname - string - optional
+    ## A custom hostname.
+    ## If unset this will be determined automatically if possible.
+    #
+    # hostname: customhostname
+
+    ## @param env - string - optional
+    ## The environment for unified service tagging.
+    ## If unset it will be determined from the `DD_ENV` environment variable.
+    #
+    # env: prod
+
+    ## @param service - string - optional
+    ## The service for unified service tagging.
+    ## If unset it will be determined from the `DD_SERVICE` environment variable.
+    #
+    # service: myservice
+
+    ## @param version - string - optional
+    ## The version for unified service tagging.
+    ## If unset it will be determined from the `DD_VERSION` environment variable.
+    #
+    # version: myversion
+
+    ## @param tags - list of strings - optional - default: []
+    ## The list of default tags to add to every metric or trace.
+    #
+    # tags: []
+
+    ## @param api - custom object - required.
+    ## Specific API configuration.
+    #
+    api:
+      ## @ param key - string - required
+      ## The Datadog API key to associate your Agent's data with your organization.
+      ## Create a new API key here: https://app.datadoghq.com/account/settings
+      #
+      key: "<YOUR API KEY>"
+
+      ## @param site - string - optional - default: datadoghq.com
+      ## The site of the Datadog intake to send Agent data to.
+      ## Set to 'datadoghq.eu' to send data to the EU site.
+      #
+      # site: datadoghq.com
+
+    ## @param metrics - custom object - optional
+    ## Metric exporter specific configuration.
+    #
+    # metrics:
+      ## @param namespace - string - optional
+      ## The namespace with which to prefix all metrics.
+      ## By default metrics are not namespaced.
+      #
+      # namespace: ""
+
+      ## @param report_buckets - boolean - optional - default: false
+      ## Whether to report bucket counts for distribution metric types.
+      ## Enabling this will increase the number of custom metrics.
+      #
+      # report_buckets: false
+
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send metrics to.
+      ## If unset the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://api.datadoghq.com
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog]

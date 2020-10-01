@@ -65,6 +65,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
