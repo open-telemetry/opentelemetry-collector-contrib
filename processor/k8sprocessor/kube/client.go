@@ -248,8 +248,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if len(pod.Spec.Containers) > 0 {
-		if c.Rules.ContainerName {
+	if c.Rules.ContainerNames {
+		if len(pod.Spec.Containers) > 0 {
 			var names []string
 			for _, container := range pod.Spec.Containers {
 				names = append(names, container.Name)

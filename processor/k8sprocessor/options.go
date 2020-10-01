@@ -31,15 +31,15 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metadataNamespace     = "namespace"
-	metadataPodName       = "podName"
-	metadataPodUID        = "podUID"
-	metadataStartTime     = "startTime"
-	metadataDeployment    = "deployment"
-	metadataCluster       = "cluster"
-	metadataNode          = "node"
-	metadataHostName      = "hostName"
-	metadataContainerName = "containerName"
+	metadataNamespace      = "namespace"
+	metadataPodName        = "podName"
+	metadataPodUID         = "podUID"
+	metadataStartTime      = "startTime"
+	metadataDeployment     = "deployment"
+	metadataCluster        = "cluster"
+	metadataNode           = "node"
+	metadataHostName       = "hostName"
+	metadataContainerNames = "containerNames"
 )
 
 // Option represents a configuration option that can be passes.
@@ -71,7 +71,7 @@ func WithExtractMetadata(fields ...string) Option {
 		if len(fields) == 0 {
 			fields = []string{
 				metadataCluster,
-				metadataContainerName,
+				metadataContainerNames,
 				metadataDeployment,
 				metadataHostName,
 				metadataNamespace,
@@ -85,8 +85,8 @@ func WithExtractMetadata(fields ...string) Option {
 			switch field {
 			case metadataCluster:
 				p.rules.Cluster = true
-			case metadataContainerName:
-				p.rules.ContainerName = true
+			case metadataContainerNames:
+				p.rules.ContainerNames = true
 			case metadataDeployment:
 				p.rules.Deployment = true
 			case metadataHostName:
