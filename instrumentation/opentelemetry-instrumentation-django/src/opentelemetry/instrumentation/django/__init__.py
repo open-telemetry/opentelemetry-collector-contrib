@@ -56,7 +56,7 @@ class DjangoInstrumentor(BaseInstrumentor):
         if isinstance(settings_middleware, tuple):
             settings_middleware = list(settings_middleware)
 
-        settings_middleware.append(self._opentelemetry_middleware)
+        settings_middleware.insert(0, self._opentelemetry_middleware)
         setattr(settings, "MIDDLEWARE", settings_middleware)
 
     def _uninstrument(self, **kwargs):
