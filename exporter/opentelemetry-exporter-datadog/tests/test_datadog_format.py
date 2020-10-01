@@ -30,11 +30,12 @@ def get_as_list(dict_object, key):
 class TestDatadogFormat(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        ids_generator = trace_api.RandomIdsGenerator()
         cls.serialized_trace_id = propagator.format_trace_id(
-            trace.generate_trace_id()
+            ids_generator.generate_trace_id()
         )
         cls.serialized_parent_id = propagator.format_span_id(
-            trace.generate_span_id()
+            ids_generator.generate_span_id()
         )
         cls.serialized_origin = "origin-service"
 
@@ -107,7 +108,7 @@ class TestDatadogFormat(unittest.TestCase):
             "child",
             trace_api.SpanContext(
                 parent_context.trace_id,
-                trace.generate_span_id(),
+                trace_api.RandomIdsGenerator().generate_span_id(),
                 is_remote=False,
                 trace_flags=parent_context.trace_flags,
                 trace_state=parent_context.trace_state,
@@ -152,7 +153,7 @@ class TestDatadogFormat(unittest.TestCase):
             "child",
             trace_api.SpanContext(
                 parent_context.trace_id,
-                trace.generate_span_id(),
+                trace_api.RandomIdsGenerator().generate_span_id(),
                 is_remote=False,
                 trace_flags=parent_context.trace_flags,
                 trace_state=parent_context.trace_state,
