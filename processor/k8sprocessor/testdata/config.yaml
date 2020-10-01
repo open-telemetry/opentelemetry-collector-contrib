@@ -9,12 +9,14 @@ processors:
     extract:
       metadata:
         # extract the following well-known metadata fields
-        - podName
-        - podUID
-        - deployment
         - cluster
+        - containerName
+        - deployment
+        - hostName
         - namespace
         - node
+        - podName
+        - podUID
         - startTime
 
       annotations:

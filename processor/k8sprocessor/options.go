@@ -31,13 +31,15 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metdataNamespace   = "namespace"
-	metadataPodName    = "podName"
-	metadataPodUID     = "podUID"
-	metadataStartTime  = "startTime"
-	metadataDeployment = "deployment"
-	metadataCluster    = "cluster"
-	metadataNode       = "node"
+	metadataNamespace     = "namespace"
+	metadataPodName       = "podName"
+	metadataPodUID        = "podUID"
+	metadataStartTime     = "startTime"
+	metadataDeployment    = "deployment"
+	metadataCluster       = "cluster"
+	metadataNode          = "node"
+	metadataHostName      = "hostName"
+	metadataContainerName = "containerName"
 )
 
 // Option represents a configuration option that can be passes.
@@ -68,31 +70,37 @@ func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
-				metdataNamespace,
+				metadataCluster,
+				metadataContainerName,
+				metadataDeployment,
+				metadataHostName,
+				metadataNamespace,
+				metadataNode,
 				metadataPodName,
 				metadataPodUID,
 				metadataStartTime,
-				metadataDeployment,
-				metadataCluster,
-				metadataNode,
 			}
 		}
 		for _, field := range fields {
 			switch field {
-			case metdataNamespace:
+			case metadataCluster:
+				p.rules.Cluster = true
+			case metadataContainerName:
+				p.rules.ContainerName = true
+			case metadataDeployment:
+				p.rules.Deployment = true
+			case metadataHostName:
+				p.rules.HostName = true
+			case metadataNamespace:
 				p.rules.Namespace = true
+			case metadataNode:
+				p.rules.Node = true
 			case metadataPodName:
 				p.rules.PodName = true
 			case metadataPodUID:
 				p.rules.PodUID = true
 			case metadataStartTime:
 				p.rules.StartTime = true
-			case metadataDeployment:
-				p.rules.Deployment = true
-			case metadataCluster:
-				p.rules.Cluster = true
-			case metadataNode:
-				p.rules.Node = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}

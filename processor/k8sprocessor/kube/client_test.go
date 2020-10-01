@@ -323,6 +323,15 @@ func TestExtractionRules(t *testing.T) {
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "myhostname",
+			Containers: []api_v1.Container{
+				{
+					Name: "container-zzzzz",
+				},
+				{
+					Name: "sidecar-container-aaaaa",
+				},
+			},
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
@@ -348,13 +357,15 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment: true,
-			Namespace:  true,
-			PodName:    true,
-			PodUID:     true,
-			Node:       true,
-			Cluster:    true,
-			StartTime:  true,
+			Deployment:    true,
+			Namespace:     true,
+			PodName:       true,
+			PodUID:        true,
+			Node:          true,
+			Cluster:       true,
+			StartTime:     true,
+			HostName:      true,
+			ContainerName: true,
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -364,6 +375,8 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"container.name":      "container-zzzzz,sidecar-container-aaaaa",
+			"host.name":           "myhostname",
 		},
 	}, {
 		name: "labels",

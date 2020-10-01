@@ -102,13 +102,15 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment bool
-	Namespace  bool
-	PodName    bool
-	PodUID     bool
-	Node       bool
-	Cluster    bool
-	StartTime  bool
+	Deployment    bool
+	Namespace     bool
+	PodName       bool
+	PodUID        bool
+	Node          bool
+	Cluster       bool
+	StartTime     bool
+	HostName      bool
+	ContainerName bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule

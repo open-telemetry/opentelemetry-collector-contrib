@@ -17,6 +17,7 @@ package kube
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -235,6 +236,30 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			tags[r.Name] = c.extractField(v, r)
 		}
 	}
+
+	if c.Rules.HostName {
+		// Basing on v1.17 Kubernetes docs, when a hostname is specified, it takes precedence over
+		// the associated metadata name, see:
+		// https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields
+		if pod.Spec.Hostname == "" {
+			tags[conventions.AttributeHostName] = pod.Name
+		} else {
+			tags[conventions.AttributeHostName] = pod.Spec.Hostname
+		}
+	}
+
+	if len(pod.Spec.Containers) > 0 {
+		if c.Rules.ContainerName {
+			var names []string
+			for _, container := range pod.Spec.Containers {
+				names = append(names, container.Name)
+			}
+
+			sort.Strings(names)
+			tags[conventions.AttributeContainerName] = strings.Join(names, ",")
+		}
+	}
+
 	return tags
 }
 

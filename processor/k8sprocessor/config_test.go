@@ -41,23 +41,26 @@ func TestLoadConfig(t *testing.T) {
 	config, err := configtest.LoadConfigFile(
 		t,
 		path.Join(".", "testdata", "config.yaml"),
-		factories)
+		factories,
+	)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, config)
 
 	p0 := config.Processors["k8s_tagger"]
-	assert.Equal(t, p0,
+	assert.Equal(t,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger",
 			},
 			APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		})
+		},
+		p0,
+	)
 
 	p1 := config.Processors["k8s_tagger/2"]
-	assert.Equal(t, p1,
+	assert.Equal(t,
 		&Config{
 			ProcessorSettings: configmodels.ProcessorSettings{
 				TypeVal: "k8s_tagger",
@@ -66,7 +69,17 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 			Passthrough: false,
 			Extract: ExtractConfig{
-				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
+				Metadata: []string{
+					"cluster",
+					"containerName",
+					"deployment",
+					"hostName",
+					"namespace",
+					"node",
+					"podName",
+					"podUID",
+					"startTime",
+				},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},
@@ -89,5 +102,7 @@ func TestLoadConfig(t *testing.T) {
 					{Key: "key2", Value: "value2", Op: "not-equals"},
 				},
 			},
-		})
+		},
+		p1,
+	)
 }
