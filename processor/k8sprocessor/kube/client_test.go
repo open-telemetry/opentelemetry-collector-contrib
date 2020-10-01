@@ -375,7 +375,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
-			"container.name":      "container-zzzzz,sidecar-container-aaaaa",
+			"k8s.container.name":  "container-zzzzz,sidecar-container-aaaaa",
 			"host.name":           "myhostname",
 		},
 	}, {

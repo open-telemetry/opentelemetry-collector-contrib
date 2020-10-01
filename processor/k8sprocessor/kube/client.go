@@ -256,7 +256,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 			}
 
 			sort.Strings(names)
-			tags[conventions.AttributeContainerName] = strings.Join(names, ",")
+			tags[conventions.AttributeK8sContainer] = strings.Join(names, ",")
 		}
 	}
 
