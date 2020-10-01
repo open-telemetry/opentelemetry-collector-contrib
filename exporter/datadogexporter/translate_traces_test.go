@@ -25,7 +25,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanID []byte) pdata.ResourceSpans {
+func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanID []byte, shouldErr bool, resourceEnvAndService bool) pdata.ResourceSpans {
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
@@ -52,8 +52,14 @@ func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanI
 
 	status := pdata.NewSpanStatus()
 	status.InitEmpty()
-	status.SetCode(13)
-	status.SetMessage("This is not a drill!")
+
+	if shouldErr {
+		status.SetCode(13)
+		status.SetMessage("This is not a drill!")
+	} else {
+		status.SetCode(0)
+	}
+
 	status.CopyTo(span.Status())
 
 	events := pdata.NewSpanEventSlice()
@@ -78,10 +84,19 @@ func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanI
 
 	resource := pdata.NewResource()
 	resource.InitEmpty()
-	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"namespace":    pdata.NewAttributeValueString("kube-system"),
-		"service.name": pdata.NewAttributeValueString("test-resource-service-name"),
-	}).CopyTo(resource.Attributes())
+
+	if resourceEnvAndService {
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"namespace":              pdata.NewAttributeValueString("kube-system"),
+			"service.name":           pdata.NewAttributeValueString("test-resource-service-name"),
+			"deployment.environment": pdata.NewAttributeValueString("test-env"),
+		}).CopyTo(resource.Attributes())
+
+	} else {
+		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
+			"namespace": pdata.NewAttributeValueString("kube-system"),
+		}).CopyTo(resource.Attributes())
+	}
 
 	resource.CopyTo(rs.Resource())
 
@@ -110,7 +125,8 @@ func TestBasicTracesTranslation(t *testing.T) {
 	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
 	// create mock resource span data
-	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID)
+	// set shouldError and resourceServiceandEnv to false to test defaut behavior
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, false, false)
 
 	// translate mocks to datadog traces
 	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{})
@@ -149,19 +165,56 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 8, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
-	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+	assert.Equal(t, int32(0), datadogPayload.Traces[0].Spans[0].Error)
 
 	// ensure that span meta also inccludes correctly sets resource attributes
 	assert.Equal(t, "kube-system", datadogPayload.Traces[0].Spans[0].Meta["namespace"])
 
 	// ensure that span service name gives resource service.name priority
-	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
+	assert.Equal(t, "OTLPResourceNoServiceName", datadogPayload.Traces[0].Spans[0].Service)
 
 	// ensure a duration and start time are calculated
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
+}
+
+func TestTracesWithConfigTranslation(t *testing.T) {
+	hostname := "testhostname"
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
+
+	// translate mocks to datadog traces
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{})
+
+	if err != nil {
+		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
+	}
+
+	// ensure we return the correct type
+	assert.IsType(t, pb.TracePayload{}, datadogPayload)
+
+	// ensure hostname arg is respected
+	assert.Equal(t, hostname, datadogPayload.HostName)
+	assert.Equal(t, 1, len(datadogPayload.Traces))
+
+	// ensure that span error is based on otlp span status
+	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+
+	// ensure that span service name gives resource service.name priority
+	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
+
+	// ensure that env gives resource deployment.environment priority
+	assert.Equal(t, "test-env", datadogPayload.Env)
+	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
