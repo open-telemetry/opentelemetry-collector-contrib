@@ -28,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/metadata"
 )
 
 type emfExporter struct {
@@ -39,6 +41,7 @@ type emfExporter struct {
 
 	pusherMapLock sync.Mutex
 	retryCnt      int
+	metadata      metadata.Metadata
 }
 
 // New func creates an EMF Exporter instance with data push callback func
@@ -65,6 +68,7 @@ func New(
 		config:           config,
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
+		metadata:         metadata.NewMetadata(session, ""),
 	}
 	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 
@@ -73,10 +77,12 @@ func New(
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	expConfig := emf.config.(*Config)
+	dimensionRollupOption := expConfig.DimensionRollupOption
+	hostID, err := emf.metadata.GetHostIdentifier()
 	logGroup := "/metrics/default"
-	logStream := "otel-stream"
+	logStream := fmt.Sprintf("otel-stream-%s", hostID)
 	// override log group if customer has specified Resource Attributes service.name or service.namespace
-	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md)
+	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md, dimensionRollupOption)
 	if namespace != "" {
 		logGroup = fmt.Sprintf("/metrics/%s", namespace)
 	}
@@ -164,7 +170,7 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string) {
+func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption int) ([]*LogEvent, int, string) {
 	rms := metric.ResourceMetrics()
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
@@ -176,7 +182,7 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string)
 		if rm.IsNil() {
 			continue
 		}
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm)
+		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, dimensionRollupOption)
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}
