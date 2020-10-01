@@ -248,7 +248,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.ContainerNames {
+	if c.Rules.ContainerName {
 		if len(pod.Spec.Containers) > 0 {
 			var names []string
 			for _, container := range pod.Spec.Containers {

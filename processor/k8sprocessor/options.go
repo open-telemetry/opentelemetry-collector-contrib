@@ -86,7 +86,7 @@ func WithExtractMetadata(fields ...string) Option {
 			case metadataCluster:
 				p.rules.Cluster = true
 			case metadataContainerNames:
-				p.rules.ContainerNames = true
+				p.rules.ContainerName = true
 			case metadataDeployment:
 				p.rules.Deployment = true
 			case metadataHostName:
