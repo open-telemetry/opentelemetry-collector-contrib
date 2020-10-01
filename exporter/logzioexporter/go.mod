@@ -2,7 +2,4 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzio
 
 go 1.14
 
-require (
-	github.com/logzio/jaeger-logzio v0.0.0-20200826115713-de8961d427e3
-	go.opentelemetry.io/collector v0.8.1-0.20200825172515-42735a24c60b
-)
+require go.opentelemetry.io/collector v0.11.1-0.20201001213035-035aa5cf6c92
