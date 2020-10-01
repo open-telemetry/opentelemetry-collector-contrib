@@ -182,7 +182,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 }
 
-func TestTracesWithConfigTranslation(t *testing.T) {
+func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
 
 	// generate mock trace, span and parent span ids
@@ -217,4 +217,62 @@ func TestTracesWithConfigTranslation(t *testing.T) {
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
 	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
+}
+
+// ensure that datadog span resource naming uses http method+route when available
+func TestSpanResourceTranslation(t *testing.T) {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetKind(pdata.SpanKindSERVER)
+	span.SetName("Default Name")
+
+	ddHTTPTags := map[string]string{
+		"http.method": "GET",
+		"http.route":  "/api",
+	}
+
+	ddNotHTTPTags := map[string]string{
+		"other": "GET",
+	}
+
+	resourceNameHTTP := getDatadogResourceName(span, ddHTTPTags)
+
+	resourceNameDefault := getDatadogResourceName(span, ddNotHTTPTags)
+
+	assert.Equal(t, "GET /api", resourceNameHTTP)
+	assert.Equal(t, "Default Name", resourceNameDefault)
+}
+
+// ensure that the datadog span name uses IL name +kind whenn available and falls back to opetelemetry + kind
+func TestSpanNameTranslation(t *testing.T) {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("Default Name")
+	span.SetKind(pdata.SpanKindSERVER)
+
+	ddIlTags := map[string]string{
+		fmt.Sprintf("%s", tracetranslator.TagInstrumentationName): "il_name",
+	}
+
+	ddNoIlTags := map[string]string{
+		"other": "other_value",
+	}
+
+	spanNameIl := getDatadogSpanName(span, ddIlTags)
+	spanNameDefault := getDatadogSpanName(span, ddNoIlTags)
+
+	assert.Equal(t, fmt.Sprintf("%s.%s", "il_name", pdata.SpanKindSERVER), spanNameIl)
+	assert.Equal(t, fmt.Sprintf("%s.%s", "opentelemetry", pdata.SpanKindSERVER), spanNameDefault)
+}
+
+// ensure that the datadog span type gets mapped from span kind
+func TestSpanTypeTranslation(t *testing.T) {
+	spanTypeClient := spanKindToDatadogType(pdata.SpanKindCLIENT)
+	spanTypeServer := spanKindToDatadogType(pdata.SpanKindSERVER)
+	spanTypeCustom := spanKindToDatadogType(pdata.SpanKindUNSPECIFIED)
+
+	assert.Equal(t, "client", spanTypeClient)
+	assert.Equal(t, "server", spanTypeServer)
+	assert.Equal(t, "custom", spanTypeCustom)
+
 }
