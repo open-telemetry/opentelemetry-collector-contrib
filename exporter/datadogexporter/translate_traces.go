@@ -35,14 +35,13 @@ type codeDetails struct {
 }
 
 const (
-	deploymentEnv              string = "deployment.environment"
-	keySamplingPriority        string = "_sampling_priority_v1"
-	keySpanName                string = "span.name"
-	instrumentationLibraryName string = "otel.instrumentation_library.name"
-	httpStatusCode             string = "http.status_code"
-	httpMethod                 string = "http.method"
-	httpRoute                  string = "http.route"
-	versionTag                 string = "version"
+	deploymentEnv       string = "deployment.environment"
+	keySamplingPriority string = "_sampling_priority_v1"
+	keySpanName         string = "span.name"
+	httpStatusCode      string = "http.status_code"
+	httpMethod          string = "http.method"
+	httpRoute           string = "http.route"
+	versionTag          string = "version"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -212,8 +211,8 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogType := spanKindToDatadogType(s.Kind())
 
 	span := &pb.Span{
-		TraceID:  decodeAPMId(hex.EncodeToString(s.TraceID().Bytes()[:])),
-		SpanID:   decodeAPMId(hex.EncodeToString(s.SpanID().Bytes()[:])),
+		TraceID:  decodeAPMId(s.TraceID().Bytes()[:]),
+		SpanID:   decodeAPMId(s.SpanID().Bytes()[:]),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
 		Service:  serviceName,
@@ -226,7 +225,7 @@ func spanToDatadogSpan(s pdata.Span,
 
 	// TODO: confirm parentId approach
 	if len(s.ParentSpanID().Bytes()) > 0 {
-		idVal := decodeAPMId(hex.EncodeToString(s.ParentSpanID().Bytes()[:]))
+		idVal := decodeAPMId(s.ParentSpanID().Bytes()[:])
 
 		span.ParentID = idVal
 	} else {
@@ -392,7 +391,8 @@ func addToAPITrace(apiTrace *pb.APITrace, sp *pb.Span) {
 	}
 }
 
-func decodeAPMId(id string) uint64 {
+func decodeAPMId(apmID []byte) uint64 {
+	id := hex.EncodeToString(apmID)
 	if len(id) > 16 {
 		id = id[len(id)-16:]
 	}
@@ -409,7 +409,7 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
 	// Get span name by using instrumentation and kind while backing off to span.kind
-	if iln, ok := datadogTags[instrumentationLibraryName]; ok {
+	if iln, ok := datadogTags[tracetranslator.TagInstrumentationName]; ok {
 		return fmt.Sprintf("%s.%s", iln, s.Kind())
 	}
 

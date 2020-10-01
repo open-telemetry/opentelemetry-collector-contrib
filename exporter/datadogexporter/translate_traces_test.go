@@ -15,26 +15,17 @@
 package datadogexporter
 
 import (
-	// "fmt"
-	// "math"
-	// "net/http"
-	// "strconv"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	// "github.com/stretchr/testify/require"
-	// "go.opencensus.io/trace"
-	// otlpcommon "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/common/v1"
-	// tracev1 "go.opentelemetry.io/collector/internal/data/opentelemetry-proto-gen/trace/v1"
-	// "go.opentelemetry.io/collector/translator/conventions"
-	// tracetranslator "go.opentelemetry.io/collector/translator/trace"
-	// "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 )
 
-func NewResourceSpansData() pdata.ResourceSpans {
+func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanID []byte) pdata.ResourceSpans {
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
@@ -48,9 +39,9 @@ func NewResourceSpansData() pdata.ResourceSpans {
 
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	traceID := pdata.NewTraceID([]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F})
-	spanID := pdata.NewSpanID([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8})
-	parentSpanID := pdata.NewSpanID([]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8})
+	traceID := pdata.NewTraceID(mockTraceID)
+	spanID := pdata.NewSpanID(mockSpanID)
+	parentSpanID := pdata.NewSpanID(mockParentSpanID)
 	span.SetTraceID(traceID)
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(parentSpanID)
@@ -78,14 +69,6 @@ func NewResourceSpansData() pdata.ResourceSpans {
 	}).CopyTo(events.At(1).Attributes())
 	events.MoveAndAppendTo(span.Events())
 
-	links := pdata.NewSpanLinkSlice()
-	links.Resize(2)
-	links.At(0).SetTraceID(pdata.NewTraceID([]byte{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCA, 0xCB, 0xCC, 0xCD, 0xCE, 0xCF}))
-	links.At(0).SetSpanID(pdata.NewSpanID([]byte{0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5, 0xB6, 0xB7}))
-	links.At(1).SetTraceID(pdata.NewTraceID([]byte{0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF}))
-	links.At(1).SetSpanID([]byte{0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7})
-	links.MoveAndAppendTo(span.Links())
-
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 		"cache_hit":  pdata.NewAttributeValueBool(true),
 		"timeout_ns": pdata.NewAttributeValueInt(12e9),
@@ -96,8 +79,10 @@ func NewResourceSpansData() pdata.ResourceSpans {
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"namespace": pdata.NewAttributeValueString("kube-system"),
+		"namespace":    pdata.NewAttributeValueString("kube-system"),
+		"service.name": pdata.NewAttributeValueString("test-resource-service-name"),
 	}).CopyTo(resource.Attributes())
+
 	resource.CopyTo(rs.Resource())
 
 	il := pdata.NewInstrumentationLibrary()
@@ -116,22 +101,67 @@ func NewResourceSpansData() pdata.ResourceSpans {
 	return rs
 }
 
-func TestTracesValue(t *testing.T) {
+func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
-	env := "testenv"
 
-	payload := pb.TracePayload{
-		HostName:     hostname,
-		Env:          env,
-		Traces:       []*pb.APITrace{},
-		Transactions: []*pb.Span{},
-	}
+	// generate mock trace, span and parent span ids
+	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
-	rs := NewResourceSpansData()
+	// create mock resource span data
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID)
+
+	// translate mocks to datadog traces
 	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{})
 
-	assert.Equal(t, nil, err)
+	if err != nil {
+		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
+	}
+
+	// ensure we return the correct type
 	assert.IsType(t, pb.TracePayload{}, datadogPayload)
-	assert.Equal(t, payload.HostName, datadogPayload.HostName)
+
+	// ensure hostname arg is respected
+	assert.Equal(t, hostname, datadogPayload.HostName)
 	assert.Equal(t, 1, len(datadogPayload.Traces))
+
+	// ensure trace id gets translated to uint64 correctly
+	assert.Equal(t, decodeAPMId(mockTraceID), datadogPayload.Traces[0].TraceID)
+
+	// ensure the correct number of spans are expected
+	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans))
+
+	// ensure span's trace id matches payload trace id
+	assert.Equal(t, datadogPayload.Traces[0].TraceID, datadogPayload.Traces[0].Spans[0].TraceID)
+
+	// ensure span's spanId and parentSpanId are set correctly
+	assert.Equal(t, decodeAPMId(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
+	assert.Equal(t, decodeAPMId(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
+
+	// ensure that span.resource defaults to otlp span.name
+	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
+
+	// ensure that span.name defaults to string representing instrumentation library if present
+	assert.Equal(t, fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER), datadogPayload.Traces[0].Spans[0].Name)
+
+	// ensure that span.type is based on otlp span.kind
+	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
+
+	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
+	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
+
+	// ensure that span error is based on otlp span status
+	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+
+	// ensure that span meta also inccludes correctly sets resource attributes
+	assert.Equal(t, "kube-system", datadogPayload.Traces[0].Spans[0].Meta["namespace"])
+
+	// ensure that span service name gives resource service.name priority
+	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
+
+	// ensure a duration and start time are calculated
+	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Start)
+	assert.NotNil(t, datadogPayload.Traces[0].Spans[0].Duration)
 }
