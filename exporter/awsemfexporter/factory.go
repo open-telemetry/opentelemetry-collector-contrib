@@ -50,7 +50,6 @@ func createDefaultConfig() configmodels.Exporter {
 		NoVerifySSL:           false,
 		ProxyAddress:          "",
 		Region:                "",
-		ResourceARN:           "",
 		RoleARN:               "",
 		DimensionRollupOption: 0,
 	}

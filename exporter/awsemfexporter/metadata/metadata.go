@@ -1,37 +1,59 @@
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package metadata
 
 import (
 	"bufio"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"io"
 	"os"
+
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 const (
-	containerIdLength = 64
+	containerIDLength = 64
 	defaultCGroupPath = "/proc/self/cgroup"
 )
 
-type Metadata struct{
-	ec2 *ec2metadata.EC2Metadata
+type Metadata interface {
+	GetHostIdentifier() (string, error)
+}
+
+type metadata struct {
+	ec2    *ec2metadata.EC2Metadata
 	docker *DockerHelper
 }
 
-func NewMetadata(s *session.Session) *Metadata{
-	return &Metadata{
+func NewMetadata(s *session.Session, cGroupPath string) Metadata {
+	if cGroupPath == "" {
+		cGroupPath = defaultCGroupPath
+	}
+	return &metadata{
 		ec2: ec2metadata.New(s),
 		docker: &DockerHelper{
-			cGroupPath: defaultCGroupPath,
+			cGroupPath: cGroupPath,
 		},
 	}
 }
 
-func (m *Metadata) isOnEC2() bool {
+func (m *metadata) isOnEC2() bool {
 	return m.ec2.Available()
 }
 
-func (m *Metadata) getEC2InstanceId() (string, error) {
+func (m *metadata) getEC2InstanceID() (string, error) {
 	instance, err := m.ec2.GetInstanceIdentityDocument()
 	if err != nil {
 		return "", err
@@ -39,32 +61,32 @@ func (m *Metadata) getEC2InstanceId() (string, error) {
 	return instance.InstanceID, nil
 }
 
-func (m *Metadata) getContainerId() (string, error) {
-	return m.docker.getContainerId()
+func (m *metadata) getContainerID() (string, error) {
+	return m.docker.getContainerID()
 }
 
-func (m *Metadata) GetHostIdentifier() (string, error){
+func (m *metadata) GetHostIdentifier() (string, error) {
 	var id string
 	var err error
 	if m.isOnEC2() {
-		id, err = m.getEC2InstanceId()
+		id, err = m.getEC2InstanceID()
 		if err == nil {
 			return id, nil
 		}
 	}
 	// Get Container ID since it's not on EC2
-	id, err = m.getContainerId()
+	id, err = m.getContainerID()
 	if err == nil {
 		return id, nil
 	}
 	return "", err
 }
 
-type DockerHelper struct{
+type DockerHelper struct {
 	cGroupPath string
 }
 
-func (d *DockerHelper) getContainerId() (string, error) {
+func (d *DockerHelper) getContainerID() (string, error) {
 	file, err := os.Open(d.cGroupPath)
 	if err != nil {
 		return "", err
@@ -72,26 +94,26 @@ func (d *DockerHelper) getContainerId() (string, error) {
 	defer file.Close()
 
 	reader := bufio.NewReader(file)
-	containerId := ""
+	containerID := ""
 	for {
-		line, isPrefix, err := reader.ReadLine()
+		line, isPrefix, readErr := reader.ReadLine()
 		if isPrefix {
 			continue
 		}
-		if err != nil && err != io.EOF {
+		if readErr != nil && readErr != io.EOF {
 			break
 		}
-		if len(line) > containerIdLength {
-			startIndex := len(line) - containerIdLength
-			containerId = string(line[startIndex:])
-			return containerId, nil
+		if len(line) > containerIDLength {
+			startIndex := len(line) - containerIDLength
+			containerID = string(line[startIndex:])
+			return containerID, nil
 		}
-		if err == io.EOF {
+		if readErr == io.EOF {
 			break
 		}
 	}
 	if err != io.EOF {
 		return "", err
 	}
-	return containerId, nil
+	return containerID, nil
 }

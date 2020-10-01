@@ -34,6 +34,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type mockMetadata struct {
+	mock.Mock
+}
+
+func (m *mockMetadata) GetHostIdentifier() (string, error) {
+	return "test-host-id", nil
+}
+
 type mockPusher struct {
 	mock.Mock
 }
@@ -127,6 +135,8 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
+	metadata := new(mockMetadata)
+	exp.(*emfExporter).metadata = metadata
 
 	mdata := consumerdata.MetricsData{}
 	md := internaldata.OCToMetrics(mdata)
@@ -162,6 +172,8 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	streamToPusherMap := map[string]Pusher{"test-logStreamName": pusher}
 	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]Pusher{}
 	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
+	metadata := new(mockMetadata)
+	exp.(*emfExporter).metadata = metadata
 
 	mdata := consumerdata.MetricsData{
 		Node: &commonpb.Node{

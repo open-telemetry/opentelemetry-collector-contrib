@@ -41,8 +41,6 @@ type Config struct {
 	ProxyAddress string `mapstructure:"proxy_address"`
 	// Region is the AWS region where the metric logs are sent to.
 	Region string `mapstructure:"region"`
-	// Amazon Resource Name (ARN) of the AWS resource running the collector.
-	ResourceARN string `mapstructure:"resource_arn"`
 	// RoleARN is the IAM role used by the collector when communicating
 	// with the CloudWatch Logs service
 	RoleARN string `mapstructure:"role_arn"`
