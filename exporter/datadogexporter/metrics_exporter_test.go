@@ -52,7 +52,6 @@ func TestProcessMetrics(t *testing.T) {
 
 	var series Series
 	series.Add(NewGauge(
-		"original_host",
 		"metric_name",
 		0,
 		0,

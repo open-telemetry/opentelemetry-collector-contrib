@@ -20,7 +20,6 @@ exporters:
 
     metrics:
       namespace: opentelemetry
-      report_percentiles: false
 
   datadog/invalid:
     metrics:

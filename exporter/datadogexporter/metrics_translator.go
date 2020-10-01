@@ -16,10 +16,8 @@ package datadogexporter
 
 import (
 	"fmt"
-	"math"
 
-	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -28,27 +26,19 @@ const (
 	Gauge string = "gauge"
 )
 
-func NewGauge(hostname, name string, ts int32, value float64, tags []string) datadog.Metric {
-	timestamp := float64(ts)
+func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
+	// Transform UnixNano timestamp into Unix timestamp
+	// 1 second = 1e9 ns
+	timestamp := float64(ts / 1e9)
 
 	gauge := datadog.Metric{
 		Points: []datadog.DataPoint{[2]*float64{&timestamp, &value}},
 		Tags:   tags,
 	}
-	gauge.SetHost(hostname)
 	gauge.SetMetric(name)
 	gauge.SetType(Gauge)
 	return gauge
 }
-
-type OpenCensusKind int
-
-const (
-	Int64 OpenCensusKind = iota
-	Double
-	Distribution
-	Summary
-)
 
 // Series is a set of metrics
 type Series struct {
@@ -59,156 +49,168 @@ func (m *Series) Add(metric datadog.Metric) {
 	m.metrics = append(m.metrics, metric)
 }
 
-func MapMetrics(logger *zap.Logger, metricsCfg MetricsConfig, data []consumerdata.MetricsData) (series Series, droppedTimeSeries int) {
+func getTags(labels pdata.StringMap) []string {
+	tags := make([]string, 0, labels.Len())
+	labels.ForEach(func(key string, v pdata.StringValue) {
+		value := v.Value()
+		if value == "" {
+			// Tags can't end with ":" so we replace empty values with "n/a"
+			value = "n/a"
+		}
+		tags = append(tags, fmt.Sprintf("%s:%s", key, value))
+	})
+	return tags
+}
 
-	for _, metricsData := range data {
-		// The hostname provided by OpenTelemetry
-		host := metricsData.Node.GetIdentifier().GetHostName()
+func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric {
+	// Allocate assuming none are nil
+	metrics := make([]datadog.Metric, 0, slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		if p.IsNil() {
+			continue
+		}
+		metrics = append(metrics,
+			NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
+		)
+	}
+	return metrics
+}
 
-		for _, metric := range metricsData.Metrics {
+func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.Metric {
+	// Allocate assuming none are nil
+	metrics := make([]datadog.Metric, 0, slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		if p.IsNil() {
+			continue
+		}
+		metrics = append(metrics,
+			NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
+		)
+	}
+	return metrics
+}
 
-			// The metric name
-			name := metric.GetMetricDescriptor().GetName()
-			// For logging purposes
-			nameField := zap.String("name", name)
+// mapIntHistogramMetrics maps histogram metrics slices to Datadog metrics
+//
+// A Histogram metric has:
+// - The count of values in the population
+// - The sum of values in the population
+// - A number of buckets, each of them having
+//    - the bounds that define the bucket
+//    - the count of the number of items in that bucket
+//    - a sample value from each bucket
+//
+// We follow a similar approach to OpenCensus:
+// we report sum and count by default; buckets count can also
+// be reported (opt-in), but bounds are ignored.
+func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice, buckets bool) []datadog.Metric {
+	// Allocate assuming none are nil and no buckets
+	metrics := make([]datadog.Metric, 0, 2*slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		if p.IsNil() {
+			continue
+		}
+		ts := uint64(p.Timestamp())
+		tags := getTags(p.LabelsMap())
 
-			// Labels are divided in keys and values, keys are shared among timeseries.
-			// We transform them into Datadog tags of the form key:value
-			labelKeys := metric.GetMetricDescriptor().GetLabelKeys()
+		metrics = append(metrics,
+			NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
+			NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
+		)
 
-			// Get information about metric
-			// We ignore whether the metric is cumulative or not
-			var kind OpenCensusKind
-			switch metric.GetMetricDescriptor().GetType() {
-			case v1.MetricDescriptor_GAUGE_INT64, v1.MetricDescriptor_CUMULATIVE_INT64:
-				kind = Int64
-			case v1.MetricDescriptor_GAUGE_DOUBLE, v1.MetricDescriptor_CUMULATIVE_DOUBLE:
-				kind = Double
-			case v1.MetricDescriptor_GAUGE_DISTRIBUTION, v1.MetricDescriptor_CUMULATIVE_DISTRIBUTION:
-				kind = Distribution
-			case v1.MetricDescriptor_SUMMARY:
-				kind = Summary
-			default:
-				logger.Info(
-					"Discarding metric: unspecified or unrecognized type",
-					nameField,
-					zap.Any("type", metric.GetMetricDescriptor().GetType()),
+		if buckets {
+			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
+			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
+			fullName := fmt.Sprintf("%s.count_per_bucket", name)
+			for idx, count := range p.BucketCounts() {
+				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
+				metrics = append(metrics,
+					NewGauge(fullName, ts, float64(count), bucketTags),
 				)
-				droppedTimeSeries += len(metric.GetTimeseries())
-				continue
-			}
-
-			for _, timeseries := range metric.GetTimeseries() {
-
-				// Create tags
-				labelValues := timeseries.GetLabelValues()
-				tags := make([]string, len(labelKeys))
-				for i, key := range labelKeys {
-					labelValue := labelValues[i]
-					if labelValue.GetHasValue() {
-						// Tags can't end with ":" so we replace empty values with "n/a"
-						value := labelValue.GetValue()
-						if value == "" {
-							value = "n/a"
-						}
-
-						tags[i] = fmt.Sprintf("%s:%s", key.GetKey(), value)
-					}
-				}
-
-				for _, point := range timeseries.GetPoints() {
-					ts := int32(point.Timestamp.Seconds)
-
-					switch kind {
-					case Int64:
-						series.Add(NewGauge(host, name, ts, float64(point.GetInt64Value()), tags))
-					case Double:
-						series.Add(NewGauge(host, name, ts, point.GetDoubleValue(), tags))
-					case Distribution:
-						// A Distribution metric has:
-						// - The count of values in the population
-						// - The sum of values in the population
-						// - The sum of squared deviations
-						// - A number of buckets, each of them having
-						//    - the bounds that define the bucket
-						//    - the count of the number of items in that bucket
-						//    - a sample value from each bucket
-						//
-						// We follow the implementation on `opencensus-go-exporter-datadog`:
-						// we report the first three values and the buckets count can also
-						// be reported (opt-in), but bounds are ignored.
-
-						dist := point.GetDistributionValue()
-
-						distMetrics := map[string]float64{
-							"count":           float64(dist.GetCount()),
-							"sum":             dist.GetSum(),
-							"squared_dev_sum": dist.GetSumOfSquaredDeviation(),
-						}
-
-						for suffix, value := range distMetrics {
-							fullName := fmt.Sprintf("%s.%s", name, suffix)
-							series.Add(NewGauge(host, fullName, ts, value, tags))
-						}
-
-						if metricsCfg.Buckets {
-							// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
-							// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
-							fullName := fmt.Sprintf("%s.count_per_bucket", name)
-
-							for idx, bucket := range dist.GetBuckets() {
-								bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-								series.Add(NewGauge(host, fullName, ts, float64(bucket.GetCount()), bucketTags))
-							}
-						}
-					case Summary:
-						// A Summary metric has:
-						// - The total sum so far
-						// - The total count so far
-						// - A snapshot with
-						//   - the sum in the current snapshot
-						//   - the count in the current snapshot
-						//   - a series of percentiles
-						//
-						// By default we report the sum and count as gauges and percentiles.
-						// Percentiles are opt-out
-
-						// Report count if available
-						if count := point.GetSummaryValue().GetCount(); count != nil {
-							fullName := fmt.Sprintf("%s.count", name)
-							series.Add(NewGauge(host, fullName, ts, float64(count.GetValue()), tags))
-						}
-
-						// Report sum if available
-						if sum := point.GetSummaryValue().GetSum(); sum != nil {
-							fullName := fmt.Sprintf("%s.sum", name)
-							series.Add(NewGauge(host, fullName, ts, sum.GetValue(), tags))
-						}
-
-						if metricsCfg.Percentiles {
-							snapshot := point.GetSummaryValue().GetSnapshot()
-							for _, pair := range snapshot.GetPercentileValues() {
-								var fullName string
-								if perc := pair.GetPercentile(); perc == 0 {
-									// p0 is the minimum
-									fullName = fmt.Sprintf("%s.min", name)
-								} else if perc == 100 {
-									// p100 is the maximum
-									fullName = fmt.Sprintf("%s.max", name)
-								} else {
-									// Round to the nearest digit
-									fullName = fmt.Sprintf("%s.p%02d", name, int(math.Round(perc)))
-								}
-
-								series.Add(NewGauge(host, fullName, ts, pair.GetValue(), tags))
-							}
-						}
-
-					}
-				}
 			}
 		}
 	}
+	return metrics
+}
 
+// mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
+//
+// see mapIntHistogramMetrics docs for further details.
+func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool) []datadog.Metric {
+	// Allocate assuming none are nil and no buckets
+	metrics := make([]datadog.Metric, 0, 2*slice.Len())
+	for i := 0; i < slice.Len(); i++ {
+		p := slice.At(i)
+		if p.IsNil() {
+			continue
+		}
+		ts := uint64(p.Timestamp())
+		tags := getTags(p.LabelsMap())
+
+		metrics = append(metrics,
+			NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
+			NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
+		)
+
+		if buckets {
+			// We have a single metric, 'count_per_bucket', which is tagged with the bucket id. See:
+			// https://github.com/DataDog/opencensus-go-exporter-datadog/blob/c3b47f1c6dcf1c47b59c32e8dbb7df5f78162daa/stats.go#L99-L104
+			fullName := fmt.Sprintf("%s.count_per_bucket", name)
+			for idx, count := range p.BucketCounts() {
+				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
+				metrics = append(metrics,
+					NewGauge(fullName, ts, float64(count), bucketTags),
+				)
+			}
+		}
+	}
+	return metrics
+}
+
+func MapMetrics(logger *zap.Logger, cfg MetricsConfig, md pdata.Metrics) (series Series, droppedTimeSeries int) {
+	rms := md.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+		ilms := rm.InstrumentationLibraryMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			ilm := ilms.At(j)
+			if ilm.IsNil() {
+				continue
+			}
+			metrics := ilm.Metrics()
+			for k := 0; k < metrics.Len(); k++ {
+				md := metrics.At(k)
+				if md.IsNil() {
+					continue
+				}
+				var datapoints []datadog.Metric
+				switch md.DataType() {
+				case pdata.MetricDataTypeNone:
+					continue
+				case pdata.MetricDataTypeIntGauge:
+					datapoints = mapIntMetrics(md.Name(), md.IntGauge().DataPoints())
+				case pdata.MetricDataTypeDoubleGauge:
+					datapoints = mapDoubleMetrics(md.Name(), md.DoubleGauge().DataPoints())
+				case pdata.MetricDataTypeIntSum:
+					// Ignore aggregation temporality; report raw values
+					datapoints = mapIntMetrics(md.Name(), md.IntSum().DataPoints())
+				case pdata.MetricDataTypeDoubleSum:
+					// Ignore aggregation temporality; report raw values
+					datapoints = mapDoubleMetrics(md.Name(), md.DoubleSum().DataPoints())
+				case pdata.MetricDataTypeIntHistogram:
+					datapoints = mapIntHistogramMetrics(md.Name(), md.IntHistogram().DataPoints(), cfg.Buckets)
+				case pdata.MetricDataTypeDoubleHistogram:
+					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets)
+				}
+				series.metrics = append(series.metrics, datapoints...)
+			}
+		}
+	}
 	return
 }

@@ -53,7 +53,6 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 
 		Metrics: MetricsConfig{
-			Percentiles: true,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
