@@ -23,7 +23,7 @@ import (
 
 func TestGetHostIdentifier(t *testing.T) {
 	s, _ := session.NewSession()
-	metadata := NewMetadata(s, "")
+	metadata := NewMetadata(s, "../testdata/mockcgroup_notexists")
 	_, err := metadata.GetHostIdentifier()
 	assert.NotNil(t, err)
 }
@@ -32,7 +32,8 @@ func TestGetHostIdentifierWithContainerId(t *testing.T) {
 	s, _ := session.NewSession()
 	metadata := NewMetadata(s, "../testdata/mockcgroup")
 
-	_, err := metadata.GetHostIdentifier()
+	id, err := metadata.GetHostIdentifier()
+	assert.Equal(t, "containerIDstart-21301923712841283901283901842132-containerIDend", id)
 	assert.Nil(t, err)
 }
 

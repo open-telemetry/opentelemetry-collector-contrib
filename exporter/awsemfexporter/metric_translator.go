@@ -42,6 +42,8 @@ const (
 	// DimensionRollupOptions
 	ZeroAndSingleDimensionRollup = 0
 	SingleDimensionRollupOnly    = 1
+
+	FakeMetricValue 			 = 0
 )
 
 var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
@@ -260,10 +262,12 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	var metricVal interface{}
 	switch metric := dp.(type) {
 	case pdata.IntDataPoint:
-		fieldsPairs[pmd.Name()] = metric.Value()
+		// Put a fake but identical metric value here in order to add metric name into fieldsPairs
+		// since calculateRate() needs metric name as one of metric identifiers
+		fieldsPairs[pmd.Name()] = int64(FakeMetricValue)
 		metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
 	case pdata.DoubleDataPoint:
-		fieldsPairs[pmd.Name()] = metric.Value()
+		fieldsPairs[pmd.Name()] = float64(FakeMetricValue)
 		metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
 	}
 	if metricVal == nil {
