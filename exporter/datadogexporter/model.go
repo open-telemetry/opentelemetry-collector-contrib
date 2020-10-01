@@ -15,8 +15,6 @@
 package datadogexporter
 
 import (
-	// "strings"
-
 	"github.com/DataDog/datadog-agent/pkg/trace/event"
 	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
