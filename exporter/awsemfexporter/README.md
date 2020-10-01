@@ -24,6 +24,7 @@ The following exporter configuration parameters are supported.
 | `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
 | `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
+| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |    0 (Enable both zero dimension rollup and single dimension rollup) |
 
 
 ## AWS Credential Configuration
