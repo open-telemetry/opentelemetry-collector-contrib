@@ -44,3 +44,12 @@ func TestGetHostIdentifierWithContainerIdErr(t *testing.T) {
 	assert.Equal(t, "", id)
 	assert.Nil(t, err)
 }
+
+func TestGetEC2InstanceID(t *testing.T) {
+	s, _ := session.NewSession()
+	metadata := NewMetadata(s, "")
+
+	id, err := metadata.GetEC2InstanceID()
+	assert.Equal(t, "", id)
+	assert.NotNil(t, err)
+}

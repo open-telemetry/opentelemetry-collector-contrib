@@ -30,6 +30,7 @@ const (
 
 type Metadata interface {
 	GetHostIdentifier() (string, error)
+	GetEC2InstanceID() (string, error)
 }
 
 type metadata struct {
@@ -53,7 +54,7 @@ func (m *metadata) isOnEC2() bool {
 	return m.ec2.Available()
 }
 
-func (m *metadata) getEC2InstanceID() (string, error) {
+func (m *metadata) GetEC2InstanceID() (string, error) {
 	instance, err := m.ec2.GetInstanceIdentityDocument()
 	if err != nil {
 		return "", err
@@ -69,7 +70,7 @@ func (m *metadata) GetHostIdentifier() (string, error) {
 	var id string
 	var err error
 	if m.isOnEC2() {
-		id, err = m.getEC2InstanceID()
+		id, err = m.GetEC2InstanceID()
 		if err == nil {
 			return id, nil
 		}

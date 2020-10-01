@@ -42,7 +42,6 @@ const (
 	// DimensionRollupOptions
 	ZeroAndSingleDimensionRollup = 0
 	SingleDimensionRollupOnly    = 1
-	NoDimensionRollup            = 2
 )
 
 var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)

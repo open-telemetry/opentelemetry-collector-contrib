@@ -42,6 +42,10 @@ func (m *mockMetadata) GetHostIdentifier() (string, error) {
 	return "test-host-id", nil
 }
 
+func (m *mockMetadata) GetEC2InstanceID() (string, error) {
+	return "test-host-id", nil
+}
+
 type mockPusher struct {
 	mock.Mock
 }
