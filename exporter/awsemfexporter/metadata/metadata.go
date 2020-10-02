@@ -36,6 +36,7 @@ type Metadata interface {
 type metadata struct {
 	ec2    *ec2metadata.EC2Metadata
 	docker *DockerHelper
+	hostID string
 }
 
 func NewMetadata(s *session.Session, cGroupPath string) Metadata {
@@ -67,17 +68,22 @@ func (m *metadata) getContainerID() (string, error) {
 }
 
 func (m *metadata) GetHostIdentifier() (string, error) {
+	if m.hostID != "" {
+		return m.hostID, nil
+	}
 	var id string
 	var err error
 	if m.isOnEC2() {
 		id, err = m.GetEC2InstanceID()
 		if err == nil {
+			m.hostID = id
 			return id, nil
 		}
 	}
 	// Get Container ID since it's not on EC2
 	id, err = m.getContainerID()
 	if err == nil {
+		m.hostID = id
 		return id, nil
 	}
 	return "", err
@@ -96,20 +102,18 @@ func (d *DockerHelper) getContainerID() (string, error) {
 
 	reader := bufio.NewReader(file)
 	containerID := ""
+	var line string
 	for {
-		line, isPrefix, readErr := reader.ReadLine()
-		if isPrefix {
-			continue
-		}
-		if readErr != nil && readErr != io.EOF {
+		line, err = reader.ReadString('\n')
+		if err != nil && err != io.EOF {
 			break
 		}
 		if len(line) > containerIDLength {
 			startIndex := len(line) - containerIDLength
-			containerID = string(line[startIndex:])
+			containerID = line[startIndex:]
 			return containerID, nil
 		}
-		if readErr == io.EOF {
+		if err == io.EOF {
 			break
 		}
 	}

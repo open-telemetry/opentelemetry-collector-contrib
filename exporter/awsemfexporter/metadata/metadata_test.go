@@ -35,6 +35,9 @@ func TestGetHostIdentifierWithContainerId(t *testing.T) {
 	id, err := metadata.GetHostIdentifier()
 	assert.Equal(t, "containerIDstart-21301923712841283901283901842132-containerIDend", id)
 	assert.Nil(t, err)
+	id, err = metadata.GetHostIdentifier()
+	assert.Equal(t, "containerIDstart-21301923712841283901283901842132-containerIDend", id)
+	assert.Nil(t, err)
 }
 
 func TestGetHostIdentifierWithContainerIdErr(t *testing.T) {

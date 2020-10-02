@@ -43,7 +43,7 @@ const (
 	ZeroAndSingleDimensionRollup = 0
 	SingleDimensionRollupOnly    = 1
 
-	FakeMetricValue 			 = 0
+	FakeMetricValue = 0
 )
 
 var currentState = mapwithexpiry.NewMapWithExpiry(CleanInterval)
@@ -276,18 +276,9 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	fieldsPairs[pmd.Name()] = metricVal
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	dimensionZero := []string{OtlibDimensionKey}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
-		//"Zero" dimension rollup
-		if len(dimensionSlice) > 0 {
-			dimensionArray = append(dimensionArray, dimensionZero)
-		}
-	}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
-		//"One" dimension rollup
-		for _, dimensionKey := range dimensionSlice {
-			dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
-		}
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice)
+	if len(rollupDimensionArray) > 0 {
+		dimensionArray = append(dimensionArray, rollupDimensionArray...)
 	}
 
 	cwMeasurement := &CwMeasurement{
@@ -333,18 +324,9 @@ func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdat
 	fieldsPairs[pmd.Name()] = metricStats
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	dimensionZero := []string{OtlibDimensionKey}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
-		//"Zero" dimension rollup
-		if len(dimensionSlice) > 0 {
-			dimensionArray = append(dimensionArray, dimensionZero)
-		}
-	}
-	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
-		//"One" dimension rollup
-		for _, dimensionKey := range dimensionSlice {
-			dimensionArray = append(dimensionArray, append(dimensionZero, dimensionKey))
-		}
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice)
+	if len(rollupDimensionArray) > 0 {
+		dimensionArray = append(dimensionArray, rollupDimensionArray...)
 	}
 
 	cwMeasurement := &CwMeasurement{
@@ -417,4 +399,23 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 		metricRate = 0
 	}
 	return metricRate
+}
+
+func dimensionRollup(dimensionRollupOption int, originalDimensionSlice []string) [][]string {
+	var rollupDimensionArray [][]string
+	dimensionZero := []string{OtlibDimensionKey}
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
+		//"Zero" dimension rollup
+		if len(originalDimensionSlice) > 0 {
+			rollupDimensionArray = append(rollupDimensionArray, dimensionZero)
+		}
+	}
+	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
+		//"One" dimension rollup
+		for _, dimensionKey := range originalDimensionSlice {
+			rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
+		}
+	}
+
+	return rollupDimensionArray
 }
