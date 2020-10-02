@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
@@ -86,21 +87,31 @@ func (exp *traceExporter) pushTraceData(
 	ObfuscatePayload(exp.obfuscator, aggregatedTraces)
 
 	for _, ddTracePayload := range aggregatedTraces {
-
-		err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, 3)
-
-		if err != nil {
-			exp.logger.Info(fmt.Sprintf("Failed to send traces with error %v\n", err))
-		}
-
-		// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
-		stats := ComputeAPMStats(ddTracePayload)
-		errStats := exp.edgeConnection.SendStats(context.Background(), stats, 3)
-
-		if errStats != nil {
-			exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", errStats))
-		}
+		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
+		// adding a helper function here to make custom retry logic easier in the future
+		exp.pushWithRetry(ddTracePayload, 1, func() error {
+			return nil
+		})
 	}
 
 	return len(aggregatedTraces), nil
+}
+
+// gives us flexibility to add custom retry logic later
+func (exp *traceExporter) pushWithRetry(ddTracePayload *pb.TracePayload, maxRetries int, fn func() error) error {
+	err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, maxRetries)
+
+	if err != nil {
+		exp.logger.Info(fmt.Sprintf("Failed to send traces with error %v\n", err))
+	}
+
+	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
+	stats := ComputeAPMStats(ddTracePayload)
+	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
+
+	if errStats != nil {
+		exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", errStats))
+	}
+
+	return fn()
 }

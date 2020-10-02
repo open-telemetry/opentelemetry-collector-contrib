@@ -162,7 +162,14 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *C
 	}
 
 	for _, apiTrace := range apiTraces {
+		// calculates analyzed spans for use in trace search and app analytics
+		// appends a specific piecce of metadata to these spans marking them as analyzed
+		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := GetAnalyzedSpans(apiTrace.Spans)
+
+		// calculates span metrics for representing direction and timing among it's different services for display in
+		// service overview graphs
+		// see: https://github.com/DataDog/datadog-agent/blob/f69a7d35330c563e9cad4c5b8865a357a87cd0dc/pkg/trace/stats/sublayers.go#L204
 		ComputeSublayerMetrics(apiTrace.Spans)
 		payload.Transactions = append(payload.Transactions, top...)
 		payload.Traces = append(payload.Traces, apiTrace)
@@ -223,13 +230,8 @@ func spanToDatadogSpan(s pdata.Span,
 		Type:     datadogType,
 	}
 
-	// TODO: confirm parentId approach
 	if len(s.ParentSpanID().Bytes()) > 0 {
-		idVal := decodeAPMId(s.ParentSpanID().Bytes()[:])
-
-		span.ParentID = idVal
-	} else {
-		span.ParentID = 0
+		span.ParentID = decodeAPMId(s.ParentSpanID().Bytes()[:])
 	}
 
 	// Set Span Status and any response or error details

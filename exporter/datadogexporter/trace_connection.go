@@ -166,7 +166,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 	// communicating with Datadog
 	var userAgent = fmt.Sprintf(
 		"%s/%s/%s (+%s)",
-		"opentelemetry-exporter", "0.1", "1", "http://localhost",
+		"otel-collector-exporter", "0.1", "1", "http://localhost",
 	)
 
 	req.Header.Set("DD-Api-Key", apiKey)

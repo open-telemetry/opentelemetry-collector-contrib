@@ -251,7 +251,7 @@ func TestSpanNameTranslation(t *testing.T) {
 	span.SetKind(pdata.SpanKindSERVER)
 
 	ddIlTags := map[string]string{
-		fmt.Sprintf("%s", tracetranslator.TagInstrumentationName): "il_name",
+		fmt.Sprintf(tracetranslator.TagInstrumentationName): "il_name",
 	}
 
 	ddNoIlTags := map[string]string{
@@ -275,4 +275,59 @@ func TestSpanTypeTranslation(t *testing.T) {
 	assert.Equal(t, "server", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
 
+}
+
+// ensure that payloads get aggregated by env to reduce number of flushes
+func TestTracePayloadAggr(t *testing.T) {
+
+	// ensure that tracepayloads are aggregated by matchig hosts if envs match
+	env := "testenv"
+	payloadOne := pb.TracePayload{
+		HostName:     "hostnameTestOne",
+		Env:          env,
+		Traces:       []*pb.APITrace{},
+		Transactions: []*pb.Span{},
+	}
+
+	payloadTwo := pb.TracePayload{
+		HostName:     "hostnameTestOne",
+		Env:          env,
+		Traces:       []*pb.APITrace{},
+		Transactions: []*pb.Span{},
+	}
+
+	originalPayload := []*pb.TracePayload{}
+	originalPayload = append(originalPayload, &payloadOne)
+	originalPayload = append(originalPayload, &payloadTwo)
+
+	updatedPayloads := aggregateTracePayloadsByEnv(originalPayload)
+
+	assert.Equal(t, 2, len(originalPayload))
+	assert.Equal(t, 1, len(updatedPayloads))
+
+	// ensure that trace playloads are not aggregated by matching hosts if different envs
+	envTwo := "testenvtwo"
+
+	payloadThree := pb.TracePayload{
+		HostName:     "hostnameTestOne",
+		Env:          env,
+		Traces:       []*pb.APITrace{},
+		Transactions: []*pb.Span{},
+	}
+
+	payloadFour := pb.TracePayload{
+		HostName:     "hostnameTestOne",
+		Env:          envTwo,
+		Traces:       []*pb.APITrace{},
+		Transactions: []*pb.Span{},
+	}
+
+	originalPayloadDifferentEnv := []*pb.TracePayload{}
+	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadThree)
+	originalPayloadDifferentEnv = append(originalPayloadDifferentEnv, &payloadFour)
+
+	updatedPayloadsDifferentEnv := aggregateTracePayloadsByEnv(originalPayloadDifferentEnv)
+
+	assert.Equal(t, 2, len(originalPayloadDifferentEnv))
+	assert.Equal(t, 2, len(updatedPayloadsDifferentEnv))
 }

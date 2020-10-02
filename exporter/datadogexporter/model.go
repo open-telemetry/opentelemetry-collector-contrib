@@ -36,31 +36,6 @@ func ObfuscatePayload(obfuscator *obfuscate.Obfuscator, tracePayloads []*pb.Trac
 	}
 }
 
-// func buildServiceLookup(tracePayloads []*pb.TracePayload, service string) map[string]string {
-// 	remappedServices := map[string]string{}
-// 	for _, tracePayload := range tracePayloads {
-// 		for _, trace := range tracePayload.Traces {
-// 			for _, span := range trace.Spans {
-// 				if span.Name == "aws.lambda" || span.Service == "aws.lambda" {
-// 					remappedServices[span.Service] = service
-// 				}
-// 			}
-// 		}
-// 	}
-// 	for _, tracePayload := range tracePayloads {
-// 		for _, trace := range tracePayload.Traces {
-// 			for _, span := range trace.Spans {
-// 				for k := range remappedServices {
-// 					if strings.HasPrefix(span.Service, k) && span.Service != k && span.Service != "" {
-// 						remappedServices[span.Service] = strings.Replace(span.Service, k, service, 1)
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return remappedServices
-// }
-
 // GetAnalyzedSpans finds all the analyzed spans in a trace, including top level spans
 // and spans marked as analyzed by the tracer.
 // A span is considered top-level if:
@@ -100,6 +75,8 @@ func GetAnalyzedSpans(sps []*pb.Span) []*pb.Span {
 	return top
 }
 
+// Compute Sublayers updates a spans metrics with relevant metadata so that it's duration and breakdown between different services can
+// be accurately displayed in the Datadog UI
 func ComputeSublayerMetrics(t pb.Trace) {
 	root := traceutil.GetRoot(t)
 	traceutil.ComputeTopLevel(t)
