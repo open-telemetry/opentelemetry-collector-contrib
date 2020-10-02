@@ -306,7 +306,7 @@ func TestHandlerWrongType(t *testing.T) {
 func TestExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
 
-	pod := &api_v1.Pod{
+	pod1 := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
 			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
@@ -338,14 +338,47 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
+	podWithoutSpecHostname := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "auth-service-abc12-xyz3",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			Namespace:         "ns1",
+			CreationTimestamp: meta_v1.Now(),
+			ClusterName:       "cluster1",
+			Labels: map[string]string{
+				"label1": "lv1",
+				"label2": "k1=v1 k5=v5 extra!",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+		Spec: api_v1.PodSpec{
+			NodeName: "node1",
+			Containers: []api_v1.Container{
+				{
+					Name: "container-zzzzz",
+				},
+				{
+					Name: "sidecar-container-aaaaa",
+				},
+			},
+		},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
 	testCases := []struct {
 		name       string
 		rules      ExtractionRules
 		attributes map[string]string
+		pod        *api_v1.Pod
 	}{{
 		name:       "no-rules",
 		rules:      ExtractionRules{},
 		attributes: nil,
+		pod:        pod1,
 	}, {
 		name: "deployment",
 		rules: ExtractionRules{
@@ -354,6 +387,7 @@ func TestExtractionRules(t *testing.T) {
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
 		},
+		pod: pod1,
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
@@ -374,10 +408,22 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.node.name":       "node1",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"k8s.pod.startTime":   pod1.GetCreationTimestamp().String(),
 			"k8s.container.name":  "container-zzzzz,sidecar-container-aaaaa",
 			"host.name":           "myhostname",
 		},
+		pod: pod1,
+	}, {
+		name: "hostname - pod.Spec.Hostname unset",
+		rules: ExtractionRules{
+			HostName:      true,
+			ContainerName: true,
+		},
+		attributes: map[string]string{
+			"k8s.container.name": "container-zzzzz,sidecar-container-aaaaa",
+			"host.name":          "auth-service-abc12-xyz3",
+		},
+		pod: podWithoutSpecHostname,
 	}, {
 		name: "labels",
 		rules: ExtractionRules{
@@ -401,13 +447,14 @@ func TestExtractionRules(t *testing.T) {
 			"l2": "v5",
 			"a1": "av1",
 		},
+		pod: pod1,
 	},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
-			c.handlePodAdd(pod)
-			p, ok := c.GetPodByIP(pod.Status.PodIP)
+			c.handlePodAdd(tc.pod)
+			p, ok := c.GetPodByIP(tc.pod.Status.PodIP)
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(p.Attributes))
