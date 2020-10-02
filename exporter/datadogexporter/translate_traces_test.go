@@ -128,8 +128,9 @@ func TestBasicTracesTranslation(t *testing.T) {
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, false, false)
 
+	mockGlobalTags := []string{"global_key:global_value"}
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{}, mockGlobalTags)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -165,7 +166,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 8, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -195,7 +196,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{}, []string{})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)

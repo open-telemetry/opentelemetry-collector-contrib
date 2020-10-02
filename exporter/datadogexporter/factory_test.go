@@ -38,10 +38,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		API: APIConfig{Site: "datadoghq.com"},
-		Metrics: MetricsConfig{
-			Percentiles: true,
-		},
+		API:     APIConfig{Site: "datadoghq.com"},
+		Metrics: MetricsConfig{},
 		Traces: TracesConfig{
 			SampleRate: 1,
 		},

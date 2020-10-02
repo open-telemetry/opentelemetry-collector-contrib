@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opencensus.io/trace"
@@ -87,7 +88,7 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 		}
 
 		// TODO: Also pass in globalTags here when we know what to do with them
-		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
+		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg, globalTags)
 		if err != nil {
 			return traces, err
 		}
@@ -100,7 +101,7 @@ func convertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*p
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *Config) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *Config, globalTags []string) (pb.TracePayload, error) {
 	// get env tag
 	env := cfg.Env
 
@@ -136,7 +137,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *C
 		extractInstrumentationLibraryTags(ils.InstrumentationLibrary(), datadogTags)
 		spans := ils.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			span, err := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg)
+			span, err := spanToDatadogSpan(spans.At(j), resourceServiceName, datadogTags, cfg, globalTags)
 
 			if err != nil {
 				return payload, err
@@ -183,6 +184,7 @@ func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
 	cfg *Config,
+	globalTags []string,
 ) (*pb.Span, error) {
 	// otel specification resource service.name takes precedence
 	// and configuration DD_ENV as fallback if it exists
@@ -264,14 +266,19 @@ func spanToDatadogSpan(s pdata.Span,
 		tags[httpStatusCode] = status.Code().String()
 	}
 
-	// TODO: Apply Config Tags
-	// for key, val := range e.opts.GlobalTags {
-	// 	setStringTag(span, key, val)
-	// }
-
 	// Set Attributes as Tags
 	for key, val := range tags {
 		setStringTag(span, key, val)
+	}
+
+	for _, val := range globalTags {
+		parts := strings.Split(val, ":")
+		// only apply global tag if its not service/env/version/host and it is not malformed
+		if len(parts) < 2 || strings.TrimSpace(parts[1]) == "" || isCanonicalSpanTag(strings.TrimSpace(parts[0])) {
+			continue
+		}
+
+		setStringTag(span, strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1]))
 	}
 
 	return span, nil
@@ -458,4 +465,17 @@ func aggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 		newPayloads = append(newPayloads, tracePayload)
 	}
 	return newPayloads
+}
+
+// we want to handle these tags separately
+func isCanonicalSpanTag(category string) bool {
+	switch category {
+	case
+		"env",
+		"host",
+		"service",
+		"version":
+		return true
+	}
+	return false
 }
