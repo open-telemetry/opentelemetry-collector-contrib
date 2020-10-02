@@ -21,6 +21,9 @@ exporters:
     metrics:
       namespace: opentelemetry
 
+    traces:
+      sample_rate: 1
+
   datadog/invalid:
     metrics:
       endpoint: "invalid:"
