@@ -74,7 +74,6 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.eu",
 			},
 		},
-
 	}, apiConfig)
 
 	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*Config)
