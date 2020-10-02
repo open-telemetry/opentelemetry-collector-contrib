@@ -16,10 +16,8 @@ package datadogexporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -35,25 +33,13 @@ func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, erro
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
 
-	if ok, err := client.Validate(); err != nil {
-		logger.Warn("Error when validating API key", zap.Error(err))
-	} else if ok {
-		logger.Info("Provided Datadog API key is valid")
-	} else {
-		return nil, fmt.Errorf("provided Datadog API key is invalid: %s", cfg.API.GetCensoredKey())
-	}
-
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
 
 	return &metricsExporter{logger, cfg, client, tags}, nil
-
 }
 
-func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	data := internaldata.MetricsToOC(md)
-	series, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, data)
-
+func (exp *metricsExporter) processMetrics(series *Series) {
 	addNamespace := exp.cfg.Metrics.Namespace != ""
 	overrideHostname := exp.cfg.Hostname != ""
 	addTags := len(exp.tags) > 0
@@ -73,6 +59,11 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 		}
 
 	}
+}
+
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
+	series, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
+	exp.processMetrics(&series)
 
 	err := exp.client.PostMetrics(series.metrics)
 	return droppedTimeSeries, err

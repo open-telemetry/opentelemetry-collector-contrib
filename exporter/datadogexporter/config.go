@@ -53,10 +53,6 @@ type MetricsConfig struct {
 	// By default metrics are not namespaced
 	Namespace string `mapstructure:"namespace"`
 
-	// Percentiles states whether to report percentiles for summary metrics,
-	// including the minimum and maximum
-	Percentiles bool `mapstructure:"report_percentiles"`
-
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
