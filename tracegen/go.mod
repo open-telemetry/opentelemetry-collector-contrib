@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/zapr v0.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/otel v0.11.0
+	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/exporters/otlp v0.11.0
 	go.opentelemetry.io/otel/sdk v0.11.0
 	go.uber.org/zap v1.16.0
