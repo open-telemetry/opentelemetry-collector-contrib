@@ -164,7 +164,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		var parentSpanID []byte
+		parentSpanID := pdata.NewSpanID(nil)
 		testSpan.SetParentSpanID(parentSpanID)
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
@@ -176,7 +176,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		parentSpanID := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+		parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
 		testSpan.SetParentSpanID(parentSpanID)
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
@@ -189,8 +189,8 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan.InitEmpty()
 
 		traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-		parentSpanID := []byte{8, 7, 6, 5, 4, 3, 2, 1}
+		spanID := pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pdata.NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pdata.TimestampUnixNano = 123
 		var endTime pdata.TimestampUnixNano = 1234567890

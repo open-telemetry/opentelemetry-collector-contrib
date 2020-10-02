@@ -102,7 +102,7 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 
 		if message != "" {
 			id := newSegmentID()
-			hexID := hex.EncodeToString(id)
+			hexID := hex.EncodeToString(id.Bytes())
 
 			cause = &awsxray.CauseData{
 				Type: awsxray.CauseTypeObject,
@@ -141,7 +141,7 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 	r.ReadLine()
 	exceptions := make([]awsxray.Exception, 0, 1)
 	exceptions = append(exceptions, awsxray.Exception{
-		ID:      aws.String(hex.EncodeToString(newSegmentID())),
+		ID:      aws.String(hex.EncodeToString(newSegmentID().Bytes())),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
 	})
@@ -217,7 +217,7 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 				}
 			}
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(hex.EncodeToString(newSegmentID())),
+				ID:      aws.String(hex.EncodeToString(newSegmentID().Bytes())),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
 				Stack:   make([]awsxray.StackFrame, 0),
