@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"sync"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -109,14 +110,23 @@ func (c *client) pushTraceData(
 		return numDroppedSpans, nil
 	}
 
+	err = c.sendSplunkEvents(splunkEvents)
+	if err != nil {
+		return td.SpanCount(), err
+	}
+
+	return numDroppedSpans, nil
+}
+
+func (c *client) sendSplunkEvents(splunkEvents []*splunkEvent) error {
 	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	req, err := http.NewRequest("POST", c.url.String(), body)
 	if err != nil {
-		return td.SpanCount(), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -129,7 +139,7 @@ func (c *client) pushTraceData(
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return td.SpanCount(), err
+		return err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
@@ -141,10 +151,26 @@ func (c *client) pushTraceData(
 			"HTTP %d %q",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		return td.SpanCount(), err
+		return err
+	}
+	return nil
+}
+
+func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	splunkEvents, numDroppedLogs := logDataToSplunk(c.logger, ld, c.config)
+	if len(splunkEvents) == 0 {
+		return numDroppedLogs, nil
 	}
 
-	return numDroppedSpans, nil
+	err = c.sendSplunkEvents(splunkEvents)
+	if err != nil {
+		return ld.LogRecordCount(), err
+	}
+
+	return numDroppedLogs, nil
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
@@ -194,6 +220,10 @@ func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io
 
 func (c *client) stop(context context.Context) error {
 	c.wg.Wait()
+	return nil
+}
+
+func (c *client) start(context.Context, component.Host) (err error) {
 	return nil
 }
 

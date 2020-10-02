@@ -65,6 +65,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Anuraag Agrawal](https://github.com/anuraaga), AWS
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
@@ -108,6 +109,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | awsxrayreceiver                | @kbrockhoff @anuraaga     |
 | carbonreceiver                 | @pjanotti                 |
 | collectdreceiver               | @owais                    |
+| dockerstatsreceiver            | @rmfitzpatrick            |
 | k8sclusterreceiver             | @asuresh4                 |
 | kubeletstatsreceiver           | @pmcollins @asuresh4      |
 | prometheusexecreceiver         | @keitwb @james-bebbington |

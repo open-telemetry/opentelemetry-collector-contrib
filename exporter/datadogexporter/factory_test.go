@@ -38,6 +38,15 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
+
+		// These are filled when loading using the helper methods
+		TagsConfig: TagsConfig{
+			Hostname: "${DD_HOST}",
+			Env:      "${DD_ENV}",
+			Service:  "${DD_SERVICE}",
+			Version:  "${DD_VERSION}",
+		},
+
 		API: APIConfig{Site: "datadoghq.com"},
 	}, cfg, "failed to create default config")
 
@@ -66,29 +75,4 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestCreateInvalidMetricsExporter(t *testing.T) {
-	logger := zap.NewNop()
-
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[configmodels.Type(typeStr)] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ctx := context.Background()
-	exp, err := factory.CreateMetricsExporter(
-		ctx,
-		component.ExporterCreateParams{Logger: logger},
-		cfg.Exporters["datadog/invalid"],
-	)
-
-	// The address is invalid
-	assert.NotNil(t, err)
-	assert.Nil(t, exp)
 }

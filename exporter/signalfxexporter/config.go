@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"path"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -41,7 +40,7 @@ type Config struct {
 	// intended for tests and debugging. The value of Realm is ignored if the
 	// URL is specified. If a path is not included the exporter will
 	// automatically append the appropriate path, eg.: "v2/datapoint".
-	// If a path is specified it will use the one set by the config.
+	// If a path is specified it will act as a prefix.
 	IngestURL string `mapstructure:"ingest_url"`
 
 	// APIURL is the destination to where SignalFx metadata will be sent. This
@@ -74,6 +73,21 @@ type Config struct {
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
 	// `delta_metric` specified in TranslationRules. Default is 3600s.
 	DeltaTranslationTTL int64 `mapstructure:"delta_translation_ttl"`
+
+	// SyncHostMetadata defines if the exporter should scrape host metadata and
+	// sends it as property updates to SignalFx backend.
+	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
+	//            If this option is enabled make sure that `resourcedetection` processor
+	//            is enabled in the pipeline with one of the cloud provider detectors
+	//            or environment variable detector setting a unique value to
+	//            `host.name` attribute within your k8s cluster. Also keep override
+	//            And keep `override=true` in resourcedetection config.
+	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
+
+	// ExcludeMetrics defines metrics that will be excluded from sending to Signalfx
+	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
+	// options, the exclusion will be applied on translated metrics.
+	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
@@ -132,7 +146,7 @@ func (cfg *Config) validateConfig() error {
 
 func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 	if cfg.IngestURL == "" {
-		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com/v2/datapoint", cfg.Realm))
+		out, err = url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
 		if err != nil {
 			return out, err
 		}
@@ -141,9 +155,6 @@ func (cfg *Config) getIngestURL() (out *url.URL, err error) {
 		out, err = url.Parse(cfg.IngestURL)
 		if err != nil {
 			return out, err
-		}
-		if out.Path == "" || out.Path == "/" {
-			out.Path = path.Join(out.Path, "v2/datapoint")
 		}
 	}
 

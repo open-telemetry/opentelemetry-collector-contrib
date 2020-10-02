@@ -19,6 +19,7 @@ package dockerstatsreceiver
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
@@ -149,7 +151,22 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	}))
 
 	assert.Never(t, func() bool {
-		return len(consumer.AllMetrics()) > 0
+		if metrics := consumer.AllMetrics(); len(metrics) > 0 {
+			for _, metric := range metrics {
+				resourceMetrics := metric.ResourceMetrics()
+				for i := 0; i < resourceMetrics.Len(); i++ {
+					resourceMetric := resourceMetrics.At(i)
+					resource := resourceMetric.Resource()
+					nameAttr, ok := resource.Attributes().Get(conventions.AttributeContainerImage)
+					if ok && !nameAttr.IsNil() {
+						if strings.Contains(nameAttr.StringVal(), "redis") {
+							return true
+						}
+					}
+				}
+			}
+		}
+		return false
 	}, 5*time.Second, 1*time.Second, "received undesired metrics")
 
 	assert.NoError(t, r.Shutdown(ctx))
