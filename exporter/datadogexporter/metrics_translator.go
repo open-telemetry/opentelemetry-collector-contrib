@@ -43,16 +43,6 @@ func newGauge(name string, ts uint64, value float64, tags []string) datadog.Metr
 	return gauge
 }
 
-// Series is a set of metrics
-type Series struct {
-	metrics []datadog.Metric
-}
-
-// Add adds a Datadog metric to a Series
-func (m *Series) Add(metric datadog.Metric) {
-	m.metrics = append(m.metrics, metric)
-}
-
 // getTags maps a stringMap into a slice of Datadog tags
 func getTags(labels pdata.StringMap) []string {
 	tags := make([]string, 0, labels.Len())
@@ -178,7 +168,7 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func MapMetrics(logger *zap.Logger, cfg MetricsConfig, md pdata.Metrics) (series Series, droppedTimeSeries int) {
+func MapMetrics(logger *zap.Logger, cfg MetricsConfig, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -216,7 +206,7 @@ func MapMetrics(logger *zap.Logger, cfg MetricsConfig, md pdata.Metrics) (series
 				case pdata.MetricDataTypeDoubleHistogram:
 					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets)
 				}
-				series.metrics = append(series.metrics, datapoints...)
+				series = append(series, datapoints...)
 			}
 		}
 	}
