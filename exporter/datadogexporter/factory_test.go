@@ -39,6 +39,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 		},
 		API: APIConfig{Site: "datadoghq.com"},
+		Traces: TracesConfig{
+			SampleRate: 1,
+		}
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
