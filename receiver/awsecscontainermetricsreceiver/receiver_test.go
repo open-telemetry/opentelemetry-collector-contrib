@@ -16,6 +16,8 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,12 +26,28 @@ import (
 	"go.uber.org/zap"
 )
 
+type fakeRestClient struct {
+}
+
+func (f fakeRestClient) EndpointResponse() ([]byte, []byte, error) {
+	taskStats, err := ioutil.ReadFile("testdata/task_stats.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	taskMetadata, err := ioutil.ReadFile("testdata/task_metadata.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	return taskStats, taskMetadata, nil
+}
+
 func TestReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
+	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
 		exportertest.NewNopMetricsExporter(),
+		&fakeRestClient{},
 	)
 
 	require.NoError(t, err)
@@ -45,12 +63,26 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestReceiverForNilConsumer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		nil,
+		&fakeRestClient{},
+	)
+
+	require.NotNil(t, err)
+	require.Nil(t, metricsReceiver)
+}
+
 func TestCollectDataFromEndpoint(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAwsEcsContainerMetricsReceiver(
+	metricsReceiver, err := New(
 		zap.NewNop(),
 		cfg,
 		new(exportertest.SinkMetricsExporter),
+		&fakeRestClient{},
 	)
 
 	require.NoError(t, err)
@@ -59,6 +91,64 @@ func TestCollectDataFromEndpoint(t *testing.T) {
 	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
 	ctx := context.Background()
 
-	err = r.collectDataFromEndpoint(ctx)
+	err = r.collectDataFromEndpoint(ctx, "")
 	require.NoError(t, err)
+}
+
+func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	sme := new(exportertest.SinkMetricsExporter)
+	e := fmt.Errorf("Test Error for Metrics Consumer")
+	sme.SetConsumeMetricsError(e)
+
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		sme,
+		&fakeRestClient{},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx, "")
+	require.EqualError(t, err, "Test Error for Metrics Consumer")
+}
+
+type invalidFakeClient struct {
+}
+
+func (f invalidFakeClient) EndpointResponse() ([]byte, []byte, error) {
+	taskStats, err := ioutil.ReadFile("testdata/wrong_file.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	taskMetadata, err := ioutil.ReadFile("testdata/wrong_file.json")
+	if err != nil {
+		return nil, nil, err
+	}
+	return taskStats, taskMetadata, nil
+}
+
+func TestCollectDataFromEndpointWithEndpointError(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	metricsReceiver, err := New(
+		zap.NewNop(),
+		cfg,
+		new(exportertest.SinkMetricsExporter),
+		&invalidFakeClient{},
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsEcsContainerMetricsReceiver)
+	ctx := context.Background()
+
+	err = r.collectDataFromEndpoint(ctx, "")
+	require.Error(t, err)
 }

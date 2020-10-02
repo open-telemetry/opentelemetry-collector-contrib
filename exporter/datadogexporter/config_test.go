@@ -62,8 +62,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Metrics: MetricsConfig{
-			Namespace:   "opentelemetry.",
-			Percentiles: false,
+			Namespace: "opentelemetry.",
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.eu",
 			},
@@ -123,4 +122,22 @@ func TestOverrideMetricsURL(t *testing.T) {
 	err := cfg.Sanitize()
 	require.NoError(t, err)
 	assert.Equal(t, cfg.Metrics.Endpoint, DebugEndpoint)
+}
+
+func TestAPIKeyUnset(t *testing.T) {
+	cfg := Config{}
+	err := cfg.Sanitize()
+	assert.Equal(t, err, errUnsetAPIKey)
+}
+
+func TestCensorAPIKey(t *testing.T) {
+	cfg := APIConfig{
+		Key: "ddog_32_characters_long_api_key1",
+	}
+
+	assert.Equal(
+		t,
+		"***************************_key1",
+		cfg.GetCensoredKey(),
+	)
 }

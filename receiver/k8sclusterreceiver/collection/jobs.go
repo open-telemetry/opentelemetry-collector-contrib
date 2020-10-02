@@ -24,35 +24,35 @@ import (
 )
 
 var podsActiveMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/job/active_pods",
+	Name:        "k8s.job.active_pods",
 	Description: "The number of actively running pods for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsDesiredCompletedMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/job/desired_successful_pods",
+	Name:        "k8s.job.desired_successful_pods",
 	Description: "The desired number of successfully finished pods the job should be run with",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsFailedMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/job/failed_pods",
+	Name:        "k8s.job.failed_pods",
 	Description: "The number of pods which reached phase Failed for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsMaxParallelMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/job/max_parallel_pods",
+	Name:        "k8s.job.max_parallel_pods",
 	Description: "The max desired number of pods the job should run at any given time",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }
 
 var podsSuccessfulMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/job/successful_pods",
+	Name:        "k8s.job.successful_pods",
 	Description: "The number of pods which reached phase Succeeded for a job",
 	Unit:        "1",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,

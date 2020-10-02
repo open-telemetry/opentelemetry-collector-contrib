@@ -2,30 +2,22 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: 0.0.0.0:55680
   zipkin:
-    endpoint: 0.0.0.0:9411
 
 exporters:
-  logging:
-
-  zipkin:
-    endpoint: "http://zipkin:9411/api/v2/spans"
-    format: proto
-
   jaeger_thrift:
     url: "http://jaeger:14268/api/traces"
+  logging:
+  zipkin:
+    endpoint: "http://zipkin:9411/api/v2/spans"
 
 processors:
   batch:
-  queued_retry:
 
 extensions:
   health_check:
   pprof:
-    endpoint: :1888
   zpages:
-    endpoint: :55679
 
 service:
   extensions: [pprof, zpages, health_check]
@@ -33,4 +25,4 @@ service:
     traces:
       receivers: [otlp, zipkin]
       exporters: [zipkin, jaeger_thrift, logging]
-      processors: [batch, queued_retry]
+      processors: [batch]

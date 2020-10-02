@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
@@ -32,15 +33,41 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
-func TestCreateReceiver(t *testing.T) {
+func TestCreateReceiverMetricsFirst(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
-	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
 	assert.Nil(t, err, "receiver creation failed")
-	assert.NotNil(t, tReceiver, "receiver creation failed")
+	assert.NotNil(t, mReceiver, "receiver creation failed")
+
+	_, err = factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
+
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, new(exportertest.SinkLogsExporter))
+	assert.Nil(t, err, "receiver creation failed")
+	assert.NotNil(t, lReceiver, "receiver creation failed")
+
+	assert.Same(t, mReceiver, lReceiver)
+}
+
+func TestCreateReceiverLogsFirst(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
+
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, new(exportertest.SinkLogsExporter))
+	assert.Nil(t, err, "receiver creation failed")
+	assert.NotNil(t, lReceiver, "receiver creation failed")
+
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	assert.Nil(t, err, "receiver creation failed")
+	assert.NotNil(t, mReceiver, "receiver creation failed")
+
+	assert.Same(t, mReceiver, lReceiver)
 }
 
 func TestCreateInvalidHTTPEndpoint(t *testing.T) {
@@ -50,6 +77,10 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
+	assert.Nil(t, tReceiver)
+
+	tReceiver, err = factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, new(exportertest.SinkLogsExporter))
 	assert.Error(t, err, "endpoint is not formatted correctly: missing port in address")
 	assert.Nil(t, tReceiver)
 }

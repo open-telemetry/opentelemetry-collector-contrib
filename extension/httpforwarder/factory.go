@@ -57,9 +57,8 @@ func createDefaultConfig() configmodels.Extension {
 
 func createExtension(
 	_ context.Context,
-	_ component.ExtensionCreateParams,
-	_ configmodels.Extension,
+	params component.ExtensionCreateParams,
+	cfg configmodels.Extension,
 ) (component.ServiceExtension, error) {
-	// TODO: Return httpForwarder
-	return nil, nil
+	return newHTTPForwarder(cfg.(*Config), params.Logger)
 }

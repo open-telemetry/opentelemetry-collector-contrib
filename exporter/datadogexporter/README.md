@@ -9,7 +9,14 @@ The only required setting is a [Datadog API key](https://app.datadoghq.com/accou
 datadog:
   api:
     key: "<API key>"
-    # site: datadoghq.eu for sending data to the Datadog EU site
+ ```
+ 
+ To send data to the Datadog EU site, set the `api.site` parameter to `datadoghq.eu`:
+ ```yaml
+datadog:
+  api:
+    key: "<API key>"
+    site: datadoghq.eu
  ```
 
 The hostname, environment, service and version can be set in the configuration for unified service tagging.

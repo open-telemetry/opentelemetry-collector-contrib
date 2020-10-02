@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -25,7 +24,7 @@ import (
 )
 
 var (
-	errUnsetAPIKey = errors.New("the Datadog API key is unset")
+	errUnsetAPIKey = errors.New("api.key is not set")
 )
 
 // APIConfig defines the API configuration options
@@ -52,10 +51,6 @@ type MetricsConfig struct {
 	// Namespace is the namespace under which the metrics are sent
 	// By default metrics are not namespaced
 	Namespace string `mapstructure:"namespace"`
-
-	// Percentiles states whether to report percentiles for summary metrics,
-	// including the minimum and maximum
-	Percentiles bool `mapstructure:"report_percentiles"`
 
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
@@ -101,26 +96,6 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// UpdateWithEnv gets the unified service tagging information
-// from the environment variables.
-func (t *TagsConfig) UpdateWithEnv() {
-	if t.Hostname == "" {
-		t.Hostname = os.Getenv("DD_HOST")
-	}
-
-	if t.Env == "" {
-		t.Env = os.Getenv("DD_ENV")
-	}
-
-	if t.Service == "" {
-		t.Service = os.Getenv("DD_SERVICE")
-	}
-
-	if t.Version == "" {
-		t.Version = os.Getenv("DD_VERSION")
-	}
-}
-
 // GetTags gets the default tags extracted from the configuration
 func (t *TagsConfig) GetTags(addHost bool) []string {
 	tags := make([]string, 0, 4)
@@ -164,10 +139,6 @@ type Config struct {
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
-	// Get info from environment variables
-	// if unset
-	c.TagsConfig.UpdateWithEnv()
-
 	// Add '.' at the end of namespace
 	if c.Metrics.Namespace != "" && !strings.HasSuffix(c.Metrics.Namespace, ".") {
 		c.Metrics.Namespace = c.Metrics.Namespace + "."

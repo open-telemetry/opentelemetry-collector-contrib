@@ -23,12 +23,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 const (
-	TypeStr          = "gce"
-	cloudProviderGCP = "gcp"
+	TypeStr = "gce"
 )
 
 var _ internal.Detector = (*Detector)(nil)
@@ -58,7 +58,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 }
 
 func (d *Detector) initializeCloudAttributes(attr pdata.AttributeMap) []error {
-	attr.InsertString(conventions.AttributeCloudProvider, cloudProviderGCP)
+	attr.InsertString(conventions.AttributeCloudProvider, cloud.ProviderGCP)
 
 	var errors []error
 

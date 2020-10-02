@@ -188,7 +188,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		traceID := []byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}
+		traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 		spanID := []byte{1, 2, 3, 4, 5, 6, 7, 8}
 		parentSpanID := []byte{8, 7, 6, 5, 4, 3, 2, 1}
 		name := "span_name"

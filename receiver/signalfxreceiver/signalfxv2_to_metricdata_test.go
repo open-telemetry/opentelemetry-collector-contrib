@@ -310,23 +310,23 @@ func Test_buildPoint_errors(t *testing.T) {
 }
 
 func strPtr(s string) *string {
-	l := s
-	return &l
+	return &s
 }
 
 func int64Ptr(i int64) *int64 {
-	l := i
-	return &l
+	return &i
 }
 
 func float64Ptr(f float64) *float64 {
-	l := f
-	return &l
+	return &f
 }
 
 func sfxTypePtr(t sfxpb.MetricType) *sfxpb.MetricType {
-	l := t
-	return &l
+	return &t
+}
+
+func sfxCategoryPtr(t sfxpb.EventCategory) *sfxpb.EventCategory {
+	return &t
 }
 
 func buildNDimensions(n uint) []*sfxpb.Dimension {
