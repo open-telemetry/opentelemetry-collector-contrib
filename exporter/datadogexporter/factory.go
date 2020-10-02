@@ -47,13 +47,6 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 
-		TagsConfig: TagsConfig{
-			Hostname: "${DD_HOST}",
-			Env:      "${DD_ENV}",
-			Service:  "${DD_SERVICE}",
-			Version:  "${DD_VERSION}",
-		},
-
 		API: APIConfig{
 			Key:  "", // must be set if using API
 			Site: DefaultSite,
