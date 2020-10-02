@@ -9,7 +9,7 @@ require (
 	github.com/client9/misspell v0.3.4
 	github.com/go-lintpack/lintpack v0.5.2 // indirect
 	github.com/golangci/golangci-lint v1.31.0
-	github.com/google/addlicense v0.0.0-20200622132530-df58acafd6d5
+	github.com/google/addlicense v0.0.0-20200906110928-a0294312aa76
 	github.com/hashicorp/go-plugin v1.3.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.0.0-00010101000000-000000000000
@@ -58,7 +58,7 @@ require (
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opentelemetry.io/collector v0.11.1-0.20200924160956-8690937037da
 	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f
-	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0 // indirect	
+	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0 // indirect
 	honnef.co/go/tools v0.0.1-2020.1.5
 	sourcegraph.com/sqs/pbtypes v0.0.0-20180604144634-d3ebe8f20ae4 // indirect
 )
