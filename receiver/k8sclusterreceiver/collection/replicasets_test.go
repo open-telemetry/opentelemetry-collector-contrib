@@ -15,10 +15,41 @@
 package collection
 
 import (
+	"testing"
+
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
 )
+
+func TestReplicasetMetrics(t *testing.T) {
+	rs := newReplicaSet("1")
+
+	actualResourceMetrics := getMetricsForReplicaSet(rs)
+
+	require.Equal(t, 1, len(actualResourceMetrics))
+	require.Equal(t, 2, len(actualResourceMetrics[0].metrics))
+
+	rm := actualResourceMetrics[0]
+	testutils.AssertResource(t, rm.resource, k8sType,
+		map[string]string{
+			"k8s.replicaset.uid":  "test-replicaset-1-uid",
+			"k8s.replicaset.name": "test-replicaset-1",
+			"k8s.namespace.name":  "test-namespace",
+			"k8s.cluster.name":    "test-cluster",
+		},
+	)
+
+	testutils.AssertMetrics(t, rm.metrics[0], "k8s.replicaset.desired",
+		metricspb.MetricDescriptor_GAUGE_INT64, 3)
+
+	testutils.AssertMetrics(t, rm.metrics[1], "k8s.replicaset.available",
+		metricspb.MetricDescriptor_GAUGE_INT64, 2)
+}
 
 func newReplicaSet(id string) *appsv1.ReplicaSet {
 	return &appsv1.ReplicaSet{
@@ -32,7 +63,14 @@ func newReplicaSet(id string) *appsv1.ReplicaSet {
 				"foo1": "",
 			},
 		},
-		Spec:   appsv1.ReplicaSetSpec{},
-		Status: appsv1.ReplicaSetStatus{},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: func() *int32 {
+				var out int32 = 3
+				return &out
+			}(),
+		},
+		Status: appsv1.ReplicaSetStatus{
+			AvailableReplicas: 2,
+		},
 	}
 }

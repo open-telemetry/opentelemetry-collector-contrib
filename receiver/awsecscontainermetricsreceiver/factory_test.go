@@ -16,14 +16,17 @@ package awsecscontainermetricsreceiver
 
 import (
 	"context"
+	"net/url"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -38,8 +41,34 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		createDefaultConfig(),
 		&testbed.MockMetricConsumer{},
 	)
+	require.Error(t, err, "No Env Variable Error")
+	require.Nil(t, metricsReceiver)
+}
+
+func TestCreateMetricsReceiverWithEnv(t *testing.T) {
+	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "http://www.test.com")
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		&testbed.MockMetricConsumer{},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, metricsReceiver)
+}
+
+func TestCreateMetricsReceiverWithBadUrl(t *testing.T) {
+	os.Setenv(awsecscontainermetrics.EndpointEnvKey, "bad-url-format")
+
+	metricsReceiver, err := createMetricsReceiver(
+		context.Background(),
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		createDefaultConfig(),
+		&testbed.MockMetricConsumer{},
+	)
+	require.Error(t, err)
+	require.Nil(t, metricsReceiver)
 }
 
 func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
@@ -49,6 +78,14 @@ func TestCreateMetricsReceiverWithNilConsumer(t *testing.T) {
 		createDefaultConfig(),
 		nil,
 	)
+
+	require.Error(t, err, "Nil Comsumer")
 	require.Nil(t, metricsReceiver)
-	require.Equal(t, err, componenterror.ErrNilNextConsumer)
+}
+
+func TestRestClient(t *testing.T) {
+	u, _ := url.Parse("http://www.test.com")
+	rest := restClient(nil, *u)
+
+	require.NotNil(t, rest)
 }

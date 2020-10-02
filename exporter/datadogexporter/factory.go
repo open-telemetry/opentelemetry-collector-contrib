@@ -50,11 +50,10 @@ func createDefaultConfig() configmodels.Exporter {
 
 		API: APIConfig{
 			Key:  "", // must be set if using API
-			Site: "datadoghq.com",
+			Site: DefaultSite,
 		},
 
 		Metrics: MetricsConfig{
-			Percentiles: true,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
