@@ -66,7 +66,7 @@ func newElasticMetricsExporter(
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
+		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
 	}
 	return exporterhelper.NewMetricsExporter(cfg, func(ctx context.Context, input pdata.Metrics) (int, error) {
 		var dropped int
