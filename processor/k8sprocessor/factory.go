@@ -40,7 +40,9 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(createTraceProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor),
+	)
 }
 
 func createDefaultConfig() configmodels.Processor {
@@ -60,6 +62,15 @@ func createTraceProcessor(
 	nextTraceConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
 	return createTraceProcessorWithOptions(ctx, params, cfg, nextTraceConsumer)
+}
+
+func createLogsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextLogsConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
 }
 
 func createMetricsProcessor(
@@ -107,6 +118,27 @@ func createMetricsProcessorWithOptions(
 	return processorhelper.NewMetricsProcessor(
 		cfg,
 		nextMetricsConsumer,
+		kp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(kp.Start),
+		processorhelper.WithShutdown(kp.Shutdown))
+}
+
+func createLogsProcessorWithOptions(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextLogsConsumer consumer.LogsConsumer,
+	options ...Option,
+) (component.LogsProcessor, error) {
+	kp, err := createKubernetesProcessor(params, cfg, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextLogsConsumer,
 		kp,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(kp.Start),

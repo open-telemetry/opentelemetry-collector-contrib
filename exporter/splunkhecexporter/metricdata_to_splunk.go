@@ -22,6 +22,7 @@ import (
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,7 +34,7 @@ const (
 	// hecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	hecEventMetricType = "metric"
 	// hostnameLabel is the hostname label name.
-	hostnameLabel = "host.hostname"
+
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
 	// separator for metric values.
@@ -63,7 +64,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {
-			host = ocmd.Resource.Labels[hostnameLabel]
+			host = ocmd.Resource.Labels[conventions.AttributeHostHostname]
 		}
 		if host == "" {
 			host = unknownHostName

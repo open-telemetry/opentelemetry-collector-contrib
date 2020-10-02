@@ -136,9 +136,9 @@ func populateSpan(
 
 	if seg.TraceID == nil {
 		// if seg.TraceID is nil, then `seg` must be an embedded subsegment.
-		span.SetTraceID(pdata.TraceID([]byte(*traceID)))
+		span.SetTraceID(pdata.NewTraceID([]byte(*traceID)))
 	} else {
-		span.SetTraceID(pdata.TraceID([]byte(*seg.TraceID)))
+		span.SetTraceID(pdata.NewTraceID([]byte(*seg.TraceID)))
 	}
 	span.SetSpanID(pdata.SpanID([]byte(*seg.ID)))
 	addParentSpanID(seg, parentID, span)

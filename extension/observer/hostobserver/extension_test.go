@@ -181,7 +181,7 @@ func startAndStopObserver(
 
 	h := &hostObserver{
 		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: 1 * time.Second,
+			RefreshInterval: 10 * time.Second,
 			Endpointslister: ml,
 		},
 	}
@@ -192,7 +192,7 @@ func startAndStopObserver(
 	require.NoError(t, h.Start(ctx, componenttest.NewNopHost()))
 	h.ListAndWatch(mn)
 
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2 * time.Second) // Wait a bit to sync endpoints once.
 	require.NoError(t, h.Shutdown(ctx))
 
 	return mn

@@ -68,7 +68,7 @@ func timestampToTime(ts *timestamppb.Timestamp) (t time.Time) {
 	if ts == nil {
 		return
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
+	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC()
 }
 
 // getStatusCode returns the status code

@@ -77,7 +77,7 @@ func spanToEnvelope(
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(span.StartTime()).Format(time.RFC3339Nano)
-	traceIDHexString := idToHex(span.TraceID())
+	traceIDHexString := idToHex(span.TraceID().Bytes())
 	envelope.Tags[contracts.OperationId] = traceIDHexString
 	envelope.Tags[contracts.OperationParentId] = idToHex(span.ParentSpanID())
 

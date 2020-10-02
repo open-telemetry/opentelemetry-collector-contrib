@@ -58,6 +58,17 @@ func newMetricsProcessor(cfg configmodels.Processor, nextMetricsConsumer consume
 	)
 }
 
+func newLogsProcessor(cfg configmodels.Processor, nextLogsConsumer consumer.LogsConsumer, options ...Option) (component.LogsProcessor, error) {
+	opts := append(options, withKubeClientProvider(newFakeClient))
+	return createLogsProcessorWithOptions(
+		context.Background(),
+		component.ProcessorCreateParams{Logger: zap.NewNop()},
+		cfg,
+		nextLogsConsumer,
+		opts...,
+	)
+}
+
 // withKubeClientProvider sets the specific implementation for getting K8s Client instances
 func withKubeClientProvider(kcp kube.ClientProvider) Option {
 	return func(p *kubernetesprocessor) error {
@@ -78,12 +89,15 @@ type multiTest struct {
 
 	tp component.TraceProcessor
 	mp component.MetricsProcessor
+	lp component.LogsProcessor
 
 	nextTrace   *exportertest.SinkTraceExporter
 	nextMetrics *exportertest.SinkMetricsExporter
+	nextLogs    *exportertest.SinkLogsExporter
 
-	kpTrace   *kubernetesprocessor
 	kpMetrics *kubernetesprocessor
+	kpTrace   *kubernetesprocessor
+	kpLogs    *kubernetesprocessor
 }
 
 func newMultiTest(
@@ -96,6 +110,7 @@ func newMultiTest(
 		t:           t,
 		nextTrace:   &exportertest.SinkTraceExporter{},
 		nextMetrics: &exportertest.SinkMetricsExporter{},
+		nextLogs:    &exportertest.SinkLogsExporter{},
 	}
 
 	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
@@ -116,8 +131,18 @@ func newMultiTest(
 		errFunc(err)
 	}
 
+	lp, err := newLogsProcessor(cfg, m.nextLogs, append(options, withExtractKubernetesProcessorInto(&m.kpLogs))...)
+	if errFunc == nil {
+		assert.NotNil(t, lp)
+		require.NoError(t, err)
+	} else {
+		assert.Nil(t, lp)
+		errFunc(err)
+	}
+
 	m.tp = tp
 	m.mp = mp
+	m.lp = lp
 	return m
 }
 
@@ -125,11 +150,13 @@ func (m *multiTest) testConsume(
 	ctx context.Context,
 	traces pdata.Traces,
 	metrics pdata.Metrics,
+	logs pdata.Logs,
 	errFunc func(err error),
 ) {
 	errs := []error{
 		m.tp.ConsumeTraces(ctx, traces),
 		m.mp.ConsumeMetrics(ctx, metrics),
+		m.lp.ConsumeLogs(ctx, logs),
 	}
 
 	for _, err := range errs {
@@ -142,21 +169,25 @@ func (m *multiTest) testConsume(
 func (m *multiTest) kubernetesProcessorOperation(kpOp func(kp *kubernetesprocessor)) {
 	kpOp(m.kpTrace)
 	kpOp(m.kpMetrics)
+	kpOp(m.kpLogs)
 }
 
 func (m *multiTest) assertBatchesLen(batchesLen int) {
 	require.Len(m.t, m.nextTrace.AllTraces(), batchesLen)
 	require.Len(m.t, m.nextMetrics.AllMetrics(), batchesLen)
+	require.Len(m.t, m.nextLogs.AllLogs(), batchesLen)
 }
 
 func (m *multiTest) assertResourceObjectLen(batchNo int, rsObjectLen int) {
 	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().Len(), rsObjectLen)
 	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().Len(), rsObjectLen)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().Len(), rsObjectLen)
 }
 
 func (m *multiTest) assertResourceAttributesLen(batchNo int, resourceObjectNo int, attrsLen int) {
 	assert.Equal(m.t, m.nextTrace.AllTraces()[batchNo].ResourceSpans().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
 	assert.Equal(m.t, m.nextMetrics.AllMetrics()[batchNo].ResourceMetrics().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
+	assert.Equal(m.t, m.nextLogs.AllLogs()[batchNo].ResourceLogs().At(resourceObjectNo).Resource().Attributes().Len(), attrsLen)
 }
 
 func (m *multiTest) assertResource(batchNum int, resourceObjectNum int, resourceFunc func(res pdata.Resource)) {
@@ -236,6 +267,25 @@ func generateMetrics(resourceFunc ...generateResourceFunc) pdata.Metrics {
 	return m
 }
 
+func generateLogs(resourceFunc ...generateResourceFunc) pdata.Logs {
+	l := pdata.NewLogs()
+	ls := l.ResourceLogs()
+	ls.Resize(1)
+	ls.At(0).InitEmpty()
+	ls.At(0).InstrumentationLibraryLogs().Resize(1)
+	ls.At(0).InstrumentationLibraryLogs().At(0).Logs().Resize(1)
+	for _, resFun := range resourceFunc {
+		res := ls.At(0).Resource()
+		if res.IsNil() {
+			res.InitEmpty()
+		}
+		resFun(res)
+	}
+	log := ls.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0)
+	log.SetName("foobar")
+	return l
+}
+
 func withPassthroughIP(passthroughIP string) generateResourceFunc {
 	return func(res pdata.Resource) {
 		res.Attributes().InsertString(k8sIPLabelName, passthroughIP)
@@ -256,6 +306,7 @@ func TestIPDetectionFromContext(t *testing.T) {
 		ctx,
 		generateTraces(),
 		generateMetrics(),
+		generateLogs(),
 		func(err error) {
 			assert.NoError(t, err)
 		})
@@ -274,6 +325,7 @@ func TestNilBatch(t *testing.T) {
 		context.Background(),
 		pdata.NewTraces(),
 		pdata.NewMetrics(),
+		generateLogs(),
 		func(err error) {
 			assert.NoError(t, err)
 		})
@@ -300,6 +352,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		ctx,
 		generateTraces(),
 		generateMetrics(),
+		generateLogs(),
 		func(err error) {
 			assert.NoError(t, err)
 		})
@@ -324,6 +377,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		ctx,
 		generateTraces(),
 		generateMetrics(),
+		generateLogs(),
 		func(err error) {
 			assert.NoError(t, err)
 		})
@@ -340,6 +394,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		ctx,
 		generateTraces(),
 		generateMetrics(),
+		generateLogs(),
 		func(err error) {
 			assert.NoError(t, err)
 		})
@@ -356,7 +411,7 @@ func TestNoIP(t *testing.T) {
 		nil,
 	)
 
-	m.testConsume(context.Background(), generateTraces(), generateMetrics(), nil)
+	m.testConsume(context.Background(), generateTraces(), generateMetrics(), generateLogs(), nil)
 
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0, 1)
@@ -406,6 +461,7 @@ func TestIPSource(t *testing.T) {
 
 			traces := generateTraces()
 			metrics := generateMetrics()
+			logs := generateLogs()
 
 			resources := []pdata.Resource{
 				traces.ResourceSpans().At(0).Resource(),
@@ -424,7 +480,7 @@ func TestIPSource(t *testing.T) {
 				}
 			}
 
-			m.testConsume(ctx, traces, metrics, nil)
+			m.testConsume(ctx, traces, metrics, logs, nil)
 			m.assertBatchesLen(i + 1)
 			m.assertResource(i, 0, func(res pdata.Resource) {
 				require.False(t, res.IsNil())
@@ -464,6 +520,7 @@ func TestProcessorAddLabels(t *testing.T) {
 			ctx,
 			generateTraces(),
 			generateMetrics(),
+			generateLogs(),
 			func(err error) {
 				assert.NoError(t, err)
 			})
@@ -503,6 +560,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 		context.Background(),
 		generateTraces(withPassthroughIP("2.2.2.2")),
 		generateMetrics(withPassthroughIP("2.2.2.2")),
+		generateLogs(withPassthroughIP("2.2.2.2")),
 		func(err error) {
 			assert.NoError(t, err)
 		})

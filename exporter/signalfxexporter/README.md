@@ -1,6 +1,6 @@
 # SignalFx Metrics Exporter
 
-This exporter can be used to send metrics to SignalFx.
+This exporter can be used to send metrics and events to SignalFx.
 
 Apart from metrics, the exporter is also capable of sending metric metadata
 (properties and tags) to SignalFx. Currently, only metric metadata updates from
@@ -46,6 +46,16 @@ The following configuration options can also be configured:
 - `translation_rules`: Set of rules on how to translate metrics to a SignalFx 
   compatible format. Rules defined in `translation/constants.go` are used by 
   default. Applicable only when `send_compatible_metrics` set to `true`.
+- `sync_host_metadata`: Defines whether the exporter should scrape host metadata
+  and send it as property updates to SignalFx backend. Disabled by default.
+  IMPORTANT: Host metadata synchronization relies on `resourcedetection` 
+  processor. If this option is enabled make sure that `resourcedetection` 
+  processor is enabled in the pipeline with one of the cloud provider detectors
+  or environment variable detector setting a unique value to `host.name` attribute 
+  within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `exclude_metrics`: metric names that will be excluded from sending
+  to Signalfx backend. If `send_compatible_metrics` or `translation_rules` 
+  options are enabled, the exclusion will be applied on translated metrics.
 
 Example:
 
@@ -59,6 +69,21 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+```
+
+> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
+
+```yaml
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
+    logs:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,

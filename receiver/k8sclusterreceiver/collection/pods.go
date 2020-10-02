@@ -39,7 +39,7 @@ const (
 )
 
 var podPhaseMetric = &metricspb.MetricDescriptor{
-	Name:        "k8s/pod/phase",
+	Name:        "k8s.pod.phase",
 	Description: "Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)",
 	Type:        metricspb.MetricDescriptor_GAUGE_INT64,
 }

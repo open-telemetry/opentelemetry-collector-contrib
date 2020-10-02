@@ -98,6 +98,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		Headers               map[string]string
 		SendCompatibleMetrics bool
 		TranslationRules      []translation.Rule
+		SyncHostMetadata      bool
 	}
 	tests := []struct {
 		name    string
@@ -117,7 +118,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				ingestURL: &url.URL{
 					Scheme: "https",
 					Host:   "ingest.us1.signalfx.com",
-					Path:   "/v2/datapoint",
+					Path:   "/",
 				},
 				apiURL: &url.URL{
 					Scheme: "https",
@@ -140,7 +141,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				ingestURL: &url.URL{
 					Scheme: "https",
 					Host:   "ingest.us0.signalfx.com",
-					Path:   "/v2/datapoint",
+					Path:   "",
 				},
 				apiURL: &url.URL{
 					Scheme: "https",
@@ -215,6 +216,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 				Headers:               tt.fields.Headers,
 				SendCompatibleMetrics: tt.fields.SendCompatibleMetrics,
 				TranslationRules:      tt.fields.TranslationRules,
+				SyncHostMetadata:      tt.fields.SyncHostMetadata,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {
