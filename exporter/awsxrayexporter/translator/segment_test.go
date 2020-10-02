@@ -30,6 +30,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
+const (
+	resourceStringKey = "string.key"
+	resourceIntKey    = "int.key"
+	resourceDoubleKey = "double.key"
+	resourceBoolKey   = "bool.key"
+	resourceMapKey    = "map.key"
+	resourceArrayKey  = "array.key"
+)
+
 var (
 	testWriters = newWriterPool(2048)
 )
@@ -123,7 +132,6 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 	assert.True(t, strings.Contains(jsonStr, errorMessage))
 	assert.True(t, strings.Contains(jsonStr, userAgent))
 	assert.True(t, strings.Contains(jsonStr, enduser))
-	assert.False(t, strings.Contains(jsonStr, "namespace"))
 }
 
 func TestServerSpanNoParentId(t *testing.T) {
@@ -147,7 +155,9 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetStartTime(pdata.TimestampUnixNano(time.Now().UnixNano()))
 	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
 
-	segment := MakeSegment(span, pdata.NewResource(), nil, false)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	segment := MakeSegment(span, resource, nil, false)
 	assert.NotNil(t, segment)
 }
 
@@ -351,9 +361,41 @@ func TestSpanWithAttributesDefaultNotIndexed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 0, len(segment.Annotations))
-	assert.Equal(t, 2, len(segment.Metadata["default"]))
 	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
+	assert.Equal(t, "string", segment.Metadata["default"]["otel.resource.string.key"])
+	assert.Equal(t, int64(10), segment.Metadata["default"]["otel.resource.int.key"])
+	assert.Equal(t, 5.0, segment.Metadata["default"]["otel.resource.double.key"])
+	assert.Equal(t, true, segment.Metadata["default"]["otel.resource.bool.key"])
+	expectedMap := make(map[string]interface{})
+	expectedMap["key1"] = int64(1)
+	expectedMap["key2"] = "value"
+	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
+	expectedArr := []interface{}{"foo", "bar"}
+	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
+}
+
+func TestSpanWithResourceNotStoredIfSubsegment(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	attributes["attr1@1"] = "val1"
+	attributes["attr2@2"] = "val2"
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 0, len(segment.Annotations))
+	assert.Equal(t, "val1", segment.Metadata["default"]["attr1@1"])
+	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.string.key"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.int.key"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.double.key"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.bool.key"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.map.key"])
+	assert.Nil(t, segment.Metadata["default"]["otel.resource.array.key"])
 }
 
 func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
@@ -370,7 +412,6 @@ func TestSpanWithAttributesPartlyIndexed(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, 1, len(segment.Annotations))
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
-	assert.Equal(t, 1, len(segment.Metadata["default"]))
 	assert.Equal(t, "val2", segment.Metadata["default"]["attr2@2"])
 }
 
@@ -386,10 +427,61 @@ func TestSpanWithAttributesAllIndexed(t *testing.T) {
 	segment := MakeSegment(span, resource, []string{"attr1@1", "not_exist"}, true)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, 2, len(segment.Annotations))
 	assert.Equal(t, "val1", segment.Annotations["attr1_1"])
 	assert.Equal(t, "val2", segment.Annotations["attr2_2"])
-	assert.Equal(t, 0, len(segment.Metadata["default"]))
+}
+
+func TestResourceAttributesCanBeIndexed(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{
+		"otel.resource.string.key",
+		"otel.resource.int.key",
+		"otel.resource.double.key",
+		"otel.resource.bool.key",
+		"otel.resource.map.key",
+		"otel.resource.array.key",
+	}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 4, len(segment.Annotations))
+	assert.Equal(t, "string", segment.Annotations["otel_resource_string_key"])
+	assert.Equal(t, int64(10), segment.Annotations["otel_resource_int_key"])
+	assert.Equal(t, 5.0, segment.Annotations["otel_resource_double_key"])
+	assert.Equal(t, true, segment.Annotations["otel_resource_bool_key"])
+
+	expectedMap := make(map[string]interface{})
+	expectedMap["key1"] = int64(1)
+	expectedMap["key2"] = "value"
+	// Maps and arrays are not supported for annotations so still in metadata.
+	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
+	expectedArr := []interface{}{"foo", "bar"}
+	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
+}
+
+func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment := MakeSegment(span, resource, []string{
+		"otel.resource.string.key",
+		"otel.resource.int.key",
+		"otel.resource.double.key",
+		"otel.resource.bool.key",
+		"otel.resource.map.key",
+		"otel.resource.array.key",
+	}, false)
+
+	assert.NotNil(t, segment)
+	assert.Empty(t, segment.Annotations)
+	assert.Empty(t, segment.Metadata)
 }
 
 func TestOriginNotAws(t *testing.T) {
@@ -556,6 +648,31 @@ func constructDefaultResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-east-1")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(resourceStringKey, "string")
+	attrs.InsertInt(resourceIntKey, 10)
+	attrs.InsertDouble(resourceDoubleKey, 5.0)
+	attrs.InsertBool(resourceBoolKey, true)
+	resourceMap := pdata.NewAttributeMap()
+	resourceMap.InitEmptyWithCapacity(2)
+	resourceMap.InsertInt("key1", 1)
+	resourceMap.InsertString("key2", "value")
+	resourceMapVal := pdata.NewAttributeValue()
+	resourceMapVal.InitEmpty()
+	resourceMapVal.SetMapVal(resourceMap)
+	attrs.Insert(resourceMapKey, resourceMapVal)
+	resourceArray := pdata.NewAnyValueArray()
+	val1 := pdata.NewAttributeValue()
+	val1.InitEmpty()
+	val1.SetStringVal("foo")
+	val2 := pdata.NewAttributeValue()
+	val2.InitEmpty()
+	val2.SetStringVal("bar")
+	resourceArray.Append(val1)
+	resourceArray.Append(val2)
+	resourceArrayVal := pdata.NewAttributeValue()
+	resourceArrayVal.InitEmpty()
+	resourceArrayVal.SetArrayVal(resourceArray)
+	attrs.Insert(resourceArrayKey, resourceArrayVal)
 	attrs.CopyTo(resource.Attributes())
 	return resource
 }
