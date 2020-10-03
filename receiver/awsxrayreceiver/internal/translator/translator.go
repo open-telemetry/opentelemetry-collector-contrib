@@ -140,7 +140,7 @@ func populateSpan(
 	} else {
 		span.SetTraceID(pdata.NewTraceID([]byte(*seg.TraceID)))
 	}
-	span.SetSpanID(pdata.SpanID([]byte(*seg.ID)))
+	span.SetSpanID(pdata.NewSpanID([]byte(*seg.ID)))
 	addParentSpanID(seg, parentID, span)
 	addStartTime(seg.StartTime, span)
 

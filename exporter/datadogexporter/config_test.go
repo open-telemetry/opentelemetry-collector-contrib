@@ -67,6 +67,13 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint: "https://api.datadoghq.eu",
 			},
 		},
+
+		Traces: TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.eu",
+			},
+		},
 	}, apiConfig)
 
 	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*Config)

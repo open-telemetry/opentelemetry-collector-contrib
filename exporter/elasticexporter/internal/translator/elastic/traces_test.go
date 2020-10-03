@@ -43,7 +43,7 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	rootSpan := pdata.NewSpan()
 	rootSpan.InitEmpty()
-	rootSpan.SetSpanID(pdata.SpanID(rootTransactionID[:]))
+	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID[:]))
 	rootSpan.SetName("root_span")
 	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
@@ -54,8 +54,8 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	clientSpan := pdata.NewSpan()
 	clientSpan.InitEmpty()
-	clientSpan.SetSpanID(pdata.SpanID(clientSpanID[:]))
-	clientSpan.SetParentSpanID(pdata.SpanID(rootTransactionID[:]))
+	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID[:]))
+	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID[:]))
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
 	clientSpan.Status().InitEmpty()
@@ -68,8 +68,8 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	serverSpan := pdata.NewSpan()
 	serverSpan.InitEmpty()
-	serverSpan.SetSpanID(pdata.SpanID(serverTransactionID[:]))
-	serverSpan.SetParentSpanID(pdata.SpanID(clientSpanID[:]))
+	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID[:]))
+	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID[:]))
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
 	serverSpan.Status().InitEmpty()
@@ -496,7 +496,7 @@ func spanWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) mod
 
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	span.SetParentSpanID([]byte{1})
+	span.SetParentSpanID(pdata.NewSpanID([]byte{1}))
 	span.Attributes().InitFromMap(attrs)
 
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
