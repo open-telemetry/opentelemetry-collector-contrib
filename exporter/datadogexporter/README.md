@@ -1,6 +1,6 @@
 # Datadog Exporter
 
-This exporter sends metric data to [Datadog](https://datadoghq.com).
+This exporter sends metric and trace data to [Datadog](https://datadoghq.com).
 
 ## Configuration
 
