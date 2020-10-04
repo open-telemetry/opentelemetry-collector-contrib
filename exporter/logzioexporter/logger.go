@@ -1,21 +1,21 @@
 package logzioexporter
 
 import (
-"fmt"
+	"fmt"
 	"io"
 	"io/ioutil"
-"log"
+	"log"
 
-hclog "github.com/hashicorp/go-hclog"
+	hclog "github.com/hashicorp/go-hclog"
 
-"go.uber.org/zap"
-"go.uber.org/zap/zapcore"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // Hclog2ZapLogger implements Hashicorp's hclog.Logger interface using Uber's zap.Logger. It's a workaround for plugin
 // system. go-plugin doesn't support other logger than hclog. This logger implements only methods used by the go-plugin.
 type Hclog2ZapLogger struct {
-	Zap *zap.Logger
+	Zap  *zap.Logger
 	name string
 }
 

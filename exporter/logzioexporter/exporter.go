@@ -44,7 +44,7 @@ var InternalTracesToJaegerTraces = jaeger.InternalTracesToJaegerProto
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
 	logger := Hclog2ZapLogger{
-		Zap:	params.Logger,
+		Zap: params.Logger,
 	}
 
 	if config == nil {
