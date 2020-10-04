@@ -43,6 +43,8 @@ const (
 	httpMethod          string = "http.method"
 	httpRoute           string = "http.route"
 	versionTag          string = "version"
+	oldILNameTag        string = "otel.instrumentation_library.name"
+	currentILNameTag    string = "otel.library.name"
 )
 
 // statusCodes maps (*trace.SpanData).Status.Code to their message and http status code. See:
@@ -412,14 +414,23 @@ func decodeAPMId(apmID []byte) uint64 {
 	return val
 }
 
-// TODO:
-// test this
 func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// largely a port of logic here
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L213
-	// Get span name by using instrumentation and kind while backing off to span.kind
-	if iln, ok := datadogTags[tracetranslator.TagInstrumentationName]; ok {
-		return fmt.Sprintf("%s.%s", iln, s.Kind())
+	// Get span name by using instrumentation library name and span kind while backing off to span.kind
+
+	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
+	// so we try to account for all permutations
+	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
+		return fmt.Sprintf("%s.%s", ilnOtlp, s.Kind())
+	}
+
+	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
+		return fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind())
+	}
+
+	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
+		return fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind())
 	}
 
 	return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind())

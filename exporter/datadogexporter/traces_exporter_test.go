@@ -15,15 +15,20 @@
 package datadogexporter
 
 import (
+	"compress/gzip"
 	"context"
-	"fmt"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -35,15 +40,68 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-func testTraceExporter(td pdata.Traces, t *testing.T) []string {
+func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 	var got []string
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		fmt.Println("oooo ok")
 		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
 
-		rw.WriteHeader(http.StatusAccepted)
+		contentType := req.Header.Get("Content-Type")
+
 		data := []string{req.Header.Get("Content-Type")}
 		got = append(got, data...)
+
+		if contentType == "application/x-protobuf" {
+			var traceData pb.TracePayload
+			b, err := ioutil.ReadAll(req.Body)
+
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				assert.NoError(t, err, "http server received malformed trace payload")
+				return
+			}
+
+			defer req.Body.Close()
+
+			if marshallErr := proto.Unmarshal(b, &traceData); marshallErr != nil {
+				http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
+				assert.NoError(t, marshallErr, "http server received malformed trace payload")
+				return
+			}
+
+			assert.NotNil(t, traceData.Env)
+			assert.NotNil(t, traceData.HostName)
+			assert.NotNil(t, traceData.Traces)
+		} else if contentType == "application/json" {
+			var statsData stats.Payload
+
+			gz, err := gzip.NewReader(req.Body)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				assert.NoError(t, err, "http server received malformed stats payload")
+				return
+			}
+
+			defer req.Body.Close()
+			defer gz.Close()
+
+			statsBytes, err := ioutil.ReadAll(gz)
+			if err != nil {
+				http.Error(rw, err.Error(), http.StatusInternalServerError)
+				assert.NoError(t, err, "http server received malformed stats payload")
+				return
+			}
+
+			if marshallErr := json.Unmarshal(statsBytes, &statsData); marshallErr != nil {
+				http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
+				assert.NoError(t, marshallErr, "http server received malformed stats payload")
+				return
+			}
+
+			assert.NotNil(t, statsData.Env)
+			assert.NotNil(t, statsData.HostName)
+			assert.NotNil(t, statsData.Stats)
+		}
+		rw.WriteHeader(http.StatusAccepted)
 	}))
 
 	defer server.Close()
@@ -91,7 +149,6 @@ func TestNewTraceExporter(t *testing.T) {
 
 func TestPushTraceData(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		fmt.Println("oooo ok")
 		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
 		rw.WriteHeader(http.StatusAccepted)
 	}))
@@ -134,7 +191,7 @@ func TestPushTraceData(t *testing.T) {
 
 }
 
-func TestExporter(t *testing.T) {
+func TestTraceAndStatsExporter(t *testing.T) {
 	td := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
@@ -232,8 +289,13 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-	got := testTraceExporter(internaldata.OCToTraceData(td), t)
 
+	// ensure that the protobuf serialized traces payload contains HostName Env and Traces
+	// ensure that the json gzipped stats payload contains HostName Env and Stats
+	got := testTraceExporterHelper(internaldata.OCToTraceData(td), t)
+
+	// ensure a protobuf and json payload are sent
 	assert.Equal(t, 2, len(got))
 	assert.Equal(t, "application/json", got[1])
+	assert.Equal(t, "application/x-protobuf", got[0])
 }
