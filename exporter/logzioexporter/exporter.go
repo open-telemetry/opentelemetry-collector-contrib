@@ -43,11 +43,9 @@ var WriteSpanFunc func(span *model.Span) error
 var InternalTracesToJaegerTraces = jaeger.InternalTracesToJaegerProto
 
 func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*logzioExporter, error) {
-	logger := hclog.New(&hclog.LoggerOptions{
-		Level:      hclog.Info,
-		Name:       loggerName,
-		JSONFormat: true,
-	})
+	logger := Hclog2ZapLogger{
+		Zap:	params.Logger,
+	}
 
 	if config == nil {
 		return nil, errors.New("exporter config can't be null")
