@@ -31,6 +31,8 @@ const (
 	HostIDKeyAWS HostIDKey = "AWSUniqueId"
 	// GCP
 	HostIDKeyGCP HostIDKey = "gcp_id"
+	// Host
+	HostIDKeyHost HostIDKey = conventions.AttributeHostName
 )
 
 // HostID is a unique key and value (usually used as a dimension) to uniquely identify a host
@@ -76,6 +78,13 @@ func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 		return HostID{
 			Key: HostIDKeyGCP,
 			ID:  fmt.Sprintf("%s_%s", cloudAccount, hostID),
+		}, true
+	}
+
+	if attr, ok := res.Attributes().Get(conventions.AttributeHostName); ok {
+		return HostID{
+			Key: HostIDKeyHost,
+			ID:  attr.StringVal(),
 		}, true
 	}
 
