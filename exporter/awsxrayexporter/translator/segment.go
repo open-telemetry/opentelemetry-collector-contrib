@@ -167,12 +167,12 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	return awsxray.Segment{
-		ID:          awsxray.String(convertToAmazonSpanID(span.SpanID())),
+		ID:          awsxray.String(convertToAmazonSpanID(span.SpanID().Bytes())),
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
 		EndTime:     awsP.Float64(endTime),
-		ParentID:    awsxray.String(convertToAmazonSpanID(span.ParentSpanID())),
+		ParentID:    awsxray.String(convertToAmazonSpanID(span.ParentSpanID().Bytes())),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
 		Throttle:    awsP.Bool(isThrottled),
@@ -209,7 +209,7 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewSpanID(r[:])
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {

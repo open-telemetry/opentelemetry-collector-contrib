@@ -57,6 +57,13 @@ func createDefaultConfig() configmodels.Exporter {
 				Endpoint: "", // set during config sanitization
 			},
 		},
+
+		Traces: TracesConfig{
+			SampleRate: 1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "", // set during config sanitization
+			},
+		},
 	}
 }
 
