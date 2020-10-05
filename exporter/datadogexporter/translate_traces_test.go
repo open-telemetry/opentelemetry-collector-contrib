@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -125,6 +126,62 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(outputTraces))
+}
+
+func TestObfuscation(t *testing.T) {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
+		"service.name": pdata.NewAttributeValueString("sure"),
+	})
+
+	instrumentationLibrary := pdata.NewInstrumentationLibrary()
+	instrumentationLibrary.InitEmpty()
+	instrumentationLibrary.SetName("flash")
+	instrumentationLibrary.SetVersion("v1")
+
+	span := pdata.NewSpan()
+	span.InitEmpty()
+
+	// Make this a FaaS span, which will trigger an error, because conversion
+	// of them is currently not supported.
+	span.Attributes().InsertString("testinfo?=123", "http.route")
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Resize(1)
+	rs := traces.ResourceSpans().At(0)
+	r := rs.Resource()
+	r.InitEmpty()
+	resource.CopyTo(r)
+	rs.InstrumentationLibrarySpans().Resize(1)
+	ilss := rs.InstrumentationLibrarySpans().At(0)
+	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
+	ilss.Spans().Resize(1)
+	span.CopyTo(ilss.Spans().At(0))
+
+	outputTraces, err := ConvertToDatadogTd(traces, &Config{}, []string{})
+
+	assert.Nil(t, err)
+
+	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
+
+	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{
+		ES: obfuscate.JSONSettings{
+			Enabled: true,
+		},
+		Mongo: obfuscate.JSONSettings{
+			Enabled: true,
+		},
+		RemoveQueryString: true,
+		RemovePathDigits:  true,
+		RemoveStackTraces: true,
+		Redis:             true,
+		Memcached:         true,
+	})
+
+	ObfuscatePayload(obfuscator, aggregatedTraces)
+
+	assert.Equal(t, 1, len(aggregatedTraces))
 }
 
 func TestBasicTracesTranslation(t *testing.T) {
