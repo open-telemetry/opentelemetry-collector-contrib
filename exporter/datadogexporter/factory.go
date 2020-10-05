@@ -53,6 +53,13 @@ func createDefaultConfig() configmodels.Exporter {
 			Site: DefaultSite,
 		},
 
+		TagsConfig: TagsConfig{
+			Hostname: "${DD_HOST}",
+			Env:      "${DD_ENV}",
+			Service:  "${DD_SERVICE}",
+			Version:  "${DD_VERSION}",
+		},
+
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
