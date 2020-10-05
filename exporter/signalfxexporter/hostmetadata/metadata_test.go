@@ -68,10 +68,10 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr: nil,
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{extraHostIDAttribute: "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
 			wantMetadataUpdate: []*collection.MetadataUpdate{
 				{
-					ResourceIDKey: extraHostIDAttribute,
+					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
 					MetadataDelta: collection.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -107,10 +107,10 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{extraHostIDAttribute: "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
 			wantMetadataUpdate: []*collection.MetadataUpdate{
 				{
-					ResourceIDKey: extraHostIDAttribute,
+					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
 					MetadataDelta: collection.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -138,10 +138,10 @@ func TestSyncMetadata(t *testing.T) {
 			hostStat:    host.InfoStat{},
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
-			metricsData: generateSampleMetricsData(map[string]string{extraHostIDAttribute: "host1"}),
+			metricsData: generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
 			wantMetadataUpdate: []*collection.MetadataUpdate{
 				{
-					ResourceIDKey: extraHostIDAttribute,
+					ResourceIDKey: conventions.AttributeHostName,
 					ResourceID:    "host1",
 					MetadataDelta: collection.MetadataDelta{
 						MetadataToUpdate: map[string]string{
@@ -163,7 +163,7 @@ func TestSyncMetadata(t *testing.T) {
 			memStatErr:         errors.New("failed"),
 			hostStat:           host.InfoStat{},
 			hostStatErr:        errors.New("failed"),
-			metricsData:        generateSampleMetricsData(map[string]string{extraHostIDAttribute: "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs: []string{
 				"Failed to scrape host hostCPU metadata",
@@ -185,7 +185,7 @@ func TestSyncMetadata(t *testing.T) {
 			},
 			hostStatErr:        nil,
 			pushFail:           true,
-			metricsData:        generateSampleMetricsData(map[string]string{extraHostIDAttribute: "host1"}),
+			metricsData:        generateSampleMetricsData(map[string]string{conventions.AttributeHostName: "host1"}),
 			wantMetadataUpdate: nil,
 			wantLogs:           []string{"Failed to push host metadata update"},
 		},
