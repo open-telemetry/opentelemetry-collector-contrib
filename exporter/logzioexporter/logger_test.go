@@ -40,3 +40,20 @@ func TestLoggerConfigs(tester *testing.T) {
 	assert.False(tester, exporterLogger.IsWarn())
 	assert.False(tester, exporterLogger.IsError())
 }
+
+func TestLogger(tester *testing.T) {
+	zapLogger := zap.NewExample()
+	exporterLogger := Hclog2ZapLogger{
+		Zap:  zapLogger,
+		name: loggerName,
+	}
+
+	loggerFunc := func() {
+		exporterLogger.Trace("Trace msg")
+		exporterLogger.Debug("Debug msg")
+		exporterLogger.Info("Info msg")
+		exporterLogger.Warn("Warn msg")
+		exporterLogger.Error("Error msg")
+	}
+	assert.NotPanics(tester, loggerFunc, "did not panic")
+}
