@@ -51,8 +51,6 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
-	// TODO:
-	// use passed in config values for site and api key instead of hardcoded
 	exporter := &traceExporter{
 		logger:         logger,
 		cfg:            cfg,

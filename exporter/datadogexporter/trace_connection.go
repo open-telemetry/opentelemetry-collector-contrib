@@ -108,9 +108,11 @@ func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TraceP
 			return nil
 		}
 
-		if shouldRetry {
-			time.Sleep(traceEdgeRetryInterval)
+		if !shouldRetry {
+			break
 		}
+
+		time.Sleep(traceEdgeRetryInterval)
 	}
 	return fmt.Errorf("failed to send trace payload to trace edge: %v", sendErr)
 }
@@ -145,9 +147,12 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.statsURL, con.InsecureSkipVerify); sendErr == nil {
 			return nil
 		}
-		if shouldRetry {
-			time.Sleep(traceEdgeRetryInterval)
+
+		if !shouldRetry {
+			break
 		}
+
+		time.Sleep(traceEdgeRetryInterval)
 	}
 	return fmt.Errorf("failed to send stats payload to trace edge: %v", sendErr)
 }

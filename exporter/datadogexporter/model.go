@@ -57,7 +57,7 @@ func GetAnalyzedSpans(sps []*pb.Span) []*pb.Span {
 
 	// iterate on each span and mark them as top-level if relevant
 	for _, span := range sps {
-		// The tracer can mark a span to be analyzfed, with a value 0-1, where 1 is always keep, and 0 is always reject.
+		// The tracer can mark a span to be analyzed, with a value 0-1, where 1 is always keep, and 0 is always reject.
 		// Values between 0-1 are used by the agent to prioritize which spans are sampled or not. Since we can't
 		// reliably apply sampling decisions in a serverless environment, we keep any analyzed span with a priority
 		// greater than 0, and let the backend make the sampling decision instead.

@@ -166,7 +166,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *C
 
 	for _, apiTrace := range apiTraces {
 		// calculates analyzed spans for use in trace search and app analytics
-		// appends a specific piecce of metadata to these spans marking them as analyzed
+		// appends a specific piece of metadata to these spans marking them as analyzed
 		// TODO: allow users to configure specific spans to be marked as an analyzed spans for app analytics
 		top := GetAnalyzedSpans(apiTrace.Spans)
 
@@ -351,8 +351,8 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 	return rawMap
 }
 
-// TODO: determine why this always seems to be SPAN_KIND_UNSPECIFIED
-// even though span.kind is getting set at the app tracer level
+// TODO: this seems to resolve to SPAN_KIND_UNSPECIFIED in e2e using jaeger receiver
+// even though span.kind is getting set at the app tracer level. Need to file bug ticket
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
