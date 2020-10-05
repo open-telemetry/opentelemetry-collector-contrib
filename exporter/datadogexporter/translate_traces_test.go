@@ -220,6 +220,52 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
+// ensure that the datadog span uses the configured unified service tags
+func TestTracesTranslationConfig(t *testing.T) {
+	hostname := "testhostname"
+
+	// generate mock trace, span and parent span ids
+	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+
+	// create mock resource span data
+	// toggle on errors and custom service naming to test edge case code paths
+	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
+
+	cfg := Config{
+		TagsConfig: TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example"})
+
+	if err != nil {
+		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
+	}
+
+	// ensure we return the correct type
+	assert.IsType(t, pb.TracePayload{}, datadogPayload)
+
+	// ensure hostname arg is respected
+	assert.Equal(t, hostname, datadogPayload.HostName)
+	assert.Equal(t, 1, len(datadogPayload.Traces))
+
+	// ensure that span error is based on otlp span status
+	assert.Equal(t, int32(1), datadogPayload.Traces[0].Spans[0].Error)
+
+	// ensure that span service name gives resource service.name priority
+	assert.Equal(t, "test-resource-service-name", datadogPayload.Traces[0].Spans[0].Service)
+
+	// ensure that env gives resource deployment.environment priority
+	assert.Equal(t, "test-env", datadogPayload.Env)
+	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
+	assert.Equal(t, "example", datadogPayload.Traces[0].Spans[0].Meta["other_tag"])
+}
+
 // ensure that datadog span resource naming uses http method+route when available
 func TestSpanResourceTranslation(t *testing.T) {
 	span := pdata.NewSpan()
