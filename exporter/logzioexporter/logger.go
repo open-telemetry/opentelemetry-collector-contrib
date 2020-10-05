@@ -7,7 +7,6 @@ import (
 	"log"
 
 	hclog "github.com/hashicorp/go-hclog"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
