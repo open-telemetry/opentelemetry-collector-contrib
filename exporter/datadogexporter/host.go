@@ -16,7 +16,9 @@ package datadogexporter
 
 import "os"
 
-// GetHost gets the hostname
+// GetHost gets the hostname according to configuration.
+// It gets the configuration hostname and if
+// not available it relies on the OS hostname
 func GetHost(cfg *Config) *string {
 	if cfg.TagsConfig.Hostname != "" {
 		return &cfg.TagsConfig.Hostname

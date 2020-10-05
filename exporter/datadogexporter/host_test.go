@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHost(t *testing.T) {
@@ -28,9 +29,6 @@ func TestHost(t *testing.T) {
 
 	host = GetHost(&Config{})
 	osHostname, err := os.Hostname()
-	if err == nil {
-		assert.Equal(t, *host, osHostname)
-	} else {
-		assert.Equal(t, *host, "unknown")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, *host, osHostname)
 }
