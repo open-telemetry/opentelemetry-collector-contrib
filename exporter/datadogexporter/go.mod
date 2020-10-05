@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.10.1-0.20200917170114-639b9a80ed46
+	go.opentelemetry.io/collector v0.11.1-0.20201001213035-035aa5cf6c92
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0

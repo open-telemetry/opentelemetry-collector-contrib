@@ -27,10 +27,18 @@ exporters:
   datadog/invalid:
     metrics:
       endpoint: "invalid:"
+    
+    traces:
+      endpoint: "invalid:"
 
 service:
   pipelines:
     metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog/api, datadog/invalid]
+
+    traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [datadog/api, datadog/invalid]

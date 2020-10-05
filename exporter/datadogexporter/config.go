@@ -60,6 +60,7 @@ type MetricsConfig struct {
 	confignet.TCPAddr `mapstructure:",squash"`
 }
 
+// TracesConfig defines the traces exporter specific configuration options
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
 	// If unset, the value is obtained from the Site.
