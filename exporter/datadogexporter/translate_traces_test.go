@@ -76,10 +76,11 @@ func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanI
 	events.MoveAndAppendTo(span.Events())
 
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"cache_hit":  pdata.NewAttributeValueBool(true),
-		"timeout_ns": pdata.NewAttributeValueInt(12e9),
-		"ping_count": pdata.NewAttributeValueInt(25),
-		"agent":      pdata.NewAttributeValueString("ocagent"),
+		"cache_hit":      pdata.NewAttributeValueBool(true),
+		"timeout_ns":     pdata.NewAttributeValueInt(12e9),
+		"ping_count":     pdata.NewAttributeValueInt(25),
+		"agent":          pdata.NewAttributeValueString("ocagent"),
+		"w3c.tracestate": pdata.NewAttributeValueString("tracestatestring"),
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
@@ -176,7 +177,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -227,7 +228,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
-	assert.Equal(t, 11, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -246,11 +247,12 @@ func TestTracesTranslationConfig(t *testing.T) {
 	cfg := Config{
 		TagsConfig: TagsConfig{
 			Version: "v1",
+			Service: "alt-service",
 		},
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example"})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example", "invalidthings"})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -271,7 +273,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
-	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
 	assert.Equal(t, "example", datadogPayload.Traces[0].Spans[0].Meta["other_tag"])
 }
@@ -315,11 +317,23 @@ func TestSpanNameTranslation(t *testing.T) {
 		"other": "other_value",
 	}
 
+	ddIlTagsOld := map[string]string{
+		"otel.instrumentation_library.name": "old_value",
+	}
+
+	ddIlTagsCur := map[string]string{
+		"otel.library.name": "current_value",
+	}
+
 	spanNameIl := getDatadogSpanName(span, ddIlTags)
 	spanNameDefault := getDatadogSpanName(span, ddNoIlTags)
+	spanNameOld := getDatadogSpanName(span, ddIlTagsOld)
+	spanNameCur := getDatadogSpanName(span, ddIlTagsCur)
 
 	assert.Equal(t, fmt.Sprintf("%s.%s", "il_name", pdata.SpanKindSERVER), spanNameIl)
 	assert.Equal(t, fmt.Sprintf("%s.%s", "opentelemetry", pdata.SpanKindSERVER), spanNameDefault)
+	assert.Equal(t, fmt.Sprintf("%s.%s", "old_value", pdata.SpanKindSERVER), spanNameOld)
+	assert.Equal(t, fmt.Sprintf("%s.%s", "current_value", pdata.SpanKindSERVER), spanNameCur)
 }
 
 // ensure that the datadog span type gets mapped from span kind
@@ -332,6 +346,42 @@ func TestSpanTypeTranslation(t *testing.T) {
 	assert.Equal(t, "server", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
 
+}
+
+// ensure that the IL Tags extraction handles nil case
+func TestILTagsExctraction(t *testing.T) {
+	il := pdata.NewInstrumentationLibrary()
+	il.InitEmpty()
+
+	tags := map[string]string{}
+
+	extractInstrumentationLibraryTags(il, tags)
+
+	assert.Equal(t, "", tags[tracetranslator.TagInstrumentationName])
+
+}
+
+func TestHttpResourceTag(t *testing.T) {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName("Default Name")
+	span.SetKind(pdata.SpanKindSERVER)
+
+	ddTags := map[string]string{
+		"http.method": "POST",
+	}
+
+	resourceName := getDatadogResourceName(pdata.Span{}, ddTags)
+
+	assert.Equal(t, "POST", resourceName)
+}
+
+func TestCanonicalSpanTag(t *testing.T) {
+	baseCase := isCanonicalSpanTag("notenv")
+	isCanonicalCase := isCanonicalSpanTag("env")
+
+	assert.Equal(t, false, baseCase)
+	assert.Equal(t, true, isCanonicalCase)
 }
 
 // ensure that payloads get aggregated by env to reduce number of flushes
