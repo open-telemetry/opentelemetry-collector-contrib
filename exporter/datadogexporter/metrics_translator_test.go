@@ -32,7 +32,7 @@ func TestMetricValue(t *testing.T) {
 		tags  []string = []string{"tool:opentelemetry", "version:0.1.0"}
 	)
 
-	metric := NewGauge(name, ts, value, tags)
+	metric := newGauge(name, ts, value, tags)
 	assert.Equal(t, Gauge, metric.GetType())
 	assert.Equal(t, tags, metric.Tags)
 }
@@ -66,7 +66,7 @@ func TestMapIntMetrics(t *testing.T) {
 
 	assert.ElementsMatch(t,
 		mapIntMetrics("int64.test", slice),
-		[]datadog.Metric{NewGauge("int64.test", uint64(ts), 17, []string{})},
+		[]datadog.Metric{newGauge("int64.test", uint64(ts), 17, []string{})},
 	)
 }
 
@@ -85,7 +85,7 @@ func TestMapDoubleMetrics(t *testing.T) {
 
 	assert.ElementsMatch(t,
 		mapDoubleMetrics("float64.test", slice),
-		[]datadog.Metric{NewGauge("float64.test", uint64(ts), math.Pi, []string{})},
+		[]datadog.Metric{newGauge("float64.test", uint64(ts), math.Pi, []string{})},
 	)
 }
 
@@ -105,13 +105,13 @@ func TestMapIntHistogramMetrics(t *testing.T) {
 	slice.Append(nilPoint)
 
 	noBuckets := []datadog.Metric{
-		NewGauge("intHist.test.count", uint64(ts), 20, []string{}),
-		NewGauge("intHist.test.sum", uint64(ts), 200, []string{}),
+		newGauge("intHist.test.count", uint64(ts), 20, []string{}),
+		newGauge("intHist.test.sum", uint64(ts), 200, []string{}),
 	}
 
 	buckets := []datadog.Metric{
-		NewGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
-		NewGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
+		newGauge("intHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
+		newGauge("intHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
 	}
 
 	assert.ElementsMatch(t,
@@ -141,13 +141,13 @@ func TestMapDoubleHistogramMetrics(t *testing.T) {
 	slice.Append(nilPoint)
 
 	noBuckets := []datadog.Metric{
-		NewGauge("doubleHist.test.count", uint64(ts), 20, []string{}),
-		NewGauge("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
+		newGauge("doubleHist.test.count", uint64(ts), 20, []string{}),
+		newGauge("doubleHist.test.sum", uint64(ts), math.Pi, []string{}),
 	}
 
 	buckets := []datadog.Metric{
-		NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
-		NewGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
+		newGauge("doubleHist.test.count_per_bucket", uint64(ts), 2, []string{"bucket_idx:0"}),
+		newGauge("doubleHist.test.count_per_bucket", uint64(ts), 18, []string{"bucket_idx:1"}),
 	}
 
 	assert.ElementsMatch(t,
