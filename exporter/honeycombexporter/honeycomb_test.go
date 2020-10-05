@@ -39,7 +39,7 @@ import (
 
 type honeycombData struct {
 	Data       map[string]interface{} `json:"data"`
-	SampleRate int                    `json:samplerate`
+	SampleRate int                    `json:"samplerate"`
 }
 
 func testingServer(callback func(data []honeycombData)) *httptest.Server {
@@ -325,6 +325,22 @@ func TestSampleRateAttribute(t *testing.T) {
 					},
 				},
 			},
+			{
+				TraceId:                 []byte{0x01},
+				SpanId:                  []byte{0x02},
+				Name:                    &tracepb.TruncatableString{Value: "root"},
+				Kind:                    tracepb.Span_SERVER,
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"hc.sample.rate": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "wrong_type"},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -364,6 +380,21 @@ func TestSampleRateAttribute(t *testing.T) {
 				"trace.trace_id":                         "01",
 				"opencensus.same_process_as_parent_span": true,
 				"no_sample_rate":                         "gets_default",
+			},
+		},
+		{
+			SampleRate: 2,
+			Data: map[string]interface{}{
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"hc.sample.rate":                         "wrong_type",
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.same_process_as_parent_span": true,
 			},
 		},
 	}
