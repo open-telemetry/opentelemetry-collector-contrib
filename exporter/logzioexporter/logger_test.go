@@ -16,7 +16,8 @@ package logzioexporter
 import (
 	"testing"
 
-	assert "github.com/stretchr/testify/assert"
+	"github.com/hashicorp/go-hclog"
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +28,7 @@ func TestLoggerConfigs(tester *testing.T) {
 		name: loggerName,
 	}
 
-	assert.Equal(tester, exporterLogger.name, loggerName)
+	assert.Equal(tester, exporterLogger.Name(), loggerName)
 	assert.NotNil(tester, exporterLogger.Named("logger"))
 	assert.NotNil(tester, exporterLogger.With("key", "val"))
 	assert.NotNil(tester, exporterLogger.ResetNamed(loggerName))
@@ -54,6 +55,7 @@ func TestLogger(tester *testing.T) {
 		exporterLogger.Info("Info msg")
 		exporterLogger.Warn("Warn msg")
 		exporterLogger.Error("Error msg")
+		exporterLogger.Log(hclog.Debug, "log msg")
 	}
 	assert.NotPanics(tester, loggerFunc, "did not panic")
 }
