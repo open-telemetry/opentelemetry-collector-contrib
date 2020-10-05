@@ -134,3 +134,4 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | Processor                      | Reviewer(s)               |
 | ------------------------------ | ------------------------- |
 | routing                        | @jpkrohling               |
+| loadbalancing                  | @jpkrohling               |

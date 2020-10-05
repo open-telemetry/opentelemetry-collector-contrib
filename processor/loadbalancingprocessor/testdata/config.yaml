@@ -1,0 +1,18 @@
+receivers:
+  examplereceiver:
+
+processors:
+  loadbalancing:
+
+exporters:
+  exampleexporter:
+
+service:
+  pipelines:
+    traces:
+      receivers:
+      - examplereceiver
+      processors:
+      - loadbalancing
+      exporters:
+      - exampleexporter
