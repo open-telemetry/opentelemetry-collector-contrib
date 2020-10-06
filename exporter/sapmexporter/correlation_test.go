@@ -26,7 +26,9 @@ import (
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(&Config{
-		Correlation: CorrelationConfig{},
+		Correlation: CorrelationConfig{
+			Enabled: true,
+		},
 		APIEndpoint: "",
 		AccessToken: "",
 	}, component.ExporterCreateParams{
