@@ -37,6 +37,8 @@ const (
 type CorrelationConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	correlations.Config           `mapstructure:",squash"`
+	// Enabled determines whether correlation is enabled or not.
+	Enabled bool `mapstructure:"enabled"`
 	// How long to wait after a trace span's service name is last seen before
 	// uncorrelating that service.
 	StaleServiceTimeout time.Duration `mapstructure:"stale_service_timeout"`

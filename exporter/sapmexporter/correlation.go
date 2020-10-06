@@ -98,6 +98,11 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 	}
 
 	cor.once.Do(func() {
+		if !cor.cfg.Correlation.Enabled {
+			cor.log.Info("Span/metrics correlation is disabled")
+			return
+		}
+
 		res := traces.ResourceSpans().At(0).Resource()
 		hostID, ok := splunk.ResourceToHostID(res)
 

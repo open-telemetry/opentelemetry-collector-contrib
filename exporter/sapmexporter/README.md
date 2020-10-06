@@ -10,6 +10,7 @@ another backend that supports the SAPM proto.
 format. It must be a full URL and include the scheme, port and path e.g,
 https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx backend or to
 another Otel collector that has the SAPM receiver enabled.
+- `api_endpoint` (no default): This is the endpoint where API calls will be made (such as for correlation). It must be a full URL (e.g. https://api.signalfx.com).
 - `max_connections` (default = 100): MaxConnections is used to set a limit to the maximum
 idle HTTP connection the exporter can keep open.
 - `num_workers` (default = 8): NumWorkers is the number of workers that should be used to
@@ -32,6 +33,16 @@ during final translation.  Intended to be used in tandem with identical configur
   User should calculate this as `num_seconds * requests_per_second` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
+- `correlation`
+  - `enabled` (default = true): Whether to enable span/metric correlation.
+  - `endpoint` (default = ""): If set this is the endpoint where correlation API calls will be made. Otherwise it defaults to using `api_endpoint` value.
+  - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
+  - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
+  - `max_buffered` (default = 10,000): Max number of correlation updates that can be buffered before updates are dropped.
+  - `max_retries` (default = 2): Max number of retries that will be made for failed correlation updates.
+  - `log_dimension_updates` (default = false): Whether or not to log correlation updates to dimensions (at DEBUG level).
+  - `send_delay` (default = 30 seconds): How long to wait between retries.
+  - `purge_interval` (default = 1 minute): How frequently to purge duplicate requests.
 
 Example:
 
