@@ -67,8 +67,14 @@ func TestConfigValidate(t *testing.T) {
 	require.Error(t, err)
 	assert.EqualError(t, err, "cannot configure Elastic APM trace exporter: invalid config: APMServerURL must be specified")
 
+	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
+	require.Error(t, err)
+	assert.EqualError(t, err, "cannot configure Elastic APM metrics exporter: invalid config: APMServerURL must be specified")
+
 	cfg.APMServerURL = "foo"
 	_, err = factory.CreateTraceExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
 

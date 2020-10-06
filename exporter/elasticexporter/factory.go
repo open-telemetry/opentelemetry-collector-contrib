@@ -32,7 +32,9 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter),
+	)
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -50,4 +52,12 @@ func createTraceExporter(
 	cfg configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	return newElasticTraceExporter(params, cfg)
+}
+
+func createMetricsExporter(
+	ctx context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	return newElasticMetricsExporter(params, cfg)
 }
