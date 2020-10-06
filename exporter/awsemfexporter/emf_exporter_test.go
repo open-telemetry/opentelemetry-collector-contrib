@@ -46,6 +46,11 @@ func (m *mockMetadata) GetEC2InstanceID() (string, error) {
 	return "test-host-id", nil
 }
 
+func init() {
+	os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+}
+
 type mockPusher struct {
 	mock.Mock
 }

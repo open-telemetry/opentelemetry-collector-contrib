@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector v0.11.1-0.20200924160956-8690937037da
+	go.opentelemetry.io/collector v0.11.1-0.20201001213035-035aa5cf6c92
 	go.uber.org/zap v1.16.0
 )
 

@@ -953,9 +953,9 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 
 	for i, props := range propsPerSpan {
 		sp := ls.Spans().At(i)
-		sp.SetSpanID([]byte(props.spanID))
+		sp.SetSpanID(pdata.NewSpanID([]byte(props.spanID)))
 		if props.parentSpanID != nil {
-			sp.SetParentSpanID([]byte(*props.parentSpanID))
+			sp.SetParentSpanID(pdata.NewSpanID([]byte(*props.parentSpanID)))
 		}
 		sp.SetName(props.name)
 		sp.SetStartTime(pdata.TimestampUnixNano(props.startTimeSec * float64(time.Second)))
@@ -1028,7 +1028,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 		assert.Equal(t,
 			expS.Attributes().Sort(),
 			actS.Attributes().Sort(),
-			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, string(expS.SpanID())),
+			fmt.Sprintf("%s: span[%s].Attributes() differ", testCase, expS.SpanID().HexString()),
 		)
 		expS.Attributes().InitEmptyWithCapacity(0)
 		actS.Attributes().InitEmptyWithCapacity(0)
@@ -1039,7 +1039,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 			expEvts.Len(),
 			actEvts.Len(),
 			fmt.Sprintf("%s: span[%s].Events().Len() differ",
-				testCase, string(expS.SpanID())),
+				testCase, expS.SpanID().HexString()),
 		)
 
 		for j := 0; j < expEvts.Len(); j++ {
@@ -1050,7 +1050,7 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 				expEvt.Attributes().Sort(),
 				actEvt.Attributes().Sort(),
 				fmt.Sprintf("%s: span[%s], event[%d].Attributes() differ",
-					testCase, string(expS.SpanID()), j),
+					testCase, expS.SpanID().HexString(), j),
 			)
 			expEvt.Attributes().InitEmptyWithCapacity(0)
 			actEvt.Attributes().InitEmptyWithCapacity(0)

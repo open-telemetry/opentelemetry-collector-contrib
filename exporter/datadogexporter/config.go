@@ -60,6 +60,18 @@ type MetricsConfig struct {
 	confignet.TCPAddr `mapstructure:",squash"`
 }
 
+// TracesConfig defines the traces exporter specific configuration options
+type TracesConfig struct {
+	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
+	// If unset, the value is obtained from the Site.
+	confignet.TCPAddr `mapstructure:",squash"`
+
+	// SampleRate is the rate at which to sample this event. Default is 1,
+	// meaning no sampling. If you want to send one event out of every 250
+	// times Send() is called, you would specify 250 here.
+	SampleRate uint `mapstructure:"sample_rate"`
+}
+
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
@@ -121,6 +133,9 @@ type Config struct {
 
 	// Metrics defines the Metrics exporter specific configuration
 	Metrics MetricsConfig `mapstructure:"metrics"`
+
+	// Traces defines the Traces exporter specific configuration
+	Traces TracesConfig `mapstructure:"traces"`
 }
 
 // Sanitize tries to sanitize a given configuration
@@ -128,6 +143,10 @@ func (c *Config) Sanitize() error {
 	// Add '.' at the end of namespace
 	if c.Metrics.Namespace != "" && !strings.HasSuffix(c.Metrics.Namespace, ".") {
 		c.Metrics.Namespace = c.Metrics.Namespace + "."
+	}
+
+	if c.TagsConfig.Env == "" {
+		c.TagsConfig.Env = "none"
 	}
 
 	if c.API.Key == "" {
@@ -139,6 +158,10 @@ func (c *Config) Sanitize() error {
 	// Set the endpoint based on the Site
 	if c.Metrics.TCPAddr.Endpoint == "" {
 		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+	}
+
+	if c.Traces.TCPAddr.Endpoint == "" {
+		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 
 	return nil
