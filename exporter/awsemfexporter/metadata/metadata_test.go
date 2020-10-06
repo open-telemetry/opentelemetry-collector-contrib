@@ -24,10 +24,8 @@ import (
 func TestGetCollectorIdentifier(t *testing.T) {
 	s, _ := session.NewSession()
 	metadata := NewMetadata(s, "")
-	_, err := metadata.GetCollectorIdentifier()
-	assert.NotNil(t, err)
 	metadata = NewMetadata(s, "../testdata/mockcgroup_notexists")
-	_, err = metadata.GetCollectorIdentifier()
+	_, err := metadata.GetCollectorIdentifier()
 	assert.NotNil(t, err)
 }
 
