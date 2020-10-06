@@ -324,9 +324,9 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 
 	defaultMetadata := map[string]interface{}{}
 
-	var indexedKeys map[string]interface{}
+	var indexedKeys map[string]bool
 	if !indexAllAttrs {
-		indexedKeys = map[string]interface{}{}
+		indexedKeys = map[string]bool{}
 		for _, name := range indexedAttrs {
 			indexedKeys[name] = true
 		}
@@ -340,7 +340,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 			if indexAllAttrs {
 				indexed = true
 			} else {
-				_, indexed = indexedKeys[key]
+				indexed = indexedKeys[key]
 			}
 			if annoVal != nil && indexed {
 				key = fixAnnotationKey(key)
