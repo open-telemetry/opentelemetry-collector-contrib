@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-// Config defines configuration for HostMetrics receiver.
+// Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
 	configmodels.ReceiverSettings            `mapstructure:",squash"`
 	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
@@ -30,12 +30,16 @@ type Config struct {
 	PerfCounters []PerfCounterConfig `mapstructure:"perfcounters"`
 }
 
+// PerfCounterConfig defines configuration for a perf counter object.
 type PerfCounterConfig struct {
-	Object   string   `mapstructure:"object"`
-	Counters []string `mapstructure:"counters"`
+	Object    string   `mapstructure:"object"`
+	Instances []string `mapstructure:"instances"`
+	Counters  []string `mapstructure:"counters"`
 }
 
 func (c *Config) validate() error {
+	// TODO: consider validating duplicate configuration of counters
+
 	var errors []error
 
 	if c.CollectionInterval <= 0 {
@@ -51,6 +55,13 @@ func (c *Config) validate() error {
 		if pc.Object == "" {
 			perfCounterMissingObjectName = true
 			continue
+		}
+
+		for _, instance := range pc.Instances {
+			if instance == "" {
+				errors = append(errors, fmt.Errorf("perf counter for object %q includes an empty instance", pc.Object))
+				break
+			}
 		}
 
 		if len(pc.Counters) == 0 {
