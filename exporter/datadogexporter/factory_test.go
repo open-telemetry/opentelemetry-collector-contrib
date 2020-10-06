@@ -14,11 +14,18 @@
 package datadogexporter
 
 import (
+	"context"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtest"
+	"go.uber.org/zap"
 )
 
 // Test that the factory creates the default configuration
@@ -47,4 +54,28 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
+}
+
+func TestCreateAPIMetricsExporter(t *testing.T) {
+	logger := zap.NewNop()
+
+	factories, err := componenttest.ExampleComponents()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	ctx := context.Background()
+	exp, err := factory.CreateMetricsExporter(
+		ctx,
+		component.ExporterCreateParams{Logger: logger},
+		cfg.Exporters["datadog/api"],
+	)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
 }
