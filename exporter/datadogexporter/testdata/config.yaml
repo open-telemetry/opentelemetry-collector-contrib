@@ -21,13 +21,24 @@ exporters:
     metrics:
       namespace: opentelemetry
 
+    traces:
+      sample_rate: 1
+
   datadog/invalid:
     metrics:
+      endpoint: "invalid:"
+    
+    traces:
       endpoint: "invalid:"
 
 service:
   pipelines:
     metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [datadog/api, datadog/invalid]
+
+    traces:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [datadog/api, datadog/invalid]

@@ -25,10 +25,10 @@ func addParentSpanID(seg *awsxray.Segment, parentID *string, span *pdata.Span) {
 		// `seg` is an embedded subsegment. Please refer to:
 		// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-subsegments
 		// for the difference between an embedded and an independent subsegment.
-		span.SetParentSpanID(pdata.SpanID([]byte(*parentID)))
+		span.SetParentSpanID(pdata.NewSpanID([]byte(*parentID)))
 	} else if seg.ParentID != nil {
 		// `seg` is an independent subsegment
-		span.SetParentSpanID(pdata.SpanID([]byte(*seg.ParentID)))
+		span.SetParentSpanID(pdata.NewSpanID([]byte(*seg.ParentID)))
 	}
 	// else: `seg` is the root segment with no parent segment.
 }

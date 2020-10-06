@@ -136,7 +136,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := []byte{0, 0, 0, 0, 0, 0, 0, 0}
+	parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil)
 
@@ -273,7 +273,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(nil, spanName, 0, "OK", attributes)
+	span := constructClientSpan(pdata.NewSpanID(nil), spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
 	traceID := span.TraceID().Bytes()
@@ -559,7 +559,7 @@ func TestOriginEb(t *testing.T) {
 	assert.Equal(t, OriginEB, *segment.Origin)
 }
 
-func constructClientSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
+func constructClientSpan(parentSpanID pdata.SpanID, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()
@@ -588,7 +588,7 @@ func constructClientSpan(parentSpanID []byte, name string, code int32, message s
 	return span
 }
 
-func constructServerSpan(parentSpanID []byte, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
+func constructServerSpan(parentSpanID pdata.SpanID, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
 	var (
 		traceID        = newTraceID()
 		spanID         = newSegmentID()

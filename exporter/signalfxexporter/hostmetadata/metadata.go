@@ -18,17 +18,11 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
-)
-
-var (
-	// Resource attribute that used as fallback if there are no cloud provider attributes.
-	extraHostIDAttribute = conventions.AttributeHostName
 )
 
 // Syncer is a config structure for host metadata syncer.
@@ -60,7 +54,7 @@ func (s *Syncer) syncOnResource(res pdata.Resource) {
 	// If resourcedetection processor is enabled, all the metrics should have resource attributes
 	// that can be used to update host metadata.
 	// Based of this assumption we check just one ResourceMetrics object,
-	hostID, ok := getHostIDFromResource(res)
+	hostID, ok := splunk.ResourceToHostID(res)
 	if !ok {
 		// if no attributes found, we assume that resourcedetection is not enabled or
 		// it doesn't set right attributes, and we do not retry.
@@ -128,20 +122,4 @@ func (s *Syncer) scrapeHostProperties() map[string]string {
 	}
 
 	return props
-}
-
-func getHostIDFromResource(res pdata.Resource) (splunk.HostID, bool) {
-	hostID, ok := splunk.ResourceToHostID(res)
-	if ok {
-		return hostID, ok
-	}
-
-	if attr, ok := res.Attributes().Get(extraHostIDAttribute); ok {
-		return splunk.HostID{
-			Key: splunk.HostIDKey(extraHostIDAttribute),
-			ID:  attr.StringVal(),
-		}, true
-	}
-
-	return splunk.HostID{}, false
 }

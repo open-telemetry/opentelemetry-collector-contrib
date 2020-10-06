@@ -73,6 +73,24 @@ exporters:
       #
       # endpoint: https://api.datadoghq.com
 
+    ## @param traces - custom object - optional
+    ## Trace exporter specific configuration.
+    #
+    # traces:
+      ## @param sample_rate - integer - optional - default: 1
+      #  The rate at which to sample traces. Default is 1 (Always Sample),
+      #  meaning no sampling. If you want to send one event out of every 250
+      #  you would specify 250.
+      #
+      # sample_rate: 1
+
+      ## @param endpoint - string - optional
+      ## The host of the Datadog intake server to send traces to.
+      ## If unset the value is obtained through the `site` parameter in the `api` section.
+      #
+      # endpoint: https://api.datadoghq.com
+      
+
 service:
   pipelines:
     traces:
