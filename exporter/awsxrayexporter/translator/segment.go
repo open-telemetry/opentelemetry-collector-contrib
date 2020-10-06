@@ -336,12 +336,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
 			key = "otel.resource." + key
 			annoVal := annotationValue(value)
-			var indexed bool
-			if indexAllAttrs {
-				indexed = true
-			} else {
-				indexed = indexedKeys[key]
-			}
+			indexed := indexAllAttrs || indexedKeys[key]
 			if annoVal != nil && indexed {
 				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
