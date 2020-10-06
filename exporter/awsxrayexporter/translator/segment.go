@@ -324,9 +324,8 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 
 	defaultMetadata := map[string]interface{}{}
 
-	var indexedKeys map[string]bool
+	indexedKeys := map[string]bool{}
 	if !indexAllAttrs {
-		indexedKeys = map[string]bool{}
 		for _, name := range indexedAttrs {
 			indexedKeys[name] = true
 		}
