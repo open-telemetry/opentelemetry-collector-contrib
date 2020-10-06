@@ -104,7 +104,7 @@ class TestDatadogFormat(unittest.TestCase):
         )
         self.assertTrue(parent_context.is_remote)
 
-        child = trace.Span(
+        child = trace._Span(
             "child",
             trace_api.SpanContext(
                 parent_context.trace_id,
@@ -149,7 +149,7 @@ class TestDatadogFormat(unittest.TestCase):
 
         self.assertEqual(parent_context.trace_flags, constants.AUTO_REJECT)
 
-        child = trace.Span(
+        child = trace._Span(
             "child",
             trace_api.SpanContext(
                 parent_context.trace_id,
