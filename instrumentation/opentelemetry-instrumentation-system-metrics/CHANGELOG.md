@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fix issue when specific metrics are not available in certain OS
+  ([#1207](https://github.com/open-telemetry/opentelemetry-python/pull/1207))
+
 ## Version 0.13b0
 
 Released 2020-09-17

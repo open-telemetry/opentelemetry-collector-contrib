@@ -372,11 +372,12 @@ class SystemMetrics:
         """
         for cpu, times in enumerate(psutil.cpu_times(percpu=True)):
             for metric in self._config["system.cpu.time"]:
-                self._system_cpu_time_labels["state"] = metric
-                self._system_cpu_time_labels["cpu"] = cpu + 1
-                observer.observe(
-                    getattr(times, metric), self._system_cpu_time_labels
-                )
+                if hasattr(times, metric):
+                    self._system_cpu_time_labels["state"] = metric
+                    self._system_cpu_time_labels["cpu"] = cpu + 1
+                    observer.observe(
+                        getattr(times, metric), self._system_cpu_time_labels
+                    )
 
     def _get_system_cpu_utilization(
         self, observer: metrics.ValueObserver
@@ -391,12 +392,13 @@ class SystemMetrics:
             psutil.cpu_times_percent(percpu=True)
         ):
             for metric in self._config["system.cpu.utilization"]:
-                self._system_cpu_utilization_labels["state"] = metric
-                self._system_cpu_utilization_labels["cpu"] = cpu + 1
-                observer.observe(
-                    getattr(times_percent, metric) / 100,
-                    self._system_cpu_utilization_labels,
-                )
+                if hasattr(times_percent, metric):
+                    self._system_cpu_utilization_labels["state"] = metric
+                    self._system_cpu_utilization_labels["cpu"] = cpu + 1
+                    observer.observe(
+                        getattr(times_percent, metric) / 100,
+                        self._system_cpu_utilization_labels,
+                    )
 
     def _get_system_memory_usage(
         self, observer: metrics.ValueObserver
@@ -409,10 +411,11 @@ class SystemMetrics:
         virtual_memory = psutil.virtual_memory()
         for metric in self._config["system.memory.usage"]:
             self._system_memory_usage_labels["state"] = metric
-            observer.observe(
-                getattr(virtual_memory, metric),
-                self._system_memory_usage_labels,
-            )
+            if hasattr(virtual_memory, metric):
+                observer.observe(
+                    getattr(virtual_memory, metric),
+                    self._system_memory_usage_labels,
+                )
 
     def _get_system_memory_utilization(
         self, observer: metrics.ValueObserver
@@ -426,10 +429,11 @@ class SystemMetrics:
 
         for metric in self._config["system.memory.utilization"]:
             self._system_memory_utilization_labels["state"] = metric
-            observer.observe(
-                getattr(system_memory, metric) / system_memory.total,
-                self._system_memory_utilization_labels,
-            )
+            if hasattr(system_memory, metric):
+                observer.observe(
+                    getattr(system_memory, metric) / system_memory.total,
+                    self._system_memory_utilization_labels,
+                )
 
     def _get_system_swap_usage(self, observer: metrics.ValueObserver) -> None:
         """Observer callback for swap usage
@@ -441,9 +445,11 @@ class SystemMetrics:
 
         for metric in self._config["system.swap.usage"]:
             self._system_swap_usage_labels["state"] = metric
-            observer.observe(
-                getattr(system_swap, metric), self._system_swap_usage_labels
-            )
+            if hasattr(system_swap, metric):
+                observer.observe(
+                    getattr(system_swap, metric),
+                    self._system_swap_usage_labels,
+                )
 
     def _get_system_swap_utilization(
         self, observer: metrics.ValueObserver
@@ -456,11 +462,12 @@ class SystemMetrics:
         system_swap = psutil.swap_memory()
 
         for metric in self._config["system.swap.utilization"]:
-            self._system_swap_utilization_labels["state"] = metric
-            observer.observe(
-                getattr(system_swap, metric) / system_swap.total,
-                self._system_swap_utilization_labels,
-            )
+            if hasattr(system_swap, metric):
+                self._system_swap_utilization_labels["state"] = metric
+                observer.observe(
+                    getattr(system_swap, metric) / system_swap.total,
+                    self._system_swap_utilization_labels,
+                )
 
     # TODO Add _get_system_swap_page_faults
     # TODO Add _get_system_swap_page_operations
@@ -473,12 +480,13 @@ class SystemMetrics:
         """
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.io"]:
-                self._system_disk_io_labels["device"] = device
-                self._system_disk_io_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "{}_bytes".format(metric)),
-                    self._system_disk_io_labels,
-                )
+                if hasattr(counters, "{}_bytes".format(metric)):
+                    self._system_disk_io_labels["device"] = device
+                    self._system_disk_io_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "{}_bytes".format(metric)),
+                        self._system_disk_io_labels,
+                    )
 
     def _get_system_disk_operations(
         self, observer: metrics.SumObserver
@@ -490,12 +498,13 @@ class SystemMetrics:
         """
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.operations"]:
-                self._system_disk_operations_labels["device"] = device
-                self._system_disk_operations_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "{}_count".format(metric)),
-                    self._system_disk_operations_labels,
-                )
+                if hasattr(counters, "{}_count".format(metric)):
+                    self._system_disk_operations_labels["device"] = device
+                    self._system_disk_operations_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "{}_count".format(metric)),
+                        self._system_disk_operations_labels,
+                    )
 
     def _get_system_disk_time(self, observer: metrics.SumObserver) -> None:
         """Observer callback for disk time
@@ -505,12 +514,13 @@ class SystemMetrics:
         """
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.time"]:
-                self._system_disk_time_labels["device"] = device
-                self._system_disk_time_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "{}_time".format(metric)) / 1000,
-                    self._system_disk_time_labels,
-                )
+                if hasattr(counters, "{}_time".format(metric)):
+                    self._system_disk_time_labels["device"] = device
+                    self._system_disk_time_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "{}_time".format(metric)) / 1000,
+                        self._system_disk_time_labels,
+                    )
 
     def _get_system_disk_merged(self, observer: metrics.SumObserver) -> None:
         """Observer callback for disk merged operations
@@ -524,12 +534,13 @@ class SystemMetrics:
 
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
             for metric in self._config["system.disk.time"]:
-                self._system_disk_merged_labels["device"] = device
-                self._system_disk_merged_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "{}_merged_count".format(metric)),
-                    self._system_disk_merged_labels,
-                )
+                if hasattr(counters, "{}_merged_count".format(metric)):
+                    self._system_disk_merged_labels["device"] = device
+                    self._system_disk_merged_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "{}_merged_count".format(metric)),
+                        self._system_disk_merged_labels,
+                    )
 
     # TODO Add _get_system_filesystem_usage
     # TODO Add _get_system_filesystem_utilization
@@ -548,14 +559,17 @@ class SystemMetrics:
         for device, counters in psutil.net_io_counters(pernic=True).items():
             for metric in self._config["system.network.dropped.packets"]:
                 in_out = {"receive": "in", "transmit": "out"}[metric]
-                self._system_network_dropped_packets_labels["device"] = device
-                self._system_network_dropped_packets_labels[
-                    "direction"
-                ] = metric
-                observer.observe(
-                    getattr(counters, "drop{}".format(in_out)),
-                    self._system_network_dropped_packets_labels,
-                )
+                if hasattr(counters, "drop{}".format(in_out)):
+                    self._system_network_dropped_packets_labels[
+                        "device"
+                    ] = device
+                    self._system_network_dropped_packets_labels[
+                        "direction"
+                    ] = metric
+                    observer.observe(
+                        getattr(counters, "drop{}".format(in_out)),
+                        self._system_network_dropped_packets_labels,
+                    )
 
     def _get_system_network_packets(
         self, observer: metrics.SumObserver
@@ -569,12 +583,13 @@ class SystemMetrics:
         for device, counters in psutil.net_io_counters(pernic=True).items():
             for metric in self._config["system.network.dropped.packets"]:
                 recv_sent = {"receive": "recv", "transmit": "sent"}[metric]
-                self._system_network_packets_labels["device"] = device
-                self._system_network_packets_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "packets_{}".format(recv_sent)),
-                    self._system_network_packets_labels,
-                )
+                if hasattr(counters, "packets_{}".format(recv_sent)):
+                    self._system_network_packets_labels["device"] = device
+                    self._system_network_packets_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "packets_{}".format(recv_sent)),
+                        self._system_network_packets_labels,
+                    )
 
     def _get_system_network_errors(
         self, observer: metrics.SumObserver
@@ -587,12 +602,13 @@ class SystemMetrics:
         for device, counters in psutil.net_io_counters(pernic=True).items():
             for metric in self._config["system.network.errors"]:
                 in_out = {"receive": "in", "transmit": "out"}[metric]
-                self._system_network_errors_labels["device"] = device
-                self._system_network_errors_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "err{}".format(in_out)),
-                    self._system_network_errors_labels,
-                )
+                if hasattr(counters, "err{}".format(in_out)):
+                    self._system_network_errors_labels["device"] = device
+                    self._system_network_errors_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "err{}".format(in_out)),
+                        self._system_network_errors_labels,
+                    )
 
     def _get_system_network_io(self, observer: metrics.SumObserver) -> None:
         """Observer callback for network IO
@@ -604,12 +620,13 @@ class SystemMetrics:
         for device, counters in psutil.net_io_counters(pernic=True).items():
             for metric in self._config["system.network.dropped.packets"]:
                 recv_sent = {"receive": "recv", "transmit": "sent"}[metric]
-                self._system_network_io_labels["device"] = device
-                self._system_network_io_labels["direction"] = metric
-                observer.observe(
-                    getattr(counters, "bytes_{}".format(recv_sent)),
-                    self._system_network_io_labels,
-                )
+                if hasattr(counters, "bytes_{}".format(recv_sent)):
+                    self._system_network_io_labels["device"] = device
+                    self._system_network_io_labels["direction"] = metric
+                    observer.observe(
+                        getattr(counters, "bytes_{}".format(recv_sent)),
+                        self._system_network_io_labels,
+                    )
 
     def _get_system_network_connections(
         self, observer: metrics.UpDownSumObserver
@@ -662,10 +679,11 @@ class SystemMetrics:
         """
         proc_memory = self._proc.memory_info()
         for metric in self._config["runtime.memory"]:
-            self._runtime_memory_labels["type"] = metric
-            observer.observe(
-                getattr(proc_memory, metric), self._runtime_memory_labels,
-            )
+            if hasattr(proc_memory, metric):
+                self._runtime_memory_labels["type"] = metric
+                observer.observe(
+                    getattr(proc_memory, metric), self._runtime_memory_labels,
+                )
 
     def _get_runtime_cpu_time(self, observer: metrics.SumObserver) -> None:
         """Observer callback for runtime CPU time
@@ -675,10 +693,11 @@ class SystemMetrics:
         """
         proc_cpu = self._proc.cpu_times()
         for metric in self._config["runtime.cpu.time"]:
-            self._runtime_cpu_time_labels["type"] = metric
-            observer.observe(
-                getattr(proc_cpu, metric), self._runtime_cpu_time_labels,
-            )
+            if hasattr(proc_cpu, metric):
+                self._runtime_cpu_time_labels["type"] = metric
+                observer.observe(
+                    getattr(proc_cpu, metric), self._runtime_cpu_time_labels,
+                )
 
     def _get_runtime_gc_count(self, observer: metrics.SumObserver) -> None:
         """Observer callback for garbage collection
