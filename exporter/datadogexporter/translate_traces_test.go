@@ -50,6 +50,7 @@ func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanI
 	span.SetKind(pdata.SpanKindSERVER)
 	span.SetStartTime(pdataStartTime)
 	span.SetEndTime(pdataEndTime)
+	span.SetTraceState("tracestatekey=tracestatevalue")
 
 	status := pdata.NewSpanStatus()
 	status.InitEmpty()
@@ -77,11 +78,10 @@ func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanI
 	events.MoveAndAppendTo(span.Events())
 
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
-		"cache_hit":      pdata.NewAttributeValueBool(true),
-		"timeout_ns":     pdata.NewAttributeValueInt(12e9),
-		"ping_count":     pdata.NewAttributeValueInt(25),
-		"agent":          pdata.NewAttributeValueString("ocagent"),
-		"w3c.tracestate": pdata.NewAttributeValueString("tracestatestring"),
+		"cache_hit":  pdata.NewAttributeValueBool(true),
+		"timeout_ns": pdata.NewAttributeValueInt(12e9),
+		"ping_count": pdata.NewAttributeValueInt(25),
+		"agent":      pdata.NewAttributeValueString("ocagent"),
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
@@ -126,6 +126,15 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(outputTraces))
+}
+
+func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
+	traces := pdata.NewTraces()
+
+	outputTraces, err := ConvertToDatadogTd(traces, &Config{}, []string{})
+
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(outputTraces))
 }
 
 func TestObfuscation(t *testing.T) {
@@ -333,6 +342,35 @@ func TestTracesTranslationConfig(t *testing.T) {
 	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
 	assert.Equal(t, "example", datadogPayload.Traces[0].Spans[0].Meta["other_tag"])
+}
+
+// ensure that the translation returns early if no resource instrumentation library spans
+func TestTracesTranslationNoIls(t *testing.T) {
+	hostname := "testhostname"
+
+	rs := pdata.NewResourceSpans()
+	rs.InitEmpty()
+
+	cfg := Config{
+		TagsConfig: TagsConfig{
+			Version: "v1",
+			Service: "alt-service",
+		},
+	}
+
+	// translate mocks to datadog traces
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example", "invalidthings"})
+
+	if err != nil {
+		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
+	}
+
+	// ensure we return the correct type
+	assert.IsType(t, pb.TracePayload{}, datadogPayload)
+
+	// ensure hostname arg is respected
+	assert.Equal(t, hostname, datadogPayload.HostName)
+	assert.Equal(t, 0, len(datadogPayload.Traces))
 }
 
 // ensure that datadog span resource naming uses http method+route when available
