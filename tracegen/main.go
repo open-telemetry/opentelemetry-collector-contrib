@@ -16,6 +16,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"time"
@@ -67,29 +68,21 @@ func main() {
 	}
 	defer func() {
 		logger.Info("stopping the exporter")
-		if err = exp.Stop(); err != nil {
+		if err = exp.Shutdown(context.Background()); err != nil {
 			logger.Error(err, "failed to stop the exporter")
 			return
 		}
 	}()
 
-	ssp, err := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	if err != nil {
-		logger.Error(err, "failed to obtain span processor")
-		return
-	}
+	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
 	defer ssp.Shutdown()
 
-	tracerProvider, err := sdktrace.NewProvider(
+	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithResource(resource.New(semconv.ServiceNameKey.String(cfg.ServiceName))),
 	)
-	if err != nil {
-		logger.Error(err, "failed to obtain tracer provider")
-		return
-	}
 
 	tracerProvider.RegisterSpanProcessor(ssp)
-	global.SetTraceProvider(tracerProvider)
+	global.SetTracerProvider(tracerProvider)
 
 	tracegen.Run(cfg, logger)
 }
