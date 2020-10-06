@@ -79,6 +79,15 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexed
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
 func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) awsxray.Segment {
+	var segmentType string
+
+	storeResource := true
+	if span.Kind() != pdata.SpanKindSERVER {
+		segmentType = "subsegment"
+		// We only store the resource information for segments, the local root.
+		storeResource = false
+	}
+
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceID())
 		startTime                              = timestampToFloatSeconds(span.StartTime())
@@ -90,10 +99,9 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
 		service                                = makeService(resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		user, annotations, metadata            = makeXRayAttributes(sqlfiltered, indexedAttrs, indexAllAttrs)
+		user, annotations, metadata            = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
 		name                                   string
 		namespace                              string
-		segmentType                            string
 	)
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
@@ -160,10 +168,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 
 	if namespace == "" && span.Kind() == pdata.SpanKindCLIENT {
 		namespace = "remote"
-	}
-
-	if span.Kind() != pdata.SpanKindSERVER {
-		segmentType = "subsegment"
 	}
 
 	return awsxray.Segment{
@@ -300,7 +304,7 @@ func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
-func makeXRayAttributes(attributes map[string]string, indexedAttrs []string, indexAllAttrs bool) (
+func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
 	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
 		annotations = map[string]interface{}{}
@@ -314,8 +318,34 @@ func makeXRayAttributes(attributes map[string]string, indexedAttrs []string, ind
 		delete(attributes, semconventions.AttributeEnduserID)
 	}
 
-	if len(attributes) == 0 {
+	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {
 		return user, nil, nil
+	}
+
+	defaultMetadata := map[string]interface{}{}
+
+	indexedKeys := map[string]bool{}
+	if !indexAllAttrs {
+		for _, name := range indexedAttrs {
+			indexedKeys[name] = true
+		}
+	}
+
+	if storeResource {
+		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+			key = "otel.resource." + key
+			annoVal := annotationValue(value)
+			indexed := indexAllAttrs || indexedKeys[key]
+			if annoVal != nil && indexed {
+				key = fixAnnotationKey(key)
+				annotations[key] = annoVal
+			} else {
+				metaVal := metadataValue(value)
+				if metaVal != nil {
+					defaultMetadata[key] = metaVal
+				}
+			}
+		})
 	}
 
 	if indexAllAttrs {
@@ -324,26 +354,62 @@ func makeXRayAttributes(attributes map[string]string, indexedAttrs []string, ind
 			annotations[key] = value
 		}
 	} else {
-		defaultMetadata := map[string]interface{}{}
-		indexedKeys := map[string]interface{}{}
-		for _, name := range indexedAttrs {
-			indexedKeys[name] = true
-		}
-
 		for key, value := range attributes {
-			if _, ok := indexedKeys[key]; ok {
+			if indexedKeys[key] {
 				key = fixAnnotationKey(key)
 				annotations[key] = value
 			} else {
 				defaultMetadata[key] = value
 			}
 		}
-		if len(defaultMetadata) > 0 {
-			metadata["default"] = defaultMetadata
-		}
+	}
+
+	if len(defaultMetadata) > 0 {
+		metadata["default"] = defaultMetadata
 	}
 
 	return user, annotations, metadata
+}
+
+func annotationValue(value pdata.AttributeValue) interface{} {
+	switch value.Type() {
+	case pdata.AttributeValueSTRING:
+		return value.StringVal()
+	case pdata.AttributeValueINT:
+		return value.IntVal()
+	case pdata.AttributeValueDOUBLE:
+		return value.DoubleVal()
+	case pdata.AttributeValueBOOL:
+		return value.BoolVal()
+	}
+	return nil
+}
+
+func metadataValue(value pdata.AttributeValue) interface{} {
+	switch value.Type() {
+	case pdata.AttributeValueSTRING:
+		return value.StringVal()
+	case pdata.AttributeValueINT:
+		return value.IntVal()
+	case pdata.AttributeValueDOUBLE:
+		return value.DoubleVal()
+	case pdata.AttributeValueBOOL:
+		return value.BoolVal()
+	case pdata.AttributeValueMAP:
+		converted := map[string]interface{}{}
+		value.MapVal().ForEach(func(key string, value pdata.AttributeValue) {
+			converted[key] = metadataValue(value)
+		})
+		return converted
+	case pdata.AttributeValueARRAY:
+		arrVal := value.ArrayVal()
+		converted := make([]interface{}, arrVal.Len())
+		for i := 0; i < arrVal.Len(); i++ {
+			converted[i] = metadataValue(arrVal.At(i))
+		}
+		return converted
+	}
+	return nil
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines

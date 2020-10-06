@@ -32,11 +32,10 @@ func TestFixedNumberOfTraces(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
 
-	tracerProvider, err := sdktrace.NewProvider()
-	require.NoError(t, err)
+	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTraceProvider(tracerProvider)
+	global.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		NumTraces:   1,
@@ -54,11 +53,10 @@ func TestRateOfSpans(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
 
-	tracerProvider, err := sdktrace.NewProvider()
-	require.NoError(t, err)
+	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTraceProvider(tracerProvider)
+	global.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		Rate:          10,
@@ -83,11 +81,10 @@ func TestUnthrottled(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
 
-	tracerProvider, err := sdktrace.NewProvider()
-	require.NoError(t, err)
+	tracerProvider := sdktrace.NewTracerProvider()
 	sp := sdktrace.NewSimpleSpanProcessor(syncer)
 	tracerProvider.RegisterSpanProcessor(sp)
-	global.SetTraceProvider(tracerProvider)
+	global.SetTracerProvider(tracerProvider)
 
 	cfg := &Config{
 		TotalDuration: 50 * time.Millisecond,
@@ -105,16 +102,21 @@ func TestUnthrottled(t *testing.T) {
 	assert.True(t, len(syncer.spans) > 100, "there should have been more than 100 spans, had %d", len(syncer.spans))
 }
 
-var _ export.SpanSyncer = (*mockSyncer)(nil)
+var _ export.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
-	spans []export.SpanData
+	spans []*export.SpanData
 }
 
-func (m *mockSyncer) ExportSpan(ctx context.Context, spanData *export.SpanData) {
-	m.spans = append(m.spans, *spanData)
+func (m *mockSyncer) ExportSpans(_ context.Context, spanData []*export.SpanData) error {
+	m.spans = append(m.spans, spanData...)
+	return nil
+}
+
+func (m *mockSyncer) Shutdown(context.Context) error {
+	panic("implement me")
 }
 
 func (m *mockSyncer) Reset() {
-	m.spans = []export.SpanData{}
+	m.spans = []*export.SpanData{}
 }
