@@ -78,7 +78,7 @@ func New(
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	expConfig := emf.config.(*Config)
 	dimensionRollupOption := expConfig.DimensionRollupOption
-	hostID, err := emf.metadata.GetHostIdentifier()
+	hostID, err := emf.metadata.GetCollectorIdentifier()
 	logGroup := "/metrics/default"
 	logStream := fmt.Sprintf("otel-stream-%s", hostID)
 	// override log group if customer has specified Resource Attributes service.name or service.namespace

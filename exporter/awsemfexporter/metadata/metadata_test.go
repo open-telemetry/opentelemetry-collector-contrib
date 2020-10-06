@@ -21,39 +21,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetHostIdentifier(t *testing.T) {
+func TestGetCollectorIdentifier(t *testing.T) {
 	s, _ := session.NewSession()
-	metadata := NewMetadata(s, "../testdata/mockcgroup_notexists")
-	_, err := metadata.GetHostIdentifier()
+	metadata := NewMetadata(s, "")
+	_, err := metadata.GetCollectorIdentifier()
+	assert.NotNil(t, err)
+	metadata = NewMetadata(s, "../testdata/mockcgroup_notexists")
+	_, err = metadata.GetCollectorIdentifier()
 	assert.NotNil(t, err)
 }
 
-func TestGetHostIdentifierWithContainerId(t *testing.T) {
+func TestGetCollectorIdentifierWithContainerId(t *testing.T) {
 	s, _ := session.NewSession()
 	metadata := NewMetadata(s, "../testdata/mockcgroup")
 
-	id, err := metadata.GetHostIdentifier()
+	id, err := metadata.GetCollectorIdentifier()
 	assert.Equal(t, "containerIDstart-21301923712841283901283901842132-containerIDend", id)
 	assert.Nil(t, err)
-	id, err = metadata.GetHostIdentifier()
+	id, err = metadata.GetCollectorIdentifier()
 	assert.Equal(t, "containerIDstart-21301923712841283901283901842132-containerIDend", id)
 	assert.Nil(t, err)
 }
 
-func TestGetHostIdentifierWithContainerIdErr(t *testing.T) {
+func TestGetCollectorIdentifierWithContainerIdErr(t *testing.T) {
 	s, _ := session.NewSession()
 	metadata := NewMetadata(s, "../testdata/mockcgroupWithErr")
 
-	id, err := metadata.GetHostIdentifier()
+	id, err := metadata.GetCollectorIdentifier()
 	assert.Equal(t, "", id)
 	assert.Nil(t, err)
-}
-
-func TestGetEC2InstanceID(t *testing.T) {
-	s, _ := session.NewSession()
-	metadata := NewMetadata(s, "")
-
-	id, err := metadata.GetEC2InstanceID()
-	assert.Equal(t, "", id)
-	assert.NotNil(t, err)
 }

@@ -29,8 +29,7 @@ const (
 )
 
 type Metadata interface {
-	GetHostIdentifier() (string, error)
-	GetEC2InstanceID() (string, error)
+	GetCollectorIdentifier() (string, error)
 }
 
 type metadata struct {
@@ -51,11 +50,7 @@ func NewMetadata(s *session.Session, cGroupPath string) Metadata {
 	}
 }
 
-func (m *metadata) isOnEC2() bool {
-	return m.ec2.Available()
-}
-
-func (m *metadata) GetEC2InstanceID() (string, error) {
+func (m *metadata) getEC2InstanceID() (string, error) {
 	instance, err := m.ec2.GetInstanceIdentityDocument()
 	if err != nil {
 		return "", err
@@ -67,21 +62,18 @@ func (m *metadata) getContainerID() (string, error) {
 	return m.docker.getContainerID()
 }
 
-func (m *metadata) GetHostIdentifier() (string, error) {
+func (m *metadata) GetCollectorIdentifier() (string, error) {
 	if m.hostID != "" {
 		return m.hostID, nil
 	}
 	var id string
 	var err error
-	if m.isOnEC2() {
-		id, err = m.GetEC2InstanceID()
-		if err == nil {
-			m.hostID = id
-			return id, nil
-		}
-	}
-	// Get Container ID since it's not on EC2
 	id, err = m.getContainerID()
+	if err == nil {
+		m.hostID = id
+		return id, nil
+	}
+	id, err = m.getEC2InstanceID()
 	if err == nil {
 		m.hostID = id
 		return id, nil
@@ -105,9 +97,6 @@ func (d *DockerHelper) getContainerID() (string, error) {
 	var line string
 	for {
 		line, err = reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			break
-		}
 		if len(line) > containerIDLength {
 			startIndex := len(line) - containerIDLength
 			containerID = line[startIndex:]
@@ -116,9 +105,6 @@ func (d *DockerHelper) getContainerID() (string, error) {
 		if err == io.EOF {
 			break
 		}
-	}
-	if err != io.EOF {
-		return "", err
 	}
 	return containerID, nil
 }

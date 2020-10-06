@@ -38,11 +38,7 @@ type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) GetHostIdentifier() (string, error) {
-	return "test-host-id", nil
-}
-
-func (m *mockMetadata) GetEC2InstanceID() (string, error) {
+func (m *mockMetadata) GetCollectorIdentifier() (string, error) {
 	return "test-host-id", nil
 }
 
