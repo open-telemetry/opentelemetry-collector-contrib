@@ -70,13 +70,14 @@ type ExtractConfig struct {
 // FieldExtractConfig allows specifying an extraction rule to extract a value from exactly one field.
 //
 // The field accepts a list FilterExtractConfig map. The map accepts three keys
-//     tag-name, key and regex
+//     tag_name, key and regex
 //
-// - tag-name represents the name of the tag that will be added to the span.
+// - tag_name represents the name of the tag that will be added to the span.
 //   When not specified a default tag name will be used of the format:
-//       k8s.<annotation>.<annotation key>
-//   For example, if tag-name is not specified and the key is git_sha,
-//   then the span name will be `k8s.annotation.deployment.git_sha`.
+//       k8s.pod.annotations.<annotation key>
+//       k8s.pod.labels.<label key>
+//   For example, if tag_name is not specified and the key is git_sha,
+//   then the attribute name will be `k8s.pod.annotations.git_sha`.
 //
 // - key represents the annotation name. This must exactly match an annotation name.
 //
