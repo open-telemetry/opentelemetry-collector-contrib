@@ -36,7 +36,7 @@ class TestJaegerSpanExporter(unittest.TestCase):
             is_remote=False,
         )
 
-        self._test_span = trace.Span("test_span", context=context)
+        self._test_span = trace._Span("test_span", context=context)
         self._test_span.start()
         self._test_span.end()
 
@@ -187,7 +187,7 @@ class TestJaegerSpanExporter(unittest.TestCase):
         ]
 
         otel_spans = [
-            trace.Span(
+            trace._Span(
                 name=span_names[0],
                 context=span_context,
                 parent=parent_context,
@@ -195,10 +195,12 @@ class TestJaegerSpanExporter(unittest.TestCase):
                 links=(link,),
                 kind=trace_api.SpanKind.CLIENT,
             ),
-            trace.Span(
+            trace._Span(
                 name=span_names[1], context=parent_context, parent=None
             ),
-            trace.Span(name=span_names[2], context=other_context, parent=None),
+            trace._Span(
+                name=span_names[2], context=other_context, parent=None
+            ),
         ]
 
         otel_spans[0].start(start_time=start_times[0])
