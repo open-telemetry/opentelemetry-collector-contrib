@@ -28,6 +28,9 @@ import (
 
 // EncodeMetrics encodes an OpenTelemetry metrics slice, and instrumentation
 // library information, as one or more metricset lines, writing to w.
+//
+// TODO(axw) otlpLibrary is currently not used. We should consider recording
+// it as metadata.
 func EncodeMetrics(otlpMetrics pdata.MetricSlice, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) (dropped int, _ error) {
 	var metricsets metricsets
 	for i := 0; i < otlpMetrics.Len(); i++ {
