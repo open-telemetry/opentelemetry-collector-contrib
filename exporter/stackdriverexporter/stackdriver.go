@@ -54,9 +54,8 @@ func (*metricsExporter) Name() string {
 	return name
 }
 
-func (te *traceExporter) Shutdown(context.Context) error {
-	te.texporter.Flush()
-	return nil
+func (te *traceExporter) Shutdown(ctx context.Context) error {
+	return te.texporter.Shutdown(ctx)
 }
 
 func (me *metricsExporter) Shutdown(context.Context) error {
@@ -200,7 +199,6 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
-	goodSpans := 0
 	spans := make([]*traceexport.SpanData, 0, numSpans)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -212,12 +210,11 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 		}
 	}
 
-	for _, span := range spans {
-		te.texporter.ExportSpan(ctx, span)
-		goodSpans++
+	err := te.texporter.ExportSpans(ctx, spans)
+	if err != nil {
+		errs = append(errs, err)
 	}
-
-	return numSpans - goodSpans, componenterror.CombineErrors(errs)
+	return numSpans - len(spans), componenterror.CombineErrors(errs)
 }
 
 func numPoints(md consumerdata.MetricsData) int {

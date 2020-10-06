@@ -77,7 +77,7 @@ func (w worker) simulateTraces() {
 
 		limiter.Wait(context.Background())
 
-		opt := trace.WithEndTime(time.Now().Add(fakeSpanDuration))
+		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
 		child.End(opt)
 		sp.End(opt)
 
