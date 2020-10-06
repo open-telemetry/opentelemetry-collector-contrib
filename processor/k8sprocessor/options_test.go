@@ -497,14 +497,14 @@ func Test_extractFieldRules(t *testing.T) {
 	}{
 		{
 			"default",
-			args{"field", []FieldExtractConfig{
+			args{"labels", []FieldExtractConfig{
 				{
 					Key: "key",
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "k8s.field.key",
+					Name: "k8s.pod.labels.key",
 					Key:  "key",
 				},
 			},
