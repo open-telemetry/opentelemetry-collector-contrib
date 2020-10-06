@@ -356,7 +356,7 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 		}
 	} else {
 		for key, value := range attributes {
-			if _, ok := indexedKeys[key]; ok {
+			if indexedKeys[key] {
 				key = fixAnnotationKey(key)
 				annotations[key] = value
 			} else {
