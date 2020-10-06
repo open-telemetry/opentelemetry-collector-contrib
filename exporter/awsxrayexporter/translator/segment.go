@@ -324,33 +324,42 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 
 	defaultMetadata := map[string]interface{}{}
 
+	var indexedKeys map[string]interface{}
+	if !indexAllAttrs {
+		indexedKeys = map[string]interface{}{}
+		for _, name := range indexedAttrs {
+			indexedKeys[name] = true
+		}
+	}
+
+	if storeResource {
+		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+			key = "otel.resource." + key
+			annoVal := annotationValue(value)
+			var indexed bool
+			if indexAllAttrs {
+				indexed = true
+			} else {
+				_, indexed = indexedKeys[key]
+			}
+			if annoVal != nil && indexed {
+				key = fixAnnotationKey(key)
+				annotations[key] = annoVal
+			} else {
+				metaVal := metadataValue(value)
+				if metaVal != nil {
+					defaultMetadata[key] = metaVal
+				}
+			}
+		})
+	}
+
 	if indexAllAttrs {
 		for key, value := range attributes {
 			key = fixAnnotationKey(key)
 			annotations[key] = value
 		}
-
-		if storeResource {
-			resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
-				key = "otel.resource." + key
-				annoVal := annotationValue(value)
-				if annoVal != nil {
-					key = fixAnnotationKey(key)
-					annotations[key] = annoVal
-				} else {
-					metaVal := metadataValue(value)
-					if metaVal != nil {
-						defaultMetadata[key] = metaVal
-					}
-				}
-			})
-		}
 	} else {
-		indexedKeys := map[string]interface{}{}
-		for _, name := range indexedAttrs {
-			indexedKeys[name] = true
-		}
-
 		for key, value := range attributes {
 			if _, ok := indexedKeys[key]; ok {
 				key = fixAnnotationKey(key)
@@ -358,23 +367,6 @@ func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, s
 			} else {
 				defaultMetadata[key] = value
 			}
-		}
-
-		if storeResource {
-			resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
-				key = "otel.resource." + key
-				annoVal := annotationValue(value)
-				_, indexed := indexedKeys[key]
-				if annoVal != nil && indexed {
-					key = fixAnnotationKey(key)
-					annotations[key] = annoVal
-				} else {
-					metaVal := metadataValue(value)
-					if metaVal != nil {
-						defaultMetadata[key] = metaVal
-					}
-				}
-			})
 		}
 	}
 
@@ -410,7 +402,7 @@ func metadataValue(value pdata.AttributeValue) interface{} {
 	case pdata.AttributeValueBOOL:
 		return value.BoolVal()
 	case pdata.AttributeValueMAP:
-		converted := make(map[string]interface{})
+		converted := map[string]interface{}{}
 		value.MapVal().ForEach(func(key string, value pdata.AttributeValue) {
 			converted[key] = metadataValue(value)
 		})
