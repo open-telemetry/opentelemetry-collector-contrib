@@ -32,6 +32,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func init() {
@@ -234,6 +236,61 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
 	assert.NotNil(t, expCfg.logger)
+}
+
+func TestNewExporterWithMetricDeclarations(t *testing.T) {
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = defaultRetryCount
+	expCfg.LogGroupName = "test-logGroupName"
+	expCfg.LogStreamName = "test-logStreamName"
+	mds := []*MetricDeclaration{
+		{
+			MetricNameSelectors: []string{"a", "b"},
+		},
+		{
+			MetricNameSelectors: []string{"c", "d"},
+		},
+		{
+			MetricNameSelectors: nil,
+		},
+		{
+			Dimensions: [][]string{
+				{"foo"},
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+			},
+			MetricNameSelectors: []string{"a"},
+		},
+	}
+	expCfg.MetricDeclarations = mds
+
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+	exp, err := New(expCfg, component.ExporterCreateParams{Logger: logger})
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	emfExporter := exp.(*emfExporter)
+	config := emfExporter.config.(*Config)
+	// Invalid metric declaration should be filtered out
+	assert.Equal(t, 3, len(config.MetricDeclarations))
+	// Invalid dimensions (> 10 dims) should be filtered out
+	assert.Equal(t, 1, len(config.MetricDeclarations[2].Dimensions))
+
+	// Test output warning logs
+	expectedLogs := []observer.LoggedEntry{
+		{
+			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric declaration. Error: Invalid metric declaration: no metric name selectors defined."},
+			Context: []zapcore.Field{},
+		},
+		{
+			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: > 10 dimensions specified."},
+			Context: []zapcore.Field{zap.String("dimensions", "a,b,c,d,e,f,g,h,i,j,k")},
+		},
+	}
+	assert.Equal(t, 2, logs.Len())
+	assert.Equal(t, expectedLogs, logs.AllUntimed())
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {

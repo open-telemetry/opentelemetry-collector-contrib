@@ -58,6 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			Region:                "us-west-2",
 			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+			MetricDeclarations:    []*MetricDeclaration{},
 		})
 
 	r2 := cfg.Exporters["awsemf/resource_attr_to_label"].(*Config)

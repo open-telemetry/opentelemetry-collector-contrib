@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"sort"
 	"strings"
@@ -255,6 +256,110 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 	assert.Equal(t, "myServiceNS", met.Measurements[0].Namespace)
 }
 
+func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName:      "myServiceName",
+				conventions.AttributeServiceNamespace: "myServiceNS",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	ilm.InstrumentationLibrary().InitEmpty()
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+
+	testCases := []struct {
+		testName            string
+		metricNameSelectors []string
+		dimensions       	[][]string
+		numMeasurements		int
+	}{
+		{
+			"With match",
+			[]string{"spanCounter"},
+			[][]string{
+				{"spanName", "isItAnError"},
+				{OTellibDimensionKey, "spanName"},
+				{OTellibDimensionKey, "isItAnError"},
+				{OTellibDimensionKey},
+			},
+			1,
+		},
+		{
+			"No match",
+			[]string{"invalid"},
+			nil,
+			0,
+		},
+	}
+	logger := zap.NewNop()
+
+	for _, tc := range testCases {
+		m := MetricDeclaration{
+			Dimensions: [][]string{{"isItAnError", "spanName"}},
+			MetricNameSelectors: tc.metricNameSelectors,
+		}
+		config := &Config{
+			Namespace: "",
+			DimensionRollupOption: ZeroAndSingleDimensionRollup,
+			MetricDeclarations: []*MetricDeclaration{&m},
+		}
+		t.Run(tc.testName, func(t *testing.T) {
+			err := m.Init(logger)
+			assert.Nil(t, err)
+			cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+			assert.Equal(t, 0, totalDroppedMetrics)
+			assert.Equal(t, 1, len(cwm))
+			assert.NotNil(t, cwm)
+
+			assert.Equal(t, tc.numMeasurements, len(cwm[0].Measurements))
+
+			if tc.numMeasurements > 0 {
+				dimensions := cwm[0].Measurements[0].Dimensions
+				assertDimsEqual(t, tc.dimensions, dimensions)
+			}
+		})
+	}
+}
+
 func TestTranslateCWMetricToEMF(t *testing.T) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
@@ -275,9 +380,39 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 		Fields:       fields,
 		Measurements: []CwMeasurement{cwMeasurement},
 	}
-	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met})
+	logger := zap.NewNop()
+	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
 
 	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
+}
+
+func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
+	timestamp := int64(1596151098037)
+	fields := make(map[string]interface{})
+	fields["OTelLib"] = "cloudwatch-otel"
+	fields["spanName"] = "test"
+	fields["spanCounter"] = 0
+
+	met := &CWMetrics{
+		Timestamp:    timestamp,
+		Fields:       fields,
+		Measurements: nil,
+	}
+	obs, logs := observer.New(zap.WarnLevel)
+	logger := zap.New(obs)
+	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
+	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
+
+	assert.Equal(t, expected, *inputLogEvent[0].InputLogEvent.Message)
+
+	// Check logged warning message
+	fieldsStr, _ := json.Marshal(fields)
+	expectedLogs := []observer.LoggedEntry{{
+		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric due to no matching metric declarations"},
+		Context: []zapcore.Field{zap.String("labels", string(fieldsStr))},
+	}}
+	assert.Equal(t, 1, logs.Len())
+	assert.Equal(t, expectedLogs, logs.AllUntimed())
 }
 
 func TestGetCWMetrics(t *testing.T) {
@@ -827,7 +962,11 @@ func TestGetCWMetrics(t *testing.T) {
 func TestBuildCWMetric(t *testing.T) {
 	namespace := "Namespace"
 	instrLibName := "InstrLibName"
-	OTelLib := "OTelLib"
+	OTelLib := OTellibDimensionKey
+	config := &Config{
+		Namespace:             "",
+		DimensionRollupOption: "",
+	}
 	metricSlice := []map[string]string{
 		{
 			"Name": "foo",
@@ -847,7 +986,7 @@ func TestBuildCWMetric(t *testing.T) {
 		})
 		dp.SetValue(int64(-17))
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
@@ -874,7 +1013,7 @@ func TestBuildCWMetric(t *testing.T) {
 		})
 		dp.SetValue(0.3)
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
@@ -903,7 +1042,7 @@ func TestBuildCWMetric(t *testing.T) {
 		})
 		dp.SetValue(int64(-17))
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
@@ -932,7 +1071,7 @@ func TestBuildCWMetric(t *testing.T) {
 		})
 		dp.SetValue(0.3)
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
@@ -962,7 +1101,7 @@ func TestBuildCWMetric(t *testing.T) {
 		dp.SetBucketCounts([]uint64{1, 2, 3})
 		dp.SetExplicitBounds([]float64{1, 2, 3})
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
@@ -990,40 +1129,69 @@ func TestBuildCWMetric(t *testing.T) {
 		dp := pdata.NewIntHistogramDataPoint()
 		dp.InitEmpty()
 
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, config)
 		assert.Nil(t, cwMetric)
 	})
-}
 
-func TestCreateDimensions(t *testing.T) {
-	OTelLib := "OTelLib"
+	// Test rollup options and labels
 	testCases := []struct {
-		testName string
-		labels   map[string]string
-		dims     [][]string
+		testName 				string
+		labels 					map[string]string
+		dimensionRollupOption 	string
+		expectedDims 			[][]string
 	}{
 		{
-			"single label",
+			"Single label w/ no rollup",
 			map[string]string{"a": "foo"},
+			"",
 			[][]string{
 				{"a", OTelLib},
+			},
+		},
+		{
+			"Single label w/ single rollup",
+			map[string]string{"a": "foo"},
+			SingleDimensionRollupOnly,
+			[][]string{
+				{"a", OTelLib},
+				{OTelLib, "a"},
+			},
+		},
+		{
+			"Single label w/ zero + single rollup",
+			map[string]string{"a": "foo"},
+			ZeroAndSingleDimensionRollup,
+			[][]string{
+				{"a", OTelLib},
+				{OTelLib, "a"},
 				{OTelLib},
 			},
 		},
 		{
-			"multiple labels",
-			map[string]string{"a": "foo", "b": "bar"},
+			"Multiple label w/ no rollup",
+			map[string]string{
+				"a": "foo",
+				"b": "bar",
+				"c": "car",
+			},
+			"",
 			[][]string{
-				{"a", "b", OTelLib},
-				{OTelLib},
+				{"a", "b", "c", OTelLib},
+			},
+		},
+		{
+			"Multiple label w/ rollup",
+			map[string]string{
+				"a": "foo",
+				"b": "bar",
+				"c": "car",
+			},
+			ZeroAndSingleDimensionRollup,
+			[][]string{
+				{"a", "b", "c", OTelLib},
 				{OTelLib, "a"},
 				{OTelLib, "b"},
-			},
-		},
-		{
-			"no labels",
-			map[string]string{},
-			[][]string{
+				{OTelLib, "c"},
 				{OTelLib},
 			},
 		},
@@ -1034,20 +1202,376 @@ func TestCreateDimensions(t *testing.T) {
 			dp := pdata.NewIntDataPoint()
 			dp.InitEmpty()
 			dp.LabelsMap().InitFromMap(tc.labels)
-			dimensions, fields := createDimensions(dp, OTelLib, ZeroAndSingleDimensionRollup)
+			dp.SetValue(int64(-17))
+			config = &Config{
+				Namespace:             namespace,
+				DimensionRollupOption: tc.dimensionRollupOption,
+			}
 
-			assertDimsEqual(t, tc.dims, dimensions)
-
-			expectedFields := make(map[string]interface{})
+			expectedFields := map[string]interface{}{
+				OTellibDimensionKey: OTelLib,
+				"foo":               int64(-17),
+			}
 			for k, v := range tc.labels {
 				expectedFields[k] = v
 			}
-			expectedFields[OTellibDimensionKey] = OTelLib
 
-			assert.Equal(t, expectedFields, fields)
+			cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, OTelLib, config)
+
+			// Check fields
+			assert.Equal(t, expectedFields, cwMetric.Fields)
+
+			// Check CW measurement
+			assert.Equal(t, 1, len(cwMetric.Measurements))
+			cwMeasurement := cwMetric.Measurements[0]
+			assert.Equal(t, namespace, cwMeasurement.Namespace)
+			assert.Equal(t, metricSlice, cwMeasurement.Metrics)
+			assertDimsEqual(t, tc.expectedDims, cwMeasurement.Dimensions)
 		})
 	}
+}
 
+func TestBuildCWMetricWithMetricDeclarations(t *testing.T) {
+	namespace := "Namespace"
+	OTelLib := OTellibDimensionKey
+	instrumentationLibName := "cloudwatch-otel"
+	metricName := "metric1"
+	metricValue := int64(-17)
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName(metricName)
+	metricSlice := []map[string]string{{"Name": metricName}}
+	testCases := []struct {
+		testName 				string
+		labels 					map[string]string
+		metricDeclarations 		[]*MetricDeclaration
+		dimensionRollupOption 	string
+		expectedDims 			[][][]string
+	}{
+		{
+			"Single label w/ no rollup",
+			map[string]string{"a": "foo"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{{{"a"}}},
+		},
+		{
+			"Single label + OTelLib w/ no rollup",
+			map[string]string{"a": "foo"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", OTelLib}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{{{"a", OTelLib}}},
+		},
+		{
+			"Single label w/ single rollup",
+			map[string]string{"a": "foo"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			SingleDimensionRollupOnly,
+			[][][]string{{{"a"}, {"a", OTelLib}}},
+		},
+		{
+			"Single label w/ zero/single rollup",
+			map[string]string{"a": "foo"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{{{"a"}, {"a", OTelLib}, {OTelLib}}},
+		},
+		{
+			"No matching metric name",
+			map[string]string{"a": "foo"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{"invalid"},
+				},
+			},
+			"",
+			nil,
+		},
+		{
+			"multiple labels w/ no rollup",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{{{"a"}}},
+		},
+		{
+			"multiple labels w/ rollup",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{{
+				{"a"},
+				{OTelLib, "a"},
+				{OTelLib, "b"},
+				{OTelLib},
+			}},
+		},
+		{
+			"multiple labels + multiple dimensions w/ no rollup",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{{{"a", "b"}, {"b"}}},
+		},
+		{
+			"multiple labels + multiple dimensions + OTelLib w/ no rollup",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b", OTelLib}, {OTelLib}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{{{"a", "b"}, {"b", OTelLib}, {OTelLib}}},
+		},
+		{
+			"multiple labels + multiple dimensions w/ rollup",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{{
+				{"a", "b"},
+				{"b"},
+				{OTelLib, "a"},
+				{OTelLib, "b"},
+				{OTelLib},
+			}},
+		},
+		{
+			"multiple labels, multiple dimensions w/ invalid dimension",
+			map[string]string{"a": "foo", "b": "bar"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b", "c"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{{
+				{"b"},
+				{OTelLib, "a"},
+				{OTelLib, "b"},
+				{OTelLib},
+			}},
+		},
+		{
+			"multiple labels, multiple dimensions w/ missing dimension",
+			map[string]string{"a": "foo", "b": "bar", "c": "car"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{{
+				{"a", "b"},
+				{"b"},
+				{OTelLib, "a"},
+				{OTelLib, "b"},
+				{OTelLib, "c"},
+				{OTelLib},
+			}},
+		},
+		{
+			"multiple metric declarations w/ no rollup",
+			map[string]string{"a": "foo", "b": "bar", "c": "car"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "c"}, {"b"}, {"c"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "d"}, {"b", "c"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{
+				{{"a", "b"}, {"b"}},
+				{{"a", "c"}, {"b"}, {"c"}},
+				{{"b", "c"}},
+			},
+		},
+		{
+			"multiple metric declarations w/ rollup",
+			map[string]string{"a": "foo", "b": "bar", "c": "car"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "c"}, {"b"}, {"c"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "d"}, {"b", "c"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			[][][]string{
+				{
+					{"a", "b"},
+					{"b"},
+					{OTelLib, "a"},
+					{OTelLib, "b"},
+					{OTelLib, "c"},
+					{OTelLib},
+				},
+				{
+					{"a", "c"},
+					{"b"},
+					{"c"},
+					{OTelLib, "a"},
+					{OTelLib, "b"},
+					{OTelLib, "c"},
+					{OTelLib},
+				},
+				{
+					{"b", "c"},
+					{OTelLib, "a"},
+					{OTelLib, "b"},
+					{OTelLib, "c"},
+					{OTelLib},
+				},
+			},
+		},
+		{
+			"remove measurements with no dimensions",
+			map[string]string{"a": "foo", "b": "bar", "c": "car"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "d"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			[][][]string{
+				{{"a", "b"}, {"b"}},
+			},
+		},
+		{
+			"multiple declarations w/ no dimensions",
+			map[string]string{"a": "foo", "b": "bar", "c": "car"},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "e"}, {"d"}},
+					MetricNameSelectors: []string{metricName},
+				},
+				{
+					Dimensions: [][]string{{"a", "d"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			"",
+			nil,
+		},
+		{
+			"no labels",
+			map[string]string{},
+			[]*MetricDeclaration{
+				{
+					Dimensions: [][]string{{"a", "b", "c"}, {"b"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			ZeroAndSingleDimensionRollup,
+			nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			dp := pdata.NewIntDataPoint()
+			dp.InitEmpty()
+			dp.LabelsMap().InitFromMap(tc.labels)
+			dp.SetValue(metricValue)
+			config := &Config{
+				Namespace: namespace,
+				DimensionRollupOption: tc.dimensionRollupOption,
+				MetricDeclarations: tc.metricDeclarations,
+			}
+			logger := zap.NewNop()
+			for _, m := range tc.metricDeclarations {
+				err := m.Init(logger)
+				assert.Nil(t, err)
+			}
+
+			expectedFields := map[string]interface{}{
+				OTellibDimensionKey: instrumentationLibName,
+				metricName: int64(-17),
+			}
+			for k, v := range tc.labels {
+				expectedFields[k] = v
+			}
+
+			cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrumentationLibName, config)
+			
+			// Check fields
+			assert.Equal(t, expectedFields, cwMetric.Fields)
+
+			// Check CW measurement
+			assert.Equal(t, len(tc.expectedDims), len(cwMetric.Measurements))
+			for i, dimensions := range tc.expectedDims {
+				cwMeasurement := cwMetric.Measurements[i]
+				assert.Equal(t, namespace, cwMeasurement.Namespace)
+				assert.Equal(t, metricSlice, cwMeasurement.Metrics)
+				assertDimsEqual(t, dimensions, cwMeasurement.Dimensions)
+			}
+		})
+	}
 }
 
 func TestCalculateRate(t *testing.T) {
@@ -1523,10 +2047,11 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 		Fields:       fields,
 		Measurements: []CwMeasurement{cwMeasurement},
 	}
+	logger := zap.NewNop()
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		TranslateCWMetricToEMF([]*CWMetrics{met})
+		TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
 	}
 }
 
