@@ -40,8 +40,8 @@ const (
 	maximumLogEventsPerPut = 10000
 
 	// DimensionRollupOptions
-	ZeroAndSingleDimensionRollup = 0
-	SingleDimensionRollupOnly    = 1
+	ZeroAndSingleDimensionRollup = "ZeroAndSingleDimensionRollup"
+	SingleDimensionRollupOnly    = "SingleDimensionRollupOnly"
 
 	FakeMetricValue = 0
 )
@@ -76,7 +76,7 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption int) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	namespace := defaultNameSpace
 	totalDroppedMetrics := 0
@@ -145,7 +145,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	return ples
 }
 
-func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimensionRollupOption int) []*CWMetrics {
+func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimensionRollupOption string) []*CWMetrics {
 	var result []*CWMetrics
 
 	// metric measure data from OT
@@ -236,7 +236,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 	return result
 }
 
-func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption int) *CWMetrics {
+func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption string) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -296,7 +296,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	return cwMetric
 }
 
-func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption int) *CWMetrics {
+func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption string) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -401,7 +401,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	return metricRate
 }
 
-func dimensionRollup(dimensionRollupOption int, originalDimensionSlice []string) [][]string {
+func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string) [][]string {
 	var rollupDimensionArray [][]string
 	dimensionZero := []string{OtlibDimensionKey}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup {

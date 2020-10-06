@@ -51,7 +51,7 @@ func createDefaultConfig() configmodels.Exporter {
 		ProxyAddress:          "",
 		Region:                "",
 		RoleARN:               "",
-		DimensionRollupOption: 0,
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 	}
 }
 

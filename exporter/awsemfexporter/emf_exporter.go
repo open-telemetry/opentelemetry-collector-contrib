@@ -170,7 +170,7 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption int) ([]*LogEvent, int, string) {
+func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption string) ([]*LogEvent, int, string) {
 	rms := metric.ResourceMetrics()
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
