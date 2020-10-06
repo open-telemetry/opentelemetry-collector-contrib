@@ -44,6 +44,7 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		LogGroupName:          "",
 		LogStreamName:         "",
+		Namespace:             "",
 		Endpoint:              "",
 		RequestTimeoutSeconds: 30,
 		MaxRetries:            1,

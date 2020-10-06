@@ -76,12 +76,11 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
-	namespace := defaultNameSpace
 	totalDroppedMetrics := 0
 
-	if !rm.Resource().IsNil() {
+	if len(namespace) == 0 && !rm.Resource().IsNil() {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueSTRING && serviceNamespace.Type() == pdata.AttributeValueSTRING {
@@ -91,6 +90,10 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 		} else if svcNsOk && serviceNamespace.Type() == pdata.AttributeValueSTRING {
 			namespace = serviceNamespace.StringVal()
 		}
+	}
+
+	if len(namespace) == 0 {
+		namespace = defaultNameSpace
 	}
 
 	ilms := rm.InstrumentationLibraryMetrics()

@@ -76,9 +76,8 @@ func (m *metadata) GetCollectorIdentifier() (string, error) {
 	id, err = m.getEC2InstanceID()
 	if err == nil {
 		m.hostID = id
-		return id, nil
 	}
-	return "", err
+	return id, err
 }
 
 type DockerHelper struct {
