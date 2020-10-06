@@ -1,0 +1,16 @@
+**Under development - not ready for use.**
+
+# Zookeeper Receiver
+
+The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mntr` command.
+
+## Configuration
+
+Example configuration.
+
+```yaml
+receivers:
+  zookeeper:
+    endpoint: "localhost:2181"
+    collection_interval: 20s
+```
