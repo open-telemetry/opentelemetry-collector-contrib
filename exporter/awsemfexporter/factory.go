@@ -44,14 +44,15 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		LogGroupName:          "",
 		LogStreamName:         "",
+		Namespace:             "",
 		Endpoint:              "",
 		RequestTimeoutSeconds: 30,
-		MaxRetries:            5,
+		MaxRetries:            1,
 		NoVerifySSL:           false,
 		ProxyAddress:          "",
 		Region:                "",
-		ResourceARN:           "",
 		RoleARN:               "",
+		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 	}
 }
 

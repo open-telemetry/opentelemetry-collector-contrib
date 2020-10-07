@@ -8,7 +8,6 @@ exporters:
   awsemf:
   awsemf/1:
     region: 'us-west-2'
-    resource_arn: "arn:aws:ec2:us-east1:123456789:instance/i-293hiuhe0u"
     role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
 
 service:
