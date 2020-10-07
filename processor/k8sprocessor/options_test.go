@@ -198,6 +198,7 @@ func TestWithExtractLabels(t *testing.T) {
 func TestWithExtractMetadata(t *testing.T) {
 	p := &kubernetesprocessor{}
 	assert.NoError(t, WithExtractMetadata()(p))
+	// Default
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
@@ -205,8 +206,9 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Deployment)
 	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
-	assert.True(t, p.rules.HostName)
-	assert.True(t, p.rules.ContainerName)
+	// Optional
+	assert.False(t, p.rules.HostName)
+	assert.False(t, p.rules.ContainerName)
 
 	p = &kubernetesprocessor{}
 	err := WithExtractMetadata("randomfield")(p)
