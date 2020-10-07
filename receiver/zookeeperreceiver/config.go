@@ -23,7 +23,8 @@ import (
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 
-	// Endpoint to connect to collect metrics.
+	// Endpoint to connect to collect metrics. Example: localhost:1234, 10.10.10.10:1234.
+	// Default is ":2181".
 	Endpoint string `mapstructure:"endpoint"`
 
 	// Timeout within which the connection should be established.
