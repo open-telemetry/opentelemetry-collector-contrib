@@ -71,9 +71,7 @@ func WithExtractMetadata(fields ...string) Option {
 		if len(fields) == 0 {
 			fields = []string{
 				metadataCluster,
-				metadataContainerNames,
 				metadataDeployment,
-				metadataHostName,
 				metadataNamespace,
 				metadataNode,
 				metadataPodName,
