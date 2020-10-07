@@ -1,0 +1,62 @@
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package sumologicexporter
+
+import (
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
+)
+
+func TestType(t *testing.T) {
+	factory := NewFactory()
+	pType := factory.Type()
+	assert.Equal(t, pType, configmodels.Type("sumologic"))
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	qs := exporterhelper.CreateDefaultQueueSettings()
+	qs.Enabled = false
+
+	assert.Equal(t, cfg, &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			NameVal: typeStr,
+			TypeVal: typeStr,
+		},
+		Compress:           true,
+		CompressEncoding:   "gzip",
+		MaxRequestBodySize: 20_971_520,
+		LogFormat:          "json",
+		MetricFormat:       "carbon2",
+		SourceCategory:     "",
+		SourceName:         "",
+		SourceHost:         "",
+		Client:             "otelcol",
+
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 55 * time.Second,
+		},
+		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings: qs,
+	})
+	assert.NoError(t, configcheck.ValidateConfig(cfg))
+}
