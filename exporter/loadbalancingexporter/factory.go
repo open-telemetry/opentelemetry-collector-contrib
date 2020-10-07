@@ -46,5 +46,5 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 func createTraceExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TraceExporter, error) {
-	return newExporter(params.Logger, cfg)
+	return newExporter(params, cfg)
 }

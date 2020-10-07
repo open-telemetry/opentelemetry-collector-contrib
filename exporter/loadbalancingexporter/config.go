@@ -21,4 +21,5 @@ import (
 // Config defines configuration for the exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
+	template                      configmodels.Exporter `mapstructure:"template"`
 }
