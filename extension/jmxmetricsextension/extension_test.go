@@ -17,8 +17,9 @@ package jmxmetricsextension
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 )
@@ -28,12 +29,65 @@ func TestExtension(t *testing.T) {
 	config := &config{}
 
 	extension := newJmxMetricsExtension(logger, config)
-	assert.NotNil(t, extension)
-	assert.Same(t, logger, extension.logger)
-	assert.Same(t, config, extension.config)
+	require.NotNil(t, extension)
+	require.Same(t, logger, extension.logger)
+	require.Same(t, config, extension.config)
 
-	assert.Nil(t, extension.Start(context.Background(), componenttest.NewNopHost()))
-	assert.Nil(t, extension.Shutdown(context.Background()))
-	assert.Nil(t, extension.Ready())
-	assert.Nil(t, extension.NotReady())
+	require.Nil(t, extension.Start(context.Background(), componenttest.NewNopHost()))
+	require.Nil(t, extension.Ready())
+	require.Nil(t, extension.Shutdown(context.Background()))
+	require.Nil(t, extension.NotReady())
+}
+
+func TestBuildJmxMetricGathererOtlpConfig(t *testing.T) {
+	logger := zap.NewNop()
+	config := &config{
+		ServiceURL:    "myserviceurl",
+		TargetSystem:  "mytargetsystem",
+		GroovyScript:  "mygroovyscript",
+		Interval:      123 * time.Second,
+		Exporter:      "otlp",
+		OtlpEndpoint:  "myotlpendpoint",
+		OtlpTimeout:   234 * time.Second,
+		PromethusHost: "myprometheushost",
+		PromethusPort: 12345,
+	}
+
+	expectedConfig := `otel.jmx.service.url = myserviceurl
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.target.system = mytargetsystem
+otel.exporter = otlp
+otel.otlp.endpoint = myotlpendpoint
+otel.otlp.metric.timeout = 234000
+`
+	extension := newJmxMetricsExtension(logger, config)
+	jmxConfig, err := extension.buildJmxMetricGathererConfig()
+	require.NoError(t, err)
+	require.Equal(t, expectedConfig, jmxConfig)
+}
+
+func TestBuildJmxMetricGathererPrometheusConfig(t *testing.T) {
+	logger := zap.NewNop()
+	config := &config{
+		ServiceURL:    "myserviceurl",
+		GroovyScript:  "mygroovyscript",
+		Interval:      123 * time.Second,
+		Exporter:      "prometheus",
+		OtlpEndpoint:  "myotlpendpoint",
+		OtlpTimeout:   234 * time.Second,
+		PromethusHost: "myprometheushost",
+		PromethusPort: 12345,
+	}
+
+	expectedConfig := `otel.jmx.service.url = myserviceurl
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.groovy.script = mygroovyscript
+otel.exporter = prometheus
+otel.prometheus.host = myprometheushost
+otel.prometheus.port = 12345
+`
+	extension := newJmxMetricsExtension(logger, config)
+	jmxConfig, err := extension.buildJmxMetricGathererConfig()
+	require.NoError(t, err)
+	require.Equal(t, expectedConfig, jmxConfig)
 }

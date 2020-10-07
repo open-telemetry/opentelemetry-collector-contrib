@@ -16,6 +16,7 @@ package jmxmetricsextension
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -23,20 +24,33 @@ import (
 
 type config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
+	// The path for the JMX Metric Gatherer uber jar (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
+	JarPath string `mapstructure:"jar_path"`
 	// The target JMX service url.
 	ServiceURL string `mapstructure:"service_url"`
-	// The script for the metric gatherer to run on the configured interval.
+	// The target system for the metric gatherer whose built in groovy script to run.  Cannot be set with GroovyScript.
+	TargetSystem string `mapstructure:"target_system"`
+	// The script for the metric gatherer to run on the configured interval.  Cannot be set with TargetSystem.
 	GroovyScript string `mapstructure:"groovy_script"`
-	// The duration in between groovy script invocations and metric exports.  Will be converted to milliseconds.
+	// The duration in between groovy script invocations and metric exports (10 seconds by default).
+	// Will be converted to milliseconds.
 	Interval time.Duration `mapstructure:"interval"`
 	// The JMX username
 	Username string `mapstructure:"username"`
 	// The JMX password
 	Password string `mapstructure:"password"`
-	// The otlp exporter timeout.  Will be converted to milliseconds.
+	// The metric exporter to use ("otlp" or "prometheus", "otlp" by default).
+	Exporter string `mapstructure:"exporter"`
+	// The Otlp Receiver endpoint to send metrics to ("localhost:55680" by default).
+	OtlpEndpoint string `mapstructure:"otlp_endpoint"`
+	// The Otlp exporter timeout (5 seconds by default).  Will be converted to milliseconds.
 	OtlpTimeout time.Duration `mapstructure:"otlp_timeout"`
 	// The headers to include in otlp metric submission requests.
 	OtlpHeaders map[string]string `mapstructure:"otlp_headers"`
+	// The Prometheus Host
+	PromethusHost string `mapstructure:"prometheus_host"`
+	// The Prometheus Port
+	PromethusPort int `mapstructure:"prometheus_port"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
@@ -60,15 +74,15 @@ func (c *config) validate() error {
 	if c.ServiceURL == "" {
 		missingFields = append(missingFields, "`service_url`")
 	}
-	if c.GroovyScript == "" {
-		missingFields = append(missingFields, "`groovy_script`")
+	if c.TargetSystem == "" && c.GroovyScript == "" {
+		missingFields = append(missingFields, "`target_system` or `groovy_script`")
 	}
 	if missingFields != nil {
 		baseMsg := fmt.Sprintf("%v missing required field", c.Name())
 		if len(missingFields) > 1 {
 			baseMsg += "s"
 		}
-		return fmt.Errorf("%v: %v", baseMsg, missingFields)
+		return fmt.Errorf("%v: %v", baseMsg, strings.Join(missingFields, ", "))
 	}
 
 	if c.Interval < 0 {

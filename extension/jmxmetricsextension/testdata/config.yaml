@@ -1,15 +1,20 @@
 extensions:
   jmx_metrics:
   jmx_metrics/all:
+    jar_path: myjarpath
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
     interval: 15s
     username: myusername
     password: mypassword
+    exporter: myexporter
+    otlp_endpoint: myotlpendpoint
     otlp_headers:
       x-header-1: value1
       x-header-2: value2
     otlp_timeout: 5s
+    prometheus_host: myprometheushost
+    prometheus_port: 12345
     keystore_path: mykeystorepath
     keystore_password: mykeystorepassword
     keystore_type: mykeystoretype

@@ -38,7 +38,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg,
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics missing required fields: [`service_url` `groovy_script`]", err.Error())
+	assert.Equal(t, "jmx_metrics missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
 	require.Nil(t, r)
 }
 

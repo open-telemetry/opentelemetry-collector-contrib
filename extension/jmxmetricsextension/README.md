@@ -2,9 +2,9 @@
 
 ### Overview
 
-The JMX Metrics Extension will work in conjunction with the upcoming [OpenTelemetry
-JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/pull/4) to
-report metrics from a target MBean server using your custom `otel` helper-utilizing Groovy script.
+The JMX Metrics Extension will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
+Groovy script.
 
 Status: alpha
 
@@ -12,25 +12,33 @@ Status: alpha
 
 This extension will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It can report metrics to an existing otlp or prometheus metric
-receiver in your pipeline.
+receiver in your pipeline.  In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+of the JMX Metric Gatherer jar and configure the extension with its path.  It is assumed that the JRE is
+available on your system.
 
 # Configuration
 
-Note: this extension is in alpha and functionality and configuration fields are subject to change.  It is currently
-partially implemented.
+Note: this extension is in alpha and functionality and configuration fields are subject to change.
 
 Example configuration:
 
 ```yaml
 extensions:
   jmx_metrics:
+    jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
     service_url: service:jmx:rmi:///jndi/rmi://<my-jmx-host>:<my-jmx-port>/jmxrmi
     groovy_script: /opt/my/groovy.script
     interval: 10s
+    exporter: otlp
+    otlp_endpoint: mycollectorotlpreceiver:55680
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
 ```
+
+### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
+
+The path for the JMX Metric Gatherer uber jar to run.
 
 ### service_url
 
@@ -40,17 +48,25 @@ Corresponds to the `otel.jmx.service.url` property.
 
 _Required._
 
+### target_system
+
+The built-in target system metric gatherer script to run.
+
+Corresponds to the `otel.jmx.target.system` property.
+
+One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
+
 ### groovy_script
 
 The path of the Groovy script the Metric Gatherer should run.
 
 Corresponds to the `otel.jmx.groovy.script` property.
 
-_Required._
+One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
 
-### interval (default: 10s)
+### interval (default: `10s`)
 
-The interval time for the Groovy script to be run and metrics exported.  Will be converted to milliseconds.
+The interval time for the Groovy script to be run and metrics exported.
 
 Corresponds to the `otel.jmx.interval.milliseconds` property.
 
@@ -66,9 +82,21 @@ The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
 
-### otlp_timeout (default: 1s)
+### exporter (default: `otlp`)
 
-The otlp exporter request timeout.  Will be converted to milliseconds.
+The metric exporter to use, which matches a desired existing `otlp` or `prometheus` receiver type.
+
+Corresponds to the `otel.exporter` property.
+
+### otlp_endpoint (default: `localhost:55680`)
+
+The otlp exporter endpoint to submit metrics.  Must coincide with an existing `otlp` receiver `endpoint`.
+
+Corresponds to the `otel.otlp.endpoint` property.
+
+### otlp_timeout (default: `5s`)
+
+The otlp exporter request timeout.
 
 Corresponds to the `otel.otlp.metric.timeout` property.
 
@@ -77,6 +105,18 @@ Corresponds to the `otel.otlp.metric.timeout` property.
 The headers to include in otlp metric submission requests.
 
 Corresponds to the `otel.otlp.metadata` property.
+
+### prometheus_host (default: `localhost`)
+
+The JMX Metric Gatherer prometheus server host interface to listen to.
+
+Corresponds to the `otel.prometheus.host` property.
+
+### prometheus_port (default: `9090`)
+
+The JMX Metric Gatherer prometheus server port to listen to.
+
+Corresponds to the `otel.prometheus.port` property.
 
 ### keystore_path
 
