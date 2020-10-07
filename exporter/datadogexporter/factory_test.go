@@ -18,6 +18,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -57,6 +58,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateAPIMetricsExporter(t *testing.T) {
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
@@ -68,6 +72,11 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
+
+	// Use the mock server for API key validation
+	c := (cfg.Exporters["datadog/api"]).(*Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	cfg.Exporters["datadog/api"] = c
 
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
