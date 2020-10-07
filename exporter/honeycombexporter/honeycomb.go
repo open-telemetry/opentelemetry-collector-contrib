@@ -38,9 +38,10 @@ const (
 
 // honeycombExporter is the object that sends events to honeycomb.
 type honeycombExporter struct {
-	builder *libhoney.Builder
-	onError func(error)
-	logger  *zap.Logger
+	builder             *libhoney.Builder
+	onError             func(error)
+	logger              *zap.Logger
+	sampleRateAttribute string
 }
 
 // event represents a honeycomb event.
@@ -105,6 +106,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 		onError: func(err error) {
 			logger.Warn(err.Error())
 		},
+		sampleRateAttribute: cfg.SampleRateAttribute,
 	}
 
 	return exporterhelper.NewTraceExporter(
@@ -159,6 +161,8 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 				for k, v := range attrs {
 					ev.AddField(k, v)
 				}
+
+				e.addSampleRate(ev, attrs)
 			}
 
 			ev.Timestamp = timestampToTime(span.GetStartTime())
@@ -217,6 +221,8 @@ func (e *honeycombExporter) sendSpanLinks(span *tracepb.Span) {
 		for k, v := range attrs {
 			ev.AddField(k, v)
 		}
+		e.addSampleRate(ev, attrs)
+
 		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
 		}
@@ -256,6 +262,8 @@ func (e *honeycombExporter) sendMessageEvents(td consumerdata.TraceData, span *t
 		for k, v := range attrs {
 			ev.AddField(k, v)
 		}
+		e.addSampleRate(ev, attrs)
+
 		ev.Timestamp = ts
 		ev.Add(spanEvent{
 			Name:           name,
@@ -295,6 +303,19 @@ func (e *honeycombExporter) RunErrorLogger(ctx context.Context, responses chan t
 			}
 		case <-ctx.Done():
 			return
+		}
+	}
+}
+
+func (e *honeycombExporter) addSampleRate(event *libhoney.Event, attrs map[string]interface{}) {
+	if e.sampleRateAttribute != "" && attrs != nil {
+		if value, ok := attrs[e.sampleRateAttribute]; ok {
+			switch v := value.(type) {
+			case int64:
+				event.SampleRate = uint(v)
+			default:
+				return
+			}
 		}
 	}
 }
