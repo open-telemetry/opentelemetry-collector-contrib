@@ -23,7 +23,7 @@ The following exporter configuration parameters are supported.
 | `region`          | Send Structured Logs to AWS CloudWatch in a specific region. If this field is not present in config, environment variable "AWS_REGION" can then be used to set region.| determined by metadata |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
 | `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
-| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |    0 (Enable both zero dimension rollup and single dimension rollup) |
+| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)|
 
 
 ## AWS Credential Configuration
