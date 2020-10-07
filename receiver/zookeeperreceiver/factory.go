@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -29,7 +28,7 @@ const (
 	typeStr = "zookeeper"
 
 	defaultCollectionInterval = 10 * time.Second
-	defaultHTTPTimeout        = 10 * time.Second
+	defaultConnectionTimeout  = 10 * time.Second
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -46,10 +45,8 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: ":2181",
-			Timeout:  defaultHTTPTimeout,
-		},
+		Endpoint:           ":2181",
+		Timeout:            defaultConnectionTimeout,
 		CollectionInterval: defaultCollectionInterval,
 	}
 }

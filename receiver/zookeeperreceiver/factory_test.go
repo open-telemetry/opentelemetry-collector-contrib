@@ -35,8 +35,8 @@ func TestFactory(t *testing.T) {
 
 	// Assert defaults.
 	assert.Equal(t, 10*time.Second, rCfg.CollectionInterval)
-	assert.Equal(t, 10*time.Second, rCfg.HTTPClientSettings.Timeout)
-	assert.Equal(t, ":2181", rCfg.HTTPClientSettings.Endpoint)
+	assert.Equal(t, 10*time.Second, rCfg.Timeout)
+	assert.Equal(t, ":2181", rCfg.Endpoint)
 
 	r, err := f.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, &testbed.MockMetricConsumer{})
 	require.NoError(t, err)

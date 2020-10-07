@@ -17,13 +17,17 @@ package zookeeperreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+
+	// Endpoint to connect to collect metrics.
+	Endpoint string `mapstructure:"endpoint"`
+
+	// Timeout within which the connection should be established.
+	Timeout time.Duration `mapstructure:"timeout"`
 
 	// CollectionInterval determines how often metrics should be synced. Default is 10s.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
