@@ -22,14 +22,13 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/metadata"
 )
 
 type emfExporter struct {
@@ -41,7 +40,7 @@ type emfExporter struct {
 
 	pusherMapLock sync.Mutex
 	retryCnt      int
-	metadata      metadata.Metadata
+	collectorID   string
 }
 
 // New func creates an EMF Exporter instance with data push callback func
@@ -62,13 +61,14 @@ func New(
 
 	// create CWLogs client with aws session config
 	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, session)
+	collectorIdentifier, _ := uuid.NewRandom()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
-		metadata:         metadata.NewMetadata(session, ""),
+		collectorID:      collectorIdentifier.String(),
 	}
 	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 
@@ -78,9 +78,8 @@ func New(
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	expConfig := emf.config.(*Config)
 	dimensionRollupOption := expConfig.DimensionRollupOption
-	hostID, err := emf.metadata.GetCollectorIdentifier()
 	logGroup := "/metrics/default"
-	logStream := fmt.Sprintf("otel-stream-%s", hostID)
+	logStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	// override log group if customer has specified Resource Attributes service.name or service.namespace
 	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md, dimensionRollupOption, expConfig.Namespace)
 	if namespace != "" {
