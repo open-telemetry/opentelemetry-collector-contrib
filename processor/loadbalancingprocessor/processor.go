@@ -16,6 +16,11 @@ package loadbalancingprocessor
 
 import (
 	"context"
+	"sort"
+	"sync"
+	"sync/atomic"
+	"time"
+	"unsafe"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -25,9 +30,20 @@ import (
 
 var _ component.TraceProcessor = (*processorImp)(nil)
 
+const (
+	defaultResInterval = 5 * time.Second
+	defaultResTimeout  = time.Second
+)
+
 type processorImp struct {
-	logger *zap.Logger
-	config Config
+	logger      *zap.Logger
+	config      Config
+	ring        *hashRing
+	res         resolver
+	resInterval time.Duration
+	resTimeout  time.Duration
+	stopped     bool
+	shutdownWg  sync.WaitGroup
 }
 
 // Crete new processor
@@ -37,16 +53,61 @@ func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp,
 	oCfg := cfg.(*Config)
 
 	return &processorImp{
-		logger: logger,
-		config: *oCfg,
+		logger:      logger,
+		config:      *oCfg,
+		resInterval: defaultResInterval,
+		resTimeout:  defaultResTimeout,
 	}, nil
 }
 
-func (e *processorImp) Start(_ context.Context, host component.Host) error {
+func (e *processorImp) Start(ctx context.Context, host component.Host) error {
+	err := e.resolveAndUpdate(ctx)
+	if err != nil {
+		return err
+	}
+
+	e.shutdownWg.Add(1)
+	go e.periodicallyResolve()
+
+	return nil
+}
+
+func (e *processorImp) periodicallyResolve() {
+	if e.stopped {
+		e.shutdownWg.Done()
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), e.resTimeout)
+	defer cancel()
+
+	if err := e.resolveAndUpdate(ctx); err != nil {
+		e.logger.Debug("failed to resolve endpoints", zap.Error(err))
+	}
+
+	time.AfterFunc(e.resInterval, func() {
+		e.periodicallyResolve()
+	})
+}
+
+func (e *processorImp) resolveAndUpdate(ctx context.Context) error {
+	resolved, err := e.res.resolve(ctx)
+	if err != nil {
+		return err
+	}
+	resolved = sort.StringSlice(resolved)
+	newRing := newHashRing(resolved)
+
+	if !newRing.equal(e.ring) {
+		atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&e.ring)), unsafe.Pointer(newRing))
+	}
+
 	return nil
 }
 
 func (e *processorImp) Shutdown(context.Context) error {
+	e.stopped = true
+	e.shutdownWg.Wait()
 	return nil
 }
 

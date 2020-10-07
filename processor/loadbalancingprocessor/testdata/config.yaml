@@ -3,6 +3,7 @@ receivers:
 
 processors:
   loadbalancing:
+    config: 
 
 exporters:
   exampleexporter:

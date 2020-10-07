@@ -146,3 +146,22 @@ func positionsForEndpoints(endpoints []string, weight int) []ringItem {
 
 	return items
 }
+
+func (h *hashRing) equal(candidate *hashRing) bool {
+	if candidate == nil {
+		return false
+	}
+
+	if len(h.items) != len(candidate.items) {
+		return false
+	}
+	for i := range candidate.items {
+		if h.items[i].endpoint != candidate.items[i].endpoint {
+			return false
+		}
+		if h.items[i].pos != candidate.items[i].pos {
+			return false
+		}
+	}
+	return true
+}
