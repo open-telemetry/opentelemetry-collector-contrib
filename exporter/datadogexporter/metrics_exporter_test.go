@@ -17,13 +17,13 @@ package datadogexporter
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
-	"go.opentelemetry.io/collector/config/confignet"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -40,7 +40,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-	
+
 	cfg.Sanitize()
 	logger := zap.NewNop()
 
@@ -57,7 +57,6 @@ func TestProcessMetrics(t *testing.T) {
 	cfg := &Config{
 		API: APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
-			Site: "datadoghq.com",
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test_host",

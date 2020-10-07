@@ -10,12 +10,12 @@ import (
 func DatadogServerMock() *httptest.Server {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
- 
+
 	srv := httptest.NewServer(handler)
- 
+
 	return srv
 }
- 
+
 type validateAPIKeyResponse struct {
 	Valid bool `json:"valid"`
 }

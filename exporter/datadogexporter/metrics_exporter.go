@@ -33,7 +33,7 @@ func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
 	logger.Info("Validating API key.")
 	res, err := client.Validate()
 	if err != nil {
-		logger.Warn("Error while validating API key.", zap.Error(err))	
+		logger.Warn("Error while validating API key.", zap.Error(err))
 	}
 
 	if res {
