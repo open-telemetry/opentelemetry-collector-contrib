@@ -28,6 +28,9 @@ type Config struct {
 	// meaning no sampling. If you want to send one event out of every 250
 	// times Send() is called, you would specify 250 here.
 	SampleRate uint `mapstructure:"sample_rate"`
+	// The name of an attribute that contains the sample_rate for each span.
+	// If the attribute is on the span, it takes precedence over the static sample_rate configuration
+	SampleRateAttribute string `mapstructure:"sample_rate_attribute"`
 	// Debug enables more verbose logging from the Honeycomb SDK. It defaults to false.
 	Debug bool `mapstructure:"debug"`
 }
