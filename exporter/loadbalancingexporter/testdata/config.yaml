@@ -2,18 +2,16 @@ receivers:
   examplereceiver:
 
 processors:
-  loadbalancing:
-    config: 
 
 exporters:
-  exampleexporter:
+  loadbalancing:
+    config: 
 
 service:
   pipelines:
     traces:
       receivers:
       - examplereceiver
-      processors:
-      - loadbalancing
+      processors: []
       exporters:
-      - exampleexporter
+      - loadbalancing

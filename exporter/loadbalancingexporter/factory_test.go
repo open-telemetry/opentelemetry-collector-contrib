@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
 import (
 	"context"
@@ -21,23 +21,22 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := component.ProcessorCreateParams{Logger: zap.NewNop()}
+	creationParams := component.ExporterCreateParams{Logger: zap.NewNop()}
 	cfg := &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ExporterSettings: configmodels.ExporterSettings{
 			NameVal: "loadbalancing",
 			TypeVal: "loadbalancing",
 		},
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.Nil(t, err)

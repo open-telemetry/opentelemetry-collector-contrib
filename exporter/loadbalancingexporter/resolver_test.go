@@ -12,25 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
-import (
-	"path"
-	"testing"
+import "context"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtest"
-)
-
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factories.Processors[typeStr] = NewFactory()
-
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+type mockResolver struct {
+	onResolve func(ctx context.Context) ([]string, error)
 }
+
+func (m *mockResolver) resolve(ctx context.Context) ([]string, error) {
+	if m.onResolve != nil {
+		return m.onResolve(ctx)
+	}
+	return []string{}, nil
+}
+
+var _ resolver = (*mockResolver)(nil)

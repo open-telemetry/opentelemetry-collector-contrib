@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
 import (
 	"context"
@@ -28,10 +28,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestProcessorCapabilities(t *testing.T) {
+func TestExporterCapabilities(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 
 	// test
 	caps := p.GetCapabilities()
@@ -45,7 +45,7 @@ func TestProcessorCapabilities(t *testing.T) {
 func TestStart(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -61,7 +61,7 @@ func TestStart(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -75,7 +75,7 @@ func TestShutdown(t *testing.T) {
 func TestConsumeTraces(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	p.res = &mockResolver{}
@@ -94,7 +94,7 @@ func TestConsumeTraces(t *testing.T) {
 func TestFailedToResolveAtStartup(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -115,7 +115,7 @@ func TestFailedToResolveAtStartup(t *testing.T) {
 func TestResolveAndUpdate(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -150,7 +150,7 @@ func TestResolveAndUpdate(t *testing.T) {
 func TestPeriodicallyResolve(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -192,7 +192,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 func TestFailedToPeriodicallyResolve(t *testing.T) {
 	// prepare
 	config := &Config{}
-	p, err := newProcessor(zap.NewNop(), config)
+	p, err := newExporter(zap.NewNop(), config)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 

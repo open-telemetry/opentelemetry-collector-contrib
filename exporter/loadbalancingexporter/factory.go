@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -28,24 +27,24 @@ const (
 	typeStr = "loadbalancing"
 )
 
-// NewFactory creates a factory for the processor.
-func NewFactory() component.ProcessorFactory {
-	return processorhelper.NewFactory(
+// NewFactory creates a factory for the exporter.
+func NewFactory() component.ExporterFactory {
+	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processorhelper.WithTraces(createTraceProcessor),
+		exporterhelper.WithTraces(createTraceExporter),
 	)
 }
 
-func createDefaultConfig() configmodels.Processor {
+func createDefaultConfig() configmodels.Exporter {
 	return &Config{
-		ProcessorSettings: configmodels.ProcessorSettings{
+		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
 	}
 }
 
-func createTraceProcessor(_ context.Context, params component.ProcessorCreateParams, cfg configmodels.Processor, nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
-	return newProcessor(params.Logger, cfg)
+func createTraceExporter(_ context.Context, params component.ExporterCreateParams, cfg configmodels.Exporter) (component.TraceExporter, error) {
+	return newExporter(params.Logger, cfg)
 }

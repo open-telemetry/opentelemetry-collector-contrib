@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
-import (
-	"go.opentelemetry.io/collector/config/configmodels"
-)
+import "context"
 
-// Config defines configuration for the processor.
-type Config struct {
-	configmodels.ProcessorSettings `mapstructure:",squash"`
+// resolver determines the contract for sources of backend endpoint information
+type resolver interface {
+	// resolve returns the current list of endpoints.
+	// returns either a non-nil error and a nil list of endpoints, or a non-nil list of endpoints and nil error.
+	resolve(context.Context) ([]string, error)
 }

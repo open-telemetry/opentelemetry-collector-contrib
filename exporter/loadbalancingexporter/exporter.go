@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package loadbalancingprocessor
+package loadbalancingexporter
 
 import (
 	"context"
@@ -28,14 +28,14 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ component.TraceProcessor = (*processorImp)(nil)
+var _ component.TraceExporter = (*exporterImp)(nil)
 
 const (
 	defaultResInterval = 5 * time.Second
 	defaultResTimeout  = time.Second
 )
 
-type processorImp struct {
+type exporterImp struct {
 	logger      *zap.Logger
 	config      Config
 	ring        *hashRing
@@ -46,13 +46,11 @@ type processorImp struct {
 	shutdownWg  sync.WaitGroup
 }
 
-// Crete new processor
-func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp, error) {
-	logger.Info("building processor")
-
+// Crete new exporter
+func newExporter(logger *zap.Logger, cfg configmodels.Exporter) (*exporterImp, error) {
 	oCfg := cfg.(*Config)
 
-	return &processorImp{
+	return &exporterImp{
 		logger:      logger,
 		config:      *oCfg,
 		resInterval: defaultResInterval,
@@ -60,7 +58,7 @@ func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp,
 	}, nil
 }
 
-func (e *processorImp) Start(ctx context.Context, host component.Host) error {
+func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
 	err := e.resolveAndUpdate(ctx)
 	if err != nil {
 		return err
@@ -72,7 +70,7 @@ func (e *processorImp) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *processorImp) periodicallyResolve() {
+func (e *exporterImp) periodicallyResolve() {
 	if e.stopped {
 		e.shutdownWg.Done()
 		return
@@ -90,7 +88,7 @@ func (e *processorImp) periodicallyResolve() {
 	})
 }
 
-func (e *processorImp) resolveAndUpdate(ctx context.Context) error {
+func (e *exporterImp) resolveAndUpdate(ctx context.Context) error {
 	resolved, err := e.res.resolve(ctx)
 	if err != nil {
 		return err
@@ -105,16 +103,16 @@ func (e *processorImp) resolveAndUpdate(ctx context.Context) error {
 	return nil
 }
 
-func (e *processorImp) Shutdown(context.Context) error {
+func (e *exporterImp) Shutdown(context.Context) error {
 	e.stopped = true
 	e.shutdownWg.Wait()
 	return nil
 }
 
-func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (e *processorImp) GetCapabilities() component.ProcessorCapabilities {
+func (e *exporterImp) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
