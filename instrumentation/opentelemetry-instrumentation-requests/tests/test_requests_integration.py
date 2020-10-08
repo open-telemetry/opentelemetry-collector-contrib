@@ -198,12 +198,12 @@ class RequestsIntegrationTestBase(abc.ABC):
             headers = dict(httpretty.last_request().headers)
             self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
             self.assertEqual(
-                str(span.get_context().trace_id),
+                str(span.get_span_context().trace_id),
                 headers[MockTextMapPropagator.TRACE_ID_KEY],
             )
             self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
             self.assertEqual(
-                str(span.get_context().span_id),
+                str(span.get_span_context().span_id),
                 headers[MockTextMapPropagator.SPAN_ID_KEY],
             )
 
