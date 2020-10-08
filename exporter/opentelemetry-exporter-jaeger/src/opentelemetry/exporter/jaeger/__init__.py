@@ -192,7 +192,7 @@ def _translate_to_jaeger(spans: Span):
     jaeger_spans = []
 
     for span in spans:
-        ctx = span.get_context()
+        ctx = span.get_span_context()
         trace_id = ctx.trace_id
         span_id = ctx.span_id
 

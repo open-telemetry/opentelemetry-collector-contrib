@@ -144,7 +144,7 @@ class TestJaegerSpanExporter(unittest.TestCase):
         span_context = trace_api.SpanContext(
             trace_id, span_id, is_remote=False
         )
-        parent_context = trace_api.SpanContext(
+        parent_span_context = trace_api.SpanContext(
             trace_id, parent_id, is_remote=False
         )
         other_context = trace_api.SpanContext(
@@ -190,13 +190,13 @@ class TestJaegerSpanExporter(unittest.TestCase):
             trace._Span(
                 name=span_names[0],
                 context=span_context,
-                parent=parent_context,
+                parent=parent_span_context,
                 events=(event,),
                 links=(link,),
                 kind=trace_api.SpanKind.CLIENT,
             ),
             trace._Span(
-                name=span_names[1], context=parent_context, parent=None
+                name=span_names[1], context=parent_span_context, parent=None
             ),
             trace._Span(
                 name=span_names[2], context=other_context, parent=None
