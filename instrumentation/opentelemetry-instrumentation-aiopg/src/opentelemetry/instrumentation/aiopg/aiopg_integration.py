@@ -37,8 +37,7 @@ class AiopgIntegration(DatabaseApiIntegration):
         args: typing.Tuple[typing.Any, typing.Any],
         kwargs: typing.Dict[typing.Any, typing.Any],
     ):
-        """Add object proxy to connection object.
-        """
+        """Add object proxy to connection object."""
         connection = await connect_method(*args, **kwargs)
         # pylint: disable=protected-access
         self.get_connection_attributes(connection._conn)
@@ -109,10 +108,14 @@ class AsyncTracedCursor(TracedCursor):
             self._populate_span(span, *args)
             try:
                 result = await query_method(*args, **kwargs)
-                span.set_status(Status(StatusCanonicalCode.OK))
+                if span.is_recording():
+                    span.set_status(Status(StatusCanonicalCode.OK))
                 return result
             except Exception as ex:  # pylint: disable=broad-except
-                span.set_status(Status(StatusCanonicalCode.UNKNOWN, str(ex)))
+                if span.is_recording():
+                    span.set_status(
+                        Status(StatusCanonicalCode.UNKNOWN, str(ex))
+                    )
                 raise ex
 
 

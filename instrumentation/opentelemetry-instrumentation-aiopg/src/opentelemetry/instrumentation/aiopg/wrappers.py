@@ -56,16 +56,16 @@ def trace_integration(
     tracer_provider: typing.Optional[TracerProvider] = None,
 ):
     """Integrate with aiopg library.
-        based on dbapi integration, where replaced sync wrap methods to async
+    based on dbapi integration, where replaced sync wrap methods to async
 
-        Args:
-            database_component: Database driver name or
-                database name "postgreSQL".
-            database_type: The Database type. For any SQL database, "sql".
-            connection_attributes: Attribute names for database, port, host and
-                user in Connection object.
-            tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
-                use. If ommited the current configured one is used.
+    Args:
+        database_component: Database driver name or
+            database name "postgreSQL".
+        database_type: The Database type. For any SQL database, "sql".
+        connection_attributes: Attribute names for database, port, host and
+            user in Connection object.
+        tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
+            use. If ommited the current configured one is used.
     """
 
     wrap_connect(
@@ -87,18 +87,18 @@ def wrap_connect(
     tracer_provider: typing.Optional[TracerProvider] = None,
 ):
     """Integrate with aiopg library.
-        https://github.com/aio-libs/aiopg
+    https://github.com/aio-libs/aiopg
 
-        Args:
-            name: Name of opentelemetry extension for aiopg.
-            database_component: Database driver name
-                or database name "postgreSQL".
-            database_type: The Database type. For any SQL database, "sql".
-            connection_attributes: Attribute names for database, port, host and
-                user in Connection object.
-            version: Version of opentelemetry extension for aiopg.
-            tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
-                use. If ommited the current configured one is used.
+    Args:
+        name: Name of opentelemetry extension for aiopg.
+        database_component: Database driver name
+            or database name "postgreSQL".
+        database_type: The Database type. For any SQL database, "sql".
+        connection_attributes: Attribute names for database, port, host and
+            user in Connection object.
+        version: Version of opentelemetry extension for aiopg.
+        tracer_provider: The :class:`opentelemetry.trace.TracerProvider` to
+            use. If ommited the current configured one is used.
     """
 
     # pylint: disable=unused-argument
@@ -125,8 +125,8 @@ def wrap_connect(
 
 
 def unwrap_connect():
-    """"Disable integration with aiopg library.
-        https://github.com/aio-libs/aiopg
+    """Disable integration with aiopg library.
+    https://github.com/aio-libs/aiopg
     """
 
     unwrap(aiopg, "connect")
@@ -217,7 +217,7 @@ def wrap_create_pool(
 
 
 def unwrap_create_pool():
-    """"Disable integration with aiopg library.
-        https://github.com/aio-libs/aiopg
+    """Disable integration with aiopg library.
+    https://github.com/aio-libs/aiopg
     """
     unwrap(aiopg, "create_pool")

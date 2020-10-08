@@ -230,6 +230,40 @@ class TestAiopgIntegration(TestBase):
             trace_api.status.StatusCanonicalCode.OK,
         )
 
+    def test_span_not_recording(self):
+        connection_props = {
+            "database": "testdatabase",
+            "server_host": "testhost",
+            "server_port": 123,
+            "user": "testuser",
+        }
+        connection_attributes = {
+            "database": "database",
+            "port": "server_port",
+            "host": "server_host",
+            "user": "user",
+        }
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = True
+        db_integration = AiopgIntegration(
+            mock_tracer, "testcomponent", "testtype", connection_attributes
+        )
+        mock_connection = async_call(
+            db_integration.wrapped_connection(
+                mock_connect, {}, connection_props
+            )
+        )
+        cursor = async_call(mock_connection.cursor())
+        async_call(cursor.execute("Test query", ("param1Value", False)))
+        self.assertFalse(mock_span.is_recording())
+        self.assertTrue(mock_span.is_recording.called)
+        self.assertFalse(mock_span.set_attribute.called)
+        self.assertFalse(mock_span.set_status.called)
+
     def test_span_failed(self):
         db_integration = AiopgIntegration(self.tracer, "testcomponent")
         mock_connection = async_call(

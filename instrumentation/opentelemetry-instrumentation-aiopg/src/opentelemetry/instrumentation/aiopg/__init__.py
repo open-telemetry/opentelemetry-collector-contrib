@@ -63,7 +63,7 @@ class AiopgInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs):
         """Integrate with PostgreSQL aiopg library.
-           aiopg: https://github.com/aio-libs/aiopg
+        aiopg: https://github.com/aio-libs/aiopg
         """
 
         tracer_provider = kwargs.get("tracer_provider")
