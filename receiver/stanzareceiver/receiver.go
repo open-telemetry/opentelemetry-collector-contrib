@@ -25,6 +25,7 @@ import (
 
 type stanzareceiver struct {
 	agent    *stanza.LogAgent
+	emitter  *LogEmitter
 	consumer consumer.LogsConsumer
 	logger   *zap.Logger
 }
