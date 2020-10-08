@@ -35,7 +35,9 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.NotNil(t, w.encoder)
 	assert.Equal(t, size, w.buffer.Cap())
 	assert.Equal(t, 0, w.buffer.Len())
-	if err := w.Encode(MakeSegment(span, pdata.NewResource(), nil, false)); err != nil {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	if err := w.Encode(MakeSegment(span, resource, nil, false)); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()

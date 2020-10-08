@@ -14,6 +14,8 @@
 package datadogexporter
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -33,6 +35,7 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
+		exporterhelper.WithMetrics(createMetricsExporter),
 	)
 }
 
@@ -69,4 +72,31 @@ func createDefaultConfig() configmodels.Exporter {
 			},
 		},
 	}
+}
+
+// createMetricsExporter creates a metrics exporter based on this config.
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	c configmodels.Exporter,
+) (component.MetricsExporter, error) {
+
+	cfg := c.(*Config)
+
+	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(); err != nil {
+		return nil, err
+	}
+
+	exp, err := newMetricsExporter(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		cfg,
+		exp.PushMetricsData,
+		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
+		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+	)
 }

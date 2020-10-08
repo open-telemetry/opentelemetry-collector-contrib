@@ -41,8 +41,6 @@ type Config struct {
 	ProxyAddress string `mapstructure:"proxy_address"`
 	// Region is the AWS region where the metric logs are sent to.
 	Region string `mapstructure:"region"`
-	// Amazon Resource Name (ARN) of the AWS resource running the collector.
-	ResourceARN string `mapstructure:"resource_arn"`
 	// RoleARN is the IAM role used by the collector when communicating
 	// with the CloudWatch Logs service
 	RoleARN string `mapstructure:"role_arn"`
@@ -50,4 +48,9 @@ type Config struct {
 	NoVerifySSL bool `mapstructure:"no_verify_ssl"`
 	// MaxRetries is the maximum number of retries before abandoning an attempt to post data.
 	MaxRetries int `mapstructure:"max_retries"`
+	// DimensionRollupOption is the option for metrics dimension rollup. Three options are available, default option is "ZeroAndSingleDimensionRollup".
+	// "ZeroAndSingleDimensionRollup" - Enable both zero dimension rollup and single dimension rollup
+	// "SingleDimensionRollupOnly" - Enable single dimension rollup
+	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
+	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
 }

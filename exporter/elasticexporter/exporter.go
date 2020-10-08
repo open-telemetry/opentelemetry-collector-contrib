@@ -60,6 +60,30 @@ func newElasticTraceExporter(
 	})
 }
 
+func newElasticMetricsExporter(
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
+	}
+	return exporterhelper.NewMetricsExporter(cfg, func(ctx context.Context, input pdata.Metrics) (int, error) {
+		var dropped int
+		var errs []error
+		resourceMetricsSlice := input.ResourceMetrics()
+		for i := 0; i < resourceMetricsSlice.Len(); i++ {
+			resourceMetrics := resourceMetricsSlice.At(i)
+			n, err := exporter.ExportResourceMetrics(ctx, resourceMetrics)
+			if err != nil {
+				errs = append(errs, err)
+			}
+			dropped += n
+		}
+		return dropped, componenterror.CombineErrors(errs)
+	})
+}
+
 type elasticExporter struct {
 	transport transport.Transport
 	logger    *zap.Logger
@@ -130,6 +154,32 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs pdata.Reso
 		return count, err
 	}
 	return len(errs), componenterror.CombineErrors(errs)
+}
+
+// ExportResourceMetrics exports OTLP metrics to Elastic APM Server,
+// returning the number of metrics that were dropped along with any errors.
+func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pdata.ResourceMetrics) (int, error) {
+	var w fastjson.Writer
+	elastic.EncodeResourceMetadata(rm.Resource(), &w)
+	var errs []error
+	var totalDropped int
+	instrumentationLibraryMetricsSlice := rm.InstrumentationLibraryMetrics()
+	for i := 0; i < instrumentationLibraryMetricsSlice.Len(); i++ {
+		instrumentationLibraryMetrics := instrumentationLibraryMetricsSlice.At(i)
+		instrumentationLibrary := instrumentationLibraryMetrics.InstrumentationLibrary()
+		metrics := instrumentationLibraryMetrics.Metrics()
+		before := w.Size()
+		dropped, err := elastic.EncodeMetrics(metrics, instrumentationLibrary, &w)
+		if err != nil {
+			w.Rewind(before)
+			errs = append(errs, err)
+		}
+		totalDropped += dropped
+	}
+	if err := e.sendEvents(ctx, &w); err != nil {
+		return totalDropped, err
+	}
+	return totalDropped, componenterror.CombineErrors(errs)
 }
 
 func (e *elasticExporter) sendEvents(ctx context.Context, w *fastjson.Writer) error {

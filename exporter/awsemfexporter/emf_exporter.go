@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -39,6 +40,7 @@ type emfExporter struct {
 
 	pusherMapLock sync.Mutex
 	retryCnt      int
+	collectorID   string
 }
 
 // New func creates an EMF Exporter instance with data push callback func
@@ -59,12 +61,14 @@ func New(
 
 	// create CWLogs client with aws session config
 	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, session)
+	collectorIdentifier, _ := uuid.NewRandom()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
+		collectorID:      collectorIdentifier.String(),
 	}
 	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 
@@ -73,10 +77,11 @@ func New(
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
 	expConfig := emf.config.(*Config)
+	dimensionRollupOption := expConfig.DimensionRollupOption
 	logGroup := "/metrics/default"
-	logStream := "otel-stream"
+	logStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
 	// override log group if customer has specified Resource Attributes service.name or service.namespace
-	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md)
+	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md, dimensionRollupOption, expConfig.Namespace)
 	if namespace != "" {
 		logGroup = fmt.Sprintf("/metrics/%s", namespace)
 	}
@@ -164,11 +169,10 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string) {
+func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption string, namespace string) ([]*LogEvent, int, string) {
 	rms := metric.ResourceMetrics()
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
-	var namespace string
 	var totalDroppedMetrics int
 
 	for i := 0; i < rms.Len(); i++ {
@@ -176,7 +180,7 @@ func generateLogEventFromMetric(metric pdata.Metrics) ([]*LogEvent, int, string)
 		if rm.IsNil() {
 			continue
 		}
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm)
+		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, dimensionRollupOption, namespace)
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}

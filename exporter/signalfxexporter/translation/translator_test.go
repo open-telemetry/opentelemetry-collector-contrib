@@ -15,6 +15,7 @@
 package translation
 
 import (
+	"encoding/json"
 	"sort"
 	"testing"
 	"time"
@@ -44,7 +45,9 @@ type byDimensions []*sfxpb.Dimension
 
 func (dims byDimensions) Len() int { return len(dims) }
 func (dims byDimensions) Less(i, j int) bool {
-	return dims[i].Key < dims[j].Key
+	ib, _ := json.Marshal(dims[i])
+	jb, _ := json.Marshal(dims[j])
+	return string(ib) < string(jb)
 }
 func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
 

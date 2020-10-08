@@ -261,7 +261,7 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 		},
 	}
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
 	assert.Equal(t, 1, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 5, len(cwm))
@@ -294,7 +294,7 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 		Metrics: []*metricspb.Metric{},
 	}
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.Nil(t, cwm)
 	assert.Equal(t, 0, len(cwm))
@@ -386,7 +386,7 @@ func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 		},
 	}
 	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm)
+	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 1, len(cwm))

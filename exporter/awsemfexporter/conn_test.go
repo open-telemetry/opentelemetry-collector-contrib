@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -135,6 +136,14 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	se, err = conn.newAWSSession(logger, roleArn, region)
 	assert.NotNil(t, err)
 	assert.Nil(t, se)
+	os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "regional")
+	se, _ = session.NewSession(&aws.Config{
+		Region: aws.String("us-east-1"),
+	})
+	assert.NotNil(t, se)
+	_, err = conn.getEC2Region(se)
+	assert.NotNil(t, err)
 }
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
