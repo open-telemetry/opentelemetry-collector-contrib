@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest import mock
 
 import pymemcache
 from pymemcache.exceptions import (
@@ -83,6 +84,23 @@ class PymemcacheClientTestCase(
         spans = self.memory_exporter.get_finished_spans()
 
         self.check_spans(spans, 1, ["set key"])
+
+    def test_set_not_recording(self):
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = True
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            client = self.make_client([b"STORED\r\n"])
+            result = client.set(b"key", b"value", noreply=False)
+            self.assertTrue(result)
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
 
     def test_get_many_none_found(self):
         client = self.make_client([b"END\r\n"])
