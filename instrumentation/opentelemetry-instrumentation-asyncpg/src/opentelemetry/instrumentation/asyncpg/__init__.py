@@ -112,9 +112,6 @@ class AsyncPGInstrumentor(BaseInstrumentor):
             unwrap(asyncpg.Connection, method)
 
     async def _do_execute(self, func, instance, args, kwargs):
-        span_attributes = _hydrate_span_from_args(
-            instance, args[0], args[1:] if self.capture_parameters else None,
-        )
         tracer = getattr(asyncpg, _APPLIED)
 
         exception = None
@@ -122,9 +119,14 @@ class AsyncPGInstrumentor(BaseInstrumentor):
         with tracer.start_as_current_span(
             "postgresql", kind=SpanKind.CLIENT
         ) as span:
-
-            for attribute, value in span_attributes.items():
-                span.set_attribute(attribute, value)
+            if span.is_recording():
+                span_attributes = _hydrate_span_from_args(
+                    instance,
+                    args[0],
+                    args[1:] if self.capture_parameters else None,
+                )
+                for attribute, value in span_attributes.items():
+                    span.set_attribute(attribute, value)
 
             try:
                 result = await func(*args, **kwargs)
@@ -132,11 +134,12 @@ class AsyncPGInstrumentor(BaseInstrumentor):
                 exception = exc
                 raise
             finally:
-                if exception is not None:
-                    span.set_status(
-                        Status(_exception_to_canonical_code(exception))
-                    )
-                else:
-                    span.set_status(Status(StatusCanonicalCode.OK))
+                if span.is_recording():
+                    if exception is not None:
+                        span.set_status(
+                            Status(_exception_to_canonical_code(exception))
+                        )
+                    else:
+                        span.set_status(Status(StatusCanonicalCode.OK))
 
         return result
