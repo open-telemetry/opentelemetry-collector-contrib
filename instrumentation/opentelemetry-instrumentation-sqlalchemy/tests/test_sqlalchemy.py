@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest import mock
 
 from sqlalchemy import create_engine
 
@@ -36,6 +37,28 @@ class TestSqlalchemyInstrumentation(TestBase):
 
         self.assertEqual(len(spans), 1)
         self.assertEqual(spans[0].name, "sqlite.query")
+
+    def test_not_recording(self):
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = True
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            engine = create_engine("sqlite:///:memory:")
+            SQLAlchemyInstrumentor().instrument(
+                engine=engine,
+                tracer_provider=self.tracer_provider,
+                service="my-database",
+            )
+            cnx = engine.connect()
+            cnx.execute("SELECT	1 + 1;").fetchall()
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
 
     def test_create_engine_wrapper(self):
         SQLAlchemyInstrumentor().instrument()
