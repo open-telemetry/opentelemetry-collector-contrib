@@ -56,6 +56,7 @@ The following configuration options can also be configured:
 - `exclude_metrics`: metric names that will be excluded from sending
   to Signalfx backend. If `send_compatible_metrics` or `translation_rules` 
   options are enabled, the exclusion will be applied on translated metrics.
+- To configure queuing and retries see [here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/exporterhelper#configuration)
 
 Example:
 
