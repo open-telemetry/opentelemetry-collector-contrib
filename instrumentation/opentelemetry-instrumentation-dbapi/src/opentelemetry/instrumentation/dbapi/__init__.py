@@ -311,6 +311,8 @@ class TracedCursor:
     def _populate_span(
         self, span: trace_api.Span, *args: typing.Tuple[typing.Any, typing.Any]
     ):
+        if not span.is_recording():
+            return
         statement = args[0] if args else ""
         span.set_attribute(
             "component", self._db_api_integration.database_component
@@ -341,10 +343,14 @@ class TracedCursor:
             self._populate_span(span, *args)
             try:
                 result = query_method(*args, **kwargs)
-                span.set_status(Status(StatusCanonicalCode.OK))
+                if span.is_recording():
+                    span.set_status(Status(StatusCanonicalCode.OK))
                 return result
             except Exception as ex:  # pylint: disable=broad-except
-                span.set_status(Status(StatusCanonicalCode.UNKNOWN, str(ex)))
+                if span.is_recording():
+                    span.set_status(
+                        Status(StatusCanonicalCode.UNKNOWN, str(ex))
+                    )
                 raise ex
 
 
