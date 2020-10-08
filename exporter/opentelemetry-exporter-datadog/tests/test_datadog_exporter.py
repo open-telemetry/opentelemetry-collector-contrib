@@ -178,7 +178,7 @@ class TestDatadogSpanExporter(unittest.TestCase):
         span_context = trace_api.SpanContext(
             trace_id, span_id, is_remote=False
         )
-        parent_context = trace_api.SpanContext(
+        parent_span_context = trace_api.SpanContext(
             trace_id, parent_id, is_remote=False
         )
         other_context = trace_api.SpanContext(
@@ -191,14 +191,14 @@ class TestDatadogSpanExporter(unittest.TestCase):
             trace._Span(
                 name=span_names[0],
                 context=span_context,
-                parent=parent_context,
+                parent=parent_span_context,
                 kind=trace_api.SpanKind.CLIENT,
                 instrumentation_info=instrumentation_info,
                 resource=Resource({}),
             ),
             trace._Span(
                 name=span_names[1],
-                context=parent_context,
+                context=parent_span_context,
                 parent=None,
                 instrumentation_info=instrumentation_info,
                 resource=resource_without_service,

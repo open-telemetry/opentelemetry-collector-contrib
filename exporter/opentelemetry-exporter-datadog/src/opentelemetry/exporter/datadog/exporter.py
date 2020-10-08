@@ -189,12 +189,12 @@ class DatadogSpanExporter(SpanExporter):
 
 def _get_trace_ids(span):
     """Extract tracer ids from span"""
-    ctx = span.get_context()
+    ctx = span.get_span_context()
     trace_id = ctx.trace_id
     span_id = ctx.span_id
 
     if isinstance(span.parent, trace_api.Span):
-        parent_id = span.parent.get_context().span_id
+        parent_id = span.parent.get_span_context().span_id
     elif isinstance(span.parent, trace_api.SpanContext):
         parent_id = span.parent.span_id
     else:
@@ -255,13 +255,13 @@ def _get_exc_info(span):
 
 
 def _get_origin(span):
-    ctx = span.get_context()
+    ctx = span.get_span_context()
     origin = ctx.trace_state.get(DD_ORIGIN)
     return origin
 
 
 def _get_sampling_rate(span):
-    ctx = span.get_context()
+    ctx = span.get_span_context()
     return (
         span.sampler.rate
         if ctx.trace_flags.sampled
