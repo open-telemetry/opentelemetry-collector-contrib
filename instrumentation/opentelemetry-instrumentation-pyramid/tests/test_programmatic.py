@@ -93,7 +93,7 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         mock_span.is_recording.return_value = False
         mock_tracer.start_span.return_value = mock_span
         mock_tracer.use_span.return_value.__enter__ = mock_span
-        mock_tracer.use_span.return_value.__exit__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = True
         with patch("opentelemetry.trace.get_tracer"):
             self.client.get("/hello/123")
             span_list = self.memory_exporter.get_finished_spans()
