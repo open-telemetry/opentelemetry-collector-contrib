@@ -38,7 +38,8 @@ import (
 )
 
 type honeycombData struct {
-	Data map[string]interface{} `json:"data"`
+	Data       map[string]interface{} `json:"data"`
+	SampleRate int                    `json:"samplerate"`
 }
 
 func testingServer(callback func(data []honeycombData)) *httptest.Server {
@@ -66,22 +67,17 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 	}))
 }
 
-func testTraceExporter(td pdata.Traces, t *testing.T) []honeycombData {
+func testTraceExporter(td pdata.Traces, t *testing.T, cfg *Config) []honeycombData {
 	var got []honeycombData
 	server := testingServer(func(data []honeycombData) {
 		got = append(got, data...)
 	})
 	defer server.Close()
-	cfg := Config{
-		APIKey:     "test",
-		Dataset:    "test",
-		APIURL:     server.URL,
-		Debug:      false,
-		SampleRate: 1,
-	}
+
+	cfg.APIURL = server.URL
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := createTraceExporter(context.Background(), params, &cfg)
+	exporter, err := createTraceExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 
 	ctx := context.Background()
@@ -90,6 +86,16 @@ func testTraceExporter(td pdata.Traces, t *testing.T) []honeycombData {
 	exporter.Shutdown(context.Background())
 
 	return got
+}
+
+func baseConfig() *Config {
+	return &Config{
+		APIKey:              "test",
+		Dataset:             "test",
+		Debug:               false,
+		SampleRate:          1,
+		SampleRateAttribute: "",
+	}
 }
 
 func TestExporter(t *testing.T) {
@@ -190,7 +196,7 @@ func TestExporter(t *testing.T) {
 			},
 		},
 	}
-	got := testTraceExporter(internaldata.OCToTraceData(td), t)
+	got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
 	want := []honeycombData{
 		{
 			Data: map[string]interface{}{
@@ -281,6 +287,129 @@ func TestExporter(t *testing.T) {
 	}
 }
 
+func TestSampleRateAttribute(t *testing.T) {
+	td := consumerdata.TraceData{
+		Node: nil,
+		Spans: []*tracepb.Span{
+			{
+				TraceId:                 []byte{0x01},
+				SpanId:                  []byte{0x02},
+				Name:                    &tracepb.TruncatableString{Value: "root"},
+				Kind:                    tracepb.Span_SERVER,
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"some_attribute": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "A value"},
+							},
+						},
+						"hc.sample.rate": {
+							Value: &tracepb.AttributeValue_IntValue{
+								IntValue: 13,
+							},
+						},
+					},
+				},
+			},
+			{
+				TraceId:                 []byte{0x01},
+				SpanId:                  []byte{0x02},
+				Name:                    &tracepb.TruncatableString{Value: "root"},
+				Kind:                    tracepb.Span_SERVER,
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"no_sample_rate": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "gets_default"},
+							},
+						},
+					},
+				},
+			},
+			{
+				TraceId:                 []byte{0x01},
+				SpanId:                  []byte{0x02},
+				Name:                    &tracepb.TruncatableString{Value: "root"},
+				Kind:                    tracepb.Span_SERVER,
+				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
+				Attributes: &tracepb.Span_Attributes{
+					AttributeMap: map[string]*tracepb.AttributeValue{
+						"hc.sample.rate": {
+							Value: &tracepb.AttributeValue_StringValue{
+								StringValue: &tracepb.TruncatableString{Value: "wrong_type"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cfg := baseConfig()
+	cfg.SampleRate = 2 // default sample rate
+	cfg.SampleRateAttribute = "hc.sample.rate"
+
+	got := testTraceExporter(internaldata.OCToTraceData(td), t, cfg)
+
+	want := []honeycombData{
+		{
+			SampleRate: 13,
+			Data: map[string]interface{}{
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"hc.sample.rate":                         float64(13),
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.same_process_as_parent_span": true,
+				"some_attribute":                         "A value",
+			},
+		},
+		{
+			SampleRate: 2,
+			Data: map[string]interface{}{
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.same_process_as_parent_span": true,
+				"no_sample_rate":                         "gets_default",
+			},
+		},
+		{
+			SampleRate: 2,
+			Data: map[string]interface{}{
+				"duration_ms":                            float64(0),
+				"has_remote_parent":                      false,
+				"hc.sample.rate":                         "wrong_type",
+				"name":                                   "root",
+				"source_format":                          "otlp_trace",
+				"span_kind":                              "server",
+				"status.code":                            float64(0),
+				"status.message":                         "OK",
+				"trace.span_id":                          "02",
+				"trace.trace_id":                         "01",
+				"opencensus.same_process_as_parent_span": true,
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("otel span: (-want +got):\n%s", diff)
+	}
+}
+
 func TestEmptyNode(t *testing.T) {
 	td := consumerdata.TraceData{
 		Node: nil,
@@ -295,7 +424,7 @@ func TestEmptyNode(t *testing.T) {
 		},
 	}
 
-	got := testTraceExporter(internaldata.OCToTraceData(td), t)
+	got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
 
 	want := []honeycombData{
 		{
@@ -424,7 +553,7 @@ func TestNode(t *testing.T) {
 				},
 			}
 
-			got := testTraceExporter(internaldata.OCToTraceData(td), t)
+			got := testTraceExporter(internaldata.OCToTraceData(td), t, baseConfig())
 
 			want := []honeycombData{
 				{

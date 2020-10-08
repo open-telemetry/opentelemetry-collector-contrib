@@ -21,10 +21,9 @@ The following exporter configuration parameters are supported.
 | `no_verify_ssl`   | Enable or disable TLS certificate verification.                        | false   |
 | `proxy_address`   | Upload Structured Logs to AWS CloudWatch through a proxy.              |         |
 | `region`          | Send Structured Logs to AWS CloudWatch in a specific region. If this field is not present in config, environment variable "AWS_REGION" can then be used to set region.| determined by metadata |
-| `resource_arn`    | Amazon Resource Name (ARN) of the AWS resource running the collector.  |         |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
-| `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    5    |
-| `force_flush_interval`| Specifies in seconds the maximum amount of time that metrics remain in the memory buffer before being sent to the server.|    60   |
+| `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
+| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)|
 
 
 ## AWS Credential Configuration

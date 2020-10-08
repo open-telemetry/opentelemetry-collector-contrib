@@ -41,11 +41,12 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		APIKey:     "",
-		Dataset:    "",
-		APIURL:     "https://api.honeycomb.io",
-		SampleRate: 1,
-		Debug:      false,
+		APIKey:              "",
+		Dataset:             "",
+		APIURL:              "https://api.honeycomb.io",
+		SampleRate:          1,
+		SampleRateAttribute: "",
+		Debug:               false,
 	}
 }
 
