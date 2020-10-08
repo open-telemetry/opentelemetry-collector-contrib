@@ -82,7 +82,7 @@ class DatadogExportSpanProcessor(SpanProcessor):
         self.worker_thread.start()
 
     def on_start(self, span: Span) -> None:
-        ctx = span.get_context()
+        ctx = span.get_span_context()
         trace_id = ctx.trace_id
 
         with self.traces_lock:
@@ -102,7 +102,7 @@ class DatadogExportSpanProcessor(SpanProcessor):
             logger.warning("Already shutdown, dropping span.")
             return
 
-        ctx = span.get_context()
+        ctx = span.get_span_context()
         trace_id = ctx.trace_id
 
         with self.traces_lock:
