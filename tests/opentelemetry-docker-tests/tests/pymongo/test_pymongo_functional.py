@@ -51,7 +51,7 @@ class TestFunctionalPymongo(TestBase):
         self.assertIsNot(root_span, None)
         self.assertIsNot(pymongo_span, None)
         self.assertIsNotNone(pymongo_span.parent)
-        self.assertIs(pymongo_span.parent, root_span.get_context())
+        self.assertIs(pymongo_span.parent, root_span.get_span_context())
         self.assertIs(pymongo_span.kind, trace_api.SpanKind.CLIENT)
         self.assertEqual(
             pymongo_span.attributes["db.instance"], MONGODB_DB_NAME

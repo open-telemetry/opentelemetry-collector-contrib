@@ -65,7 +65,7 @@ class TestFunctionalPyMysql(TestBase):
         self.assertEqual(root_span.name, "rootSpan")
         self.assertEqual(db_span.name, "mysql.opentelemetry-tests")
         self.assertIsNotNone(db_span.parent)
-        self.assertIs(db_span.parent, root_span.get_context())
+        self.assertIs(db_span.parent, root_span.get_span_context())
         self.assertIs(db_span.kind, trace_api.SpanKind.CLIENT)
         self.assertEqual(db_span.attributes["db.instance"], MYSQL_DB_NAME)
         self.assertEqual(db_span.attributes["net.peer.name"], MYSQL_HOST)

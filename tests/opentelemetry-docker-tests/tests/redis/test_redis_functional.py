@@ -109,7 +109,7 @@ class TestRedisInstrument(TestBase):
 
         # confirm the parenting
         self.assertIsNone(parent_span.parent)
-        self.assertIs(child_span.parent, parent_span.get_context())
+        self.assertIs(child_span.parent, parent_span.get_span_context())
 
         self.assertEqual(parent_span.name, "redis_get")
         self.assertEqual(parent_span.instrumentation_info.name, "redis_svc")

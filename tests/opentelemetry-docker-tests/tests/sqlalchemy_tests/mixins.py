@@ -175,7 +175,7 @@ class SQLAlchemyTestMixin(TestBase):
 
         # confirm the parenting
         self.assertIsNone(parent_span.parent)
-        self.assertIs(child_span.parent, parent_span.get_context())
+        self.assertIs(child_span.parent, parent_span.get_span_context())
 
         self.assertEqual(parent_span.name, "sqlalch_op")
         self.assertEqual(parent_span.instrumentation_info.name, "sqlalch_svc")
