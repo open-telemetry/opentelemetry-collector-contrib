@@ -52,7 +52,7 @@ class TestSQLite3(TestBase):
         self.assertEqual(root_span.name, "rootSpan")
         self.assertEqual(child_span.name, "sqlite3")
         self.assertIsNotNone(child_span.parent)
-        self.assertIs(child_span.parent, root_span.get_context())
+        self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
 
     def test_execute(self):
