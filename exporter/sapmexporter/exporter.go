@@ -54,11 +54,17 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 		return sapmExporter{}, err
 	}
 
+	var tracker *Tracker
+
+	if !cfg.Correlation.Enabled {
+		tracker = NewTracker(cfg, params)
+	}
+
 	return sapmExporter{
 		client:  client,
 		logger:  params.Logger,
 		config:  cfg,
-		tracker: NewTracker(cfg, params),
+		tracker: tracker,
 	}, err
 }
 

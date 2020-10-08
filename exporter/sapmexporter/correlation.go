@@ -93,16 +93,11 @@ func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 // AddSpans processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
 func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
-	if traces.ResourceSpans().Len() == 0 {
+	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return
 	}
 
 	cor.once.Do(func() {
-		if !cor.cfg.Correlation.Enabled {
-			cor.log.Info("Span/metrics correlation is disabled")
-			return
-		}
-
 		res := traces.ResourceSpans().At(0).Resource()
 		hostID, ok := splunk.ResourceToHostID(res)
 
@@ -120,9 +115,17 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 			return
 		}
 
-		cor.traceTracker = tracetracker.New(newZapShim(cor.params.Logger), cor.cfg.Correlation.StaleServiceTimeout, cor.correlation, map[string]string{
-			string(hostID.Key): hostID.ID,
-		}, false, nil)
+		cor.traceTracker = tracetracker.New(
+			newZapShim(cor.params.Logger),
+			cor.cfg.Correlation.StaleServiceTimeout,
+			cor.correlation,
+			map[string]string{
+				string(hostID.Key): hostID.ID,
+			},
+			false,
+			nil,
+			// TODO: Followup PR to use translated dimension names.
+			tracetracker.DefaultDimsToSyncSource)
 		cor.Start()
 	})
 
@@ -133,14 +136,14 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 
 // Start correlation tracking.
 func (cor *Tracker) Start() {
-	if cor.correlation != nil {
+	if cor != nil && cor.correlation != nil {
 		cor.correlation.Start()
 	}
 }
 
 // Shutdown correlation tracking.
 func (cor *Tracker) Shutdown() {
-	if cor.correlation != nil {
+	if cor != nil && cor.correlation != nil {
 		cor.correlation.cancel()
 	}
 }

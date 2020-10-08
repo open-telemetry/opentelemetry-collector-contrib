@@ -84,6 +84,10 @@ func (c *Config) validate() error {
 		return errors.New("`endpoint` not specified")
 	}
 
+	if c.Correlation.Enabled && c.Correlation.Endpoint == "" && c.APIEndpoint == "" {
+		return errors.New("`api_endpoint` or `correlation.endpoint` must be set when `correlation.enabled` is true")
+	}
+
 	e, err := url.Parse(c.Endpoint)
 	if err != nil {
 		return err

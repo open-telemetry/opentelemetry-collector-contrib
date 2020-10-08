@@ -59,12 +59,12 @@ func createDefaultConfig() configmodels.Exporter {
 			Enabled:             true,
 			StaleServiceTimeout: 5 * time.Minute,
 			Config: correlations.Config{
-				MaxRequests:         20,
-				MaxBuffered:         10_000,
-				MaxRetries:          2,
-				LogDimensionUpdates: false,
-				SendDelay:           30 * time.Second,
-				PurgeInterval:       1 * time.Minute,
+				MaxRequests:     20,
+				MaxBuffered:     10_000,
+				MaxRetries:      2,
+				LogUpdates:      false,
+				RetryDelay:      30 * time.Second,
+				CleanupInterval: 1 * time.Minute,
 			},
 		},
 	}

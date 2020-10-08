@@ -34,7 +34,7 @@ during final translation.  Intended to be used in tandem with identical configur
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 - `correlation`
-  - `enabled` (default = true): Whether to enable span/metric correlation.
+  - `enabled` (default = true): Whether to enable span/metric correlation. Note that correlation is enabled by default if the entire `correlation` block is not set due to this value.
   - `endpoint` (default = ""): If set this is the endpoint where correlation API calls will be made. Otherwise it defaults to using `api_endpoint` value.
   - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
   - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
