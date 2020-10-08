@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -110,40 +109,4 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 		},
 		config: config,
 	}
-}
-
-func (se splunkExporter) Start(ctxt context.Context, host component.Host) error {
-	return se.start(ctxt, host)
-}
-
-func (se splunkExporter) Shutdown(ctxt context.Context) error {
-	return se.stop(ctxt)
-}
-
-func (se splunkExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
-
-	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
-
-	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-	return err
-}
-
-func (se splunkExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	ctx = obsreport.StartTraceDataExportOp(ctx, typeStr)
-
-	numDroppedSpans, err := se.pushTraceData(ctx, td)
-
-	obsreport.EndTraceDataExportOp(ctx, td.SpanCount(), numDroppedSpans, err)
-	return err
-}
-
-func (se splunkExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	ctx = obsreport.StartLogsExportOp(ctx, typeStr)
-
-	numDroppedLogs, err := se.pushLogData(ctx, ld)
-
-	obsreport.EndLogsExportOp(ctx, ld.LogRecordCount(), numDroppedLogs, err)
-	return err
 }
