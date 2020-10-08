@@ -90,13 +90,14 @@ COMMANDS = [
 
 
 def _set_connection_attributes(span, instance):
+    if not span.is_recording():
+        return
     for key, value in _get_address_attributes(instance).items():
         span.set_attribute(key, value)
 
 
 def _with_tracer_wrapper(func):
-    """Helper for providing tracer for wrapper functions.
-    """
+    """Helper for providing tracer for wrapper functions."""
 
     def _with_tracer(tracer, cmd):
         def wrapper(wrapped, instance, args, kwargs):
