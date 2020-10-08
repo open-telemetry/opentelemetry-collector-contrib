@@ -16,6 +16,8 @@ The following configuration options can also be configured:
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
+- To configure queuing and retries see [here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/exporterhelper#configuration)
+
 Example:
 
 ```yaml
