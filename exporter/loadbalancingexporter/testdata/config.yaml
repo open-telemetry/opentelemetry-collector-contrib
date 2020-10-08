@@ -5,7 +5,16 @@ processors:
 
 exporters:
   loadbalancing:
-    config: 
+    # the OTLP exporter configuration. "endpoint" values will be ignored
+    otlp:
+      timeout: 1s
+
+    # how to get the list of backends: DNS or static
+    resolver:
+      static:
+        hostnames:
+        - endpoint-1 # assumes 55678 as the default port
+        - endpoint-2:55678
 
 service:
   pipelines:

@@ -16,6 +16,7 @@ package loadbalancingexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -35,6 +36,8 @@ const (
 	defaultResTimeout     = time.Second
 	defaultEndpointFormat = "%s:55678"
 )
+
+var errNoResolver = errors.New("no resolvers specified for the exporter")
 
 type exporterImp struct {
 	logger *zap.Logger
@@ -61,12 +64,28 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 		ApplicationStartInfo: params.ApplicationStartInfo,
 	}
 
+	var res resolver
+	if oCfg.Resolver.Static != nil {
+		var err error
+		res, err = newStaticResolver(oCfg.Resolver.Static.Hostnames)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if res == nil {
+		return nil, errNoResolver
+	}
+
 	return &exporterImp{
-		logger:               params.Logger,
-		templateCreateParams: tmplParams,
-		config:               *oCfg,
+		logger: params.Logger,
+		config: *oCfg,
+
+		res: res,
+
 		exporters:            map[string]component.TraceExporter{},
 		exporterFactory:      otlpexporter.NewFactory(),
+		templateCreateParams: tmplParams,
 	}, nil
 }
 
@@ -101,15 +120,18 @@ func (e *exporterImp) onBackendChanges(resolved []string) {
 func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []string) {
 	for _, endpoint := range endpoints {
 		if _, exists := e.exporters[endpoint]; !exists {
-			cfg := e.config.template
-			if cfg == nil {
-				cfg = e.exporterFactory.CreateDefaultConfig()
-			}
-
+			cfg := e.exporterFactory.CreateDefaultConfig()
 			oCfg := cfg.(*otlpexporter.Config)
-			oCfg.Endpoint = fmt.Sprintf(defaultEndpointFormat, endpoint)
 
-			exp, err := e.exporterFactory.CreateTraceExporter(ctx, e.templateCreateParams, oCfg)
+			// is this wrong? are we overriding default fields, or is the config unmarshaller taking care of it?
+			oCfg.ExporterSettings = e.config.OTLP.ExporterSettings
+			oCfg.TimeoutSettings = e.config.OTLP.TimeoutSettings
+			oCfg.QueueSettings = e.config.OTLP.QueueSettings
+			oCfg.RetrySettings = e.config.OTLP.RetrySettings
+			oCfg.GRPCClientSettings = e.config.OTLP.GRPCClientSettings
+
+			oCfg.Endpoint = fmt.Sprintf(defaultEndpointFormat, endpoint)
+			exp, err := e.exporterFactory.CreateTraceExporter(ctx, e.templateCreateParams, cfg)
 			if err != nil {
 				e.logger.Warn("failed to create new trace exporter for endpoint", zap.String("endpoint", endpoint))
 				continue

@@ -16,10 +16,22 @@ package loadbalancingexporter
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"`
-	template                      configmodels.Exporter `mapstructure:"template"`
+	OTLP                          otlpexporter.Config `mapstructure:"otlp"`
+	Resolver                      ResolverSettings    `mapstructure:"resolver"`
+}
+
+// ResolverSettings defines the configurations for the backend resolver
+type ResolverSettings struct {
+	Static *StaticResolver `mapstructure:"static"`
+}
+
+// StaticResolver defines the configuration for the resolver providing a fixed list of backends
+type StaticResolver struct {
+	Hostnames []string `mapstructure:"hostnames"`
 }

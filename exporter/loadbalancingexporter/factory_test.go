@@ -33,6 +33,9 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 			NameVal: "loadbalancing",
 			TypeVal: "loadbalancing",
 		},
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
 	}
 
 	// test

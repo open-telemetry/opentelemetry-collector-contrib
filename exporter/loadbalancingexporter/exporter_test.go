@@ -30,9 +30,43 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestExporterCapabilities(t *testing.T) {
+func TestNewExporterNoResolver(t *testing.T) {
 	// prepare
 	config := &Config{}
+	params := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}
+
+	// test
+	p, err := newExporter(params, config)
+
+	// verify
+	require.Nil(t, p)
+	require.Equal(t, errNoResolver, err)
+}
+
+func TestNewExporterInvalidStaticResolver(t *testing.T) {
+	// prepare
+	config := &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{}},
+		},
+	}
+	params := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}
+
+	// test
+	p, err := newExporter(params, config)
+
+	// verify
+	require.Nil(t, p)
+	require.Equal(t, errNoEndpoints, err)
+}
+
+func TestExporterCapabilities(t *testing.T) {
+	// prepare
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -49,7 +83,7 @@ func TestExporterCapabilities(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -68,7 +102,7 @@ func TestStart(t *testing.T) {
 
 func TestStartFailure(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -92,7 +126,7 @@ func TestStartFailure(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -109,7 +143,7 @@ func TestShutdown(t *testing.T) {
 
 func TestConsumeTraces(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -139,7 +173,7 @@ func TestConsumeTraces(t *testing.T) {
 
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -160,7 +194,7 @@ func TestOnBackendChanges(t *testing.T) {
 
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -182,7 +216,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 
 func TestAddMissingExporters(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -213,7 +247,7 @@ func TestAddMissingExporters(t *testing.T) {
 
 func TestFailedToAddMissingExporters(t *testing.T) {
 	// prepare
-	config := &Config{}
+	config := simpleConfig()
 	params := component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}
@@ -281,4 +315,12 @@ func simpleTraces() pdata.Traces {
 	traces.ResourceSpans().Append(rss)
 
 	return traces
+}
+
+func simpleConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+	}
 }
