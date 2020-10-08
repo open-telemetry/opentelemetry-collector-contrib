@@ -29,9 +29,15 @@ type Config struct {
 // ResolverSettings defines the configurations for the backend resolver
 type ResolverSettings struct {
 	Static *StaticResolver `mapstructure:"static"`
+	DNS    *DNSResolver    `mapstructure:"dns"`
 }
 
 // StaticResolver defines the configuration for the resolver providing a fixed list of backends
 type StaticResolver struct {
 	Hostnames []string `mapstructure:"hostnames"`
+}
+
+// DNSResolver defines the configuration for the DNS resolver
+type DNSResolver struct {
+	Hostname string `mapstructure:"hostname"`
 }

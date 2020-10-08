@@ -9,12 +9,19 @@ exporters:
     otlp:
       timeout: 1s
 
-    # how to get the list of backends: DNS or static
+    # how to get the list of backends: static
     resolver:
       static:
         hostnames:
         - endpoint-1 # assumes 55678 as the default port
         - endpoint-2:55678
+  loadbalancing/2:
+    otlp:
+
+    # how to get the list of backends: DNS
+    resolver:
+      dns:
+        hostname: service-1
 
 service:
   pipelines:

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -32,8 +31,6 @@ import (
 var _ component.TraceExporter = (*exporterImp)(nil)
 
 const (
-	defaultResInterval    = 5 * time.Second
-	defaultResTimeout     = time.Second
 	defaultEndpointFormat = "%s:55678"
 )
 
@@ -68,6 +65,15 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 	if oCfg.Resolver.Static != nil {
 		var err error
 		res, err = newStaticResolver(oCfg.Resolver.Static.Hostnames)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if oCfg.Resolver.DNS != nil { // if both are configured, DNS takes precedence
+		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
+
+		var err error
+		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname)
 		if err != nil {
 			return nil, err
 		}

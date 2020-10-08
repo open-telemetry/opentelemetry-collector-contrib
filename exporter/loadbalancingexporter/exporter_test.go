@@ -64,6 +64,27 @@ func TestNewExporterInvalidStaticResolver(t *testing.T) {
 	require.Equal(t, errNoEndpoints, err)
 }
 
+func TestNewExporterInvalidDNSResolver(t *testing.T) {
+	// prepare
+	config := &Config{
+		Resolver: ResolverSettings{
+			DNS: &DNSResolver{
+				Hostname: "",
+			},
+		},
+	}
+	params := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}
+
+	// test
+	p, err := newExporter(params, config)
+
+	// verify
+	require.Nil(t, p)
+	require.Equal(t, errNoHostname, err)
+}
+
 func TestExporterCapabilities(t *testing.T) {
 	// prepare
 	config := simpleConfig()
@@ -100,7 +121,54 @@ func TestStart(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestStartFailure(t *testing.T) {
+func TestWithDNSResolver(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		config *Config
+	}{
+		{
+			"DNS settings specified",
+			&Config{
+				Resolver: ResolverSettings{
+					DNS: &DNSResolver{
+						Hostname: "service-1",
+					},
+				},
+			},
+		},
+		{
+			"DNS and static settings specified",
+			&Config{
+				Resolver: ResolverSettings{
+					Static: &StaticResolver{
+						Hostnames: []string{"endpoint-1", "endpoint-2"},
+					},
+					DNS: &DNSResolver{
+						Hostname: "service-1",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			params := component.ExporterCreateParams{
+				Logger: zap.NewNop(),
+			}
+			p, err := newExporter(params, tt.config)
+			require.NotNil(t, p)
+			require.NoError(t, err)
+
+			// test
+			res, ok := p.res.(*dnsResolver)
+
+			// verify
+			assert.NotNil(t, res)
+			assert.True(t, ok)
+		})
+	}
+}
+
+func TestStartFailureStaticResolver(t *testing.T) {
 	// prepare
 	config := simpleConfig()
 	params := component.ExporterCreateParams{

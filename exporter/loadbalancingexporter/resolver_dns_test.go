@@ -18,15 +18,18 @@ import (
 	"context"
 	"errors"
 	"net"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestInitialDNSResolution(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver("service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1")
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{
@@ -56,7 +59,7 @@ func TestInitialDNSResolution(t *testing.T) {
 
 func TestErrNoHostname(t *testing.T) {
 	// test
-	res, err := newDNSResolver("")
+	res, err := newDNSResolver(zap.NewNop(), "")
 
 	// verify
 	assert.Nil(t, res)
@@ -65,7 +68,7 @@ func TestErrNoHostname(t *testing.T) {
 
 func TestCantResolve(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver("service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1")
 	require.NoError(t, err)
 
 	expectedErr := errors.New("some expected error")
@@ -84,7 +87,7 @@ func TestCantResolve(t *testing.T) {
 
 func TestOnChange(t *testing.T) {
 	// prepare
-	res, err := newDNSResolver("service-1")
+	res, err := newDNSResolver(zap.NewNop(), "service-1")
 	require.NoError(t, err)
 
 	resolve := []net.IPAddr{
@@ -143,6 +146,96 @@ func TestEqualStringSlice(t *testing.T) {
 		res := equalStringSlice(tt.source, tt.candidate)
 		assert.Equal(t, tt.expected, res)
 	}
+}
+
+func TestPeriodicallyResolve(t *testing.T) {
+	// prepare
+	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	require.NoError(t, err)
+
+	wg := sync.WaitGroup{}
+	counter := 0
+	resolve := [][]net.IPAddr{
+		{
+			{IP: net.IPv4(127, 0, 0, 1)},
+		}, {
+			{IP: net.IPv4(127, 0, 0, 1)},
+			{IP: net.IPv4(127, 0, 0, 2)},
+		},
+	}
+	res.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			counter++
+
+			// count down at most two times
+			if counter <= 2 {
+				wg.Done()
+			}
+
+			// for subsequent calls, return the second result
+			if counter >= 2 {
+				return resolve[1], nil
+			}
+
+			// for the first call, return the first result
+			return resolve[0], nil
+		},
+	}
+	res.resInterval = 10 * time.Millisecond
+
+	// test
+	wg.Add(2)
+	res.start(context.Background())
+	defer res.shutdown(context.Background())
+
+	// wait for two resolutions: from the start, and one periodic
+	wg.Wait()
+
+	// verify
+	assert.GreaterOrEqual(t, 2, counter)
+	assert.Len(t, res.endpoints, 2)
+}
+
+func TestPeriodicallyResolveFailure(t *testing.T) {
+	// prepare
+	res, err := newDNSResolver(zap.NewNop(), "service-1")
+	require.NoError(t, err)
+
+	expectedErr := errors.New("some expected error")
+	wg := sync.WaitGroup{}
+	counter := 0
+	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
+	res.resolver = &mockDNSResolver{
+		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
+			counter++
+
+			// count down at most two times
+			if counter <= 2 {
+				wg.Done()
+			}
+
+			// for subsequent calls, return the error
+			if counter >= 2 {
+				return nil, expectedErr
+			}
+
+			// for the first call, return the first result
+			return resolve, nil
+		},
+	}
+	res.resInterval = 10 * time.Millisecond
+
+	// test
+	wg.Add(2)
+	res.start(context.Background())
+	defer res.shutdown(context.Background())
+
+	// wait for two resolutions: from the start, and one periodic
+	wg.Wait()
+
+	// verify
+	assert.GreaterOrEqual(t, 2, counter)
+	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 
 var _ netResolver = (*mockDNSResolver)(nil)

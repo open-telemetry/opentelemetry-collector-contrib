@@ -21,49 +21,91 @@ import (
 	"net"
 	"sort"
 	"sync"
+	"time"
+
+	"go.uber.org/zap"
 )
 
 var _ resolver = (*dnsResolver)(nil)
 
+const (
+	defaultResInterval = 5 * time.Second
+	defaultResTimeout  = time.Second
+)
+
 var errNoHostname = errors.New("no hostname specified to resolve the backends")
 
 type dnsResolver struct {
-	hostname string
-	resolver netResolver
+	logger *zap.Logger
+
+	hostname    string
+	resolver    netResolver
+	resInterval time.Duration
+	resTimeout  time.Duration
 
 	endpoints         []string
 	onChangeCallbacks []func([]string)
 
+	stopped    bool
 	updateLock sync.Mutex
+	shutdownWg sync.WaitGroup
 }
 
 type netResolver interface {
 	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
-func newDNSResolver(hostname string) (*dnsResolver, error) {
+func newDNSResolver(logger *zap.Logger, hostname string) (*dnsResolver, error) {
 	if len(hostname) == 0 {
 		return nil, errNoHostname
 	}
 
 	return &dnsResolver{
-		hostname: hostname,
-		resolver: &net.Resolver{},
+		logger:      logger,
+		hostname:    hostname,
+		resolver:    &net.Resolver{},
+		resInterval: defaultResInterval,
+		resTimeout:  defaultResTimeout,
+		stopped:     true,
 	}, nil
 }
 
 func (r *dnsResolver) start(ctx context.Context) error {
+	r.stopped = false
 	if _, err := r.resolve(ctx); err != nil {
 		return err
 	}
+
+	go r.periodicallyResolve()
+
 	return nil
 }
 
 func (r *dnsResolver) shutdown(ctx context.Context) error {
+	r.stopped = true
+	r.shutdownWg.Wait()
 	return nil
 }
 
+func (r *dnsResolver) periodicallyResolve() {
+	if r.stopped {
+		return
+	}
+
+	time.AfterFunc(r.resInterval, func() {
+		ctx, cancel := context.WithTimeout(context.Background(), r.resTimeout)
+		defer cancel()
+
+		if _, err := r.resolve(ctx); err != nil {
+			r.logger.Warn("failed to resolve", zap.Error(err))
+		}
+	})
+}
+
 func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
+	r.shutdownWg.Add(1)
+	defer r.shutdownWg.Done()
+
 	addrs, err := r.resolver.LookupIPAddr(ctx, r.hostname)
 	if err != nil {
 		return nil, err
