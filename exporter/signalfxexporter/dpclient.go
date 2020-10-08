@@ -95,7 +95,7 @@ func (s *sfxDPClient) pushMetricsData(
 				//    is added for metrics type.
 				// 2) Also consider invoking in a goroutine to some concurrency going, in case
 				//    there are a lot of tokens.
-				droppedCount, err := s.pushMetricsDataForToken(metricsData[batchStartIdx:i], currentToken)
+				droppedCount, err := s.pushMetricsDataForToken(ctx, metricsData[batchStartIdx:i], currentToken)
 				numDroppedTimeseries += droppedCount
 				if err != nil {
 					errs = append(errs, err)
@@ -108,7 +108,7 @@ func (s *sfxDPClient) pushMetricsData(
 
 	// Ensure to get the last chunk of metrics.
 	if len(metricsData[batchStartIdx:]) > 0 {
-		droppedCount, err := s.pushMetricsDataForToken(metricsData[batchStartIdx:], currentToken)
+		droppedCount, err := s.pushMetricsDataForToken(ctx, metricsData[batchStartIdx:], currentToken)
 		numDroppedTimeseries += droppedCount
 		if err != nil {
 			errs = append(errs, err)
@@ -118,7 +118,7 @@ func (s *sfxDPClient) pushMetricsData(
 	return numDroppedTimeseries, componenterror.CombineErrors(errs)
 }
 
-func (s *sfxDPClient) pushMetricsDataForToken(
+func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context,
 	metricsData []consumerdata.MetricsData, accessToken string) (int, error) {
 	numTimeseries := timeseriesCount(metricsData)
 	sfxDataPoints := make([]*sfxpb.DataPoint, 0, numTimeseries)
@@ -133,7 +133,7 @@ func (s *sfxDPClient) pushMetricsDataForToken(
 	if !strings.HasSuffix(datapointURL.Path, "v2/datapoint") {
 		datapointURL.Path = path.Join(datapointURL.Path, "v2/datapoint")
 	}
-	req, err := http.NewRequest("POST", datapointURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", datapointURL.String(), body)
 	if err != nil {
 		return numTimeseries, consumererror.Permanent(err)
 	}
