@@ -284,13 +284,17 @@ class TestShim(TestCase):
                 )
 
                 # Verify parent-child relationship.
-                parent_trace_id = parent.span.unwrap().get_context().trace_id
-                child_trace_id = child.span.unwrap().get_context().trace_id
+                parent_trace_id = (
+                    parent.span.unwrap().get_span_context().trace_id
+                )
+                child_trace_id = (
+                    child.span.unwrap().get_span_context().trace_id
+                )
 
                 self.assertEqual(parent_trace_id, child_trace_id)
                 self.assertEqual(
                     child.span.unwrap().parent,
-                    parent.span.unwrap().get_context(),
+                    parent.span.unwrap().get_span_context(),
                 )
 
             # Verify parent span becomes the active span again.
@@ -314,23 +318,26 @@ class TestShim(TestCase):
             with self.shim.start_active_span(
                 "ChildSpan", child_of=parent
             ) as child:
-                parent_trace_id = parent.unwrap().get_context().trace_id
-                child_trace_id = child.span.unwrap().get_context().trace_id
+                parent_trace_id = parent.unwrap().get_span_context().trace_id
+                child_trace_id = (
+                    child.span.unwrap().get_span_context().trace_id
+                )
 
                 self.assertEqual(child_trace_id, parent_trace_id)
                 self.assertEqual(
-                    child.span.unwrap().parent, parent.unwrap().get_context()
+                    child.span.unwrap().parent,
+                    parent.unwrap().get_span_context(),
                 )
 
         with self.shim.start_span("ParentSpan") as parent:
             child = self.shim.start_span("ChildSpan", child_of=parent)
 
-            parent_trace_id = parent.unwrap().get_context().trace_id
-            child_trace_id = child.unwrap().get_context().trace_id
+            parent_trace_id = parent.unwrap().get_span_context().trace_id
+            child_trace_id = child.unwrap().get_span_context().trace_id
 
             self.assertEqual(child_trace_id, parent_trace_id)
             self.assertEqual(
-                child.unwrap().parent, parent.unwrap().get_context()
+                child.unwrap().parent, parent.unwrap().get_span_context()
             )
 
             child.finish()
@@ -344,8 +351,10 @@ class TestShim(TestCase):
             with self.shim.start_active_span(
                 "ChildSpan", child_of=parent.context
             ) as child:
-                parent_trace_id = parent.unwrap().get_context().trace_id
-                child_trace_id = child.span.unwrap().get_context().trace_id
+                parent_trace_id = parent.unwrap().get_span_context().trace_id
+                child_trace_id = (
+                    child.span.unwrap().get_span_context().trace_id
+                )
 
                 self.assertEqual(child_trace_id, parent_trace_id)
                 self.assertEqual(
@@ -356,8 +365,8 @@ class TestShim(TestCase):
             with self.shim.start_span(
                 "SpanWithContextParent", child_of=parent.context
             ) as child:
-                parent_trace_id = parent.unwrap().get_context().trace_id
-                child_trace_id = child.unwrap().get_context().trace_id
+                parent_trace_id = parent.unwrap().get_span_context().trace_id
+                child_trace_id = child.unwrap().get_span_context().trace_id
 
                 self.assertEqual(child_trace_id, parent_trace_id)
                 self.assertEqual(
