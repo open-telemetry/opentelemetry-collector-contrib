@@ -179,9 +179,9 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 48, len(config.TranslationRules))
+	assert.Equal(t, 49, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
+	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
@@ -212,6 +212,57 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
 	assert.Equal(t, 1, len(config.TranslationRules[0].Mapping))
 	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
+}
+
+func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:    "testToken",
+		Realm:          "us1",
+		ExcludeMetrics: []string{"metric1"},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[0].Action)
+	assert.Equal(t, 1, len(config.TranslationRules[0].MetricNames))
+	assert.True(t, config.TranslationRules[0].MetricNames["metric1"])
+}
+
+func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+		TranslationRules: []translation.Rule{
+			{
+				Action: translation.ActionRenameDimensionKeys,
+				Mapping: map[string]string{
+					"old_dimension": "new_dimension",
+				},
+			},
+		},
+		ExcludeMetrics: []string{"metric1"},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	assert.Equal(t, 2, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
+	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[1].Action)
+	assert.Equal(t, 1, len(config.TranslationRules[1].MetricNames))
+	assert.True(t, config.TranslationRules[1].MetricNames["metric1"])
 }
 
 func TestDefaultTranslationRules(t *testing.T) {

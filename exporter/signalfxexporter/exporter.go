@@ -31,15 +31,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 type signalfxExporter struct {
-	logger           *zap.Logger
-	pushMetricsData  func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata     func(metadata []*collection.MetadataUpdate) error
-	pushResourceLogs func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	logger             *zap.Logger
+	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushMetadata       func(metadata []*collection.MetadataUpdate) error
+	pushResourceLogs   func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	hostMetadataSyncer *hostmetadata.Syncer
 }
 
 type exporterOptions struct {
@@ -102,10 +104,16 @@ func newSignalFxExporter(
 		})
 	dimClient.Start()
 
+	var hms *hostmetadata.Syncer
+	if config.SyncHostMetadata {
+		hms = hostmetadata.NewSyncer(logger, dimClient)
+	}
+
 	return signalfxExporter{
-		logger:          logger,
-		pushMetricsData: dpClient.pushMetricsData,
-		pushMetadata:    dimClient.PushMetadata,
+		logger:             logger,
+		pushMetricsData:    dpClient.pushMetricsData,
+		pushMetadata:       dimClient.PushMetadata,
+		hostMetadataSyncer: hms,
 	}, nil
 }
 
@@ -160,6 +168,9 @@ func (se signalfxExporter) Shutdown(context.Context) error {
 func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
 	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+	if err == nil && se.hostMetadataSyncer != nil {
+		se.hostMetadataSyncer.Sync(md)
+	}
 	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
 
 	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)

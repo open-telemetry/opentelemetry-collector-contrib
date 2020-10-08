@@ -15,6 +15,7 @@
 package translation
 
 import (
+	"encoding/json"
 	"sort"
 	"testing"
 	"time"
@@ -44,7 +45,9 @@ type byDimensions []*sfxpb.Dimension
 
 func (dims byDimensions) Len() int { return len(dims) }
 func (dims byDimensions) Less(i, j int) bool {
-	return dims[i].Key < dims[j].Key
+	ib, _ := json.Marshal(dims[i])
+	jb, _ := json.Marshal(dims[j])
+	return string(ib) < string(jb)
 }
 func (dims byDimensions) Swap(i, j int) { dims[i], dims[j] = dims[j], dims[i] }
 
@@ -124,6 +127,38 @@ func TestNewMetricTranslator(t *testing.T) {
 			wantError:         "",
 		},
 		{
+			name: "rename_metric_valid_add_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					AddDimensions: map[string]string{
+						"dim1": "val1",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
+			name: "rename_metric_valid_copy_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "dim2",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         "",
+		},
+		{
 			name: "rename_metric_invalid",
 			trs: []Rule{
 				{
@@ -132,6 +167,22 @@ func TestNewMetricTranslator(t *testing.T) {
 			},
 			wantDimensionsMap: nil,
 			wantError:         "field \"mapping\" is required for \"rename_metrics\" translation rule",
+		},
+		{
+			name: "rename_metric_invalid_copy_dimensions",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"metric1": "metric2",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "",
+					},
+				},
+			},
+			wantDimensionsMap: nil,
+			wantError:         `mapping "copy_dimensions" for "rename_metrics" translation rule must not contain empty string keys or values`,
 		},
 		{
 			name: "rename_dimensions_and_metrics_valid",
@@ -492,7 +543,7 @@ func TestNewMetricTranslator(t *testing.T) {
 				assert.Equal(t, tt.wantDimensionsMap, mt.dimensionsMap)
 			} else {
 				require.Error(t, err)
-				assert.Equal(t, err.Error(), tt.wantError)
+				assert.Equal(t, tt.wantError, err.Error())
 				require.Nil(t, mt)
 			}
 		})
@@ -754,6 +805,46 @@ func TestTranslateDataPoints(t *testing.T) {
 						{Key: "dim1", Value: "val1"},
 						{Key: "dim2", Value: "val2"},
 						{Key: "dim3", Value: "val3"},
+					},
+				},
+			},
+		},
+		{
+			name: "rename_metric with copy dimension",
+			trs: []Rule{
+				{
+					Action: ActionRenameMetrics,
+					Mapping: map[string]string{
+						"k8s/container/mem/usage": "container_memory_usage_bytes",
+					},
+					CopyDimensions: map[string]string{
+						"dim1": "copied1",
+						"dim2": "copied2",
+					},
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "k8s/container/mem/usage",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{{Key: "dim1", Value: "val1"}},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "container_memory_usage_bytes",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(13),
+					},
+					MetricType: &gaugeType,
+					Dimensions: []*sfxpb.Dimension{
+						{Key: "dim1", Value: "val1"},
+						{Key: "copied1", Value: "val1"},
 					},
 				},
 			},
@@ -1591,6 +1682,144 @@ func TestTranslateDataPoints(t *testing.T) {
 						{
 							Key:   "dim1",
 							Value: "val1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "aggregate_metric_mean",
+			trs: []Rule{
+				{
+					Action:            ActionAggregateMetric,
+					MetricName:        "metric1",
+					WithoutDimensions: []string{"dim3"},
+					AggregationMethod: "avg",
+				},
+			},
+			dps: []*sfxpb.DataPoint{
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(9),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "different",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(2),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
+						},
+						{
+							Key:   "dim3",
+							Value: "another",
+						},
+					},
+				},
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+			},
+			want: []*sfxpb.DataPoint{
+				{
+					Metric:    "another-metric",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						IntValue: generateIntPtr(23),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(8.6),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val1",
+						},
+						{
+							Key:   "dim2",
+							Value: "val1",
+						},
+					},
+				},
+				{
+					Metric:    "metric1",
+					Timestamp: msec,
+					Value: sfxpb.Datum{
+						DoubleValue: generateFloatPtr(2.0),
+					},
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim1",
+							Value: "val2",
+						},
+						{
+							Key:   "dim2",
+							Value: "val2",
 						},
 					},
 				},

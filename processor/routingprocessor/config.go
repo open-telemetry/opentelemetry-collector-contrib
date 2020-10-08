@@ -28,7 +28,7 @@ type Config struct {
 
 	// FromAttribute contains the attribute name to look up the route value. This attribute should be part of the context propagated
 	// down from the previous receivers and/or processors. If all the receivers and processors are propagating the entire context correctly,
-	// this could be the HTTP/gRPC header from the original request/RPC. Typically, aggregation processors (batch, queued_retry, groupbytrace)
+	// this could be the HTTP/gRPC header from the original request/RPC. Typically, aggregation processors (batch, groupbytrace)
 	// will create a new context, so, those should be avoided when using this processor.Although the HTTP spec allows headers to be repeated,
 	// this processor will only use the first value.
 	// Required.
