@@ -53,10 +53,11 @@ func (r *stanzareceiver) Start(ctx context.Context, host component.Host) error {
 		err = nil
 		rctx, cancel := context.WithCancel(ctx)
 		r.cancel = cancel
-		r.logger.Info("Starting observiq receiver")
+		r.logger.Info("Starting stanza receiver")
 
 		if obsErr := r.agent.Start(); obsErr != nil {
-			err = fmt.Errorf("start observiq: %s", err)
+			err = fmt.Errorf("start stanza: %s", err)
+			return
 		}
 
 		r.wg.Add(1)
@@ -88,6 +89,7 @@ func (r *stanzareceiver) Shutdown(context.Context) error {
 
 	err := componenterror.ErrAlreadyStopped
 	r.stopOnce.Do(func() {
+		r.logger.Info("Stopping stanza receiver")
 		err = r.agent.Stop()
 		r.cancel()
 		r.wg.Wait()
