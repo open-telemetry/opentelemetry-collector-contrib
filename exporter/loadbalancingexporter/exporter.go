@@ -37,18 +37,19 @@ const (
 )
 
 type exporterImp struct {
-	logger               *zap.Logger
-	config               Config
-	ring                 *hashRing
+	logger *zap.Logger
+	config Config
+
+	res  resolver
+	ring *hashRing
+
 	exporters            map[string]component.TraceExporter
-	res                  resolver
-	resInterval          time.Duration
-	resTimeout           time.Duration
-	stopped              bool
-	shutdownWg           sync.WaitGroup
 	exporterFactory      component.ExporterFactory
 	templateCreateParams component.ExporterCreateParams
-	updateLock           sync.RWMutex
+
+	stopped    bool
+	shutdownWg sync.WaitGroup
+	updateLock sync.RWMutex
 }
 
 // Crete new exporter
@@ -65,47 +66,20 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 		templateCreateParams: tmplParams,
 		config:               *oCfg,
 		exporters:            map[string]component.TraceExporter{},
-		resInterval:          defaultResInterval,
-		resTimeout:           defaultResTimeout,
 		exporterFactory:      otlpexporter.NewFactory(),
 	}, nil
 }
 
 func (e *exporterImp) Start(ctx context.Context, host component.Host) error {
-	err := e.resolveAndUpdate(ctx)
-	if err != nil {
+	e.res.onChange(e.onBackendChanges)
+	if err := e.res.start(ctx); err != nil {
 		return err
 	}
-
-	e.shutdownWg.Add(1)
-	go e.periodicallyResolve()
 
 	return nil
 }
 
-func (e *exporterImp) periodicallyResolve() {
-	if e.stopped {
-		e.shutdownWg.Done()
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), e.resTimeout)
-	defer cancel()
-
-	if err := e.resolveAndUpdate(ctx); err != nil {
-		e.logger.Debug("failed to resolve endpoints", zap.Error(err))
-	}
-
-	time.AfterFunc(e.resInterval, func() {
-		e.periodicallyResolve()
-	})
-}
-
-func (e *exporterImp) resolveAndUpdate(ctx context.Context) error {
-	resolved, err := e.res.resolve(ctx)
-	if err != nil {
-		return err
-	}
+func (e *exporterImp) onBackendChanges(resolved []string) {
 	resolved = sort.StringSlice(resolved)
 	newRing := newHashRing(resolved)
 
@@ -115,12 +89,13 @@ func (e *exporterImp) resolveAndUpdate(ctx context.Context) error {
 
 		e.ring = newRing
 
+		// TODO: set a timeout?
+		ctx := context.Background()
+
 		// add the missing exporters first
 		e.addMissingExporters(ctx, resolved)
 		e.removeExtraExporters(ctx, resolved)
 	}
-
-	return nil
 }
 
 func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []string) {

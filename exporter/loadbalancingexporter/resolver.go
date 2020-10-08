@@ -21,4 +21,13 @@ type resolver interface {
 	// resolve returns the current list of endpoints.
 	// returns either a non-nil error and a nil list of endpoints, or a non-nil list of endpoints and nil error.
 	resolve(context.Context) ([]string, error)
+
+	// start signals the resolver to start its work
+	start(context.Context) error
+
+	// shutdown signals the resolver to finish its work
+	shutdown(context.Context) error
+
+	// onChange registers a function to call back whenever the list of backends is updated
+	onChange(func([]string))
 }

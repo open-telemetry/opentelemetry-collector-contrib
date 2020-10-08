@@ -17,9 +17,7 @@ package loadbalancingexporter
 import (
 	"context"
 	"errors"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -68,6 +66,30 @@ func TestStart(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestStartFailure(t *testing.T) {
+	// prepare
+	config := &Config{}
+	params := component.ExporterCreateParams{
+		Logger: zap.NewNop(),
+	}
+	p, err := newExporter(params, config)
+	require.NotNil(t, p)
+	require.NoError(t, err)
+
+	expectedErr := errors.New("some expected err")
+	p.res = &mockResolver{
+		onStart: func(context.Context) error {
+			return expectedErr
+		},
+	}
+
+	// test
+	res := p.Start(context.Background(), componenttest.NewNopHost())
+
+	// verify
+	assert.Equal(t, expectedErr, res)
+}
+
 func TestShutdown(t *testing.T) {
 	// prepare
 	config := &Config{}
@@ -98,6 +120,7 @@ func TestConsumeTraces(t *testing.T) {
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
 	p.res = &mockResolver{
+		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
@@ -114,7 +137,7 @@ func TestConsumeTraces(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestFailedToResolveAtStartup(t *testing.T) {
+func TestOnBackendChanges(t *testing.T) {
 	// prepare
 	config := &Config{}
 	params := component.ExporterCreateParams{
@@ -124,147 +147,15 @@ func TestFailedToResolveAtStartup(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
-	expectedErr := errors.New("some error")
-	p.res = &mockResolver{
-		onResolve: func(_ context.Context) ([]string, error) {
-			return nil, expectedErr
-		},
-	}
-
 	// test
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-
-	// verify
-	assert.Equal(t, expectedErr, err)
-}
-
-func TestResolveAndUpdate(t *testing.T) {
-	// prepare
-	config := &Config{}
-	params := component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	}
-	p, err := newExporter(params, config)
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	counter := -1
-	results := [][]string{
-		{"endpoint-1"},               // results for the first call
-		{"endpoint-1", "endpoint-2"}, // results for the second call
-	}
-	p.res = &mockResolver{
-		onResolve: func(_ context.Context) ([]string, error) {
-			if counter > 1 {
-				return results[1], nil
-			}
-			counter++
-			return results[counter], nil
-		},
-	}
-
-	// test
-	err = p.resolveAndUpdate(context.Background())
-	require.NoError(t, err)
+	p.onBackendChanges([]string{"endpoint-1"})
 	require.Len(t, p.ring.items, defaultWeight)
 
 	// this should resolve to two endpoints
-	err = p.resolveAndUpdate(context.Background())
-
-	// verify
-	assert.NoError(t, err)
-	assert.Len(t, p.ring.items, 2*defaultWeight)
-}
-
-func TestPeriodicallyResolve(t *testing.T) {
-	// prepare
-	config := &Config{}
-	params := component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	}
-	p, err := newExporter(params, config)
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	counter := -1
-	results := [][]string{
-		{"endpoint-1"},               // results for the first call
-		{"endpoint-1", "endpoint-2"}, // results for the second call
-	}
-	p.res = &mockResolver{
-		onResolve: func(_ context.Context) ([]string, error) {
-			if counter > 1 {
-				return results[1], nil
-			}
-			counter++
-			wg.Done()
-			return results[counter], nil
-		},
-	}
-	p.resInterval = 50 * time.Millisecond
-
-	// test
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	require.Len(t, p.ring.items, defaultWeight)
-
-	// wait for at least one periodic routine to be called
-	wg.Wait()
-
-	// wait for the periodic routine to be completed
-	err = p.Shutdown(context.Background())
-	require.NoError(t, err)
+	p.onBackendChanges([]string{"endpoint-1", "endpoint-2"})
 
 	// verify
 	assert.Len(t, p.ring.items, 2*defaultWeight)
-}
-
-func TestFailedToPeriodicallyResolve(t *testing.T) {
-	// prepare
-	config := &Config{}
-	params := component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	}
-	p, err := newExporter(params, config)
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	expectedErr := errors.New("expected err")
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	once := sync.Once{}
-	counter := 0
-	p.res = &mockResolver{
-		onResolve: func(_ context.Context) ([]string, error) {
-			if counter > 0 {
-				once.Do(func() {
-					wg.Done()
-				})
-				return nil, expectedErr
-			}
-			counter++
-			wg.Done()
-			return []string{"endpoint-1"}, nil
-		},
-	}
-	p.resInterval = 50 * time.Millisecond
-
-	// test
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	require.Len(t, p.ring.items, defaultWeight)
-
-	// wait for at least one periodic routine to be called
-	wg.Wait()
-
-	// wait for the periodic routine to be completed
-	err = p.Shutdown(context.Background())
-	require.NoError(t, err)
-
-	// verify
-	assert.Len(t, p.ring.items, defaultWeight)
 }
 
 func TestRemoveExtraExporters(t *testing.T) {
