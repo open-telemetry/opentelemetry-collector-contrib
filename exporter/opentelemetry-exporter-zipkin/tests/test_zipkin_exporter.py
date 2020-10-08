@@ -127,7 +127,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
             is_remote=False,
             trace_flags=TraceFlags(TraceFlags.SAMPLED),
         )
-        parent_context = trace_api.SpanContext(
+        parent_span_context = trace_api.SpanContext(
             trace_id, parent_id, is_remote=False
         )
         other_context = trace_api.SpanContext(
@@ -157,12 +157,12 @@ class TestZipkinSpanExporter(unittest.TestCase):
             trace._Span(
                 name=span_names[0],
                 context=span_context,
-                parent=parent_context,
+                parent=parent_span_context,
                 events=(event,),
                 links=(link,),
             ),
             trace._Span(
-                name=span_names[1], context=parent_context, parent=None
+                name=span_names[1], context=parent_span_context, parent=None
             ),
             trace._Span(
                 name=span_names[2], context=other_context, parent=None
@@ -328,12 +328,14 @@ class TestZipkinSpanExporter(unittest.TestCase):
             is_remote=False,
             trace_flags=TraceFlags(TraceFlags.SAMPLED),
         )
-        parent_context = trace_api.SpanContext(
+        parent_span_context = trace_api.SpanContext(
             trace_id, parent_id, is_remote=False
         )
 
         otel_span = trace._Span(
-            name=span_names[0], context=span_context, parent=parent_context,
+            name=span_names[0],
+            context=span_context,
+            parent=parent_span_context,
         )
 
         otel_span.start(start_time=start_time)

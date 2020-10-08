@@ -159,7 +159,7 @@ class ZipkinSpanExporter(SpanExporter):
 
         zipkin_spans = []
         for span in spans:
-            context = span.get_context()
+            context = span.get_span_context()
             trace_id = context.trace_id
             span_id = context.span_id
 
@@ -205,7 +205,7 @@ class ZipkinSpanExporter(SpanExporter):
 
             if isinstance(span.parent, Span):
                 zipkin_span["parentId"] = format(
-                    span.parent.get_context().span_id, "016x"
+                    span.parent.get_span_context().span_id, "016x"
                 )
             elif isinstance(span.parent, SpanContext):
                 zipkin_span["parentId"] = format(span.parent.span_id, "016x")
