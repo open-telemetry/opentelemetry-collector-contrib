@@ -354,6 +354,21 @@ class TestTornadoInstrumentation(TornadoTest):
         test_excluded("/healthz")
         test_excluded("/ping")
 
+    @patch(
+        "opentelemetry.instrumentation.tornado._traced_attrs",
+        ["uri", "full_url", "query"],
+    )
+    def test_traced_attrs(self):
+        self.fetch("/ping?q=abc&b=123")
+        spans = self.sorted_spans(self.memory_exporter.get_finished_spans())
+        self.assertEqual(len(spans), 2)
+        server_span = spans[0]
+        self.assertEqual(server_span.kind, SpanKind.SERVER)
+        self.assert_span_has_attributes(
+            server_span, {"uri": "/ping?q=abc&b=123", "query": "q=abc&b=123"}
+        )
+        self.memory_exporter.clear()
+
 
 class TestTornadoUninstrument(TornadoTest):
     def test_uninstrument(self):
