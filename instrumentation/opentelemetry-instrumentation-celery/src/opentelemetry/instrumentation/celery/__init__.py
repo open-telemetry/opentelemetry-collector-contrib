@@ -118,14 +118,13 @@ class CeleryInstrumentor(BaseInstrumentor):
             return
 
         request = task.request
-        tracectx = propagators.extract(carrier_extractor, request) or {}
-        parent = get_current_span(tracectx)
+        tracectx = propagators.extract(carrier_extractor, request) or None
 
         logger.debug("prerun signal start task_id=%s", task_id)
 
         operation_name = "{0}/{1}".format(_TASK_RUN, task.name)
         span = self._tracer.start_span(
-            operation_name, parent=parent, kind=trace.SpanKind.CONSUMER
+            operation_name, context=tracectx, kind=trace.SpanKind.CONSUMER
         )
 
         activation = self._tracer.use_span(span, end_on_exit=True)
