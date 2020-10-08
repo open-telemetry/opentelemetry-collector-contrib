@@ -63,6 +63,8 @@ _CMD = "redis.command"
 
 
 def _set_connection_attributes(span, conn):
+    if not span.is_recording():
+        return
     for key, value in _extract_conn_attributes(
         conn.connection_pool.connection_kwargs
     ).items():
@@ -75,10 +77,11 @@ def _traced_execute_command(func, instance, args, kwargs):
     with tracer.start_as_current_span(
         _CMD, kind=trace.SpanKind.CLIENT
     ) as span:
-        span.set_attribute("service", tracer.instrumentation_info.name)
-        span.set_attribute(_RAWCMD, query)
-        _set_connection_attributes(span, instance)
-        span.set_attribute("redis.args_length", len(args))
+        if span.is_recording():
+            span.set_attribute("service", tracer.instrumentation_info.name)
+            span.set_attribute(_RAWCMD, query)
+            _set_connection_attributes(span, instance)
+            span.set_attribute("redis.args_length", len(args))
         return func(*args, **kwargs)
 
 
@@ -91,12 +94,13 @@ def _traced_execute_pipeline(func, instance, args, kwargs):
     with tracer.start_as_current_span(
         _CMD, kind=trace.SpanKind.CLIENT
     ) as span:
-        span.set_attribute("service", tracer.instrumentation_info.name)
-        span.set_attribute(_RAWCMD, resource)
-        _set_connection_attributes(span, instance)
-        span.set_attribute(
-            "redis.pipeline_length", len(instance.command_stack)
-        )
+        if span.is_recording():
+            span.set_attribute("service", tracer.instrumentation_info.name)
+            span.set_attribute(_RAWCMD, resource)
+            _set_connection_attributes(span, instance)
+            span.set_attribute(
+                "redis.pipeline_length", len(instance.command_stack)
+            )
         return func(*args, **kwargs)
 
 
