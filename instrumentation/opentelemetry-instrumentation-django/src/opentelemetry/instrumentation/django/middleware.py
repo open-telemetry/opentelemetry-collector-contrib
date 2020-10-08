@@ -17,6 +17,7 @@ from logging import getLogger
 from opentelemetry.configuration import Configuration
 from opentelemetry.context import attach, detach
 from opentelemetry.instrumentation.django.version import __version__
+from opentelemetry.instrumentation.utils import extract_attributes_from_object
 from opentelemetry.instrumentation.wsgi import (
     add_response_attributes,
     collect_request_attributes,
@@ -111,10 +112,9 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         if span.is_recording():
             attributes = collect_request_attributes(environ)
-            for attr in self._traced_request_attrs:
-                value = getattr(request, attr, None)
-                if value is not None:
-                    attributes[attr] = str(value)
+            attributes = extract_attributes_from_object(
+                request, self._traced_request_attrs, attributes
+            )
             for key, value in attributes.items():
                 span.set_attribute(key, value)
 
