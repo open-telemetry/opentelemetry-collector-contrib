@@ -288,7 +288,6 @@ func TestExporter(t *testing.T) {
 }
 
 func TestSampleRateAttribute(t *testing.T) {
-	t.Skip()
 	td := consumerdata.TraceData{
 		Node: nil,
 		Spans: []*tracepb.Span{
