@@ -31,7 +31,7 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				"prope_rty2": "rty2",
 				"prope.rty3": "rty3"},
 		},
-	}, 1)
+	}, 1, true)
 	type args struct {
 		metadata         collection.MetadataUpdate
 		metricTranslator *translation.MetricTranslator
@@ -129,14 +129,14 @@ func TestGetDimensionUpdateFromMetadata(t *testing.T) {
 				Name:  "name",
 				Value: "val",
 				Properties: getMapToPointers(map[string]string{
-					"prope_rty1": "value1",
-					"prope_rty2": "",
+					"prope/rty1": "value1",
+					"prope.rty2": "",
 					"prope_rty3": "value33",
-					"prope_rty4": "",
+					"prope.rty4": "",
 				}),
 				Tags: map[string]bool{
-					"ta_g1": true,
-					"ta_g2": false,
+					"ta.g1": true,
+					"ta/g2": false,
 				},
 			},
 		},

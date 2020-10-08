@@ -360,7 +360,9 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 			wantSfxDataPoints: expectedFromSummary("summary_no_quantiles", tsMSecs, keys, values, summaryNoQuantiles),
 		},
 	}
-	c := NewMetricsConverter(logger, nil)
+	tr, err := NewMetricTranslator([]Rule{}, 1, true)
+	require.NoError(t, err)
+	c := NewMetricsConverter(logger, tr)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotSfxDataPoints, gotNumDroppedTimeSeries := c.MetricDataToSignalFxV2(tt.metricsDataFn(), nil)
@@ -382,7 +384,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 				"old.dim": "new.dim",
 			},
 		},
-	}, 1)
+	}, 1, false)
 	require.NoError(t, err)
 
 	md := []consumerdata.MetricsData{
@@ -418,7 +420,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 			MetricType: &gaugeType,
 			Dimensions: []*sfxpb.Dimension{
 				{
-					Key:   "new_dim",
+					Key:   "new.dim",
 					Value: "val1",
 				},
 			},

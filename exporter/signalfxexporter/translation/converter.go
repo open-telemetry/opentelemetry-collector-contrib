@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
-	"unicode"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -101,7 +99,6 @@ func (c *MetricsConverter) MetricDataToSignalFxV2(mds []consumerdata.MetricsData
 		sfxDataPoints, droppedDPCount = c.metricDataToSfxDataPoints(md, sfxDataPoints)
 		numDroppedTimeSeries += droppedDPCount
 	}
-	sanitizeDataPointDimensions(sfxDataPoints)
 	return sfxDataPoints, numDroppedTimeSeries
 }
 
@@ -375,27 +372,6 @@ func buildSumDataPoint(
 	sumDP.Value = sfxpb.Datum{DoubleValue: sum}
 
 	return &sumDP
-}
-
-// sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
-// in metric label keys and with "_"
-func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
-	for _, dp := range dps {
-		for _, d := range dp.Dimensions {
-			d.Key = filterKeyChars(d.Key)
-		}
-	}
-}
-
-func filterKeyChars(str string) string {
-	filterMap := func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
-			return r
-		}
-		return '_'
-	}
-
-	return strings.Map(filterMap, str)
 }
 
 func float64ToDimValue(f float64) string {

@@ -765,9 +765,9 @@ func TestConsumeMetadata(t *testing.T) {
 			fields{
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{
-						"prop_erty1": "val1",
+						"prop.erty1": "val1",
 						"property2":  nil,
-						"prop_erty3": "val33",
+						"prop.erty3": "val33",
 						"property4":  nil,
 					},
 					"tags":         nil,
@@ -801,10 +801,10 @@ func TestConsumeMetadata(t *testing.T) {
 				map[string]interface{}{
 					"customProperties": map[string]interface{}{},
 					"tags": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 				},
 			},
@@ -836,10 +836,10 @@ func TestConsumeMetadata(t *testing.T) {
 						"property3": nil,
 					},
 					"tags": []interface{}{
-						"tag_2",
+						"tag/2",
 					},
 					"tagsToRemove": []interface{}{
-						"tag_1",
+						"tag.1",
 					},
 				},
 			},

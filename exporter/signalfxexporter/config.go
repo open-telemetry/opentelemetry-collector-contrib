@@ -66,6 +66,10 @@ type Config struct {
 	// SignalFx naming conventions, "false" by default.
 	SendCompatibleMetrics bool `mapstructure:"send_compatible_metrics"`
 
+	// SanitizeDimensions specifies if metric dimensions must be sanitized before sending them
+	// to SignalFx backend which doesn't fully support "." and "/" in dimension names. Default: true.
+	SanitizeDimensions bool `mapstructure:"sanitize_dimensions"`
+
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// Rules defined in translation/constants.go are used by default.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
@@ -110,8 +114,8 @@ func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
 	}
 
 	var metricTranslator *translation.MetricTranslator
-	if cfg.SendCompatibleMetrics {
-		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
+	if len(cfg.TranslationRules) > 0 || cfg.SanitizeDimensions {
+		metricTranslator, err = translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL, cfg.SanitizeDimensions)
 		if err != nil {
 			return nil, fmt.Errorf("invalid \"translation_rules\": %v", err)
 		}

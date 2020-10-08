@@ -92,6 +92,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		DeltaTranslationTTL: 3600,
+		SanitizeDimensions:  true,
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

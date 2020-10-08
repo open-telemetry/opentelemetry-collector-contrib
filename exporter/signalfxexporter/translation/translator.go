@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/gogo/protobuf/proto"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
@@ -209,18 +210,21 @@ type MetricTranslator struct {
 	dimensionsMap map[string]string
 
 	deltaTranslator *deltaTranslator
+
+	sanitizeDimensions bool
 }
 
-func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
+func NewMetricTranslator(rules []Rule, ttl int64, sanitizeDimensions bool) (*MetricTranslator, error) {
 	err := validateTranslationRules(rules)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricTranslator{
-		rules:           rules,
-		dimensionsMap:   createDimensionsMap(rules),
-		deltaTranslator: newDeltaTranslator(ttl),
+		rules:              rules,
+		dimensionsMap:      createDimensionsMap(rules),
+		deltaTranslator:    newDeltaTranslator(ttl),
+		sanitizeDimensions: sanitizeDimensions,
 	}, nil
 }
 
@@ -476,7 +480,32 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		}
 	}
 
+	if mp.sanitizeDimensions {
+		sanitizeDataPointDimensions(processedDataPoints)
+	}
+
 	return processedDataPoints
+}
+
+// sanitizeDataPointLabels replaces all characters unsupported by SignalFx backend
+// in metric label keys and with "_"
+func sanitizeDataPointDimensions(dps []*sfxpb.DataPoint) {
+	for _, dp := range dps {
+		for _, d := range dp.Dimensions {
+			d.Key = sanitizeDimension(d.Key)
+		}
+	}
+}
+
+func sanitizeDimension(str string) string {
+	filterMap := func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-' {
+			return r
+		}
+		return '_'
+	}
+
+	return strings.Map(filterMap, str)
 }
 
 func calcNewMetricInputPairs(processedDataPoints []*sfxpb.DataPoint, tr Rule) [][2]*sfxpb.DataPoint {
@@ -589,10 +618,14 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {
+	dim := orig
 	if translated, ok := mp.dimensionsMap[orig]; ok {
-		return translated
+		dim = translated
 	}
-	return orig
+	if mp.sanitizeDimensions {
+		return sanitizeDimension(dim)
+	}
+	return dim
 }
 
 // aggregateDatapoints aggregates datapoints assuming that they have
