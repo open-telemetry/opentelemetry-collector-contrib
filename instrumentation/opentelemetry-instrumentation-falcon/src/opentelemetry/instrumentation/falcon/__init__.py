@@ -53,7 +53,10 @@ from opentelemetry import configuration, context, propagators, trace
 from opentelemetry.configuration import Configuration
 from opentelemetry.instrumentation.falcon.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
-from opentelemetry.instrumentation.utils import http_status_to_canonical_code
+from opentelemetry.instrumentation.utils import (
+    extract_attributes_from_object,
+    http_status_to_canonical_code,
+)
 from opentelemetry.trace.status import Status
 from opentelemetry.util import ExcludeList, time_ns
 
@@ -162,10 +165,11 @@ class _TraceMiddleware:
         if not span:
             return
 
-        for attr in self._traced_request_attrs:
-            value = getattr(req, attr, None)
-            if value is not None:
-                span.set_attribute(attr, str(value))
+        attributes = extract_attributes_from_object(
+            req, self._traced_request_attrs
+        )
+        for key, value in attributes.items():
+            span.set_attribute(key, value)
 
     def process_resource(self, req, resp, resource, params):
         span = req.env.get(_ENVIRON_SPAN_KEY)
