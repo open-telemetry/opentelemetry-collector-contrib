@@ -62,6 +62,29 @@ class TestPostgresqlIntegration(TestBase):
 
     @mock.patch("psycopg2.connect")
     # pylint: disable=unused-argument
+    def test_not_recording(self, mock_connect):
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = True
+        Psycopg2Instrumentor().instrument()
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            cnx = psycopg2.connect(database="test")
+            cursor = cnx.cursor()
+            query = "SELECT * FROM test"
+            cursor.execute(query)
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
+
+        Psycopg2Instrumentor().uninstrument()
+
+    @mock.patch("psycopg2.connect")
+    # pylint: disable=unused-argument
     def test_custom_tracer_provider(self, mock_connect):
         resource = resources.Resource.create({})
         result = self.create_tracer_provider(resource=resource)
