@@ -2,6 +2,50 @@
 
 ## Unreleased
 
+## v0.12.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.12.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.12.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `awsemf` exporter to support exporting metrics to AWS CloudWatch (#498, #1169)
+- `http_forwarder` extension that forwards HTTP requests to a specified target (#979, #1014, #1150)
+- `datadog` exporter that sends metric and trace data to Datadog (#1142, #1178, #1181, #1212)
+- `awsecscontainermetrics` receiver to collect metrics from Amazon ECS Task Metadata Endpoint (#1089, #1148, #1160)
+
+## 💡 Enhancements 💡
+
+- `signalfx` exporter:
+  - Add host metadata synchronization (#1039, #1118)
+  - Add `copy_dimensions` translator option (#1126)
+  - Update `k8s_cluster` metric translations (#1121)
+  - Add option to exclude metrics (#1156)
+  - Add `avg` aggregation method (#1151)
+  - Fallback to host if cloud resource id not found (#1170)
+  - Add backwards compatible translation rules for the `dockerstatsreceiver` (#1201)
+  - Enable queuing and retries (#1223)
+- `splunkhec` exporter:
+  - Add log support (#875)
+  - Enable queuing and retries (#1222)
+- `k8scluster` receiver: Standardize metric names (#1119)
+- `awsxray` exporter:
+  - Support AWS EKS attributes (#1090)
+  - Store resource attributes in X-Ray segments (#1174)
+- `honeycomb` exporter:
+  - Add span kind to the event sent to Honeycomb (#474)
+  - Add option to adjust the sample rate using an attribute on the span (#1162)
+- `jmxmetrics` extension: Add subprocess manager to manage child java processes (#1028)
+- `elastic` exporter: Initial metrics support (#1173)
+- `k8s` processor: Rename default attr names for label/annotation extraction (#1214)
+- Add common SignalFx host id extraction (#1100)
+- Allow MSI upgrades (#1165)
+
+## 🧰 Bug fixes 🧰
+
+- `awsxray` exporter: Don't set origin to EC2 when not on AWS (#1115)
+
 ## v0.11.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.11.0 (Beta) 🎉
