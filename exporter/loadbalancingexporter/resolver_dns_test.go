@@ -153,7 +153,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1")
 	require.NoError(t, err)
 
-	wg := sync.WaitGroup{}
 	counter := 0
 	resolve := [][]net.IPAddr{
 		{
@@ -167,11 +166,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			counter++
 
-			// count down at most two times
-			if counter <= 2 {
-				wg.Done()
-			}
-
 			// for subsequent calls, return the second result
 			if counter >= 2 {
 				return resolve[1], nil
@@ -182,6 +176,11 @@ func TestPeriodicallyResolve(t *testing.T) {
 		},
 	}
 	res.resInterval = 10 * time.Millisecond
+
+	wg := sync.WaitGroup{}
+	res.onChange(func(backends []string) {
+		wg.Done()
+	})
 
 	// test
 	wg.Add(2)

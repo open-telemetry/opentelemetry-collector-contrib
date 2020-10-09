@@ -49,6 +49,7 @@ type dnsResolver struct {
 	onChangeCallbacks []func([]string)
 
 	stopped    bool
+	stopLock   sync.RWMutex
 	updateLock sync.Mutex
 	shutdownWg sync.WaitGroup
 }
@@ -84,12 +85,16 @@ func (r *dnsResolver) start(ctx context.Context) error {
 }
 
 func (r *dnsResolver) shutdown(ctx context.Context) error {
+	r.stopLock.Lock()
 	r.stopped = true
+	r.stopLock.Unlock()
 	r.shutdownWg.Wait()
 	return nil
 }
 
 func (r *dnsResolver) periodicallyResolve() {
+	r.stopLock.RLock()
+	defer r.stopLock.RUnlock()
 	if r.stopped {
 		return
 	}
@@ -135,7 +140,7 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	}
 
 	// keep it always in the same order
-	sort.Sort(sort.StringSlice(backends))
+	sort.Strings(backends)
 
 	if equalStringSlice(r.endpoints, backends) {
 		return r.endpoints, nil
