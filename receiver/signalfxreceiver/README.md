@@ -10,6 +10,8 @@ More information about sending custom events can be found in the [SignalFx
 Developers
 Guide](https://developers.signalfx.com/ingest_data_reference.html#tag/Send-Custom-Events).
 
+Supported pipeline types: logs, metrics
+
 ## Configuration
 
 The following settings are required:
