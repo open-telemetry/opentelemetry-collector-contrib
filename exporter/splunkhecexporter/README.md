@@ -23,7 +23,7 @@ The following configuration options can also be configured:
 - `timeout` (default: 10s): HTTP timeout when sending data.
 - `insecure_skip_verify` (default: false): Whether to skip checking the certificate of the HEC endpoint when sending data over HTTPS.
 
-In addition, this exporter offers queued retry which is enable by default.
+In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
 
