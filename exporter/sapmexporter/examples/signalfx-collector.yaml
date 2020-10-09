@@ -1,5 +1,8 @@
 extensions:
   health_check:
+  http_forwarder:
+    egress:
+      endpoint: "https://api.${SFX_REALM}.signalfx.com"
   zpages:
 receivers:
   sapm:
@@ -57,12 +60,12 @@ processors:
 exporters:
   # Traces
   sapm:
-    access_token: "YOUR_ACCESS_TOKEN"
-    endpoint: "https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace"
+    access_token: "${SFX_TOKEN}"
+    endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
   # Metrics + Events
   signalfx:
-    access_token: "YOUR_ACCESS_TOKEN"
-    realm: "YOUR_SIGNALFX_REALM"
+    access_token: "${SFX_TOKEN}"
+    realm: "${SFX_REALM}"
 service:
   pipelines:
     traces:
@@ -77,4 +80,4 @@ service:
       receivers: [signalfx]
       processors: [memory_limiter, batch]
       exporters: [signalfx]
-  extensions: [health_check, zpages]
+  extensions: [health_check, http_forwarder, zpages]

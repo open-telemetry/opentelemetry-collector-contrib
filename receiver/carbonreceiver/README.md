@@ -4,6 +4,8 @@ The [Carbon](https://github.com/graphite-project/carbon) receiver supports
 Carbon's [plaintext
 protocol](https://graphite.readthedocs.io/en/stable/feeding-carbon.html#the-plaintext-protocol).
 
+Supported pipeline types: metrics
+
 > :information_source: The `wavefront` receiver is based on Carbon and binds to the
 same port by default. This means the `carbon` and `wavefront` receivers
 cannot both be enabled with their respective default configurations. To
