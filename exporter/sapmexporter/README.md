@@ -30,7 +30,7 @@ during final translation.  Intended to be used in tandem with identical configur
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 
-In addition, this exporter offers queued retry which is enable by default.
+In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
 
