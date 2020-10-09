@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 )
 
@@ -106,10 +108,19 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.shutdownWg.Add(1)
 	defer r.shutdownWg.Done()
 
+	// the context to use for all metrics in this function
+	mCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("resolver"), "dns"))
+
 	addrs, err := r.resolver.LookupIPAddr(ctx, r.hostname)
 	if err != nil {
+		failedCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "false"))
+		stats.Record(failedCtx, mNumResolutions.M(1))
 		return nil, err
 	}
+
+	// from this point, we don't fail anymore
+	successCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "true"))
+	stats.Record(successCtx, mNumResolutions.M(1))
 
 	var backends []string
 	for _, ip := range addrs {
@@ -134,6 +145,8 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
+	stats.Record(mCtx, mNumBackendUpdates.M(1))
+	stats.Record(mCtx, mNumBackends.M(int64(len(backends))))
 
 	// propate the change
 	for _, callback := range r.onChangeCallbacks {

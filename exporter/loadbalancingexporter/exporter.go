@@ -31,7 +31,7 @@ import (
 var _ component.TraceExporter = (*exporterImp)(nil)
 
 const (
-	defaultEndpointFormat = "%s:55678"
+	defaultEndpointFormat = "%s"
 )
 
 var errNoResolver = errors.New("no resolvers specified for the exporter")
