@@ -29,7 +29,6 @@ func TestTrackerAddSpans(t *testing.T) {
 		Correlation: CorrelationConfig{
 			Enabled: true,
 		},
-		APIEndpoint: "",
 		AccessToken: "",
 	}, component.ExporterCreateParams{
 		Logger: zap.NewNop(),

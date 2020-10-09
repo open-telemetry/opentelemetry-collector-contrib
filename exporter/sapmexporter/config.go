@@ -55,10 +55,6 @@ type Config struct {
 	// Correlation settings for associating environment and services observed from traces to metrics.
 	Correlation CorrelationConfig `mapstructure:"correlation"`
 
-	// APIEndpoint is the destination to where API calls for correlation and dimension updates will be made.
-	// It must be a full URL including scheme and port but without a path e.g., https://api.signalfx.com
-	APIEndpoint string `mapstructure:"api_endpoint"`
-
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
 
@@ -84,8 +80,8 @@ func (c *Config) validate() error {
 		return errors.New("`endpoint` not specified")
 	}
 
-	if c.Correlation.Enabled && c.Correlation.Endpoint == "" && c.APIEndpoint == "" {
-		return errors.New("`api_endpoint` or `correlation.endpoint` must be set when `correlation.enabled` is true")
+	if c.Correlation.Enabled && c.Correlation.Endpoint == "" {
+		return errors.New("`correlation.endpoint` must be set when `correlation.enabled` is true")
 	}
 
 	e, err := url.Parse(c.Endpoint)

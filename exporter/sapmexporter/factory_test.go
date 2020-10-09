@@ -38,7 +38,7 @@ func TestCreateExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
-	eCfg.APIEndpoint = "http://local"
+	eCfg.Correlation.Endpoint = "http://local"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	te, err := factory.CreateTraceExporter(context.Background(), params, eCfg)
@@ -57,5 +57,5 @@ func TestCreateExporterWithoutAPIEndpoint(t *testing.T) {
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.Nil(t, te)
-	assert.EqualError(t, err, "`api_endpoint` or `correlation.endpoint` must be set when `correlation.enabled` is true")
+	assert.EqualError(t, err, "`correlation.endpoint` must be set when `correlation.enabled` is true")
 }

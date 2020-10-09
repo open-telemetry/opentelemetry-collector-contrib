@@ -53,7 +53,7 @@ func createDefaultConfig() configmodels.Exporter {
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		Correlation: CorrelationConfig{
-			Enabled:             true,
+			Enabled:             false,
 			StaleServiceTimeout: 5 * time.Minute,
 			Config: correlations.Config{
 				MaxRequests:     20,

@@ -56,12 +56,7 @@ func NewTracker(cfg *Config, params component.ExporterCreateParams) *Tracker {
 func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 	*correlationContext, error,
 ) {
-	endpoint := cfg.APIEndpoint
-	if cfg.Correlation.Endpoint != "" {
-		endpoint = cfg.Correlation.Endpoint
-	}
-
-	corrURL, err := url.Parse(endpoint)
+	corrURL, err := url.Parse(cfg.Correlation.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Correlation.Endpoint, err)
 	}
