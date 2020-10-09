@@ -17,6 +17,7 @@ package awsxrayreceiver
 import (
 	"context"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -60,6 +61,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateTraceReceiver(t *testing.T) {
+	// TODO review if test should succeed on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+
 	env := stashEnv()
 	defer restoreEnv(env)
 	os.Setenv(defaultRegionEnvName, mockRegion)

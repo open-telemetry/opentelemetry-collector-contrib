@@ -158,6 +158,10 @@ workflows:
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
+      - windows-test:
+          filters:
+            tags:
+              only: /.*/
       - setup:
           filters:
             tags:
@@ -205,6 +209,7 @@ workflows:
             - integration-tests
             - cross-compile
             - loadtest
+            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -215,6 +220,7 @@ workflows:
             - integration-tests
             - cross-compile
             - loadtest
+            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -228,6 +234,7 @@ workflows:
             - lint
             - unit-tests
             - loadtest
+            - windows-test
             - integration-tests
             - cross-compile
           filters:
@@ -322,6 +329,26 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+
+  windows-test:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    environment:
+      GOPATH=~/go
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Upgrade golang
+          command: |
+            choco upgrade golang --version=1.15
+            refreshenv
+      - run:
+          name: Unit tests
+          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+      - save_module_cache
+      - github_issue_generator
 
   windows-msi:
     executor:
