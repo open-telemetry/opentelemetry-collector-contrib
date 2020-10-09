@@ -101,6 +101,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | elasticexporter                | @axw                       |
 | honeycombexporter              | @paulosman @lizthegrey     |
 | jaegerthrifthttpexporter       | @jpkrohling @pavolloffay   |
+| loadbalancingexporter          | @jpkrohling                |
 | kinesisexporter                | @owais                     |
 | newrelicexporter               | @MrAlias                   |
 | sapmexporter                   | @owais @dmitryax           |
