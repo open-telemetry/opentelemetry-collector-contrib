@@ -22,7 +22,10 @@ import (
 
 func TestProcessorMetrics(t *testing.T) {
 	expectedViewNames := []string{
-		"num_resolutions",
+		"loadbalancer_num_resolutions",
+		"loadbalancer_num_backends",
+		"loadbalancer_num_backend_updates",
+		"loadbalancer_backend_latency",
 	}
 
 	views := MetricViews()

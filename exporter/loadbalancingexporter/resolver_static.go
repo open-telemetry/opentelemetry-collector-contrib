@@ -18,6 +18,9 @@ import (
 	"context"
 	"errors"
 	"sync"
+
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 )
 
 var _ resolver = (*staticResolver)(nil)
@@ -50,7 +53,16 @@ func (r *staticResolver) shutdown(ctx context.Context) error {
 }
 
 func (r *staticResolver) resolve(ctx context.Context) ([]string, error) {
+	// the context to use for all metrics in this function
+	ctx, _ = tag.New(ctx,
+		tag.Upsert(tag.MustNewKey("resolver"), "static"),
+		tag.Upsert(tag.MustNewKey("success"), "true"),
+	)
+	stats.Record(ctx, mNumResolutions.M(1))
+
 	r.once.Do(func() {
+		stats.Record(ctx, mNumBackends.M(int64(len(r.endpoints))))
+
 		for _, callback := range r.onChangeCallbacks {
 			callback(r.endpoints)
 		}

@@ -145,7 +145,6 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
-	stats.Record(mCtx, mNumBackendUpdates.M(1))
 	stats.Record(mCtx, mNumBackends.M(int64(len(backends))))
 
 	// propate the change

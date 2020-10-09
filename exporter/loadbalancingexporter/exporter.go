@@ -20,7 +20,10 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -183,7 +186,21 @@ func (e *exporterImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error 
 		// something is really wrong... how come we couldn't find the exporter??
 		return fmt.Errorf("couldn't find the exporter for the endpoint %q", endpoint)
 	}
-	return exp.ConsumeTraces(ctx, td)
+
+	start := time.Now()
+	err := exp.ConsumeTraces(ctx, td)
+	duration := time.Since(start)
+	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
+
+	if err == nil {
+		sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
+		stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
+	} else {
+		fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
+		stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
+	}
+
+	return err
 }
 
 func (e *exporterImp) GetCapabilities() component.ProcessorCapabilities {
