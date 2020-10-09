@@ -51,7 +51,9 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Timeout: defaultHTTPTimeout,
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
@@ -65,21 +67,26 @@ func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (exp component.MetricsExporter, err error) {
+) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
-	err = setTranslationRules(expCfg)
+	err := setTranslationRules(expCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	exp, err = newSignalFxExporter(expCfg, params.Logger)
-
+	exp, err := newSignalFxExporter(expCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return exp, nil
+	return exporterhelper.NewMetricsExporter(
+		expCfg,
+		exp.pushMetrics,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings))
 }
 
 func setTranslationRules(cfg *Config) error {
@@ -116,7 +123,18 @@ func createLogsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	oCfg := cfg.(*Config)
+	expCfg := cfg.(*Config)
 
-	return NewEventExporter(oCfg, params.Logger)
+	exp, err := newEventExporter(expCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewLogsExporter(
+		expCfg,
+		exp.pushLogs,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings))
 }
