@@ -54,6 +54,7 @@ func TestCreateExporterWithoutAPIEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://local"
+	cfg.Correlation.Enabled = true
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.Nil(t, te)

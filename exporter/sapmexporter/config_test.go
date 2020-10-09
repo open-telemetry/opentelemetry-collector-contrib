@@ -74,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize:    10,
 			},
 			Correlation: CorrelationConfig{
-				Enabled:             true,
+				Enabled:             false,
 				StaleServiceTimeout: 5 * time.Minute,
 				Config: correlations.Config{
 					MaxRequests:     20,
