@@ -18,6 +18,8 @@ also supports starting binaries with flags and environment variables,
 retrying them with exponential backoff if they crash, string templating, and
 random port assignments.
 
+Supported pipeline types: metrics
+
 > :information_source: If you do not need to spawn the binaries locally,
 please consider using the [core Prometheus
 receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver/prometheusreceiver)

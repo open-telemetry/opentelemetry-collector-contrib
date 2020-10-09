@@ -2,6 +2,10 @@
 
 Tails and parses logs from a wide variety of sources using the [stanza](https://github.com/observIQ/stanza/tree/master/docs) log processor.
 
+Supported pipeline types: metrics
+
+> :construction: This receiver is in alpha and configuration fields are subject to change.
+
 ## Input Sources
 
 Stanza supports pre-defined log sources for dozens of [specific technologies](https://github.com/observIQ/stanza-plugins/tree/master/plugins).
@@ -34,7 +38,7 @@ It can also be easily configured to tail and parse any structured or unstructure
 
 ## Example - Tailing a simple json file
 
-Receiver Configuration 
+Receiver Configuration
 ```yaml
 receivers:
   stanza:

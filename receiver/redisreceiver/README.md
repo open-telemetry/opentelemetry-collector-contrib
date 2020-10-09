@@ -4,7 +4,9 @@ The Redis receiver is designed to retrieve Redis INFO data from a single Redis
 instance, build metrics from that data, and send them to the next consumer at a
 configurable interval.
 
-> :construction: This receiver is currently in **BETA**.
+Supported pipeline types: metrics
+
+> :construction: This receiver is in beta and configuration fields are subject to change.
 
 ## Details
 
