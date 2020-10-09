@@ -163,3 +163,69 @@ func TestPositionsForEndpoints(t *testing.T) {
 		})
 	}
 }
+
+func TestEqual(t *testing.T) {
+	original := &hashRing{
+		[]ringItem{
+			{pos: position(123), endpoint: "endpoint-1"},
+		},
+	}
+
+	for _, tt := range []struct {
+		name      string
+		candidate *hashRing
+		outcome   bool
+	}{
+		{
+			"empty",
+			&hashRing{[]ringItem{}},
+			false,
+		},
+		{
+			"null",
+			nil,
+			false,
+		},
+		{
+			"equal",
+			&hashRing{
+				[]ringItem{
+					{pos: position(123), endpoint: "endpoint-1"},
+				},
+			},
+			true,
+		},
+		{
+			"different length",
+			&hashRing{
+				[]ringItem{
+					{pos: position(123), endpoint: "endpoint-1"},
+					{pos: position(124), endpoint: "endpoint-2"},
+				},
+			},
+			false,
+		},
+		{
+			"different position",
+			&hashRing{
+				[]ringItem{
+					{pos: position(124), endpoint: "endpoint-1"},
+				},
+			},
+			false,
+		},
+		{
+			"different endpoint",
+			&hashRing{
+				[]ringItem{
+					{pos: position(123), endpoint: "endpoint-2"},
+				},
+			},
+			false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.outcome, original.equal(tt.candidate))
+		})
+	}
+}
