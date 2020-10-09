@@ -61,7 +61,7 @@ The following configuration options can also be configured:
   or environment variable detector setting a unique value to `host.name` attribute
   within your k8s cluster. And keep `override=true` in resourcedetection config.
 
-In addition, this exporter offers queued retry which is enable by default.
+In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
 
