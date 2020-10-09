@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,7 +35,7 @@ import (
 var _ component.TraceExporter = (*exporterImp)(nil)
 
 const (
-	defaultEndpointFormat = "%s"
+	defaultPort = "55680"
 )
 
 var errNoResolver = errors.New("no resolvers specified for the exporter")
@@ -128,6 +129,8 @@ func (e *exporterImp) onBackendChanges(resolved []string) {
 
 func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []string) {
 	for _, endpoint := range endpoints {
+		endpoint = endpointWithPort(endpoint)
+
 		if _, exists := e.exporters[endpoint]; !exists {
 			cfg := e.exporterFactory.CreateDefaultConfig()
 			oCfg := cfg.(*otlpexporter.Config)
@@ -139,7 +142,7 @@ func (e *exporterImp) addMissingExporters(ctx context.Context, endpoints []strin
 			oCfg.RetrySettings = e.config.OTLP.RetrySettings
 			oCfg.GRPCClientSettings = e.config.OTLP.GRPCClientSettings
 
-			oCfg.Endpoint = fmt.Sprintf(defaultEndpointFormat, endpoint)
+			oCfg.Endpoint = endpoint
 			exp, err := e.exporterFactory.CreateTraceExporter(ctx, e.templateCreateParams, cfg)
 			if err != nil {
 				e.logger.Warn("failed to create new trace exporter for endpoint", zap.String("endpoint", endpoint))
@@ -210,4 +213,11 @@ func (e *exporterImp) GetCapabilities() component.ProcessorCapabilities {
 func traceIDFromTraces(td pdata.Traces) pdata.TraceID {
 	// is this safe? can a trace be empty and not contain a single span?
 	return td.ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0).TraceID()
+}
+
+func endpointWithPort(endpoint string) string {
+	if !strings.Contains(endpoint, ":") {
+		endpoint = fmt.Sprintf("%s:%s", endpoint, defaultPort)
+	}
+	return endpoint
 }

@@ -302,7 +302,7 @@ func TestAddMissingExporters(t *testing.T) {
 		return &componenttest.ExampleExporterConsumer{}, nil
 	}))
 
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters["endpoint-1:55680"] = &componenttest.ExampleExporterConsumer{}
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
@@ -310,7 +310,7 @@ func TestAddMissingExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 2)
-	assert.Contains(t, p.exporters, "endpoint-2")
+	assert.Contains(t, p.exporters, "endpoint-2:55680")
 }
 
 func TestFailedToAddMissingExporters(t *testing.T) {
@@ -363,6 +363,23 @@ func TestEndpointFound(t *testing.T) {
 		},
 	} {
 		assert.Equal(t, tt.expected, endpointFound(tt.endpoint, tt.endpoints))
+	}
+}
+
+func TestEndpointWithPort(t *testing.T) {
+	for _, tt := range []struct {
+		input, expected string
+	}{
+		{
+			"endpoint-1",
+			"endpoint-1:55680",
+		},
+		{
+			"endpoint-1:55690",
+			"endpoint-1:55690",
+		},
+	} {
+		assert.Equal(t, tt.expected, endpointWithPort(tt.input))
 	}
 }
 
