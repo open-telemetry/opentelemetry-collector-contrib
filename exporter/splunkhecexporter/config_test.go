@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -63,7 +64,20 @@ func TestLoadConfig(t *testing.T) {
 		SourceType:     "otel",
 		Index:          "metrics",
 		MaxConnections: 100,
-		Timeout:        10 * time.Second,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 10 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 

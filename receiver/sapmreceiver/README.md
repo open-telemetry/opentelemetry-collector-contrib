@@ -5,6 +5,8 @@ receive traces from other collectors or the SignalFx Smart Agent. SAPM proto
 and some useful related utilities can be found
 [here](https://github.com/signalfx/sapm-proto/).
 
+Supported pipeline types: traces
+
 ## Configuration
 
 The following settings are required:

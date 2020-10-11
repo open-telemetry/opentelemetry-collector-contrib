@@ -174,6 +174,8 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer exporter.Shutdown(context.Background())
 
 	md := createMetricsData(numberOfDataPoints)
 
@@ -210,6 +212,8 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer exporter.Shutdown(context.Background())
 
 	td := createTraceData(numberOfTraces)
 
@@ -246,6 +250,8 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer exporter.Shutdown(context.Background())
 
 	ld := createLogData(numberOfLogs)
 
@@ -330,14 +336,19 @@ func TestErrorReceived(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.RetrySettings.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
-
-	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer exporter.Shutdown(context.Background())
 
 	td := createTraceData(3)
 
@@ -368,11 +379,18 @@ func TestInvalidMetrics(t *testing.T) {
 func TestInvalidURL(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	// Disable queuing to ensure that we execute the request when calling ConsumeTraces
+	// otherwise we will not see the error.
+	cfg.QueueSettings.Enabled = false
+	// Disable retries to not wait too much time for the return error.
+	cfg.RetrySettings.Enabled = false
 	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
+	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
+	defer exporter.Shutdown(context.Background())
 
 	td := createTraceData(2)
 
@@ -417,17 +435,25 @@ func TestInvalidJsonClient(t *testing.T) {
 		},
 		nil,
 	}
-	c := client{url: nil, zippers: sync.Pool{New: func() interface{} {
-		return gzip.NewWriter(nil)
-	}}, config: &Config{Timeout: time.Microsecond}}
-	err := c.sendSplunkEvents(evs)
+	c := client{
+		url: nil,
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: &Config{},
+	}
+	err := c.sendSplunkEvents(context.Background(), evs)
 	assert.EqualError(t, err, "Permanent error: json: unsupported value: +Inf")
 }
 
 func TestInvalidURLClient(t *testing.T) {
-	c := client{url: &url.URL{Host: "in va lid"}, zippers: sync.Pool{New: func() interface{} {
-		return gzip.NewWriter(nil)
-	}}, config: &Config{Timeout: time.Microsecond}}
-	err := c.sendSplunkEvents([]*splunkEvent{})
+	c := client{
+		url: &url.URL{Host: "in va lid"},
+		zippers: sync.Pool{New: func() interface{} {
+			return gzip.NewWriter(nil)
+		}},
+		config: &Config{},
+	}
+	err := c.sendSplunkEvents(context.Background(), []*splunkEvent{})
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
 }
