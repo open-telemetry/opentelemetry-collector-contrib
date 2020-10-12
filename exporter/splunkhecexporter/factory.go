@@ -47,7 +47,11 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Timeout:            defaultHTTPTimeout,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: defaultHTTPTimeout,
+		},
+		RetrySettings:      exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:      exporterhelper.CreateDefaultQueueSettings(),
 		DisableCompression: false,
 		MaxConnections:     defaultMaxIdleCons,
 	}
@@ -64,12 +68,19 @@ func createTraceExporter(
 	expCfg := config.(*Config)
 
 	exp, err := createExporter(expCfg, params.Logger)
-
 	if err != nil {
 		return nil, err
 	}
 
-	return exp, nil
+	return exporterhelper.NewTraceExporter(
+		expCfg,
+		exp.pushTraceData,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.stop))
 }
 
 func createMetricsExporter(
@@ -88,10 +99,22 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exp, nil
+	return exporterhelper.NewMetricsExporter(
+		expCfg,
+		exp.pushMetricsData,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.stop))
 }
 
-func createLogsExporter(ctx context.Context, params component.ExporterCreateParams, config configmodels.Exporter) (exporter component.LogsExporter, err error) {
+func createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -103,5 +126,13 @@ func createLogsExporter(ctx context.Context, params component.ExporterCreatePara
 		return nil, err
 	}
 
-	return exp, nil
+	return exporterhelper.NewLogsExporter(
+		expCfg,
+		exp.pushLogData,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.stop))
 }

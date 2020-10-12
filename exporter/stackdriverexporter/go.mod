@@ -7,8 +7,8 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v0.12.0
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/stretchr/testify v1.6.1
-	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.11.1-0.20201006165100-07236c11fb27
+	go.opencensus.io v0.22.5
+	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
 	go.opentelemetry.io/otel v0.12.0
 	go.opentelemetry.io/otel/sdk v0.12.0
 	go.uber.org/zap v1.16.0

@@ -3,7 +3,9 @@
 The Kubelet Stats Receiver pulls pod metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
 
-Status: beta
+Supported pipeline types: metrics
+
+> :construction: This receiver is in beta and configuration fields are subject to change.
 
 ## Configuration
 

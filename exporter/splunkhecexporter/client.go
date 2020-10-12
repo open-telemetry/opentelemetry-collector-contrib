@@ -46,7 +46,7 @@ type client struct {
 }
 
 func (c *client) pushMetricsData(
-	_ context.Context,
+	ctx context.Context,
 	md pdata.Metrics,
 ) (droppedTimeSeries int, err error) {
 	c.wg.Add(1)
@@ -65,7 +65,7 @@ func (c *client) pushMetricsData(
 		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", c.url.String(), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
 	if err != nil {
 		return numMetricPoint(md), consumererror.Permanent(err)
 	}
@@ -110,7 +110,7 @@ func (c *client) pushTraceData(
 		return numDroppedSpans, nil
 	}
 
-	err = c.sendSplunkEvents(splunkEvents)
+	err = c.sendSplunkEvents(ctx, splunkEvents)
 	if err != nil {
 		return td.SpanCount(), err
 	}
@@ -118,13 +118,13 @@ func (c *client) pushTraceData(
 	return numDroppedSpans, nil
 }
 
-func (c *client) sendSplunkEvents(splunkEvents []*splunkEvent) error {
+func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunkEvent) error {
 	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", c.url.String(), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
 	if err != nil {
 		return consumererror.Permanent(err)
 	}
@@ -165,7 +165,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 		return numDroppedLogs, nil
 	}
 
-	err = c.sendSplunkEvents(splunkEvents)
+	err = c.sendSplunkEvents(ctx, splunkEvents)
 	if err != nil {
 		return ld.LogRecordCount(), err
 	}
