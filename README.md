@@ -51,7 +51,7 @@ core distribution of the Collector. Typically, these contributions are vendor
 specific receivers/exporters and/or components that are only
 useful to a relatively small number of users.
 
-## Creating your own OpenTracing Collector distribution
+## Creating your own OpenTelemetry Collector distribution
 
 A guide on how to create your own distribution is available in this blog post: 
 ["Building your own OpenTelemetry Collector distribution"](https://medium.com/p/42337e994b63)
