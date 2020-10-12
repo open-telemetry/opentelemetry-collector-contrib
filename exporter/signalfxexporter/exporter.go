@@ -24,7 +24,9 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -155,12 +157,24 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}, nil
 }
 
-func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+func (se *signalfxExporter) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (se *signalfxExporter) Shutdown(context.Context) error {
+	return nil
+}
+
+func (se *signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
 	}
-	return numDroppedTimeSeries, err
+	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
+
+	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
+	return err
 }
 
 func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
