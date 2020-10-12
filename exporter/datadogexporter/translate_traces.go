@@ -36,12 +36,7 @@ type codeDetails struct {
 }
 
 const (
-	deploymentEnv       string = "deployment.environment"
 	keySamplingPriority string = "_sampling_priority_v1"
-	keySpanName         string = "span.name"
-	httpStatusCode      string = "http.status_code"
-	httpMethod          string = "http.method"
-	httpRoute           string = "http.route"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -113,7 +108,7 @@ func AggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 			existingPayload = &pb.TracePayload{
 				HostName: tracePayload.HostName,
 				Env:      tracePayload.Env,
-				Traces:   make([]*pb.APITrace, 0),
+				Traces:   make([]*pb.APITrace, 0, len(tracePayload.Traces)),
 			}
 			lookup[key] = existingPayload
 		}
@@ -151,7 +146,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *C
 
 	// specification states that the resource level deployment.environment should be used for passing env, so defer to that
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/resource/semantic_conventions/deployment_environment.md#deployment
-	if resourceEnv, ok := datadogTags[deploymentEnv]; ok {
+	if resourceEnv, ok := datadogTags[conventions.AttributeDeploymentEnvironment]; ok {
 		payload.Env = resourceEnv
 	}
 
@@ -291,7 +286,7 @@ func spanToDatadogSpan(s pdata.Span,
 		}
 
 		// set tag as string for status code
-		tags[httpStatusCode] = status.Code().String()
+		tags[conventions.AttributeHTTPStatusCode] = status.Code().String()
 	}
 
 	// Set Attributes as Tags
@@ -318,12 +313,12 @@ func resourceToDatadogServiceNameAndAttributeMap(
 
 	datadogTags = make(map[string]string)
 	if resource.IsNil() {
-		return tracetranslator.ResourceNotSet, datadogTags
+		return tracetranslator.ResourceNoServiceName, datadogTags
 	}
 
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
-		return tracetranslator.ResourceNoAttrs, datadogTags
+		return tracetranslator.ResourceNoServiceName, datadogTags
 	}
 
 	attrs.ForEach(func(k string, v pdata.AttributeValue) {
@@ -467,8 +462,8 @@ func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string 
 	// https://github.com/open-telemetry/opentelemetry-python/blob/b2559409b2bf82e693f3e68ed890dd7fd1fa8eae/exporter/opentelemetry-exporter-datadog/src/opentelemetry/exporter/datadog/exporter.py#L229
 	// Get span resource name by checking for existence http.method + http.route 'GET /api'
 	// backing off to just http.method, and then span.name if unrelated to http
-	if method, methodOk := datadogTags[httpMethod]; methodOk {
-		if route, routeOk := datadogTags[httpRoute]; routeOk {
+	if method, methodOk := datadogTags[conventions.AttributeHTTPMethod]; methodOk {
+		if route, routeOk := datadogTags[conventions.AttributeHTTPRoute]; routeOk {
 			return fmt.Sprintf("%s %s", method, route)
 		}
 
