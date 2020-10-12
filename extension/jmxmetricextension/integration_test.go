@@ -14,7 +14,7 @@
 
 // +build integration
 
-package jmxmetricsextension
+package jmxmetricextension
 
 import (
 	"context"

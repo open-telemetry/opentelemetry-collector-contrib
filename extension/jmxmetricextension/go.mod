@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jmxmetricsextension
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jmxmetricextension
 
 go 1.14
 
