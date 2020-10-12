@@ -28,7 +28,7 @@ func TestExtension(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{}
 
-	extension := newJmxMetricsExtension(logger, config)
+	extension := newJmxMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	require.Same(t, logger, extension.logger)
 	require.Same(t, config, extension.config)
@@ -60,7 +60,7 @@ otel.exporter = otlp
 otel.otlp.endpoint = myotlpendpoint
 otel.otlp.metric.timeout = 234000
 `
-	extension := newJmxMetricsExtension(logger, config)
+	extension := newJmxMetricExtension(logger, config)
 	jmxConfig, err := extension.buildJmxMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)
@@ -86,7 +86,7 @@ otel.exporter = prometheus
 otel.prometheus.host = myprometheushost
 otel.prometheus.port = 12345
 `
-	extension := newJmxMetricsExtension(logger, config)
+	extension := newJmxMetricExtension(logger, config)
 	jmxConfig, err := extension.buildJmxMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)

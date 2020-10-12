@@ -54,7 +54,7 @@ func TestWithValidConfig(t *testing.T) {
 	r, err := f.CreateExtension(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	extension := r.(*jmxMetricsExtension)
+	extension := r.(*jmxMetricExtension)
 	assert.Same(t, extension.logger, params.Logger)
 	assert.Same(t, extension.config, cfg)
 }

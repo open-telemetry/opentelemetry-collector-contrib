@@ -174,7 +174,7 @@ func newPrometheusMetricReceiver(t *testing.T, logger *zap.Logger) (int, *compon
 	return port, &receiver, consumer
 }
 
-func getJavaStdout(extension *jmxMetricsExtension) string {
+func getJavaStdout(extension *jmxMetricExtension) string {
 	msg := ""
 LOOP:
 	for i := 0; i < 70; i++ {
@@ -234,7 +234,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaOtlpReceiverIntegration() {
 		Password:     "cassandra",
 	}
 
-	extension := newJmxMetricsExtension(logger, config)
+	extension := newJmxMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	defer func() {
 		require.Nil(t, extension.Shutdown(context.Background()))
@@ -316,7 +316,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaPrometheusReceiverIntegration(
 		Password:      "cassandra",
 	}
 
-	extension := newJmxMetricsExtension(logger, config)
+	extension := newJmxMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	defer func() {
 		require.Nil(t, extension.Shutdown(context.Background()))

@@ -24,26 +24,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jmxmetricextension/subprocess"
 )
 
-var _ component.ServiceExtension = (*jmxMetricsExtension)(nil)
-var _ component.PipelineWatcher = (*jmxMetricsExtension)(nil)
+var _ component.ServiceExtension = (*jmxMetricExtension)(nil)
+var _ component.PipelineWatcher = (*jmxMetricExtension)(nil)
 
-type jmxMetricsExtension struct {
+type jmxMetricExtension struct {
 	logger     *zap.Logger
 	config     *config
 	subprocess *subprocess.Subprocess
 }
 
-func newJmxMetricsExtension(
+func newJmxMetricExtension(
 	logger *zap.Logger,
 	config *config,
-) *jmxMetricsExtension {
-	return &jmxMetricsExtension{
+) *jmxMetricExtension {
+	return &jmxMetricExtension{
 		logger: logger,
 		config: config,
 	}
 }
 
-func (jmx *jmxMetricsExtension) Start(ctx context.Context, host component.Host) error {
+func (jmx *jmxMetricExtension) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("Starting JMX Metric Extension")
 	javaConfig, err := jmx.buildJmxMetricGathererConfig()
 	if err != nil {
@@ -59,21 +59,21 @@ func (jmx *jmxMetricsExtension) Start(ctx context.Context, host component.Host) 
 	return nil
 }
 
-func (jmx *jmxMetricsExtension) Shutdown(ctx context.Context) error {
+func (jmx *jmxMetricExtension) Shutdown(ctx context.Context) error {
 	jmx.logger.Debug("Shutting down JMX Metric Extension")
 	return jmx.subprocess.Shutdown(ctx)
 }
 
-func (jmx *jmxMetricsExtension) Ready() error {
+func (jmx *jmxMetricExtension) Ready() error {
 	jmx.logger.Debug("JMX Metric Extension is ready.  Starting subprocess.")
 	return jmx.subprocess.Start(context.Background())
 }
 
-func (jmx *jmxMetricsExtension) NotReady() error {
+func (jmx *jmxMetricExtension) NotReady() error {
 	return nil
 }
 
-func (jmx *jmxMetricsExtension) buildJmxMetricGathererConfig() (string, error) {
+func (jmx *jmxMetricExtension) buildJmxMetricGathererConfig() (string, error) {
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
 `, jmx.config.ServiceURL, jmx.config.Interval.Milliseconds())

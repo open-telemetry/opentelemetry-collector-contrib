@@ -64,5 +64,5 @@ func createExtension(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJmxMetricsExtension(params.Logger, jmxConfig), nil
+	return newJmxMetricExtension(params.Logger, jmxConfig), nil
 }
