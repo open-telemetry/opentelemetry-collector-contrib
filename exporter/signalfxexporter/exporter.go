@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -33,6 +34,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
+
+type signalfMetadataExporter struct {
+	component.MetricsExporter
+	pushMetadata func(metadata []*collection.MetadataUpdate) error
+}
+
+func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
+	return sme.pushMetadata(metadata)
+}
 
 type signalfxExporter struct {
 	logger             *zap.Logger
@@ -174,8 +184,4 @@ func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, e
 	}
 
 	return numDroppedRecords, err
-}
-
-func (se *signalfxExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
-	return se.pushMetadata(metadata)
 }
