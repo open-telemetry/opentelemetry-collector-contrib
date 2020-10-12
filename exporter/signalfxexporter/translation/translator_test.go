@@ -1886,14 +1886,6 @@ func TestTranslateDataPoints(t *testing.T) {
 }
 
 func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataPoint, action Action) {
-	// Handle float values separately
-	for i, dp := range got {
-		if dp.GetValue().DoubleValue != nil {
-			assert.InDelta(t, *want[i].GetValue().DoubleValue, *dp.GetValue().DoubleValue, 0.00000001)
-			*dp.GetValue().DoubleValue = *want[i].GetValue().DoubleValue
-		}
-	}
-
 	// Sort metrics to handle not deterministic order from aggregation
 	if action == ActionAggregateMetric {
 		sort.Sort(byContent(want))
@@ -1907,6 +1899,14 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 
 		for _, dp := range got {
 			sort.Sort(byDimensions(dp.Dimensions))
+		}
+	}
+
+	// Handle float values separately
+	for i, dp := range got {
+		if dp.GetValue().DoubleValue != nil {
+			assert.InDelta(t, *want[i].GetValue().DoubleValue, *dp.GetValue().DoubleValue, 0.00000001)
+			*dp.GetValue().DoubleValue = *want[i].GetValue().DoubleValue
 		}
 	}
 
