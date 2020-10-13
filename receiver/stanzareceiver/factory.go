@@ -26,6 +26,7 @@ import (
 
 const (
 	typeStr = "stanza"
+	verStr  = "0.12.0"
 )
 
 // NewFactory creates a factory for Stanza receiver.

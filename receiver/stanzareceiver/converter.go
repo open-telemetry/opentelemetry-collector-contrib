@@ -42,8 +42,8 @@ func convert(obsLog *entry.Entry) pdata.Logs {
 
 	il := ills.InstrumentationLibrary()
 	il.InitEmpty()
-	il.SetName("stanza")
-	il.SetVersion("0.12.0")
+	il.SetName(typeStr)
+	il.SetVersion(verStr)
 
 	lr := pdata.NewLogRecord()
 	lr.InitEmpty()
