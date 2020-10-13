@@ -5,6 +5,8 @@ receiver](https://github.com/open-telemetry/opentelemetry-collector/tree/master/
 This receiver provides a simple configuration interface to configure the
 prometheus receiver to scrape metrics from a single target.
 
+Supported pipeline types: metrics
+
 ## Configuration
 
 The following settings are required:

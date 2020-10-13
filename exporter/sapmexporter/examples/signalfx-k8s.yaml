@@ -10,6 +10,9 @@ data:
   otel-collector-config: |
     extensions:
       health_check:
+      http_forwarder:
+        egress:
+          endpoint: "https://api.${SFX_REALM}.signalfx.com"
       zpages:
     receivers:
       sapm:
@@ -67,14 +70,14 @@ data:
     exporters:
       # Traces
       sapm:
-        access_token: "YOUR_ACCESS_TOKEN"
-        endpoint: "https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace"
+        access_token: "${SFX_TOKEN}"
+        endpoint: "https://ingest.${SFX_REALM}.signalfx.com/v2/trace"
       # Metrics
       signalfx:
-        access_token: "YOUR_ACCESS_TOKEN"
-        realm: "YOUR_SIGNALFX_REALM"
+        access_token: "${SFX_TOKEN}"
+        realm: "${SFX_REALM}"
     service:
-      extensions: [health_check]
+      extensions: [health_check, http_forwarder, zpages]
       pipelines:
         traces:
           receivers: [sapm, zipkin]
@@ -136,7 +139,7 @@ spec:
           - "--config=/conf/otel-collector-config.yaml"
 #           Memory Ballast size should be max 1/3 to 1/2 of memory.
           - "--mem-ballast-size-mib=683"
-        image: otel/opentelemetry-collector-contrib:0.11.0
+        image: otel/opentelemetry-collector-contrib:0.12.0
         name: otel-collector
         resources:
           limits:
@@ -148,10 +151,11 @@ spec:
         ports:
         - containerPort: 55679 # Default endpoint for ZPages.
         - containerPort: 55680 # Default endpoint for OpenTelemetry receiver.
-        - containerPort: 7276 # Default endpoint for SignalFx APM receiver.
-        - containerPort: 9411 # Default endpoint for Zipkin trace receiver.
-        - containerPort: 9943 # Default endpoint for SignalFx metrics receiver.
+        - containerPort: 6060  # Default endpoint for HTTP Forwarder extension.
+        - containerPort: 7276  # Default endpoint for SignalFx APM receiver.
         - containerPort: 8888  # Default endpoint for querying metrics.
+        - containerPort: 9411  # Default endpoint for Zipkin trace receiver.
+        - containerPort: 9943  # Default endpoint for SignalFx metrics receiver.
         volumeMounts:
         - name: otel-collector-config-vol
           mountPath: /conf

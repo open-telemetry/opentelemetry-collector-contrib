@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -48,9 +49,9 @@ func TestNew(t *testing.T) {
 	assert.Nil(t, got)
 
 	config := &Config{
-		Token:    "someToken",
-		Endpoint: "https://example.com:8088",
-		Timeout:  1 * time.Second,
+		Token:           "someToken",
+		Endpoint:        "https://example.com:8088",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 	}
 	got, err = createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
@@ -320,6 +321,5 @@ func TestExporterStartAlwaysReturnsNil(t *testing.T) {
 	}
 	e, err := createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
-	err = e.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
 }

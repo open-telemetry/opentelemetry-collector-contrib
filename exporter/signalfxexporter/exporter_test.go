@@ -33,9 +33,9 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -67,10 +67,10 @@ func TestNew(t *testing.T) {
 		{
 			name: "successfully create exporter",
 			config: &Config{
-				AccessToken: "someToken",
-				Realm:       "xyz",
-				Timeout:     1 * time.Second,
-				Headers:     nil,
+				AccessToken:     "someToken",
+				Realm:           "xyz",
+				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+				Headers:         nil,
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestNew(t *testing.T) {
 			config: &Config{
 				AccessToken:      "someToken",
 				Realm:            "xyz",
-				Timeout:          1 * time.Second,
+				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 				Headers:          nil,
 				SyncHostMetadata: true,
 			},
@@ -95,8 +95,6 @@ func TestNew(t *testing.T) {
 				}
 			} else {
 				require.NotNil(t, got)
-				require.NoError(t, got.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, got.Shutdown(context.Background()))
 			}
 		})
 	}
@@ -449,29 +447,29 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func TestNewEventExporter(t *testing.T) {
-	got, err := NewEventExporter(nil, zap.NewNop())
+	got, err := newEventExporter(nil, zap.NewNop())
 	assert.EqualError(t, err, "nil config")
 	assert.Nil(t, got)
 
 	config := &Config{
-		AccessToken: "someToken",
-		IngestURL:   "asdf://:%",
-		Timeout:     1 * time.Second,
-		Headers:     nil,
+		AccessToken:     "someToken",
+		IngestURL:       "asdf://:%",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		Headers:         nil,
 	}
 
-	got, err = NewEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(config, zap.NewNop())
 	assert.NotNil(t, err)
 	assert.Nil(t, got)
 
 	config = &Config{
-		AccessToken: "someToken",
-		Realm:       "xyz",
-		Timeout:     1 * time.Second,
-		Headers:     nil,
+		AccessToken:     "someToken",
+		Realm:           "xyz",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
+		Headers:         nil,
 	}
 
-	got, err = NewEventExporter(config, zap.NewNop())
+	got, err = newEventExporter(config, zap.NewNop())
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
@@ -479,7 +477,7 @@ func TestNewEventExporter(t *testing.T) {
 	rls := makeSampleResourceLogs()
 	ld := pdata.NewLogs()
 	ld.ResourceLogs().Append(rls)
-	err = got.ConsumeLogs(context.Background(), ld)
+	_, err = got.pushLogs(context.Background(), ld)
 	assert.Error(t, err)
 }
 

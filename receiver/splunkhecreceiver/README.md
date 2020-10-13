@@ -1,8 +1,12 @@
-# Splunk HEC Receiver 
+# Splunk HEC Receiver
 
 The Splunk HEC receiver accepts metrics in the [Splunk HEC
 format](https://docs.splunk.com/Documentation/Splunk/8.0.5/Data/FormateventsforHTTPEventCollector).
 This allows the collector to receive metrics, traces and logs.
+
+Supported pipeline types: logs, metrics, traces
+
+> :construction: This receiver is in beta and configuration fields are subject to change.
 
 ## Configuration
 
