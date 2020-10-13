@@ -48,9 +48,9 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.12.0
-	golang.org/x/sys v0.0.0-20200905004654-be1d3432aa8f
-	honnef.co/go/tools v0.0.1-2020.1.5
+	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	golang.org/x/sys v0.0.0-20201005172224-997123666555
+	honnef.co/go/tools v0.0.1-2020.1.6
 )
 
 // Replace references to modules that are in this repository with their relateive paths
@@ -131,6 +131,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ./receiver/wavefrontreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ./receiver/dockerstatsreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ./receiver/windowsperfcountersreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
 

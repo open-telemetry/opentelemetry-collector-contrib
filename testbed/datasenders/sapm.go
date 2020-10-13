@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
@@ -28,8 +28,8 @@ import (
 
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
-	exporter component.TraceExporter
-	port     int
+	testbed.DataSenderBase
+	consumer.TraceConsumer
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
@@ -38,49 +38,40 @@ var _ testbed.TraceDataSender = (*SapmDataSender)(nil)
 // NewSapmDataSender creates a new Sapm protocol sender that will send
 // to the specified port after Start is called.
 func NewSapmDataSender(port int) *SapmDataSender {
-	return &SapmDataSender{port: port}
+	return &SapmDataSender{
+		DataSenderBase: testbed.DataSenderBase{
+			Port: port,
+			Host: testbed.DefaultHost,
+		},
+	}
 }
 
 // Start the sender.
 func (je *SapmDataSender) Start() error {
 	cfg := &sapmexporter.Config{
-		Endpoint:           fmt.Sprintf("http://localhost:%d/v2/trace", je.port),
+		Endpoint:           fmt.Sprintf("http://%s/v2/trace", je.GetEndpoint()),
 		DisableCompression: true,
 		AccessToken:        "MyToken",
 	}
 
 	var err error
 	factory := sapmexporter.NewFactory()
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	params := component.ExporterCreateParams{Logger: zap.L()}
 	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg)
 
 	if err != nil {
 		return err
 	}
 
-	je.exporter = exporter
+	je.TraceConsumer = exporter
 	return err
-}
-
-// SendSpans sends spans. Can be called after Start.
-func (je *SapmDataSender) SendSpans(traces pdata.Traces) error {
-	return je.exporter.ConsumeTraces(context.Background(), traces)
-}
-
-// Flush previously sent spans.
-func (je *SapmDataSender) Flush() {
 }
 
 // GenConfigYAMLStr returns receiver config for the agent.
 func (je *SapmDataSender) GenConfigYAMLStr() string {
 	return fmt.Sprintf(`
   sapm:
-    endpoint: "localhost:%d"`, je.port)
-}
-
-// GetCollectorPort returns receiver port for the Collector.
-func (je *SapmDataSender) GetCollectorPort() int {
-	return je.port
+    endpoint: "%s"`, je.GetEndpoint())
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.
