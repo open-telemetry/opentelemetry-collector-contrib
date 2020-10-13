@@ -32,7 +32,8 @@ const (
 	CleanInterval = 5 * time.Minute
 	MinTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 
-	OTellibDimensionKey            = "OTelLib"
+	// OTel instrumentation lib name as dimension
+	OTellibDimensionKey          = "OTelLib"
 	defaultNameSpace             = "default"
 	noInstrumentationLibraryName = "Undefined"
 
@@ -258,7 +259,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 		fieldsPairs[k] = v.Value()
 		dimensionSlice = append(dimensionSlice, k)
 	})
-	// add OTel instrumentation lib name as an additional dimension
+	// add OTel instrumentation lib name as an additional dimension if it is defined
 	if instrumentationLibName != noInstrumentationLibraryName {
 		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
 		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
@@ -304,12 +305,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	return cwMetric
 }
 
-func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint,
-	pmd *pdata.Metric,
-	namespace string,
-	metricSlice []map[string]string,
-	instrumentationLibName string,
-	dimensionRollupOption string) *CWMetrics {
+func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, dimensionRollupOption string) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -321,7 +317,7 @@ func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint,
 		fieldsPairs[k] = v.Value()
 		dimensionSlice = append(dimensionSlice, k)
 	})
-	// add OTel instrumentation lib name as an additional dimension
+	// add OTel instrumentation lib name as an additional dimension if it is defined
 	if instrumentationLibName != noInstrumentationLibraryName {
 		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
 		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
