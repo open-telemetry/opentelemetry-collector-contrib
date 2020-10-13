@@ -942,8 +942,11 @@ func TestConsumeMetadata(t *testing.T) {
 				logger:       logger,
 				pushMetadata: dimClient.PushMetadata,
 			}
+			sme := signalfMetadataExporter{
+				pushMetadata: se.pushMetadata,
+			}
 
-			err = se.ConsumeMetadata(tt.args.metadata)
+			err = sme.ConsumeMetadata(tt.args.metadata)
 
 			// Wait for requests to be handled by the mocked server before assertion.
 			wg.Wait()
