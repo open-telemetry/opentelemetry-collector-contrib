@@ -17,7 +17,7 @@ package kinesisexporter
 import (
 	"context"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	kinesis "github.com/signalfx/omnition-kinesis-producer"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,7 +27,7 @@ import (
 
 // Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
 type Exporter struct {
-	kinesis *kinesis.Exporter
+	kinesis *kinesis.Producer
 	logger  *zap.Logger
 }
 
@@ -38,12 +38,13 @@ var _ component.TraceExporter = (*Exporter)(nil)
 // with the host after Start() has already returned. If error is returned by
 // Start() then the collector startup will be aborted.
 func (e Exporter) Start(_ context.Context, _ component.Host) error {
+	e.kinesis.Start()
 	return nil
 }
 
 // Shutdown is invoked during exporter shutdown.
 func (e Exporter) Shutdown(context.Context) error {
-	e.kinesis.Flush()
+	e.kinesis.Stop()
 	return nil
 }
 
@@ -61,7 +62,12 @@ func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 			if span.Process == nil {
 				span.Process = pBatch.Process
 			}
-			err := e.kinesis.ExportSpan(span)
+			// Temporary span marshalling
+			d, err := span.Marshal()
+			if err != nil {
+				e.logger.Error("error marshalling span", zap.Error(err))
+			}
+			err = e.kinesis.Put(d, span.SpanID.String())
 			if err != nil {
 				e.logger.Error("error exporting span to kinesis", zap.Error(err))
 				exportErr = err

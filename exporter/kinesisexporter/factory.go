@@ -16,8 +16,12 @@ package kinesisexporter
 
 import (
 	"context"
+	"time"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/kinesis"
+	producer "github.com/signalfx/omnition-kinesis-producer"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -53,12 +57,7 @@ func createDefaultConfig() configmodels.Exporter {
 			FlushIntervalSeconds: 5,
 			MaxConnections:       24,
 		},
-
-		QueueSize:            100000,
-		NumWorkers:           8,
-		FlushIntervalSeconds: 5,
-		MaxBytesPerBatch:     100000,
-		MaxBytesPerSpan:      900000,
+		ExportFormat: "",
 	}
 }
 
@@ -68,32 +67,25 @@ func createTraceExporter(
 	config configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	c := config.(*Config)
-	k, err := kinesis.NewExporter(&kinesis.Options{
-		Name:               c.Name(),
-		StreamName:         c.AWS.StreamName,
-		AWSRegion:          c.AWS.Region,
-		AWSRole:            c.AWS.Role,
-		AWSKinesisEndpoint: c.AWS.KinesisEndpoint,
+	awsConfig := aws.NewConfig().WithRegion(c.AWS.Region).WithEndpoint(c.AWS.KinesisEndpoint)
+	client := kinesis.New(session.Must(session.NewSession(awsConfig)))
 
-		KPLAggregateBatchSize:   c.KPL.AggregateBatchSize,
-		KPLAggregateBatchCount:  c.KPL.AggregateBatchCount,
-		KPLBatchSize:            c.KPL.BatchSize,
-		KPLBatchCount:           c.KPL.BatchCount,
-		KPLBacklogCount:         c.KPL.BacklogCount,
-		KPLFlushIntervalSeconds: c.KPL.FlushIntervalSeconds,
-		KPLMaxConnections:       c.KPL.MaxConnections,
-		KPLMaxRetries:           c.KPL.MaxRetries,
-		KPLMaxBackoffSeconds:    c.KPL.MaxBackoffSeconds,
+	producer := producer.New(&producer.Config{
+		StreamName: c.AWS.StreamName,
+		// KPL parameters
+		FlushInterval:       time.Duration(c.KPL.FlushIntervalSeconds) * time.Second,
+		BatchCount:          c.KPL.BatchCount,
+		BatchSize:           c.KPL.BatchSize,
+		AggregateBatchCount: c.KPL.AggregateBatchCount,
+		AggregateBatchSize:  c.KPL.AggregateBatchSize,
+		BacklogCount:        c.KPL.BacklogCount,
+		MaxConnections:      c.KPL.MaxConnections,
+		MaxRetries:          c.KPL.MaxRetries,
+		MaxBackoffTime:      time.Duration(c.KPL.MaxBackoffSeconds) * time.Second,
 
-		QueueSize:             c.QueueSize,
-		NumWorkers:            c.NumWorkers,
-		MaxAllowedSizePerSpan: c.MaxBytesPerSpan,
-		MaxListSize:           c.MaxBytesPerBatch,
-		ListFlushInterval:     c.FlushIntervalSeconds,
-		Encoding:              exportFormat,
-	}, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-	return Exporter{k, params.Logger}, nil
+		Logger: nil,
+		Client: client,
+	}, nil)
+
+	return Exporter{producer, params.Logger}, nil
 }
