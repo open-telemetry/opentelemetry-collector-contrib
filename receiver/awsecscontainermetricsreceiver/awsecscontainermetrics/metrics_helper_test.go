@@ -94,6 +94,21 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	require.EqualValues(t, v, taskMetrics.MemoryUsage)
 	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
 	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
+
+	containerStats = ContainerStats{
+		Name:        "test",
+		ID:          "001",
+		Memory:      mem,
+		Disk:        disk,
+		Network:     net,
+		NetworkRate: NetworkRateStats{},
+		CPU:         cpuStats,
+	}
+	containerMetrics = getContainerMetrics(containerStats)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
 }
 
 func TestExtractStorageUsage(t *testing.T) {
