@@ -61,7 +61,7 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport []string) [
 }
 
 func getNodeConditionMetric(nodeConditionTypeValue string) string {
-	return fmt.Sprintf("k8s/node/condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
 }
 
 func getResourceForNode(node *corev1.Node) *resourcepb.Resource {

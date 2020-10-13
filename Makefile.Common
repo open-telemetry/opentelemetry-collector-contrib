@@ -2,6 +2,7 @@
 SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 
 ALL_SRC := $(shell find . -name '*.go' \
+                                -not -path '*/third_party/*' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.
@@ -14,8 +15,9 @@ ALL_PKGS := $(shell go list $(sort $(dir $(ALL_SRC))) 2>/dev/null)
 ALL_MODULES := $(shell find . -type f -name "go.mod" -exec dirname {} \; | sort | egrep  '^./' )
 
 GOTEST_OPT?= -race -timeout 30s
+GOTEST_INTEGRATION_OPT?= -race -timeout 60s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
+GOTEST_INTEGRATION_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOTEST=go test
 GOOS=$(shell go env GOOS)
 GOARCH=$(shell go env GOARCH)

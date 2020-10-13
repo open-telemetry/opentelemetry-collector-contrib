@@ -39,7 +39,7 @@ type stanzareceiver struct {
 	logger   *zap.Logger
 }
 
-// Ensure this factory adheres to required interface
+// Ensure this receiver adheres to required interface
 var _ component.LogsReceiver = (*stanzareceiver)(nil)
 
 // Start tells the receiver to start

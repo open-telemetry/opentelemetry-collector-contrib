@@ -17,6 +17,7 @@ OTEL_VERSION=master
 # Modules to run integration tests on.
 # XXX: Find a way to automatically populate this. Too slow to run across all modules when there are just a few.
 INTEGRATION_TEST_MODULES := \
+	extension/jmxmetricsextension/subprocess \
 	receiver/dockerstatsreceiver \
 	receiver/redisreceiver \
 	internal/common
@@ -44,7 +45,8 @@ integration-tests-with-cover:
 # Long-running e2e tests
 .PHONY: stability-tests
 stability-tests: otelcontribcol
-	$(MAKE) -C testbed run-stability-tests
+	@echo Stability tests are disabled until we have a stable performance environment.
+	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
 .PHONY: gotidy
 gotidy:

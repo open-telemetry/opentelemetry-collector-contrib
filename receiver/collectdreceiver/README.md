@@ -13,6 +13,8 @@ receiver supports extracting labels from different fields. Given a field
 value `field[a=b, k=v]`, this receiver will extract `a` and `b` as label keys
 and, `k` and `v` as the respective label values.
 
+Supported pipeline types: metrics
+
 ## Configuration
 
 The following settings are required:

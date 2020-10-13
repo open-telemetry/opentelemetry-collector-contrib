@@ -185,11 +185,11 @@ func newTraceID() pdata.TraceID {
 	return pdata.NewTraceID(r[:])
 }
 
-func newSegmentID() []byte {
+func newSegmentID() pdata.SpanID {
 	var r [8]byte
 	_, err := rand.Read(r[:])
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewSpanID(r[:])
 }

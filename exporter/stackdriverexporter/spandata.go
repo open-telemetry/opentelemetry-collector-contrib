@@ -61,7 +61,7 @@ func pdataSpanToOTSpanData(
 	copy(sc.TraceID[:], span.TraceID().Bytes())
 	copy(sc.SpanID[:], span.SpanID().Bytes())
 	var parentSpanID apitrace.SpanID
-	copy(parentSpanID[:], span.ParentSpanID())
+	copy(parentSpanID[:], span.ParentSpanID().Bytes())
 	startTime := time.Unix(0, int64(span.StartTime()))
 	endTime := time.Unix(0, int64(span.EndTime()))
 	r := sdkresource.New(
@@ -157,7 +157,7 @@ func pdataLinksToOTLinks(links pdata.SpanLinkSlice) []apitrace.Link {
 		}
 		sc := apitrace.SpanContext{}
 		copy(sc.TraceID[:], link.TraceID().Bytes())
-		copy(sc.SpanID[:], link.SpanID())
+		copy(sc.SpanID[:], link.SpanID().Bytes())
 		otLinks = append(otLinks, apitrace.Link{
 			SpanContext: sc,
 			Attributes:  pdataAttributesToOTAttributes(link.Attributes(), pdata.NewResource()),

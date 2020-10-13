@@ -49,6 +49,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2)
 	assert.Nil(t, awsData.ECS)
 	assert.Nil(t, awsData.Beanstalk)
+	assert.Nil(t, awsData.EKS)
 	assert.Equal(t, "123456789", *awsData.AccountID)
 	assert.Equal(t, &awsxray.EC2Metadata{
 		InstanceID:       aws.String(instanceID),
@@ -60,20 +61,22 @@ func TestAwsFromEc2Resource(t *testing.T) {
 
 func TestAwsFromEcsResource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
-	containerID := "signup_aggregator-x82ufje83"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
-	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
 	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
 	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
 	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
 	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerID, containerID)
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 	attrs.CopyTo(resource.Attributes())
@@ -87,8 +90,10 @@ func TestAwsFromEcsResource(t *testing.T) {
 	assert.NotNil(t, awsData.EC2)
 	assert.NotNil(t, awsData.ECS)
 	assert.Nil(t, awsData.Beanstalk)
+	assert.NotNil(t, awsData.EKS)
 	assert.Equal(t, &awsxray.ECSMetadata{
-		ContainerName: aws.String(containerID),
+		ContainerName: aws.String(containerName),
+		ContainerID:   aws.String(containerID),
 	}, awsData.ECS)
 }
 
@@ -115,6 +120,7 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	assert.Nil(t, awsData.EC2)
 	assert.Nil(t, awsData.ECS)
 	assert.NotNil(t, awsData.Beanstalk)
+	assert.Nil(t, awsData.EKS)
 	assert.Equal(t, &awsxray.BeanstalkMetadata{
 		Environment:  aws.String("production"),
 		VersionLabel: aws.String(versionLabel),
@@ -122,22 +128,64 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	}, awsData.Beanstalk)
 }
 
-func TestAwsWithAwsSqsResources(t *testing.T) {
+func TestAwsFromEksResource(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
-	containerID := "signup_aggregator-x82ufje83"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
-	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
 	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
 	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
 	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
 	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerID, containerID)
+	attrs.InsertString(semconventions.AttributeHostID, instanceID)
+	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
+	attrs.CopyTo(resource.Attributes())
+
+	attributes := make(map[string]string)
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.NotNil(t, awsData.EC2)
+	assert.NotNil(t, awsData.ECS)
+	assert.Nil(t, awsData.Beanstalk)
+	assert.NotNil(t, awsData.EKS)
+	assert.Equal(t, &awsxray.EKSMetadata{
+		ClusterName: aws.String("production"),
+		Pod:         aws.String("my-deployment-65dcf7d447-ddjnl"),
+		ContainerID: aws.String(containerID),
+	}, awsData.EKS)
+}
+
+func TestAwsWithAwsSqsResources(t *testing.T) {
+	instanceID := "i-00f7c0bcb26da2a99"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
+	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
+	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
+	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
+	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
+	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerID, containerID)
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 
@@ -171,7 +219,8 @@ func TestAwsWithSqsAlternateAttribute(t *testing.T) {
 
 func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	instanceID := "i-00f7c0bcb26da2a99"
-	containerID := "signup_aggregator-x82ufje83"
+	containerName := "signup_aggregator-x82ufje83"
+	containerID := "0123456789A"
 	resource := pdata.NewResource()
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
@@ -184,7 +233,9 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeK8sCluster, "production")
 	attrs.InsertString(semconventions.AttributeK8sNamespace, "default")
 	attrs.InsertString(semconventions.AttributeK8sDeployment, "signup_aggregator")
-	attrs.InsertString(semconventions.AttributeK8sPod, containerID)
+	attrs.InsertString(semconventions.AttributeK8sPod, "my-deployment-65dcf7d447-ddjnl")
+	attrs.InsertString(semconventions.AttributeContainerName, containerName)
+	attrs.InsertString(semconventions.AttributeContainerID, containerID)
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 

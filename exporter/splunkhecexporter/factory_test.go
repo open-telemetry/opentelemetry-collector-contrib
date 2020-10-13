@@ -72,6 +72,30 @@ func TestCreateTraceExporterInvalidEndpoint(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateLogsExporter(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Token = "1234-1234"
+
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), params, cfg)
+	assert.NoError(t, err)
+}
+
+func TestCreateLogsExporterNoConfig(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), params, nil)
+	assert.Error(t, err)
+}
+
+func TestCreateLogsExporterInvalidEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "urn:something:12345"
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createLogsExporter(context.Background(), params, cfg)
+	assert.Error(t, err)
+}
+
 func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 

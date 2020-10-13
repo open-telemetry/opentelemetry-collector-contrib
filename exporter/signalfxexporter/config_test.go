@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
@@ -65,8 +66,20 @@ func TestLoadConfig(t *testing.T) {
 			"added-entry": "added value",
 			"dot.test":    "test",
 		},
-		Timeout: 2 * time.Second,
-		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 2 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: false,
 		},
 		SendCompatibleMetrics: true,
@@ -98,6 +111,7 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 		Headers               map[string]string
 		SendCompatibleMetrics bool
 		TranslationRules      []translation.Rule
+		SyncHostMetadata      bool
 	}
 	tests := []struct {
 		name    string
@@ -206,15 +220,18 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ExporterSettings:      tt.fields.ExporterSettings,
-				AccessToken:           tt.fields.AccessToken,
-				Realm:                 tt.fields.Realm,
-				IngestURL:             tt.fields.IngestURL,
-				APIURL:                tt.fields.APIURL,
-				Timeout:               tt.fields.Timeout,
+				ExporterSettings: tt.fields.ExporterSettings,
+				AccessToken:      tt.fields.AccessToken,
+				Realm:            tt.fields.Realm,
+				IngestURL:        tt.fields.IngestURL,
+				APIURL:           tt.fields.APIURL,
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: tt.fields.Timeout,
+				},
 				Headers:               tt.fields.Headers,
 				SendCompatibleMetrics: tt.fields.SendCompatibleMetrics,
 				TranslationRules:      tt.fields.TranslationRules,
+				SyncHostMetadata:      tt.fields.SyncHostMetadata,
 			}
 			got, err := cfg.getOptionsFromConfig()
 			if (err != nil) != tt.wantErr {
