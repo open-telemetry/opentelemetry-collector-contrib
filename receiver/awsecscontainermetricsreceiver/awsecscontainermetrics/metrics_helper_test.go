@@ -23,6 +23,7 @@ import (
 func TestGetContainerAndTaskMetrics(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
+	floatZero := float64(0)
 
 	memStats := make(map[string]uint64)
 	memStats["cache"] = v
@@ -107,8 +108,8 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	containerMetrics = getContainerMetrics(containerStats)
 	require.NotNil(t, containerMetrics)
 
-	require.EqualValues(t, f, containerMetrics.NetworkRateRxBytesPerSecond)
-	require.EqualValues(t, f, containerMetrics.NetworkRateTxBytesPerSecond)
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateTxBytesPerSecond)
 }
 
 func TestExtractStorageUsage(t *testing.T) {
