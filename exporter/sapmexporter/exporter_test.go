@@ -54,32 +54,6 @@ func TestCreateTraceExporter(t *testing.T) {
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
-func TestCreateTraceExporterWithCorrelationEnabled(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1234"
-	cfg.Correlation.Enabled = true
-	cfg.Correlation.Endpoint = "http://localhost"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-
-	te, err := newSAPMExporter(cfg, params)
-	assert.Nil(t, err)
-	assert.NotNil(t, te, "failed to create trace exporter")
-
-	assert.NotNil(t, te.tracker, "correlation tracker should have been set")
-}
-
-func TestCreateTraceExporterWithCorrelationDisabled(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "localhost:1234"
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-
-	te, err := newSAPMExporter(cfg, params)
-	assert.Nil(t, err)
-	assert.NotNil(t, te, "failed to create trace exporter")
-
-	assert.Nil(t, te.tracker, "tracker correlation should not be created")
-}
-
 func TestCreateTraceExporterWithInvalidConfig(t *testing.T) {
 	config := &Config{}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
