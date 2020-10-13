@@ -113,7 +113,7 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 	}
 
 	// Add span kind if it is set
-	if span.Kind > tracepb.Span_SPAN_KIND_UNSPECIFIED {
+	if span.Kind != tracepb.Span_SPAN_KIND_UNSPECIFIED {
 		attrs["span.kind"] = strings.ToLower(span.Kind.String())
 	}
 
