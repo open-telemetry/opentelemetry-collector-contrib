@@ -2,6 +2,8 @@
 
 StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
 
+Supported pipeline types: metrics
+
 > :construction: This receiver is currently in **BETA**.
 
 ## Configuration

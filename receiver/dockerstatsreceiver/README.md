@@ -5,6 +5,8 @@ all desired running containers on a configured interval.  These stats are for co
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
 
+Supported pipeline types: metrics
+
 > :information_source: Requires Docker API version 1.22+ and only Linux is supported.
 
 ## Configuration
