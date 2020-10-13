@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.14b0
+
+Released 2020-10-13
+
 - Changed span name extraction from request to comply semantic convention ([#992](https://github.com/open-telemetry/opentelemetry-python/pull/992)) 
 - Added support for `OTEL_PYTHON_DJANGO_TRACED_REQUEST_ATTRS` ([#1154](https://github.com/open-telemetry/opentelemetry-python/pull/1154))
 
