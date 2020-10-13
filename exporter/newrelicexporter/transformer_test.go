@@ -206,6 +206,35 @@ func TestTransformSpan(t *testing.T) {
 				},
 			},
 		},
+		{
+			in: &tracepb.Span{
+				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 5},
+				Name:    &tracepb.TruncatableString{Value: "with time"},
+				Status:  &tracepb.Status{},
+				StartTime: &timestamppb.Timestamp{
+					Seconds: now.Unix(),
+				},
+				EndTime: &timestamppb.Timestamp{
+					Seconds: now.Add(time.Second * 5).Unix(),
+				},
+				Kind: tracepb.Span_SERVER,
+			},
+			want: telemetry.Span{
+				ID:          "0000000000000005",
+				TraceID:     "01010101010101010101010101010101",
+				Name:        "with time",
+				Timestamp:   now,
+				Duration:    time.Second * 5,
+				ServiceName: "test-service",
+				Attributes: map[string]interface{}{
+					"collector.name":    name,
+					"collector.version": version,
+					"resource":          "R1",
+					"span.kind":         "server",
+				},
+			},
+		},
 	}
 
 	transform := &transformer{
