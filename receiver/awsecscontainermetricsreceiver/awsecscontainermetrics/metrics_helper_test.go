@@ -23,6 +23,7 @@ import (
 func TestGetContainerAndTaskMetrics(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
+	floatZero := float64(0)
 
 	memStats := make(map[string]uint64)
 	memStats["cache"] = v
@@ -94,6 +95,21 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	require.EqualValues(t, v, taskMetrics.MemoryUsage)
 	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
 	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
+
+	containerStats = ContainerStats{
+		Name:        "test",
+		ID:          "001",
+		Memory:      mem,
+		Disk:        disk,
+		Network:     net,
+		NetworkRate: NetworkRateStats{},
+		CPU:         cpuStats,
+	}
+	containerMetrics = getContainerMetrics(containerStats)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateTxBytesPerSecond)
 }
 
 func TestExtractStorageUsage(t *testing.T) {

@@ -66,7 +66,7 @@ func (s *sfxEventClient) pushResourceLogs(
 	if !strings.HasSuffix(eventURL.Path, "v2/event") {
 		eventURL.Path = path.Join(eventURL.Path, "v2/event")
 	}
-	req, err := http.NewRequest("POST", eventURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", eventURL.String(), body)
 	if err != nil {
 		return countRecords(rls), consumererror.Permanent(err)
 	}
