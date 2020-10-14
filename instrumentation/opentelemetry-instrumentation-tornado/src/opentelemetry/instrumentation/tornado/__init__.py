@@ -226,9 +226,12 @@ def _start_span(tracer, handler, start_time) -> _TraceContext:
     span = tracer.start_span(
         _get_operation_name(handler, handler.request),
         kind=trace.SpanKind.SERVER,
-        attributes=_get_attributes_from_request(handler.request),
         start_time=start_time,
     )
+    if span.is_recording():
+        attributes = _get_attributes_from_request(handler.request)
+        for key, value in attributes.items():
+            span.set_attribute(key, value)
 
     activation = tracer.use_span(span, end_on_exit=True)
     activation.__enter__()
@@ -260,15 +263,16 @@ def _finish_span(tracer, handler, error=None):
     if not ctx:
         return
 
-    if reason:
-        ctx.span.set_attribute("http.status_text", reason)
-    ctx.span.set_attribute("http.status_code", status_code)
-    ctx.span.set_status(
-        Status(
-            canonical_code=http_status_to_canonical_code(status_code),
-            description=reason,
+    if ctx.span.is_recording():
+        if reason:
+            ctx.span.set_attribute("http.status_text", reason)
+        ctx.span.set_attribute("http.status_code", status_code)
+        ctx.span.set_status(
+            Status(
+                canonical_code=http_status_to_canonical_code(status_code),
+                description=reason,
+            )
         )
-    )
 
     ctx.activation.__exit__(*finish_args)
     context.detach(ctx.token)
