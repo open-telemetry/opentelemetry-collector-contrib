@@ -268,8 +268,9 @@ func TestMissingECSMetadataFile(t *testing.T) {
 	os.Setenv(ecsMetadataFileEnvVar, "testdata/doesntExist.txt")
 
 	_, err := getRegionFromECSMetadata()
-	assert.EqualError(t, err,
-		"unable to open ECS metadata file, path: testdata/doesntExist.txt, error: open testdata/doesntExist.txt: no such file or directory",
+	assert.Regexp(t,
+		"^unable to open ECS metadata file, path: testdata/doesntExist.txt, error: open testdata/doesntExist.txt:",
+		err,
 		"expected error")
 }
 
