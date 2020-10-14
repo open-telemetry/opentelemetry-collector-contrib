@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +build !windows
+// TODO review if tests should succeed on Windows
+
 package kubelet
 
 import (

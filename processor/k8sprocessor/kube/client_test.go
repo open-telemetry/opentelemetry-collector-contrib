@@ -224,8 +224,8 @@ func TestPodDelete(t *testing.T) {
 	deleteRequest := c.deleteQueue[0]
 	assert.Equal(t, deleteRequest.ip, "1.1.1.1")
 	assert.Equal(t, deleteRequest.name, "podB")
-	assert.True(t, deleteRequest.ts.After(tsBeforeDelete))
-	assert.True(t, deleteRequest.ts.Before(time.Now()))
+	assert.False(t, deleteRequest.ts.Before(tsBeforeDelete))
+	assert.False(t, deleteRequest.ts.After(time.Now()))
 }
 
 func TestDeleteQueue(t *testing.T) {
