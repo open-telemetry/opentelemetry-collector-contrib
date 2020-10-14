@@ -69,6 +69,30 @@ class TestUtils(unittest.TestCase):
         )
         self.assertNotIn("custom_meta", span.attributes)
 
+    def test_set_attributes_not_recording(self):
+        # it should extract only relevant keys
+        context = {
+            "correlation_id": "44b7f305",
+            "delivery_info": {"eager": True},
+            "eta": "soon",
+            "expires": "later",
+            "hostname": "localhost",
+            "id": "44b7f305",
+            "reply_to": "44b7f305",
+            "retries": 4,
+            "timelimit": ("now", "later"),
+            "custom_meta": "custom_value",
+            "routing_key": "celery",
+        }
+
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        utils.set_attributes_from_context(mock_span, context)
+        self.assertFalse(mock_span.is_recording())
+        self.assertTrue(mock_span.is_recording.called)
+        self.assertFalse(mock_span.set_attribute.called)
+        self.assertFalse(mock_span.set_status.called)
+
     def test_set_attributes_from_context_empty_keys(self):
         # it should not extract empty keys
         context = {
