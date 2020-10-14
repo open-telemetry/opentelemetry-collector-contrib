@@ -30,3 +30,22 @@ func TestGetValues(t *testing.T) {
 	metric.Fields["metric_name:foo2"] = "foobar"
 	assert.Equal(t, map[string]interface{}{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
 }
+
+func TestIsMetric(t *testing.T) {
+	ev := Event{
+		Event: map[string]interface{}{},
+	}
+	assert.False(t, ev.IsMetric())
+	metric := Event{
+		Event: "metric",
+	}
+	assert.True(t, metric.IsMetric())
+	arr := Event{
+		Event: []interface{}{"foo", "bar"},
+	}
+	assert.False(t, arr.IsMetric())
+	yo := Event{
+		Event: "yo",
+	}
+	assert.False(t, yo.IsMetric())
+}
