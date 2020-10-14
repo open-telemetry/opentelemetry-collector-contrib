@@ -88,6 +88,24 @@ class TestElasticsearchIntegration(TestBase):
         spans_list = self.get_ordered_finished_spans()
         self.assertEqual(len(spans_list), 1)
 
+    def test_span_not_recording(self, request_mock):
+        request_mock.return_value = (1, {}, {})
+        mock_tracer = mock.Mock()
+        mock_span = mock.Mock()
+        mock_span.is_recording.return_value = False
+        mock_tracer.start_span.return_value = mock_span
+        mock_tracer.use_span.return_value.__enter__ = mock_span
+        mock_tracer.use_span.return_value.__exit__ = mock_span
+        with mock.patch("opentelemetry.trace.get_tracer") as tracer:
+            tracer.return_value = mock_tracer
+            Elasticsearch()
+            self.assertFalse(mock_span.is_recording())
+            self.assertTrue(mock_span.is_recording.called)
+            self.assertFalse(mock_span.set_attribute.called)
+            self.assertFalse(mock_span.set_status.called)
+
+        ElasticsearchInstrumentor().uninstrument()
+
     def test_prefix_arg(self, request_mock):
         prefix = "prefix-from-env"
         ElasticsearchInstrumentor().uninstrument()

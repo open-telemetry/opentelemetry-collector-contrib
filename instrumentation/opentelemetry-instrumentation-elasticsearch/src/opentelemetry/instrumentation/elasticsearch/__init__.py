@@ -110,6 +110,7 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
 
 
 def _wrap_perform_request(tracer, span_name_prefix):
+    # pylint: disable=R0912
     def wrapper(wrapped, _, args, kwargs):
         method = url = None
         try:
@@ -125,26 +126,27 @@ def _wrap_perform_request(tracer, span_name_prefix):
         params = kwargs.get("params", {})
         body = kwargs.get("body", None)
 
-        attributes = {
-            "component": "elasticsearch-py",
-            "db.type": "elasticsearch",
-        }
-
-        if url:
-            attributes["elasticsearch.url"] = url
-        if method:
-            attributes["elasticsearch.method"] = method
-        if body:
-            attributes["db.statement"] = str(body)
-        if params:
-            attributes["elasticsearch.params"] = str(params)
-
         with tracer.start_as_current_span(
-            op_name, kind=SpanKind.CLIENT, attributes=attributes
+            op_name, kind=SpanKind.CLIENT,
         ) as span:
+            if span.is_recording():
+                attributes = {
+                    "component": "elasticsearch-py",
+                    "db.type": "elasticsearch",
+                }
+                if url:
+                    attributes["elasticsearch.url"] = url
+                if method:
+                    attributes["elasticsearch.method"] = method
+                if body:
+                    attributes["db.statement"] = str(body)
+                if params:
+                    attributes["elasticsearch.params"] = str(params)
+                for key, value in attributes.items():
+                    span.set_attribute(key, value)
             try:
                 rv = wrapped(*args, **kwargs)
-                if isinstance(rv, dict):
+                if isinstance(rv, dict) and span.is_recording():
                     for member in _ATTRIBUTES_FROM_RESULT:
                         if member in rv:
                             span.set_attribute(
@@ -153,11 +155,12 @@ def _wrap_perform_request(tracer, span_name_prefix):
                             )
                 return rv
             except Exception as ex:  # pylint: disable=broad-except
-                if isinstance(ex, elasticsearch.exceptions.NotFoundError):
-                    status = StatusCanonicalCode.NOT_FOUND
-                else:
-                    status = StatusCanonicalCode.UNKNOWN
-                span.set_status(Status(status, str(ex)))
+                if span.is_recording():
+                    if isinstance(ex, elasticsearch.exceptions.NotFoundError):
+                        status = StatusCanonicalCode.NOT_FOUND
+                    else:
+                        status = StatusCanonicalCode.UNKNOWN
+                    span.set_status(Status(status, str(ex)))
                 raise ex
 
     return wrapper
