@@ -118,15 +118,16 @@ def _wrap_cmd(tracer, cmd, wrapped, instance, args, kwargs):
         _CMD, kind=SpanKind.INTERNAL, attributes={}
     ) as span:
         try:
-            if not args:
-                vals = ""
-            else:
-                vals = _get_query_string(args[0])
+            if span.is_recording():
+                if not args:
+                    vals = ""
+                else:
+                    vals = _get_query_string(args[0])
 
-            query = "{}{}{}".format(cmd, " " if vals else "", vals)
-            span.set_attribute(_RAWCMD, query)
+                query = "{}{}{}".format(cmd, " " if vals else "", vals)
+                span.set_attribute(_RAWCMD, query)
 
-            _set_connection_attributes(span, instance)
+                _set_connection_attributes(span, instance)
         except Exception as ex:  # pylint: disable=broad-except
             logger.warning(
                 "Failed to set attributes for pymemcache span %s", str(ex)
