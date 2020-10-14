@@ -71,7 +71,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.Resou
 
 		lr.Resource().InitEmpty()
 		attrs := lr.Resource().Attributes()
-		attrs.InitEmptyWithCapacity(3 + len(event.Fields))
+		attrs.InitEmptyWithCapacity(3)
 		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
 		attrs.InsertString(conventions.AttributeServiceName, event.Source)
 		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
