@@ -50,12 +50,23 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	assert.Equal(t, met.Fields["spanCounter"], 0)
 	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
 	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
-	dimensions := met.Measurements[0].Dimensions[0]
-	sort.Strings(dimensions)
-	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError", "spanName"}, dimensions)
+	dimensionSetOne := met.Measurements[0].Dimensions[0]
+	sort.Strings(dimensionSetOne)
+	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError", "spanName"}, dimensionSetOne)
 	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
 	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
 	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
+
+	dimensionSetTwo := met.Measurements[0].Dimensions[1]
+	assert.Equal(t, []string{OTellibDimensionKey}, dimensionSetTwo)
+
+	dimensionSetThree := met.Measurements[0].Dimensions[2]
+	sort.Strings(dimensionSetThree)
+	assert.Equal(t, []string{OTellibDimensionKey, "spanName"}, dimensionSetThree)
+
+	dimensionSetFour := met.Measurements[0].Dimensions[3]
+	sort.Strings(dimensionSetFour)
+	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError"}, dimensionSetFour)
 }
 
 func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
@@ -73,13 +84,25 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	assert.Equal(t, met.Fields["spanCounter"], 0)
 
 	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
-	assert.Equal(t, 3, len(met.Measurements[0].Dimensions))
-	dimensions := met.Measurements[0].Dimensions[0]
-	sort.Strings(dimensions)
-	assert.Equal(t, []string{"isItAnError", "spanName"}, dimensions)
+	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
+	dimensionSetOne := met.Measurements[0].Dimensions[0]
+	sort.Strings(dimensionSetOne)
+	assert.Equal(t, []string{"isItAnError", "spanName"}, dimensionSetOne)
 	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
 	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
 	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
+
+	// zero dimension metric
+	dimensionSetTwo := met.Measurements[0].Dimensions[1]
+	assert.Equal(t, []string{}, dimensionSetTwo)
+
+	dimensionSetThree := met.Measurements[0].Dimensions[2]
+	sort.Strings(dimensionSetTwo)
+	assert.Equal(t, []string{"spanName"}, dimensionSetThree)
+
+	dimensionSetFour := met.Measurements[0].Dimensions[3]
+	sort.Strings(dimensionSetFour)
+	assert.Equal(t, []string{"isItAnError"}, dimensionSetFour)
 }
 
 func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {

@@ -416,13 +416,13 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 
 func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
-	var dimensionZero []string
+	dimensionZero := []string{}
 	if instrumentationLibName != noInstrumentationLibraryName {
 		dimensionZero = append(dimensionZero, OTellibDimensionKey)
 	}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
 		//"Zero" dimension rollup
-		if len(originalDimensionSlice) > 0 && len(dimensionZero) > 0 {
+		if len(originalDimensionSlice) > 0 {
 			rollupDimensionArray = append(rollupDimensionArray, dimensionZero)
 		}
 	}
