@@ -21,12 +21,12 @@ import (
 )
 
 func TestGetValues(t *testing.T) {
-	metric := Metric{
+	metric := Event{
 		Fields: map[string]interface{}{},
 	}
-	assert.Equal(t, map[string]interface{}{}, metric.GetValues())
+	assert.Equal(t, map[string]interface{}{}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo"] = "bar"
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, metric.GetValues())
+	assert.Equal(t, map[string]interface{}{"foo": "bar"}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo2"] = "foobar"
-	assert.Equal(t, map[string]interface{}{"foo": "bar", "foo2": "foobar"}, metric.GetValues())
+	assert.Equal(t, map[string]interface{}{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
 }

@@ -409,7 +409,7 @@ func TestInvalidJson(t *testing.T) {
 	syncPool := sync.Pool{New: func() interface{} {
 		return gzip.NewWriter(nil)
 	}}
-	evs := []*splunkEvent{
+	evs := []*splunk.Event{
 		{
 			Event: badEvent,
 		},
@@ -429,7 +429,7 @@ func TestInvalidJsonClient(t *testing.T) {
 	badEvent := badJSON{
 		Foo: math.Inf(1),
 	}
-	evs := []*splunkEvent{
+	evs := []*splunk.Event{
 		{
 			Event: badEvent,
 		},
@@ -454,6 +454,6 @@ func TestInvalidURLClient(t *testing.T) {
 		}},
 		config: &Config{},
 	}
-	err := c.sendSplunkEvents(context.Background(), []*splunkEvent{})
+	err := c.sendSplunkEvents(context.Background(), []*splunk.Event{})
 	assert.EqualError(t, err, "Permanent error: parse \"//in%20va%20lid\": invalid URL escape \"%20\"")
 }

@@ -118,7 +118,7 @@ func (c *client) pushTraceData(
 	return numDroppedSpans, nil
 }
 
-func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunkEvent) error {
+func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunk.Event) error {
 	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
 		return consumererror.Permanent(err)
@@ -173,7 +173,7 @@ func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs
 	return numDroppedLogs, nil
 }
 
-func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBodyEvents(zippers *sync.Pool, evs []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range evs {
@@ -186,7 +186,7 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression
 	return getReader(zippers, buf, disableCompression)
 }
 
-func encodeBody(zippers *sync.Pool, dps []*splunk.Metric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers *sync.Pool, dps []*splunk.Event, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
