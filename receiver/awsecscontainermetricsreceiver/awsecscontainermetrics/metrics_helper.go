@@ -26,6 +26,7 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	netStatArray := getNetworkStats(stats.Network)
 
 	storageReadBytes, storageWriteBytes := extractStorageUsage(&stats.Disk)
+	floatZero := float64(0)
 
 	m := ECSMetrics{}
 
@@ -42,8 +43,13 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
 	m.CPUUtilized = cpuUtilized
 
-	m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
-	m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+	if stats.NetworkRate == (NetworkRateStats{}) {
+		m.NetworkRateRxBytesPerSecond = floatZero
+		m.NetworkRateTxBytesPerSecond = floatZero
+	} else {
+		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
+		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+	}
 
 	m.NetworkRxBytes = netStatArray[0]
 	m.NetworkRxPackets = netStatArray[1]
