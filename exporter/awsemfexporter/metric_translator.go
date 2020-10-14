@@ -32,7 +32,8 @@ const (
 	CleanInterval = 5 * time.Minute
 	MinTimeDiff   = 50 * time.Millisecond // We assume 50 milli-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 
-	OtlibDimensionKey            = "OTLib"
+	// OTel instrumentation lib name as dimension
+	OTellibDimensionKey          = "OTelLib"
 	defaultNameSpace             = "default"
 	noInstrumentationLibraryName = "Undefined"
 
@@ -79,6 +80,7 @@ type CWMetricStats struct {
 func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	totalDroppedMetrics := 0
+	var instrumentationLibName string
 
 	if len(namespace) == 0 && !rm.Resource().IsNil() {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
@@ -103,10 +105,10 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 			continue
 		}
 		if ilm.InstrumentationLibrary().IsNil() {
-			ilm.InstrumentationLibrary().InitEmpty()
-			ilm.InstrumentationLibrary().SetName(noInstrumentationLibraryName)
+			instrumentationLibName = noInstrumentationLibraryName
+		} else {
+			instrumentationLibName = ilm.InstrumentationLibrary().Name()
 		}
-		OTLib := ilm.InstrumentationLibrary().Name()
 
 		metrics := ilm.Metrics()
 		for k := 0; k < metrics.Len(); k++ {
@@ -115,7 +117,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 				totalDroppedMetrics++
 				continue
 			}
-			cwMetricList := getMeasurements(&metric, namespace, OTLib, dimensionRollupOption)
+			cwMetricList := getMeasurements(&metric, namespace, instrumentationLibName, dimensionRollupOption)
 			cwMetricLists = append(cwMetricLists, cwMetricList...)
 		}
 	}
@@ -148,7 +150,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 	return ples
 }
 
-func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimensionRollupOption string) []*CWMetrics {
+func getMeasurements(metric *pdata.Metric, namespace string, instrumentationLibName string, dimensionRollupOption string) []*CWMetrics {
 	var result []*CWMetrics
 
 	// metric measure data from OT
@@ -170,7 +172,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -185,7 +187,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -200,7 +202,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -215,7 +217,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
+			cwMetric := buildCWMetricFromDP(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -230,7 +232,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 			if dp.IsNil() {
 				continue
 			}
-			cwMetric := buildCWMetricFromHistogram(dp, metric, namespace, metricSlice, OTLib, dimensionRollupOption)
+			cwMetric := buildCWMetricFromHistogram(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
 			if cwMetric != nil {
 				result = append(result, cwMetric)
 			}
@@ -239,7 +241,7 @@ func getMeasurements(metric *pdata.Metric, namespace string, OTLib string, dimen
 	return result
 }
 
-func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption string) *CWMetrics {
+func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, dimensionRollupOption string) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -257,9 +259,13 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 		fieldsPairs[k] = v.Value()
 		dimensionSlice = append(dimensionSlice, k)
 	})
-	// add OTLib as an additional dimension
-	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+	// add OTel instrumentation lib name as an additional dimension if it is defined
+	if instrumentationLibName != noInstrumentationLibraryName {
+		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
+		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
+	} else {
+		dimensionArray = append(dimensionArray, dimensionSlice)
+	}
 
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var metricVal interface{}
@@ -279,7 +285,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	fieldsPairs[pmd.Name()] = metricVal
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice)
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice, instrumentationLibName)
 	if len(rollupDimensionArray) > 0 {
 		dimensionArray = append(dimensionArray, rollupDimensionArray...)
 	}
@@ -299,7 +305,7 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 	return cwMetric
 }
 
-func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, OTLib string, dimensionRollupOption string) *CWMetrics {
+func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdata.Metric, namespace string, metricSlice []map[string]string, instrumentationLibName string, dimensionRollupOption string) *CWMetrics {
 	// fields contains metric and dimensions key/value pairs
 	fieldsPairs := make(map[string]interface{})
 	var dimensionArray [][]string
@@ -311,9 +317,13 @@ func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdat
 		fieldsPairs[k] = v.Value()
 		dimensionSlice = append(dimensionSlice, k)
 	})
-	// add OTLib as an additional dimension
-	fieldsPairs[OtlibDimensionKey] = OTLib
-	dimensionArray = append(dimensionArray, append(dimensionSlice, OtlibDimensionKey))
+	// add OTel instrumentation lib name as an additional dimension if it is defined
+	if instrumentationLibName != noInstrumentationLibraryName {
+		fieldsPairs[OTellibDimensionKey] = instrumentationLibName
+		dimensionArray = append(dimensionArray, append(dimensionSlice, OTellibDimensionKey))
+	} else {
+		dimensionArray = append(dimensionArray, dimensionSlice)
+	}
 
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 
@@ -327,7 +337,7 @@ func buildCWMetricFromHistogram(metric pdata.DoubleHistogramDataPoint, pmd *pdat
 	fieldsPairs[pmd.Name()] = metricStats
 
 	// EMF dimension attr takes list of list on dimensions. Including single/zero dimension rollup
-	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice)
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, dimensionSlice, instrumentationLibName)
 	if len(rollupDimensionArray) > 0 {
 		dimensionArray = append(dimensionArray, rollupDimensionArray...)
 	}
@@ -404,9 +414,12 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	return metricRate
 }
 
-func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string) [][]string {
+func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
-	dimensionZero := []string{OtlibDimensionKey}
+	dimensionZero := []string{}
+	if instrumentationLibName != noInstrumentationLibraryName {
+		dimensionZero = append(dimensionZero, OTellibDimensionKey)
+	}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup {
 		//"Zero" dimension rollup
 		if len(originalDimensionSlice) > 0 {
