@@ -148,10 +148,11 @@ class CeleryInstrumentor(BaseInstrumentor):
             return
 
         # request context tags
-        span.set_attribute(_TASK_TAG_KEY, _TASK_RUN)
-        utils.set_attributes_from_context(span, kwargs)
-        utils.set_attributes_from_context(span, task.request)
-        span.set_attribute(_TASK_NAME_KEY, task.name)
+        if span.is_recording():
+            span.set_attribute(_TASK_TAG_KEY, _TASK_RUN)
+            utils.set_attributes_from_context(span, kwargs)
+            utils.set_attributes_from_context(span, task.request)
+            span.set_attribute(_TASK_NAME_KEY, task.name)
 
         activation.__exit__(None, None, None)
         utils.detach_span(task, task_id)
@@ -169,10 +170,11 @@ class CeleryInstrumentor(BaseInstrumentor):
         )
 
         # apply some attributes here because most of the data is not available
-        span.set_attribute(_TASK_TAG_KEY, _TASK_APPLY_ASYNC)
-        span.set_attribute(_MESSAGE_ID_ATTRIBUTE_NAME, task_id)
-        span.set_attribute(_TASK_NAME_KEY, task.name)
-        utils.set_attributes_from_context(span, kwargs)
+        if span.is_recording():
+            span.set_attribute(_TASK_TAG_KEY, _TASK_APPLY_ASYNC)
+            span.set_attribute(_MESSAGE_ID_ATTRIBUTE_NAME, task_id)
+            span.set_attribute(_TASK_NAME_KEY, task.name)
+            utils.set_attributes_from_context(span, kwargs)
 
         activation = self._tracer.use_span(span, end_on_exit=True)
         activation.__enter__()
@@ -209,7 +211,7 @@ class CeleryInstrumentor(BaseInstrumentor):
 
         # retrieve and pass exception info to activation
         span, _ = utils.retrieve_span(task, task_id)
-        if span is None:
+        if span is None or not span.is_recording():
             return
 
         status_kwargs = {"canonical_code": StatusCanonicalCode.UNKNOWN}
@@ -238,7 +240,7 @@ class CeleryInstrumentor(BaseInstrumentor):
             return
 
         span, _ = utils.retrieve_span(task, task_id)
-        if span is None:
+        if span is None or not span.is_recording():
             return
 
         # Add retry reason metadata to span

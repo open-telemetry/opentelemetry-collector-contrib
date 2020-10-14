@@ -48,6 +48,8 @@ CELERY_CONTEXT_ATTRIBUTES = (
 # pylint:disable=too-many-branches
 def set_attributes_from_context(span, context):
     """Helper to extract meta values from a Celery Context"""
+    if not span.is_recording():
+        return
     for key in CELERY_CONTEXT_ATTRIBUTES:
         value = context.get(key)
 
