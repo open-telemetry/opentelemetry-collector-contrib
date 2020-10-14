@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
@@ -46,13 +45,4 @@ func TestCreateReceiver(t *testing.T) {
 	receiver, err = createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
 	require.Error(t, err, "receiver creation should fail if offsets file is invalid")
 	require.Nil(t, receiver, "receiver creation should have failed due to invalid offsets file")
-}
-
-type mockLogsConsumer struct {
-	received int
-}
-
-func (m *mockLogsConsumer) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	m.received++
-	return nil
 }
