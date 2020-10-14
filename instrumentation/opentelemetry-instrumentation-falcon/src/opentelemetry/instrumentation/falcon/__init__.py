@@ -117,13 +117,16 @@ class _InstrumentedFalconAPI(falcon.API):
         token = context.attach(
             propagators.extract(otel_wsgi.get_header_from_environ, env)
         )
-        attributes = otel_wsgi.collect_request_attributes(env)
         span = self._tracer.start_span(
             otel_wsgi.get_default_span_name(env),
             kind=trace.SpanKind.SERVER,
-            attributes=attributes,
             start_time=start_time,
         )
+        if span.is_recording():
+            attributes = otel_wsgi.collect_request_attributes(env)
+            for key, value in attributes.items():
+                span.set_attribute(key, value)
+
         activation = self._tracer.use_span(span, end_on_exit=True)
         activation.__enter__()
         env[_ENVIRON_SPAN_KEY] = span
@@ -162,7 +165,7 @@ class _TraceMiddleware:
 
     def process_request(self, req, resp):
         span = req.env.get(_ENVIRON_SPAN_KEY)
-        if not span:
+        if not span or not span.is_recording():
             return
 
         attributes = extract_attributes_from_object(
@@ -173,7 +176,7 @@ class _TraceMiddleware:
 
     def process_resource(self, req, resp, resource, params):
         span = req.env.get(_ENVIRON_SPAN_KEY)
-        if not span:
+        if not span or not span.is_recording():
             return
 
         resource_name = resource.__class__.__name__
@@ -186,7 +189,7 @@ class _TraceMiddleware:
         self, req, resp, resource, req_succeeded=None
     ):  # pylint:disable=R0201
         span = req.env.get(_ENVIRON_SPAN_KEY)
-        if not span:
+        if not span or not span.is_recording():
             return
 
         status = resp.status
