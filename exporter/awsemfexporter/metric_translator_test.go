@@ -31,9 +31,258 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
-func TestTranslateOtToCWMetric(t *testing.T) {
+func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 
+	md := createMetricTestData()
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().InitEmpty()
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	assert.Equal(t, 1, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 1, len(cwm[0].Measurements))
+
+	met := cwm[0]
+
+	assert.Equal(t, met.Fields["spanCounter"], 0)
+	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
+	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
+	dimensionSetOne := met.Measurements[0].Dimensions[0]
+	sort.Strings(dimensionSetOne)
+	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError", "spanName"}, dimensionSetOne)
+	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
+	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
+	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
+
+	dimensionSetTwo := met.Measurements[0].Dimensions[1]
+	assert.Equal(t, []string{OTellibDimensionKey}, dimensionSetTwo)
+
+	dimensionSetThree := met.Measurements[0].Dimensions[2]
+	sort.Strings(dimensionSetThree)
+	assert.Equal(t, []string{OTellibDimensionKey, "spanName"}, dimensionSetThree)
+
+	dimensionSetFour := met.Measurements[0].Dimensions[3]
+	sort.Strings(dimensionSetFour)
+	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError"}, dimensionSetFour)
+}
+
+func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
+
+	md := createMetricTestData()
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	assert.Equal(t, 1, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 1, len(cwm[0].Measurements))
+
+	met := cwm[0]
+	assert.NotContains(t, met.Fields, OTellibDimensionKey)
+	assert.Equal(t, met.Fields["spanCounter"], 0)
+
+	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
+	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
+	dimensionSetOne := met.Measurements[0].Dimensions[0]
+	sort.Strings(dimensionSetOne)
+	assert.Equal(t, []string{"isItAnError", "spanName"}, dimensionSetOne)
+	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
+	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
+	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
+
+	// zero dimension metric
+	dimensionSetTwo := met.Measurements[0].Dimensions[1]
+	assert.Equal(t, []string{}, dimensionSetTwo)
+
+	dimensionSetThree := met.Measurements[0].Dimensions[2]
+	sort.Strings(dimensionSetTwo)
+	assert.Equal(t, []string{"spanName"}, dimensionSetThree)
+
+	dimensionSetFour := met.Measurements[0].Dimensions[3]
+	sort.Strings(dimensionSetFour)
+	assert.Equal(t, []string{"isItAnError"}, dimensionSetFour)
+}
+
+func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
 	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName: "myServiceName",
+			},
+		},
+		Metrics: []*metricspb.Metric{},
+	}
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.Nil(t, cwm)
+	assert.Equal(t, 0, len(cwm))
+	md = consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceNamespace: "myServiceNS",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+				},
+				Timeseries: []*metricspb.TimeSeries{},
+			},
+		},
+	}
+	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	assert.Equal(t, 0, totalDroppedMetrics)
+	assert.NotNil(t, cwm)
+	assert.Equal(t, 1, len(cwm))
+
+	met := cwm[0]
+	assert.Equal(t, "myServiceNS", met.Measurements[0].Namespace)
+}
+
+func TestTranslateCWMetricToEMF(t *testing.T) {
+	cwMeasurement := CwMeasurement{
+		Namespace:  "test-emf",
+		Dimensions: [][]string{{"OTelLib"}, {"OTelLib", "spanName"}},
+		Metrics: []map[string]string{{
+			"Name": "spanCounter",
+			"Unit": "Count",
+		}},
+	}
+	timestamp := int64(1596151098037)
+	fields := make(map[string]interface{})
+	fields["OTelLib"] = "cloudwatch-otel"
+	fields["spanName"] = "test"
+	fields["spanCounter"] = 0
+
+	met := &CWMetrics{
+		Timestamp:    timestamp,
+		Fields:       fields,
+		Measurements: []CwMeasurement{cwMeasurement},
+	}
+	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met})
+
+	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
+}
+
+func TestGetMeasurements(t *testing.T) {
+
+}
+
+func TestCalculateRate(t *testing.T) {
+	prevValue := int64(0)
+	curValue := int64(10)
+	fields := make(map[string]interface{})
+	fields["OTelLib"] = "cloudwatch-otel"
+	fields["spanName"] = "test"
+	fields["spanCounter"] = prevValue
+	fields["type"] = "Int64"
+	prevTime := time.Now().UnixNano() / int64(time.Millisecond)
+	curTime := time.Unix(0, prevTime*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
+	rate := calculateRate(fields, prevValue, prevTime)
+	assert.Equal(t, 0, rate)
+	rate = calculateRate(fields, curValue, curTime)
+	assert.Equal(t, int64(1), rate)
+
+	prevDoubleValue := 0.0
+	curDoubleValue := 5.0
+	fields["type"] = "Float64"
+	rate = calculateRate(fields, prevDoubleValue, prevTime)
+	assert.Equal(t, 0, rate)
+	rate = calculateRate(fields, curDoubleValue, curTime)
+	assert.Equal(t, 0.5, rate)
+}
+
+func readFromFile(filename string) string {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	str := string(data)
+	return str
+}
+
+func createMetricTestData() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
 		},
@@ -260,199 +509,4 @@ func TestTranslateOtToCWMetric(t *testing.T) {
 			},
 		},
 	}
-	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
-	assert.Equal(t, 1, totalDroppedMetrics)
-	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
-	assert.Equal(t, 1, len(cwm[0].Measurements))
-
-	met := cwm[0]
-	assert.Equal(t, met.Fields[OtlibDimensionKey], noInstrumentationLibraryName)
-	assert.Equal(t, met.Fields["spanCounter"], 0)
-
-	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
-	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
-	dimensions := met.Measurements[0].Dimensions[0]
-	sort.Strings(dimensions)
-	assert.Equal(t, []string{OtlibDimensionKey, "isItAnError", "spanName"}, dimensions)
-	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
-	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
-	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
-}
-
-func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
-	md := consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				conventions.AttributeServiceName: "myServiceName",
-			},
-		},
-		Metrics: []*metricspb.Metric{},
-	}
-	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
-	assert.Equal(t, 0, totalDroppedMetrics)
-	assert.Nil(t, cwm)
-	assert.Equal(t, 0, len(cwm))
-	md = consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				conventions.AttributeServiceNamespace: "myServiceNS",
-			},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-				},
-				Timeseries: []*metricspb.TimeSeries{},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-				},
-				Timeseries: []*metricspb.TimeSeries{},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-				},
-				Timeseries: []*metricspb.TimeSeries{},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-				},
-				Timeseries: []*metricspb.TimeSeries{},
-			},
-		},
-	}
-	rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
-	cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
-	assert.Equal(t, 0, totalDroppedMetrics)
-	assert.NotNil(t, cwm)
-	assert.Equal(t, 1, len(cwm))
-
-	met := cwm[0]
-	assert.Equal(t, "myServiceNS", met.Measurements[0].Namespace)
-}
-
-func TestTranslateCWMetricToEMF(t *testing.T) {
-	cwMeasurement := CwMeasurement{
-		Namespace:  "test-emf",
-		Dimensions: [][]string{{"OTLib"}, {"OTLib", "spanName"}},
-		Metrics: []map[string]string{{
-			"Name": "spanCounter",
-			"Unit": "Count",
-		}},
-	}
-	timestamp := int64(1596151098037)
-	fields := make(map[string]interface{})
-	fields["OTLib"] = "cloudwatch-otel"
-	fields["spanName"] = "test"
-	fields["spanCounter"] = 0
-
-	met := &CWMetrics{
-		Timestamp:    timestamp,
-		Fields:       fields,
-		Measurements: []CwMeasurement{cwMeasurement},
-	}
-	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met})
-
-	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
-}
-
-func TestGetMeasurements(t *testing.T) {
-
-}
-
-func TestCalculateRate(t *testing.T) {
-	prevValue := int64(0)
-	curValue := int64(10)
-	fields := make(map[string]interface{})
-	fields["OTLib"] = "cloudwatch-otel"
-	fields["spanName"] = "test"
-	fields["spanCounter"] = prevValue
-	fields["type"] = "Int64"
-	prevTime := time.Now().UnixNano() / int64(time.Millisecond)
-	curTime := time.Unix(0, prevTime*int64(time.Millisecond)).Add(time.Second*10).UnixNano() / int64(time.Millisecond)
-	rate := calculateRate(fields, prevValue, prevTime)
-	assert.Equal(t, 0, rate)
-	rate = calculateRate(fields, curValue, curTime)
-	assert.Equal(t, int64(1), rate)
-
-	prevDoubleValue := 0.0
-	curDoubleValue := 5.0
-	fields["type"] = "Float64"
-	rate = calculateRate(fields, prevDoubleValue, prevTime)
-	assert.Equal(t, 0, rate)
-	rate = calculateRate(fields, curDoubleValue, curTime)
-	assert.Equal(t, 0.5, rate)
-}
-
-func readFromFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	str := string(data)
-	return str
 }
