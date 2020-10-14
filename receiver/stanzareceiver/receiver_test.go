@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/observiq/stanza/entry"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -34,5 +35,40 @@ func TestStart(t *testing.T) {
 	err := receiver.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "receiver start failed")
 
-	require.NoError(t, receiver.Shutdown(context.Background()), "receiver shutdown failed")
+	obsReceiver := receiver.(*stanzareceiver)
+	obsReceiver.emitter.logChan <- entry.New()
+	receiver.Shutdown(context.Background())
+	require.Equal(t, 1, mockConsumer.received, "one log entry expected")
+}
+
+func TestHandleStartError(t *testing.T) {
+	params := component.ReceiverCreateParams{
+		Logger: zaptest.NewLogger(t),
+	}
+	mockConsumer := mockLogsConsumer{}
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Pipeline = append(cfg.Pipeline, newUnstartableParams())
+
+	receiver, err := createLogsReceiver(context.Background(), params, cfg, &mockConsumer)
+	require.NoError(t, err, "receiver should successfully build")
+
+	err = receiver.Start(context.Background(), componenttest.NewNopHost())
+	require.Error(t, err, "receiver fails to start under rare circumstances")
+}
+
+func TestHandleConsumeError(t *testing.T) {
+	params := component.ReceiverCreateParams{
+		Logger: zaptest.NewLogger(t),
+	}
+	mockConsumer := mockLogsRejecter{}
+	receiver, _ := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockConsumer)
+
+	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "receiver start failed")
+
+	obsReceiver := receiver.(*stanzareceiver)
+	obsReceiver.emitter.logChan <- entry.New()
+	receiver.Shutdown(context.Background())
+	require.Equal(t, 1, mockConsumer.rejected, "one log entry expected")
 }
