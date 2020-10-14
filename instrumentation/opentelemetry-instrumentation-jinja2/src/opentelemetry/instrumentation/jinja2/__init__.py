@@ -78,39 +78,44 @@ def _with_tracer_wrapper(func):
 def _wrap_render(tracer, wrapped, instance, args, kwargs):
     """Wrap `Template.render()` or `Template.generate()`
     """
-    template_name = instance.name or DEFAULT_TEMPLATE_NAME
-    attributes = {ATTRIBUTE_JINJA2_TEMPLATE_NAME: template_name}
     with tracer.start_as_current_span(
-        "jinja2.render", kind=SpanKind.INTERNAL, attributes=attributes
-    ):
+        "jinja2.render", kind=SpanKind.INTERNAL,
+    ) as span:
+        if span.is_recording():
+            template_name = instance.name or DEFAULT_TEMPLATE_NAME
+            span.set_attribute(ATTRIBUTE_JINJA2_TEMPLATE_NAME, template_name)
         return wrapped(*args, **kwargs)
 
 
 @_with_tracer_wrapper
 def _wrap_compile(tracer, wrapped, _, args, kwargs):
-    template_name = (
-        args[1] if len(args) > 1 else kwargs.get("name", DEFAULT_TEMPLATE_NAME)
-    )
-    attributes = {ATTRIBUTE_JINJA2_TEMPLATE_NAME: template_name}
     with tracer.start_as_current_span(
-        "jinja2.compile", kind=SpanKind.INTERNAL, attributes=attributes
-    ):
+        "jinja2.compile", kind=SpanKind.INTERNAL,
+    ) as span:
+        if span.is_recording():
+            template_name = (
+                args[1]
+                if len(args) > 1
+                else kwargs.get("name", DEFAULT_TEMPLATE_NAME)
+            )
+            span.set_attribute(ATTRIBUTE_JINJA2_TEMPLATE_NAME, template_name)
         return wrapped(*args, **kwargs)
 
 
 @_with_tracer_wrapper
 def _wrap_load_template(tracer, wrapped, _, args, kwargs):
-    template_name = kwargs.get("name", args[0])
-    attributes = {ATTRIBUTE_JINJA2_TEMPLATE_NAME: template_name}
     with tracer.start_as_current_span(
-        "jinja2.load", kind=SpanKind.INTERNAL, attributes=attributes
+        "jinja2.load", kind=SpanKind.INTERNAL,
     ) as span:
+        if span.is_recording():
+            template_name = kwargs.get("name", args[0])
+            span.set_attribute(ATTRIBUTE_JINJA2_TEMPLATE_NAME, template_name)
         template = None
         try:
             template = wrapped(*args, **kwargs)
             return template
         finally:
-            if template:
+            if template and span.is_recording():
                 span.set_attribute(
                     ATTRIBUTE_JINJA2_TEMPLATE_PATH, template.filename
                 )
