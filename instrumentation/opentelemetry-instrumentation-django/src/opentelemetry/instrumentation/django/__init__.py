@@ -41,7 +41,7 @@ class DjangoInstrumentor(BaseInstrumentor):
         # built inside the Configuration class itself with the magic method
         # __bool__
 
-        if not Configuration().DJANGO_INSTRUMENT:
+        if Configuration().DJANGO_INSTRUMENT is False:
             return
 
         # This can not be solved, but is an inherent problem of this approach:
