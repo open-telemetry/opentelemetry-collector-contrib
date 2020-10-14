@@ -31,12 +31,14 @@ import (
 
 // EncodeSpan encodes an OpenTelemetry span, and instrumentation library information,
 // as a transaction or span line, writing to w.
+//
+// TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) error {
 	var spanID, parentID model.SpanID
 	var traceID model.TraceID
-	copy(spanID[:], otlpSpan.SpanID())
+	copy(spanID[:], otlpSpan.SpanID().Bytes())
 	copy(traceID[:], otlpSpan.TraceID().Bytes())
-	copy(parentID[:], otlpSpan.ParentSpanID())
+	copy(parentID[:], otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
 	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()

@@ -4,12 +4,21 @@ The SAPM exporter builds on the Jaeger proto and adds additional batching on top
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
 
+Supported pipeline types: traces
+
+## Configuration
+
+The following configuration options are required:
+
 - `access_token` (no default): AccessToken is the authentication token provided by SignalFx or
 another backend that supports the SAPM proto.
 - `endpoint` (no default): This is the destination to where traces will be sent to in SAPM
 format. It must be a full URL and include the scheme, port and path e.g,
 https://ingest.us0.signalfx.com/v2/trace. This can be pointed to the SignalFx backend or to
 another Otel collector that has the SAPM receiver enabled.
+
+The following configuration options can also be configured:
+
 - `max_connections` (default = 100): MaxConnections is used to set a limit to the maximum
 idle HTTP connection the exporter can keep open.
 - `num_workers` (default = 8): NumWorkers is the number of workers that should be used to
@@ -20,18 +29,20 @@ trace resource attribute, if any, as SFx access token.  In either case this attr
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
-- `retry_on_failure`
-  - `enabled` (default = true)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
-- `sending_queue`
-  - `enabled` (default = false)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 5000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`;
-  User should calculate this as `num_seconds * requests_per_second` where:
-    - `num_seconds` is the number of seconds to buffer in case of a backend outage
-    - `requests_per_second` is the average number of requests per seconds.
+- `correlation`
+  - `enabled` (default = false): Whether to enable spans to metric correlation. If this block is not set at all then correlation is not enabled due to the default.
+  - `endpoint` (default = ""): Required if `enabled` is `true`. This is the base URL for API requests (e.g. https://api.signalfx.com).
+  - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
+  - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
+  - `max_buffered` (default = 10,000): Max number of correlation updates that can be buffered before updates are dropped.
+  - `max_retries` (default = 2): Max number of retries that will be made for failed correlation updates.
+  - `log_updates` (default = false): Whether or not to log correlation updates to dimensions (at DEBUG level).
+  - `retry_delay` (default = 30 seconds): How long to wait between retries.
+  - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
+
+In addition, this exporter offers queued retry which is enabled by default.
+Information about queued retry configuration parameters can be found
+[here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/exporter/exporterhelper/README.md).
 
 Example:
 
@@ -45,13 +56,8 @@ exporters:
     num_workers: 8
 ```
 
-Beyond standard YAML configuration as outlined in the sections that follow,
-exporters that leverage the net/http package (all do today) also respect the
-following proxy environment variables:
+The full list of settings exposed for this exporter are documented [here](config.go)
+with detailed sample configurations [here](testdata/config.yaml).
 
-* HTTP_PROXY
-* HTTPS_PROXY
-* NO_PROXY
-
-If set at Collector start time then exporters, regardless of protocol,
-will or will not proxy traffic as defined by these environment variables.
+This exporter also offers proxy support as documented
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).

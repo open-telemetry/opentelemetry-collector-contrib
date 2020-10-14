@@ -141,6 +141,7 @@ type AggregationMethod string
 const (
 	// AggregationMethodCount represents count aggregation method
 	AggregationMethodCount AggregationMethod = "count"
+	AggregationMethodAvg   AggregationMethod = "avg"
 	AggregationMethodSum   AggregationMethod = "sum"
 )
 
@@ -188,6 +189,10 @@ type Rule struct {
 	// AddDimensions used by "rename_metrics" translation rule to add dimensions that are necessary for
 	// existing SFx content for desired metric name
 	AddDimensions map[string]string `mapstructure:"add_dimensions"`
+
+	// CopyDimensions used by "rename_metrics" translation rule to copy dimensions that are necessary for
+	// existing SFx content for desired metric name.  This will duplicate the dimension value and isn't a rename.
+	CopyDimensions map[string]string `mapstructure:"copy_dimensions"`
 
 	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
@@ -237,6 +242,13 @@ func validateTranslationRules(rules []Rule) error {
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
 			}
+			if tr.CopyDimensions != nil {
+				for k, v := range tr.CopyDimensions {
+					if k == "" || v == "" {
+						return fmt.Errorf("mapping \"copy_dimensions\" for %q translation rule must not contain empty string keys or values", tr.Action)
+					}
+				}
+			}
 		case ActionMultiplyInt:
 			if tr.ScaleFactorsInt == nil {
 				return fmt.Errorf("field \"scale_factors_int\" is required for %q translation rule", tr.Action)
@@ -283,7 +295,9 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" "+
 					"are required for %q translation rule", tr.Action)
 			}
-			if tr.AggregationMethod != "count" && tr.AggregationMethod != "sum" {
+			if tr.AggregationMethod != AggregationMethodCount &&
+				tr.AggregationMethod != AggregationMethodSum &&
+				tr.AggregationMethod != AggregationMethodAvg {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
@@ -351,6 +365,14 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			for _, dp := range processedDataPoints {
 				if newKey, ok := tr.Mapping[dp.Metric]; ok {
 					dp.Metric = newKey
+					if tr.CopyDimensions != nil {
+						for _, d := range dp.Dimensions {
+							if k, ok := tr.CopyDimensions[d.Key]; ok {
+								dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: k, Value: d.Value})
+
+							}
+						}
+					}
 					if len(additionalDimensions) > 0 {
 						dp.Dimensions = append(dp.Dimensions, additionalDimensions...)
 					}
@@ -623,6 +645,20 @@ func aggregateDatapoints(
 				}
 			}
 			dp.Value = value
+		case AggregationMethodAvg:
+			var mean float64
+			for _, dp := range dps {
+				if dp.Value.IntValue != nil {
+					mean += float64(*dp.Value.IntValue)
+				}
+				if dp.Value.DoubleValue != nil {
+					mean += *dp.Value.DoubleValue
+				}
+			}
+			mean /= float64(len(dps))
+			dp.Value = sfxpb.Datum{
+				DoubleValue: &mean,
+			}
 		}
 		result = append(result, dp)
 	}

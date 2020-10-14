@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@ package sapmexporter
 
 import (
 	"context"
+	"time"
 
+	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -38,9 +40,6 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() configmodels.Exporter {
-	// TODO: Enable the queued settings.
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
 	return &Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
@@ -52,7 +51,19 @@ func createDefaultConfig() configmodels.Exporter {
 		},
 		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
 		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
+		Correlation: CorrelationConfig{
+			Enabled:             false,
+			StaleServiceTimeout: 5 * time.Minute,
+			Config: correlations.Config{
+				MaxRequests:     20,
+				MaxBuffered:     10_000,
+				MaxRetries:      2,
+				LogUpdates:      false,
+				RetryDelay:      30 * time.Second,
+				CleanupInterval: 1 * time.Minute,
+			},
+		},
 	}
 }
 

@@ -17,6 +17,7 @@ package redisreceiver
 import (
 	"io/ioutil"
 	"path"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -32,6 +33,10 @@ func newFakeClient() *fakeClient {
 }
 
 func (c fakeClient) delimiter() string {
+	if runtime.GOOS == "windows" {
+		return "\r\n"
+	}
+
 	return "\n"
 }
 

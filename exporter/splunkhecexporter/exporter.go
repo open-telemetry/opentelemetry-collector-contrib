@@ -28,7 +28,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +41,9 @@ const (
 type splunkExporter struct {
 	pushMetricsData func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
 	pushTraceData   func(ctx context.Context, td pdata.Traces) (numDroppedSpans int, err error)
+	pushLogData     func(ctx context.Context, td pdata.Logs) (numDroppedSpans int, err error)
 	stop            func(ctx context.Context) (err error)
+	start           func(ctx context.Context, host component.Host) (err error)
 }
 
 type exporterOptions struct {
@@ -70,7 +71,9 @@ func createExporter(
 	return &splunkExporter{
 		pushMetricsData: client.pushMetricsData,
 		pushTraceData:   client.pushTraceData,
+		pushLogData:     client.pushLogData,
 		stop:            client.stop,
+		start:           client.start,
 	}, nil
 }
 
@@ -106,31 +109,4 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 		},
 		config: config,
 	}
-}
-
-func (se splunkExporter) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (se splunkExporter) Shutdown(ctxt context.Context) error {
-	return se.stop(ctxt)
-}
-
-func (se splunkExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
-	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
-
-	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
-
-	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-	return err
-}
-
-func (se splunkExporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
-	ctx = obsreport.StartTraceDataExportOp(ctx, typeStr)
-
-	numDroppedSpans, err := se.pushTraceData(ctx, td)
-
-	obsreport.EndTraceDataExportOp(ctx, td.SpanCount(), numDroppedSpans, err)
-	return err
 }

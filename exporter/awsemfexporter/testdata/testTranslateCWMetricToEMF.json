@@ -1,0 +1,1 @@
+{"OTelLib":"cloudwatch-otel","_aws":{"CloudWatchMetrics":[{"Namespace":"test-emf","Dimensions":[["OTelLib"],["OTelLib","spanName"]],"Metrics":[{"Name":"spanCounter","Unit":"Count"}]}],"Timestamp":1596151098037},"spanCounter":0,"spanName":"test"}

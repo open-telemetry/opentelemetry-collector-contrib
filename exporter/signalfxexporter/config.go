@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -28,7 +29,10 @@ import (
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	configmodels.ExporterSettings  `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
@@ -46,10 +50,6 @@ type Config struct {
 	// APIURL is the destination to where SignalFx metadata will be sent. This
 	// value takes precedence over the value of Realm
 	APIURL string `mapstructure:"api_url"`
-
-	// Timeout is the maximum timeout for HTTP request sending trace data. The
-	// default value is 5 seconds.
-	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Headers are a set of headers to be added to the HTTP request sending
 	// trace data. These can override pre-defined header values used by the
@@ -73,6 +73,21 @@ type Config struct {
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
 	// `delta_metric` specified in TranslationRules. Default is 3600s.
 	DeltaTranslationTTL int64 `mapstructure:"delta_translation_ttl"`
+
+	// SyncHostMetadata defines if the exporter should scrape host metadata and
+	// sends it as property updates to SignalFx backend.
+	// IMPORTANT: Host metadata synchronization relies on `resourcedetection` processor.
+	//            If this option is enabled make sure that `resourcedetection` processor
+	//            is enabled in the pipeline with one of the cloud provider detectors
+	//            or environment variable detector setting a unique value to
+	//            `host.name` attribute within your k8s cluster. Also keep override
+	//            And keep `override=true` in resourcedetection config.
+	SyncHostMetadata bool `mapstructure:"sync_host_metadata"`
+
+	// ExcludeMetrics defines metrics that will be excluded from sending to Signalfx
+	// backend. If translations enabled with SendCompatibleMetrics or TranslationRules
+	// options, the exclusion will be applied on translated metrics.
+	ExcludeMetrics []string `mapstructure:"exclude_metrics"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

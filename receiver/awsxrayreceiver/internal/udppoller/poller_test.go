@@ -81,7 +81,9 @@ func TestUDPPortUnavailable(t *testing.T) {
 	)
 
 	assert.Error(t, err, "should have failed to create a new receiver")
-	assert.Contains(t, err.Error(), "address already in use", "error message should complain about address in-use")
+	assert.True(t,
+		strings.Contains(err.Error(), "address already in use") || strings.Contains(err.Error(), "Only one usage of each socket address"),
+		"error message should complain about address in-use")
 }
 
 func TestCloseStopsPoller(t *testing.T) {

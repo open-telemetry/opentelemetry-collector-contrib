@@ -1,0 +1,19 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  awsemf:
+  awsemf/1:
+    region: 'us-west-2'
+    role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [awsemf]
+

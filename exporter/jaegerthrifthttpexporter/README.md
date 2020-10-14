@@ -1,6 +1,10 @@
 # Jaeger Thrift Exporter
 
-This exporter supports sending trace data to [Jaeger](https://www.jaegertracing.io) over Thrift HTTP. 
+This exporter supports sending trace data to [Jaeger](https://www.jaegertracing.io) over Thrift HTTP.
+
+Supported pipeline types: traces
+
+## Configuration
 
 The following settings are required:
 
@@ -27,3 +31,5 @@ exporters:
 The full list of settings exposed for this exporter are documented [here](config.go)
 with detailed sample configurations [here](testdata/config.yaml).
 
+This exporter also offers proxy support as documented
+[here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter#proxy-support).

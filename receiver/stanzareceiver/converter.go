@@ -16,7 +16,6 @@ package stanzareceiver
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/observiq/stanza/entry"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,11 +37,16 @@ func convert(obsLog *entry.Entry) pdata.Logs {
 	}
 
 	rls.InstrumentationLibraryLogs().Resize(1)
-	logSlice := rls.InstrumentationLibraryLogs().At(0).Logs()
+	ills := rls.InstrumentationLibraryLogs().At(0)
+	ills.InitEmpty()
+
+	il := ills.InstrumentationLibrary()
+	il.InitEmpty()
+	il.SetName(typeStr)
+	il.SetVersion(verStr)
 
 	lr := pdata.NewLogRecord()
 	lr.InitEmpty()
-
 	lr.SetTimestamp(pdata.TimestampUnixNano(obsLog.Timestamp.UnixNano()))
 
 	sevText, sevNum := convertSeverity(obsLog.Severity)
@@ -59,7 +63,7 @@ func convert(obsLog *entry.Entry) pdata.Logs {
 	lr.Body().InitEmpty()
 	insertToAttributeVal(obsLog.Record, lr.Body())
 
-	logSlice.Append(lr)
+	ills.Logs().Append(lr)
 
 	return out
 }
@@ -99,7 +103,7 @@ func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
 	case map[string]interface{}:
 		dest.SetMapVal(toAttributeMap(t))
 	case []interface{}:
-		dest.SetMapVal(toAttributeMap(sliceToMap(t)))
+		dest.SetArrayVal(toAttributeArray(t))
 	default:
 		dest.SetStringVal(fmt.Sprintf("%v", t))
 	}
@@ -146,10 +150,10 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeMap {
 			subMapVal.SetMapVal(subMap)
 			attMap.Insert(k, subMapVal)
 		case []interface{}:
-			subMap := toAttributeMap(sliceToMap(t))
-			subMapVal := pdata.NewAttributeValueMap()
-			subMapVal.SetMapVal(subMap)
-			attMap.Insert(k, subMapVal)
+			arr := toAttributeArray(t)
+			arrVal := pdata.NewAttributeValueArray()
+			arrVal.SetArrayVal(arr)
+			attMap.Insert(k, arrVal)
 		default:
 			attMap.InsertString(k, fmt.Sprintf("%v", t))
 		}
@@ -157,14 +161,14 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeMap {
 	return attMap
 }
 
-// This returns a map of stringified index to value,
-// rather than an array because the pdata package does not support arrays
-func sliceToMap(arr []interface{}) map[string]interface{} {
-	sliceAsMap := make(map[string]interface{})
-	for i, v := range arr {
-		sliceAsMap[strconv.Itoa(i)] = v
+func toAttributeArray(obsArr []interface{}) pdata.AnyValueArray {
+	arr := pdata.NewAnyValueArray()
+	for _, v := range obsArr {
+		attVal := pdata.NewAttributeValue()
+		insertToAttributeVal(v, attVal)
+		arr.Append(attVal)
 	}
-	return sliceAsMap
+	return arr
 }
 
 func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {

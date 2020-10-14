@@ -174,13 +174,57 @@ func TestConvertMapBody(t *testing.T) {
 }
 
 func TestConvertArrayBody(t *testing.T) {
-	result := recordToBody([]interface{}{0, 1}).MapVal()
+	structuredRecord := []interface{}{
+		true,
+		false,
+		"string",
+		[]byte("bytes"),
+		1,
+		int8(1),
+		int16(1),
+		int32(1),
+		int64(1),
+		uint(1),
+		uint8(1),
+		uint16(1),
+		uint32(1),
+		uint64(1),
+		float32(1),
+		float64(1),
+		[]interface{}{"string", 1},
+		map[string]interface{}{"one": 1, "yes": true},
+	}
 
-	v, _ := result.Get("0")
-	require.Equal(t, int64(0), v.IntVal())
+	result := recordToBody(structuredRecord).ArrayVal()
 
-	v, _ = result.Get("1")
+	require.True(t, result.At(0).BoolVal())
+	require.False(t, result.At(1).BoolVal())
+	require.Equal(t, "string", result.At(2).StringVal())
+	require.Equal(t, "bytes", result.At(3).StringVal())
+
+	require.Equal(t, int64(1), result.At(4).IntVal())  // int
+	require.Equal(t, int64(1), result.At(5).IntVal())  // int8
+	require.Equal(t, int64(1), result.At(6).IntVal())  // int16
+	require.Equal(t, int64(1), result.At(7).IntVal())  // int32
+	require.Equal(t, int64(1), result.At(8).IntVal())  // int64
+	require.Equal(t, int64(1), result.At(9).IntVal())  // uint
+	require.Equal(t, int64(1), result.At(10).IntVal()) // uint8
+	require.Equal(t, int64(1), result.At(11).IntVal()) // uint16
+	require.Equal(t, int64(1), result.At(12).IntVal()) // uint32
+	require.Equal(t, int64(1), result.At(13).IntVal()) // uint64
+
+	require.Equal(t, float64(1), result.At(14).DoubleVal()) // float32
+	require.Equal(t, float64(1), result.At(15).DoubleVal()) // float64
+
+	nestedArr := result.At(16).ArrayVal()
+	require.Equal(t, "string", nestedArr.At(0).StringVal())
+	require.Equal(t, int64(1), nestedArr.At(1).IntVal())
+
+	nestedMap := result.At(17).MapVal()
+	v, _ := nestedMap.Get("one")
 	require.Equal(t, int64(1), v.IntVal())
+	v, _ = nestedMap.Get("yes")
+	require.True(t, v.BoolVal())
 }
 
 func TestConvertUnknownBody(t *testing.T) {
@@ -201,15 +245,13 @@ func TestConvertNestedMapBody(t *testing.T) {
 	result := recordToBody(structuredRecord).MapVal()
 
 	arrayAttVal, _ := result.Get("array")
-	a := arrayAttVal.MapVal()
-	v, _ := a.Get("0")
-	require.Equal(t, int64(0), v.IntVal())
-	v, _ = a.Get("1")
-	require.Equal(t, int64(1), v.IntVal())
+	a := arrayAttVal.ArrayVal()
+	require.Equal(t, int64(0), a.At(0).IntVal())
+	require.Equal(t, int64(1), a.At(1).IntVal())
 
 	mapAttVal, _ := result.Get("map")
 	m := mapAttVal.MapVal()
-	v, _ = m.Get("0")
+	v, _ := m.Get("0")
 	require.Equal(t, int64(0), v.IntVal())
 	v, _ = m.Get("1")
 	require.Equal(t, "one", v.StringVal())

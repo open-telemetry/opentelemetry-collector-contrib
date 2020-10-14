@@ -17,6 +17,7 @@ package newrelicexporter
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -109,6 +110,11 @@ func (t *transformer) SpanAttributes(span *tracepb.Span) map[string]interface{} 
 	// Any existing error attribute will override this.
 	if isErr {
 		attrs["error"] = true
+	}
+
+	// Add span kind if it is set
+	if span.Kind != tracepb.Span_SPAN_KIND_UNSPECIFIED {
+		attrs["span.kind"] = strings.ToLower(span.Kind.String())
 	}
 
 	if t.Resource != nil {

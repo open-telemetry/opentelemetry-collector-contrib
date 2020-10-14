@@ -26,20 +26,30 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
+type signalfMetadataExporter struct {
+	component.MetricsExporter
+	pushMetadata func(metadata []*collection.MetadataUpdate) error
+}
+
+func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
+	return sme.pushMetadata(metadata)
+}
+
 type signalfxExporter struct {
-	logger           *zap.Logger
-	pushMetricsData  func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
-	pushMetadata     func(metadata []*collection.MetadataUpdate) error
-	pushResourceLogs func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	logger             *zap.Logger
+	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushMetadata       func(metadata []*collection.MetadataUpdate) error
+	pushResourceLogs   func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	hostMetadataSyncer *hostmetadata.Syncer
 }
 
 type exporterOptions struct {
@@ -55,7 +65,7 @@ type exporterOptions struct {
 func newSignalFxExporter(
 	config *Config,
 	logger *zap.Logger,
-) (component.MetricsExporter, error) {
+) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -102,10 +112,16 @@ func newSignalFxExporter(
 		})
 	dimClient.Start()
 
-	return signalfxExporter{
-		logger:          logger,
-		pushMetricsData: dpClient.pushMetricsData,
-		pushMetadata:    dimClient.PushMetadata,
+	var hms *hostmetadata.Syncer
+	if config.SyncHostMetadata {
+		hms = hostmetadata.NewSyncer(logger, dimClient)
+	}
+
+	return &signalfxExporter{
+		logger:             logger,
+		pushMetricsData:    dpClient.pushMetricsData,
+		pushMetadata:       dimClient.PushMetadata,
+		hostMetadataSyncer: hms,
 	}, nil
 }
 
@@ -115,7 +131,7 @@ func newGzipPool() sync.Pool {
 	}}
 }
 
-func NewEventExporter(config *Config, logger *zap.Logger) (component.LogsExporter, error) {
+func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -143,32 +159,21 @@ func NewEventExporter(config *Config, logger *zap.Logger) (component.LogsExporte
 		accessTokenPassthrough: config.AccessTokenPassthrough,
 	}
 
-	return signalfxExporter{
+	return &signalfxExporter{
 		logger:           logger,
 		pushResourceLogs: eventClient.pushResourceLogs,
 	}, nil
 }
 
-func (se signalfxExporter) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (se signalfxExporter) Shutdown(context.Context) error {
-	return nil
-}
-
-func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
 	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
-	numReceivedTimeSeries, numPoints := md.MetricAndDataPointCount()
-
-	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-	return err
+	if err == nil && se.hostMetadataSyncer != nil {
+		se.hostMetadataSyncer.Sync(md)
+	}
+	return numDroppedTimeSeries, err
 }
 
-func (se signalfxExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	ctx = obsreport.StartLogsExportOp(ctx, typeStr)
-
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
 	var numDroppedRecords int
 	var err error
 	rls := ld.ResourceLogs()
@@ -178,10 +183,5 @@ func (se signalfxExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error
 		err = multierr.Append(err, thisErr)
 	}
 
-	obsreport.EndLogsExportOp(ctx, ld.LogRecordCount(), numDroppedRecords, err)
-	return err
-}
-
-func (se signalfxExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
-	return se.pushMetadata(metadata)
+	return numDroppedRecords, err
 }

@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ func TestCreateTraceExporter(t *testing.T) {
 	te, err := newSAPMTraceExporter(config, params)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
+
+	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
 }
 
 func TestCreateTraceExporterWithInvalidConfig(t *testing.T) {

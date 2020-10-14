@@ -50,7 +50,6 @@ func TestCreateExporter(t *testing.T) {
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		eCfg,
 	)
-	assert.Error(t, err)
-	assert.EqualError(t, err, "telemetry type is not supported")
-	assert.Nil(t, me)
+	assert.NoError(t, err)
+	assert.NotNil(t, me, "failed to create metrics exporter")
 }

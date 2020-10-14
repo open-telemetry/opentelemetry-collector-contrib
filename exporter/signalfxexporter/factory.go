@@ -51,7 +51,9 @@ func createDefaultConfig() configmodels.Exporter {
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
-		Timeout: defaultHTTPTimeout,
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultHTTPTimeout},
+		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.CreateDefaultQueueSettings(),
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 			AccessTokenPassthrough: true,
 		},
@@ -65,23 +67,46 @@ func createMetricsExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (exp component.MetricsExporter, err error) {
+) (component.MetricsExporter, error) {
 
 	expCfg := config.(*Config)
-	if expCfg.SendCompatibleMetrics && expCfg.TranslationRules == nil {
-		expCfg.TranslationRules, err = loadDefaultTranslationRules()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	exp, err = newSignalFxExporter(expCfg, params.Logger)
-
+	err := setTranslationRules(expCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return exp, nil
+	exp, err := newSignalFxExporter(expCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	me, err := exporterhelper.NewMetricsExporter(
+		expCfg,
+		exp.pushMetrics,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings))
+
+	return &signalfMetadataExporter{
+		MetricsExporter: me,
+		pushMetadata:    exp.pushMetadata,
+	}, err
+}
+
+func setTranslationRules(cfg *Config) error {
+	if cfg.SendCompatibleMetrics && cfg.TranslationRules == nil {
+		defaultRules, err := loadDefaultTranslationRules()
+		if err != nil {
+			return err
+		}
+		cfg.TranslationRules = defaultRules
+	}
+	if len(cfg.ExcludeMetrics) > 0 {
+		cfg.TranslationRules = append(cfg.TranslationRules,
+			translation.GetExcludeMetricsRule(cfg.ExcludeMetrics))
+	}
+	return nil
 }
 
 func loadDefaultTranslationRules() ([]translation.Rule, error) {
@@ -103,7 +128,18 @@ func createLogsExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
 ) (component.LogsExporter, error) {
-	oCfg := cfg.(*Config)
+	expCfg := cfg.(*Config)
 
-	return NewEventExporter(oCfg, params.Logger)
+	exp, err := newEventExporter(expCfg, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewLogsExporter(
+		expCfg,
+		exp.pushLogs,
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(expCfg.RetrySettings),
+		exporterhelper.WithQueue(expCfg.QueueSettings))
 }

@@ -6,7 +6,7 @@ The following configuration options are supported:
 
 - `project` (optional): GCP project identifier.
 - `endpoint` (optional): Endpoint where data is going to be sent to.
-- `metric_prefix` (optional): MetricPrefix overrides the prefix of a Stackdriver metric names.
+- `metric_prefix` (optional): MetricPrefix overrides the prefix / namespace of the Stackdriver metric type identifier. If not set, defaults to "custom.googleapis.com/opencensus/"
 - `number_of_workers` (optional): NumberOfWorkers sets the number of go rountines that send requests. The minimum number of workers is 1.
 - `use_insecure` (optional): If true. use gRPC as their communication transport. Only has effect if Endpoint is not "".
 - `timeout` (optional): Timeout for all API calls. If not set, defaults to 12 seconds.
