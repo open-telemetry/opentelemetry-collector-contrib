@@ -224,23 +224,21 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	}
 
 	ld := pdata.NewLogs()
-	rls := ld.ResourceLogs()
-	rls.Resize(1)
-	rl := rls.At(0)
-	resource := rl.Resource()
 
-	ills := rl.InstrumentationLibraryLogs()
-	ills.Resize(1)
-	ill := ills.At(0)
-
-	logSlice.MoveAndAppendTo(ill.Logs())
-
-	if r.config.AccessTokenPassthrough {
-		if accessToken := req.Header.Get(splunk.SplunkHECTokenHeader); accessToken != "" {
-			resource.InitEmpty()
-			resource.Attributes().InsertString(splunk.SplunkHecTokenLabel, accessToken)
+	for i := 0; i < logSlice.Len(); i++ {
+		rl := logSlice.At(i)
+		if r.config.AccessTokenPassthrough {
+			if accessToken := req.Header.Get(splunk.SplunkHECTokenHeader); accessToken != "" {
+				resource := rl.Resource()
+				if resource.IsNil() {
+					resource.InitEmpty()
+				}
+				resource.Attributes().InsertString(splunk.SplunkHecTokenLabel, accessToken)
+			}
 		}
+		ld.ResourceLogs().Append(rl)
 	}
+
 	decodeErr = r.logConsumer.ConsumeLogs(ctx, ld)
 
 	obsreport.EndMetricsReceiveOp(

@@ -29,7 +29,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	tests := []struct {
 		name    string
 		event   splunk.Event
-		output  pdata.LogSlice
+		output  pdata.ResourceLogsSlice
 		wantErr error
 	}{
 		{
@@ -45,7 +45,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			output: func() pdata.LogSlice {
+			output: func() pdata.ResourceLogsSlice {
 				return createLogsSlice("value")
 			}(),
 			wantErr: nil,
@@ -63,9 +63,9 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			output: func() pdata.LogSlice {
+			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice("value")
-				logsSlice.At(0).Body().SetDoubleVal(12.3)
+				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -83,12 +83,12 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			output: func() pdata.LogSlice {
+			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice("value")
 				arr := pdata.NewAnyValueArray()
 				arr.Append(pdata.NewAttributeValueString("foo"))
 				arr.Append(pdata.NewAttributeValueString("bar"))
-				logsSlice.At(0).Body().SetArrayVal(arr)
+				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetArrayVal(arr)
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -106,7 +106,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					"foo": "bar",
 				},
 			},
-			output: func() pdata.LogSlice {
+			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice("value")
 				attMap := pdata.NewAttributeMap()
 				foos := pdata.NewAnyValueArray()
@@ -115,32 +115,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				foos.Append(pdata.NewAttributeValueString("foobar"))
 				foosArr := pdata.NewAttributeValueArray()
 				foosArr.SetArrayVal(foos)
-				attMap.Insert("foos", foosArr)
 				attMap.InsertBool("bool", false)
+				attMap.Insert("foos", foosArr)
 				attMap.InsertInt("someInt", 12)
-				logsSlice.At(0).Body().SetMapVal(attMap)
+				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetMapVal(attMap)
 				return logsSlice
-			}(),
-			wantErr: nil,
-		},
-		{
-			name: "override_sourcetype",
-			event: splunk.Event{
-				Time:       0.123,
-				Host:       "localhost",
-				Source:     "mysource",
-				SourceType: "mysourcetype",
-				Index:      "myindex",
-				Event:      "value",
-				Fields: map[string]interface{}{
-					"foo":                   "bar",
-					"com.splunk.sourcetype": "different",
-				},
-			},
-			output: func() pdata.LogSlice {
-				slice := createLogsSlice("value")
-				slice.At(0).Attributes().UpdateString("com.splunk.sourcetype", "different")
-				return slice
 			}(),
 			wantErr: nil,
 		},
@@ -155,18 +134,26 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 }
 
-func createLogsSlice(body string) pdata.LogSlice {
-	lrs := pdata.NewLogSlice()
+func createLogsSlice(body string) pdata.ResourceLogsSlice {
+	lrs := pdata.NewResourceLogsSlice()
 	lrs.Resize(1)
 	lr := lrs.At(0)
 	lr.InitEmpty()
-	lr.SetName("mysourcetype")
-	lr.Body().SetStringVal(body)
-	lr.SetTimestamp(pdata.TimestampUnixNano(123000000))
-	lr.Attributes().InsertString("host.hostname", "localhost")
-	lr.Attributes().InsertString("service.name", "mysource")
-	lr.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-	lr.Attributes().InsertString("foo", "bar")
+	lr.Resource().InitEmpty()
+	logRecord := pdata.NewLogRecord()
+	logRecord.InitEmpty()
+
+	logRecord.SetName("mysourcetype")
+	logRecord.Body().SetStringVal(body)
+	logRecord.SetTimestamp(pdata.TimestampUnixNano(123000000))
+	lr.Resource().Attributes().InsertString("host.hostname", "localhost")
+	lr.Resource().Attributes().InsertString("service.name", "mysource")
+	lr.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().InsertString("foo", "bar")
+	ill := pdata.NewInstrumentationLibraryLogs()
+	ill.InitEmpty()
+	ill.Logs().Append(logRecord)
+	lr.InstrumentationLibraryLogs().Append(ill)
 
 	return lrs
 }

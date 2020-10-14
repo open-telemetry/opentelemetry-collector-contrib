@@ -16,6 +16,7 @@ package splunkhecreceiver
 
 import (
 	"errors"
+	"sort"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -29,60 +30,69 @@ const (
 )
 
 // SplunkHecToLogData transforms splunk events into logs
-func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.LogSlice, error) {
-	lrs := pdata.NewLogSlice()
+func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.ResourceLogsSlice, error) {
+	lrs := pdata.NewResourceLogsSlice()
 	lrs.Resize(len(events))
 
 	for i, event := range events {
 		lr := lrs.At(i)
 		lr.InitEmpty()
+		logRecord := pdata.NewLogRecord()
+		logRecord.InitEmpty()
 
 		// The SourceType field is the most logical "name" of the event.
-		lr.SetName(event.SourceType)
-		lr.Body().InitEmpty()
+		logRecord.SetName(event.SourceType)
+		logRecord.Body().InitEmpty()
 		if value, ok := event.Event.(string); ok {
-			lr.Body().SetStringVal(value)
+			logRecord.Body().SetStringVal(value)
 		} else if value, ok := event.Event.(int64); ok {
-			lr.Body().SetIntVal(value)
+			logRecord.Body().SetIntVal(value)
 		} else if value, ok := event.Event.(float64); ok {
-			lr.Body().SetDoubleVal(value)
+			logRecord.Body().SetDoubleVal(value)
 		} else if value, ok := event.Event.(bool); ok {
-			lr.Body().SetBoolVal(value)
+			logRecord.Body().SetBoolVal(value)
 		} else if value, ok := event.Event.(map[string]interface{}); ok {
 			mapValue, err := convertToAttributeMap(logger, value)
 			if err != nil {
 				return lrs, err
 			}
-			lr.Body().SetMapVal(mapValue)
+			logRecord.Body().SetMapVal(mapValue)
 		} else if value, ok := event.Event.([]interface{}); ok {
 			arrValue, err := convertToArrayVal(logger, value)
 			if err != nil {
 				return lrs, err
 			}
-			lr.Body().SetArrayVal(arrValue)
+			logRecord.Body().SetArrayVal(arrValue)
 		}
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
-		lr.SetTimestamp(pdata.TimestampUnixNano(event.Time * 1e9))
+		logRecord.SetTimestamp(pdata.TimestampUnixNano(event.Time * 1e9))
 
-		attrs := lr.Attributes()
+		lr.Resource().InitEmpty()
+		attrs := lr.Resource().Attributes()
 		attrs.InitEmptyWithCapacity(3 + len(event.Fields))
 		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
 		attrs.InsertString(conventions.AttributeServiceName, event.Source)
 		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
 		//TODO consider setting the index field as well for pass through scenarios.
-		for key, val := range event.Fields {
+		keys := make([]string, 0, len(event.Fields))
+		for k := range event.Fields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			val := event.Fields[key]
 			attrValue, err := convertInterfaceToAttributeValue(logger, val)
 			if err != nil {
 				return lrs, err
 			}
-			if _, ok := attrs.Get(key); ok {
-				attrs.Update(key, attrValue)
-			} else {
-				attrs.Insert(key, attrValue)
-			}
+			logRecord.Attributes().Insert(key, attrValue)
 		}
+		ill := pdata.NewInstrumentationLibraryLogs()
+		ill.InitEmpty()
+		ill.Logs().Append(logRecord)
+		lr.InstrumentationLibraryLogs().Append(ill)
 	}
 
 	return lrs, nil
@@ -135,7 +145,13 @@ func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.AnyValueA
 
 func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pdata.AttributeMap, error) {
 	attrMap := pdata.NewAttributeMap()
-	for k, v := range value {
+	keys := make([]string, 0, len(value))
+	for k := range value {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		v := value[k]
 		translatedElt, err := convertInterfaceToAttributeValue(logger, v)
 		if err != nil {
 			return attrMap, err
