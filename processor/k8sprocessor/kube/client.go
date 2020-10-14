@@ -237,17 +237,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.HostName {
-		// Basing on v1.17 Kubernetes docs, when a hostname is specified,
-		// it takes precedence over the associated metadata name, see:
-		// https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields
-		hostname := pod.Spec.Hostname
-		if hostname == "" {
-			hostname = pod.Name
-		}
-		tags[conventions.AttributeHostName] = hostname
-	}
-
 	if c.Rules.ContainerName {
 		if len(pod.Spec.Containers) > 0 {
 			var names []string

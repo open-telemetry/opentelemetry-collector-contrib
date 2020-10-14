@@ -207,7 +207,6 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Cluster)
 	assert.True(t, p.rules.Node)
 	// Optional
-	assert.False(t, p.rules.HostName)
 	assert.False(t, p.rules.ContainerName)
 
 	p = &kubernetesprocessor{}
@@ -223,7 +222,6 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.False(t, p.rules.StartTime)
 	assert.False(t, p.rules.Deployment)
 	assert.False(t, p.rules.Node)
-	assert.False(t, p.rules.HostName)
 	assert.False(t, p.rules.ContainerName)
 }
 

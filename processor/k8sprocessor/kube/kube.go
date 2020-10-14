@@ -109,7 +109,6 @@ type ExtractionRules struct {
 	Node          bool
 	Cluster       bool
 	StartTime     bool
-	HostName      bool
 	ContainerName bool
 
 	Annotations []FieldExtractionRule
