@@ -47,13 +47,12 @@ const (
 )
 
 // CreateTraceEdgeConnection returns a new TraceEdgeConnection
-func CreateTraceEdgeConnection(rootURL, apiKey string, InsecureSkipVerify bool) TraceEdgeConnection {
+func CreateTraceEdgeConnection(rootURL, apiKey string) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
-		traceURL:           rootURL + "/api/v0.2/traces",
-		statsURL:           rootURL + "/api/v0.2/stats",
-		apiKey:             apiKey,
-		InsecureSkipVerify: InsecureSkipVerify,
+		traceURL: rootURL + "/api/v0.2/traces",
+		statsURL: rootURL + "/api/v0.2/stats",
+		apiKey:   apiKey,
 	}
 }
 
@@ -102,7 +101,7 @@ func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TraceP
 	// NOTE: APM stores traces by trace id, however, Logs pipeline does NOT dedupe APM events,
 	// and retries may potentially cause duplicate APM events in Trace Search
 	for retries := 1; retries <= maxRetries; retries++ {
-		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.traceURL, con.InsecureSkipVerify); sendErr == nil {
+		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.traceURL); sendErr == nil {
 			return nil
 		}
 
@@ -139,7 +138,7 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 	// If error while sending to trace-edge, retry maximum maxRetries number of times
 	// NOTE: APM does NOT dedupe, and retries may potentially cause duplicate/inaccurate stats
 	for retries := 1; retries <= maxRetries; retries++ {
-		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.statsURL, con.InsecureSkipVerify); sendErr == nil {
+		if shouldRetry, sendErr = con.sendPayloadToTraceEdge(ctx, con.apiKey, &payload, con.statsURL); sendErr == nil {
 			return nil
 		}
 
@@ -153,7 +152,7 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 }
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
-func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string, InsecureSkipVerify bool) (bool, error) {
+func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
 	// Create the request to be sent to the API
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload.Bytes))
 	req = req.WithContext(ctx)
@@ -165,7 +164,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 	utils.SetDDHeaders(req.Header, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
-	client := utils.NewHTTPClient(InsecureSkipVerify, traceEdgeTimout)
+	client := utils.NewHTTPClient(traceEdgeTimout)
 	resp, err := client.Do(req)
 
 	if err != nil {

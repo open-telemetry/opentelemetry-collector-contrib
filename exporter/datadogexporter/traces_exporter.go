@@ -55,7 +55,7 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 	exporter := &traceExporter{
 		logger:         logger,
 		cfg:            cfg,
-		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, false),
+		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key),
 		obfuscator:     obfuscator,
 		tags:           tags,
 	}

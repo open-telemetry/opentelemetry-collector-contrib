@@ -34,7 +34,7 @@ var (
 )
 
 // NewClient returns a http.Client configured with the Agent options.
-func NewHTTPClient(InsecureSkipVerify bool, timeout time.Duration) *http.Client {
+func NewHTTPClient(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
@@ -46,7 +46,7 @@ func NewHTTPClient(InsecureSkipVerify bool, timeout time.Duration) *http.Client 
 			MaxIdleConns: 100,
 			// Not supported by intake
 			ForceAttemptHTTP2: false,
-			TLSClientConfig:   &tls.Config{InsecureSkipVerify: InsecureSkipVerify},
+			TLSClientConfig:   &tls.Config{InsecureSkipVerify: false},
 		},
 	}
 }
