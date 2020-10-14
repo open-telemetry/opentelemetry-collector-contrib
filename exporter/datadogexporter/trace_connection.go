@@ -63,16 +63,6 @@ type Payload struct {
 	Headers      map[string]string
 }
 
-// NewPayload constructs a new payload object with the provided data and with CreationDate initialized to the current
-// time.
-func NewPayload(bytes []byte, headers map[string]string) *Payload {
-	return &Payload{
-		CreationDate: time.Now(),
-		Bytes:        bytes,
-		Headers:      headers,
-	}
-}
-
 // SendTraces serializes a trace payload to protobuf and sends it to Trace Edge
 func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TracePayload, maxRetries int) error {
 	binary, marshallErr := proto.Marshal(trace)

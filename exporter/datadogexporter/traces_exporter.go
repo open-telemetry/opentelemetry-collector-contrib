@@ -85,7 +85,7 @@ func (exp *traceExporter) pushTraceData(
 	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
 	ObfuscatePayload(exp.obfuscator, aggregatedTraces)
 
-	pushTime := time.Now().UnixNano()
+	pushTime := time.Now().UTC().UnixNano()
 	for _, ddTracePayload := range aggregatedTraces {
 		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
 		// adding a helper function here to make custom retry logic easier in the future
