@@ -1092,6 +1092,11 @@ func TestDecodeXRaySpanID(t *testing.T) {
 		assert.Equal(t, spanIDBytes, expectedSpanIDBytes)
 	}
 
+	// invalid format
+	spanID = "12345566"
+	_, err = decodeXRaySpanID(&spanID)
+	assert.Error(t, err)
+
 	// null point
 	_, err = decodeXRaySpanID(nil)
 	assert.Error(t, err)

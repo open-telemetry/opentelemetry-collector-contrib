@@ -248,5 +248,8 @@ func decodeXRaySpanID(spanID *string) ([]byte, error) {
 	if spanID == nil {
 		return nil, errors.New("spanid is null")
 	}
+	if len(*spanID) != 16 {
+		return nil, errors.New("spanID length is wrong")
+	}
 	return hex.DecodeString(*spanID)
 }
