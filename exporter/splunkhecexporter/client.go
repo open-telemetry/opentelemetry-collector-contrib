@@ -26,10 +26,12 @@ import (
 	"net/url"
 	"sync"
 
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 // client sends the data to the splunk backend.
@@ -45,14 +47,14 @@ type client struct {
 
 func (c *client) pushMetricsData(
 	ctx context.Context,
-	md consumerdata.MetricsData,
+	md pdata.Metrics,
 ) (droppedTimeSeries int, err error) {
 	c.wg.Add(1)
 	defer c.wg.Done()
 
 	splunkDataPoints, numDroppedTimeseries, err := metricDataToSplunk(c.logger, md, c.config)
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 	if len(splunkDataPoints) == 0 {
 		return numDroppedTimeseries, nil
@@ -60,12 +62,12 @@ func (c *client) pushMetricsData(
 
 	body, compressed, err := encodeBody(&c.zippers, splunkDataPoints, c.config.DisableCompression)
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 
-	req, err := http.NewRequest("POST", c.url.String(), body)
+	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), consumererror.Permanent(err)
+		return numMetricPoint(md), consumererror.Permanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -78,7 +80,7 @@ func (c *client) pushMetricsData(
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return exporterhelper.NumTimeSeries(md), err
+		return numMetricPoint(md), err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
@@ -90,7 +92,7 @@ func (c *client) pushMetricsData(
 			"HTTP %d %q",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		return exporterhelper.NumTimeSeries(md), err
+		return numMetricPoint(md), err
 	}
 
 	return numDroppedTimeseries, nil
@@ -98,7 +100,7 @@ func (c *client) pushMetricsData(
 
 func (c *client) pushTraceData(
 	ctx context.Context,
-	td consumerdata.TraceData,
+	td pdata.Traces,
 ) (droppedSpans int, err error) {
 	c.wg.Add(1)
 	defer c.wg.Done()
@@ -108,14 +110,23 @@ func (c *client) pushTraceData(
 		return numDroppedSpans, nil
 	}
 
-	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
+	err = c.sendSplunkEvents(ctx, splunkEvents)
 	if err != nil {
-		return len(td.Spans), consumererror.Permanent(err)
+		return td.SpanCount(), err
 	}
 
-	req, err := http.NewRequest("POST", c.url.String(), body)
+	return numDroppedSpans, nil
+}
+
+func (c *client) sendSplunkEvents(ctx context.Context, splunkEvents []*splunkEvent) error {
+	body, compressed, err := encodeBodyEvents(&c.zippers, splunkEvents, c.config.DisableCompression)
 	if err != nil {
-		return len(td.Spans), consumererror.Permanent(err)
+		return consumererror.Permanent(err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.url.String(), body)
+	if err != nil {
+		return consumererror.Permanent(err)
 	}
 
 	for k, v := range c.headers {
@@ -128,7 +139,7 @@ func (c *client) pushTraceData(
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return len(td.Spans), err
+		return err
 	}
 
 	io.Copy(ioutil.Discard, resp.Body)
@@ -140,10 +151,26 @@ func (c *client) pushTraceData(
 			"HTTP %d %q",
 			resp.StatusCode,
 			http.StatusText(resp.StatusCode))
-		return len(td.Spans), err
+		return err
+	}
+	return nil
+}
+
+func (c *client) pushLogData(ctx context.Context, ld pdata.Logs) (numDroppedLogs int, err error) {
+	c.wg.Add(1)
+	defer c.wg.Done()
+
+	splunkEvents, numDroppedLogs := logDataToSplunk(c.logger, ld, c.config)
+	if len(splunkEvents) == 0 {
+		return numDroppedLogs, nil
 	}
 
-	return numDroppedSpans, nil
+	err = c.sendSplunkEvents(ctx, splunkEvents)
+	if err != nil {
+		return ld.LogRecordCount(), err
+	}
+
+	return numDroppedLogs, nil
 }
 
 func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
@@ -159,7 +186,7 @@ func encodeBodyEvents(zippers *sync.Pool, evs []*splunkEvent, disableCompression
 	return getReader(zippers, buf, disableCompression)
 }
 
-func encodeBody(zippers *sync.Pool, dps []*splunkMetric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
+func encodeBody(zippers *sync.Pool, dps []*splunk.Metric, disableCompression bool) (bodyReader io.Reader, compressed bool, err error) {
 	buf := new(bytes.Buffer)
 	encoder := json.NewEncoder(buf)
 	for _, e := range dps {
@@ -194,4 +221,13 @@ func getReader(zippers *sync.Pool, b *bytes.Buffer, disableCompression bool) (io
 func (c *client) stop(context context.Context) error {
 	c.wg.Wait()
 	return nil
+}
+
+func (c *client) start(context.Context, component.Host) (err error) {
+	return nil
+}
+
+func numMetricPoint(md pdata.Metrics) int {
+	_, numPoints := md.MetricAndDataPointCount()
+	return numPoints
 }

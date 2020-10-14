@@ -31,9 +31,16 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func TestNew(t *testing.T) {
@@ -42,9 +49,9 @@ func TestNew(t *testing.T) {
 	assert.Nil(t, got)
 
 	config := &Config{
-		Token:    "someToken",
-		Endpoint: "https://example.com:8088",
-		Timeout:  1 * time.Second,
+		Token:           "someToken",
+		Endpoint:        "https://example.com:8088",
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 1 * time.Second},
 	}
 	got, err = createExporter(config, zap.NewNop())
 	assert.NoError(t, err)
@@ -52,7 +59,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetricsData(t *testing.T) {
-	smallBatch := &consumerdata.MetricsData{
+	smallBatch := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunk"},
 		},
@@ -69,7 +76,7 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 	tests := []struct {
 		name                 string
-		md                   *consumerdata.MetricsData
+		md                   consumerdata.MetricsData
 		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
 		numDroppedTimeSeries int
@@ -91,7 +98,7 @@ func TestConsumeMetricsData(t *testing.T) {
 					t.Fatal("Small batch should not be compressed")
 				}
 				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
-				var metric splunkMetric
+				var metric splunk.Metric
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
 					t.Fatal(err)
@@ -143,7 +150,8 @@ func TestConsumeMetricsData(t *testing.T) {
 			}
 			sender := buildClient(options, config, zap.NewNop())
 
-			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), *tt.md)
+			md := internaldata.OCToMetrics(tt.md)
+			numDroppedTimeSeries, err := sender.pushMetricsData(context.Background(), md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
 			if tt.wantErr {
@@ -156,8 +164,8 @@ func TestConsumeMetricsData(t *testing.T) {
 	}
 }
 
-func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
-	md := &consumerdata.MetricsData{
+func generateLargeBatch(t *testing.T) consumerdata.MetricsData {
+	md := consumerdata.MetricsData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test_splunkhec"},
 		},
@@ -183,4 +191,135 @@ func generateLargeBatch(t *testing.T) *consumerdata.MetricsData {
 	}
 
 	return md
+}
+
+func generateLargeLogsBatch(t *testing.T) pdata.Logs {
+	logs := pdata.NewLogs()
+	rl := pdata.NewResourceLogs()
+	rl.InitEmpty()
+	logs.ResourceLogs().Append(rl)
+	ill := pdata.NewInstrumentationLibraryLogs()
+	ill.InitEmpty()
+	rl.InstrumentationLibraryLogs().Append(ill)
+
+	ts := pdata.TimestampUnixNano(123)
+	for i := 0; i < 65000; i++ {
+		logRecord := pdata.NewLogRecord()
+		logRecord.InitEmpty()
+		logRecord.Body().SetStringVal("mylog")
+		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.SetTimestamp(ts)
+	}
+
+	return logs
+}
+
+func TestConsumeLogsData(t *testing.T) {
+	logRecord := pdata.NewLogRecord()
+	logRecord.InitEmpty()
+	logRecord.Body().SetStringVal("mylog")
+	logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+	logRecord.Attributes().InsertString("custom", "custom")
+	logRecord.SetTimestamp(123)
+	smallBatch := makeLog(logRecord)
+	tests := []struct {
+		name             string
+		ld               pdata.Logs
+		reqTestFunc      func(t *testing.T, r *http.Request)
+		httpResponseCode int
+		numDroppedLogs   int
+		wantErr          bool
+	}{
+		{
+			name: "happy_path",
+			ld:   smallBatch,
+			reqTestFunc: func(t *testing.T, r *http.Request) {
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, "keep-alive", r.Header.Get("Connection"))
+				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				assert.Equal(t, "OpenTelemetry-Collector Splunk Exporter/v0.0.1", r.Header.Get("User-Agent"))
+				assert.Equal(t, "Splunk 1234", r.Header.Get("Authorization"))
+				if r.Header.Get("Content-Encoding") == "gzip" {
+					t.Fatal("Small batch should not be compressed")
+				}
+				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
+				var event splunkEvent
+				err = json.Unmarshal([]byte(firstPayload), &event)
+				if err != nil {
+					t.Fatal(err)
+				}
+				assert.Equal(t, "test", event.Source)
+				assert.Equal(t, "test_type", event.SourceType)
+				assert.Equal(t, "test_index", event.Index)
+
+			},
+			httpResponseCode: http.StatusAccepted,
+		},
+		{
+			name:             "response_forbidden",
+			ld:               smallBatch,
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusForbidden,
+			numDroppedLogs:   1,
+			wantErr:          true,
+		},
+		{
+			name:             "large_batch",
+			ld:               generateLargeLogsBatch(t),
+			reqTestFunc:      nil,
+			httpResponseCode: http.StatusAccepted,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.reqTestFunc != nil {
+					tt.reqTestFunc(t, r)
+				}
+				w.WriteHeader(tt.httpResponseCode)
+			}))
+			defer server.Close()
+
+			serverURL, err := url.Parse(server.URL)
+			assert.NoError(t, err)
+
+			options := &exporterOptions{
+				url:   serverURL,
+				token: "1234",
+			}
+			config := &Config{
+				Source:     "test",
+				SourceType: "test_type",
+				Token:      "1234",
+				Index:      "test_index",
+			}
+			sender := buildClient(options, config, zap.NewNop())
+
+			numDroppedLogs, err := sender.pushLogData(context.Background(), tt.ld)
+			assert.Equal(t, tt.numDroppedLogs, numDroppedLogs)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestExporterStartAlwaysReturnsNil(t *testing.T) {
+	config := &Config{
+		Endpoint: "https://example.com:8088",
+		Token:    "abc",
+	}
+	e, err := createExporter(config, zap.NewNop())
+	assert.NoError(t, err)
+	assert.NoError(t, e.start(context.Background(), componenttest.NewNopHost()))
 }

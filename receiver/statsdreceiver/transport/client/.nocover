@@ -1,0 +1,1 @@
+Transport clients are used only for test of transport.Server implementations and as such do not need tests.

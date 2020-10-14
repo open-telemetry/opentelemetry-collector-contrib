@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/jaegertracing/jaeger/model"
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/signalfx/sapm-proto/sapmprotocol"
 	"github.com/stretchr/testify/assert"
@@ -49,10 +48,10 @@ import (
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
-	traceID := pdata.TraceID(
+	traceID := pdata.NewTraceID(
 		[]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
-	parentSpanID := pdata.SpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
-	childSpanID := pdata.SpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	parentSpanID := pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pdata.NewSpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -73,7 +72,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span0.Status().InitEmpty()
-	span0.Status().SetCode(pdata.StatusCode(otlptrace.Status_NotFound))
+	span0.Status().SetCode(pdata.StatusCodeNotFound)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
@@ -83,7 +82,7 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
 	span1.Status().InitEmpty()
-	span1.Status().SetCode(pdata.StatusCode(otlptrace.Status_InternalError))
+	span1.Status().SetCode(pdata.StatusCodeInternalError)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces

@@ -21,16 +21,20 @@ import (
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
 	// hecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	hecEventMetricType = "metric"
 	// hostnameLabel is the hostname label name.
-	hostnameLabel = "host.hostname"
+
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
 	// separator for metric values.
@@ -52,66 +56,60 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-type splunkMetric struct {
-	Time       float64                `json:"time"`                 // epoch time
-	Host       string                 `json:"host"`                 // hostname
-	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      string                 `json:"event"`                // type of event: this is a metric.
-	Fields     map[string]interface{} `json:"fields"`               // metric data
-}
-
-func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, config *Config) ([]*splunkMetric, int, error) {
-	var host string
-	if data.Resource != nil {
-		host = data.Resource.Labels[hostnameLabel]
-	}
-	if host == "" {
-		host = unknownHostName
-	}
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Metric, int, error) {
+	ocmds := internaldata.MetricsToOC(data)
 	numDroppedTimeSeries := 0
-	splunkMetrics := make([]*splunkMetric, 0)
-	for _, metric := range data.Metrics {
-		for _, timeSeries := range metric.Timeseries {
-			for _, tsPoint := range timeSeries.Points {
-				values, err := mapValues(logger, metric, tsPoint.GetValue())
-				if err != nil {
-					logger.Warn(
-						"Timeseries dropped to unexpected metric type",
-						zap.Any("metric", metric),
-						zap.Any("err", err))
-					numDroppedTimeSeries++
-					continue
-				}
-				for key, value := range values {
-					if value == nil {
+	_, numPoints := data.MetricAndDataPointCount()
+	splunkMetrics := make([]*splunk.Metric, 0, numPoints)
+	for _, ocmd := range ocmds {
+		var host string
+		if ocmd.Resource != nil {
+			host = ocmd.Resource.Labels[conventions.AttributeHostHostname]
+		}
+		if host == "" {
+			host = unknownHostName
+		}
+		for _, metric := range ocmd.Metrics {
+			for _, timeSeries := range metric.Timeseries {
+				for _, tsPoint := range timeSeries.Points {
+					values, err := mapValues(logger, metric, tsPoint.GetValue())
+					if err != nil {
 						logger.Warn(
 							"Timeseries dropped to unexpected metric type",
-							zap.Any("metric", value))
+							zap.Any("metric", metric),
+							zap.Any("err", err))
 						numDroppedTimeSeries++
 						continue
 					}
-					fields := map[string]interface{}{key: value}
-					for k, v := range data.Node.GetAttributes() {
-						fields[k] = v
+					for key, value := range values {
+						if value == nil {
+							logger.Warn(
+								"Timeseries dropped to unexpected metric type",
+								zap.Any("metric", value))
+							numDroppedTimeSeries++
+							continue
+						}
+						fields := map[string]interface{}{key: value}
+						for k, v := range ocmd.Node.GetAttributes() {
+							fields[k] = v
+						}
+						for k, v := range ocmd.Resource.GetLabels() {
+							fields[k] = v
+						}
+						for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
+							fields[desc.Key] = timeSeries.LabelValues[i].Value
+						}
+						sm := &splunk.Metric{
+							Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
+							Host:       host,
+							Source:     config.Source,
+							SourceType: config.SourceType,
+							Index:      config.Index,
+							Event:      hecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
 					}
-					for k, v := range data.Resource.GetLabels() {
-						fields[k] = v
-					}
-					for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
-						fields[desc.Key] = timeSeries.LabelValues[i].Value
-					}
-					sm := &splunkMetric{
-						Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
-						Host:       host,
-						Source:     config.Source,
-						SourceType: config.SourceType,
-						Index:      config.Index,
-						Event:      hecEventMetricType,
-						Fields:     fields,
-					}
-					splunkMetrics = append(splunkMetrics, sm)
 				}
 			}
 		}
@@ -120,7 +118,7 @@ func metricDataToSplunk(logger *zap.Logger, data consumerdata.MetricsData, confi
 	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
-func timestampToEpochMilliseconds(ts *timestamp.Timestamp) float64 {
+func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) float64 {
 	if ts == nil {
 		return 0
 	}

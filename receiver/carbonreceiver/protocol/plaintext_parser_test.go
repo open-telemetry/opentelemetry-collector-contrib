@@ -18,9 +18,9 @@ import (
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_plaintextParser_Parse(t *testing.T) {
@@ -39,7 +39,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				nil,
 				nil,
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
 				},
 			),
@@ -52,7 +52,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				nil,
 				nil,
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_DoubleValue{DoubleValue: 3.14},
 				},
 			),
@@ -65,7 +65,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				[]string{"k0", "k1", "k2"},
 				[]string{"v_0", "v_1", "v_2"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_Int64Value{Int64Value: 128},
 				},
 			),
@@ -78,7 +78,7 @@ func Test_plaintextParser_Parse(t *testing.T) {
 				[]string{"k0"},
 				[]string{"v_0"},
 				&metricspb.Point{
-					Timestamp: &timestamp.Timestamp{Seconds: 1582230020},
+					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
 					Value:     &metricspb.Point_DoubleValue{DoubleValue: 1.23},
 				},
 			),

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/selection"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
@@ -497,14 +497,14 @@ func Test_extractFieldRules(t *testing.T) {
 	}{
 		{
 			"default",
-			args{"field", []FieldExtractConfig{
+			args{"labels", []FieldExtractConfig{
 				{
 					Key: "key",
 				},
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "k8s.field.key",
+					Name: "k8s.labels.key",
 					Key:  "key",
 				},
 			},

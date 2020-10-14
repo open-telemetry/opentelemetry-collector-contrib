@@ -17,12 +17,14 @@ package stackdriverexporter
 import (
 	"path"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,10 +51,14 @@ func TestLoadConfig(t *testing.T) {
 			ExporterSettings:           configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "stackdriver/customname"},
 			ProjectID:                  "my-project",
 			Prefix:                     "prefix",
+			UserAgent:                  "opentelemetry-collector-contrib {{version}}",
 			Endpoint:                   "test-endpoint",
 			NumOfWorkers:               3,
 			SkipCreateMetricDescriptor: true,
 			UseInsecure:                true,
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 20 * time.Second,
+			},
 			ResourceMappings: []ResourceMapping{
 				{
 					SourceType: "source.resource1",

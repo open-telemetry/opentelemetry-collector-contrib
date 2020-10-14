@@ -21,11 +21,14 @@ import (
 	"math/rand"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
-	otlptrace "github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1"
+	awsP "github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
 // AWS X-Ray acceptable values for origin field.
@@ -33,6 +36,7 @@ const (
 	OriginEC2 = "AWS::EC2::Instance"
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS = "AWS::EKS::Container"
 )
 
 var (
@@ -43,9 +47,6 @@ var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
-	// reInvalidAnnotationCharacters defines the invalid letters in an annotation key as per
-	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
-	reInvalidAnnotationCharacters = regexp.MustCompile(`[^a-zA-Z0-9_]`)
 )
 
 const (
@@ -60,50 +61,13 @@ const (
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
-// Segment provides the shape for unmarshalling segment data.
-type Segment struct {
-	// Required
-	TraceID   string  `json:"trace_id,omitempty"`
-	ID        string  `json:"id"`
-	Name      string  `json:"name"`
-	StartTime float64 `json:"start_time"`
-	EndTime   float64 `json:"end_time,omitempty"`
-
-	// Optional
-	InProgress  bool       `json:"in_progress,omitempty"`
-	ParentID    string     `json:"parent_id,omitempty"`
-	Fault       bool       `json:"fault,omitempty"`
-	Error       bool       `json:"error,omitempty"`
-	Throttle    bool       `json:"throttle,omitempty"`
-	Cause       *CauseData `json:"cause,omitempty"`
-	ResourceARN string     `json:"resource_arn,omitempty"`
-	Origin      string     `json:"origin,omitempty"`
-
-	Type         string   `json:"type,omitempty"`
-	Namespace    string   `json:"namespace,omitempty"`
-	User         string   `json:"user,omitempty"`
-	PrecursorIDs []string `json:"precursor_ids,omitempty"`
-
-	HTTP *HTTPData `json:"http,omitempty"`
-	AWS  *AWSData  `json:"aws,omitempty"`
-
-	Service *ServiceData `json:"service,omitempty"`
-
-	// SQL
-	SQL *SQLData `json:"sql,omitempty"`
-
-	// Metadata
-	Annotations map[string]interface{}            `json:"annotations,omitempty"`
-	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
-}
-
 var (
 	writers = newWriterPool(2048)
 )
 
-// MakeSegmentDocumentString converts an OpenCensus Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource) (string, error) {
-	segment := MakeSegment(span, resource)
+// MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
+func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
+	segment := MakeSegment(span, resource, indexedAttrs, indexAllAttrs)
 	w := writers.borrow()
 	if err := w.Encode(segment); err != nil {
 		return "", err
@@ -113,23 +77,31 @@ func MakeSegmentDocumentString(span pdata.Span, resource pdata.Resource) (string
 	return jsonStr, nil
 }
 
-// MakeSegment converts an OpenCensus Span to an X-Ray Segment
-func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
+// MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
+func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string, indexAllAttrs bool) awsxray.Segment {
+	var segmentType string
+
+	storeResource := true
+	if span.Kind() != pdata.SpanKindSERVER {
+		segmentType = "subsegment"
+		// We only store the resource information for segments, the local root.
+		storeResource = false
+	}
+
 	var (
 		traceID                                = convertToAmazonTraceID(span.TraceID())
 		startTime                              = timestampToFloatSeconds(span.StartTime())
 		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
-		isThrottled                            = !span.Status().IsNil() && otlptrace.Status_StatusCode(span.Status().Code()) == otlptrace.Status_ResourceExhausted
+		isThrottled                            = !span.Status().IsNil() && span.Status().Code() == pdata.StatusCodeResourceExhausted
 		origin                                 = determineAwsOrigin(resource)
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
 		service                                = makeService(resource)
 		sqlfiltered, sql                       = makeSQL(awsfiltered)
-		user, annotations                      = makeAnnotations(sqlfiltered)
+		user, annotations, metadata            = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
 		name                                   string
 		namespace                              string
-		segmentType                            string
 	)
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
@@ -142,7 +114,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 	}
 
 	if name == "" {
-		if awsService, ok := attributes.Get(AWSServiceAttribute); ok {
+		if awsService, ok := attributes.Get(awsxray.AWSServiceAttribute); ok {
 			// Generally spans are named something like "Method" or "Service.Method" but for AWS spans, X-Ray expects spans
 			// to be named "Service"
 			name = awsService.StringVal()
@@ -198,31 +170,27 @@ func MakeSegment(span pdata.Span, resource pdata.Resource) Segment {
 		namespace = "remote"
 	}
 
-	if span.Kind() != pdata.SpanKindSERVER {
-		segmentType = "subsegment"
-	}
-
-	return Segment{
-		ID:          convertToAmazonSpanID(span.SpanID()),
-		TraceID:     traceID,
-		Name:        name,
-		StartTime:   startTime,
-		EndTime:     endTime,
-		ParentID:    convertToAmazonSpanID(span.ParentSpanID()),
-		Fault:       isFault,
-		Error:       isError,
-		Throttle:    isThrottled,
+	return awsxray.Segment{
+		ID:          awsxray.String(convertToAmazonSpanID(span.SpanID().Bytes())),
+		TraceID:     awsxray.String(traceID),
+		Name:        awsxray.String(name),
+		StartTime:   awsP.Float64(startTime),
+		EndTime:     awsP.Float64(endTime),
+		ParentID:    awsxray.String(convertToAmazonSpanID(span.ParentSpanID().Bytes())),
+		Fault:       awsP.Bool(isFault),
+		Error:       awsP.Bool(isError),
+		Throttle:    awsP.Bool(isThrottled),
 		Cause:       cause,
-		Origin:      origin,
-		Namespace:   namespace,
-		User:        user,
+		Origin:      awsxray.String(origin),
+		Namespace:   awsxray.String(namespace),
+		User:        awsxray.String(user),
 		HTTP:        http,
 		AWS:         aws,
 		Service:     service,
 		SQL:         sql,
 		Annotations: annotations,
-		Metadata:    nil,
-		Type:        segmentType,
+		Metadata:    metadata,
+		Type:        awsxray.String(segmentType),
 	}
 }
 
@@ -235,7 +203,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewTraceID(r[:])
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
@@ -245,13 +213,23 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return r[:]
+	return pdata.NewSpanID(r[:])
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	// EB > ECS > EC2
 	if resource.IsNil() {
-		return OriginEC2
+		return ""
+	}
+
+	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
+		if provider.StringVal() != "aws" {
+			return ""
+		}
+	}
+	// EKS > EB > ECS > EC2
+	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
+	if eks {
+		return OriginEKS
 	}
 	_, eb := resource.Attributes().Get(semconventions.AttributeServiceInstance)
 	if eb {
@@ -288,7 +266,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	var (
 		content  = [traceIDLength]byte{}
 		epochNow = time.Now().Unix()
-		epoch    = int64(binary.BigEndian.Uint32(traceID[0:4]))
+		epoch    = int64(binary.BigEndian.Uint32(traceID.Bytes()[0:4]))
 		b        = [4]byte{}
 	)
 
@@ -308,7 +286,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) string {
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
 	content[10] = '-'
-	hex.Encode(content[identifierOffset:], traceID[4:16]) // overwrite with identifier
+	hex.Encode(content[identifierOffset:], traceID.Bytes()[4:16]) // overwrite with identifier
 
 	return string(content[0:traceIDLength])
 }
@@ -326,17 +304,12 @@ func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
-func sanitizeAndTransferAnnotations(dest map[string]interface{}, src map[string]string) {
-	for key, value := range src {
-		key = fixAnnotationKey(key)
-		dest[key] = value
-	}
-}
-
-func makeAnnotations(attributes map[string]string) (string, map[string]interface{}) {
+func makeXRayAttributes(attributes map[string]string, resource pdata.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
+	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
-		result = map[string]interface{}{}
-		user   string
+		annotations = map[string]interface{}{}
+		metadata    = map[string]map[string]interface{}{}
+		user        string
 	)
 	delete(attributes, semconventions.AttributeComponent)
 	userid, ok := attributes[semconventions.AttributeEnduserID]
@@ -344,12 +317,99 @@ func makeAnnotations(attributes map[string]string) (string, map[string]interface
 		user = userid
 		delete(attributes, semconventions.AttributeEnduserID)
 	}
-	sanitizeAndTransferAnnotations(result, attributes)
 
-	if len(result) == 0 {
-		return user, nil
+	if len(attributes) == 0 && (!storeResource || resource.Attributes().Len() == 0) {
+		return user, nil, nil
 	}
-	return user, result
+
+	defaultMetadata := map[string]interface{}{}
+
+	indexedKeys := map[string]bool{}
+	if !indexAllAttrs {
+		for _, name := range indexedAttrs {
+			indexedKeys[name] = true
+		}
+	}
+
+	if storeResource {
+		resource.Attributes().ForEach(func(key string, value pdata.AttributeValue) {
+			key = "otel.resource." + key
+			annoVal := annotationValue(value)
+			indexed := indexAllAttrs || indexedKeys[key]
+			if annoVal != nil && indexed {
+				key = fixAnnotationKey(key)
+				annotations[key] = annoVal
+			} else {
+				metaVal := metadataValue(value)
+				if metaVal != nil {
+					defaultMetadata[key] = metaVal
+				}
+			}
+		})
+	}
+
+	if indexAllAttrs {
+		for key, value := range attributes {
+			key = fixAnnotationKey(key)
+			annotations[key] = value
+		}
+	} else {
+		for key, value := range attributes {
+			if indexedKeys[key] {
+				key = fixAnnotationKey(key)
+				annotations[key] = value
+			} else {
+				defaultMetadata[key] = value
+			}
+		}
+	}
+
+	if len(defaultMetadata) > 0 {
+		metadata["default"] = defaultMetadata
+	}
+
+	return user, annotations, metadata
+}
+
+func annotationValue(value pdata.AttributeValue) interface{} {
+	switch value.Type() {
+	case pdata.AttributeValueSTRING:
+		return value.StringVal()
+	case pdata.AttributeValueINT:
+		return value.IntVal()
+	case pdata.AttributeValueDOUBLE:
+		return value.DoubleVal()
+	case pdata.AttributeValueBOOL:
+		return value.BoolVal()
+	}
+	return nil
+}
+
+func metadataValue(value pdata.AttributeValue) interface{} {
+	switch value.Type() {
+	case pdata.AttributeValueSTRING:
+		return value.StringVal()
+	case pdata.AttributeValueINT:
+		return value.IntVal()
+	case pdata.AttributeValueDOUBLE:
+		return value.DoubleVal()
+	case pdata.AttributeValueBOOL:
+		return value.BoolVal()
+	case pdata.AttributeValueMAP:
+		converted := map[string]interface{}{}
+		value.MapVal().ForEach(func(key string, value pdata.AttributeValue) {
+			converted[key] = metadataValue(value)
+		})
+		return converted
+	case pdata.AttributeValueARRAY:
+		arrVal := value.ArrayVal()
+		converted := make([]interface{}, arrVal.Len())
+		for i := 0; i < arrVal.Len(); i++ {
+			converted[i] = metadataValue(arrVal.At(i))
+		}
+		return converted
+	}
+	return nil
 }
 
 // fixSegmentName removes any invalid characters from the span name.  AWS X-Ray defines
@@ -374,10 +434,16 @@ func fixSegmentName(name string) string {
 // the list of valid characters here:
 // https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 func fixAnnotationKey(key string) string {
-	if reInvalidAnnotationCharacters.MatchString(key) {
-		// only allocate for ReplaceAllString if we need to
-		key = reInvalidAnnotationCharacters.ReplaceAllString(key, "_")
-	}
-
-	return key
+	return strings.Map(func(r rune) rune {
+		switch {
+		case '0' <= r && r <= '9':
+			fallthrough
+		case 'A' <= r && r <= 'Z':
+			fallthrough
+		case 'a' <= r && r <= 'z':
+			return r
+		default:
+			return '_'
+		}
+	}, key)
 }

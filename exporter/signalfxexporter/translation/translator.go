@@ -29,7 +29,7 @@ type Action string
 
 const (
 	// ActionRenameDimensionKeys renames dimension keys using Rule.Mapping.
-	// The rule can be applied only to a particular metric if MetricName is provided,
+	// The rule can be applied only to particular metrics if MetricNames are provided,
 	// otherwise applied to all metrics.
 	ActionRenameDimensionKeys Action = "rename_dimension_keys"
 
@@ -109,6 +109,14 @@ const (
 	// new metric will also get any attributes of the 'memory.used' metric except for its value and metric name.
 	// Currently only integer inputs are handled and only division is supported.
 	ActionCalculateNewMetric Action = "calculate_new_metric"
+
+	// ActionDropMetrics drops datapoints with metric name defined in "metric_names".
+	ActionDropMetrics Action = "drop_metrics"
+
+	// ActionDeltaMetric creates a new delta (cumulative) metric from an existing non-cumulative int or double
+	// metric. It takes mappings of names of the existing metrics to the names of the new, delta metrics to be
+	// created. All dimensions will be preserved.
+	ActionDeltaMetric Action = "delta_metric"
 )
 
 type MetricOperator string
@@ -133,6 +141,7 @@ type AggregationMethod string
 const (
 	// AggregationMethodCount represents count aggregation method
 	AggregationMethodCount AggregationMethod = "count"
+	AggregationMethodAvg   AggregationMethod = "avg"
 	AggregationMethodSum   AggregationMethod = "sum"
 )
 
@@ -177,8 +186,15 @@ type Rule struct {
 	// excluded by aggregation.
 	WithoutDimensions []string `mapstructure:"without_dimensions"`
 
-	// MetricName is used by "split_metric" translation rule to specify a name
-	// of a metric that will be split.
+	// AddDimensions used by "rename_metrics" translation rule to add dimensions that are necessary for
+	// existing SFx content for desired metric name
+	AddDimensions map[string]string `mapstructure:"add_dimensions"`
+
+	// CopyDimensions used by "rename_metrics" translation rule to copy dimensions that are necessary for
+	// existing SFx content for desired metric name.  This will duplicate the dimension value and isn't a rename.
+	CopyDimensions map[string]string `mapstructure:"copy_dimensions"`
+
+	// MetricNames is used by "rename_dimension_keys" and "drop_metrics" translation rules.
 	MetricNames map[string]bool `mapstructure:"metric_names"`
 
 	Operand1Metric string         `mapstructure:"operand1_metric"`
@@ -191,17 +207,20 @@ type MetricTranslator struct {
 
 	// Additional map to be used only for dimension renaming in metadata
 	dimensionsMap map[string]string
+
+	deltaTranslator *deltaTranslator
 }
 
-func NewMetricTranslator(rules []Rule) (*MetricTranslator, error) {
+func NewMetricTranslator(rules []Rule, ttl int64) (*MetricTranslator, error) {
 	err := validateTranslationRules(rules)
 	if err != nil {
 		return nil, err
 	}
 
 	return &MetricTranslator{
-		rules:         rules,
-		dimensionsMap: createDimensionsMap(rules),
+		rules:           rules,
+		dimensionsMap:   createDimensionsMap(rules),
+		deltaTranslator: newDeltaTranslator(ttl),
 	}, nil
 }
 
@@ -222,6 +241,13 @@ func validateTranslationRules(rules []Rule) error {
 		case ActionRenameMetrics:
 			if tr.Mapping == nil {
 				return fmt.Errorf("field \"mapping\" is required for %q translation rule", tr.Action)
+			}
+			if tr.CopyDimensions != nil {
+				for k, v := range tr.CopyDimensions {
+					if k == "" || v == "" {
+						return fmt.Errorf("mapping \"copy_dimensions\" for %q translation rule must not contain empty string keys or values", tr.Action)
+					}
+				}
 			}
 		case ActionMultiplyInt:
 			if tr.ScaleFactorsInt == nil {
@@ -269,7 +295,9 @@ func validateTranslationRules(rules []Rule) error {
 				return fmt.Errorf("fields \"metric_name\", \"without_dimensions\", and \"aggregation_method\" "+
 					"are required for %q translation rule", tr.Action)
 			}
-			if tr.AggregationMethod != "count" && tr.AggregationMethod != "sum" {
+			if tr.AggregationMethod != AggregationMethodCount &&
+				tr.AggregationMethod != AggregationMethodSum &&
+				tr.AggregationMethod != AggregationMethodAvg {
 				return fmt.Errorf("invalid \"aggregation_method\": %q provided for %q translation rule",
 					tr.AggregationMethod, tr.Action)
 			}
@@ -281,7 +309,14 @@ func validateTranslationRules(rules []Rule) error {
 			if tr.Operator != MetricOperatorDivision {
 				return fmt.Errorf("invalid operator %q for %q translation rule", tr.Operator, tr.Action)
 			}
-
+		case ActionDropMetrics:
+			if len(tr.MetricNames) == 0 {
+				return fmt.Errorf(`field "metric_names" is required for %q translation rule`, tr.Action)
+			}
+		case ActionDeltaMetric:
+			if len(tr.Mapping) == 0 {
+				return fmt.Errorf(`field "mapping" is required for %q translation rule`, tr.Action)
+			}
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
 		}
@@ -320,9 +355,27 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 		case ActionRenameMetrics:
+			var additionalDimensions []*sfxpb.Dimension
+			if tr.AddDimensions != nil {
+				for k, v := range tr.AddDimensions {
+					additionalDimensions = append(additionalDimensions, &sfxpb.Dimension{Key: k, Value: v})
+				}
+			}
+
 			for _, dp := range processedDataPoints {
 				if newKey, ok := tr.Mapping[dp.Metric]; ok {
 					dp.Metric = newKey
+					if tr.CopyDimensions != nil {
+						for _, d := range dp.Dimensions {
+							if k, ok := tr.CopyDimensions[d.Key]; ok {
+								dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: k, Value: d.Value})
+
+							}
+						}
+					}
+					if len(additionalDimensions) > 0 {
+						dp.Dimensions = append(dp.Dimensions, additionalDimensions...)
+					}
 				}
 			}
 		case ActionMultiplyInt:
@@ -405,6 +458,21 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			}
 			aggregatedDps := aggregateDatapoints(dpsToAggregate, tr.WithoutDimensions, tr.AggregationMethod)
 			processedDataPoints = append(otherDps, aggregatedDps...)
+
+		case ActionDropMetrics:
+			resultSliceLen := 0
+			for i, dp := range processedDataPoints {
+				if match := tr.MetricNames[dp.Metric]; !match {
+					if resultSliceLen < i {
+						processedDataPoints[resultSliceLen] = dp
+					}
+					resultSliceLen++
+				}
+			}
+			processedDataPoints = processedDataPoints[:resultSliceLen]
+
+		case ActionDeltaMetric:
+			processedDataPoints = mp.deltaTranslator.translate(processedDataPoints, tr)
 		}
 	}
 
@@ -461,25 +529,27 @@ func calculateNewMetric(
 	operand2 *sfxpb.DataPoint,
 	tr Rule,
 ) *sfxpb.DataPoint {
-	if operand1.Value.IntValue == nil {
+	v1 := ptToFloatVal(operand1)
+	if v1 == nil {
 		logger.Warn(
-			"calculate_new_metric: operand1 has no IntValue",
+			"calculate_new_metric: operand1 has no numeric value",
 			zap.String("tr.Operand1Metric", tr.Operand1Metric),
 			zap.String("tr.MetricName", tr.MetricName),
 		)
 		return nil
 	}
 
-	if operand2.Value.IntValue == nil {
+	v2 := ptToFloatVal(operand2)
+	if v2 == nil {
 		logger.Warn(
-			"calculate_new_metric: operand2 has no IntValue",
-			zap.String("tr.Operand2Metric", tr.Operand2Metric),
+			"calculate_new_metric: operand2 has no numeric value",
+			zap.String("tr.Operand2Metric", tr.Operand1Metric),
 			zap.String("tr.MetricName", tr.MetricName),
 		)
 		return nil
 	}
 
-	if tr.Operator == MetricOperatorDivision && *operand2.Value.IntValue == 0 {
+	if tr.Operator == MetricOperatorDivision && *v2 == 0 {
 		logger.Warn(
 			"calculate_new_metric: attempt to divide by zero, skipping",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
@@ -494,14 +564,28 @@ func calculateNewMetric(
 	switch tr.Operator {
 	// only supporting divide operator for now
 	case MetricOperatorDivision:
-		// only supporting int values for now
-		newPtVal = float64(*operand1.Value.IntValue) / float64(*operand2.Value.IntValue)
+		newPtVal = *v1 / *v2
 	default:
 		logger.Warn("calculate_new_metric: unsupported operator", zap.String("operator", string(tr.Operator)))
 		return nil
 	}
 	newPt.Value = sfxpb.Datum{DoubleValue: &newPtVal}
 	return newPt
+}
+
+func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
+	if pt == nil {
+		return nil
+	}
+	var f float64
+	if pt.Value.IntValue != nil {
+		f = float64(*pt.Value.IntValue)
+	} else if pt.Value.DoubleValue != nil {
+		f = *pt.Value.DoubleValue
+	} else {
+		return nil
+	}
+	return &f
 }
 
 func (mp *MetricTranslator) TranslateDimension(orig string) string {
@@ -525,7 +609,7 @@ func aggregateDatapoints(
 	// group datapoints by dimension values
 	dimValuesToDps := make(map[string][]*sfxpb.DataPoint, len(dps))
 	for i, dp := range dps {
-		aggregationKey := getAggregationKey(dp.Dimensions, withoutDimensions)
+		aggregationKey := stringifyDimensions(dp.Dimensions, withoutDimensions)
 		if _, ok := dimValuesToDps[aggregationKey]; !ok {
 			// set slice capacity to the possible maximum = len(dps)-i to avoid reallocations
 			dimValuesToDps[aggregationKey] = make([]*sfxpb.DataPoint, 0, len(dps)-i)
@@ -561,6 +645,20 @@ func aggregateDatapoints(
 				}
 			}
 			dp.Value = value
+		case AggregationMethodAvg:
+			var mean float64
+			for _, dp := range dps {
+				if dp.Value.IntValue != nil {
+					mean += float64(*dp.Value.IntValue)
+				}
+				if dp.Value.DoubleValue != nil {
+					mean += *dp.Value.DoubleValue
+				}
+			}
+			mean /= float64(len(dps))
+			dp.Value = sfxpb.Datum{
+				DoubleValue: &mean,
+			}
 		}
 		result = append(result, dp)
 	}
@@ -568,13 +666,15 @@ func aggregateDatapoints(
 	return result
 }
 
-// getAggregationKey composes an aggregation key based on dimensions that left after excluding withoutDimensions.
-// The key composed from dimensions has the following form: dim1:val1//dim2:val2
-func getAggregationKey(dimensions []*sfxpb.Dimension, withoutDimensions []string) string {
+// stringifyDimensions turns the passed-in `dimensions` into a string while
+// ignoring the passed-in `exclusions`. The result has the following form:
+// dim1:val1//dim2:val2. Order is deterministic so this function can be used to
+// generate map keys.
+func stringifyDimensions(dimensions []*sfxpb.Dimension, exclusions []string) string {
 	const aggregationKeyDelimiter = "//"
 	var aggregationKeyParts = make([]string, 0, len(dimensions))
 	for _, d := range dimensions {
-		if !dimensionIn(d, withoutDimensions) {
+		if !dimensionIn(d, exclusions) {
 			aggregationKeyParts = append(aggregationKeyParts, fmt.Sprintf("%s:%s", d.Key, d.Value))
 		}
 	}

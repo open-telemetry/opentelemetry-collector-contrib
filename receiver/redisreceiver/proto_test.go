@@ -19,10 +19,9 @@ import (
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestServiceName(t *testing.T) {
@@ -114,11 +113,11 @@ func TestKeyspaceMetrics(t *testing.T) {
 }
 
 func TestNewProtoMetric(t *testing.T) {
-	serverStartTime, _ := ptypes.TimestampProto(time.Unix(900, 0))
+	serverStartTime := timestamppb.New(time.Unix(900, 0))
 	tests := []struct {
 		name     string
 		mdType   metricspb.MetricDescriptor_Type
-		expected *timestamp.Timestamp
+		expected *timestamppb.Timestamp
 	}{
 		{"cumulative int", metricspb.MetricDescriptor_CUMULATIVE_INT64, serverStartTime},
 		{"cumulative double", metricspb.MetricDescriptor_CUMULATIVE_DOUBLE, serverStartTime},
@@ -151,19 +150,19 @@ func getProtoMetric(t *testing.T, redisMetric *redisMetric, serverName string) *
 	return metric
 }
 
-func getMetricData(t *testing.T, metric *redisMetric, serverName string) *consumerdata.MetricsData {
+func getMetricData(t *testing.T, metric *redisMetric, serverName string) consumerdata.MetricsData {
 	md, warnings, err := getMetricDataErr(metric, serverName)
 	require.Nil(t, err)
 	require.Nil(t, warnings)
 	return md
 }
 
-func getMetricDataErr(metric *redisMetric, serverName string) (*consumerdata.MetricsData, []error, error) {
+func getMetricDataErr(metric *redisMetric, serverName string) (consumerdata.MetricsData, []error, error) {
 	redisMetrics := []*redisMetric{metric}
 	svc := newRedisSvc(newFakeClient())
 	info, err := svc.info()
 	if err != nil {
-		return nil, nil, err
+		return consumerdata.MetricsData{}, nil, err
 	}
 	protoMetrics, warnings := info.buildFixedProtoMetrics(redisMetrics, getDefaultTimeBundle())
 	md := newMetricsData(protoMetrics, serverName)

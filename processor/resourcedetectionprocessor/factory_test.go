@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
-	var factory Factory
-	cfg := factory.CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 	assert.NotNil(t, cfg)
 }
@@ -34,11 +34,34 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, tp)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, nil, cfg)
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
+
+	lp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	assert.NoError(t, err)
+	assert.NotNil(t, lp)
+}
+
+func TestInvalidConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Detectors = []string{"not-existing"}
+
+	tp, err := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopTraceExporter())
+	assert.Error(t, err)
+	assert.Nil(t, tp)
+
+	mp, err := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopMetricsExporter())
+	assert.Error(t, err)
+	assert.Nil(t, mp)
+
+	lp, err := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{}, cfg, exportertest.NewNopLogsExporter())
+	assert.Error(t, err)
+	assert.Nil(t, lp)
 }

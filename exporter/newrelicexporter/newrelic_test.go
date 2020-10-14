@@ -23,12 +23,14 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestLogWriter(t *testing.T) {
@@ -48,14 +50,52 @@ func TestLogWriter(t *testing.T) {
 	assert.Len(t, messages, 2)
 }
 
-func TestExportTraceData(t *testing.T) {
+func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	m := &Mock{make([]Data, 0, 3)}
+	m := &Mock{make([]Data, 0, 1)}
 	srv := m.Server()
 	defer srv.Close()
 
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	c.APIKey, c.SpansURLOverride = "1", srv.URL
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateTraceExporter(context.Background(), params, c)
+	require.NoError(t, err)
+	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
+	require.NoError(t, exp.Shutdown(ctx))
+	assert.Equal(t, expected, m.Spans())
+}
+
+func TestExportTraceDataMinimum(t *testing.T) {
+	td := consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+				SpanId:  []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:    &tracepb.TruncatableString{Value: "root"},
+			},
+		},
+	}
+
+	expected := []Span{
+		{
+			ID:      "0000000000000001",
+			TraceID: "01010101010101010101010101010101",
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"name":              "root",
+			},
+		},
+	}
+
+	testTraceData(t, expected, td)
+}
+
+func TestExportTraceDataFullTrace(t *testing.T) {
 	td := consumerdata.TraceData{
 		Node: &commonpb.Node{
 			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
@@ -88,15 +128,6 @@ func TestExportTraceData(t *testing.T) {
 			},
 		},
 	}
-
-	f := new(Factory)
-	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.SpansURLOverride = "1", srv.URL
-	l := zap.NewNop()
-	exp, err := f.CreateTraceExporter(l, c)
-	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeTraceData(ctx, td))
-	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Span{
 		{
@@ -136,10 +167,10 @@ func TestExportTraceData(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, m.Spans())
+	testTraceData(t, expected, td)
 }
 
-func TestExportMetricData(t *testing.T) {
+func testExportMetricData(t *testing.T, expected []Metric, md consumerdata.MetricsData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -147,6 +178,76 @@ func TestExportMetricData(t *testing.T) {
 	srv := m.Server()
 	defer srv.Close()
 
+	f := NewFactory()
+	c := f.CreateDefaultConfig().(*Config)
+	c.APIKey, c.MetricsURLOverride = "1", srv.URL
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := f.CreateMetricsExporter(context.Background(), params, c)
+	require.NoError(t, err)
+	require.NoError(t, exp.ConsumeMetrics(ctx, internaldata.OCToMetrics(md)))
+	require.NoError(t, exp.Shutdown(ctx))
+	assert.Equal(t, expected, m.Metrics())
+}
+
+func TestExportMetricDataMinimal(t *testing.T) {
+	desc := "physical property of matter that quantitatively expresses hot and cold"
+	unit := "K"
+	md := consumerdata.MetricsData{
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "temperature",
+					Description: desc,
+					Unit:        unit,
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "location"},
+						{Key: "elevation"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "Portland", HasValue: true},
+							{Value: "0", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamppb.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 293.15,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	expected := []Metric{
+		{
+			Name:      "temperature",
+			Type:      "gauge",
+			Value:     293.15,
+			Timestamp: int64(100 * time.Microsecond),
+			Attributes: map[string]interface{}{
+				"collector.name":    name,
+				"collector.version": version,
+				"description":       desc,
+				"unit":              unit,
+				"location":          "Portland",
+				"elevation":         "0",
+			},
+		},
+	}
+
+	testExportMetricData(t, expected, md)
+}
+
+func TestExportMetricDataFull(t *testing.T) {
 	desc := "physical property of matter that quantitatively expresses hot and cold"
 	unit := "K"
 	md := consumerdata.MetricsData{
@@ -173,12 +274,12 @@ func TestExportMetricData(t *testing.T) {
 				Timeseries: []*metricspb.TimeSeries{
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Portland"},
-							{Value: "0"},
+							{Value: "Portland", HasValue: true},
+							{Value: "0", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 100,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -186,7 +287,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 101,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -194,7 +295,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 102,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -205,12 +306,12 @@ func TestExportMetricData(t *testing.T) {
 					},
 					{
 						LabelValues: []*metricspb.LabelValue{
-							{Value: "Denver"},
-							{Value: "5280"},
+							{Value: "Denver", HasValue: true},
+							{Value: "5280", HasValue: true},
 						},
 						Points: []*metricspb.Point{
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 99,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -218,7 +319,7 @@ func TestExportMetricData(t *testing.T) {
 								},
 							},
 							{
-								Timestamp: &timestamp.Timestamp{
+								Timestamp: &timestamppb.Timestamp{
 									Seconds: 106,
 								},
 								Value: &metricspb.Point_DoubleValue{
@@ -231,15 +332,6 @@ func TestExportMetricData(t *testing.T) {
 			},
 		},
 	}
-
-	f := new(Factory)
-	c := f.CreateDefaultConfig().(*Config)
-	c.APIKey, c.MetricsURLOverride = "1", srv.URL
-	l := zap.NewNop()
-	exp, err := f.CreateMetricsExporter(l, c)
-	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeMetricsData(ctx, md))
-	require.NoError(t, exp.Shutdown(ctx))
 
 	expected := []Metric{
 		{
@@ -324,5 +416,5 @@ func TestExportMetricData(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, expected, m.Metrics())
+	testExportMetricData(t, expected, md)
 }

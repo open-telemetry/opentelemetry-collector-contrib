@@ -36,6 +36,7 @@ func TestStabilityMetricsOTLP(t *testing.T) {
 		},
 		contribPerfResultsSummary,
 		nil,
+		nil,
 	)
 }
 
@@ -45,11 +46,12 @@ func TestStabilityMetricsOpenCensus(t *testing.T) {
 		testbed.NewOCMetricDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
 		testbed.NewOCDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      70,
+			ExpectedMaxCPU:      85,
 			ExpectedMaxRAM:      86,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
+		nil,
 		nil,
 	)
 }
@@ -61,10 +63,11 @@ func TestStabilityMetricsCarbon(t *testing.T) {
 		datareceivers.NewCarbonDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      237,
-			ExpectedMaxRAM:      100,
+			ExpectedMaxRAM:      120,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
+		nil,
 		nil,
 	)
 }
@@ -75,11 +78,12 @@ func TestStabilityMetricsSignalFx(t *testing.T) {
 		datasenders.NewSFxMetricDataSender(testbed.GetAvailablePort(t)),
 		datareceivers.NewSFxMetricsDataReceiver(testbed.GetAvailablePort(t)),
 		testbed.ResourceSpec{
-			ExpectedMaxCPU:      83,
+			ExpectedMaxCPU:      120,
 			ExpectedMaxRAM:      95,
 			ResourceCheckPeriod: resourceCheckPeriod,
 		},
 		contribPerfResultsSummary,
+		nil,
 		nil,
 	)
 }

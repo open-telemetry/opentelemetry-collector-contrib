@@ -183,8 +183,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	}
 
 	parentSpanID := ""
-	if psID := span.ParentSpanID(); !isAllZero(psID) {
-		parentSpanID = psID.String()
+	if psID := span.ParentSpanID(); !isAllZero(psID.Bytes()) {
+		parentSpanID = psID.HexString()
 	}
 
 	attributes := span.Attributes()
@@ -214,8 +214,8 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	}
 
 	sentrySpan = &sentry.Span{
-		TraceID:        span.TraceID().String(),
-		SpanID:         span.SpanID().String(),
+		TraceID:        span.TraceID().HexString(),
+		SpanID:         span.SpanID().HexString(),
 		ParentSpanID:   parentSpanID,
 		Description:    description,
 		Op:             op,

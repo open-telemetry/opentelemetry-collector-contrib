@@ -19,14 +19,16 @@ package stackdriverexporter
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	traceexport "go.opentelemetry.io/otel/sdk/export/trace"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -52,9 +54,8 @@ func (*metricsExporter) Name() string {
 	return name
 }
 
-func (te *traceExporter) Shutdown(context.Context) error {
-	te.texporter.Flush()
-	return nil
+func (te *traceExporter) Shutdown(ctx context.Context) error {
+	return te.texporter.Shutdown(ctx)
 }
 
 func (me *metricsExporter) Shutdown(context.Context) error {
@@ -63,31 +64,44 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
+func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, error) {
+	userAgent := strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
 	var copts []option.ClientOption
-	if cfg.UseInsecure {
-		conn, err := grpc.Dial(cfg.Endpoint, grpc.WithInsecure())
-		if err != nil {
-			return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
+	if userAgent != "" {
+		copts = append(copts, option.WithUserAgent(userAgent))
+	}
+	if cfg.Endpoint != "" {
+		if cfg.UseInsecure {
+			// WithGRPCConn option takes precedent over all other supplied options so need to provide user agent here as well
+			var dialOpts []grpc.DialOption
+			if userAgent != "" {
+				dialOpts = append(dialOpts, grpc.WithUserAgent(userAgent))
+			}
+			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithInsecure())...)
+			if err != nil {
+				return nil, fmt.Errorf("cannot configure grpc conn: %w", err)
+			}
+			copts = append(copts, option.WithGRPCConn(conn))
+		} else {
+			copts = append(copts, option.WithEndpoint(cfg.Endpoint))
 		}
-		copts = append(copts, option.WithGRPCConn(conn))
-	} else {
-		copts = append(copts, option.WithEndpoint(cfg.Endpoint))
+	}
+	if cfg.GetClientOptions != nil {
+		copts = append(copts, cfg.GetClientOptions()...)
 	}
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
+		cloudtrace.WithTimeout(cfg.Timeout),
 	}
-	if cfg.Endpoint != "" {
-		copts, err := generateClientOptions(cfg)
-		if err != nil {
-			return nil, err
-		}
-		topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
+	copts, err := generateClientOptions(cfg, version)
+	if err != nil {
+		return nil, err
 	}
+	topts = append(topts, cloudtrace.WithTraceClientOptions(copts))
 	if cfg.NumOfWorkers > 0 {
 		topts = append(topts, cloudtrace.WithMaxNumberOfWorkers(cfg.NumOfWorkers))
 	}
@@ -100,10 +114,13 @@ func newStackdriverTraceExporter(cfg *Config) (component.TraceExporter, error) {
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		tExp.pushTraces,
-		exporterhelper.WithShutdown(tExp.Shutdown))
+		exporterhelper.WithShutdown(tExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
-func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, error) {
+func newStackdriverMetricsExporter(cfg *Config, version string) (component.MetricsExporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -115,14 +132,17 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
+
+		Timeout: cfg.Timeout,
 	}
-	if cfg.Endpoint != "" {
-		copts, err := generateClientOptions(cfg)
-		if err != nil {
-			return nil, err
-		}
-		options.MonitoringClientOptions = copts
+
+	copts, err := generateClientOptions(cfg, version)
+	if err != nil {
+		return nil, err
 	}
+	options.TraceClientOptions = copts
+	options.MonitoringClientOptions = copts
+
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
@@ -135,6 +155,7 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 		}
 		options.MapResource = rm.mapResource
 	}
+
 	sde, serr := stackdriver.NewExporter(options)
 	if serr != nil {
 		return nil, fmt.Errorf("cannot configure Stackdriver metric exporter: %w", serr)
@@ -144,21 +165,33 @@ func newStackdriverMetricsExporter(cfg *Config) (component.MetricsExporter, erro
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		mExp.pushMetrics,
-		exporterhelper.WithShutdown(mExp.Shutdown))
+		exporterhelper.WithShutdown(mExp.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
 func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (int, error) {
-	mds := pdatautil.MetricsToMetricsData(m)
-	dropped := 0
+	var errors []error
+	var totalDropped int
+
+	mds := internaldata.MetricsToOC(m)
 	for _, md := range mds {
-		d, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
-		dropped += d
+		points := numPoints(md)
+		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
+		recordPointCount(ctx, points-dropped, dropped, err)
+		totalDropped += dropped
 		if err != nil {
-			return dropped, err
+			errors = append(errors, err)
 		}
 	}
-	return dropped, nil
+
+	if len(errors) > 0 {
+		return totalDropped, componenterror.CombineErrors(errors)
+	}
+
+	return totalDropped, nil
 }
 
 // pushTraces calls texporter.ExportSpan for each span in the given traces
@@ -166,7 +199,6 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	numSpans := td.SpanCount()
-	goodSpans := 0
 	spans := make([]*traceexport.SpanData, 0, numSpans)
 
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -178,10 +210,20 @@ func (te *traceExporter) pushTraces(ctx context.Context, td pdata.Traces) (int, 
 		}
 	}
 
-	for _, span := range spans {
-		te.texporter.ExportSpan(ctx, span)
-		goodSpans++
+	err := te.texporter.ExportSpans(ctx, spans)
+	if err != nil {
+		errs = append(errs, err)
 	}
+	return numSpans - len(spans), componenterror.CombineErrors(errs)
+}
 
-	return numSpans - goodSpans, componenterror.CombineErrors(errs)
+func numPoints(md consumerdata.MetricsData) int {
+	numPoints := 0
+	for _, metric := range md.Metrics {
+		tss := metric.GetTimeseries()
+		for _, ts := range tss {
+			numPoints += len(ts.GetPoints())
+		}
+	}
+	return numPoints
 }

@@ -24,22 +24,22 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/consumer/pdatautil"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/collection"
 )
 
 type signalfxExporter struct {
-	logger                 *zap.Logger
-	pushMetricsData        func(ctx context.Context, md consumerdata.MetricsData) (droppedTimeSeries int, err error)
-	pushKubernetesMetadata func(metadata []*collection.KubernetesMetadataUpdate) error
+	logger             *zap.Logger
+	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushMetadata       func(metadata []*collection.MetadataUpdate) error
+	pushResourceLogs   func(ctx context.Context, ld pdata.ResourceLogs) (droppedLogRecords int, err error)
+	hostMetadataSyncer *hostmetadata.Syncer
 }
 
 type exporterOptions struct {
@@ -55,8 +55,7 @@ type exporterOptions struct {
 func newSignalFxExporter(
 	config *Config,
 	logger *zap.Logger,
-) (component.MetricsExporter, error) {
-
+) (*signalfxExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
@@ -67,25 +66,22 @@ func newSignalFxExporter(
 			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
 	}
 
-	headers, err := buildHeaders(config)
-	if err != nil {
-		return nil, err
-	}
+	headers := buildHeaders(config)
 
 	dpClient := &sfxDPClient{
-		ingestURL: options.ingestURL,
-		headers:   headers,
-		client: &http.Client{
-			// TODO: What other settings of http.Client to expose via config?
-			//  Or what others change from default values?
-			Timeout: config.Timeout,
+		sfxClientBase: sfxClientBase{
+			ingestURL: options.ingestURL,
+			headers:   headers,
+			client: &http.Client{
+				// TODO: What other settings of http.Client to expose via config?
+				//  Or what others change from default values?
+				Timeout: config.Timeout,
+			},
+			zippers: newGzipPool(),
 		},
-		logger: logger,
-		zippers: sync.Pool{New: func() interface{} {
-			return gzip.NewWriter(nil)
-		}},
+		logger:                 logger,
 		accessTokenPassthrough: config.AccessTokenPassthrough,
-		metricTranslator:       options.metricTranslator,
+		converter:              translation.NewMetricsConverter(logger, options.metricTranslator),
 	}
 
 	dimClient := dimensions.NewDimensionClient(
@@ -106,39 +102,80 @@ func newSignalFxExporter(
 		})
 	dimClient.Start()
 
-	return signalfxExporter{
-		logger:                 logger,
-		pushMetricsData:        dpClient.pushMetricsData,
-		pushKubernetesMetadata: dimClient.PushKubernetesMetadata,
+	var hms *hostmetadata.Syncer
+	if config.SyncHostMetadata {
+		hms = hostmetadata.NewSyncer(logger, dimClient)
+	}
+
+	return &signalfxExporter{
+		logger:             logger,
+		pushMetricsData:    dpClient.pushMetricsData,
+		pushMetadata:       dimClient.PushMetadata,
+		hostMetadataSyncer: hms,
 	}, nil
 }
 
-func (se signalfxExporter) Start(context.Context, component.Host) error {
-	return nil
+func newGzipPool() sync.Pool {
+	return sync.Pool{New: func() interface{} {
+		return gzip.NewWriter(nil)
+	}}
 }
 
-func (se signalfxExporter) Shutdown(context.Context) error {
-	return nil
-}
-
-func (se signalfxExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
-	ctx = obsreport.StartMetricsExportOp(ctx, typeStr)
-	numDroppedTimeSeries := 0
-	var err error
-	for _, md := range pdatautil.MetricsToMetricsData(md) {
-		ndts, cErr := se.pushMetricsData(ctx, md)
-		if cErr != nil {
-			err = cErr
-		}
-		numDroppedTimeSeries += ndts
+func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, error) {
+	if config == nil {
+		return nil, errors.New("nil config")
 	}
 
-	numReceivedTimeSeries, numPoints := pdatautil.MetricAndDataPointCount(md)
+	options, err := config.getOptionsFromConfig()
+	if err != nil {
+		return nil,
+			fmt.Errorf("failed to process %q config: %v", config.Name(), err)
+	}
 
-	obsreport.EndMetricsExportOp(ctx, numPoints, numReceivedTimeSeries, numDroppedTimeSeries, err)
-	return err
+	headers := buildHeaders(config)
+
+	eventClient := &sfxEventClient{
+		sfxClientBase: sfxClientBase{
+			ingestURL: options.ingestURL,
+			headers:   headers,
+			client: &http.Client{
+				// TODO: What other settings of http.Client to expose via config?
+				//  Or what others change from default values?
+				Timeout: config.Timeout,
+			},
+			zippers: newGzipPool(),
+		},
+		logger:                 logger,
+		accessTokenPassthrough: config.AccessTokenPassthrough,
+	}
+
+	return &signalfxExporter{
+		logger:           logger,
+		pushResourceLogs: eventClient.pushResourceLogs,
+	}, nil
 }
 
-func (se signalfxExporter) ConsumeKubernetesMetadata(metadata []*collection.KubernetesMetadataUpdate) error {
-	return se.pushKubernetesMetadata(metadata)
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) (int, error) {
+	numDroppedTimeSeries, err := se.pushMetricsData(ctx, md)
+	if err == nil && se.hostMetadataSyncer != nil {
+		se.hostMetadataSyncer.Sync(md)
+	}
+	return numDroppedTimeSeries, err
+}
+
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) (int, error) {
+	var numDroppedRecords int
+	var err error
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		dropped, thisErr := se.pushResourceLogs(ctx, rls.At(i))
+		numDroppedRecords += dropped
+		err = multierr.Append(err, thisErr)
+	}
+
+	return numDroppedRecords, err
+}
+
+func (se *signalfxExporter) ConsumeMetadata(metadata []*collection.MetadataUpdate) error {
+	return se.pushMetadata(metadata)
 }

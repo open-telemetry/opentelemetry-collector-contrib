@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/interval"
@@ -41,6 +42,7 @@ type receiverOptions struct {
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	k8sAPIClient          kubernetes.Interface
 }
 
 func newReceiver(rOptions *receiverOptions,

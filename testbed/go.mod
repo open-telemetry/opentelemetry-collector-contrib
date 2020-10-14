@@ -10,8 +10,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector v0.8.1-0.20200815205113-8e5c6065eb0e
-	go.uber.org/zap v1.15.0
+	go.opentelemetry.io/collector v0.12.0
+	go.uber.org/zap v1.16.0
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
@@ -22,6 +22,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signa
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../internal/common
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../internal/k8sconfig
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver => ../receiver/k8sclusterreceiver
@@ -29,6 +31,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8scl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../receiver/sapmreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver => ../receiver/signalfxreceiver
-
-// Yet another hack that we need until kubernetes client moves to the new github.com/googleapis/gnostic
-replace github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1

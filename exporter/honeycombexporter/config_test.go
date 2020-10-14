@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(
 		t, path.Join(".", "testdata", "config.yaml"), factories,
@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	assert.Equal(t, len(cfg.Exporters), 3)
 
 	r0 := cfg.Exporters["honeycomb"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -50,5 +50,13 @@ func TestLoadConfig(t *testing.T) {
 		Dataset:          "test-dataset",
 		APIURL:           "https://api.testhost.io",
 		SampleRate:       1,
+	})
+
+	r2 := cfg.Exporters["honeycomb/sample_rate"].(*Config)
+	assert.Equal(t, r2, &Config{
+		ExporterSettings:    configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "honeycomb/sample_rate"},
+		APIURL:              "https://api.honeycomb.io",
+		SampleRate:          5,
+		SampleRateAttribute: "custom.sample_rate",
 	})
 }

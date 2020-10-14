@@ -19,13 +19,13 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // This file implements factory for SignalFx receiver.
@@ -38,24 +38,16 @@ const (
 	defaultEndpoint = ":9943"
 )
 
-// Factory is the factory for SignalFx receiver.
-type Factory struct {
+// NewFactory creates a factory for SignalFx receiver.
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithLogs(createLogsReceiver))
 }
 
-var _ component.ReceiverFactoryOld = (*Factory)(nil)
-
-// Type gets the type of the Receiver config created by this factory.
-func (f *Factory) Type() configmodels.Type {
-	return configmodels.Type(typeStr)
-}
-
-// CustomUnmarshaler returns nil because we don't need custom unmarshaling for this config.
-func (f *Factory) CustomUnmarshaler() component.CustomUnmarshaler {
-	return nil
-}
-
-// CreateDefaultConfig creates the default configuration for SignalFx receiver.
-func (f *Factory) CreateDefaultConfig() configmodels.Receiver {
+func createDefaultConfig() configmodels.Receiver {
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
@@ -86,6 +78,10 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 
 // verify that the configured port is not 0
 func (rCfg *Config) validate() error {
+	if rCfg.Endpoint == "" {
+		return errEmptyEndpoint
+	}
+
 	_, err := extractPortFromEndpoint(rCfg.Endpoint)
 	if err != nil {
 		return err
@@ -93,25 +89,13 @@ func (rCfg *Config) validate() error {
 	return nil
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
-func (f *Factory) CreateTraceReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
+// createMetricsReceiver creates a metrics receiver based on provided config.
+func createMetricsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TraceConsumerOld,
-) (component.TraceReceiver, error) {
-
-	return nil, configerror.ErrDataTypeIsNotSupported
-}
-
-// CreateMetricsReceiver creates a metrics receiver based on provided config.
-func (f *Factory) CreateMetricsReceiver(
-	ctx context.Context,
-	logger *zap.Logger,
-	cfg configmodels.Receiver,
-	consumer consumer.MetricsConsumerOld,
+	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-
 	rCfg := cfg.(*Config)
 
 	err := rCfg.validate()
@@ -119,5 +103,45 @@ func (f *Factory) CreateMetricsReceiver(
 		return nil, err
 	}
 
-	return New(logger, *rCfg, consumer)
+	receiverLock.Lock()
+	r := receivers[rCfg]
+	if r == nil {
+		r = newReceiver(params.Logger, *rCfg)
+		receivers[rCfg] = r
+	}
+	receiverLock.Unlock()
+
+	r.RegisterMetricsConsumer(consumer)
+
+	return r, nil
 }
+
+// createLogsReceiver creates a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+	rCfg := cfg.(*Config)
+
+	err := rCfg.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	receiverLock.Lock()
+	r := receivers[rCfg]
+	if r == nil {
+		r = newReceiver(params.Logger, *rCfg)
+		receivers[rCfg] = r
+	}
+	receiverLock.Unlock()
+
+	r.RegisterLogsConsumer(consumer)
+
+	return r, nil
+}
+
+var receiverLock sync.Mutex
+var receivers = map[*Config]*sfxReceiver{}

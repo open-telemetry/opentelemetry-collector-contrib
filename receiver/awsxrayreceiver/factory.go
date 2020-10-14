@@ -17,21 +17,21 @@ package awsxrayreceiver
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
 
 // NewFactory creates a factory for AWS receiver.
 func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
-		typeStr,
+		awsxray.TypeStr,
 		createDefaultConfig,
 		receiverhelper.WithTraces(createTraceReceiver))
 }
@@ -42,8 +42,8 @@ func createDefaultConfig() configmodels.Receiver {
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
 		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: configmodels.Type(typeStr),
-			NameVal: typeStr,
+			TypeVal: configmodels.Type(awsxray.TypeStr),
+			NameVal: awsxray.TypeStr,
 			// X-Ray daemon defaults to 127.0.0.1:2000 but
 			// the default in OT is 0.0.0.0.
 		},
@@ -51,20 +51,7 @@ func createDefaultConfig() configmodels.Receiver {
 			Endpoint:  "0.0.0.0:2000",
 			Transport: udppoller.Transport,
 		},
-		ProxyServer: &proxyServer{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "0.0.0.0:2000",
-			},
-			ProxyAddress: "",
-			TLSSetting: configtls.TLSClientSetting{
-				Insecure:   false,
-				ServerName: "",
-			},
-			Region:      "",
-			RoleARN:     "",
-			AWSEndpoint: "",
-			LocalMode:   aws.Bool(false),
-		},
+		ProxyServer: proxy.DefaultConfig(),
 	}
 }
 

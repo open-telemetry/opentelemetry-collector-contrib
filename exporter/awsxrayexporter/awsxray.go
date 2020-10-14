@@ -69,7 +69,8 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 							continue
 						}
 
-						document, localErr := translator.MakeSegmentDocumentString(span, resource)
+						document, localErr := translator.MakeSegmentDocumentString(span, resource,
+							config.(*Config).IndexedAttributes, config.(*Config).IndexAllAttributes)
 						if localErr != nil {
 							totalDroppedSpans++
 							continue
@@ -86,8 +87,9 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
 				logger.Debug("request: " + input.String())
 				output, localErr := xrayClient.PutTraceSegments(&input)
-				if localErr != nil && !config.(*Config).LocalMode {
-					err = wrapErrorIfBadRequest(&localErr) // not test mode, so record error
+				if localErr != nil {
+					logger.Debug("response error", zap.Error(localErr))
+					err = wrapErrorIfBadRequest(&localErr) // record error
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())

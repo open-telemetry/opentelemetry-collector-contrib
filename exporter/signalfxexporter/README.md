@@ -1,39 +1,62 @@
 # SignalFx Metrics Exporter
 
-This exporter can be used to send metrics to SignalFx.
+This exporter can be used to send metrics and events to SignalFx.
 
-Apart from metrics, the exporter is also capable of sending metric metadata (properties and tags)
-to SignalFx. Currently, only metric metadata updates from the [k8s_cluster receiver](../../receiver/k8sclusterreceiver/README.md)
-are supported.
+Apart from metrics, the exporter is also capable of sending metric metadata
+(properties and tags) to SignalFx. Currently, only metric metadata updates from
+the [k8s_cluster receiver](../../receiver/k8sclusterreceiver/README.md) are
+supported.
 
 The following configuration options are required:
 
-- `access_token` (no default): AccessToken is the authentication token provided
-by SignalFx.
-- `realm` (no default): SignalFx realm where the data will be received.
+- `access_token` (no default): The access token is the authentication token
+  provided by SignalFx.
+- Either `realm` or both `api_url` and `ingest_url`. Both `api_url` and
+  `ingest_url` take precedence over `realm`. See below for more information.
 
 The following configuration options can also be configured:
 
+- `access_token_passthrough`: (default = `true`) Whether to use
+  `"com.splunk.signalfx.access_token"` metric resource label, if any, as the
+  SignalFx access token.  In either case this label will be dropped during
+  final translation.  Intended to be used in tandem with identical
+  configuration option for [SignalFx
+  receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint
+  origin.
+- `api_url` (no default): Destination to which SignalFx [properties and
+  tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata)
+  are sent. If `realm` is set, this option is derived and will be
+  `https://api.{realm}.signalfx.com/`. If a value is explicitly set, the value
+  of `realm` will not be used in determining `api_url`. The explicit value will
+  be used instead.
 - `headers` (no default): Headers to pass in the payload.
-- `timeout` (default = 5s): Amount of time to wait for a send operation to complete.
-- `ingest_url` (no default): Destination
-where SignalFx metrics are sent. If `realm` is set, this option is derived and will be
-`https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is explicitly set, the
-value of `realm` will not be used in determining `ingest_url`. The explicit value will
-be used instead. If path is not specified, `/v2/datapoint` is used.
-- `api_url` (no default): Destination to which SignalFx
-[properties and tags](https://docs.signalfx.com/en/latest/metrics-metadata/metrics-metadata.html#metrics-metadata) are sent.
-If `realm` is set, this option is derived and will be `https://api.{realm}.signalfx.com/`. If a value is explicitly
-set, the value of `realm` will not be used in determining `api_url`. The explicit value will be used instead.
-- `log_dimension_updates` (default = `false`): Whether or not to log dimension updates.
-- `access_token_passthrough`: (default = `true`) Whether to use `"com.splunk.signalfx.access_token"` metric resource label, if any, as SFx access token.  In either case this label will be dropped during final translation.  Intended to be used in tandem with identical configuration option for [SignalFx receiver](../../receiver/signalfxreceiver/README.md) to preserve datapoint origin.
-- `send_compatible_metrics` (default = `false`): Whether metrics must be translated to a format 
-backward-compatible with SignalFx naming conventions.
-- `translation_rules`: Set of rules on how to translate metrics to a SignalFx compatible format
-If not provided explicitly, the rules defined in `translations/config/default.yaml` are used.
-Used only when `send_compatible_metrics` set to `true`.
-
-Note: Either `realm` or both `ingest_url` and `api_url` should be explicitly set.
+- `ingest_url` (no default): Destination where SignalFx metrics are sent. If
+  `realm` is set, this option is derived and will be
+  `https://ingest.{realm}.signalfx.com/v2/datapoint`.  If a value is explicitly
+  set, the value of `realm` will not be used in determining `ingest_url`. The
+  explicit value will be used instead. If path is not specified,
+  `/v2/datapoint` is used.
+- `log_dimension_updates` (default = `false`): Whether or not to log dimension
+  updates.
+- `realm` (no default): SignalFx realm where the data will be received.
+- `send_compatible_metrics` (default = `false`): Whether metrics must be
+  translated to a format backward-compatible with SignalFx naming conventions.
+- `timeout` (default = 5s): Amount of time to wait for a send operation to
+  complete.
+- `translation_rules`: Set of rules on how to translate metrics to a SignalFx 
+  compatible format. Rules defined in `translation/constants.go` are used by 
+  default. Applicable only when `send_compatible_metrics` set to `true`.
+- `sync_host_metadata`: Defines whether the exporter should scrape host metadata
+  and send it as property updates to SignalFx backend. Disabled by default.
+  IMPORTANT: Host metadata synchronization relies on `resourcedetection` 
+  processor. If this option is enabled make sure that `resourcedetection` 
+  processor is enabled in the pipeline with one of the cloud provider detectors
+  or environment variable detector setting a unique value to `host.name` attribute 
+  within your k8s cluster. And keep `override=true` in resourcedetection config.
+- `exclude_metrics`: metric names that will be excluded from sending
+  to Signalfx backend. If `send_compatible_metrics` or `translation_rules` 
+  options are enabled, the exclusion will be applied on translated metrics.
+- To configure queuing and retries see [here](https://github.com/open-telemetry/opentelemetry-collector/tree/master/exporter/exporterhelper#configuration)
 
 Example:
 
@@ -47,6 +70,21 @@ exporters:
       dot.test: test
     realm: us1
     timeout: 5s
+```
+
+> :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
+
+```yaml
+service:
+  pipelines:
+    metrics:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
+    logs:
+      receivers: [signalfx]
+      processors: [memory_limiter, batch]
+      exporters: [signalfx]
 ```
 
 Beyond standard YAML configuration as outlined in the sections that follow,

@@ -20,9 +20,8 @@ import (
 	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // spanAttributesToMap converts an opencensus proto Span_Attributes object into a map
@@ -65,11 +64,11 @@ func hasRemoteParent(span *tracepb.Span) bool {
 }
 
 // timestampToTime converts a protobuf timestamp into a time.Time.
-func timestampToTime(ts *timestamp.Timestamp) (t time.Time) {
+func timestampToTime(ts *timestamppb.Timestamp) (t time.Time) {
 	if ts == nil {
 		return
 	}
-	return time.Unix(ts.Seconds, int64(ts.Nanos))
+	return time.Unix(ts.Seconds, int64(ts.Nanos)).UTC()
 }
 
 // getStatusCode returns the status code
@@ -94,7 +93,7 @@ func getStatusMessage(status *tracepb.Status) string {
 
 // getTraceLevelfFields extracts the node and resource fields from TraceData that
 // should be added as underlays on every span in a trace.
-func getTraceLevelFields(td consumerdata.TraceData) map[string]interface{} {
+func getTraceLevelFields(node *commonpb.Node, resource *resourcepb.Resource, sourceFormat string) map[string]interface{} {
 	fields := make(map[string]interface{})
 
 	// we want to get the service_name and some opencensus fields that are set when
@@ -110,8 +109,14 @@ func getTraceLevelFields(td consumerdata.TraceData) map[string]interface{} {
 			if len(process.HostName) != 0 {
 				fields["process.hostname"] = process.HostName
 			}
-			fields["process.pid"] = process.Pid
-			fields["opencensus.start_timestamp"] = timestampToTime(process.StartTimestamp)
+			if process.Pid != 0 {
+				fields["process.pid"] = process.Pid
+			}
+
+			startTime := timestampToTime(process.StartTimestamp)
+			if startTime != (time.Time{}) {
+				fields["opencensus.start_timestamp"] = startTime
+			}
 		}
 	}
 
@@ -129,11 +134,11 @@ func getTraceLevelFields(td consumerdata.TraceData) map[string]interface{} {
 		}
 	}
 
-	nodeFields(td.Node, fields)
-	resourceFields(td.Resource, fields)
+	nodeFields(node, fields)
+	resourceFields(resource, fields)
 
-	if sourceFormat := td.SourceFormat; len(sourceFormat) > 0 {
-		fields["source_format"] = td.SourceFormat
+	if sourceFormat := sourceFormat; len(sourceFormat) > 0 {
+		fields["source_format"] = sourceFormat
 	}
 
 	return fields

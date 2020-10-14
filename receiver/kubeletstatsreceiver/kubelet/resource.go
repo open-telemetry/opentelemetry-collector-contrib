@@ -15,6 +15,8 @@
 package kubelet
 
 import (
+	"fmt"
+
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -48,7 +50,10 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 	}
 	// augment the container resource with pod labels
 	labels[conventions.AttributeK8sContainer] = s.Name
-	err := metadata.setExtraLabels(labels, labels[conventions.AttributeK8sPodUID], labels[conventions.AttributeK8sContainer])
+	err := metadata.setExtraLabels(
+		labels, labels[conventions.AttributeK8sPodUID],
+		MetadataLabelContainerID, labels[conventions.AttributeK8sContainer],
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
 
@@ -59,9 +64,28 @@ func containerResource(pod *resourcepb.Resource, s stats.ContainerStats, metadat
 	}, nil
 }
 
-func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats) *resourcepb.Resource {
+func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats, metadata Metadata) (*resourcepb.Resource, error) {
 	labels := map[string]string{
 		labelVolumeName: vs.Name,
+	}
+
+	err := metadata.setExtraLabels(
+		labels, pod.Labels[conventions.AttributeK8sPodUID],
+		MetadataLabelVolumeType, labels[labelVolumeName],
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to set extra labels from metadata")
+	}
+
+	if labels[labelVolumeType] == labelValuePersistentVolumeClaim {
+		volCacheID := fmt.Sprintf("%s/%s", pod.Labels[conventions.AttributeK8sPodUID], vs.Name)
+		err = metadata.DetailedPVCLabelsSetter(
+			volCacheID, labels[labelPersistentVolumeClaimName],
+			pod.Labels[conventions.AttributeK8sNamespace], labels,
+		)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to set labels from volume claim")
+		}
 	}
 
 	// Collect relevant Pod labels to be able to associate the volume to it.
@@ -69,11 +93,8 @@ func volumeResource(pod *resourcepb.Resource, vs stats.VolumeStats) *resourcepb.
 	labels[conventions.AttributeK8sPod] = pod.Labels[conventions.AttributeK8sPod]
 	labels[conventions.AttributeK8sNamespace] = pod.Labels[conventions.AttributeK8sNamespace]
 
-	//TODO: Optionally add more labels through the /pods endpoint and
-	// the Kubernetes API. Will make PRs for those enhancements separately.
-
 	return &resourcepb.Resource{
 		Type:   "k8s",
 		Labels: labels,
-	}
+	}, nil
 }

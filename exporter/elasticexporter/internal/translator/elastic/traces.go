@@ -17,6 +17,7 @@
 package elastic
 
 import (
+	"fmt"
 	"net"
 	"net/url"
 	"strconv"
@@ -30,12 +31,14 @@ import (
 
 // EncodeSpan encodes an OpenTelemetry span, and instrumentation library information,
 // as a transaction or span line, writing to w.
+//
+// TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) error {
 	var spanID, parentID model.SpanID
 	var traceID model.TraceID
-	copy(spanID[:], otlpSpan.SpanID())
-	copy(traceID[:], otlpSpan.TraceID())
-	copy(parentID[:], otlpSpan.ParentSpanID())
+	copy(spanID[:], otlpSpan.SpanID().Bytes())
+	copy(traceID[:], otlpSpan.TraceID().Bytes())
+	copy(parentID[:], otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
 	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()
@@ -249,7 +252,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 
 		// net.*
 		case conventions.AttributeNetPeerName:
-			netPeerIP = v.StringVal()
+			netPeerName = v.StringVal()
 		case conventions.AttributeNetPeerIP:
 			netPeerIP = v.StringVal()
 		case conventions.AttributeNetPeerPort:
@@ -277,6 +280,12 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		}
 	})
 
+	destPort := netPeerPort
+	destAddr := netPeerName
+	if destAddr == "" {
+		destAddr = netPeerIP
+	}
+
 	span.Type = "app"
 	if context.model.HTTP != nil {
 		span.Type = "external"
@@ -288,25 +297,58 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 				// a failsafe.
 				context.http.URL.Scheme = "http"
 			}
-			if context.http.URL.Host == "" {
-				hostname := netPeerName
-				if hostname == "" {
-					hostname = netPeerIP
+
+			if context.http.URL.Host != "" {
+				// Set destination.{address,port} from http.url.host.
+				destAddr = context.http.URL.Hostname()
+				if portString := context.http.URL.Port(); portString != "" {
+					destPort, _ = strconv.Atoi(context.http.URL.Port())
+				} else {
+					destPort = schemeDefaultPort(context.http.URL.Scheme)
 				}
-				if hostname != "" {
-					host := hostname
-					if netPeerPort > 0 {
-						port := strconv.Itoa(netPeerPort)
-						host = net.JoinHostPort(hostname, port)
-					}
-					context.http.URL.Host = host
+			} else if destAddr != "" {
+				// Set http.url.host from net.peer.*
+				host := destAddr
+				if destPort > 0 {
+					port := strconv.Itoa(destPort)
+					host = net.JoinHostPort(destAddr, port)
+				}
+				context.http.URL.Host = host
+				if destPort == 0 {
+					// Set destPort after setting http.url.host, so that
+					// we don't include the default port there.
+					destPort = schemeDefaultPort(context.http.URL.Scheme)
 				}
 			}
+
+			// See https://github.com/elastic/apm/issues/180 for rules about setting
+			// destination.service.* for external HTTP requests.
+			destinationServiceURL := url.URL{Scheme: context.http.URL.Scheme, Host: context.http.URL.Host}
+			destinationServiceResource := destinationServiceURL.Host
+			if destPort != 0 && destPort == schemeDefaultPort(context.http.URL.Scheme) {
+				if destinationServiceURL.Port() != "" {
+					destinationServiceURL.Host = destinationServiceURL.Hostname()
+				} else {
+					destinationServiceResource = fmt.Sprintf("%s:%d", destinationServiceResource, destPort)
+				}
+			}
+			context.setDestinationService(destinationServiceURL.String(), destinationServiceResource)
 		}
 	}
 	if context.model.Database != nil {
 		span.Type = "db"
 		span.Subtype = context.model.Database.Type
+		if span.Subtype != "" {
+			// For database requests, we currently just identify the
+			// destination service by db.system.
+			context.setDestinationService(span.Subtype, span.Subtype)
+		}
+	}
+	if destAddr != "" {
+		context.setDestinationAddress(destAddr, destPort)
+	}
+	if context.model.Destination != nil && context.model.Destination.Service != nil {
+		context.model.Destination.Service.Type = span.Type
 	}
 	span.Context = context.modelContext()
 	return nil
@@ -416,16 +458,19 @@ func (c *transactionContext) setHTTPStatusCode(statusCode int) {
 }
 
 type spanContext struct {
-	model   model.SpanContext
-	http    model.HTTPSpanContext
-	httpURL url.URL
-	db      model.DatabaseSpanContext
+	model              model.SpanContext
+	http               model.HTTPSpanContext
+	httpURL            url.URL
+	db                 model.DatabaseSpanContext
+	destination        model.DestinationSpanContext
+	destinationService model.DestinationServiceSpanContext
 }
 
 func (c *spanContext) modelContext() *model.SpanContext {
 	switch {
 	case c.model.HTTP != nil:
 	case c.model.Database != nil:
+	case c.model.Destination != nil:
 	case len(c.model.Tags) != 0:
 	default:
 		return nil
@@ -491,4 +536,27 @@ func (c *spanContext) setDatabaseStatement(dbStatement string) {
 func (c *spanContext) setDatabaseUser(dbUser string) {
 	c.db.User = truncate(dbUser)
 	c.model.Database = &c.db
+}
+
+func (c *spanContext) setDestinationAddress(address string, port int) {
+	c.destination.Address = truncate(address)
+	c.destination.Port = port
+	c.model.Destination = &c.destination
+}
+
+func (c *spanContext) setDestinationService(name, resource string) {
+	c.destinationService.Name = truncate(name)
+	c.destinationService.Resource = truncate(resource)
+	c.destination.Service = &c.destinationService
+	c.model.Destination = &c.destination
+}
+
+func schemeDefaultPort(scheme string) int {
+	switch scheme {
+	case "http":
+		return 80
+	case "https":
+		return 443
+	}
+	return 0
 }

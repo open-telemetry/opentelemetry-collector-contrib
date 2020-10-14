@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
@@ -32,6 +32,7 @@ const (
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
+var processorCapabilities = component.ProcessorCapabilities{MutatesConsumedData: true}
 
 // NewFactory returns a new factory for the k8s processor.
 func NewFactory() component.ProcessorFactory {
@@ -39,7 +40,9 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		processorhelper.WithTraces(createTraceProcessor),
-		processorhelper.WithMetrics(createMetricsProcessor))
+		processorhelper.WithMetrics(createMetricsProcessor),
+		processorhelper.WithLogs(createLogsProcessor),
+	)
 }
 
 func createDefaultConfig() configmodels.Processor {
@@ -53,21 +56,119 @@ func createDefaultConfig() configmodels.Processor {
 }
 
 func createTraceProcessor(
-	_ context.Context,
+	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextTraceConsumer consumer.TraceConsumer,
 ) (component.TraceProcessor, error) {
-	return newTraceProcessor(params.Logger, nextTraceConsumer, kubeClientProvider, createProcessorOpts(cfg)...)
+	return createTraceProcessorWithOptions(ctx, params, cfg, nextTraceConsumer)
+}
+
+func createLogsProcessor(
+	ctx context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextLogsConsumer consumer.LogsConsumer,
+) (component.LogsProcessor, error) {
+	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
 }
 
 func createMetricsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextMetricsConsumer consumer.MetricsConsumer,
 ) (component.MetricsProcessor, error) {
-	return newMetricsProcessor(params.Logger, nextMetricsConsumer, kubeClientProvider, createProcessorOpts(cfg)...)
+	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
+}
+
+func createTraceProcessorWithOptions(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextTraceConsumer consumer.TraceConsumer,
+	options ...Option,
+) (component.TraceProcessor, error) {
+	kp, err := createKubernetesProcessor(params, cfg, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewTraceProcessor(
+		cfg,
+		nextTraceConsumer,
+		kp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(kp.Start),
+		processorhelper.WithShutdown(kp.Shutdown))
+}
+
+func createMetricsProcessorWithOptions(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextMetricsConsumer consumer.MetricsConsumer,
+	options ...Option,
+) (component.MetricsProcessor, error) {
+	kp, err := createKubernetesProcessor(params, cfg, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewMetricsProcessor(
+		cfg,
+		nextMetricsConsumer,
+		kp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(kp.Start),
+		processorhelper.WithShutdown(kp.Shutdown))
+}
+
+func createLogsProcessorWithOptions(
+	_ context.Context,
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	nextLogsConsumer consumer.LogsConsumer,
+	options ...Option,
+) (component.LogsProcessor, error) {
+	kp, err := createKubernetesProcessor(params, cfg, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	return processorhelper.NewLogsProcessor(
+		cfg,
+		nextLogsConsumer,
+		kp,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(kp.Start),
+		processorhelper.WithShutdown(kp.Shutdown))
+}
+
+func createKubernetesProcessor(
+	params component.ProcessorCreateParams,
+	cfg configmodels.Processor,
+	options ...Option,
+) (*kubernetesprocessor, error) {
+	kp := &kubernetesprocessor{logger: params.Logger}
+
+	allOptions := append(createProcessorOpts(cfg), options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			return nil, err
+		}
+	}
+
+	// This might have been set by an option already
+	if kp.kc == nil {
+		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return kp, nil
 }
 
 func createProcessorOpts(cfg configmodels.Processor) []Option {

@@ -28,7 +28,7 @@ import (
 )
 
 func TestCronJobMetrics(t *testing.T) {
-	cj := NewCronJob("1")
+	cj := newCronJob("1")
 
 	actualResourceMetrics := getMetricsForCronJob(cj)
 
@@ -44,12 +44,12 @@ func TestCronJobMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s/cronjob/active_jobs",
+	testutils.AssertMetrics(t, actualResourceMetrics[0].metrics[0], "k8s.cronjob.active_jobs",
 		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
 func TestCronJobMetadata(t *testing.T) {
-	cj := NewCronJob("1")
+	cj := newCronJob("1")
 
 	actualMetadata := getMetadataForCronJob(cj)
 
@@ -74,7 +74,7 @@ func TestCronJobMetadata(t *testing.T) {
 	)
 }
 
-func NewCronJob(id string) *batchv1beta1.CronJob {
+func newCronJob(id string) *batchv1beta1.CronJob {
 	return &batchv1beta1.CronJob{
 		ObjectMeta: v1.ObjectMeta{
 			Name:        "test-cronjob-" + id,

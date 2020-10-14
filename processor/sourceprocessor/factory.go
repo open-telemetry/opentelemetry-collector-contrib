@@ -16,9 +16,9 @@ package sourceprocessor
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configerror"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
 )
@@ -45,19 +45,17 @@ const (
 	defaultSourceHostKey      = "source_host"
 )
 
-// Factory is the factory for OpenCensus exporter.
-type Factory struct {
+
+// NewFactory returns a new factory for the Span processor.
+func NewFactory() component.ProcessorFactory {
+	return processorhelper.NewFactory(
+		typeStr,
+		createDefaultConfig,
+		processorhelper.WithTraces(createTraceProcessor))
 }
 
-var _ component.ProcessorFactory = (*Factory)(nil)
-
-// Type gets the type of the Option config created by this factory.
-func (Factory) Type() configmodels.Type {
-	return typeStr
-}
-
-// CreateDefaultConfig creates the default configuration for processor.
-func (Factory) CreateDefaultConfig() configmodels.Processor {
+// createDefaultConfig creates the default configuration for processor.
+func createDefaultConfig() configmodels.Processor {
 	return &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
 			TypeVal: typeStr,
@@ -82,22 +80,12 @@ func (Factory) CreateDefaultConfig() configmodels.Processor {
 }
 
 // CreateTraceProcessor creates a trace processor based on this config.
-func (f *Factory) CreateTraceProcessor(
+func createTraceProcessor(
 	_ context.Context,
 	_ component.ProcessorCreateParams,
-	nextConsumer consumer.TraceConsumer,
-	cfg configmodels.Processor) (component.TraceProcessor, error) {
+	cfg configmodels.Processor,
+	nextConsumer consumer.TraceConsumer) (component.TraceProcessor, error) {
 
 	oCfg := cfg.(*Config)
 	return newSourceTraceProcessor(nextConsumer, oCfg)
-}
-
-// CreateMetricsProcessor creates a metric processor based on this config.
-func (f *Factory) CreateMetricsProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateParams,
-	_ consumer.MetricsConsumer,
-	_ configmodels.Processor) (component.MetricsProcessor, error) {
-	// Span Processor does not support Metrics.
-	return nil, configerror.ErrDataTypeIsNotSupported
 }

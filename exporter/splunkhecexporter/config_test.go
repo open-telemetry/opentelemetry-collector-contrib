@@ -15,6 +15,7 @@
 package splunkhecexporter
 
 import (
+	"context"
 	"net/url"
 	"path"
 	"testing"
@@ -22,9 +23,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.Nil(t, err)
 
-	factory := &Factory{}
+	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
@@ -61,11 +64,25 @@ func TestLoadConfig(t *testing.T) {
 		SourceType:     "otel",
 		Index:          "metrics",
 		MaxConnections: 100,
-		Timeout:        10 * time.Second,
+		TimeoutSettings: exporterhelper.TimeoutSettings{
+			Timeout: 10 * time.Second,
+		},
+		RetrySettings: exporterhelper.RetrySettings{
+			Enabled:         true,
+			InitialInterval: 10 * time.Second,
+			MaxInterval:     1 * time.Minute,
+			MaxElapsedTime:  10 * time.Minute,
+		},
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 2,
+			QueueSize:    10,
+		},
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateMetricsExporter(zap.NewNop(), e1)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	te, err := factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

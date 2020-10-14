@@ -23,7 +23,8 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -77,60 +78,77 @@ func newExporter(l *zap.Logger, c configmodels.Exporter) (*exporter, error) {
 	}, nil
 }
 
-func (e exporter) pushTraceData(ctx context.Context, td consumerdata.TraceData) (int, error) {
+func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, error) {
 	var errs []error
 	goodSpans := 0
 
-	transform := &transformer{
-		ServiceName: td.Node.ServiceInfo.Name,
-		Resource:    td.Resource,
-	}
+	octds := internaldata.TraceDataToOC(td)
+	for _, octd := range octds {
 
-	for _, span := range td.Spans {
-		nrSpan, err := transform.Span(span)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		var srv string
+		if octd.Node != nil && octd.Node.ServiceInfo != nil {
+			srv = octd.Node.ServiceInfo.Name
 		}
-		err = e.harvester.RecordSpan(nrSpan)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+
+		transform := &transformer{
+			ServiceName: srv,
+			Resource:    octd.Resource,
 		}
-		goodSpans++
+
+		for _, span := range octd.Spans {
+			nrSpan, err := transform.Span(span)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			err = e.harvester.RecordSpan(nrSpan)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			goodSpans++
+		}
 	}
 
 	e.harvester.HarvestNow(ctx)
 
-	return len(td.Spans) - goodSpans, componenterror.CombineErrors(errs)
+	return td.SpanCount() - goodSpans, componenterror.CombineErrors(errs)
 }
 
-func (e exporter) pushMetricData(ctx context.Context, md consumerdata.MetricsData) (int, error) {
+func (e exporter) pushMetricData(ctx context.Context, md pdata.Metrics) (int, error) {
 	var errs []error
 	goodMetrics := 0
 
-	transform := &transformer{
-		DeltaCalculator: e.deltaCalculator,
-		ServiceName:     md.Node.ServiceInfo.Name,
-		Resource:        md.Resource,
-	}
+	ocmds := internaldata.MetricsToOC(md)
+	for _, ocmd := range ocmds {
+		var srv string
+		if ocmd.Node != nil && ocmd.Node.ServiceInfo != nil {
+			srv = ocmd.Node.ServiceInfo.Name
+		}
 
-	for _, metric := range md.Metrics {
-		nrMetrics, err := transform.Metric(metric)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+		transform := &transformer{
+			DeltaCalculator: e.deltaCalculator,
+			ServiceName:     srv,
+			Resource:        ocmd.Resource,
 		}
-		// TODO: optimize this, RecordMetric locks each call.
-		for _, m := range nrMetrics {
-			e.harvester.RecordMetric(m)
+
+		for _, metric := range ocmd.Metrics {
+			nrMetrics, err := transform.Metric(metric)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			// TODO: optimize this, RecordMetric locks each call.
+			for _, m := range nrMetrics {
+				e.harvester.RecordMetric(m)
+			}
+			goodMetrics++
 		}
-		goodMetrics++
 	}
 
 	e.harvester.HarvestNow(ctx)
 
-	return len(md.Metrics) - goodMetrics, componenterror.CombineErrors(errs)
+	return md.MetricCount() - goodMetrics, componenterror.CombineErrors(errs)
 }
 
 func (e exporter) Shutdown(ctx context.Context) error {

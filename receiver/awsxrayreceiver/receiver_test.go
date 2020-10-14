@@ -18,21 +18,38 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
+)
+
+const (
+	segmentHeader        = "{\"format\": \"json\", \"version\": 1}\n"
+	defaultRegionEnvName = "AWS_DEFAULT_REGION"
+	mockRegion           = "us-west-2"
 )
 
 func TestConsumerCantBeNil(t *testing.T) {
@@ -57,7 +74,31 @@ func TestConsumerCantBeNil(t *testing.T) {
 	assert.True(t, errors.Is(err, componenterror.ErrNilNextConsumer), "consumer is nil should be detected")
 }
 
+func TestProxyCreationFailed(t *testing.T) {
+	addr, err := findAvailableUDPAddress()
+	assert.NoError(t, err, "there should be address available")
+
+	sink := new(exportertest.SinkTraceExporter)
+	_, err = newReceiver(
+		&Config{
+			NetAddr: confignet.NetAddr{
+				Endpoint:  addr,
+				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: "invalidEndpoint",
+				},
+			},
+		},
+		sink,
+		zap.NewNop(),
+	)
+	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
+}
+
 func TestPollerCreationFailed(t *testing.T) {
+	sink := new(exportertest.SinkTraceExporter)
 	_, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -65,17 +106,20 @@ func TestPollerCreationFailed(t *testing.T) {
 				Transport: "tcp",
 			},
 		},
-		new(exportertest.SinkTraceExporter),
+		sink,
 		zap.NewNop(),
 	)
-	assert.EqualError(t, err,
-		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp",
-		"receiver should not be created")
+	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }
 
 func TestCantStartAnInstanceTwice(t *testing.T) {
-	addr, err := findAvailableAddress()
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	sink := new(exportertest.SinkTraceExporter)
 	rcvr, err := newReceiver(
@@ -83,6 +127,11 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -100,8 +149,13 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 }
 
 func TestCantStopAnInstanceTwice(t *testing.T) {
-	addr, err := findAvailableAddress()
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
 	sink := new(exportertest.SinkTraceExporter)
 	rcvr, err := newReceiver(
@@ -109,6 +163,11 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -143,12 +202,26 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 // TODO: Update this test to assert on the format of traces
 // once the transformation from X-Ray segments -> OTLP is done.
 func TestSegmentsPassedToConsumer(t *testing.T) {
-	addr, rcvr, _ := createAndOptionallyStartReceiver(t, true)
+	if runtime.GOOS == "darwin" {
+		t.Skip("skipping test on darwin")
+	}
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	const receiverName = "TestSegmentsPassedToConsumer"
+
+	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverName, nil, true)
 	defer rcvr.Shutdown(context.Background())
 
-	// valid header with invalid body (for now this is ok because we haven't
-	// implemented the X-Ray segment -> OT format conversion)
-	err := writePacket(t, addr, `{"format": "json", "version": 1}`+"\nBody")
+	content, err := ioutil.ReadFile(path.Join("../../internal/awsxray", "testdata", "ddbSample.txt"))
+	assert.NoError(t, err, "can not read raw segment")
+
+	err = writePacket(t, addr, segmentHeader+string(content))
 	assert.NoError(t, err, "can not write packet in the happy case")
 
 	sink := rcvr.(*xrayReceiver).consumer.(*exportertest.SinkTraceExporter)
@@ -157,19 +230,189 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		got := sink.AllTraces()
 		return len(got) == 1
 	}, "consumer should eventually get the X-Ray span")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 18, 0)
 }
 
-func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
-	addr, err := findAvailableAddress()
-	assert.NoError(t, err, "there should be address available")
+func TestTranslatorErrorsOut(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
 
-	sink := new(exportertest.SinkTraceExporter)
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	const receiverName = "TestTranslatorErrorsOut"
+
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName, nil, true)
+	defer rcvr.Shutdown(context.Background())
+
+	err = writePacket(t, addr, segmentHeader+"invalidSegment")
+	assert.NoError(t, err, "can not write packet in the "+receiverName+" case")
+
+	testutil.WaitFor(t, func() bool {
+		logs := recordedLogs.All()
+		fmt.Println(logs)
+		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
+			"X-Ray segment to OT traces conversion failed")
+	}, "poller should log warning because consumer errored out")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+}
+
+func TestSegmentsConsumerErrorsOut(t *testing.T) {
+	doneFn, err := obsreporttest.SetupRecordedMetricsTest()
+	assert.NoError(t, err, "SetupRecordedMetricsTest should succeed")
+	defer doneFn()
+
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	const receiverName = "TestSegmentsConsumerErrorsOut"
+
+	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverName,
+		&mockConsumer{consumeErr: errors.New("can't consume traces")},
+		true)
+	defer rcvr.Shutdown(context.Background())
+
+	content, err := ioutil.ReadFile(path.Join("../../internal/awsxray", "testdata", "serverSample.txt"))
+	assert.NoError(t, err, "can not read raw segment")
+
+	err = writePacket(t, addr, segmentHeader+string(content))
+	assert.NoError(t, err, "can not write packet")
+
+	testutil.WaitFor(t, func() bool {
+		logs := recordedLogs.All()
+		return len(logs) > 0 && strings.Contains(logs[len(logs)-1].Message,
+			"Trace consumer errored out")
+	}, "poller should log warning because consumer errored out")
+
+	obsreporttest.CheckReceiverTracesViews(t, receiverName, udppoller.Transport, 0, 1)
+}
+
+func TestPollerCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestPollerCloseError", nil, false)
+	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
+	rcvr.(*xrayReceiver).poller = mPoller
+	rcvr.(*xrayReceiver).server = &mockProxy{}
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err, mPoller.closeErr.Error(), "expected error")
+}
+
+func TestProxyCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestPollerCloseError", nil, false)
+	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
+	rcvr.(*xrayReceiver).poller = &mockPoller{}
+	rcvr.(*xrayReceiver).server = mProxy
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err, mProxy.closeErr.Error(), "expected error")
+}
+
+func TestBothPollerAndProxyCloseError(t *testing.T) {
+	env := stashEnv()
+	defer restoreEnv(env)
+	os.Setenv(defaultRegionEnvName, mockRegion)
+
+	_, rcvr, _ := createAndOptionallyStartReceiver(t, "TestBothPollerAndProxyCloseError", nil, false)
+	mPoller := &mockPoller{closeErr: errors.New("mockPollerCloseErr")}
+	mProxy := &mockProxy{closeErr: errors.New("mockProxyCloseErr")}
+	rcvr.(*xrayReceiver).poller = mPoller
+	rcvr.(*xrayReceiver).server = mProxy
+	err := rcvr.Shutdown(context.Background())
+	assert.EqualError(t, err,
+		fmt.Sprintf("failed to close proxy: %s: failed to close poller: %s",
+			mProxy.closeErr.Error(), mPoller.closeErr.Error()),
+		"expected error")
+}
+
+type mockConsumer struct {
+	mu         sync.Mutex
+	consumeErr error
+	traces     pdata.Traces
+}
+
+func (m *mockConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.consumeErr != nil {
+		return m.consumeErr
+	}
+	m.traces = td
+	return nil
+}
+
+type mockPoller struct {
+	closeErr error
+}
+
+func (m *mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
+	return make(chan udppoller.RawSegment, 1)
+}
+
+func (m *mockPoller) Start(ctx context.Context) {}
+
+func (m *mockPoller) Close() error {
+	if m.closeErr != nil {
+		return m.closeErr
+	}
+	return nil
+}
+
+type mockProxy struct {
+	closeErr error
+}
+
+func (m *mockProxy) ListenAndServe() error {
+	return errors.New("returning from ListenAndServe() always errors out")
+}
+
+func (m *mockProxy) Close() error {
+	if m.closeErr != nil {
+		return m.closeErr
+	}
+	return nil
+}
+
+func createAndOptionallyStartReceiver(
+	t *testing.T,
+	receiverName string,
+	csu consumer.TraceConsumer,
+	start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
+	addr, err := findAvailableUDPAddress()
+	assert.NoError(t, err, "there should be address available")
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+
+	var sink consumer.TraceConsumer
+	if csu == nil {
+		sink = new(exportertest.SinkTraceExporter)
+	} else {
+		sink = csu
+	}
+
 	logger, recorded := logSetup()
 	rcvr, err := newReceiver(
 		&Config{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				NameVal: receiverName,
+			},
 			NetAddr: confignet.NetAddr{
 				Endpoint:  addr,
 				Transport: udppoller.Transport,
+			},
+			ProxyServer: &proxy.Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: tcpAddr,
+				},
 			},
 		},
 		sink,
@@ -184,10 +427,10 @@ func createAndOptionallyStartReceiver(t *testing.T, start bool) (string, compone
 	return addr, rcvr, recorded
 }
 
-// findAvailableAddress finds an available local address+port and returns it.
+// findAvailableUDPAddress finds an available local address+port and returns it.
 // There might be race condition on the address returned by this function if
 // there's some other code that grab the address before we can listen on it.
-func findAvailableAddress() (string, error) {
+func findAvailableUDPAddress() (string, error) {
 	addr, err := net.ResolveUDPAddr(udppoller.Transport, "localhost:0")
 	if err != nil {
 		return "", err
@@ -212,7 +455,7 @@ func writePacket(t *testing.T, addr, toWrite string) error {
 	if err != nil {
 		return err
 	}
-	assert.Equal(t, len(toWrite), n, "exunpected number of bytes written")
+	assert.Equal(t, len(toWrite), n, "unexpected number of bytes written")
 	return nil
 }
 

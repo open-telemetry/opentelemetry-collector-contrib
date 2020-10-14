@@ -54,7 +54,9 @@ func (mtp *metricsTransformProcessor) groupTimeseriesByNewLabelValue(metric *met
 		}
 
 		key, newLabelValues := mtp.newLabelValuesAsKey(labelIdx, timeseries, newValue, aggregatedValuesSet)
-		key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
+		if timeseries.StartTimestamp != nil {
+			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
+		}
 
 		timeseriesGroup, ok := groupedTimeseries[key]
 		if ok {

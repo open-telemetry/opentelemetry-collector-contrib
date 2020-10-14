@@ -44,10 +44,10 @@ func TestRequestQuotaMetrics(t *testing.T) {
 		},
 	)
 
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[0], "k8s/resource_quota/hard_limt",
+	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[0], "k8s.resource_quota.hard_limit",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 2000)
 
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[1], "k8s/resource_quota/used",
+	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].metrics[1], "k8s.resource_quota.used",
 		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 1000)
 }
 

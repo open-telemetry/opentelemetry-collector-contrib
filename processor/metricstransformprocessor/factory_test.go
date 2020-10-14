@@ -27,17 +27,18 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 )
 
 func TestType(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	pType := factory.Type()
 	assert.Equal(t, pType, configmodels.Type("metricstransform"))
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: configmodels.ProcessorSettings{
@@ -80,20 +81,18 @@ func TestCreateProcessors(t *testing.T) {
 		factories, err := componenttest.ExampleComponents()
 		assert.NoError(t, err)
 
-		factory := &Factory{}
+		factory := NewFactory()
 		factories.Processors[typeStr] = factory
 		config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configName), factories)
 		assert.NoError(t, err)
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				factory := &Factory{}
-
 				tp, tErr := factory.CreateTraceProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
-					cfg)
+					cfg,
+					exportertest.NewNopTraceExporter())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -101,8 +100,8 @@ func TestCreateProcessors(t *testing.T) {
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
-					nil,
-					cfg)
+					cfg,
+					exportertest.NewNopMetricsExporter())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
@@ -152,7 +151,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {
-	factory := Factory{}
+	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 
@@ -163,13 +162,18 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			NewName:    "new-name",
 			Operations: []Operation{
 				{
+					Action:   AddLabel,
+					NewLabel: "new-label",
+					NewValue: "new-value {{version}}",
+				},
+				{
 					Action:   UpdateLabel,
 					Label:    "label",
 					NewLabel: "new-label",
 					ValueActions: []ValueAction{
 						{
 							Value:    "value",
-							NewValue: "new/value",
+							NewValue: "new/value {{version}}",
 						},
 					},
 				},
@@ -197,17 +201,24 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 			Operations: []internalOperation{
 				{
 					configOperation: Operation{
+						Action:   AddLabel,
+						NewLabel: "new-label",
+						NewValue: "new-value v0.0.1",
+					},
+				},
+				{
+					configOperation: Operation{
 						Action:   UpdateLabel,
 						Label:    "label",
 						NewLabel: "new-label",
 						ValueActions: []ValueAction{
 							{
 								Value:    "value",
-								NewValue: "new/value",
+								NewValue: "new/value v0.0.1",
 							},
 						},
 					},
-					valueActionsMapping: map[string]string{"value": "new/value"},
+					valueActionsMapping: map[string]string{"value": "new/value v0.0.1"},
 				},
 				{
 					configOperation: Operation{
@@ -237,7 +248,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms := buildHelperConfig(oCfg)
+	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]

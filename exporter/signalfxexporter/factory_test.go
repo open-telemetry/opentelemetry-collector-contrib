@@ -16,19 +16,23 @@ package signalfxexporter
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/signalfx/com_signalfx_metrics_protobuf/model"
+	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 )
@@ -75,6 +79,13 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
+	logExp, err := factory.CreateLogsExporter(
+		context.Background(),
+		component.ExporterCreateParams{Logger: zap.NewNop()},
+		cfg)
+	assert.NoError(t, err)
+	require.NotNil(t, logExp)
+
 	assert.NoError(t, exp.Shutdown(context.Background()))
 }
 
@@ -90,7 +101,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 			"added-entry": "added value",
 			"dot.test":    "test",
 		},
-		Timeout: 2 * time.Second,
+		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
 	}
 
 	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
@@ -111,9 +122,9 @@ func TestFactory_CreateMetricsExporterFails(t *testing.T) {
 					TypeVal: configmodels.Type(typeStr),
 					NameVal: typeStr,
 				},
-				AccessToken: "testToken",
-				Realm:       "lab",
-				Timeout:     -2 * time.Second,
+				AccessToken:     "testToken",
+				Realm:           "lab",
+				TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
 			},
 			errorMessage: "failed to process \"signalfx\" config: cannot have a negative \"timeout\"",
 		},
@@ -169,9 +180,9 @@ func TestCreateMetricsExporterWithDefaultTranslaitonRules(t *testing.T) {
 
 	// Validate that default translation rules are loaded
 	// Expected values has to be updated once default config changed
-	assert.Equal(t, 27, len(config.TranslationRules))
+	assert.Equal(t, 49, len(config.TranslationRules))
 	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
-	assert.Equal(t, 32, len(config.TranslationRules[0].Mapping))
+	assert.Equal(t, 33, len(config.TranslationRules[0].Mapping))
 }
 
 func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
@@ -204,21 +215,73 @@ func TestCreateMetricsExporterWithSpecifiedTranslaitonRules(t *testing.T) {
 	assert.Equal(t, "new_dimension", config.TranslationRules[0].Mapping["old_dimension"])
 }
 
+func TestCreateMetricsExporterWithExcludedMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken:    "testToken",
+		Realm:          "us1",
+		ExcludeMetrics: []string{"metric1"},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	assert.Equal(t, 1, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[0].Action)
+	assert.Equal(t, 1, len(config.TranslationRules[0].MetricNames))
+	assert.True(t, config.TranslationRules[0].MetricNames["metric1"])
+}
+
+func TestCreateMetricsExporterWithDefinedRulesAndExcludedMetrics(t *testing.T) {
+	config := &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
+		AccessToken: "testToken",
+		Realm:       "us1",
+		TranslationRules: []translation.Rule{
+			{
+				Action: translation.ActionRenameDimensionKeys,
+				Mapping: map[string]string{
+					"old_dimension": "new_dimension",
+				},
+			},
+		},
+		ExcludeMetrics: []string{"metric1"},
+	}
+
+	te, err := createMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, config)
+	require.NoError(t, err)
+	require.NotNil(t, te)
+
+	assert.Equal(t, 2, len(config.TranslationRules))
+	assert.Equal(t, translation.ActionRenameDimensionKeys, config.TranslationRules[0].Action)
+	assert.Equal(t, translation.ActionDropMetrics, config.TranslationRules[1].Action)
+	assert.Equal(t, 1, len(config.TranslationRules[1].MetricNames))
+	assert.True(t, config.TranslationRules[1].MetricNames["metric1"])
+}
+
 func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules)
+	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
-	data := md()
+	data := testMetricsData()
 
-	translated, _ := translation.MetricDataToSignalFxV2(zap.NewNop(), tr, data)
+	c := translation.NewMetricsConverter(zap.NewNop(), tr)
+	translated, _ := c.MetricDataToSignalFxV2(data, nil)
 	require.NotNil(t, translated)
 
-	metrics := make(map[string][]*model.DataPoint)
+	metrics := make(map[string][]*sfxpb.DataPoint)
 	for _, pt := range translated {
 		if _, ok := metrics[pt.Metric]; !ok {
-			metrics[pt.Metric] = make([]*model.DataPoint, 0, 1)
+			metrics[pt.Metric] = make([]*sfxpb.DataPoint, 0, 1)
 		}
 		metrics[pt.Metric] = append(metrics[pt.Metric], pt)
 	}
@@ -232,7 +295,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	// system.disk.ops metric split and dimension rename
 	dps, ok = metrics["disk_ops.read"]
 	require.True(t, ok, "disk_ops.read metrics not found")
-	require.Equal(t, 2, len(dps))
+	require.Equal(t, 4, len(dps))
 	require.Equal(t, int64(4e3), *dps[0].Value.IntValue)
 	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
 	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
@@ -242,13 +305,23 @@ func TestDefaultTranslationRules(t *testing.T) {
 
 	dps, ok = metrics["disk_ops.write"]
 	require.True(t, ok, "disk_ops.write metrics not found")
-	require.Equal(t, 2, len(dps))
+	require.Equal(t, 4, len(dps))
 	require.Equal(t, int64(1e3), *dps[0].Value.IntValue)
 	require.Equal(t, "disk", dps[0].Dimensions[1].Key)
 	require.Equal(t, "sda1", dps[0].Dimensions[1].Value)
 	require.Equal(t, int64(5e3), *dps[1].Value.IntValue)
 	require.Equal(t, "disk", dps[1].Dimensions[1].Key)
 	require.Equal(t, "sda2", dps[1].Dimensions[1].Value)
+
+	// disk_ops.total gauge from system.disk.ops cumulative, where is disk_ops.total
+	// is the cumulative across devices and directions.
+	dps, ok = metrics["disk_ops.total"]
+	require.True(t, ok, "disk_ops.total metrics not found")
+	require.Equal(t, 1, len(dps))
+	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
+	require.Equal(t, 1, len(dps[0].Dimensions))
+	require.Equal(t, "host", dps[0].Dimensions[0].Key)
+	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
 
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
@@ -266,7 +339,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func md() consumerdata.MetricsData {
+func testMetricsData() []consumerdata.MetricsData {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
@@ -284,7 +357,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "used",
 							HasValue: true,
@@ -299,7 +372,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -308,7 +381,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "free",
 							HasValue: true,
@@ -323,7 +396,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -338,7 +411,7 @@ func md() consumerdata.MetricsData {
 					Name:        "system.disk.ops",
 					Description: "Disk operations count.",
 					Unit:        "bytes",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
 					LabelKeys: []*metricspb.LabelKey{
 						{Key: "host"},
 						{Key: "direction"},
@@ -347,7 +420,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -359,7 +432,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -368,7 +441,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -380,7 +453,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -389,7 +462,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -401,7 +474,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -410,7 +483,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -422,11 +495,110 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
 								Int64Value: 5e3,
+							},
+						}},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "system.disk.ops",
+					Description: "Disk operations count.",
+					Unit:        "bytes",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "host"},
+						{Key: "direction"},
+						{Key: "device"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000060,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 6e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "read",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000060,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 8e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda1",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000060,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 3e3,
+							},
+						}},
+					},
+					{
+						StartTimestamp: &timestamppb.Timestamp{},
+						LabelValues: []*metricspb.LabelValue{{
+							Value:    "host0",
+							HasValue: true,
+						}, {
+							Value:    "write",
+							HasValue: true,
+						}, {
+							Value:    "sda2",
+							HasValue: true,
+						}},
+						Points: []*metricspb.Point{{
+							Timestamp: &timestamppb.Timestamp{
+								Seconds: 1596000060,
+							},
+							Value: &metricspb.Point_Int64Value{
+								Int64Value: 7e3,
 							},
 						}},
 					},
@@ -448,7 +620,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "receive",
 							HasValue: true,
@@ -466,7 +638,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -475,7 +647,7 @@ func md() consumerdata.MetricsData {
 						}},
 					},
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "transmit",
 							HasValue: true,
@@ -493,7 +665,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -516,7 +688,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -528,7 +700,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -551,7 +723,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -563,7 +735,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -586,7 +758,7 @@ func md() consumerdata.MetricsData {
 				},
 				Timeseries: []*metricspb.TimeSeries{
 					{
-						StartTimestamp: &timestamp.Timestamp{},
+						StartTimestamp: &timestamppb.Timestamp{},
 						LabelValues: []*metricspb.LabelValue{{
 							Value:    "host0",
 							HasValue: true,
@@ -598,7 +770,7 @@ func md() consumerdata.MetricsData {
 							HasValue: true,
 						}},
 						Points: []*metricspb.Point{{
-							Timestamp: &timestamp.Timestamp{
+							Timestamp: &timestamppb.Timestamp{
 								Seconds: 1596000000,
 							},
 							Value: &metricspb.Point_Int64Value{
@@ -610,5 +782,96 @@ func md() consumerdata.MetricsData {
 			},
 		},
 	}
-	return md
+	return []consumerdata.MetricsData{md}
+}
+
+func TestDefaultDiskTranslations(t *testing.T) {
+	var pts []*sfxpb.DataPoint
+	err := testReadJSON("testdata/json/system.filesystem.usage.json", &pts)
+	require.NoError(t, err)
+
+	tr := testGetTranslator(t)
+	translated := tr.TranslateDataPoints(zap.NewNop(), pts)
+	require.NotNil(t, translated)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated {
+		l := m[pt.Metric]
+		l = append(l, pt)
+		m[pt.Metric] = l
+	}
+
+	_, ok := m["disk.total"]
+	require.False(t, ok)
+
+	_, ok = m["disk.summary_total"]
+	require.False(t, ok)
+
+	_, ok = m["df_complex.used_total"]
+	require.False(t, ok)
+
+	du, ok := m["disk.utilization"]
+	require.True(t, ok)
+	require.Equal(t, 4, len(du[0].Dimensions))
+	// cheap test for pct conversion
+	require.True(t, *du[0].Value.DoubleValue > 1)
+
+	dsu, ok := m["disk.summary_utilization"]
+	require.True(t, ok)
+	require.Equal(t, 3, len(dsu[0].Dimensions))
+	require.True(t, *dsu[0].Value.DoubleValue > 1)
+}
+
+func testGetTranslator(t *testing.T) *translation.MetricTranslator {
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(t, err)
+	require.NotNil(t, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 3600)
+	require.NoError(t, err)
+	return tr
+}
+
+func TestDefaultCPUTranslations(t *testing.T) {
+	var pts1 []*sfxpb.DataPoint
+	err := testReadJSON("testdata/json/system.cpu.time.1.json", &pts1)
+	require.NoError(t, err)
+
+	var pts2 []*sfxpb.DataPoint
+	err = testReadJSON("testdata/json/system.cpu.time.2.json", &pts2)
+	require.NoError(t, err)
+
+	tr := testGetTranslator(t)
+	log := zap.NewNop()
+
+	// write 'prev' points from which to calculate deltas
+	_ = tr.TranslateDataPoints(log, pts1)
+
+	// calculate cpu utilization
+	translated2 := tr.TranslateDataPoints(log, pts2)
+
+	m := map[string][]*sfxpb.DataPoint{}
+	for _, pt := range translated2 {
+		pts := m[pt.Metric]
+		pts = append(pts, pt)
+		m[pt.Metric] = pts
+	}
+
+	cpuUtil := m["cpu.utilization"]
+	require.Equal(t, 1, len(cpuUtil))
+	for _, pt := range cpuUtil {
+		require.Equal(t, 66, int(*pt.Value.DoubleValue))
+	}
+}
+
+func testReadJSON(f string, v interface{}) error {
+	file, err := os.Open(f)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = file.Close() }()
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(bytes, &v)
 }

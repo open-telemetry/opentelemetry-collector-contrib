@@ -23,7 +23,7 @@ import (
 )
 
 func createConfig() *Config {
-	factory := Factory{}
+	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Collector = "foocollector"
 	config.SourceCategoryPrefix = "prefix/"

@@ -20,13 +20,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 func TestNewTraceExporter(t *testing.T) {
 
-	got, err := NewTraceExporter(zap.NewNop(), &Config{
+	got, err := newTraceExporter(zap.NewNop(), &Config{
 		Endpoint: "cn-hangzhou.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -35,14 +35,14 @@ func TestNewTraceExporter(t *testing.T) {
 	require.NotNil(t, got)
 
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeTraceData(context.Background(), consumerdata.TraceData{})
-	assert.Nil(t, err)
+	err = got.ConsumeTraces(context.Background(), pdata.NewTraces())
+	assert.NoError(t, err)
 	assert.Nil(t, got.Shutdown(context.Background()))
 }
 
 func TestNewFailsWithEmptyTraceExporterName(t *testing.T) {
 
-	got, err := NewTraceExporter(zap.NewNop(), &Config{})
+	got, err := newTraceExporter(zap.NewNop(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

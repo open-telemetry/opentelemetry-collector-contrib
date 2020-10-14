@@ -524,6 +524,17 @@ func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	defaultInternalRemoteDependencyDataValidations(t, span, data)
 }
 
+// Tests that spans with unspecified kind are treated similar to internal spans
+func TestUnspecifiedSpanToInProcRemoteDependencyData(t *testing.T) {
+	span := getDefaultInternalSpan()
+	span.SetKind(pdata.SpanKindUNSPECIFIED)
+
+	envelope, _ := spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
+	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
+	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
+	defaultInternalRemoteDependencyDataValidations(t, span, data)
+}
+
 func TestSanitize(t *testing.T) {
 	sanitizeFunc := func() []string {
 		warnings := [4]string{
@@ -737,9 +748,9 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 func getSpan(spanName string, spanKind pdata.SpanKind, initialAttributes map[string]pdata.AttributeValue) pdata.Span {
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	span.SetTraceID(defaultTraceID)
-	span.SetSpanID(defaultSpanID)
-	span.SetParentSpanID(defaultParentSpanID)
+	span.SetTraceID(pdata.NewTraceID(defaultTraceID))
+	span.SetSpanID(pdata.NewSpanID(defaultSpanID))
+	span.SetParentSpanID(pdata.NewSpanID(defaultParentSpanID))
 	span.SetName(spanName)
 	span.SetKind(spanKind)
 	span.SetStartTime(defaultSpanStartTime)
