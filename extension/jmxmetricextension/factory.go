@@ -45,13 +45,13 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		JarPath:       "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		Interval:      10 * time.Second,
-		Exporter:      otlpExporter,
-		OtlpEndpoint:  otlpEndpoint,
-		OtlpTimeout:   5 * time.Second,
-		PromethusHost: prometheusEndpoint,
-		PromethusPort: prometheusPort,
+		JarPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		Interval:       10 * time.Second,
+		Exporter:       otlpExporter,
+		OtlpEndpoint:   otlpEndpoint,
+		OtlpTimeout:    5 * time.Second,
+		PrometheusHost: prometheusEndpoint,
+		PrometheusPort: prometheusPort,
 	}
 }
 

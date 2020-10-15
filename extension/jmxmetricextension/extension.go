@@ -93,7 +93,7 @@ otel.otlp.metric.timeout = %v
 		javaConfig += fmt.Sprintf(`otel.exporter = prometheus
 otel.prometheus.host = %v
 otel.prometheus.port = %v
-`, jmx.config.PromethusHost, jmx.config.PromethusPort)
+`, jmx.config.PrometheusHost, jmx.config.PrometheusPort)
 	}
 
 	if jmx.config.Username != "" {

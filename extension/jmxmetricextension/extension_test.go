@@ -42,15 +42,15 @@ func TestExtension(t *testing.T) {
 func TestBuildJmxMetricGathererOtlpConfig(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{
-		ServiceURL:    "myserviceurl",
-		TargetSystem:  "mytargetsystem",
-		GroovyScript:  "mygroovyscript",
-		Interval:      123 * time.Second,
-		Exporter:      "otlp",
-		OtlpEndpoint:  "myotlpendpoint",
-		OtlpTimeout:   234 * time.Second,
-		PromethusHost: "myprometheushost",
-		PromethusPort: 12345,
+		ServiceURL:     "myserviceurl",
+		TargetSystem:   "mytargetsystem",
+		GroovyScript:   "mygroovyscript",
+		Interval:       123 * time.Second,
+		Exporter:       "otlp",
+		OtlpEndpoint:   "myotlpendpoint",
+		OtlpTimeout:    234 * time.Second,
+		PrometheusHost: "myprometheushost",
+		PrometheusPort: 12345,
 	}
 
 	expectedConfig := `otel.jmx.service.url = myserviceurl
@@ -69,14 +69,14 @@ otel.otlp.metric.timeout = 234000
 func TestBuildJmxMetricGathererPrometheusConfig(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{
-		ServiceURL:    "myserviceurl",
-		GroovyScript:  "mygroovyscript",
-		Interval:      123 * time.Second,
-		Exporter:      "prometheus",
-		OtlpEndpoint:  "myotlpendpoint",
-		OtlpTimeout:   234 * time.Second,
-		PromethusHost: "myprometheushost",
-		PromethusPort: 12345,
+		ServiceURL:     "myserviceurl",
+		GroovyScript:   "mygroovyscript",
+		Interval:       123 * time.Second,
+		Exporter:       "prometheus",
+		OtlpEndpoint:   "myotlpendpoint",
+		OtlpTimeout:    234 * time.Second,
+		PrometheusHost: "myprometheushost",
+		PrometheusPort: 12345,
 	}
 
 	expectedConfig := `otel.jmx.service.url = myserviceurl

@@ -48,9 +48,9 @@ type config struct {
 	// The headers to include in otlp metric submission requests.
 	OtlpHeaders map[string]string `mapstructure:"otlp_headers"`
 	// The Prometheus Host
-	PromethusHost string `mapstructure:"prometheus_host"`
+	PrometheusHost string `mapstructure:"prometheus_host"`
 	// The Prometheus Port
-	PromethusPort int `mapstructure:"prometheus_port"`
+	PrometheusPort int `mapstructure:"prometheus_port"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL

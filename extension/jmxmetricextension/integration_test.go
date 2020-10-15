@@ -305,15 +305,15 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaPrometheusReceiverIntegration(
 	}()
 
 	config := &config{
-		JarPath:       suite.JarPath,
-		ServiceURL:    fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
-		Exporter:      "prometheus",
-		PromethusHost: "localhost",
-		PromethusPort: port,
-		Interval:      100 * time.Millisecond,
-		GroovyScript:  path.Join(".", "testdata", "script.groovy"),
-		Username:      "cassandra",
-		Password:      "cassandra",
+		JarPath:        suite.JarPath,
+		ServiceURL:     fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
+		Exporter:       "prometheus",
+		PrometheusHost: "localhost",
+		PrometheusPort: port,
+		Interval:       100 * time.Millisecond,
+		GroovyScript:   path.Join(".", "testdata", "script.groovy"),
+		Username:       "cassandra",
+		Password:       "cassandra",
 	}
 
 	extension := newJmxMetricExtension(logger, config)
