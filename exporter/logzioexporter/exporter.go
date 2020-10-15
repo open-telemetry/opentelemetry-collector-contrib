@@ -34,10 +34,10 @@ const (
 
 // logzioExporter implements an OpenTelemetry trace exporter that exports all spans to Logz.io
 type logzioExporter struct {
-	accountToken string
-	writer       *store.LogzioSpanWriter
-	logger       hclog.Logger
-	WriteSpanFunc func(span *model.Span) error
+	accountToken                 string
+	writer                       *store.LogzioSpanWriter
+	logger                       hclog.Logger
+	WriteSpanFunc                func(span *model.Span) error
 	InternalTracesToJaegerTraces func(td pdata.Traces) ([]*model.Batch, error)
 }
 
@@ -65,11 +65,11 @@ func newLogzioExporter(config *Config, params component.ExporterCreateParams) (*
 	}
 
 	return &logzioExporter{
-		writer:       spanWriter,
-		accountToken: config.Token,
-		logger:       logger,
-		InternalTracesToJaegerTraces:	jaeger.InternalTracesToJaegerProto,
-		WriteSpanFunc:	spanWriter.WriteSpan,
+		writer:                       spanWriter,
+		accountToken:                 config.Token,
+		logger:                       logger,
+		InternalTracesToJaegerTraces: jaeger.InternalTracesToJaegerProto,
+		WriteSpanFunc:                spanWriter.WriteSpan,
 	}, nil
 }
 
