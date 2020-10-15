@@ -113,7 +113,7 @@ func createTraceExporter(
 ) (component.TraceExporter, error) {
 	// TODO review if trace export can be supported on Windows
 	if runtime.GOOS == "windows" {
-		return nil, errors.New("Datadog Trace Export is currently not supported on Windows")
+		return nil, errors.New("datadog trace export is currently not supported on Windows")
 	}
 
 	cfg := c.(*Config)
