@@ -125,6 +125,26 @@ class _DjangoMiddleware(MiddlewareMixin):
         request.META[self._environ_span_key] = span
         request.META[self._environ_token] = token
 
+    # pylint: disable=unused-argument
+    def process_view(self, request, view_func, *args, **kwargs):
+        # Process view is executed before the view function, here we get the
+        # route template from request.resolver_match.  It is not set yet in process_request
+        if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
+            return
+
+        if (
+            self._environ_activation_key in request.META.keys()
+            and self._environ_span_key in request.META.keys()
+        ):
+            span = request.META[self._environ_span_key]
+
+            if span.is_recording():
+                match = getattr(request, "resolver_match")
+                if match:
+                    route = getattr(match, "route")
+                    if route:
+                        span.set_attribute("http.route", route)
+
     def process_exception(self, request, exception):
         # Django can call this method and process_response later. In order
         # to avoid __exit__ and detach from being called twice then, the

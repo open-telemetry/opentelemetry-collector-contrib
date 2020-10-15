@@ -5,6 +5,10 @@ def traced(request):  # pylint: disable=unused-argument
     return HttpResponse()
 
 
+def traced_template(request, year):  # pylint: disable=unused-argument
+    return HttpResponse()
+
+
 def error(request):  # pylint: disable=unused-argument
     raise ValueError("error")
 
