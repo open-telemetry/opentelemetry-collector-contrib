@@ -30,8 +30,9 @@ const (
 )
 
 // SplunkHecToLogData transforms splunk events into logs
-func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.ResourceLogsSlice, error) {
-	rls := pdata.NewResourceLogsSlice()
+func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
+	ld := pdata.NewLogs()
+	rls := ld.ResourceLogs()
 	rls.Resize(len(events))
 
 	for i, event := range events {
@@ -54,18 +55,18 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.Resou
 		} else if value, ok := event.Event.(map[string]interface{}); ok {
 			mapValue, err := convertToAttributeMap(logger, value)
 			if err != nil {
-				return rls, err
+				return ld, err
 			}
 			logRecord.Body().SetMapVal(mapValue)
 		} else if value, ok := event.Event.([]interface{}); ok {
 			arrValue, err := convertToArrayVal(logger, value)
 			if err != nil {
-				return rls, err
+				return ld, err
 			}
 			logRecord.Body().SetArrayVal(arrValue)
 		} else {
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
-			return rls, errors.New(cannotConvertValue)
+			return ld, errors.New(cannotConvertValue)
 		}
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
@@ -78,6 +79,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.Resou
 		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
 		attrs.InsertString(conventions.AttributeServiceName, event.Source)
 		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
+		resourceCustomizer(rl.Resource())
 		//TODO consider setting the index field as well for pass through scenarios.
 		keys := make([]string, 0, len(event.Fields))
 		for k := range event.Fields {
@@ -88,7 +90,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.Resou
 			val := event.Fields[key]
 			attrValue, err := convertInterfaceToAttributeValue(logger, val)
 			if err != nil {
-				return rls, err
+				return ld, err
 			}
 			logRecord.Attributes().Insert(key, attrValue)
 		}
@@ -98,7 +100,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event) (pdata.Resou
 		rl.InstrumentationLibraryLogs().Append(ill)
 	}
 
-	return rls, nil
+	return ld, nil
 }
 
 func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pdata.AttributeValue, error) {

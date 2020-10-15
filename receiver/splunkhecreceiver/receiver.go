@@ -217,26 +217,19 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		events = append(events, &msg)
 	}
 
-	logSlice, err := SplunkHecToLogData(r.logger, events)
-	if err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
-		return
-	}
-
-	ld := pdata.NewLogs()
-
-	for i := 0; i < logSlice.Len(); i++ {
-		rl := logSlice.At(i)
-		if r.config.AccessTokenPassthrough {
-			if accessToken := req.Header.Get(splunk.SplunkHECTokenHeader); accessToken != "" {
-				resource := rl.Resource()
-				if resource.IsNil() {
-					resource.InitEmpty()
-				}
+	customizer := func(resource pdata.Resource) {}
+	if r.config.AccessTokenPassthrough {
+		if accessToken := req.Header.Get(splunk.SplunkHECTokenHeader); accessToken != "" {
+			customizer = func(resource pdata.Resource) {
 				resource.Attributes().InsertString(splunk.SplunkHecTokenLabel, accessToken)
 			}
 		}
-		ld.ResourceLogs().Append(rl)
+	}
+
+	ld, err := SplunkHecToLogData(r.logger, events, customizer)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+		return
 	}
 
 	decodeErr = r.logConsumer.ConsumeLogs(ctx, ld)
