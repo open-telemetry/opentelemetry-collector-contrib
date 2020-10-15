@@ -334,6 +334,11 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	resourceMetrics := pdata.NewResourceMetrics()
 	resourceMetrics.InitEmpty()
 	metrics.ResourceMetrics().Append(resourceMetrics)
+	resourceMetrics.Resource().InitEmpty()
+	attrs := resourceMetrics.Resource().Attributes()
+	attrs.InsertString("host.hostname", "localhost")
+	attrs.InsertString("service.name", "source")
+	attrs.InsertString("com.splunk.sourcetype", "sourcetype")
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	ilm.InitEmpty()

@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
@@ -40,7 +41,12 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		metrics := pdata.NewInstrumentationLibraryMetrics()
 		metrics.InitEmpty()
-
+		resourceMetrics.Resource().InitEmpty()
+		attrs := resourceMetrics.Resource().Attributes()
+		attrs.InitEmptyWithCapacity(3)
+		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
+		attrs.InsertString(conventions.AttributeServiceName, event.Source)
+		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
 		resourceCustomizer(resourceMetrics.Resource())
 
 		values := event.GetMetricValues()
