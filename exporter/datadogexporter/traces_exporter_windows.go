@@ -17,20 +17,22 @@
 package datadogexporter
 
 import (
+	"context"
 	"errors"
 
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 )
 
 type traceExporterStub struct {}
 
 func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporterStub, error) {
-	return traceExporterStub, errors.New("datadog trace export is currently not supported on Windows")
+	return &traceExporterStub{}, errors.New("datadog trace export is currently not supported on Windows")
 }
 
 func (exp *traceExporterStub) pushTraceData(
-	_,
-	_,
+	_ context.Context,
+	_ pdata.Traces,
 ) (int, error) {
 	return 0, errors.New("datadog trace export is currently not supported on Windows")
 }
