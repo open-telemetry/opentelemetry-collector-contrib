@@ -22,3 +22,7 @@ datadog:
 The hostname, environment, service and version can be set in the configuration for unified service tagging.
 
 See the sample configuration file under the `example` folder for other available options.
+
+## Trace Export Configuration
+
+_Note: Trace Export is not supported on windows at the moment_
