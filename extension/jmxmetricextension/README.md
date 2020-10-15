@@ -66,7 +66,7 @@ One of `groovy_script` or `target_system` is _required_.  Both cannot be specifi
 
 ### interval (default: `10s`)
 
-The interval time for the Groovy script to be run and metrics exported.
+The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
 
 Corresponds to the `otel.jmx.interval.milliseconds` property.
 
