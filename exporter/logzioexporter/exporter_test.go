@@ -96,14 +96,10 @@ func TestEmptyNode(tester *testing.T) {
 		Node:  nil,
 		Spans: nil,
 	}
-
 	testTraceExporter(internaldata.OCToTraceData(td), tester, &cfg)
 }
 
 func TestWriteSpanError(tester *testing.T) {
-	oldFunc := WriteSpanFunc
-	defer func() { WriteSpanFunc = oldFunc }()
-
 	cfg := Config{
 		Token:  "test",
 		Region: "eu",
@@ -114,7 +110,9 @@ func TestWriteSpanError(tester *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
-	WriteSpanFunc = func(*model.Span) error {
+	oldFunc := exporter.WriteSpanFunc
+	defer func() { exporter.WriteSpanFunc = oldFunc }()
+	exporter.WriteSpanFunc = func(*model.Span) error {
 		return errors.New("fail")
 	}
 	droppedSpans, _ := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
@@ -122,9 +120,6 @@ func TestWriteSpanError(tester *testing.T) {
 }
 
 func TestConversionTraceError(tester *testing.T) {
-	oldFunc := InternalTracesToJaegerTraces
-	defer func() { InternalTracesToJaegerTraces = oldFunc }()
-
 	cfg := Config{
 		Token:  "test",
 		Region: "eu",
@@ -135,7 +130,9 @@ func TestConversionTraceError(tester *testing.T) {
 	}
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exporter, _ := newLogzioExporter(&cfg, params)
-	InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
+	oldFunc := exporter.InternalTracesToJaegerTraces
+	defer func() { exporter.InternalTracesToJaegerTraces = oldFunc }()
+	exporter.InternalTracesToJaegerTraces = func(td pdata.Traces) ([]*model.Batch, error) {
 		return nil, errors.New("fail")
 	}
 	_, err := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
