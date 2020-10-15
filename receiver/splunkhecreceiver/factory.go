@@ -45,7 +45,9 @@ func NewFactory() component.ReceiverFactory {
 	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createMetricsReceiver))
+		receiverhelper.WithMetrics(createMetricsReceiver),
+		receiverhelper.WithTraces(createTraceReceiver),
+		receiverhelper.WithLogs(createLogsReceiver))
 }
 
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
@@ -105,4 +107,22 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 
 	return nil, configerror.ErrDataTypeIsNotSupported
+}
+
+// createLogsReceiver creates a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.LogsConsumer,
+) (component.LogsReceiver, error) {
+
+	rCfg := cfg.(*Config)
+
+	err := rCfg.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return New(params.Logger, *rCfg, consumer)
 }
