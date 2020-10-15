@@ -346,7 +346,9 @@ jobs:
             refreshenv
       - run:
           name: Unit tests
-          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+          command: |
+            $env:CGO_ENABLED = 0
+            (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
       - save_module_cache
       - github_issue_generator
 
