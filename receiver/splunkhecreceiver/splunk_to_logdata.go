@@ -44,30 +44,12 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		// The SourceType field is the most logical "name" of the event.
 		logRecord.SetName(event.SourceType)
 		logRecord.Body().InitEmpty()
-		if value, ok := event.Event.(string); ok {
-			logRecord.Body().SetStringVal(value)
-		} else if value, ok := event.Event.(int64); ok {
-			logRecord.Body().SetIntVal(value)
-		} else if value, ok := event.Event.(float64); ok {
-			logRecord.Body().SetDoubleVal(value)
-		} else if value, ok := event.Event.(bool); ok {
-			logRecord.Body().SetBoolVal(value)
-		} else if value, ok := event.Event.(map[string]interface{}); ok {
-			mapValue, err := convertToAttributeMap(logger, value)
-			if err != nil {
-				return ld, err
-			}
-			logRecord.Body().SetMapVal(mapValue)
-		} else if value, ok := event.Event.([]interface{}); ok {
-			arrValue, err := convertToArrayVal(logger, value)
-			if err != nil {
-				return ld, err
-			}
-			logRecord.Body().SetArrayVal(arrValue)
-		} else {
+		attrValue, err := convertInterfaceToAttributeValue(logger, event.Event)
+		if err != nil {
 			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
 			return ld, errors.New(cannotConvertValue)
 		}
+		attrValue.CopyTo(logRecord.Body())
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
