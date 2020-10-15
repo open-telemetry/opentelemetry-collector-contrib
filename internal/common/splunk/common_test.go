@@ -49,3 +49,20 @@ func TestIsMetric(t *testing.T) {
 	}
 	assert.False(t, yo.IsMetric())
 }
+
+func TestIsMetric_WithoutEventField(t *testing.T) {
+	fieldsOnly := Event{
+		Fields: map[string]interface{}{
+			"foo": "bar",
+		},
+	}
+	assert.False(t, fieldsOnly.IsMetric())
+	fieldsWithMetrics := Event{
+		Fields: map[string]interface{}{
+			"foo":             "bar",
+			"metric_name:foo": 123,
+			"foobar":          "foobar",
+		},
+	}
+	assert.True(t, fieldsWithMetrics.IsMetric())
+}

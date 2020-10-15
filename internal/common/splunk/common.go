@@ -41,13 +41,13 @@ type Event struct {
 	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
 	Index      string                 `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      interface{}            `json:"event"`                // type of event: set to "metric" if the event represents a metric.
-	Fields     map[string]interface{} `json:"fields,omitempty"`     // metric data
+	Event      interface{}            `json:"event"`                // type of event: set to "metric" or nil if the event represents a metric, or is the payload of the event.
+	Fields     map[string]interface{} `json:"fields,omitempty"`     // dimensions and metric data
 }
 
-// IsMetric returns true if the splunk event is a metric.
+// IsMetric returns true if the Splunk event is a metric.
 func (m Event) IsMetric() bool {
-	return m.Event == HecEventMetricType
+	return m.Event == HecEventMetricType || (m.Event == nil && len(m.GetMetricValues()) > 0)
 }
 
 // GetMetricValues extracts metric key value pairs from a Splunk HEC metric.

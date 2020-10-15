@@ -42,11 +42,11 @@ const (
 
 	responseOK                        = "OK"
 	responseInvalidMethod             = `Only "POST" method is supported`
-	responseInvalidContentType        = "\"Content-Type\" must be \"application/json\""
-	responseInvalidEncoding           = "\"Content-Encoding\" must be \"gzip\" or empty"
+	responseInvalidContentType        = `"Content-Type" must be "application/json"`
+	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
 	responseErrGzipReader             = "Error on gzip body"
 	responseErrUnmarshalBody          = "Failed to unmarshal message body"
-	responseErrNextConsumer           = "Internal Server Error"
+	responseErrInternalServerError    = "Internal Server Error"
 	responseErrUnsupportedMetricEvent = "Unsupported metric event"
 
 	// Centralizing some HTTP and related string constants.
@@ -66,7 +66,7 @@ var (
 	invalidEncodingRespBody   = initJSONResponse(responseInvalidEncoding)
 	errGzipReaderRespBody     = initJSONResponse(responseErrGzipReader)
 	errUnmarshalBodyRespBody  = initJSONResponse(responseErrUnmarshalBody)
-	errNextConsumerRespBody   = initJSONResponse(responseErrNextConsumer)
+	errInternalServerError    = initJSONResponse(responseErrInternalServerError)
 	errUnsupportedMetricEvent = initJSONResponse(responseErrUnsupportedMetricEvent)
 )
 
@@ -248,7 +248,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		messagesReceived,
 		decodeErr)
 	if decodeErr != nil {
-		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, decodeErr)
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusAccepted)
 		resp.Write(okRespBody)
