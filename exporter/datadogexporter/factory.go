@@ -16,6 +16,8 @@ package datadogexporter
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -103,12 +105,16 @@ func createMetricsExporter(
 	)
 }
 
-// createMetricsExporter creates a trace exporter based on this config.
+// createTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.TraceExporter, error) {
+	// TODO review if trace export can be supported on Windows
+	if runtime.GOOS == "windows" {
+		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
+	}
 
 	cfg := c.(*Config)
 
