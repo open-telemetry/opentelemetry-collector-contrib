@@ -340,6 +340,11 @@ jobs:
       - checkout
       - restore_module_cache
       - run:
+          name: Install gcc (for cgo)
+          command: |
+            choco install mingw --version=8.1.0
+            refreshenv
+      - run:
           name: Upgrade golang
           command: |
             choco upgrade golang --version=1.15
