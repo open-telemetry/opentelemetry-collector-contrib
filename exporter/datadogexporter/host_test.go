@@ -20,14 +20,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func TestHost(t *testing.T) {
 
-	host := GetHost(&Config{TagsConfig: TagsConfig{Hostname: "test_host"}})
+	host := GetHost(&config.Config{TagsConfig: config.TagsConfig{Hostname: "test_host"}})
 	assert.Equal(t, *host, "test_host")
 
-	host = GetHost(&Config{})
+	host = GetHost(&config.Config{})
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, *host, osHostname)

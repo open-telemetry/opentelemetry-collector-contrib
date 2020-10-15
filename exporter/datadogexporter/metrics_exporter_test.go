@@ -21,10 +21,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func TestNewExporter(t *testing.T) {
-	cfg := &Config{}
+	cfg := &config.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	logger := zap.NewNop()
 
@@ -35,13 +37,13 @@ func TestNewExporter(t *testing.T) {
 }
 
 func TestProcessMetrics(t *testing.T) {
-	cfg := &Config{
-		TagsConfig: TagsConfig{
+	cfg := &config.Config{
+		TagsConfig: config.TagsConfig{
 			Hostname: "test_host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Metrics: MetricsConfig{
+		Metrics: config.MetricsConfig{
 			Namespace: "test.",
 		},
 	}

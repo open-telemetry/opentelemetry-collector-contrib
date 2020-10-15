@@ -14,12 +14,16 @@
 
 package datadogexporter
 
-import "os"
+import (
+	"os"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+)
 
 // GetHost gets the hostname according to configuration.
 // It gets the configuration hostname and if
 // not available it relies on the OS hostname
-func GetHost(cfg *Config) *string {
+func GetHost(cfg *config.Config) *string {
 	if cfg.TagsConfig.Hostname != "" {
 		return &cfg.TagsConfig.Hostname
 	}

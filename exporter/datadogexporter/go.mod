@@ -1,4 +1,4 @@
-module github.com/DataDog/opentelemetry-collector-contrib/exporter/datadogexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
 go 1.15
 
