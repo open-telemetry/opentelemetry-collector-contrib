@@ -260,10 +260,9 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 }
 
 func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.Resource) {
-	customizer := func(resource pdata.Resource) {}
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.HECTokenHeader); accessToken != "" {
-			customizer = func(resource pdata.Resource) {
+			return func(resource pdata.Resource) {
 				if resource.IsNil() {
 					resource.InitEmpty()
 				}
@@ -271,7 +270,7 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 			}
 		}
 	}
-	return customizer
+	return func(resource pdata.Resource) {}
 }
 
 func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Event, resp http.ResponseWriter, req *http.Request) {

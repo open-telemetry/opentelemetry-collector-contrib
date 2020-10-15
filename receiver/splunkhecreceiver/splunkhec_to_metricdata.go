@@ -31,8 +31,6 @@ import (
 // dropped time series.
 func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
 
-	// TODO: not optimized at all, basically regenerating everything for each
-	// 	data point.
 	numDroppedTimeSeries := 0
 	md := pdata.NewMetrics()
 
@@ -43,16 +41,17 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		metrics := pdata.NewInstrumentationLibraryMetrics()
 		metrics.InitEmpty()
 
-		labelKeys, labelValues := buildLabelKeysAndValues(event.Fields)
-		if len(labelKeys) > 0 {
-			resourceMetrics.Resource().InitEmpty()
-		}
-		for i, k := range labelKeys {
-			resourceMetrics.Resource().Attributes().InsertString(k, labelValues[i])
-		}
 		resourceCustomizer(resourceMetrics.Resource())
 
 		values := event.GetMetricValues()
+
+		labelKeys, labelValues := buildLabelKeysAndValues(event.Fields)
+		populateLabels := func(labels pdata.StringMap) {
+			for i, k := range labelKeys {
+				labels.Insert(k, labelValues[i])
+			}
+		}
+
 		metricNames := make([]string, 0, len(values))
 		for k := range values {
 			metricNames = append(metricNames, k)
@@ -63,26 +62,25 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pdata.NewMetric()
 			metric.InitEmpty()
-			// TODO currently mapping all values to unspecified.
 			metric.SetDataType(pdata.MetricDataTypeNone)
 			metric.SetName(metricName)
 
 			metricValue := values[metricName]
 			if i, ok := metricValue.(int64); ok {
-				addIntGauge(pointTimestamp, i, metric)
+				addIntGauge(pointTimestamp, i, metric, populateLabels)
 			} else if i, ok := metricValue.(*int64); ok {
-				addIntGauge(pointTimestamp, *i, metric)
+				addIntGauge(pointTimestamp, *i, metric, populateLabels)
 			} else if f, ok := metricValue.(float64); ok {
 				if f == float64(int64(f)) {
-					addIntGauge(pointTimestamp, int64(f), metric)
+					addIntGauge(pointTimestamp, int64(f), metric, populateLabels)
 				} else {
-					addDoubleGauge(pointTimestamp, f, metric)
+					addDoubleGauge(pointTimestamp, f, metric, populateLabels)
 				}
 			} else if f, ok := metricValue.(*float64); ok {
 				if *f == float64(int64(*f)) {
-					addIntGauge(pointTimestamp, int64(*f), metric)
+					addIntGauge(pointTimestamp, int64(*f), metric, populateLabels)
 				} else {
-					addDoubleGauge(pointTimestamp, *f, metric)
+					addDoubleGauge(pointTimestamp, *f, metric, populateLabels)
 				}
 			} else if s, ok := metricValue.(*string); ok {
 				// best effort, cast to string and turn into a number
@@ -92,7 +90,17 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 					logger.Debug("Cannot convert metric",
 						zap.String("metric", metricName))
 				} else {
-					addDoubleGauge(pointTimestamp, dbl, metric)
+					addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
+				}
+			} else if s, ok := metricValue.(string); ok {
+				// best effort, cast to string and turn into a number
+				dbl, err := strconv.ParseFloat(s, 64)
+				if err != nil {
+					numDroppedTimeSeries++
+					logger.Debug("Cannot convert metric",
+						zap.String("metric", metricName))
+				} else {
+					addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
 				}
 			} else {
 				// drop this point as we do not know how to extract a value from it
@@ -114,21 +122,23 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	return md, numDroppedTimeSeries
 }
 
-func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric) {
+func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	intPt := pdata.NewIntDataPoint()
 	intPt.InitEmpty()
 	intPt.SetTimestamp(ts)
 	intPt.SetValue(value)
+	populateLabels(intPt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeIntGauge)
 	metric.IntGauge().InitEmpty()
 	metric.IntGauge().DataPoints().Append(intPt)
 }
 
-func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metric) {
+func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
 	doublePt := pdata.NewDoubleDataPoint()
 	doublePt.InitEmpty()
 	doublePt.SetTimestamp(ts)
 	doublePt.SetValue(value)
+	populateLabels(doublePt.LabelsMap())
 	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
 	metric.DoubleGauge().InitEmpty()
 	metric.DoubleGauge().DataPoints().Append(doublePt)

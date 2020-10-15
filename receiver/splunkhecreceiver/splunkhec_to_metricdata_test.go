@@ -80,6 +80,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt.InitEmpty()
 				intPt.SetValue(14)
 				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				intPt.LabelsMap().Insert("k0", "v0")
+				intPt.LabelsMap().Insert("k1", "v1")
+				intPt.LabelsMap().Insert("k2", "v2")
 				metricPt.IntGauge().DataPoints().Append(intPt)
 				metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
 
@@ -92,6 +95,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt2.InitEmpty()
 				intPt2.SetValue(15)
 				intPt2.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				intPt2.LabelsMap().Insert("k0", "v0")
+				intPt2.LabelsMap().Insert("k1", "v1")
+				intPt2.LabelsMap().Insert("k2", "v2")
 				metricPt2.IntGauge().DataPoints().Append(intPt2)
 				metrics.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt2)
 
@@ -116,6 +122,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt.InitEmpty()
 				doublePt.SetValue(13.13)
 				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				doublePt.LabelsMap().Insert("k0", "v0")
+				doublePt.LabelsMap().Insert("k1", "v1")
+				doublePt.LabelsMap().Insert("k2", "v2")
 				metricPt.DoubleGauge().DataPoints().Append(doublePt)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
@@ -156,6 +165,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt := pdata.NewDoubleDataPoint()
 				doublePt.InitEmpty()
 				doublePt.SetValue(13.13)
+				doublePt.LabelsMap().Insert("k0", "v0")
+				doublePt.LabelsMap().Insert("k1", "v1")
+				doublePt.LabelsMap().Insert("k2", "v2")
 				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
 				metricPt.DoubleGauge().DataPoints().Append(doublePt)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
@@ -182,6 +194,9 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				intPt.InitEmpty()
 				intPt.SetValue(13)
 				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				intPt.LabelsMap().Insert("k0", "v0")
+				intPt.LabelsMap().Insert("k1", "v1")
+				intPt.LabelsMap().Insert("k2", "v2")
 				metricPt.IntGauge().DataPoints().Append(intPt)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
@@ -189,7 +204,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 		},
 		{
-			name: "double_counter_as_string",
+			name: "double_counter_as_string_pointer",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
 				pt.Fields["metric_name:single"] = strPtr("13.13")
@@ -205,6 +220,37 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				doublePt := pdata.NewDoubleDataPoint()
 				doublePt.InitEmpty()
 				doublePt.SetValue(13.13)
+				doublePt.LabelsMap().Insert("k0", "v0")
+				doublePt.LabelsMap().Insert("k1", "v1")
+				doublePt.LabelsMap().Insert("k2", "v2")
+				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
+				metricPt.DoubleGauge().DataPoints().Append(doublePt)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
+				return md
+			}(),
+		},
+
+		{
+			name: "double_counter_as_string",
+			splunkDataPoint: func() *splunk.Event {
+				pt := buildDefaultSplunkDataPt()
+				pt.Fields["metric_name:single"] = "13.13"
+				return pt
+			}(),
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(nanos)
+				metricPt := pdata.NewMetric()
+				metricPt.InitEmpty()
+				metricPt.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				metricPt.SetName("single")
+				metricPt.DoubleGauge().InitEmpty()
+				doublePt := pdata.NewDoubleDataPoint()
+				doublePt.InitEmpty()
+				doublePt.SetValue(13.13)
+				doublePt.LabelsMap().Insert("k0", "v0")
+				doublePt.LabelsMap().Insert("k1", "v1")
+				doublePt.LabelsMap().Insert("k2", "v2")
 				doublePt.SetTimestamp(pdata.TimestampUnixNano(nanos))
 				metricPt.DoubleGauge().DataPoints().Append(doublePt)
 				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
@@ -232,8 +278,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pdata.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				value, _ := md.ResourceMetrics().At(0).Resource().Attributes().Get("k0")
-				value.SetStringVal("")
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Update("k0", "")
 				return md
 			}(),
 		},
@@ -289,10 +334,6 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	resourceMetrics := pdata.NewResourceMetrics()
 	resourceMetrics.InitEmpty()
 	metrics.ResourceMetrics().Append(resourceMetrics)
-	resourceMetrics.Resource().InitEmpty()
-	resourceMetrics.Resource().Attributes().InsertString("k0", "v0")
-	resourceMetrics.Resource().Attributes().InsertString("k1", "v1")
-	resourceMetrics.Resource().Attributes().InsertString("k2", "v2")
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	ilm.InitEmpty()
@@ -304,6 +345,9 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	intPt := pdata.NewIntDataPoint()
 	intPt.InitEmpty()
 	intPt.SetValue(13)
+	intPt.LabelsMap().Insert("k0", "v0")
+	intPt.LabelsMap().Insert("k1", "v1")
+	intPt.LabelsMap().Insert("k2", "v2")
 	intPt.SetTimestamp(pdata.TimestampUnixNano(time))
 	metricPt.IntGauge().DataPoints().Append(intPt)
 	ilm.Metrics().Append(metricPt)
