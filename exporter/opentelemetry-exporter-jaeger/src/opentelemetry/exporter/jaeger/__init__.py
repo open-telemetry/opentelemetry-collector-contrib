@@ -39,10 +39,7 @@ Usage
         agent_host_name='localhost',
         agent_port=6831,
         # optional: configure also collector
-        # collector_host_name='localhost',
-        # collector_port=14268,
-        # collector_endpoint='/api/traces?format=jaeger.thrift',
-        # collector_protocol='http',
+        # collector_endpoint='http://localhost:14268/api/traces?format=jaeger.thrift',
         # username=xxxx, # optional
         # password=xxxx, # optional
     )
@@ -69,7 +66,7 @@ import socket
 from thrift.protocol import TBinaryProtocol, TCompactProtocol
 from thrift.transport import THttpClient, TTransport
 
-import opentelemetry.trace as trace_api
+from opentelemetry.configuration import Configuration
 from opentelemetry.exporter.jaeger.gen.agent import Agent as agent
 from opentelemetry.exporter.jaeger.gen.jaeger import Collector as jaeger
 from opentelemetry.sdk.trace.export import Span, SpanExporter, SpanExportResult
@@ -77,8 +74,6 @@ from opentelemetry.trace.status import StatusCanonicalCode
 
 DEFAULT_AGENT_HOST_NAME = "localhost"
 DEFAULT_AGENT_PORT = 6831
-DEFAULT_COLLECTOR_ENDPOINT = "/api/traces?format=jaeger.thrift"
-DEFAULT_COLLECTOR_PROTOCOL = "http"
 
 UDP_PACKET_MAX_LENGTH = 65000
 
@@ -93,11 +88,7 @@ class JaegerSpanExporter(SpanExporter):
             when query for spans.
         agent_host_name: The host name of the Jaeger-Agent.
         agent_port: The port of the Jaeger-Agent.
-        collector_host_name: The host name of the Jaeger-Collector HTTP/HTTPS
-            Thrift.
-        collector_port: The port of the Jaeger-Collector HTTP/HTTPS Thrift.
         collector_endpoint: The endpoint of the Jaeger-Collector HTTP/HTTPS Thrift.
-        collector_protocol: The transfer protocol for the Jaeger-Collector(HTTP or HTTPS).
         username: The user name of the Basic Auth if authentication is
             required.
         password: The password of the Basic Auth if authentication is
@@ -107,25 +98,39 @@ class JaegerSpanExporter(SpanExporter):
     def __init__(
         self,
         service_name,
-        agent_host_name=DEFAULT_AGENT_HOST_NAME,
-        agent_port=DEFAULT_AGENT_PORT,
-        collector_host_name=None,
-        collector_port=None,
-        collector_endpoint=DEFAULT_COLLECTOR_ENDPOINT,
-        collector_protocol=DEFAULT_COLLECTOR_PROTOCOL,
+        agent_host_name=None,
+        agent_port=None,
+        collector_endpoint=None,
         username=None,
         password=None,
     ):
         self.service_name = service_name
-        self.agent_host_name = agent_host_name
-        self.agent_port = agent_port
+        self.agent_host_name = _parameter_setter(
+            param=agent_host_name,
+            env_variable=Configuration().EXPORTER_JAEGER_AGENT_HOST,
+            default=DEFAULT_AGENT_HOST_NAME,
+        )
+        self.agent_port = _parameter_setter(
+            param=agent_port,
+            env_variable=Configuration().EXPORTER_JAEGER_AGENT_PORT,
+            default=DEFAULT_AGENT_PORT,
+        )
         self._agent_client = None
-        self.collector_host_name = collector_host_name
-        self.collector_port = collector_port
-        self.collector_endpoint = collector_endpoint
-        self.collector_protocol = collector_protocol
-        self.username = username
-        self.password = password
+        self.collector_endpoint = _parameter_setter(
+            param=collector_endpoint,
+            env_variable=Configuration().EXPORTER_JAEGER_ENDPOINT,
+            default=None,
+        )
+        self.username = _parameter_setter(
+            param=username,
+            env_variable=Configuration().EXPORTER_JAEGER_USER,
+            default=None,
+        )
+        self.password = _parameter_setter(
+            param=password,
+            env_variable=Configuration().EXPORTER_JAEGER_PASSWORD,
+            default=None,
+        )
         self._collector = None
 
     @property
@@ -141,21 +146,16 @@ class JaegerSpanExporter(SpanExporter):
         if self._collector is not None:
             return self._collector
 
-        if self.collector_host_name is None or self.collector_port is None:
+        if self.collector_endpoint is None:
             return None
-
-        thrift_url = "{}://{}:{}{}".format(
-            self.collector_protocol,
-            self.collector_host_name,
-            self.collector_port,
-            self.collector_endpoint,
-        )
 
         auth = None
         if self.username is not None and self.password is not None:
             auth = (self.username, self.password)
 
-        self._collector = Collector(thrift_url=thrift_url, auth=auth)
+        self._collector = Collector(
+            thrift_url=self.collector_endpoint, auth=auth
+        )
         return self._collector
 
     def export(self, spans):
@@ -175,6 +175,22 @@ class JaegerSpanExporter(SpanExporter):
 
     def shutdown(self):
         pass
+
+
+def _parameter_setter(param, env_variable, default):
+    """Returns value according to the provided data.
+
+    Args:
+        param: Constructor parameter value
+        env_variable: Environment variable related to the parameter
+        default: Constructor parameter default value
+    """
+    if param is None:
+        res = env_variable or default
+    else:
+        res = param
+
+    return res
 
 
 def _nsec_to_usec_round(nsec):

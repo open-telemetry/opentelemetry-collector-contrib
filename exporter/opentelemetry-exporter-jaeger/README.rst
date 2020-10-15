@@ -19,6 +19,14 @@ Installation
 .. _Jaeger: https://www.jaegertracing.io/
 .. _OpenTelemetry: https://github.com/open-telemetry/opentelemetry-python/
 
+Configuration
+-------------
+
+OpenTelemetry Jaeger Exporter can be configured by setting `JaegerSpanExporter parameters
+<https://github.com/open-telemetry/opentelemetry-python/blob/master/exporter/opentelemetry-exporter-jaeger
+/src/opentelemetry/exporter/jaeger/__init__.py#L88>`_ or by setting
+`environment variables <https://github.com/open-telemetry/opentelemetry-specification/blob/master/
+specification/sdk-environment-variables.md#jaeger-exporter>`_
 
 References
 ----------

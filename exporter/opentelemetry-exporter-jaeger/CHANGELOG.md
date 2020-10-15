@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Add support for Jaeger Span Exporter configuration by environment variables and<br/>
+  change JaegerSpanExporter constructor parameters
+  ([#1114](https://github.com/open-telemetry/opentelemetry-python/pull/1114)) 
 
 ## Version 0.13b0
 
