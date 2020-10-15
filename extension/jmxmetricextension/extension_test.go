@@ -28,7 +28,7 @@ func TestExtension(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{}
 
-	extension := newJmxMetricExtension(logger, config)
+	extension := newJMXMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	require.Same(t, logger, extension.logger)
 	require.Same(t, config, extension.config)
@@ -39,7 +39,7 @@ func TestExtension(t *testing.T) {
 	require.Nil(t, extension.NotReady())
 }
 
-func TestBuildJmxMetricGathererOtlpConfig(t *testing.T) {
+func TestBuildJMXMetricGathererOTLPConfig(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{
 		ServiceURL:     "myserviceurl",
@@ -47,8 +47,8 @@ func TestBuildJmxMetricGathererOtlpConfig(t *testing.T) {
 		GroovyScript:   "mygroovyscript",
 		Interval:       123 * time.Second,
 		Exporter:       "otlp",
-		OtlpEndpoint:   "myotlpendpoint",
-		OtlpTimeout:    234 * time.Second,
+		OTLPEndpoint:   "myotlpendpoint",
+		OTLPTimeout:    234 * time.Second,
 		PrometheusHost: "myprometheushost",
 		PrometheusPort: 12345,
 	}
@@ -60,21 +60,21 @@ otel.exporter = otlp
 otel.otlp.endpoint = myotlpendpoint
 otel.otlp.metric.timeout = 234000
 `
-	extension := newJmxMetricExtension(logger, config)
-	jmxConfig, err := extension.buildJmxMetricGathererConfig()
+	extension := newJMXMetricExtension(logger, config)
+	jmxConfig, err := extension.buildJMXMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)
 }
 
-func TestBuildJmxMetricGathererPrometheusConfig(t *testing.T) {
+func TestBuildJMXMetricGathererPrometheusConfig(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{
 		ServiceURL:     "myserviceurl",
 		GroovyScript:   "mygroovyscript",
 		Interval:       123 * time.Second,
 		Exporter:       "prometheus",
-		OtlpEndpoint:   "myotlpendpoint",
-		OtlpTimeout:    234 * time.Second,
+		OTLPEndpoint:   "myotlpendpoint",
+		OTLPTimeout:    234 * time.Second,
 		PrometheusHost: "myprometheushost",
 		PrometheusPort: 12345,
 	}
@@ -86,8 +86,8 @@ otel.exporter = prometheus
 otel.prometheus.host = myprometheushost
 otel.prometheus.port = 12345
 `
-	extension := newJmxMetricExtension(logger, config)
-	jmxConfig, err := extension.buildJmxMetricGathererConfig()
+	extension := newJMXMetricExtension(logger, config)
+	jmxConfig, err := extension.buildJMXMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)
 }

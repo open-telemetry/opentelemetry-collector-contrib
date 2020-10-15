@@ -33,7 +33,7 @@ type jmxMetricExtension struct {
 	subprocess *subprocess.Subprocess
 }
 
-func newJmxMetricExtension(
+func newJMXMetricExtension(
 	logger *zap.Logger,
 	config *config,
 ) *jmxMetricExtension {
@@ -45,13 +45,13 @@ func newJmxMetricExtension(
 
 func (jmx *jmxMetricExtension) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("Starting JMX Metric Extension")
-	javaConfig, err := jmx.buildJmxMetricGathererConfig()
+	javaConfig, err := jmx.buildJMXMetricGathererConfig()
 	if err != nil {
 		return err
 	}
 	subprocessConfig := subprocess.Config{
 		ExecutablePath: "java",
-		Args:           []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug", "-jar", jmx.config.JarPath, "-config", "-"},
+		Args:           []string{"-Dorg.slf4j.simpleLogger.defaultLogLevel=debug", "-jar", jmx.config.JARPath, "-config", "-"},
 		StdInContents:  javaConfig,
 	}
 
@@ -73,7 +73,7 @@ func (jmx *jmxMetricExtension) NotReady() error {
 	return nil
 }
 
-func (jmx *jmxMetricExtension) buildJmxMetricGathererConfig() (string, error) {
+func (jmx *jmxMetricExtension) buildJMXMetricGathererConfig() (string, error) {
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
 `, jmx.config.ServiceURL, jmx.config.Interval.Milliseconds())
@@ -88,7 +88,7 @@ otel.jmx.interval.milliseconds = %v
 		javaConfig += fmt.Sprintf(`otel.exporter = otlp
 otel.otlp.endpoint = %v
 otel.otlp.metric.timeout = %v
-`, jmx.config.OtlpEndpoint, jmx.config.OtlpTimeout.Milliseconds())
+`, jmx.config.OTLPEndpoint, jmx.config.OTLPTimeout.Milliseconds())
 	} else if jmx.config.Exporter == prometheusExporter {
 		javaConfig += fmt.Sprintf(`otel.exporter = prometheus
 otel.prometheus.host = %v

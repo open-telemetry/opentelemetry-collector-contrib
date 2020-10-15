@@ -13,7 +13,7 @@ Status: alpha
 This extension will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It can report metrics to an existing otlp or prometheus metric
 receiver in your pipeline.  In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
-of the JMX Metric Gatherer jar and configure the extension with its path.  It is assumed that the JRE is
+of the JMX Metric Gatherer JAR and configure the extension with its path.  It is assumed that the JRE is
 available on your system.
 
 # Configuration
@@ -38,7 +38,7 @@ extensions:
 
 ### jar_path (default: `/opt/opentelemetry-java-contrib-jmx-metrics.jar`)
 
-The path for the JMX Metric Gatherer uber jar to run.
+The path for the JMX Metric Gatherer uber JAR to run.
 
 ### service_url
 

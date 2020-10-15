@@ -24,8 +24,8 @@ import (
 
 type config struct {
 	configmodels.ExtensionSettings `mapstructure:",squash"`
-	// The path for the JMX Metric Gatherer uber jar (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
-	JarPath string `mapstructure:"jar_path"`
+	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
+	JARPath string `mapstructure:"jar_path"`
 	// The target JMX service url.
 	ServiceURL string `mapstructure:"service_url"`
 	// The target system for the metric gatherer whose built in groovy script to run.  Cannot be set with GroovyScript.
@@ -41,12 +41,12 @@ type config struct {
 	Password string `mapstructure:"password"`
 	// The metric exporter to use ("otlp" or "prometheus", "otlp" by default).
 	Exporter string `mapstructure:"exporter"`
-	// The Otlp Receiver endpoint to send metrics to ("localhost:55680" by default).
-	OtlpEndpoint string `mapstructure:"otlp_endpoint"`
-	// The Otlp exporter timeout (5 seconds by default).  Will be converted to milliseconds.
-	OtlpTimeout time.Duration `mapstructure:"otlp_timeout"`
-	// The headers to include in otlp metric submission requests.
-	OtlpHeaders map[string]string `mapstructure:"otlp_headers"`
+	// The OTLP Receiver endpoint to send metrics to ("localhost:55680" by default).
+	OTLPEndpoint string `mapstructure:"otlp_endpoint"`
+	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
+	OTLPTimeout time.Duration `mapstructure:"otlp_timeout"`
+	// The headers to include in OTLP metric submission requests.
+	OTLPHeaders map[string]string `mapstructure:"otlp_headers"`
 	// The Prometheus Host
 	PrometheusHost string `mapstructure:"prometheus_host"`
 	// The Prometheus Port
@@ -89,8 +89,8 @@ func (c *config) validate() error {
 		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.Interval.Milliseconds())
 	}
 
-	if c.OtlpTimeout < 0 {
-		return fmt.Errorf("%v `otlp_timeout` must be positive: %vms", c.Name(), c.OtlpTimeout.Milliseconds())
+	if c.OTLPTimeout < 0 {
+		return fmt.Errorf("%v `otlp_timeout` must be positive: %vms", c.Name(), c.OTLPTimeout.Milliseconds())
 	}
 	return nil
 }

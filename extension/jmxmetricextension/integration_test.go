@@ -47,26 +47,26 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type JmxIntegrationSuite struct {
+type JMXIntegrationSuite struct {
 	suite.Suite
-	JarPath string
+	JARPath string
 }
 
-func TestJmxIntegration(t *testing.T) {
-	suite.Run(t, new(JmxIntegrationSuite))
+func TestJMXIntegration(t *testing.T) {
+	suite.Run(t, new(JMXIntegrationSuite))
 }
 
-func (suite *JmxIntegrationSuite) SetupSuite() {
-	jarPath, err := downloadJmxMetricGathererJar()
+func (suite *JMXIntegrationSuite) SetupSuite() {
+	jarPath, err := downloadJMXMetricGathererJAR()
 	require.NoError(suite.T(), err)
-	suite.JarPath = jarPath
+	suite.JARPath = jarPath
 }
 
-func (suite *JmxIntegrationSuite) TearDownSuite() {
-	require.NoError(suite.T(), os.Remove(suite.JarPath))
+func (suite *JMXIntegrationSuite) TearDownSuite() {
+	require.NoError(suite.T(), os.Remove(suite.JARPath))
 }
 
-func downloadJmxMetricGathererJar() (string, error) {
+func downloadJMXMetricGathererJAR() (string, error) {
 	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20200918.184353-3.jar"
 	resp, err := http.Get(url)
 	if err != nil {
@@ -102,7 +102,7 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	return cassandra
 }
 
-func newOtlpMetricReceiver(t *testing.T, logger *zap.Logger) (int, *component.MetricsReceiver, *exportertest.SinkMetricsExporter) {
+func newOTLPMetricReceiver(t *testing.T, logger *zap.Logger) (int, *component.MetricsReceiver, *exportertest.SinkMetricsExporter) {
 	consumer := &exportertest.SinkMetricsExporter{}
 	require.NotNil(t, consumer)
 
@@ -203,7 +203,7 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 	}
 }
 
-func (suite *JmxIntegrationSuite) TestJmxMetricViaOtlpReceiverIntegration() {
+func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 	t := suite.T()
 	cassandra := cassandraContainer(t)
 	defer cassandra.Terminate(context.Background())
@@ -214,7 +214,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaOtlpReceiverIntegration() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	port, receiver, consumer := newOtlpMetricReceiver(t, logger)
+	port, receiver, consumer := newOTLPMetricReceiver(t, logger)
 	defer func() {
 		require.Nil(t, (*receiver).Shutdown(context.Background()))
 	}()
@@ -225,16 +225,16 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaOtlpReceiverIntegration() {
 	}
 
 	config := &config{
-		JarPath:      suite.JarPath,
+		JARPath:      suite.JARPath,
 		ServiceURL:   fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
 		Exporter:     "otlp",
-		OtlpEndpoint: fmt.Sprintf("%v:%v", otlp, port),
+		OTLPEndpoint: fmt.Sprintf("%v:%v", otlp, port),
 		GroovyScript: path.Join(".", "testdata", "script.groovy"),
 		Username:     "cassandra",
 		Password:     "cassandra",
 	}
 
-	extension := newJmxMetricExtension(logger, config)
+	extension := newJMXMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	defer func() {
 		require.Nil(t, extension.Shutdown(context.Background()))
@@ -288,7 +288,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaOtlpReceiverIntegration() {
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(extension))
 }
 
-func (suite *JmxIntegrationSuite) TestJmxMetricViaPrometheusReceiverIntegration() {
+func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration() {
 	t := suite.T()
 	cassandra := cassandraContainer(t)
 	defer cassandra.Terminate(context.Background())
@@ -305,7 +305,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaPrometheusReceiverIntegration(
 	}()
 
 	config := &config{
-		JarPath:        suite.JarPath,
+		JARPath:        suite.JARPath,
 		ServiceURL:     fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
 		Exporter:       "prometheus",
 		PrometheusHost: "localhost",
@@ -316,7 +316,7 @@ func (suite *JmxIntegrationSuite) TestJmxMetricViaPrometheusReceiverIntegration(
 		Password:       "cassandra",
 	}
 
-	extension := newJmxMetricExtension(logger, config)
+	extension := newJMXMetricExtension(logger, config)
 	require.NotNil(t, extension)
 	defer func() {
 		require.Nil(t, extension.Shutdown(context.Background()))

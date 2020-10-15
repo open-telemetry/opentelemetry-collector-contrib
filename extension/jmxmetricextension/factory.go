@@ -45,11 +45,11 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		JarPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		Interval:       10 * time.Second,
 		Exporter:       otlpExporter,
-		OtlpEndpoint:   otlpEndpoint,
-		OtlpTimeout:    5 * time.Second,
+		OTLPEndpoint:   otlpEndpoint,
+		OTLPTimeout:    5 * time.Second,
 		PrometheusHost: prometheusEndpoint,
 		PrometheusPort: prometheusPort,
 	}
@@ -64,5 +64,5 @@ func createExtension(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJmxMetricExtension(params.Logger, jmxConfig), nil
+	return newJMXMetricExtension(params.Logger, jmxConfig), nil
 }
