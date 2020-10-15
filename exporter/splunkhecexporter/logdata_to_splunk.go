@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
-func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunkEvent, int) {
+func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splunk.Event, int) {
 	numDroppedLogs := 0
-	splunkEvents := make([]*splunkEvent, 0)
+	splunkEvents := make([]*splunk.Event, 0)
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -60,14 +60,14 @@ func logDataToSplunk(logger *zap.Logger, ld pdata.Logs, config *Config) ([]*splu
 	return splunkEvents, numDroppedLogs
 }
 
-func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunkEvent {
+func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.Logger) *splunk.Event {
 	if lr.Body().IsNil() {
 		return nil
 	}
 	var host string
 	var source string
 	var sourcetype string
-	fields := map[string]string{}
+	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		if v.Type() != pdata.AttributeValueSTRING {
 			logger.Debug("Failed to convert log record attribute value to Splunk property value, value is not a string", zap.String("key", k))
@@ -97,7 +97,7 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 	}
 
 	eventValue := convertAttributeValue(lr.Body(), logger)
-	return &splunkEvent{
+	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
 		Host:       host,
 		Source:     source,
