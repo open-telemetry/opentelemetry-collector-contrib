@@ -447,11 +447,11 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 func needsCalculateRate(pmd *pdata.Metric) bool {
 	switch pmd.DataType() {
 	case pdata.MetricDataTypeIntSum:
-		if pmd.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if !pmd.IntSum().IsNil() && pmd.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return true
 		}
 	case pdata.MetricDataTypeDoubleSum:
-		if pmd.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+		if !pmd.DoubleSum().IsNil() && pmd.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
 			return true
 		}
 	}

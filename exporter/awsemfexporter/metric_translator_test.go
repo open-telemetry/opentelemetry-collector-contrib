@@ -27,6 +27,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
@@ -509,4 +510,32 @@ func createMetricTestData() consumerdata.MetricsData {
 			},
 		},
 	}
+}
+
+func TestNeedsCalculateRate(t *testing.T) {
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetDataType(pdata.MetricDataTypeIntGauge)
+	assert.False(t, needsCalculateRate(&metric))
+	metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	assert.False(t, needsCalculateRate(&metric))
+
+	metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+	assert.False(t, needsCalculateRate(&metric))
+	metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+	assert.False(t, needsCalculateRate(&metric))
+
+	metric.SetDataType(pdata.MetricDataTypeIntSum)
+	metric.IntSum().InitEmpty()
+	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	assert.True(t, needsCalculateRate(&metric))
+	metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	assert.False(t, needsCalculateRate(&metric))
+
+	metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+	metric.DoubleSum().InitEmpty()
+	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+	assert.True(t, needsCalculateRate(&metric))
+	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+	assert.False(t, needsCalculateRate(&metric))
 }
