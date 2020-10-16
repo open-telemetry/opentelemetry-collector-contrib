@@ -15,17 +15,12 @@
 package splunkhecexporter
 
 import (
-	"errors"
 	"fmt"
 	"math"
-	"strconv"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -33,70 +28,79 @@ import (
 const (
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
-	// separator for metric values.
-	separator = "."
 	// splunkMetricValue is the splunk metric value prefix.
 	splunkMetricValue = "metric_name"
-	// bucketSuffix is the bucket suffix for distribution buckets.
-	bucketSuffix = "bucket"
-	// quantileSuffix is the quantile suffix for summary quantiles.
-	quantileSuffix = "quantile"
 	// countSuffix is the count metric value suffix.
 	countSuffix = "count"
-	// sumOfSquaredDeviation is the sum of squared deviation metric value suffix.
-	sumOfSquaredDeviation = "sum_of_squared_deviation"
-)
-
-var (
-	// infinity bound dimension value is used on all histograms.
-	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int, error) {
-	ocmds := internaldata.MetricsToOC(data)
 	numDroppedTimeSeries := 0
-	_, numPoints := data.MetricAndDataPointCount()
-	splunkMetrics := make([]*splunk.Event, 0, numPoints)
-	for _, ocmd := range ocmds {
-		var host string
-		if ocmd.Resource != nil {
-			host = ocmd.Resource.Labels[conventions.AttributeHostHostname]
+	var splunkMetrics []*splunk.Event
+	for i := 0; i < data.ResourceMetrics().Len(); i++ {
+		rm := data.ResourceMetrics().At(i)
+
+		host := unknownHostName
+		source := config.Source
+		sourceType := config.SourceType
+		if !rm.Resource().IsNil() {
+			if conventionHost, isSet := rm.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+				host = conventionHost.StringVal()
+			}
+			if sourceSet, isSet := rm.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
+				source = sourceSet.StringVal()
+			}
+			if sourcetypeSet, isSet := rm.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
+				sourceType = sourcetypeSet.StringVal()
+			}
 		}
-		if host == "" {
-			host = unknownHostName
-		}
-		for _, metric := range ocmd.Metrics {
-			for _, timeSeries := range metric.Timeseries {
-				for _, tsPoint := range timeSeries.Points {
-					values, err := mapValues(logger, metric, tsPoint.GetValue())
-					if err != nil {
-						logger.Warn(
-							"Timeseries dropped to unexpected metric type",
-							zap.Any("metric", metric),
-							zap.Any("err", err))
-						numDroppedTimeSeries++
-						continue
-					}
-					for key, value := range values {
-						if value == nil {
-							logger.Warn(
-								"Timeseries dropped to unexpected metric type",
-								zap.Any("metric", value))
-							numDroppedTimeSeries++
-							continue
+		rm.InstrumentationLibraryMetrics().Len()
+		for ilmi := 0; ilmi < rm.InstrumentationLibraryMetrics().Len(); ilmi++ {
+			ilm := rm.InstrumentationLibraryMetrics().At(ilmi)
+			for tmi := 0; tmi < ilm.Metrics().Len(); tmi++ {
+				tm := ilm.Metrics().At(tmi)
+
+				switch tm.DataType() {
+				case pdata.MetricDataTypeIntGauge:
+					for gi := 0; gi < tm.IntGauge().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						if !rm.Resource().IsNil() {
+							rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+								fields[k] = v.StringVal()
+							})
 						}
-						fields := map[string]interface{}{key: value}
-						for k, v := range ocmd.Node.GetAttributes() {
+						rm.Resource().Attributes()
+						dataPt := tm.IntGauge().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
 							fields[k] = v
-						}
-						for k, v := range ocmd.Resource.GetLabels() {
-							fields[k] = v
-						}
-						for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
-							fields[desc.Key] = timeSeries.LabelValues[i].Value
-						}
+						})
 						sm := &splunk.Event{
-							Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
+							Host:       host,
+							Source:     source,
+							SourceType: sourceType,
+							Index:      config.Index,
+							Event:      splunk.HecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
+					}
+				case pdata.MetricDataTypeDoubleGauge:
+					for gi := 0; gi < tm.DoubleGauge().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						if !rm.Resource().IsNil() {
+							rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+								fields[k] = v.StringVal()
+							})
+						}
+						dataPt := tm.DoubleGauge().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
+							fields[k] = v
+						})
+						sm := &splunk.Event{
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
 							Host:       host,
 							Source:     config.Source,
 							SourceType: config.SourceType,
@@ -106,6 +110,113 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						}
 						splunkMetrics = append(splunkMetrics, sm)
 					}
+				case pdata.MetricDataTypeDoubleHistogram:
+					for gi := 0; gi < tm.DoubleHistogram().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						if !rm.Resource().IsNil() {
+							rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+								fields[k] = v.StringVal()
+							})
+						}
+						dataPt := tm.DoubleHistogram().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Sum()
+						for bi := 0; bi < len(dataPt.ExplicitBounds()); bi++ {
+							bound := dataPt.ExplicitBounds()[bi]
+							fields[fmt.Sprintf("%s:%s_%f", splunkMetricValue, tm.Name(), bound)] = dataPt.BucketCounts()[bi]
+						}
+
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
+							fields[k] = v
+						})
+						sm := &splunk.Event{
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
+							Host:       host,
+							Source:     config.Source,
+							SourceType: config.SourceType,
+							Index:      config.Index,
+							Event:      splunk.HecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
+					}
+				case pdata.MetricDataTypeIntHistogram:
+					for gi := 0; gi < tm.IntHistogram().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						if !rm.Resource().IsNil() {
+							rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+								fields[k] = v.StringVal()
+							})
+						}
+						dataPt := tm.IntHistogram().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Sum()
+						for bi := 0; bi < len(dataPt.ExplicitBounds()); bi++ {
+							bound := dataPt.ExplicitBounds()[bi]
+							fields[fmt.Sprintf("%s:%s_%f", splunkMetricValue, tm.Name(), bound)] = dataPt.BucketCounts()[bi]
+						}
+
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
+							fields[k] = v
+						})
+						sm := &splunk.Event{
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
+							Host:       host,
+							Source:     config.Source,
+							SourceType: config.SourceType,
+							Index:      config.Index,
+							Event:      splunk.HecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
+					}
+				case pdata.MetricDataTypeDoubleSum:
+					for gi := 0; gi < tm.DoubleSum().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						dataPt := tm.DoubleSum().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
+							fields[k] = v
+						})
+						sm := &splunk.Event{
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
+							Host:       host,
+							Source:     config.Source,
+							SourceType: config.SourceType,
+							Index:      config.Index,
+							Event:      splunk.HecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
+					}
+				case pdata.MetricDataTypeIntSum:
+					for gi := 0; gi < tm.IntSum().DataPoints().Len(); gi++ {
+						fields := map[string]interface{}{}
+						dataPt := tm.IntSum().DataPoints().At(gi)
+						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+
+						dataPt.LabelsMap().ForEach(func(k string, v string) {
+							fields[k] = v
+						})
+						sm := &splunk.Event{
+							Time:       timestampToEpochMilliseconds(dataPt.Timestamp()),
+							Host:       host,
+							Source:     config.Source,
+							SourceType: config.SourceType,
+							Index:      config.Index,
+							Event:      splunk.HecEventMetricType,
+							Fields:     fields,
+						}
+						splunkMetrics = append(splunkMetrics, sm)
+					}
+				case pdata.MetricDataTypeNone:
+					fallthrough
+				default:
+					logger.Warn(
+						"Point with unsupported type",
+						zap.Any("metric", rm))
+					numDroppedTimeSeries++
 				}
 			}
 		}
@@ -114,14 +225,8 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
-func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) *float64 {
-	if ts == nil {
-		return nil
-	}
-
-	seconds := ts.GetSeconds()
-	nanos := ts.GetNanos()
-	if seconds == 0 && nanos == 0 {
+func timestampToEpochMilliseconds(ts pdata.TimestampUnixNano) *float64 {
+	if ts == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
 		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
 		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
@@ -129,104 +234,7 @@ func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) *float64 {
 		return nil
 	}
 
-	val := float64(seconds) + math.Round(float64(nanos)/1e6)/1e3
+	val := math.Round(float64(ts)/1e6)/1e3
 
 	return &val
-}
-
-func mapValues(logger *zap.Logger, metric *metricspb.Metric, value interface{}) (map[string]interface{}, error) {
-	metricName := fmt.Sprintf("%s:%s", splunkMetricValue, metric.GetMetricDescriptor().Name)
-	switch pv := value.(type) {
-	case *metricspb.Point_Int64Value:
-		return map[string]interface{}{metricName: pv.Int64Value}, nil
-	case *metricspb.Point_DoubleValue:
-		return map[string]interface{}{metricName: pv.DoubleValue}, nil
-	case *metricspb.Point_DistributionValue:
-		return mapDistributionValue(metric, pv.DistributionValue)
-	case *metricspb.Point_SummaryValue:
-		return mapSummaryValue(metric, pv.SummaryValue)
-	default:
-		return nil, errors.New("unsupported metric type")
-	}
-}
-
-func mapDistributionValue(metric *metricspb.Metric, distributionValue *metricspb.DistributionValue) (map[string]interface{}, error) {
-	// Translating distribution values per symmetrical recommendations to Prometheus:
-	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
-
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>.
-	values := make(map[string]interface{})
-	metricName := fmt.Sprintf("%s:%s", splunkMetricValue, metric.GetMetricDescriptor().Name)
-	values[metricName+separator+countSuffix] = distributionValue.Count
-	values[metricName] = distributionValue.Sum
-	values[metricName+separator+sumOfSquaredDeviation] = distributionValue.SumOfSquaredDeviation
-
-	// 3. Each histogram bucket is converted to a cumulative counter called
-	// <basename>_bucket and will include a dimension called upper_bound that
-	// specifies the maximum value in that bucket. This metric specifies the
-	// number of events with a value that is less than or equal to the upper
-	// bound.
-	bucketMetricName := metricName + separator + bucketSuffix + separator
-	explicitBuckets := distributionValue.BucketOptions.GetExplicit()
-	if explicitBuckets == nil {
-		return values, fmt.Errorf(
-			"unknown bucket options type for metric %q",
-			bucketMetricName)
-	}
-	bounds := explicitBuckets.Bounds
-	splunkBounds := make([]*string, len(bounds)+1)
-	for i := 0; i < len(bounds); i++ {
-		dimValue := float64ToDimValue(bounds[i])
-		splunkBounds[i] = &dimValue
-	}
-	splunkBounds[len(splunkBounds)-1] = &infinityBoundSFxDimValue
-
-	for i, bucket := range distributionValue.Buckets {
-		values[fmt.Sprintf("%s%s", bucketMetricName, *splunkBounds[i])] = bucket.Count
-	}
-
-	return values, nil
-}
-
-func float64ToDimValue(f float64) string {
-	// Parameters below are the same used by Prometheus
-	// see https://github.com/prometheus/common/blob/b5fe7d854c42dc7842e48d1ca58f60feae09d77b/expfmt/text_create.go#L450
-	// SignalFx agent uses a different pattern
-	// https://github.com/signalfx/signalfx-agent/blob/5779a3de0c9861fa07316fd11b3c4ff38c0d78f0/internal/monitors/prometheusexporter/conversion.go#L77
-	// The important issue here is consistency with the exporter, opting for the
-	// more common one used by Prometheus.
-	str := strconv.FormatFloat(f, 'g', -1, 64)
-	return str
-}
-
-func mapSummaryValue(metric *metricspb.Metric, summaryValue *metricspb.SummaryValue) (map[string]interface{}, error) {
-
-	// Translating summary values per symmetrical recommendations to Prometheus:
-	// https://docs.signalfx.com/en/latest/integrations/agent/monitors/prometheus-exporter.html#overview
-
-	// 1. The total count gets converted to a cumulative counter called
-	// <basename>_count.
-	// 2. The total sum gets converted to a cumulative counter called <basename>
-	values := make(map[string]interface{})
-	metricName := fmt.Sprintf("%s:%s", splunkMetricValue, metric.GetMetricDescriptor().Name)
-	values[metricName+separator+countSuffix] = summaryValue.Count.Value
-	values[metricName] = summaryValue.Sum.Value
-
-	// 3. Each quantile value is converted to a gauge called <basename>_quantile
-	// and will include a dimension called quantile that specifies the quantile.
-	percentiles := summaryValue.GetSnapshot().GetPercentileValues()
-	if percentiles == nil {
-		return values, fmt.Errorf(
-			"unknown percentiles values for summary metric %q",
-			metricName)
-	}
-	quantileMetricName := metricName + separator + quantileSuffix + separator
-	for _, quantile := range percentiles {
-		values[quantileMetricName+float64ToDimValue(quantile.Percentile)] = quantile.Value
-
-	}
-
-	return values, nil
 }

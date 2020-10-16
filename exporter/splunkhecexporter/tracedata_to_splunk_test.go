@@ -20,56 +20,44 @@ import (
 	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := &timestamppb.Timestamp{
-		Nanos: 123,
-	}
+	ts := pdata.TimestampUnixNano(123)
 
 	tests := []struct {
 		name                string
-		traceDataFn         func() consumerdata.TraceData
+		traceDataFn         func() pdata.Span
 		wantSplunkEvents    []*splunk.Event
 		wantNumDroppedSpans int
 	}{
 		{
 			name: "valid",
-			traceDataFn: func() consumerdata.TraceData {
-				return consumerdata.TraceData{
-					Spans: []*v1.Span{
-						makeSpan("myspan", ts),
-					},
-				}
+			traceDataFn: func() pdata.Span {
+				return makeSpan("myspan", &ts)
 			},
 			wantSplunkEvents: []*splunk.Event{
 				commonSplunkEvent("myspan", ts),
 			},
 			wantNumDroppedSpans: 0,
 		},
-		{
-			name: "missing_start_ts",
-			traceDataFn: func() consumerdata.TraceData {
-				return consumerdata.TraceData{
-					Spans: []*v1.Span{
-						makeSpan("myspan", nil),
-					},
-				}
-			},
-			wantSplunkEvents:    []*splunk.Event{},
-			wantNumDroppedSpans: 1,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, internaldata.OCToTraceData(tt.traceDataFn()), &Config{})
+			traces := pdata.NewTraces()
+			rs := pdata.NewResourceSpans()
+			rs.InitEmpty()
+			ils := pdata.NewInstrumentationLibrarySpans()
+			ils.InitEmpty()
+			ils.Spans().Append(tt.traceDataFn())
+			rs.InstrumentationLibrarySpans().Append(ils)
+			traces.ResourceSpans().Append(rs)
+			gotEvents, gotNumDroppedSpans := traceDataToSplunk(logger, traces, &Config{})
 			assert.Equal(t, tt.wantNumDroppedSpans, gotNumDroppedSpans)
 			require.Equal(t, len(tt.wantSplunkEvents), len(gotEvents))
 			for i, want := range tt.wantSplunkEvents {
@@ -80,24 +68,24 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func makeSpan(name string, ts *timestamppb.Timestamp) *v1.Span {
-	trunceableName := &v1.TruncatableString{
-		Value: name,
+func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName(name)
+	if ts != nil {
+		span.SetStartTime(*ts)
 	}
-	return &v1.Span{
-		Name:      trunceableName,
-		StartTime: ts,
-	}
+	return span
 }
 
 func commonSplunkEvent(
 	name string,
-	ts *timestamppb.Timestamp,
+	ts pdata.TimestampUnixNano,
 ) *splunk.Event {
 	trunceableName := &v1.TruncatableString{
 		Value: name,
 	}
-	span := v1.Span{Name: trunceableName, StartTime: ts}
+	span := v1.Span{Name: trunceableName, StartTime: pdata.UnixNanoToTimestamp(ts)}
 	return &splunk.Event{
 		Time:  timestampToEpochMilliseconds(ts),
 		Host:  "unknown",

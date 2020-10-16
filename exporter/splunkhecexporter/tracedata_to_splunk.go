@@ -24,34 +24,42 @@ import (
 )
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
-	octds := internaldata.TraceDataToOC(data)
+
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
-	for _, octd := range octds {
-		var host string
-		if octd.Resource != nil {
-			host = octd.Resource.Labels[conventions.AttributeHostHostname]
-		}
-		if host == "" {
-			host = unknownHostName
-		}
-		for _, span := range octd.Spans {
-			if span.StartTime == nil {
-				logger.Debug(
-					"Span dropped as it had no start timestamp",
-					zap.Any("span", span))
-				numDroppedSpans++
-				continue
+	for i := 0; i < data.ResourceSpans().Len(); i++ {
+		rs := data.ResourceSpans().At(i)
+		host := unknownHostName
+		source := config.Source
+		sourceType := config.SourceType
+		if !rs.Resource().IsNil() {
+			if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+				host = conventionHost.StringVal()
 			}
-			se := &splunk.Event{
-				Time:       timestampToEpochMilliseconds(span.StartTime),
-				Host:       host,
-				Source:     config.Source,
-				SourceType: config.SourceType,
-				Index:      config.Index,
-				Event:      span,
+			if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
+				source = sourceSet.StringVal()
 			}
-			splunkEvents = append(splunkEvents, se)
+			if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
+				sourceType = sourcetypeSet.StringVal()
+			}
+		}
+		for sils := 0; sils < rs.InstrumentationLibrarySpans().Len(); sils++ {
+			ils := rs.InstrumentationLibrarySpans().At(sils)
+			for si := 0; si < ils.Spans().Len(); si++ {
+				span := ils.Spans().At(si)
+				// TODO replace with span JSON object.
+				spanOC := internaldata.TraceDataToOC(data)[i].Spans[(sils+1)*si]
+
+				se := &splunk.Event{
+					Time:       timestampToEpochMilliseconds(span.StartTime()),
+					Host:       host,
+					Source:     source,
+					SourceType: sourceType,
+					Index:      config.Index,
+					Event:      spanOC,
+				}
+				splunkEvents = append(splunkEvents, se)
+			}
 		}
 	}
 
