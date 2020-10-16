@@ -27,23 +27,26 @@ import (
 // runner starts and stops receiver instances.
 type runner interface {
 	// start a receiver instance from its static config and discovered config.
-	start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error)
+	start(receiver receiverConfig, discoveredConfig userConfigMap, nextConsumer consumer.MetricsConsumer) (component.Receiver, error)
 	// shutdown a receiver.
 	shutdown(rcvr component.Receiver) error
 }
 
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
-	params       component.ReceiverCreateParams
-	nextConsumer consumer.MetricsConsumer
-	idNamespace  string
-	host         component.Host
+	params      component.ReceiverCreateParams
+	idNamespace string
+	host        component.Host
 }
 
 var _ runner = (*receiverRunner)(nil)
 
 // start a receiver instance from its static config and discovered config.
-func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userConfigMap) (component.Receiver, error) {
+func (run *receiverRunner) start(
+	receiver receiverConfig,
+	discoveredConfig userConfigMap,
+	nextConsumer consumer.MetricsConsumer,
+) (component.Receiver, error) {
 	factory := run.host.GetFactory(component.KindReceiver, receiver.typeStr)
 
 	if factory == nil {
@@ -56,7 +59,7 @@ func (run *receiverRunner) start(receiver receiverConfig, discoveredConfig userC
 	if err != nil {
 		return nil, err
 	}
-	recvr, err := run.createRuntimeReceiver(receiverFactory, cfg)
+	recvr, err := run.createRuntimeReceiver(receiverFactory, cfg, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +106,10 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 }
 
 // createRuntimeReceiver creates a receiver that is discovered at runtime.
-func (run *receiverRunner) createRuntimeReceiver(factory component.ReceiverFactory, cfg configmodels.Receiver) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, run.nextConsumer)
+func (run *receiverRunner) createRuntimeReceiver(
+	factory component.ReceiverFactory,
+	cfg configmodels.Receiver,
+	nextConsumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
+	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
 }

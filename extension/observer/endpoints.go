@@ -93,17 +93,23 @@ func (e *Endpoint) String() string {
 type Pod struct {
 	// Name of the pod.
 	Name string
+	// UID is the unique ID in the cluster for the pod.
+	UID string
 	// Labels is a map of user-specified metadata.
 	Labels map[string]string
 	// Annotations is a map of user-specified metadata.
 	Annotations map[string]string
+	// Namespace must be unique for pods with same name.
+	Namespace string
 }
 
 func (p *Pod) Env() EndpointEnv {
 	return map[string]interface{}{
+		"uid":         p.UID,
 		"name":        p.Name,
 		"labels":      p.Labels,
 		"annotations": p.Annotations,
+		"namespace":   p.Namespace,
 	}
 }
 
@@ -125,13 +131,9 @@ type Port struct {
 
 func (p *Port) Env() EndpointEnv {
 	return map[string]interface{}{
-		"name": p.Name,
-		"port": p.Port,
-		"pod": map[string]interface{}{
-			"name":        p.Pod.Name,
-			"labels":      p.Pod.Labels,
-			"annotations": p.Pod.Annotations,
-		},
+		"name":      p.Name,
+		"port":      p.Port,
+		"pod":       p.Pod.Env(),
 		"transport": p.Transport,
 	}
 }
