@@ -56,6 +56,34 @@ config:
    endpoint: `endpoint`:8080
 ```
 
+**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+
+This setting controls what resource attributes are set on metrics emitted from the created receiver. These attributes can be set from [values in the endpoint](#rule-expressions) that was matched by the `rule`. These attributes vary based on the endpoint type. These defaults can be disabled by setting the attribute to be removed to an empty value. Note that the values can be dynamic and processed the same as in `config`.
+
+Note that the backticks below are not typos--they indicate the value is set dynamically.
+
+`type.pod`
+
+| Resource Attribute | Default
+|---|---|
+| k8s.pod.name | \`name\` |
+| k8s.pod.uid | \`uid\` |
+| k8s.namespace.name | \`namespace\` |
+
+`type.port`
+
+| Resource Attribute | Default
+|---|---|
+| k8s.pod.name | \`pod.name\` |
+| k8s.pod.uid | \`pod.uid\` |
+| k8s.namespace.name | \`pod.namespace\` |
+
+`type.host`
+
+None
+
+See `redis/2` in [examples](#examples).
+
 ## Rule Expressions
 
 Each rule must start with `type.(pod|port) &&` such that the rule matches
@@ -70,6 +98,7 @@ targeting it will have different variables available.
 | name        | name of the pod                   |
 | labels      | map of labels set on the pod      |
 | annotations | map of annotations set on the pod |
+| namespace   | namespace to which the pod belongs|
 
 ### Port
 
@@ -81,9 +110,10 @@ targeting it will have different variables available.
 | pod.name        | name of the owning pod               |
 | pod.labels      | map of labels of the owning pod      |
 | pod.annotations | map of annotations of the owning pod |
+| pod.namespace   | namespace to which the pod belongs   |
 | protocol        | `TCP` or `UDP`                       |
 
-## Example
+## Examples
 
 ```yaml
 extensions:
@@ -111,6 +141,15 @@ receivers:
           password: secret
           # Dynamic configuration value.
           service_name: `pod.labels["service_name"]`
+
+      redis/2:
+        # Set a resource attribute based on endpoint value.
+        rule: type.port && port == 6379
+        resource_attributes:
+          # Dynamic value.
+          app: `pod.labels["app"]`
+          # Static value.
+          source: redis
   receiver_creator/2:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [host_observer]
