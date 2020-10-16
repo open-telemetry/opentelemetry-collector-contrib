@@ -131,8 +131,22 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 }
 
 // Matches returns true if the given OTLP Metric's name matches any of the Metric
-// Declaration's metric name selectors.
-func (m *MetricDeclaration) Matches(metric *pdata.Metric) bool {
+// Declaration's metric name selectors and label matchers.
+func (m *MetricDeclaration) Matches(metric *pdata.Metric, labels map[string]string) bool {
+	// If there are label matchers defined, filter against those first
+	if len(m.LabelMatchers) > 0 {
+		hasLabelMatch := false
+		for _, lm := range m.LabelMatchers {
+			if lm.Matches(labels) {
+				hasLabelMatch = true
+				break
+			}
+		}
+		if !hasLabelMatch {
+			return false
+		}
+	}
+
 	for _, regex := range m.metricRegexList {
 		if regex.MatchString(metric.Name()) {
 			return true
@@ -219,7 +233,7 @@ func processMetricDeclarations(metricDeclarations []*MetricDeclaration, metric *
 	}
 	// Extract and append dimensions from metric declarations
 	for _, m := range metricDeclarations {
-		if m.Matches(metric) {
+		if m.Matches(metric, labels) {
 			extractedDims := m.ExtractDimensions(labels)
 			for _, dimSet := range extractedDims {
 				addDimSet(dimSet)

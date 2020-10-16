@@ -362,31 +362,151 @@ func TestMetricDeclarationMatches(t *testing.T) {
 	metric := pdata.NewMetric()
 	metric.InitEmpty()
 	metric.SetName("a")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aa")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aaaa")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("aaab")
-	assert.False(t, m.Matches(&metric))
+	assert.False(t, m.Matches(&metric, nil))
 
 	metric.SetName("b")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("ba")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("c")
-	assert.False(t, m.Matches(&metric))
+	assert.False(t, m.Matches(&metric, nil))
 
 	metric.SetName("aca")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
 
 	metric.SetName("accca")
-	assert.True(t, m.Matches(&metric))
+	assert.True(t, m.Matches(&metric, nil))
+}
+
+func TestMetricDeclarationMatchesWithLabelMatchers(t *testing.T) {
+	labels := map[string]string{
+		"label1": "foo",
+		"label2": "bar",
+		"label3": "car",
+	}
+	testCases := []struct {
+		testName      string
+		labelMatchers []*LabelMatcher
+		expected      bool
+	}{
+		{
+			"Single label",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "^fo+$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ single label",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "food",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "^c.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ single label, no match",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1"},
+					Regex:      "food",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "cat",
+				},
+			},
+			false,
+		},
+		{
+			"Multiple labels",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Regex:      "fo+;car;b.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple labels w/ custom separator",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,car,b.*$",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ multiple labels",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,car,b.*$",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "fat",
+				},
+			},
+			true,
+		},
+		{
+			"Multiple matchers w/ multiple labels, no match",
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label3", "label2"},
+					Separator:  ",",
+					Regex:      "fo+,cat,b.*$",
+				},
+				{
+					LabelNames: []string{"label3"},
+					Regex:      "fat",
+				},
+			},
+			false,
+		},
+	}
+	logger := zap.NewNop()
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("a")
+
+	for _, tc := range testCases {
+		m := MetricDeclaration{
+			MetricNameSelectors: []string{"^a+$"},
+			LabelMatchers:       tc.labelMatchers,
+		}
+		t.Run(tc.testName, func(t *testing.T) {
+			err := m.Init(logger)
+			assert.Nil(t, err)
+			matches := m.Matches(&metric, labels)
+			assert.Equal(t, tc.expected, matches)
+		})
+	}
 }
 
 func TestExtractDimensions(t *testing.T) {
