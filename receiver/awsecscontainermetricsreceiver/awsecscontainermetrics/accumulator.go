@@ -33,6 +33,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	taskMetrics := ECSMetrics{}
 	timestamp := timestampProto(time.Now())
 	taskResource := taskResource(metadata)
+	taskLabelKeys, taskLabelValues := taskLabelKeysAndValues(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
 		stats := containerStatsMap[containerMetadata.DockerID]
@@ -40,14 +41,22 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
+		if containerMetrics.CPUReserved > 0 {
+			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
+		}
+
 		containerResource := containerResource(containerMetadata)
 		for k, v := range taskResource.Labels {
 			containerResource.Labels[k] = v
 		}
 
+		labelKeys, labelValues := containerLabelKeysAndValues(containerMetadata)
+		labelKeys = append(labelKeys, taskLabelKeys...)
+		labelValues = append(labelValues, taskLabelValues...)
+
 		acc.accumulate(
 			containerResource,
-			convertToOCMetrics(ContainerPrefix, containerMetrics, nil, nil, timestamp),
+			convertToOCMetrics(ContainerPrefix, containerMetrics, labelKeys, labelValues, timestamp),
 		)
 
 		aggregateTaskMetrics(&taskMetrics, containerMetrics)
@@ -64,10 +73,11 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	if metadata.Limits.CPU != nil {
 		taskMetrics.CPUReserved = *metadata.Limits.CPU
 	}
+	taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 
 	acc.accumulate(
 		taskResource,
-		convertToOCMetrics(TaskPrefix, taskMetrics, nil, nil, timestamp),
+		convertToOCMetrics(TaskPrefix, taskMetrics, taskLabelKeys, taskLabelValues, timestamp),
 	)
 }
 
