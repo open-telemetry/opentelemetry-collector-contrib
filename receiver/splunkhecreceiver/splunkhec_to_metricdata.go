@@ -103,7 +103,7 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			} else {
 				// drop this point as we do not know how to extract a value from it
 				numDroppedTimeSeries++
-				logger.Debug("Cannot convert metric",
+				logger.Debug("Cannot convert metric, unknown input type",
 					zap.String("metric", metricName))
 			}
 
