@@ -85,7 +85,7 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 				dbl, err := strconv.ParseFloat(*s, 64)
 				if err != nil {
 					numDroppedTimeSeries++
-					logger.Debug("Cannot convert metric",
+					logger.Debug("Cannot convert metric value from string to number",
 						zap.String("metric", metricName))
 				} else {
 					addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
