@@ -31,10 +31,6 @@ import (
 )
 
 const (
-	// hecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
-	hecEventMetricType = "metric"
-	// hostnameLabel is the hostname label name.
-
 	// unknownHostName is the default host name when no hostname label is passed.
 	unknownHostName = "unknown"
 	// separator for metric values.
@@ -56,11 +52,11 @@ var (
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
 )
 
-func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Metric, int, error) {
+func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int, error) {
 	ocmds := internaldata.MetricsToOC(data)
 	numDroppedTimeSeries := 0
 	_, numPoints := data.MetricAndDataPointCount()
-	splunkMetrics := make([]*splunk.Metric, 0, numPoints)
+	splunkMetrics := make([]*splunk.Event, 0, numPoints)
 	for _, ocmd := range ocmds {
 		var host string
 		if ocmd.Resource != nil {
@@ -99,13 +95,13 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						for i, desc := range metric.MetricDescriptor.GetLabelKeys() {
 							fields[desc.Key] = timeSeries.LabelValues[i].Value
 						}
-						sm := &splunk.Metric{
+						sm := &splunk.Event{
 							Time:       timestampToEpochMilliseconds(tsPoint.GetTimestamp()),
 							Host:       host,
 							Source:     config.Source,
 							SourceType: config.SourceType,
 							Index:      config.Index,
-							Event:      hecEventMetricType,
+							Event:      splunk.HecEventMetricType,
 							Fields:     fields,
 						}
 						splunkMetrics = append(splunkMetrics, sm)

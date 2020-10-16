@@ -378,10 +378,17 @@ translation_rules:
     system.filesystem.usage: disk.summary_total
 - action: aggregate_metric
   metric_name: disk.summary_total
+  aggregation_method: avg
+  without_dimensions:
+    - mode
+    - mountpoint
+- action: aggregate_metric
+  metric_name: disk.summary_total
   aggregation_method: sum
   without_dimensions:
     - state
     - device
+    - type
 
 # convert filesystem metrics
 - action: split_metric
@@ -401,12 +408,19 @@ translation_rules:
 # df_complex.used_total
 - action: copy_metrics
   mapping:
-    df_complex.used: df_complex.used_total 
+    df_complex.used: df_complex.used_total
+- action: aggregate_metric
+  metric_name: df_complex.used_total
+  aggregation_method: avg
+  without_dimensions:
+    - mode
+    - mountpoint
 - action: aggregate_metric
   metric_name: df_complex.used_total
   aggregation_method: sum
   without_dimensions:
   - device
+  - type
 
 # disk utilization
 - action: calculate_new_metric

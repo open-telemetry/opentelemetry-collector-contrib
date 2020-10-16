@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 func Test_traceDataToSplunk(t *testing.T) {
@@ -35,7 +37,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name                string
 		traceDataFn         func() consumerdata.TraceData
-		wantSplunkEvents    []*splunkEvent
+		wantSplunkEvents    []*splunk.Event
 		wantNumDroppedSpans int
 	}{
 		{
@@ -47,7 +49,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkEvents: []*splunkEvent{
+			wantSplunkEvents: []*splunk.Event{
 				commonSplunkEvent("myspan", ts),
 			},
 			wantNumDroppedSpans: 0,
@@ -61,7 +63,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkEvents:    []*splunkEvent{},
+			wantSplunkEvents:    []*splunk.Event{},
 			wantNumDroppedSpans: 1,
 		},
 	}
@@ -91,12 +93,12 @@ func makeSpan(name string, ts *timestamppb.Timestamp) *v1.Span {
 func commonSplunkEvent(
 	name string,
 	ts *timestamppb.Timestamp,
-) *splunkEvent {
+) *splunk.Event {
 	trunceableName := &v1.TruncatableString{
 		Value: name,
 	}
 	span := v1.Span{Name: trunceableName, StartTime: ts}
-	return &splunkEvent{
+	return &splunk.Event{
 		Time:  timestampToEpochMilliseconds(ts),
 		Host:  "unknown",
 		Event: &span,
