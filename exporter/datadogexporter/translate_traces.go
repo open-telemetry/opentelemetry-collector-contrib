@@ -31,6 +31,7 @@ import (
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 // codeDetails specifies information about a trace status code.
@@ -72,7 +73,7 @@ var statusCodes = map[int32]codeDetails{
 func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config, globalTags []string) ([]*pb.TracePayload, error) {
 	// get hostname tag
 	// this is getting abstracted out to config
-	hostname := *GetHost(cfg)
+	hostname := *metadata.GetHost(cfg)
 
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service

@@ -22,6 +22,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 type metricsExporter struct {
@@ -53,7 +54,7 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 		}
 
 		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = GetHost(exp.cfg)
+			metrics[i].Host = metadata.GetHost(exp.cfg)
 		}
 
 		if addTags {
