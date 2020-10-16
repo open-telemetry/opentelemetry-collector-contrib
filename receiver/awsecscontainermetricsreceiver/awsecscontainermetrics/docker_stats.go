@@ -18,10 +18,10 @@ import "time"
 
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {
-	Name    string    `json:"name"`
-	ID      string    `json:"id"`
-	Read    time.Time `json:"read"`
-	PreRead time.Time `json:"preread"`
+	Name         string    `json:"name"`
+	ID           string    `json:"id"`
+	Read         time.Time `json:"read"`
+	PreviousRead time.Time `json:"preread"`
 
 	Memory      MemoryStats             `json:"memory_stats,omitempty"`
 	Disk        DiskStats               `json:"blkio_stats,omitempty"`

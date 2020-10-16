@@ -95,16 +95,16 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	}
 
 	containerStats := ContainerStats{
-		Name:        "test",
-		ID:          "001",
-		Read:        time.Now(),
-		PreRead:     time.Now().Add(-10 * time.Second),
-		Memory:      mem,
-		Disk:        disk,
-		Network:     net,
-		NetworkRate: netRate,
-		CPU:         cpuStats,
-		PreviousCPU: previousCPUStats,
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       mem,
+		Disk:         disk,
+		Network:      net,
+		NetworkRate:  netRate,
+		CPU:          cpuStats,
+		PreviousCPU:  previousCPUStats,
 	}
 
 	containerMetrics := getContainerMetrics(containerStats)

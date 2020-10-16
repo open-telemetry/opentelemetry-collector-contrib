@@ -18,7 +18,7 @@ package awsecscontainermetrics
 func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
 	numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
-	timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreRead).Nanoseconds())
+	timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
 	cpuUsageInVCpu := float64(0)
 	if timeDiffSinceLastRead > 0 {
