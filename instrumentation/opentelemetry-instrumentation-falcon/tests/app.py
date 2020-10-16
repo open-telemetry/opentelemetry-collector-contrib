@@ -5,6 +5,7 @@ import falcon
 
 class HelloWorldResource:
     def _handle_request(self, _, resp):
+        # pylint: disable=no-member
         resp.status = falcon.HTTP_201
         resp.body = "Hello World"
 
