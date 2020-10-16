@@ -79,15 +79,15 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		CPUReserved:    &v,
 	}
 
-	preCPUUsage := CPUUsage{
+	previousCPUUsage := CPUUsage{
 		TotalUsage:        &v,
 		UsageInKernelmode: &v,
 		UsageInUserMode:   &v,
 		PerCPUUsage:       percpu,
 	}
 
-	preCPUStats := CPUStats{
-		CPUUsage:       preCPUUsage,
+	previousCPUStats := CPUStats{
+		CPUUsage:       previousCPUUsage,
 		OnlineCpus:     &v,
 		SystemCPUUsage: &v,
 		CPUUtilized:    &v,
@@ -104,7 +104,7 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		Network:     net,
 		NetworkRate: netRate,
 		CPU:         cpuStats,
-		PreCPU:      preCPUStats,
+		PreviousCPU: previousCPUStats,
 	}
 
 	containerMetrics := getContainerMetrics(containerStats)

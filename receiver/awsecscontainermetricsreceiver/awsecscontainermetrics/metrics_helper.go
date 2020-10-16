@@ -22,7 +22,7 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 
 	cpuUsageInVCpu := float64(0)
 	if timeDiffSinceLastRead > 0 {
-		cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreCPU.CPUUsage.TotalUsage)
+		cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
 		cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
 	}
 	cpuUtilized := cpuUsageInVCpu * 100

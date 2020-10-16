@@ -28,7 +28,7 @@ type ContainerStats struct {
 	Network     map[string]NetworkStats `json:"networks,omitempty"`
 	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
 	CPU         CPUStats                `json:"cpu_stats,omitempty"`
-	PreCPU      CPUStats                `json:"precpu_stats,omitempty"`
+	PreviousCPU CPUStats                `json:"precpu_stats,omitempty"`
 }
 
 // MemoryStats defines the memory stats
