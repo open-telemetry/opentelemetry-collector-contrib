@@ -54,7 +54,7 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 		}
 
 		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = metadata.GetHost(exp.cfg)
+			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
 		}
 
 		if addTags {

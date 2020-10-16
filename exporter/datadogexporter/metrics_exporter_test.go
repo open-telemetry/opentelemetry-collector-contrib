@@ -39,7 +39,7 @@ func TestNewExporter(t *testing.T) {
 func TestProcessMetrics(t *testing.T) {
 	cfg := &config.Config{
 		TagsConfig: config.TagsConfig{
-			Hostname: "test_host",
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
@@ -64,7 +64,7 @@ func TestProcessMetrics(t *testing.T) {
 
 	exp.processMetrics(metrics)
 
-	assert.Equal(t, "test_host", *metrics[0].Host)
+	assert.Equal(t, "test-host", *metrics[0].Host)
 	assert.Equal(t, "test.metric_name", *metrics[0].Metric)
 	assert.ElementsMatch(t,
 		[]string{"key:val", "env:test_env", "key2:val2"},

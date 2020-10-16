@@ -17,20 +17,34 @@ package metadata
 import (
 	"os"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 // GetHost gets the hostname according to configuration.
 // It gets the configuration hostname and if
 // not available it relies on the OS hostname
-func GetHost(cfg *config.Config) *string {
-	if cfg.TagsConfig.Hostname != "" {
-		return &cfg.TagsConfig.Hostname
+func GetHost(logger *zap.Logger, cfg *config.Config) *string {
+	if cacheVal, ok := cache.Get(cache.CanonicalHostnameKey); ok {
+		return cacheVal.(*string)
 	}
 
-	host, err := os.Hostname()
-	if err != nil || host == "" {
-		host = "unknown"
+	if err := validHostname(cfg.Hostname); err == nil {
+		cache.SetNoExpire(cache.CanonicalHostnameKey, &cfg.Hostname)
+		return &cfg.Hostname
+	} else if cfg.Hostname != "" {
+		logger.Error("Hostname set in configuration is invalid", zap.Error(err))
 	}
-	return &host
+
+	hostname, _ := os.Hostname()
+	if err := validHostname(hostname); err != nil {
+		// If invalid log but continue
+		logger.Error("Detected hostname is not valid", zap.Error(err))
+	}
+
+	logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
+	cache.SetNoExpire(cache.CanonicalHostnameKey, &hostname)
+	return &hostname
 }

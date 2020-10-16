@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -73,7 +74,8 @@ var statusCodes = map[int32]codeDetails{
 func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config, globalTags []string) ([]*pb.TracePayload, error) {
 	// get hostname tag
 	// this is getting abstracted out to config
-	hostname := *metadata.GetHost(cfg)
+	// TODO pass logger here once traces code stabilizes
+	hostname := *metadata.GetHost(zap.NewNop(), cfg)
 
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service

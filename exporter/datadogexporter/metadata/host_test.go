@@ -20,16 +20,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 func TestHost(t *testing.T) {
 
-	host := GetHost(&config.Config{TagsConfig: config.TagsConfig{Hostname: "test_host"}})
-	assert.Equal(t, *host, "test_host")
+	logger := zap.NewNop()
 
-	host = GetHost(&config.Config{})
+	host := GetHost(logger, &config.Config{
+		TagsConfig: config.TagsConfig{Hostname: "test-host"},
+	})
+	assert.Equal(t, *host, "test-host")
+	cache.Delete(cache.CanonicalHostnameKey)
+
+	host = GetHost(logger, &config.Config{})
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, *host, osHostname)
