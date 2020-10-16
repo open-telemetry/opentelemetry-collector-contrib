@@ -45,6 +45,7 @@ from opentelemetry import context, propagators
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.metric import (
     HTTPMetricRecorder,
+    HTTPMetricType,
     MetricMixin,
 )
 from opentelemetry.instrumentation.requests.version import __version__
@@ -135,7 +136,7 @@ def _instrument(tracer_provider=None, span_callback=None):
             __name__, __version__, tracer_provider
         ).start_as_current_span(span_name, kind=SpanKind.CLIENT) as span:
             exception = None
-            with recorder.record_duration(labels):
+            with recorder.record_client_duration(labels):
                 if span.is_recording():
                     span.set_attribute("component", "http")
                     span.set_attribute("http.method", method)
@@ -176,7 +177,6 @@ def _instrument(tracer_provider=None, span_callback=None):
                             )
                         )
                     labels["http.status_code"] = str(result.status_code)
-                    labels["http.status_text"] = result.reason
                     if result.raw and result.raw.version:
                         labels["http.flavor"] = (
                             str(result.raw.version)[:1]
@@ -253,7 +253,9 @@ class RequestsInstrumentor(BaseInstrumentor, MetricMixin):
             __name__, __version__,
         )
         # pylint: disable=W0201
-        self.metric_recorder = HTTPMetricRecorder(self.meter, SpanKind.CLIENT)
+        self.metric_recorder = HTTPMetricRecorder(
+            self.meter, HTTPMetricType.CLIENT
+        )
 
     def _uninstrument(self, **kwargs):
         _uninstrument()
