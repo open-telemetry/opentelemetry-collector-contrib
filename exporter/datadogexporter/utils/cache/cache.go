@@ -22,6 +22,7 @@ import (
 
 const (
 	CanonicalHostnameKey = "canonical_hostname"
+	SystemHostInfoKey    = "system_hostinfo"
 )
 
 var generalCache = gocache.New(20*time.Minute, 10*time.Minute)
