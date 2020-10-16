@@ -175,34 +175,6 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return md
 			}(),
 		},
-
-		{
-			name: "double_counter_as_int",
-			splunkDataPoint: func() *splunk.Event {
-				pt := buildDefaultSplunkDataPt()
-				pt.Fields["metric_name:single"] = float64Ptr(13)
-				return pt
-			}(),
-			wantMetricsData: func() pdata.Metrics {
-				md := buildDefaultMetricsData(nanos)
-				metricPt := pdata.NewMetric()
-				metricPt.InitEmpty()
-				metricPt.SetDataType(pdata.MetricDataTypeIntGauge)
-				metricPt.SetName("single")
-				metricPt.IntGauge().InitEmpty()
-				intPt := pdata.NewIntDataPoint()
-				intPt.InitEmpty()
-				intPt.SetValue(13)
-				intPt.SetTimestamp(pdata.TimestampUnixNano(nanos))
-				intPt.LabelsMap().Insert("k0", "v0")
-				intPt.LabelsMap().Insert("k1", "v1")
-				intPt.LabelsMap().Insert("k2", "v2")
-				metricPt.IntGauge().DataPoints().Append(intPt)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Resize(0)
-				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().Append(metricPt)
-				return md
-			}(),
-		},
 		{
 			name: "double_counter_as_string_pointer",
 			splunkDataPoint: func() *splunk.Event {
@@ -230,7 +202,6 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				return md
 			}(),
 		},
-
 		{
 			name: "double_counter_as_string",
 			splunkDataPoint: func() *splunk.Event {

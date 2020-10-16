@@ -77,17 +77,9 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			} else if i, ok := metricValue.(*int64); ok {
 				addIntGauge(pointTimestamp, *i, metric, populateLabels)
 			} else if f, ok := metricValue.(float64); ok {
-				if f == float64(int64(f)) {
-					addIntGauge(pointTimestamp, int64(f), metric, populateLabels)
-				} else {
-					addDoubleGauge(pointTimestamp, f, metric, populateLabels)
-				}
+				addDoubleGauge(pointTimestamp, f, metric, populateLabels)
 			} else if f, ok := metricValue.(*float64); ok {
-				if *f == float64(int64(*f)) {
-					addIntGauge(pointTimestamp, int64(*f), metric, populateLabels)
-				} else {
-					addDoubleGauge(pointTimestamp, *f, metric, populateLabels)
-				}
+				addDoubleGauge(pointTimestamp, *f, metric, populateLabels)
 			} else if s, ok := metricValue.(*string); ok {
 				// best effort, cast to string and turn into a number
 				dbl, err := strconv.ParseFloat(*s, 64)
