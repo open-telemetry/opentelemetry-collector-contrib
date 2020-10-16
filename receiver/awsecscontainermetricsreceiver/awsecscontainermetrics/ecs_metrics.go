@@ -30,6 +30,7 @@ type ECSMetrics struct {
 	NumOfCPUCores        uint64
 	CPUReserved          float64
 	CPUUtilized          float64
+	CPUUsageInVCPU       float64
 
 	NetworkRateRxBytesPerSecond float64
 	NetworkRateTxBytesPerSecond float64
