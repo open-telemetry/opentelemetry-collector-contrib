@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/translator/conventions"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/cloud"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -88,7 +87,7 @@ func TestDetectTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeCloudProvider: cloud.ProviderGCP,
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
 		conventions.AttributeCloudAccount:  "1",
 		conventions.AttributeCloudZone:     "zone",
 
@@ -129,7 +128,7 @@ func TestDetectError(t *testing.T) {
 
 	assert.EqualError(t, err, "[err1; err2; err3; err4; err5; err6]")
 
-	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: cloud.ProviderGCP})
+	expected := internal.NewResource(map[string]interface{}{conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP})
 
 	res.Attributes().Sort()
 	expected.Attributes().Sort()
