@@ -81,25 +81,9 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			} else if f, ok := metricValue.(*float64); ok {
 				addDoubleGauge(pointTimestamp, *f, metric, populateLabels)
 			} else if s, ok := metricValue.(*string); ok {
-				// best effort, cast to string and turn into a number
-				dbl, err := strconv.ParseFloat(*s, 64)
-				if err != nil {
-					numDroppedTimeSeries++
-					logger.Debug("Cannot convert metric value from string to number",
-						zap.String("metric", metricName))
-				} else {
-					addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
-				}
+				convertString(logger, metricName, *s, &numDroppedTimeSeries, pointTimestamp, metric, populateLabels)
 			} else if s, ok := metricValue.(string); ok {
-				// best effort, cast to string and turn into a number
-				dbl, err := strconv.ParseFloat(s, 64)
-				if err != nil {
-					numDroppedTimeSeries++
-					logger.Debug("Cannot convert metric",
-						zap.String("metric", metricName))
-				} else {
-					addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
-				}
+				convertString(logger, metricName, s, &numDroppedTimeSeries, pointTimestamp, metric, populateLabels)
 			} else {
 				// drop this point as we do not know how to extract a value from it
 				numDroppedTimeSeries++
@@ -118,6 +102,18 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 	}
 
 	return md, numDroppedTimeSeries
+}
+
+func convertString(logger *zap.Logger, metricName string, s string, numDroppedTimeSeries *int, pointTimestamp pdata.TimestampUnixNano, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
+	// best effort, cast to string and turn into a number
+	dbl, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		*numDroppedTimeSeries++
+		logger.Debug("Cannot convert metric value from string to number",
+			zap.String("metric", metricName))
+	} else {
+		addDoubleGauge(pointTimestamp, dbl, metric, populateLabels)
+	}
 }
 
 func addIntGauge(ts pdata.TimestampUnixNano, value int64, metric pdata.Metric, populateLabels func(pdata.StringMap)) {
@@ -149,6 +145,7 @@ func convertTimestamp(sec float64) pdata.TimestampUnixNano {
 	return pdata.TimestampUnixNano(sec * 1e9)
 }
 
+// Extract dimensions from the Splunk event fields to populate metric data point labels.
 func buildLabelKeysAndValues(
 	dimensions map[string]interface{},
 ) ([]string, []string) {
