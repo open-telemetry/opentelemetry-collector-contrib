@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+ - Make `SpanProcessor.on_start` accept parent Context
+  ([#1251](https://github.com/open-telemetry/opentelemetry-python/pull/1251))
+
 ## Version 0.14b0
 
 Released 2020-10-13

@@ -21,6 +21,7 @@ from unittest import mock
 from ddtrace.internal.writer import AgentWriter
 
 from opentelemetry import trace as trace_api
+from opentelemetry.context import Context
 from opentelemetry.exporter import datadog
 from opentelemetry.sdk import trace
 from opentelemetry.sdk.trace import Resource, sampling
@@ -481,6 +482,21 @@ class TestDatadogSpanExporter(unittest.TestCase):
         self.assertEqual(len(datadog_spans), 1)
 
         tracer_provider.shutdown()
+
+    def test_span_processor_accepts_parent_context(self):
+        span_processor = mock.Mock(
+            wraps=datadog.DatadogExportSpanProcessor(self.exporter)
+        )
+        tracer_provider = trace.TracerProvider()
+        tracer_provider.add_span_processor(span_processor)
+        tracer = tracer_provider.get_tracer(__name__)
+
+        context = Context()
+        span = tracer.start_span("foo", context=context)
+
+        span_processor.on_start.assert_called_once_with(
+            span, parent_context=context
+        )
 
     def test_origin(self):
         context = trace_api.SpanContext(
