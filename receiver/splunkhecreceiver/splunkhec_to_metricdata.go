@@ -28,7 +28,7 @@ import (
 )
 
 // SplunkHecToMetricsData converts Splunk HEC metric points to
-// consumerdata.MetricsData. Returning the converted data and the number of
+// pdata.Metrics. Returning the converted data and the number of
 // dropped time series.
 func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Metrics, int) {
 
