@@ -28,11 +28,20 @@ The following exporter configuration parameters are supported.
 | [`metric_declarations`](#metric_declaration) | List of rules for filtering exported metrics and their dimensions. |    [ ]   |
 
 ### <metric_declaration>
-A metric_declaration section characterizes a rule to be used to set dimensions for exported metrics, filtered by the incoming metrics' metric names.
+A metric_declaration section characterizes a rule to be used to set dimensions for exported metrics, filtered by the incoming metrics' labels and metric names.
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
 | `dimensions`      | List of dimension sets to be exported.                                 |  [[ ]]   |
 | `metric_name_selectors` | List of regex strings to filter metric names by.                 |   [ ]    |
+| [`label_matchers`](#label_matcher)  | (Optional) list of label matching rules to filter metrics by their labels. This rule is applied to any metric that matches any of the label matchers. |   [ ]    |
+
+### <label_matcher>
+A label_matcher section defines a matching rule against the labels of the incoming metric. Only metrics that match the rules will be used by the surrounding `metric_declaration`.
+| Name              | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `label_names`     | List of label names to filter by. Their corresponding values are concatenated using the separator and matched against the configured regular expression.                             |   [ ]    |
+| `separator`       | (Optional) separator placed between concatenated label values.         |   ";"   |
+| `regex`           | (Optional) regex string to be matched against concatenated label values. |  ".+"  |
 
 
 ## AWS Credential Configuration

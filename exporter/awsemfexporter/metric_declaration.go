@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"bytes"
 	"errors"
 	"regexp"
 	"sort"
@@ -34,9 +35,27 @@ type MetricDeclaration struct {
 	// MetricNameSelectors is a list of regex strings to be matched against metric names
 	// to determine which metrics should be included with this metric declaration rule.
 	MetricNameSelectors []string `mapstructure:"metric_name_selectors"`
+	// (Optional) List of label matchers that define matching rules to filter against
+	// the labels of incoming metrics.
+	LabelMatchers []*LabelMatcher `mapstructure:"label_matchers"`
 
 	// metricRegexList is a list of compiled regexes for metric name selectors.
 	metricRegexList []*regexp.Regexp
+}
+
+// Defines a label filtering rule against the labels of incoming metrics. Only metrics that
+// match the rules will be used by the surrounding MetricDeclaration.
+type LabelMatcher struct {
+	// List of label names to filter by. Their corresponding values are concatenated using
+	// the separator and matched against the specified regular expression.
+	LabelNames []string `mapstructure:"label_names"`
+	// (Optional) Separator placed between concatenated source label values. (Default: ';')
+	Separator string `mapstructure:"separator"`
+	// (Optional) Regex string to be used to match against values of the concatenated
+	// labels. (Default: '.+)
+	Regex string `mapstructure:"regex"`
+
+	compiledRegex *regexp.Regexp
 }
 
 // Remove duplicated entries from dimension set.
@@ -101,6 +120,13 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 	for i, selector := range m.MetricNameSelectors {
 		m.metricRegexList[i] = regexp.MustCompile(selector)
 	}
+
+	// Initialize label matchers
+	for _, lm := range m.LabelMatchers {
+		if err := lm.Init(); err != nil {
+			return err
+		}
+	}
 	return
 }
 
@@ -134,6 +160,44 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 		}
 	}
 	return
+}
+
+// Initialize LabelMatcher with default values and compile regex string.
+func (lm *LabelMatcher) Init() (err error) {
+	// Throw error if no label names are specified
+	if len(lm.LabelNames) == 0 {
+		return errors.New("Label matcher must have at least one label name specified.")
+	}
+	if len(lm.Separator) == 0 {
+		lm.Separator = ";"
+	}
+	if len(lm.Regex) == 0 {
+		lm.Regex = ".+"
+	}
+	lm.compiledRegex = regexp.MustCompile(lm.Regex)
+	return
+}
+
+// Returns true if given set of labels matches the LabelMatcher's rules.
+func (lm *LabelMatcher) Matches(labels map[string]string) bool {
+	concatenatedLabels := lm.getConcatenatedLabels(labels)
+	return lm.compiledRegex.MatchString(concatenatedLabels)
+}
+
+// Concatenate matched labels using separator defined by the LabelMatcher's rules.
+func (lm *LabelMatcher) getConcatenatedLabels(labels map[string]string) string {
+	buf := new(bytes.Buffer)
+	isFirstLabel := true
+	for _, labelName := range lm.LabelNames {
+		if isFirstLabel {
+			isFirstLabel = false
+		} else {
+			buf.WriteString(lm.Separator)
+		}
+
+		buf.WriteString(labels[labelName])
+	}
+	return buf.String()
 }
 
 // processMetricDeclarations processes a list of MetricDeclarations and creates a

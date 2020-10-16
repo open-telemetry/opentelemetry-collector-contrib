@@ -24,7 +24,201 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestInit(t *testing.T) {
+func TestLabelMatcherInit(t *testing.T) {
+	lm := &LabelMatcher{
+		LabelNames: []string{"label1", "label2"},
+	}
+	err := lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ";", lm.Separator)
+	assert.Equal(t, ".+", lm.Regex)
+	assert.NotNil(t, lm.compiledRegex)
+
+	lm.Separator = ""
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ";", lm.Separator)
+
+	lm.Separator = ","
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, ",", lm.Separator)
+
+	lm.Regex = "a*"
+	err = lm.Init()
+	assert.Nil(t, err)
+	assert.Equal(t, "a*", lm.Regex)
+	assert.NotNil(t, lm.compiledRegex)
+
+	// Test error
+	lm.LabelNames = []string{}
+	err = lm.Init()
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "Label matcher must have at least one label name specified.")
+}
+
+func TestGetConcatenatedLabels(t *testing.T) {
+	labels := map[string]string{
+		"label1": "a",
+		"label2": "b",
+		"label3": "c",
+	}
+	testCases := []struct {
+		testName   string
+		labelNames []string
+		separator  string
+		expected   string
+	}{
+		{
+			"Single label w/ default separator",
+			[]string{"label1"},
+			"",
+			"a",
+		},
+		{
+			"Multiple labels w/ default separator",
+			[]string{"label1", "label3", "label2"},
+			"",
+			"a;c;b",
+		},
+		{
+			"Single label w/ custom separator",
+			[]string{"label1"},
+			",",
+			"a",
+		},
+		{
+			"Multiple labels w/ custom separator",
+			[]string{"label1", "label3", "label2"},
+			",",
+			"a,c,b",
+		},
+		{
+			"Multiple labels w/ missing label",
+			[]string{"label1", "label4", "label2"},
+			"",
+			"a;;b",
+		},
+	}
+
+	for _, tc := range testCases {
+		lm := &LabelMatcher{
+			LabelNames: tc.labelNames,
+			Separator:  tc.separator,
+		}
+		lm.Init()
+		t.Run(tc.testName, func(t *testing.T) {
+			concatenatedLabels := lm.getConcatenatedLabels(labels)
+			assert.Equal(t, tc.expected, concatenatedLabels)
+		})
+	}
+}
+
+func TestLabelMatcherMatches(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		labels       map[string]string
+		labelMatcher *LabelMatcher
+		expected     bool
+	}{
+		{
+			"Single label",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1"},
+				Regex:      "^fo+$",
+			},
+			true,
+		},
+		{
+			"Single label, no match",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1"},
+				Regex:      "^f+$",
+			},
+			false,
+		},
+		{
+			"Single label w/ missing label name",
+			map[string]string{
+				"label1": "foo",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label2"},
+			},
+			false,
+		},
+		{
+			"Multiple labels",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Regex:      "fo+;car;b.*$",
+			},
+			true,
+		},
+		{
+			"Multiple labels w/ custom separator",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Separator:  ",",
+				Regex:      "fo+,car,b.*$",
+			},
+			true,
+		},
+		{
+			"Multiple labels, no match",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label3", "label2"},
+				Separator:  ",",
+				Regex:      "fo+;car;b.*$",
+			},
+			false,
+		},
+		{
+			"Multiple labels w/ missing label name",
+			map[string]string{
+				"label1": "foo",
+				"label2": "bar",
+				"label3": "car",
+			},
+			&LabelMatcher{
+				LabelNames: []string{"label1", "label4", "label2"},
+				Regex:      "fo+;;b.*$",
+			},
+			true,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc.labelMatcher.Init()
+		t.Run(tc.testName, func(t *testing.T) {
+			matches := tc.labelMatcher.Matches(tc.labels)
+			assert.Equal(t, tc.expected, matches)
+		})
+	}
+}
+
+func TestMetricDeclarationInit(t *testing.T) {
 	logger := zap.NewNop()
 	t.Run("no dimensions", func(t *testing.T) {
 		m := &MetricDeclaration{
@@ -111,9 +305,53 @@ func TestInit(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "invalid metric declaration: no metric name selectors defined")
 	})
+
+	// Test initialization of label matchers
+	t.Run("initialization of label matchers", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+				},
+				{
+					LabelNames: []string{"label1", "label3"},
+					Separator:  ",",
+					Regex:      "a*",
+				},
+			},
+		}
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 2, len(m.LabelMatchers))
+		assert.Equal(t, ";", m.LabelMatchers[0].Separator)
+		assert.Equal(t, ".+", m.LabelMatchers[0].Regex)
+		assert.NotNil(t, m.LabelMatchers[0].compiledRegex)
+		assert.Equal(t, ",", m.LabelMatchers[1].Separator)
+		assert.Equal(t, "a*", m.LabelMatchers[1].Regex)
+		assert.NotNil(t, m.LabelMatchers[1].compiledRegex)
+	})
+
+	// Test error from label matcher initialization
+	t.Run("label matcher init error", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+				},
+				{
+					LabelNames: []string{},
+				},
+			},
+		}
+		err := m.Init(logger)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "Label matcher must have at least one label name specified.")
+	})
 }
 
-func TestMatches(t *testing.T) {
+func TestMetricDeclarationMatches(t *testing.T) {
 	m := &MetricDeclaration{
 		MetricNameSelectors: []string{"^a+$", "^b.*$", "^ac+a$"},
 	}
