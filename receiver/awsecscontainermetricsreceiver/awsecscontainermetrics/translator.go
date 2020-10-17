@@ -34,8 +34,9 @@ func convertToOCMetrics(prefix string, m ECSMetrics, labelKeys []*metricspb.Labe
 		intGauge(prefix+AttributeCPUCores, UnitCount, &m.NumOfCPUCores, labelKeys, labelValues),
 		intGauge(prefix+AttributeCPUOnlines, UnitCount, &m.CPUOnlineCpus, labelKeys, labelValues),
 		intCumulative(prefix+AttributeCPUSystemUsage, UnitNanoSecond, &m.SystemCPUUsage, labelKeys, labelValues),
-		doubleGauge(prefix+AttributeCPUUtilized, UnitVCpu, &m.CPUUtilized, labelKeys, labelValues),
+		doubleGauge(prefix+AttributeCPUUtilized, UnitPercent, &m.CPUUtilized, labelKeys, labelValues),
 		doubleGauge(prefix+AttributeCPUReserved, UnitVCpu, &m.CPUReserved, labelKeys, labelValues),
+		doubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, &m.CPUUsageInVCPU, labelKeys, labelValues),
 
 		doubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, &m.NetworkRateRxBytesPerSecond, labelKeys, labelValues),
 		doubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, &m.NetworkRateTxBytesPerSecond, labelKeys, labelValues),

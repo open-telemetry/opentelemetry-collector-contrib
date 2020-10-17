@@ -48,6 +48,7 @@ const (
 	AttributeCPUOnlines         = "cpu.onlines"
 	AttributeCPUReserved        = "cpu.reserved"
 	AttributeCPUUtilized        = "cpu.utilized"
+	AttributeCPUUsageInVCPU     = "cpu.usage.vcpu"
 
 	AttributeNetworkRateRx = "network.rate.rx"
 	AttributeNetworkRateTx = "network.rate.tx"
@@ -70,4 +71,5 @@ const (
 	UnitBytesPerSec = "Bytes/Sec"
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
+	UnitPercent     = "Percent"
 )

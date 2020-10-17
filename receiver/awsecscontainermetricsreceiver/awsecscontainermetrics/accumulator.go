@@ -40,6 +40,10 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		containerMetrics.MemoryReserved = *containerMetadata.Limits.Memory
 		containerMetrics.CPUReserved = *containerMetadata.Limits.CPU
 
+		if containerMetrics.CPUReserved > 0 {
+			containerMetrics.CPUUtilized = (containerMetrics.CPUUtilized / containerMetrics.CPUReserved)
+		}
+
 		containerResource := containerResource(containerMetadata)
 		for k, v := range taskResource.Labels {
 			containerResource.Labels[k] = v
@@ -64,6 +68,12 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	if metadata.Limits.CPU != nil {
 		taskMetrics.CPUReserved = *metadata.Limits.CPU
 	}
+
+	// taskMetrics.CPUReserved cannot be zero. In ECS, user needs to set CPU limit
+	// at least in one place (either in task level or in container level). If the
+	// task level CPULimit is not present, we calculate it from the summation of
+	// all container CPU limits.
+	taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 
 	acc.accumulate(
 		taskResource,
