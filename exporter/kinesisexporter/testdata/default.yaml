@@ -13,3 +13,7 @@ service:
       receivers: [examplereceiver]
       processors: [exampleprocessor]
       exporters: [kinesis]
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [kinesis]

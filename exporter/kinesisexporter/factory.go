@@ -17,7 +17,6 @@ package kinesisexporter
 import (
 	"context"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,8 +24,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr      = "kinesis"
-	exportFormat = "jaeger-proto"
+	typeStr   = "kinesis"
+	otlpProto = "otlp_proto"
+	// The default encoding scheme is set to otlpProto
+	defaultEncoding = otlpProto
 )
 
 // NewFactory creates a factory for Kinesis exporter.
@@ -34,7 +35,8 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTraceExporter))
+		exporterhelper.WithTraces(createTraceExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
 func createDefaultConfig() configmodels.Exporter {
@@ -44,7 +46,8 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 		AWS: AWSConfig{
-			Region: "us-west-2",
+			Region:     "us-west-2",
+			StreamName: "test-stream",
 		},
 		KPL: KPLConfig{
 			BatchSize:            5242880,
@@ -53,12 +56,7 @@ func createDefaultConfig() configmodels.Exporter {
 			FlushIntervalSeconds: 5,
 			MaxConnections:       24,
 		},
-
-		QueueSize:            100000,
-		NumWorkers:           8,
-		FlushIntervalSeconds: 5,
-		MaxBytesPerBatch:     100000,
-		MaxBytesPerSpan:      900000,
+		Encoding: defaultEncoding,
 	}
 }
 
@@ -68,32 +66,32 @@ func createTraceExporter(
 	config configmodels.Exporter,
 ) (component.TraceExporter, error) {
 	c := config.(*Config)
-	k, err := kinesis.NewExporter(&kinesis.Options{
-		Name:               c.Name(),
-		StreamName:         c.AWS.StreamName,
-		AWSRegion:          c.AWS.Region,
-		AWSRole:            c.AWS.Role,
-		AWSKinesisEndpoint: c.AWS.KinesisEndpoint,
-
-		KPLAggregateBatchSize:   c.KPL.AggregateBatchSize,
-		KPLAggregateBatchCount:  c.KPL.AggregateBatchCount,
-		KPLBatchSize:            c.KPL.BatchSize,
-		KPLBatchCount:           c.KPL.BatchCount,
-		KPLBacklogCount:         c.KPL.BacklogCount,
-		KPLFlushIntervalSeconds: c.KPL.FlushIntervalSeconds,
-		KPLMaxConnections:       c.KPL.MaxConnections,
-		KPLMaxRetries:           c.KPL.MaxRetries,
-		KPLMaxBackoffSeconds:    c.KPL.MaxBackoffSeconds,
-
-		QueueSize:             c.QueueSize,
-		NumWorkers:            c.NumWorkers,
-		MaxAllowedSizePerSpan: c.MaxBytesPerSpan,
-		MaxListSize:           c.MaxBytesPerBatch,
-		ListFlushInterval:     c.FlushIntervalSeconds,
-		Encoding:              exportFormat,
-	}, params.Logger)
+	exp, err := newExporter(c, params.Logger)
 	if err != nil {
 		return nil, err
 	}
-	return Exporter{k, params.Logger}, nil
+
+	return exporterhelper.NewTraceExporter(
+		c,
+		exp.pushTraces,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown))
+}
+
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	config configmodels.Exporter,
+) (component.MetricsExporter, error) {
+	c := config.(*Config)
+	exp, err := newExporter(c, params.Logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		c,
+		exp.pushMetrics,
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown))
 }
