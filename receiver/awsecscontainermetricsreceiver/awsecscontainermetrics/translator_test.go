@@ -39,7 +39,7 @@ func TestConvertToOTMetrics(t *testing.T) {
 	}
 
 	metrics := convertToOCMetrics("container.", m, labelKeys, labelValues, timestamp)
-	require.EqualValues(t, 25, len(metrics))
+	require.EqualValues(t, 26, len(metrics))
 }
 
 func TestIntGauge(t *testing.T) {

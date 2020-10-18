@@ -14,16 +14,21 @@
 
 package awsecscontainermetrics
 
+import "time"
+
 // ContainerStats defines the structure for container stats
 type ContainerStats struct {
-	Name string `json:"name"`
-	ID   string `json:"id"`
+	Name         string    `json:"name"`
+	ID           string    `json:"id"`
+	Read         time.Time `json:"read"`
+	PreviousRead time.Time `json:"preread"`
 
 	Memory      MemoryStats             `json:"memory_stats,omitempty"`
 	Disk        DiskStats               `json:"blkio_stats,omitempty"`
 	Network     map[string]NetworkStats `json:"networks,omitempty"`
 	NetworkRate NetworkRateStats        `json:"network_rate_stats,omitempty"`
 	CPU         CPUStats                `json:"cpu_stats,omitempty"`
+	PreviousCPU CPUStats                `json:"precpu_stats,omitempty"`
 }
 
 // MemoryStats defines the memory stats

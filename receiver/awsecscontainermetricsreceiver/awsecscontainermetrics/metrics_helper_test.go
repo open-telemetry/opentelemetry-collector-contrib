@@ -16,6 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -77,14 +78,33 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		CPUUtilized:    &v,
 		CPUReserved:    &v,
 	}
+
+	previousCPUUsage := CPUUsage{
+		TotalUsage:        &v,
+		UsageInKernelmode: &v,
+		UsageInUserMode:   &v,
+		PerCPUUsage:       percpu,
+	}
+
+	previousCPUStats := CPUStats{
+		CPUUsage:       previousCPUUsage,
+		OnlineCpus:     &v,
+		SystemCPUUsage: &v,
+		CPUUtilized:    &v,
+		CPUReserved:    &v,
+	}
+
 	containerStats := ContainerStats{
-		Name:        "test",
-		ID:          "001",
-		Memory:      mem,
-		Disk:        disk,
-		Network:     net,
-		NetworkRate: netRate,
-		CPU:         cpuStats,
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       mem,
+		Disk:         disk,
+		Network:      net,
+		NetworkRate:  netRate,
+		CPU:          cpuStats,
+		PreviousCPU:  previousCPUStats,
 	}
 
 	containerMetrics := getContainerMetrics(containerStats)

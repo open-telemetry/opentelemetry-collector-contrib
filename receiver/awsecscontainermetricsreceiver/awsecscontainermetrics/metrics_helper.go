@@ -17,11 +17,15 @@ package awsecscontainermetrics
 // getContainerMetrics generate ECS Container metrics from Container stats
 func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
-
 	numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
+	timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
-	// TODO: match with ECS Agent calculation and modify if needed
-	cpuUtilized := (float64)(*stats.CPU.CPUUsage.TotalUsage / numOfCores / 1024)
+	cpuUsageInVCpu := float64(0)
+	if timeDiffSinceLastRead > 0 {
+		cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
+		cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
+	}
+	cpuUtilized := cpuUsageInVCpu * 100
 
 	netStatArray := getNetworkStats(stats.Network)
 
@@ -41,6 +45,7 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	m.NumOfCPUCores = numOfCores
 	m.CPUOnlineCpus = *stats.CPU.OnlineCpus
 	m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
+	m.CPUUsageInVCPU = cpuUsageInVCpu
 	m.CPUUtilized = cpuUtilized
 
 	if stats.NetworkRate == (NetworkRateStats{}) {
@@ -119,8 +124,8 @@ func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
 	taskMetrics.NumOfCPUCores += conMetrics.NumOfCPUCores
 	taskMetrics.CPUOnlineCpus += conMetrics.CPUOnlineCpus
 	taskMetrics.SystemCPUUsage += conMetrics.SystemCPUUsage
-	taskMetrics.CPUUtilized += conMetrics.CPUUtilized
 	taskMetrics.CPUReserved += conMetrics.CPUReserved
+	taskMetrics.CPUUsageInVCPU += conMetrics.CPUUsageInVCPU
 
 	taskMetrics.NetworkRateRxBytesPerSecond += conMetrics.NetworkRateRxBytesPerSecond
 	taskMetrics.NetworkRateTxBytesPerSecond += conMetrics.NetworkRateTxBytesPerSecond

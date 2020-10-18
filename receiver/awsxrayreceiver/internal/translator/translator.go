@@ -15,7 +15,9 @@
 package translator
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -134,16 +136,51 @@ func populateSpan(
 		return err
 	}
 
+	// decode trace id
+	var traceIDBytes []byte
 	if seg.TraceID == nil {
 		// if seg.TraceID is nil, then `seg` must be an embedded subsegment.
-		span.SetTraceID(pdata.NewTraceID([]byte(*traceID)))
-	} else {
-		span.SetTraceID(pdata.NewTraceID([]byte(*seg.TraceID)))
-	}
-	span.SetSpanID(pdata.NewSpanID([]byte(*seg.ID)))
-	addParentSpanID(seg, parentID, span)
-	addStartTime(seg.StartTime, span)
+		traceIDBytes, err = decodeXRayTraceID(traceID)
+		if err != nil {
+			return err
+		}
 
+	} else {
+		traceIDBytes, err = decodeXRayTraceID(seg.TraceID)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	// decode parent id
+	var parentIDBytes []byte
+	if parentID != nil {
+		parentIDBytes, err = decodeXRaySpanID(parentID)
+		if err != nil {
+			return err
+		}
+	} else if seg.ParentID != nil {
+		parentIDBytes, err = decodeXRaySpanID(seg.ParentID)
+		if err != nil {
+			return err
+		}
+	}
+
+	// decode span id
+	spanIDBytes, err := decodeXRaySpanID(seg.ID)
+	if err != nil {
+		return err
+	}
+
+	span.SetTraceID(pdata.NewTraceID(traceIDBytes))
+	span.SetSpanID(pdata.NewSpanID(spanIDBytes))
+
+	if parentIDBytes != nil {
+		span.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
+	}
+
+	addStartTime(seg.StartTime, span)
 	addEndTime(seg.EndTime, span)
 	addBool(seg.InProgress, awsxray.AWSXRayInProgressAttribute, &attrs)
 	addString(seg.User, conventions.AttributeEnduserID, &attrs)
@@ -188,4 +225,31 @@ func totalSegmentsCount(seg awsxray.Segment) int {
 	}
 
 	return 1 + subsegmentCount
+}
+
+/*
+decodeXRayTraceID decodes the traceid from xraysdk
+one example of xray format: "1-5f84c7a1-e7d1852db8c4fd35d88bf49a"
+decodeXRayTraceID transfers it to "5f84c7a1e7d1852db8c4fd35d88bf49a" and decode it from hex
+*/
+func decodeXRayTraceID(traceID *string) ([]byte, error) {
+	if traceID == nil {
+		return nil, errors.New("traceID is null")
+	}
+	if len(*traceID) < 35 {
+		return nil, errors.New("traceID length is wrong")
+	}
+	traceIDtoBeDecoded := (*traceID)[2:10] + (*traceID)[11:]
+	return hex.DecodeString(traceIDtoBeDecoded)
+}
+
+// decodeXRaySpanID decodes the spanid from xraysdk
+func decodeXRaySpanID(spanID *string) ([]byte, error) {
+	if spanID == nil {
+		return nil, errors.New("spanid is null")
+	}
+	if len(*spanID) != 16 {
+		return nil, errors.New("spanID length is wrong")
+	}
+	return hex.DecodeString(*spanID)
 }

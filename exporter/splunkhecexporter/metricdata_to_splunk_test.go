@@ -63,7 +63,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	tests := []struct {
 		name                     string
 		metricsDataFn            func() consumerdata.MetricsData
-		wantSplunkMetrics        []*splunk.Metric
+		wantSplunkMetrics        []*splunk.Event
 		wantNumDroppedTimeseries int
 	}{
 		{
@@ -78,7 +78,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunk.Metric{
+			wantSplunkMetrics: []*splunk.Event{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{}, []string{}, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, []string{}, []string{}, doubleVal),
@@ -97,7 +97,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunk.Metric{
+			wantSplunkMetrics: []*splunk.Event{
 				commonSplunkMetric("gauge_double_with_dims", tsMSecs, keys, values, doubleVal),
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, keys, values, int64Val),
 				commonSplunkMetric("cumulative_double_with_dims", tsMSecs, keys, values, doubleVal),
@@ -126,7 +126,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 					},
 				}
 			},
-			wantSplunkMetrics: []*splunk.Metric{
+			wantSplunkMetrics: []*splunk.Event{
 				commonSplunkMetric(
 					"gauge_double_with_dims",
 					tsMSecs,
@@ -173,7 +173,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	}
 }
 
-func sortMetrics(metrics []*splunk.Metric) {
+func sortMetrics(metrics []*splunk.Event) {
 	sort.Slice(metrics, func(p, q int) bool {
 		firstField := getFieldValue(metrics[p])
 		secondField := getFieldValue(metrics[q])
@@ -181,7 +181,7 @@ func sortMetrics(metrics []*splunk.Metric) {
 	})
 }
 
-func getFieldValue(metric *splunk.Metric) string {
+func getFieldValue(metric *splunk.Event) string {
 	for k := range metric.Fields {
 		if strings.HasPrefix(k, "metric_name:") {
 			return k
@@ -196,14 +196,14 @@ func commonSplunkMetric(
 	keys []string,
 	values []string,
 	val interface{},
-) *splunk.Metric {
+) *splunk.Event {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
 
 	for i, k := range keys {
 		fields[k] = values[i]
 	}
 
-	return &splunk.Metric{
+	return &splunk.Event{
 		Time:   ts,
 		Host:   "unknown",
 		Event:  "metric",
@@ -217,12 +217,12 @@ func expectedFromDistribution(
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
-) []*splunk.Metric {
+) []*splunk.Event {
 	distributionValue := distributionTimeSeries.Points[0].GetDistributionValue()
 
 	// Three additional data points: one for count, one for sum and one for sum of squared deviation.
 	const extraDataPoints = 3
-	dps := make([]*splunk.Metric, 0, len(distributionValue.Buckets)+extraDataPoints)
+	dps := make([]*splunk.Event, 0, len(distributionValue.Buckets)+extraDataPoints)
 
 	dps = append(dps,
 		commonSplunkMetric(metricName, ts, keys, values,
