@@ -16,8 +16,6 @@ package awskinesisexporter
 
 import (
 	"context"
-
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,8 +23,10 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr      = "awskinesis"
-	exportFormat = "jaeger-proto"
+	typeStr   = "awskinesis"
+	// The default encoding scheme is set to otlpProto
+	otlpProto = "otlp_proto"
+	defaultEncoding = otlpProto
 )
 
 // NewFactory creates a factory for Kinesis exporter.
@@ -34,14 +34,16 @@ func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter))
+		exporterhelper.WithTraces(createTracesExporter),
+		exporterhelper.WithMetrics(createMetricsExporter))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewID(typeStr)),
 		AWS: AWSConfig{
-			Region: "us-west-2",
+			Region:     "us-west-2",
+			StreamName: "test-stream",
 		},
 		KPL: KPLConfig{
 			BatchSize:            5242880,
@@ -50,12 +52,7 @@ func createDefaultConfig() config.Exporter {
 			FlushIntervalSeconds: 5,
 			MaxConnections:       24,
 		},
-
-		QueueSize:            100000,
-		NumWorkers:           8,
-		FlushIntervalSeconds: 5,
-		MaxBytesPerBatch:     100000,
-		MaxBytesPerSpan:      900000,
+		Encoding: defaultEncoding,
 	}
 }
 
@@ -65,33 +62,14 @@ func createTracesExporter(
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	c := config.(*Config)
-	k, err := awskinesis.NewExporter(&awskinesis.Options{
-		Name:               c.ID().String(),
-		StreamName:         c.AWS.StreamName,
-		AWSRegion:          c.AWS.Region,
-		AWSRole:            c.AWS.Role,
-		AWSKinesisEndpoint: c.AWS.KinesisEndpoint,
+	return newExporter(c, params.Logger)
+}
 
-		KPLAggregateBatchSize:   c.KPL.AggregateBatchSize,
-		KPLAggregateBatchCount:  c.KPL.AggregateBatchCount,
-		KPLBatchSize:            c.KPL.BatchSize,
-		KPLBatchCount:           c.KPL.BatchCount,
-		KPLBacklogCount:         c.KPL.BacklogCount,
-		KPLFlushIntervalSeconds: c.KPL.FlushIntervalSeconds,
-		KPLMaxConnections:       c.KPL.MaxConnections,
-		KPLMaxRetries:           c.KPL.MaxRetries,
-		KPLMaxBackoffSeconds:    c.KPL.MaxBackoffSeconds,
-
-		QueueSize:             c.QueueSize,
-		NumWorkers:            c.NumWorkers,
-		MaxAllowedSizePerSpan: c.MaxBytesPerSpan,
-		MaxListSize:           c.MaxBytesPerBatch,
-		ListFlushInterval:     c.FlushIntervalSeconds,
-		Encoding:              exportFormat,
-	}, params.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return Exporter{k, params.Logger}, nil
+func createMetricsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	config config.Exporter,
+) (component.MetricsExporter, error) {
+	c := config.(*Config)
+	return newExporter(c, params.Logger)
 }

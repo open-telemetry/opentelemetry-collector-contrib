@@ -3,12 +3,7 @@ receivers:
 
 exporters:
   awskinesis:
-    queue_size: 1
-    num_workers: 2
-    flush_interval_seconds: 3
-    max_bytes_per_batch: 4
-    max_bytes_per_span: 5
-
+    encoding: ""
     aws:
         stream_name: test-stream
         region: mars-1
@@ -32,6 +27,10 @@ processors:
 service:
   pipelines:
     traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awskinesis]
+    metrics:
       receivers: [nop]
       processors: [nop]
       exporters: [awskinesis]

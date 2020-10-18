@@ -16,29 +16,56 @@ package awskinesisexporter
 
 import (
 	"context"
+	"fmt"
 
-	awskinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 
-// Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
+const (
+	errInvalidContext = "invalid context"
+)
+
+// exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
 type Exporter struct {
-	awskinesis *awskinesis.Exporter
+	producer   producer
 	logger     *zap.Logger
+	marshaller Marshaller
 }
 
 var _ component.TracesExporter = (*Exporter)(nil)
+var _ component.MetricsExporter = (*Exporter)(nil)
+// newExporter creates a new exporter with the passed in configurations.
+// It starts the AWS session and setups the relevant connections.
+func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
+	// Get marshaller based on config
+	marshaller := defaultMarshallers()[c.Encoding]
+	if marshaller == nil {
+		return nil, fmt.Errorf("unrecognized encoding")
+	}
 
-// Start tells the exporter to start. The exporter may prepare for exporting
+	pr, err := newKinesisProducer(c, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Exporter{producer: pr, marshaller: marshaller, logger: logger}, nil
+}
+
+// start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
-// with the host after Start() has already returned. If error is returned by
-// Start() then the collector startup will be aborted.
-func (e Exporter) Start(_ context.Context, _ component.Host) error {
+// with the host after start() has already returned. If error is returned by
+// start() then the collector startup will be aborted.
+func (e *Exporter) Start(ctx context.Context, _ component.Host) error {
+	if ctx == nil || ctx.Err() != nil {
+		return fmt.Errorf(errInvalidContext)
+	}
+
+	e.producer.start()
 	return nil
 }
 
@@ -48,31 +75,50 @@ func (e Exporter) Capabilities() consumer.Capabilities {
 }
 
 // Shutdown is invoked during exporter shutdown.
-func (e Exporter) Shutdown(context.Context) error {
-	e.awskinesis.Flush()
+func (e Exporter) Shutdown(ctx context.Context) error {
+	if ctx == nil || ctx.Err() != nil {
+		return fmt.Errorf(errInvalidContext)
+	}
+
+	e.producer.stop()
 	return nil
 }
 
 // ConsumeTraces receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
-	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+func (e Exporter) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+	if ctx == nil || ctx.Err() != nil {
+		return fmt.Errorf(errInvalidContext)
+	}
+
+	pBatches, err := e.marshaller.MarshalTraces(td)
 	if err != nil {
 		e.logger.Error("error translating span batch", zap.Error(err))
 		return consumererror.Permanent(err)
 	}
-	// TODO: Use a multi error type
-	var exportErr error
-	for _, pBatch := range pBatches {
-		for _, span := range pBatch.GetSpans() {
-			if span.Process == nil {
-				span.Process = pBatch.Process
-			}
-			err := e.awskinesis.ExportSpan(span)
-			if err != nil {
-				e.logger.Error("error exporting span to awskinesis", zap.Error(err))
-				exportErr = err
-			}
-		}
+
+	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
+		e.logger.Error("error exporting span to kinesis", zap.Error(err))
+		return err
 	}
-	return exportErr
+
+	return nil
+}
+
+func (e Exporter) ConsumeMetrics(ctx context.Context, td pdata.Metrics) error {
+	if ctx == nil || ctx.Err() != nil {
+		return fmt.Errorf(errInvalidContext)
+	}
+
+	pBatches, err := e.marshaller.MarshalMetrics(td)
+	if err != nil {
+		e.logger.Error("error translating metrics batch", zap.Error(err))
+		return consumererror.Permanent(err)
+	}
+
+	if err = e.producer.put(pBatches, uuid.New().String()); err != nil {
+		e.logger.Error("error exporting metrics to kinesis", zap.Error(err))
+		return err
+	}
+
+	return nil
 }
