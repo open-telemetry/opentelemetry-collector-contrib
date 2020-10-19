@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -192,7 +193,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   cloudProviderAWS,
+								"cloud.provider":   conventions.AttributeCloudProviderAWS,
 								"cloud.account.id": "efgh",
 								"cloud.region":     "us-east",
 							},
@@ -209,7 +210,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					tsMSecs,
 					&sfxMetricTypeGauge,
 					append([]string{"cloud_account_id", "cloud_provider", "cloud_region", "k_r0", "k_r1"}, keys...),
-					append([]string{"efgh", cloudProviderAWS, "us-east", "vr0", "vr1"}, values...),
+					append([]string{"efgh", conventions.AttributeCloudProviderAWS, "us-east", "vr0", "vr1"}, values...),
 					doubleVal),
 			},
 		},
@@ -222,7 +223,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   cloudProviderAWS,
+								"cloud.provider":   conventions.AttributeCloudProviderAWS,
 								"cloud.account.id": "efgh",
 								"cloud.region":     "us-east",
 								"host.id":          "abcd",
@@ -253,7 +254,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":           "vr0",
 								"k/r1":           "vr1",
-								"cloud.provider": cloudProviderGCP,
+								"cloud.provider": conventions.AttributeCloudProviderGCP,
 								"host.id":        "abcd",
 							},
 						},
@@ -269,7 +270,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					tsMSecs,
 					&sfxMetricTypeGauge,
 					append([]string{"cloud_provider", "host_id", "k_r0", "k_r1"}, keys...),
-					append([]string{cloudProviderGCP, "abcd", "vr0", "vr1"}, values...),
+					append([]string{conventions.AttributeCloudProviderGCP, "abcd", "vr0", "vr1"}, values...),
 					doubleVal),
 			},
 		},
@@ -282,7 +283,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 							Labels: map[string]string{
 								"k/r0":             "vr0",
 								"k/r1":             "vr1",
-								"cloud.provider":   cloudProviderGCP,
+								"cloud.provider":   conventions.AttributeCloudProviderGCP,
 								"cloud.account.id": "efgh",
 								"host.id":          "abcd",
 							},
