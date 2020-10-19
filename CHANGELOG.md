@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v0.13.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.13.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.13.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 💡 Enhancements 💡
+
+- `sapm` exporter:
+  - Enable queuing by default (#1224)
+  - Add SignalFx APM correlation (#1205)
+  - Make span source attribute and destination dimension names configurable (#1286)
+- `signalfx` exporter:
+  - Pass context to the http client requests (#1225)
+  - Update `disk.summary_utilization` translation rule to accommodate new labels (#1258)
+- `newrelic` exporter: Add `span.kind` attribute (#1263)
+- `datadog` exporter:
+  - Add Datadog trace translation helpers (#1208)
+  - Add API key validation (#1216)
+- `splunkhec` receiver: Add the ability to ingest logs (#1268)
+- `awscontainermetrics` receiver: Report `CpuUtilized` metric in percentage (#1283)
+- `awsemf` exporter: Only calculate metric rate for cumulative counter and avoid SingleDimensionRollup for metrics with only one dimension (#1280)
+
+## 🧰 Bug fixes 🧰
+
+- Make `signalfx` exporter a metadata exporter (#1252)
+- `awsecscontainermetrics` receiver: Check for empty network rate stats and set zero (#1260)
+- `awsemf` exporter: Remove InstrumentationLibrary dimension in CloudWatch EMF Logs if it is undefined (#1256)
+- `awsxray` receiver: Fix trace/span id transfer (#1264)
+- `datadog` exporter: Remove trace support for Windows for now (#1274)
+- `sapm` exporter: Correlation enabled check inversed (#1278)
+
 ## v0.12.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.12.0 (Beta) 🎉
