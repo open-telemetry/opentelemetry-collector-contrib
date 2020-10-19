@@ -1,6 +1,8 @@
-module github.com/DataDog/opentelemetry-collector-contrib/exporter/datadogexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.15
+go 1.14
+
+replace gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 => github.com/zorkian/go-datadog-api v2.29.1-0.20201007103024-437d51d487bf+incompatible
 
 require (
 	github.com/DataDog/datadog-agent v0.0.0-20200417180928-f454c60bc16f

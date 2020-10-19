@@ -29,9 +29,25 @@ type metricsExporter struct {
 	tags   []string
 }
 
+func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
+	logger.Info("Validating API key.")
+	res, err := client.Validate()
+	if err != nil {
+		logger.Warn("Error while validating API key.", zap.Error(err))
+	}
+
+	if res {
+		logger.Info("API key validation successful.")
+	} else {
+		logger.Warn("API key validation failed.")
+	}
+}
+
 func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
+
+	validateAPIKey(logger, client)
 
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
