@@ -42,6 +42,8 @@ type CorrelationConfig struct {
 	// How long to wait after a trace span's service name is last seen before
 	// uncorrelating that service.
 	StaleServiceTimeout time.Duration `mapstructure:"stale_service_timeout"`
+	// SyncAttributes is a key of the span attribute name to sync to the dimension as the value.
+	SyncAttributes map[string]string `mapstructure:"sync_attributes"`
 }
 
 // Config defines configuration for SAPM exporter.
