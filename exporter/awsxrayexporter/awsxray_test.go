@@ -91,7 +91,7 @@ func constructResource() pdata.Resource {
 	attrs.InsertString(semconventions.AttributeContainerName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
 	attrs.InsertString(semconventions.AttributeContainerTag, "v1")
-	attrs.InsertString(semconventions.AttributeCloudProvider, "aws")
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "999999998")
 	attrs.InsertString(semconventions.AttributeCloudRegion, "us-west-2")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-west-1b")

@@ -75,10 +75,6 @@ var (
 
 	// infinity bound dimension value is used on all histograms.
 	infinityBoundSFxDimValue = float64ToDimValue(math.Inf(1))
-
-	// TODO: expose the constants somewhere in the project and share with resource detector processor
-	cloudProviderAWS = "aws"
-	cloudProviderGCP = "gcp"
 )
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
@@ -425,7 +421,7 @@ func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr 
 	filter := func(k string) bool { return true }
 
 	switch provider {
-	case cloudProviderAWS:
+	case conventions.AttributeCloudProviderAWS:
 		if instanceID == "" || region == "" || accountID == "" {
 			break
 		}
@@ -439,7 +435,7 @@ func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr 
 			Key:   "AWSUniqueId",
 			Value: fmt.Sprintf("%s_%s_%s", instanceID, region, accountID),
 		})
-	case cloudProviderGCP:
+	case conventions.AttributeCloudProviderGCP:
 		if accountID == "" || instanceID == "" {
 			break
 		}
