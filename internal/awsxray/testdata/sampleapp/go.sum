@@ -1,8 +1,8 @@
 github.com/DATA-DOG/go-sqlmock v1.4.1 h1:ThlnYciV1iM/V0OSF/dtkqWb6xo5qITT1TJBG1MRDJM=
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/aws/aws-sdk-go v1.17.12/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
-github.com/aws/aws-sdk-go v1.35.7 h1:FHMhVhyc/9jljgFAcGkQDYjpC9btM0B8VfkLBfctdNE=
-github.com/aws/aws-sdk-go v1.35.7/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
+github.com/aws/aws-sdk-go v1.35.9 h1:b1HiUpdkFLJyoOQ7zas36YHzjNHH0ivHx/G5lWBeg+U=
+github.com/aws/aws-sdk-go v1.35.9/go.mod h1:tlPOdRjfxPBpNIwqDj61rmsnA85v9jc0Ps9+muhnW+k=
 github.com/aws/aws-xray-sdk-go v1.1.0 h1:CSOeSvhl0OWHmF73yV9dkq5vNcd0H2w7RYYgkcJZa3w=
 github.com/aws/aws-xray-sdk-go v1.1.0/go.mod h1:tmxq1c+yeEbMh39OmRFuXOrse5ajRlMmDXJ6LrCVsIs=
 github.com/davecgh/go-spew v0.0.0-20160907170601-6d212800a42e/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
