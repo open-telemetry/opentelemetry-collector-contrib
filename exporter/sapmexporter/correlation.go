@@ -119,8 +119,7 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 			},
 			false,
 			nil,
-			// TODO: Followup PR to use translated dimension names.
-			tracetracker.DefaultDimsToSyncSource)
+			cor.cfg.Correlation.SyncAttributes)
 		cor.Start()
 	})
 

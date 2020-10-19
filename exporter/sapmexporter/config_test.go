@@ -76,6 +76,10 @@ func TestLoadConfig(t *testing.T) {
 			Correlation: CorrelationConfig{
 				Enabled:             false,
 				StaleServiceTimeout: 5 * time.Minute,
+				SyncAttributes: map[string]string{
+					"k8s.pod.uid":  "k8s.pod.uid",
+					"container.id": "container.id",
+				},
 				Config: correlations.Config{
 					MaxRequests:     20,
 					MaxBuffered:     10_000,
