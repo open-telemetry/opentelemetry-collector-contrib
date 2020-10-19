@@ -8,5 +8,5 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200706150819-a40b877fbb9e+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	go.opentelemetry.io/collector v0.12.1-0.20201016230751-46aada6e3c3a
 )
