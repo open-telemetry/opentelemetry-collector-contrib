@@ -44,8 +44,8 @@ func TestCreateReceiver(t *testing.T) {
 
 	mockMetricsConsumer := exportertest.NewNopMetricsExporter()
 	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockMetricsConsumer)
-	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
-	assert.Nil(t, mReceiver)
+	assert.Nil(t, err, "receiver creation failed")
+	assert.NotNil(t, mReceiver, "receiver creation failed")
 
 	mockTracesConsumer := exportertest.NewNopTraceExporter()
 	tReceiver, err := createTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockTracesConsumer)
