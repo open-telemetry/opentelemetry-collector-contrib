@@ -24,7 +24,8 @@ import (
 )
 
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
-
+	// TODO replace with span JSON object.
+	internalData := internaldata.TraceDataToOC(data)
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
 	for i := 0; i < data.ResourceSpans().Len(); i++ {
@@ -47,8 +48,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			ils := rs.InstrumentationLibrarySpans().At(sils)
 			for si := 0; si < ils.Spans().Len(); si++ {
 				span := ils.Spans().At(si)
-				// TODO replace with span JSON object.
-				spanOC := internaldata.TraceDataToOC(data)[i].Spans[(sils+1)*si]
+				spanOC := internalData[i].Spans[(sils+1)*si]
 
 				se := &splunk.Event{
 					Time:       timestampToEpochMilliseconds(span.StartTime()),
