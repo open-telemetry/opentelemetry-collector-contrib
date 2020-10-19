@@ -44,7 +44,7 @@ type traceEdgeConnection struct {
 }
 
 const (
-	traceEdgeTimout        time.Duration = 5 * time.Second
+	traceEdgeTimout        time.Duration = 10 * time.Second
 	traceEdgeRetryInterval time.Duration = 1 * time.Second
 )
 
