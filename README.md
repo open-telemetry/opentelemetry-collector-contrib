@@ -76,6 +76,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 
