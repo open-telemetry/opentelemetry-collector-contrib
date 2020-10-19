@@ -274,10 +274,16 @@ func buildCWMetricFromDP(dp interface{}, pmd *pdata.Metric, namespace string, me
 		// Put a fake but identical metric value here in order to add metric name into fieldsPairs
 		// since calculateRate() needs metric name as one of metric identifiers
 		fieldsPairs[pmd.Name()] = int64(FakeMetricValue)
-		metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+		metricVal = metric.Value()
+		if needsCalculateRate(pmd) {
+			metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+		}
 	case pdata.DoubleDataPoint:
 		fieldsPairs[pmd.Name()] = float64(FakeMetricValue)
-		metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+		metricVal = metric.Value()
+		if needsCalculateRate(pmd) {
+			metricVal = calculateRate(fieldsPairs, metric.Value(), timestamp)
+		}
 	}
 	if metricVal == nil {
 		return nil
@@ -428,10 +434,26 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 	}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
 		//"One" dimension rollup
-		for _, dimensionKey := range originalDimensionSlice {
-			rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
+		if len(originalDimensionSlice) > 1 {
+			for _, dimensionKey := range originalDimensionSlice {
+				rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
+			}
 		}
 	}
 
 	return rollupDimensionArray
+}
+
+func needsCalculateRate(pmd *pdata.Metric) bool {
+	switch pmd.DataType() {
+	case pdata.MetricDataTypeIntSum:
+		if !pmd.IntSum().IsNil() && pmd.IntSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+			return true
+		}
+	case pdata.MetricDataTypeDoubleSum:
+		if !pmd.DoubleSum().IsNil() && pmd.DoubleSum().AggregationTemporality() == pdata.AggregationTemporalityCumulative {
+			return true
+		}
+	}
+	return false
 }
