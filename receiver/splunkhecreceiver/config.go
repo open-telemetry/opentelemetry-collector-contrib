@@ -21,6 +21,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
+const (
+	// hecPath is the default HEC path on the Splunk instance.
+	hecPath = "/services/collector"
+)
+
 // Config defines configuration for the SignalFx receiver.
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

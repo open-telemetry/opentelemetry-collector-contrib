@@ -51,6 +51,14 @@ core distribution of the Collector. Typically, these contributions are vendor
 specific receivers/exporters and/or components that are only
 useful to a relatively small number of users.
 
+## Creating your own OpenTelemetry Collector distribution
+
+A guide on how to create your own distribution is available in this blog post: 
+["Building your own OpenTelemetry Collector distribution"](https://medium.com/p/42337e994b63)
+
+If you are building your own distribution, the [OpenTelemetry Collector Builder](https://github.com/observatorium/opentelemetry-collector-builder) 
+might be a good starting point.
+
 ## Questions
 Reach the Collector community on
 [gitter](https://gitter.im/open-telemetry/opentelemetry-service) if you have

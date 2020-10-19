@@ -98,7 +98,7 @@ func TestConsumeMetricsData(t *testing.T) {
 					t.Fatal("Small batch should not be compressed")
 				}
 				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
-				var metric splunk.Metric
+				var metric splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &metric)
 				if err != nil {
 					t.Fatal(err)
@@ -249,7 +249,7 @@ func TestConsumeLogsData(t *testing.T) {
 					t.Fatal("Small batch should not be compressed")
 				}
 				firstPayload := strings.Split(string(body), "\n\r\n\r")[0]
-				var event splunkEvent
+				var event splunk.Event
 				err = json.Unmarshal([]byte(firstPayload), &event)
 				if err != nil {
 					t.Fatal(err)

@@ -49,6 +49,10 @@ type HostID struct {
 func ResourceToHostID(res pdata.Resource) (HostID, bool) {
 	var cloudAccount, region, hostID, provider string
 
+	if res.IsNil() {
+		return HostID{}, false
+	}
+
 	if attr, ok := res.Attributes().Get(conventions.AttributeCloudAccount); ok {
 		cloudAccount = attr.StringVal()
 	}

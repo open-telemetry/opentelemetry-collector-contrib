@@ -37,6 +37,11 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:1" // Endpoint is required, not going to be used here.
 
+	mockLogsConsumer := exportertest.NewNopLogsExporter()
+	lReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
+	assert.Nil(t, err, "receiver creation failed")
+	assert.NotNil(t, lReceiver, "receiver creation failed")
+
 	mockMetricsConsumer := exportertest.NewNopMetricsExporter()
 	mReceiver, err := createMetricsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockMetricsConsumer)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
@@ -86,4 +91,23 @@ func TestValidateBadEndpoint(t *testing.T) {
 	config.Endpoint = "localhost:abr"
 	err := config.validate()
 	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abr\": invalid syntax")
+}
+
+func TestCreateNilNextConsumer(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:1"
+
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	assert.EqualError(t, err, "nil metricsConsumer")
+	assert.Nil(t, mReceiver, "receiver creation failed")
+}
+
+func TestCreateBadEndpoint(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = "localhost:abc"
+
+	mockLogsConsumer := exportertest.NewNopLogsExporter()
+	mReceiver, err := createLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, mockLogsConsumer)
+	assert.EqualError(t, err, "endpoint port is not a number: strconv.ParseInt: parsing \"abc\": invalid syntax")
+	assert.Nil(t, mReceiver, "receiver creation failed")
 }

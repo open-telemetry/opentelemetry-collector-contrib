@@ -807,6 +807,7 @@ github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/observiq/ctimefmt v1.0.0 h1:r7vTJ+Slkrt9fZ67mkf+mA6zAdR5nGIJRMTzkUyvilk=
 github.com/observiq/ctimefmt v1.0.0/go.mod h1:mxi62//WbSpG/roCO1c6MqZ7zQTvjVtYheqHN3eOjvc=
+github.com/observiq/nanojack v0.0.0-20200910202758-a0af1c611319 h1:33Fh2cXMUKlnSxYAqt9+BHZRdK01/P6lJNfXttwmIjk=
 github.com/observiq/nanojack v0.0.0-20200910202758-a0af1c611319/go.mod h1:f+QQxL9zFpO5q44o7rf+TOEtEmlMQUI9snW9ZADIku0=
 github.com/observiq/stanza v0.12.0 h1:AOOKMxJyP/2U1ugorO4ufLKNyNrlDDWbqOS/9n6ZYDU=
 github.com/observiq/stanza v0.12.0/go.mod h1:Tu5ukrGEoFVnk9Mz3yaRyQ6x7Y7IeqwCoLHd4JCySHU=

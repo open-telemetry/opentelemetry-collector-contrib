@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
 const (
@@ -105,7 +107,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			"Connection":    "keep-alive",
 			"Content-Type":  "application/json",
 			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": "Splunk " + config.Token,
+			"Authorization": splunk.SplunkHECTokenHeader + " " + config.Token,
 		},
 		config: config,
 	}

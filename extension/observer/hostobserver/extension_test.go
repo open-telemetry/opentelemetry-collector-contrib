@@ -39,6 +39,11 @@ import (
 
 // Tests observer with real connections on system.
 func TestHostObserver(t *testing.T) {
+	// TODO review if test should succeed on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+
 	tests := []struct {
 		name                    string
 		protocol                observer.Transport

@@ -80,13 +80,18 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
+	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(expCfg.RetrySettings),
 		exporterhelper.WithQueue(expCfg.QueueSettings))
+
+	return &signalfMetadataExporter{
+		MetricsExporter: me,
+		pushMetadata:    exp.pushMetadata,
+	}, err
 }
 
 func setTranslationRules(cfg *Config) error {

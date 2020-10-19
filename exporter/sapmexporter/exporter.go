@@ -1,4 +1,4 @@
-// Copyright 2019, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,13 +31,15 @@ import (
 
 // sapmExporter is a wrapper struct of SAPM exporter
 type sapmExporter struct {
-	client *sapmclient.Client
-	logger *zap.Logger
-	config *Config
+	client  *sapmclient.Client
+	logger  *zap.Logger
+	config  *Config
+	tracker *Tracker
 }
 
 func (se *sapmExporter) Shutdown(context.Context) error {
 	se.client.Stop()
+	se.tracker.Shutdown()
 	return nil
 }
 
@@ -51,10 +53,18 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 	if err != nil {
 		return sapmExporter{}, err
 	}
+
+	var tracker *Tracker
+
+	if cfg.Correlation.Enabled {
+		tracker = NewTracker(cfg, params)
+	}
+
 	return sapmExporter{
-		client: client,
-		logger: params.Logger,
-		config: cfg,
+		client:  client,
+		logger:  params.Logger,
+		config:  cfg,
+		tracker: tracker,
 	}, err
 }
 
@@ -134,6 +144,9 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (dro
 			}
 			droppedSpansCount += trace.SpanCount()
 		}
+
+		// NOTE: Correlation does not currently support inline access token.
+		se.tracker.AddSpans(ctx, trace)
 	}
 	return
 }

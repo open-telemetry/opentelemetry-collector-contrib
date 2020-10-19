@@ -17,15 +17,20 @@ package awsecscontainermetrics
 // getContainerMetrics generate ECS Container metrics from Container stats
 func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	memoryUtilizedInMb := (*stats.Memory.Usage - stats.Memory.Stats["cache"]) / BytesInMiB
-
 	numOfCores := (uint64)(len(stats.CPU.CPUUsage.PerCPUUsage))
+	timeDiffSinceLastRead := (float64)(stats.Read.Sub(stats.PreviousRead).Nanoseconds())
 
-	// TODO: match with ECS Agent calculation and modify if needed
-	cpuUtilized := (float64)(*stats.CPU.CPUUsage.TotalUsage / numOfCores / 1024)
+	cpuUsageInVCpu := float64(0)
+	if timeDiffSinceLastRead > 0 {
+		cpuDelta := (float64)(*stats.CPU.CPUUsage.TotalUsage - *stats.PreviousCPU.CPUUsage.TotalUsage)
+		cpuUsageInVCpu = cpuDelta / timeDiffSinceLastRead
+	}
+	cpuUtilized := cpuUsageInVCpu * 100
 
 	netStatArray := getNetworkStats(stats.Network)
 
 	storageReadBytes, storageWriteBytes := extractStorageUsage(&stats.Disk)
+	floatZero := float64(0)
 
 	m := ECSMetrics{}
 
@@ -40,10 +45,16 @@ func getContainerMetrics(stats ContainerStats) ECSMetrics {
 	m.NumOfCPUCores = numOfCores
 	m.CPUOnlineCpus = *stats.CPU.OnlineCpus
 	m.SystemCPUUsage = *stats.CPU.SystemCPUUsage
+	m.CPUUsageInVCPU = cpuUsageInVCpu
 	m.CPUUtilized = cpuUtilized
 
-	m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
-	m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+	if stats.NetworkRate == (NetworkRateStats{}) {
+		m.NetworkRateRxBytesPerSecond = floatZero
+		m.NetworkRateTxBytesPerSecond = floatZero
+	} else {
+		m.NetworkRateRxBytesPerSecond = *stats.NetworkRate.RxBytesPerSecond
+		m.NetworkRateTxBytesPerSecond = *stats.NetworkRate.TxBytesPerSecond
+	}
 
 	m.NetworkRxBytes = netStatArray[0]
 	m.NetworkRxPackets = netStatArray[1]
@@ -113,8 +124,8 @@ func aggregateTaskMetrics(taskMetrics *ECSMetrics, conMetrics ECSMetrics) {
 	taskMetrics.NumOfCPUCores += conMetrics.NumOfCPUCores
 	taskMetrics.CPUOnlineCpus += conMetrics.CPUOnlineCpus
 	taskMetrics.SystemCPUUsage += conMetrics.SystemCPUUsage
-	taskMetrics.CPUUtilized += conMetrics.CPUUtilized
 	taskMetrics.CPUReserved += conMetrics.CPUReserved
+	taskMetrics.CPUUsageInVCPU += conMetrics.CPUUsageInVCPU
 
 	taskMetrics.NetworkRateRxBytesPerSecond += conMetrics.NetworkRateRxBytesPerSecond
 	taskMetrics.NetworkRateTxBytesPerSecond += conMetrics.NetworkRateTxBytesPerSecond

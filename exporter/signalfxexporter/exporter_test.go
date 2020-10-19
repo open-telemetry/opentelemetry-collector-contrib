@@ -33,6 +33,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -942,8 +943,11 @@ func TestConsumeMetadata(t *testing.T) {
 				logger:       logger,
 				pushMetadata: dimClient.PushMetadata,
 			}
+			sme := signalfMetadataExporter{
+				pushMetadata: se.pushMetadata,
+			}
 
-			err = se.ConsumeMetadata(tt.args.metadata)
+			err = sme.ConsumeMetadata(tt.args.metadata)
 
 			// Wait for requests to be handled by the mocked server before assertion.
 			wg.Wait()
@@ -986,4 +990,19 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		assert.NoError(b, err)
 		assert.Equal(b, 0, numDroppedTimeSeries)
 	}
+}
+
+// Test to ensure SignalFx exporter implements collection.MetadataExporter in k8s_cluster receiver.
+func TestSignalFxExporterConsumeMetadata(t *testing.T) {
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig()
+	rCfg := cfg.(*Config)
+	rCfg.AccessToken = "token"
+	rCfg.Realm = "realm"
+	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, rCfg)
+	require.NoError(t, err)
+
+	kme, ok := exp.(collection.MetadataExporter)
+	require.True(t, ok, "SignalFx exporter does not implement collection.MetadataExporter")
+	require.NotNil(t, kme)
 }

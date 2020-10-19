@@ -16,6 +16,7 @@ package awsecscontainermetrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,6 +24,7 @@ import (
 func TestGetContainerAndTaskMetrics(t *testing.T) {
 	v := uint64(1)
 	f := float64(1.0)
+	floatZero := float64(0)
 
 	memStats := make(map[string]uint64)
 	memStats["cache"] = v
@@ -76,14 +78,33 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 		CPUUtilized:    &v,
 		CPUReserved:    &v,
 	}
+
+	previousCPUUsage := CPUUsage{
+		TotalUsage:        &v,
+		UsageInKernelmode: &v,
+		UsageInUserMode:   &v,
+		PerCPUUsage:       percpu,
+	}
+
+	previousCPUStats := CPUStats{
+		CPUUsage:       previousCPUUsage,
+		OnlineCpus:     &v,
+		SystemCPUUsage: &v,
+		CPUUtilized:    &v,
+		CPUReserved:    &v,
+	}
+
 	containerStats := ContainerStats{
-		Name:        "test",
-		ID:          "001",
-		Memory:      mem,
-		Disk:        disk,
-		Network:     net,
-		NetworkRate: netRate,
-		CPU:         cpuStats,
+		Name:         "test",
+		ID:           "001",
+		Read:         time.Now(),
+		PreviousRead: time.Now().Add(-10 * time.Second),
+		Memory:       mem,
+		Disk:         disk,
+		Network:      net,
+		NetworkRate:  netRate,
+		CPU:          cpuStats,
+		PreviousCPU:  previousCPUStats,
 	}
 
 	containerMetrics := getContainerMetrics(containerStats)
@@ -94,6 +115,21 @@ func TestGetContainerAndTaskMetrics(t *testing.T) {
 	require.EqualValues(t, v, taskMetrics.MemoryUsage)
 	require.EqualValues(t, v, taskMetrics.MemoryMaxUsage)
 	require.EqualValues(t, v, taskMetrics.StorageReadBytes)
+
+	containerStats = ContainerStats{
+		Name:        "test",
+		ID:          "001",
+		Memory:      mem,
+		Disk:        disk,
+		Network:     net,
+		NetworkRate: NetworkRateStats{},
+		CPU:         cpuStats,
+	}
+	containerMetrics = getContainerMetrics(containerStats)
+	require.NotNil(t, containerMetrics)
+
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateRxBytesPerSecond)
+	require.EqualValues(t, floatZero, containerMetrics.NetworkRateTxBytesPerSecond)
 }
 
 func TestExtractStorageUsage(t *testing.T) {
