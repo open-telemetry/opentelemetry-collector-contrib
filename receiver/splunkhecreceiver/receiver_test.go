@@ -36,8 +36,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
@@ -68,7 +68,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config:       *emptyEndpointConfig,
-				logsConsumer: new(exportertest.SinkLogsExporter),
+				logsConsumer: new(consumertest.LogsSink),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -76,7 +76,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				logsConsumer: exportertest.NewNopLogsExporter(),
+				logsConsumer: consumertest.NewLogsNop(),
 			},
 		},
 		{
@@ -87,7 +87,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				logsConsumer: exportertest.NewNopLogsExporter(),
+				logsConsumer: consumertest.NewLogsNop(),
 			},
 		},
 	}
@@ -128,7 +128,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "empty_endpoint",
 			args: args{
 				config:          *emptyEndpointConfig,
-				metricsConsumer: new(exportertest.SinkMetricsExporter),
+				metricsConsumer: new(consumertest.MetricsSink),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -136,7 +136,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:          *defaultConfig,
-				metricsConsumer: exportertest.NewNopMetricsExporter(),
+				metricsConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -147,7 +147,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				metricsConsumer: exportertest.NewNopMetricsExporter(),
+				metricsConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 	}
@@ -305,7 +305,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
@@ -330,8 +330,8 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, "foo", 3)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	sink := new(exportertest.SinkLogsExporter)
-	sink.SetConsumeLogError(errors.New("bad consumer"))
+	sink := new(consumertest.LogsSink)
+	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 	assert.NoError(t, err)
 
@@ -360,8 +360,8 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	sink := new(exportertest.SinkMetricsExporter)
-	sink.SetConsumeMetricsError(errors.New("bad consumer"))
+	sink := new(consumertest.MetricsSink)
+	sink.SetConsumeError(errors.New("bad consumer"))
 	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, sink)
 	assert.NoError(t, err)
 
@@ -394,7 +394,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
-	sink := new(exportertest.SinkLogsExporter)
+	sink := new(consumertest.LogsSink)
 	r, err := NewLogsReceiver(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
@@ -500,7 +500,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 

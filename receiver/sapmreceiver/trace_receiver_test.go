@@ -37,8 +37,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -211,7 +211,7 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	return resp, nil
 }
 
-func setupReceiver(t *testing.T, config *Config, sink *exportertest.SinkTraceExporter) component.TraceReceiver {
+func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TraceReceiver {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	sr, err := New(context.Background(), params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
@@ -300,7 +300,7 @@ func TestReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, tt.args.config, sink)
 			defer sr.Shutdown(context.Background())
 
@@ -364,7 +364,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 				Batches: []*model.Batch{grpcFixture(time.Now().UTC(), time.Minute*10, time.Second*2)},
 			}
 
-			sink := new(exportertest.SinkTraceExporter)
+			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, config, sink)
 			defer sr.Shutdown(context.Background())
 

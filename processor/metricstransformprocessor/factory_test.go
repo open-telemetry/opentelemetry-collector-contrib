@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
@@ -92,7 +92,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					exportertest.NewNopTraceExporter())
+					consumertest.NewTracesNop())
 				// Not implemented error
 				assert.Error(t, tErr)
 				assert.Nil(t, tp)
@@ -101,7 +101,7 @@ func TestCreateProcessors(t *testing.T) {
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,
-					exportertest.NewNopMetricsExporter())
+					consumertest.NewMetricsNop())
 				if test.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)

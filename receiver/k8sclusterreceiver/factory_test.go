@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 
@@ -51,7 +51,7 @@ func TestFactory(t *testing.T) {
 
 	r, err := f.CreateTraceReceiver(
 		context.Background(), component.ReceiverCreateParams{},
-		&configmodels.ReceiverSettings{}, &exportertest.SinkTraceExporter{},
+		&configmodels.ReceiverSettings{}, consumertest.NewTracesNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -59,7 +59,7 @@ func TestFactory(t *testing.T) {
 	// Fails with bad K8s Config.
 	r, err = f.CreateMetricsReceiver(
 		context.Background(), component.ReceiverCreateParams{},
-		rCfg, &exportertest.SinkMetricsExporter{},
+		rCfg, consumertest.NewMetricsNop(),
 	)
 	require.Error(t, err)
 	require.Nil(t, r)
@@ -70,7 +70,7 @@ func TestFactory(t *testing.T) {
 	}
 	r, err = f.CreateMetricsReceiver(
 		context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()},
-		rCfg, &exportertest.SinkMetricsExporter{},
+		rCfg, consumertest.NewMetricsNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
