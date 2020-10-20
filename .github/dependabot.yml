@@ -9,8 +9,132 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly" # Check for updates to GitHub Actions every week
+
+  ################
+  #   INTERNAL   #
+  ################
   - package-ecosystem: "gomod"
-    directory: "/testbed"
+    directory: "/internal/awsxray"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleapp"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/awsxray/testdata/sampleserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/common"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/internal/k8sconfig"
+    schedule:
+      interval: "weekly"
+
+  ##################
+  #   EXTENSIONS   #
+  ##################
+  - package-ecosystem: "gomod"
+    directory: "/extension/jmxmetricsextension"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/httpforwarder"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/hostobserver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/extension/observer/k8sobserver"
+    schedule:
+      interval: "weekly"
+
+  #################
+  #   EXPORTERS   #
+  #################
+  - package-ecosystem: "gomod"
+    directory: "/exporter/alibabacloudlogserviceexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/awsemfexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/awsxrayexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/azuremonitorexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/carbonexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/datadogexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/elasticexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/honeycombexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/jaegerthrifthttpexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/kinesisexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/logzioexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/newrelicexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/sapmexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/sentryexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/signalfxexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/splunkhecexporter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/stackdriverexporter"
+    schedule:
+      interval: "weekly"
+
+  ##################
+  #   PROCESSORS   #
+  ##################
+  - package-ecosystem: "gomod"
+    directory: "/processor/groupbytraceprocessor"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -27,6 +151,14 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/processor/routingprocessor"
+    schedule:
+      interval: "weekly"
+
+  #################
+  #   RECEIVERS   #
+  #################
+  - package-ecosystem: "gomod"
+    directory: "/receiver/awsecscontainermetricsreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -78,11 +210,15 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/statsdreceiver"
+    directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/receiver/splunkhecreceiver"
+    directory: "/receiver/stanzareceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/statsdreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -90,97 +226,21 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/common"
+    directory: "/receiver/windowsperfcountersreceiver"
     schedule:
       interval: "weekly"
+
+  ###############
+  #   TESTBED   #
+  ###############
   - package-ecosystem: "gomod"
-    directory: "/internal/awsxray"
+    directory: "/testbed"
     schedule:
       interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/k8sconfig"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleapp"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/internal/awsxray/testdata/sampleserver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/jmxmetricsextension"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer/hostobserver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/extension/observer/k8sobserver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/alibabacloudlogserviceexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/awsxrayexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/azuremonitorexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/carbonexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/elasticexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/jaegerthrifthttpexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/kinesisexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/newrelicexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/sapmexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/sentryexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/signalfxexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/splunkhecexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/stackdriverexporter"
-    schedule:
-      interval: "weekly"
+
+  ################
+  #   TRACEGEN   #
+  ################
   - package-ecosystem: "gomod"
     directory: "/tracegen"
     schedule:
