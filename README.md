@@ -87,58 +87,28 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
 
-## Component Reviewers
+## PRs and Reviews
 
-### Exporters
+When creating a PR please following the process [described
+here](https://github.com/open-telemetry/opentelemetry-collector/blob/master/CONTRIBUTING.md#how-to-structure-prs-to-get-expedient-reviews).
 
-| Exporter                       | Reviewer(s)                |
-| ------------------------------ | -------------------------- |
-| alibabacloudlogserviceexporter | @shabicheng                |
-| awsxrayexporter                | @kbrockhoff @anuraaga      |
-| azuremonitorexporter           | @pcwiese                   |
-| carbonexporter                 | @pjanotti                  |
-| elasticexporter                | @axw                       |
-| honeycombexporter              | @paulosman @lizthegrey     |
-| jaegerthrifthttpexporter       | @jpkrohling @pavolloffay   |
-| kinesisexporter                | @owais                     |
-| newrelicexporter               | @MrAlias                   |
-| sapmexporter                   | @owais @dmitryax           |
-| sentryexporter                 | @AbhiPrasad                |
-| signalfxexporter               | @pmcollins @asuresh4       |
-| splunkhecexporter              | @atoulme                   |
-| stackdriverexporter            | @nilebox @james-bebbington |
+News PRs will be automatically associated with the reviewers based on
+[CODEOWNERS](.github/CODEOWNERS). PRs will be also automatically assigned to one of the
+maintainers or approvers for facilitation.
+ 
+The facilitator is responsible for helping the PR author and reviewers to make progress
+or if progress cannot be made for closing the PR.
+ 
+If the reviewers do not have approval rights the facilitator is also responsible
+for the official approval that is required for the PR to be merged and if the facilitator
+is a maintainer they are responsible for merging the PR as well.
+ 
+The facilitator is not required to perform a thorough review, but they are encouraged to
+enforce Collector best practices and consistency across the codebase and component
+behavior. The facilitators will typically rely on codeowner's detailed review of the code
+when making the final approval decision. 
 
-### Receivers
-
-| Receiver                       | Reviewer(s)               |
-| ------------------------------ | ------------------------- |
-| awsecscontainermetricsreceiver | @kbrockhoff @anuraaga     |
-| awsxrayreceiver                | @kbrockhoff @anuraaga     |
-| carbonreceiver                 | @pjanotti                 |
-| collectdreceiver               | @owais                    |
-| dockerstatsreceiver            | @rmfitzpatrick            |
-| k8sclusterreceiver             | @asuresh4                 |
-| kubeletstatsreceiver           | @pmcollins @asuresh4      |
-| prometheusexecreceiver         | @keitwb @james-bebbington |
-| receivercreator                | @jrcamp                   |
-| redisreceiver                  | @pmcollins @jrcamp        |
-| sapmreceiver                   | @owais                    |
-| signalfxreceiver               | @pjanotti @asuresh4       |
-| simpleprometheusreceiver       | @asuresh4                 |
-| statsdreceiver                 | @keitwb @jmacd            |
-| wavefrontreceiver              | @pjanotti                 |
-
-### Processors
-
-| Processor                      | Reviewer(s)               |
-| ------------------------------ | ------------------------- |
-| groupbytrace                   | @jpkrohling               |
-| routing                        | @jpkrohling               |
-
-### Extensions
-
-| Extension                      | Reviewer(s)               |
-| ------------------------------ | ------------------------- |
-| httpforwarder                  | @asuresh4                 |
-| jmxmetrics                     | @rmfitzpatrick            |
-| observer                       | @asuresh4 @jrcamp         |
+We recommend maintainers and approvers to keep an eye on the
+[project board](https://github.com/orgs/open-telemetry/projects/3). All newly created
+PRs are automatically added to this board. (If you don't see the PR on the board you
+may need to add it manually by setting the Project field in the PR view).
