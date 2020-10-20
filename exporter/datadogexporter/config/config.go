@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package config
 
 import (
 	"errors"
@@ -25,6 +25,11 @@ import (
 
 var (
 	errUnsetAPIKey = errors.New("api.key is not set")
+)
+
+const (
+	// DefaultSite is the default site of the Datadog intake to send data to
+	DefaultSite = "datadoghq.com"
 )
 
 // APIConfig defines the API configuration options
