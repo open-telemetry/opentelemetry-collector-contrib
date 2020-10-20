@@ -76,13 +76,13 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
@@ -132,6 +132,7 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 
 | Processor                      | Reviewer(s)               |
 | ------------------------------ | ------------------------- |
+| groupbytrace                   | @jpkrohling               |
 | routing                        | @jpkrohling               |
 
 ### Extensions
