@@ -83,7 +83,6 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
