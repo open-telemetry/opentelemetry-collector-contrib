@@ -1,5 +1,3 @@
-package stanzareceiver
-
 // Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +11,8 @@ package stanzareceiver
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+package stanzareceiver
 
 import (
 	"context"
@@ -62,7 +62,7 @@ func TestReadStaticFile(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshal(t, `
+	cfg.Pipeline = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
   start_at: beginning`)
@@ -106,7 +106,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	numLogs := 300
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshal(t, fmt.Sprintf(`
+	cfg.Pipeline = unmarshalConfig(t, fmt.Sprintf(`
 - type: file_input
   include: [%s/*]
   start_at: beginning

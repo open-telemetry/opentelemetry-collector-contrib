@@ -81,7 +81,7 @@ func TestHandleConsumeError(t *testing.T) {
 	require.Equal(t, 1, mockConsumer.rejected, "one log entry expected")
 }
 
-func BenchmarkPipelineSimple(b *testing.B) {
+func BenchmarkReadLines(b *testing.B) {
 
 	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -121,11 +121,11 @@ func BenchmarkPipelineSimple(b *testing.B) {
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		<-emitter.logChan
+		convert(<-emitter.logChan)
 	}
 }
 
-func BenchmarkPipelineComplex(b *testing.B) {
+func BenchmarkParseAndMap(b *testing.B) {
 
 	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -174,13 +174,13 @@ func BenchmarkPipelineComplex(b *testing.B) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
-		file.WriteString("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 761\n")
+		file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
 	}
 
 	// // Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pl.Start())
 	for i := 0; i < b.N; i++ {
-		<-emitter.logChan
+		convert(<-emitter.logChan)
 	}
 }
