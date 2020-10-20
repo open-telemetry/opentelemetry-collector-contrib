@@ -97,8 +97,7 @@ func TestReadStaticFile(t *testing.T) {
     parse_from: ts
     layout: '%Y-%m-%d'
   severity:
-    parse_from: sev
-`)
+    parse_from: sev`)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 
@@ -126,6 +125,7 @@ type rotationTest struct {
 
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
+
 	f := NewFactory()
 	sink := &exportertest.SinkLogsExporter{}
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
@@ -138,23 +138,44 @@ func (rt *rotationTest) Run(t *testing.T) {
 	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate)
 	numLogs := 300
 
+	// Build input lines and expected outputs
+	lines := make([]string, numLogs)
+	expectedLogs := make([]pdata.Logs, numLogs)
+	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
+	for i := 0; i < numLogs; i++ {
+		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
+		lines[i] = fmt.Sprintf("2020-08-25 %s", msg)
+
+		e := entry.New()
+		e.Timestamp = expectedTimestamp
+		e.Set(entry.NewRecordField("msg"), msg)
+		expectedLogs[i] = convert(e)
+	}
+
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Pipeline = unmarshalConfig(t, fmt.Sprintf(`
-- type: file_input
-  include: [%s/*]
-  start_at: beginning
-  poll_interval: 10ms`, tempDir))
+  - type: file_input
+    include: [%s/*]
+    include_file_name: false
+    start_at: beginning
+    poll_interval: 10ms
+  - type: regex_parser
+    regex: '^(?P<ts>\d{4}-\d{2}-\d{2}) (?P<msg>[^\n]+)'
+    timestamp:
+      parse_from: ts
+      layout: '%%Y-%%m-%%d'`, tempDir))
 
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
 
-	for i := 0; i < numLogs; i++ {
-		logger.Printf("This is a simple log line with the number %3d", i)
+	for _, line := range lines {
+		logger.Print(line)
 		time.Sleep(time.Millisecond)
 	}
 
 	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
+	require.ElementsMatch(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
