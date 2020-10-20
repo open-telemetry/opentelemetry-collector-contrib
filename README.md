@@ -45,24 +45,23 @@
 ---
 
 # OpenTelemetry Collector Contrib
+
 This is a repository for OpenTelemetry Collector contributions that are not part of the
 [core repository](https://github.com/open-telemetry/opentelemetry-collector) and
 core distribution of the Collector. Typically, these contributions are vendor
 specific receivers/exporters and/or components that are only
 useful to a relatively small number of users.
 
+Please note that this repository and its releases are a superset of the core repository.
+
 ## Creating your own OpenTelemetry Collector distribution
 
-A guide on how to create your own distribution is available in this blog post: 
+A guide on how to create your own distribution is available in this blog post:
 ["Building your own OpenTelemetry Collector distribution"](https://medium.com/p/42337e994b63)
 
-If you are building your own distribution, the [OpenTelemetry Collector Builder](https://github.com/observatorium/opentelemetry-collector-builder) 
+If you are building your own distribution, the [OpenTelemetry Collector
+Builder](https://github.com/observatorium/opentelemetry-collector-builder)
 might be a good starting point.
-
-## Questions
-Reach the Collector community on
-[gitter](https://gitter.im/open-telemetry/opentelemetry-service) if you have
-further questions.
 
 ## Contributing
 
@@ -77,13 +76,13 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
 - [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Bogdan Drutu](https://github.com/BogdanDrutu), Splunk
-- [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Tigran Najaryan](https://github.com/tigrannajaryan), Splunk
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md).
@@ -135,3 +134,11 @@ Learn more about roles in the [community repository](https://github.com/open-tel
 | ------------------------------ | ------------------------- |
 | groupbytrace                   | @jpkrohling               |
 | routing                        | @jpkrohling               |
+
+### Extensions
+
+| Extension                      | Reviewer(s)               |
+| ------------------------------ | ------------------------- |
+| httpforwarder                  | @asuresh4                 |
+| jmxmetrics                     | @rmfitzpatrick            |
+| observer                       | @asuresh4 @jrcamp         |
