@@ -36,13 +36,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, nextTraceConsumer consumer.TraceConsumer, options ...Option) (component.TraceProcessor, error) {
+func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TraceProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
 		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
-		nextTraceConsumer,
+		next,
 		opts...,
 	)
 }
