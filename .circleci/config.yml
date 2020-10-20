@@ -161,47 +161,47 @@ workflows:
       - windows-test:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - setup:
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - lint:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - build-examples:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - cross-compile:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - loadtest:
           requires:
             - cross-compile 
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - unit-tests:
           requires:
             - setup
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - windows-msi:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /.*/
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - publish-check:
           requires:
             - lint
