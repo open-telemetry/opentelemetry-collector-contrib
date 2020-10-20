@@ -20,19 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAddToCache(t *testing.T) {
-	const testKey = "test_key"
-	const testVal = "test_value"
-
-	_, found := Get(testKey)
-	assert.False(t, found)
-
-	SetNoExpire(testKey, testVal)
-	val, found := Get(testKey)
-	assert.True(t, found)
-	assert.Equal(t, testVal, val.(string))
-
-	Delete(testKey)
-	_, found = Get(testKey)
-	assert.False(t, found)
+func TestCache(t *testing.T) {
+	assert.NotNil(t, Cache)
 }

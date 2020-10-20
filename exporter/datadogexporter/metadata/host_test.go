@@ -34,7 +34,7 @@ func TestHost(t *testing.T) {
 		TagsConfig: config.TagsConfig{Hostname: "test-host"},
 	})
 	assert.Equal(t, *host, "test-host")
-	cache.Delete(cache.CanonicalHostnameKey)
+	cache.Cache.Delete(cache.CanonicalHostnameKey)
 
 	host = GetHost(logger, &config.Config{})
 	osHostname, err := os.Hostname()

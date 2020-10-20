@@ -22,26 +22,8 @@ import (
 
 const (
 	CanonicalHostnameKey = "canonical_hostname"
+	NoExpiration         = gocache.NoExpiration
+	DefaultExpiration    = gocache.DefaultExpiration
 )
 
-var generalCache = gocache.New(20*time.Minute, 10*time.Minute)
-
-// SetNoExpire saves a value in cache indefinitely
-func SetNoExpire(key string, val interface{}) {
-	generalCache.Add(key, val, gocache.NoExpiration)
-}
-
-// SetExpire saves a value in cache for the default time
-func SetExpire(key string, val interface{}) {
-	generalCache.Add(key, val, gocache.DefaultExpiration)
-}
-
-// Get retrieves a value from cache
-func Get(key string) (interface{}, bool) {
-	return generalCache.Get(key)
-}
-
-// Delete retrieves a value from cache
-func Delete(key string) {
-	generalCache.Delete(key)
-}
+var Cache = gocache.New(20*time.Minute, 10*time.Minute)
