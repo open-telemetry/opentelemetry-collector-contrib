@@ -48,12 +48,11 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	keys := []string{"k0", "k1"}
 	values := []string{"v0", "v1"}
 
-	unixSecs := int64(1574092046)
-	unixNSecs := int64(11 * time.Millisecond)
 	doubleVal := 1234.5678
 	var metrics []*metricspb.Metric
 	for i := 0; i < numberOfDataPoints; i++ {
-		tsUnix := time.Unix(unixSecs+int64(i), unixNSecs)
+		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
+
 		doublePt := metricstestutil.Double(tsUnix, doubleVal)
 		metric := metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt))
 		metrics = append(metrics, metric)
@@ -112,8 +111,8 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	ill.InitEmpty()
 	rl.InstrumentationLibraryLogs().Append(ill)
 
-	ts := pdata.TimestampUnixNano(123)
 	for i := 0; i < numberOfLogs; i++ {
+		ts := pdata.TimestampUnixNano(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 		logRecord.Body().SetStringVal("mylog")
@@ -122,6 +121,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
+
 		ill.Logs().Append(logRecord)
 	}
 
@@ -280,11 +280,11 @@ func TestReceiveTraces(t *testing.T) {
 func TestReceiveLogs(t *testing.T) {
 	actual, err := runLogExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -292,11 +292,11 @@ func TestReceiveLogs(t *testing.T) {
 func TestReceiveMetrics(t *testing.T) {
 	actual, err := runMetricsExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":1574092046.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
+	expected := `{"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1574092047.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
+	expected += `{"time":1.001,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":1574092048.011,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
+	expected += `{"time":2.002,"host":"unknown","event":"metric","fields":{"k/n0":"vn0","k/n1":"vn1","k/r0":"vr0","k/r1":"vr1","k0":"v0","k1":"v1","metric_name:gauge_double_with_dims":1234.5678}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }

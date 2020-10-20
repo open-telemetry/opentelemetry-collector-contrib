@@ -140,6 +140,16 @@ func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) inter
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) float64 {
-	return time.Duration(ts).Round(time.Millisecond).Seconds()
+func nanoTimestampToEpochMilliseconds(ts pdata.TimestampUnixNano) *float64 {
+	duration := time.Duration(ts)
+	if duration == 0 {
+		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
+		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
+		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
+		// at indexing time, which will be much more useful than a 0-epoch-time value.
+		return nil
+	}
+
+	val := duration.Round(time.Millisecond).Seconds()
+	return &val
 }

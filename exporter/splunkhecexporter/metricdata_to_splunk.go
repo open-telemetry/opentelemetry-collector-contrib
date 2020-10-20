@@ -114,11 +114,24 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	return splunkMetrics, numDroppedTimeSeries, nil
 }
 
-func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) float64 {
+func timestampToEpochMilliseconds(ts *timestamppb.Timestamp) *float64 {
 	if ts == nil {
-		return 0
+		return nil
 	}
-	return float64(ts.GetSeconds()) + math.Round(float64(ts.GetNanos())/1e6)/1e3
+
+	seconds := ts.GetSeconds()
+	nanos := ts.GetNanos()
+	if seconds == 0 && nanos == 0 {
+		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
+		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
+		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
+		// at indexing time, which will be much more useful than a 0-epoch-time value.
+		return nil
+	}
+
+	val := float64(seconds) + math.Round(float64(nanos)/1e6)/1e3
+
+	return &val
 }
 
 func mapValues(logger *zap.Logger, metric *metricspb.Metric, value interface{}) (map[string]interface{}, error) {
