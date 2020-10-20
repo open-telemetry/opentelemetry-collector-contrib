@@ -28,8 +28,8 @@ import (
 )
 
 type mockMetadata struct {
-	retIdDoc    ec2metadata.EC2InstanceIdentityDocument
-	retErrIdDoc error
+	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
+	retErrIDDoc error
 
 	retHostname    string
 	retErrHostname error
@@ -44,10 +44,10 @@ func (mm mockMetadata) available(ctx context.Context) bool {
 }
 
 func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
-	if mm.retErrIdDoc != nil {
-		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIdDoc
+	if mm.retErrIDDoc != nil {
+		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
-	return mm.retIdDoc, nil
+	return mm.retIDDoc, nil
 }
 
 func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
@@ -80,7 +80,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "success",
 			fields: fields{provider: &mockMetadata{
-				retIdDoc: ec2metadata.EC2InstanceIdentityDocument{
+				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
 					Region:           "us-west-2",
 					AccountID:        "account1234",
 					AvailabilityZone: "us-west-2a",
@@ -108,8 +108,8 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "endpoint not available",
 			fields: fields{provider: &mockMetadata{
-				retIdDoc:    ec2metadata.EC2InstanceIdentityDocument{},
-				retErrIdDoc: errors.New("should not be called"),
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
 			args: args{ctx: context.Background()},
@@ -122,8 +122,8 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "get fails",
 			fields: fields{provider: &mockMetadata{
-				retIdDoc:    ec2metadata.EC2InstanceIdentityDocument{},
-				retErrIdDoc: errors.New("get failed"),
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
 			args: args{ctx: context.Background()},
@@ -136,7 +136,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "hostname fails",
 			fields: fields{provider: &mockMetadata{
-				retIdDoc:       ec2metadata.EC2InstanceIdentityDocument{},
+				retIDDoc:       ec2metadata.EC2InstanceIdentityDocument{},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
