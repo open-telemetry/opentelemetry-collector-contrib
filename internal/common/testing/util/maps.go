@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package util
 
 // MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
 func MergeStringMaps(maps ...map[string]string) map[string]string {

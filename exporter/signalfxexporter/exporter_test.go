@@ -27,18 +27,12 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/dimensions"
@@ -102,22 +96,33 @@ func TestNew(t *testing.T) {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-	smallBatch := internaldata.OCToMetrics(
-		consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{Type: "test"},
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Gauge(
-					"test_gauge",
-					[]string{"k0", "k1"},
-					metricstestutil.Timeseries(
-						time.Now(),
-						[]string{"v0", "v1"},
-						metricstestutil.Double(time.Now(), 123))),
-			},
-		})
+	smallBatch := pdata.NewMetrics()
+	smallBatch.ResourceMetrics().Resize(1)
+	rm := smallBatch.ResourceMetrics().At(0)
+	rm.InitEmpty()
+
+	rm.InstrumentationLibraryMetrics().Resize(1)
+	ilm := rm.InstrumentationLibraryMetrics().At(0)
+	ilm.InitEmpty()
+	ilm.Metrics()
+
+	ilm.Metrics().Resize(1)
+	m := ilm.Metrics().At(0)
+
+	m.SetName("test_gauge")
+	m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+	m.DoubleGauge().InitEmpty()
+
+	dp := pdata.NewDoubleDataPoint()
+	dp.InitEmpty()
+	dp.LabelsMap().InitFromMap(map[string]string{
+		"k0": "v0",
+		"k1": "v1",
+	})
+	dp.SetValue(123)
+
+	m.DoubleGauge().DataPoints().Append(dp)
+
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
@@ -194,30 +199,39 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 	fromLabels := []string{"AccessTokenFromLabel0", "AccessTokenFromLabel1"}
 
 	validMetricsWithToken := func(includeToken bool, token string) pdata.Metrics {
-		md := consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{
-				Type: "test",
-				Labels: map[string]string{
-					"com.splunk.signalfx.access_token": token,
-				},
-			},
-			Metrics: []*metricspb.Metric{
-				metricstestutil.Gauge(
-					"test_gauge",
-					[]string{"k0", "k1"},
-					metricstestutil.Timeseries(
-						time.Now(),
-						[]string{"v0", "v1"},
-						metricstestutil.Double(time.Now(), 123))),
-			},
+		out := pdata.NewMetrics()
+		out.ResourceMetrics().Resize(1)
+		rm := out.ResourceMetrics().At(0)
+		rm.InitEmpty()
+
+		if includeToken {
+			rm.Resource().Attributes().InitFromMap(map[string]pdata.AttributeValue{
+				"com.splunk.signalfx.access_token": pdata.NewAttributeValueString(token),
+			})
 		}
-		if !includeToken {
-			delete(md.Resource.Labels, "com.splunk.signalfx.access_token")
-		}
-		return internaldata.OCToMetrics(md)
+
+		rm.InstrumentationLibraryMetrics().Resize(1)
+		ilm := rm.InstrumentationLibraryMetrics().At(0)
+		ilm.InitEmpty()
+		ilm.Metrics()
+
+		ilm.Metrics().Resize(1)
+		m := ilm.Metrics().At(0)
+
+		m.SetName("test_gauge")
+		m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		m.DoubleGauge().InitEmpty()
+
+		dp := pdata.NewDoubleDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"k0": "v0",
+			"k1": "v1",
+		})
+		dp.SetValue(123)
+
+		m.DoubleGauge().DataPoints().Append(dp)
+		return out
 	}
 
 	tests := []struct {
@@ -275,20 +289,36 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		{
 			name:                   "use token from header when resource is nil",
 			accessTokenPassthrough: true,
-			metrics: internaldata.OCToMetrics(consumerdata.MetricsData{
-				Node: &commonpb.Node{
-					ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-				},
-				Metrics: []*metricspb.Metric{
-					metricstestutil.Gauge(
-						"test_gauge",
-						[]string{"k0", "k1"},
-						metricstestutil.Timeseries(
-							time.Now(),
-							[]string{"v0", "v1"},
-							metricstestutil.Double(time.Now(), 123))),
-				},
-			}),
+			metrics: func() pdata.Metrics {
+				out := pdata.NewMetrics()
+				out.ResourceMetrics().Resize(1)
+				rm := out.ResourceMetrics().At(0)
+				rm.InitEmpty()
+
+				rm.InstrumentationLibraryMetrics().Resize(1)
+				ilm := rm.InstrumentationLibraryMetrics().At(0)
+				ilm.InitEmpty()
+				ilm.Metrics()
+
+				ilm.Metrics().Resize(1)
+				m := ilm.Metrics().At(0)
+
+				m.SetName("test_gauge")
+				m.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				m.DoubleGauge().InitEmpty()
+
+				dp := pdata.NewDoubleDataPoint()
+				dp.InitEmpty()
+				dp.LabelsMap().InitFromMap(map[string]string{
+					"k0": "v0",
+					"k1": "v1",
+				})
+				dp.SetValue(123)
+
+				m.DoubleGauge().DataPoints().Append(dp)
+
+				return out
+			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromHeaders: 1,
 			},
@@ -344,7 +374,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			}(),
 			numPushDataCallsPerToken: map[string]int{
 				fromLabels[0]: 1,
-				fromLabels[1]: 1,
+				// We don't do grouping anymore with pdata.Metrics since they
+				// are so hard to manipulate.
+				fromLabels[1]: 2,
 			},
 		},
 		{
@@ -701,31 +733,39 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 }
 
 func generateLargeDPBatch(t *testing.T) pdata.Metrics {
-	mds := make([]consumerdata.MetricsData, 65000)
+	md := pdata.NewMetrics()
+	md.ResourceMetrics().Resize(6500)
 
 	ts := time.Now()
-	for i := 0; i < 65000; i++ {
-		mds[i] = consumerdata.MetricsData{
-			Node: &commonpb.Node{
-				ServiceInfo: &commonpb.ServiceInfo{Name: "test_signalfx"},
-			},
-			Resource: &resourcepb.Resource{Type: "test" + strconv.Itoa(i)},
-			Metrics: []*metricspb.Metric{metricstestutil.Gauge(
-				"test_"+strconv.Itoa(i),
-				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
-					time.Now(),
-					[]string{"v0", "v1"},
-					&metricspb.Point{
-						Timestamp: metricstestutil.Timestamp(ts),
-						Value:     &metricspb.Point_Int64Value{Int64Value: int64(i)},
-					},
-				),
-			)},
-		}
+	for i := 0; i < 6500; i++ {
+		rm := md.ResourceMetrics().At(i)
+		rm.InitEmpty()
+
+		rm.InstrumentationLibraryMetrics().Resize(1)
+		ilm := rm.InstrumentationLibraryMetrics().At(0)
+		ilm.InitEmpty()
+		ilm.Metrics()
+
+		ilm.Metrics().Resize(1)
+		m := ilm.Metrics().At(0)
+
+		m.SetName("test_" + strconv.Itoa(i))
+		m.SetDataType(pdata.MetricDataTypeIntGauge)
+		m.IntGauge().InitEmpty()
+
+		dp := pdata.NewIntDataPoint()
+		dp.InitEmpty()
+		dp.SetTimestamp(pdata.TimestampUnixNano(ts.UnixNano()))
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"k0": "v0",
+			"k1": "v1",
+		})
+		dp.SetValue(int64(i))
+
+		m.IntGauge().DataPoints().Append(dp)
 	}
 
-	return internaldata.OCSliceToMetrics(mds)
+	return md
 }
 
 func generateLargeEventBatch(t *testing.T) pdata.ResourceLogs {
@@ -956,9 +996,9 @@ func TestConsumeMetadata(t *testing.T) {
 
 func BenchmarkExporterConsumeData(b *testing.B) {
 	batchSize := 1000
-	mds := make([]consumerdata.MetricsData, 0, batchSize)
+	metrics := pdata.NewMetrics()
 	for i := 0; i < batchSize; i++ {
-		mds = append(mds, testMetricsData()...)
+		metrics.ResourceMetrics().Append(testMetricsData())
 	}
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -981,7 +1021,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		logger:    zap.NewNop(),
 		converter: translation.NewMetricsConverter(zap.NewNop(), nil),
 	}
-	metrics := internaldata.OCSliceToMetrics(mds)
+
 	for i := 0; i < b.N; i++ {
 		numDroppedTimeSeries, err := dpClient.pushMetricsData(context.Background(), metrics)
 		assert.NoError(b, err)
