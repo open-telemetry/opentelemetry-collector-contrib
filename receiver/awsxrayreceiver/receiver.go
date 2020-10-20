@@ -44,14 +44,14 @@ type xrayReceiver struct {
 	poller       udppoller.Poller
 	server       proxy.Server
 	logger       *zap.Logger
-	consumer     consumer.TraceConsumer
+	consumer     consumer.TracesConsumer
 	longLivedCtx context.Context
 	startOnce    sync.Once
 	stopOnce     sync.Once
 }
 
 func newReceiver(config *Config,
-	consumer consumer.TraceConsumer,
+	consumer consumer.TracesConsumer,
 	logger *zap.Logger) (component.TraceReceiver, error) {
 
 	if consumer == nil {
