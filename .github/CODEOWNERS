@@ -14,6 +14,10 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+internal/awsxray/                @anuraaga @mxiamxia
+internal/k8sconfig/              @pmcollins @asuresh4
+internal/splunk/                 @pmcollins @asuresh4
+
 exporter/alibabacloudlogserviceexporter/ @shabicheng
 exporter/awsemfexporter/                 @anuraaga @shaochengwang @mxiamxia
 exporter/awsxrayexporter/                @kbrockhoff @anuraaga
