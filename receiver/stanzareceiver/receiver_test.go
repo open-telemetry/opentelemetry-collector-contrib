@@ -125,7 +125,7 @@ func BenchmarkPipelineSimple(b *testing.B) {
 	}
 }
 
-func BenchmarkPipelineComplex(b *testing.B) {
+func BenchmarkParseAndMap(b *testing.B) {
 
 	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
