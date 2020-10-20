@@ -18,8 +18,6 @@ import (
 	"os"
 
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 type HostInfo struct {
@@ -29,10 +27,6 @@ type HostInfo struct {
 
 // GetHostInfo gets system information about the hostname
 func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
-	if cacheVal, ok := cache.Get(cache.SystemHostInfoKey); ok {
-		return cacheVal.(*HostInfo)
-	}
-
 	hostInfo = &HostInfo{}
 
 	if hostname, err := getSystemFQDN(); err == nil {
@@ -47,6 +41,5 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		logger.Warn("Could not get OS Hostname", zap.Error(err))
 	}
 
-	cache.SetNoExpire(cache.SystemHostInfoKey, hostInfo)
 	return
 }

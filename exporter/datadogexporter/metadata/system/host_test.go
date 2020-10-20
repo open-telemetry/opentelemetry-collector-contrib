@@ -21,18 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 func TestGetHostInfo(t *testing.T) {
 	logger := zap.NewNop()
-	testHostInfo := &HostInfo{OS: "test-os", FQDN: "test-fqdn"}
-
-	// Check it is retrieved from cache
-	cache.SetNoExpire(cache.SystemHostInfoKey, testHostInfo)
-	assert.Equal(t, testHostInfo, GetHostInfo(logger))
-	cache.Delete(cache.SystemHostInfoKey)
 
 	hostInfo := GetHostInfo(logger)
 	require.NotNil(t, hostInfo)
