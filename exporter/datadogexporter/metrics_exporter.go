@@ -46,7 +46,7 @@ func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
 	}
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
 

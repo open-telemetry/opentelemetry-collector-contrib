@@ -133,7 +133,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	// Use the mock server for API key validation
-	c := (cfg.Exporters["datadog/api"]).(*Config)
+	c := (cfg.Exporters["datadog/api"]).(*config.Config)
 	c.Metrics.TCPAddr.Endpoint = server.URL
 	cfg.Exporters["datadog/api"] = c
 

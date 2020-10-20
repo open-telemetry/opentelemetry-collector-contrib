@@ -31,11 +31,11 @@ func TestNewExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &config.Config{
+		API: config.APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
-		Metrics: MetricsConfig{
+		Metrics: config.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
@@ -55,12 +55,12 @@ func TestProcessMetrics(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &config.Config{
+		API: config.APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
-		TagsConfig: TagsConfig{
-			Hostname: "test_host",
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
