@@ -14,10 +14,6 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-internal/awsxray/                @anuraaga @mxiamxia
-internal/k8sconfig/              @pmcollins @asuresh4
-internal/splunk/                 @pmcollins @asuresh4
-
 exporter/alibabacloudlogserviceexporter/ @shabicheng
 exporter/awsemfexporter/                 @anuraaga @shaochengwang @mxiamxia
 exporter/awsxrayexporter/                @kbrockhoff @anuraaga
@@ -28,6 +24,7 @@ exporter/elasticexporter/                @axw
 exporter/honeycombexporter/              @paulosman @lizthegrey
 exporter/jaegerthrifthttpexporter/       @jpkrohling @pavolloffay
 exporter/kinesisexporter/                @owais
+exporter/loadbalancingexporter/          @jpkrohling
 exporter/logzioexporter/                 @yyyogev
 exporter/newrelicexporter/               @MrAlias
 exporter/sapmexporter/                   @owais @dmitryax
@@ -37,13 +34,18 @@ exporter/splunkhecexporter/              @atoulme
 exporter/stackdriverexporter/            @nilebox @james-bebbington
 
 extension/httpforwarder/                 @asuresh4
-extension/jmxmetrics/                    @rmfitzpatrick
+extension/jmxmetricsextension/           @rmfitzpatrick
 extension/observer/                      @asuresh4 @jrcamp
 
+internal/awsxray/                        @anuraaga @mxiamxia
+internal/k8sconfig/                      @pmcollins @asuresh4
+internal/splunk/                         @pmcollins @asuresh4
+
+processor/groupbytraceprocessor/         @jpkrohling
 processor/k8sprocessor/                  @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/     @james-bebbington
 processor/resourcedetectionprocessor/    @jrcamp @pmm-sumo @anuraaga @james-bebbington
-processor/routing/                       @jpkrohling
+processor/routingprocessor/              @jpkrohling
 
 receiver/awsecscontainermetricsreceiver/ @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                @kbrockhoff @anuraaga
@@ -64,3 +66,4 @@ receiver/statsdreceiver/                 @keitwb @jmacd
 receiver/wavefrontreceiver/              @pjanotti
 receiver/windowsperfcountersreceiver/    @james-bebbington
 
+tracegen/                                @jpkrohling
