@@ -46,14 +46,16 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                 = "OK"
-	responseInvalidMethod      = "Only \"POST\" method is supported"
-	responseInvalidContentType = "\"Content-Type\" must be \"application/x-protobuf\""
-	responseInvalidEncoding    = "\"Content-Encoding\" must be \"gzip\" or empty"
-	responseErrGzipReader      = "Error on gzip body"
-	responseErrReadBody        = "Failed to read message body"
-	responseErrUnmarshalBody   = "Failed to unmarshal message body"
-	responseErrNextConsumer    = "Internal Server Error"
+	responseOK                      = "OK"
+	responseInvalidMethod           = "Only \"POST\" method is supported"
+	responseInvalidContentType      = "\"Content-Type\" must be \"application/x-protobuf\""
+	responseInvalidEncoding         = "\"Content-Encoding\" must be \"gzip\" or empty"
+	responseErrGzipReader           = "Error on gzip body"
+	responseErrReadBody             = "Failed to read message body"
+	responseErrUnmarshalBody        = "Failed to unmarshal message body"
+	responseErrNextConsumer         = "Internal Server Error"
+	responseErrLogsNotConfigured    = "Log pipeline has not been configured to handle events"
+	responseErrMetricsNotConfigured = "Metric pipeline has not been configured to handle datapoints"
 
 	// Centralizing some HTTP and related string constants.
 	protobufContentType       = "application/x-protobuf"
@@ -74,6 +76,8 @@ var (
 	errReadBodyRespBody      = initJSONResponse(responseErrReadBody)
 	errUnmarshalBodyRespBody = initJSONResponse(responseErrUnmarshalBody)
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
+	errLogsNotConfigured     = initJSONResponse(responseErrLogsNotConfigured)
+	errMetricsNotConfigured  = initJSONResponse(responseErrMetricsNotConfigured)
 )
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
@@ -229,6 +233,11 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 
+	if r.metricsConsumer == nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, errMetricsNotConfigured, nil)
+		return
+	}
+
 	body, ok := r.readBody(ctx, resp, req)
 	if !ok {
 		return
@@ -279,6 +288,11 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
+
+	if r.logsConsumer == nil {
+		r.failRequest(ctx, resp, http.StatusBadRequest, errLogsNotConfigured, nil)
+		return
+	}
 
 	body, ok := r.readBody(ctx, resp, req)
 	if !ok {
