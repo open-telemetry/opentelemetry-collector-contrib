@@ -12,23 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package cache
 
 import (
-	"os"
-	"testing"
+	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	gocache "github.com/patrickmn/go-cache"
 )
 
-func TestHost(t *testing.T) {
+const (
+	CanonicalHostnameKey = "canonical_hostname"
+	NoExpiration         = gocache.NoExpiration
+	DefaultExpiration    = gocache.DefaultExpiration
+)
 
-	host := GetHost(&Config{TagsConfig: TagsConfig{Hostname: "test_host"}})
-	assert.Equal(t, *host, "test_host")
-
-	host = GetHost(&Config{})
-	osHostname, err := os.Hostname()
-	require.NoError(t, err)
-	assert.Equal(t, *host, osHostname)
-}
+var Cache = gocache.New(20*time.Minute, 10*time.Minute)
