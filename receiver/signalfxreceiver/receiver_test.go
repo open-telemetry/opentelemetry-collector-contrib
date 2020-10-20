@@ -181,9 +181,10 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		name             string
+		req              *http.Request
+		skipRegistration bool
+		assertResponse   func(t *testing.T, status int, body string)
 	}{
 		{
 			name: "incorrect_method",
@@ -191,6 +192,21 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
+			},
+		},
+		{
+			name: "incorrect_pipeline",
+			req: func() *http.Request {
+				msgBytes, err := sFxMsg.Marshal()
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			skipRegistration: true,
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrMetricsNotConfigured, body)
 			},
 		},
 		{
@@ -313,7 +329,9 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
-			rcv.RegisterMetricsConsumer(sink)
+			if !tt.skipRegistration {
+				rcv.RegisterMetricsConsumer(sink)
+			}
 
 			w := httptest.NewRecorder()
 			rcv.handleDatapointReq(w, tt.req)
@@ -338,9 +356,10 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		name             string
+		req              *http.Request
+		skipRegistration bool
+		assertResponse   func(t *testing.T, status int, body string)
 	}{
 		{
 			name: "incorrect_method",
@@ -348,6 +367,21 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
+			},
+		},
+		{
+			name: "incorrect_pipeline",
+			req: func() *http.Request {
+				msgBytes, err := sFxMsg.Marshal()
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			skipRegistration: true,
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrLogsNotConfigured, body)
 			},
 		},
 		{
@@ -470,7 +504,9 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
-			rcv.RegisterLogsConsumer(sink)
+			if !tt.skipRegistration {
+				rcv.RegisterLogsConsumer(sink)
+			}
 
 			w := httptest.NewRecorder()
 			rcv.handleEventReq(w, tt.req)
