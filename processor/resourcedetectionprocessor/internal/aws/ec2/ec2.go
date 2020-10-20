@@ -56,6 +56,11 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 		return res, err
 	}
 
+	hostname, err := d.provider.hostname(ctx)
+	if err != nil {
+		return res, err
+	}
+
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, cloud.ProviderAWS)
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
@@ -64,6 +69,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
 	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
+	attr.InsertString(conventions.AttributeHostName, hostname)
 
 	return res, nil
 }
