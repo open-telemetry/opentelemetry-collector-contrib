@@ -22,8 +22,8 @@ const (
 	SFxEventCategoryKey   = "com.splunk.signalfx.event_category"
 	SFxEventPropertiesKey = "com.splunk.signalfx.event_properties"
 	SourcetypeLabel       = "com.splunk.sourcetype"
-	SplunkHECTokenHeader  = "Splunk"
-	SplunkHecTokenLabel   = "com.splunk.hec.access_token"
+	HECTokenHeader        = "Splunk"
+	HecTokenLabel         = "com.splunk.hec.access_token"
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 )

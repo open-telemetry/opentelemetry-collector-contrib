@@ -26,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
 // Test that the factory creates the default configuration
@@ -57,6 +59,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateAPIMetricsExporter(t *testing.T) {
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
@@ -68,6 +73,11 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
+
+	// Use the mock server for API key validation
+	c := (cfg.Exporters["datadog/api"]).(*Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
+	cfg.Exporters["datadog/api"] = c
 
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(

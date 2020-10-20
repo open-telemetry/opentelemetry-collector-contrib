@@ -107,7 +107,7 @@ func buildClient(options *exporterOptions, config *Config, logger *zap.Logger) *
 			"Connection":    "keep-alive",
 			"Content-Type":  "application/json",
 			"User-Agent":    "OpenTelemetry-Collector Splunk Exporter/v0.0.1",
-			"Authorization": splunk.SplunkHECTokenHeader + " " + config.Token,
+			"Authorization": splunk.HECTokenHeader + " " + config.Token,
 		},
 		config: config,
 	}
