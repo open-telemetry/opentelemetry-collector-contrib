@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.0.0-00010101000000-000000000000
@@ -21,9 +21,9 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapme
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ../exporter/signalfxexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../internal/common
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../internal/k8sconfig
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../internal/splunk
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../receiver/carbonreceiver
 

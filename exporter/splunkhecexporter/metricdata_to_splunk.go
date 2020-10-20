@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (

@@ -41,7 +41,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {

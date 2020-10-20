@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
