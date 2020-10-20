@@ -134,6 +134,10 @@ updates:
   #   PROCESSORS   #
   ##################
   - package-ecosystem: "gomod"
+    directory: "/processor/groupbytraceprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/k8sprocessor"
     schedule:
       interval: "weekly"
