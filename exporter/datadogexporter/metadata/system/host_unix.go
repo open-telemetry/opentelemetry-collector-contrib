@@ -40,11 +40,10 @@ func getSystemFQDN() (string, error) {
 }
 
 func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
-	if err := valid.ValidHostname(hi.FQDN); err != nil {
+	if err := valid.Hostname(hi.FQDN); err != nil {
 		logger.Info("FQDN is not valid", zap.Error(err))
 		return hi.OS
-	} else {
-		return hi.FQDN
 	}
 
+	return hi.FQDN
 }

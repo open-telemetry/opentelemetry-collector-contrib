@@ -31,7 +31,7 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 		return cacheVal.(*string)
 	}
 
-	if err := valid.ValidHostname(cfg.Hostname); err == nil {
+	if err := valid.Hostname(cfg.Hostname); err == nil {
 		cache.Cache.Add(cache.CanonicalHostnameKey, &cfg.Hostname, cache.NoExpiration)
 		return &cfg.Hostname
 	} else if cfg.Hostname != "" {
@@ -42,7 +42,7 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	hostInfo := system.GetHostInfo(logger)
 	hostname := hostInfo.GetHostname(logger)
 
-	if err := valid.ValidHostname(hostname); err != nil {
+	if err := valid.Hostname(hostname); err != nil {
 		// If invalid log but continue
 		logger.Error("Detected hostname is not valid", zap.Error(err))
 	}

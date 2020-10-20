@@ -21,19 +21,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestValidHostname(t *testing.T) {
+func TestHostname(t *testing.T) {
 	// Empty
-	require.Error(t, ValidHostname(""))
+	require.Error(t, Hostname(""))
 
 	// Local
-	require.Error(t, ValidHostname("localhost"))
+	require.Error(t, Hostname("localhost"))
 
 	// Max length exceeded
-	require.Error(t, ValidHostname(strings.Repeat("a", 256)))
+	require.Error(t, Hostname(strings.Repeat("a", 256)))
 
 	// non RFC1123 compliant
-	require.Error(t, ValidHostname("***"))
-	require.Error(t, ValidHostname("invalid_hostname"))
+	require.Error(t, Hostname("***"))
+	require.Error(t, Hostname("invalid_hostname"))
 
-	require.NoError(t, ValidHostname("valid-hostname"))
+	require.NoError(t, Hostname("valid-hostname"))
 }

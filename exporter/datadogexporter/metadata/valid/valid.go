@@ -33,9 +33,9 @@ var (
 	}
 )
 
-// ValidHostname determines whether the passed string is a valid hostname.
+// Hostname determines whether the passed string is a valid hostname.
 // In case it's not, the returned error contains the details of the failure.
-func ValidHostname(hostname string) error {
+func Hostname(hostname string) error {
 	const maxLength = 255
 
 	if hostname == "" {
