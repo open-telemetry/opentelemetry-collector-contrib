@@ -26,7 +26,7 @@ Example:
 
 ```yaml
 exporters:
-  signalfxcorrelation:
+  signalfx_correlation:
     access_token: YOUR_ACCESS_TOKEN
     endpoint: https://api.YOUR_SIGNALFX_REALM.signalfx.com
 ```
