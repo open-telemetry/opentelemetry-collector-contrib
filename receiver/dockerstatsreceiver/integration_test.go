@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -65,7 +65,7 @@ func TestDefaultMetricsIntegration(t *testing.T) {
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
@@ -86,7 +86,7 @@ func TestAllMetricsIntegration(t *testing.T) {
 	d := container.New(t)
 	d.StartImage("docker.io/library/nginx:1.17", container.WithPortReady(80))
 
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 	config.ProvidePerCoreCPUMetrics = true
 
@@ -111,7 +111,7 @@ func TestAllMetricsIntegration(t *testing.T) {
 func TestMonitoringAddedContainerIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 
 	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
@@ -141,7 +141,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "*redis*")
 
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
 	r := receiver.(*Receiver)
 
@@ -175,7 +175,7 @@ func TestExcludedImageProducesNoMetricsIntegration(t *testing.T) {
 func TestRemovedContainerRemovesRecordsIntegration(t *testing.T) {
 	params, ctx, cancel := paramsAndContext(t)
 	defer cancel()
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	f, config := factory()
 	config.ExcludedImages = append(config.ExcludedImages, "!*nginx*")
 	receiver, err := f.CreateMetricsReceiver(ctx, params, config, consumer)
