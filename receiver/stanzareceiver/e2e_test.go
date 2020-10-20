@@ -45,7 +45,7 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshal(t *testing.T, pipelineYaml string) pipeline.Config {
+func unmarshalConfig(t *testing.T, pipelineYaml string) pipeline.Config {
 	pipelineCfg := pipeline.Config{}
 	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
 	return pipelineCfg
