@@ -63,7 +63,7 @@ func (je *SapmDataSender) Start() error {
 		return err
 	}
 
-	je.TraceConsumer = exporter
+	je.TracesConsumer = exporter
 	return err
 }
 
