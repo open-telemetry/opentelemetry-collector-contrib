@@ -59,7 +59,7 @@ func createTraceProcessor(
 	ctx context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextTraceConsumer consumer.TraceConsumer,
+	nextTraceConsumer consumer.TracesConsumer,
 ) (component.TraceProcessor, error) {
 	return createTraceProcessorWithOptions(ctx, params, cfg, nextTraceConsumer)
 }
@@ -86,7 +86,7 @@ func createTraceProcessorWithOptions(
 	_ context.Context,
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
-	nextTraceConsumer consumer.TraceConsumer,
+	nextTraceConsumer consumer.TracesConsumer,
 	options ...Option,
 ) (component.TraceProcessor, error) {
 	kp, err := createKubernetesProcessor(params, cfg, options...)

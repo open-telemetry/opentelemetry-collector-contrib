@@ -45,7 +45,7 @@ func (m *mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metri
 type mockTraceConsumer struct {
 }
 
-var _ (consumer.TraceConsumer) = (*mockTraceConsumer)(nil)
+var _ (consumer.TracesConsumer) = (*mockTraceConsumer)(nil)
 
 func (m *mockTraceConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	return nil
