@@ -25,9 +25,11 @@ import (
 	"time"
 
 	"github.com/observiq/nanojack"
+	"github.com/observiq/stanza/entry"
 	"github.com/observiq/stanza/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap/zaptest"
 	"gopkg.in/yaml.v2"
@@ -57,6 +59,29 @@ func expectNLogs(sink *exportertest.SinkLogsExporter, expected int) func() bool 
 
 func TestReadStaticFile(t *testing.T) {
 	t.Parallel()
+
+	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
+
+	e1 := entry.New()
+	e1.Timestamp = expectedTimestamp
+	e1.Severity = entry.Info
+	e1.Set(entry.NewRecordField("msg"), "Something routine")
+	e1.AddLabel("file_name", "simple.log")
+
+	e2 := entry.New()
+	e2.Timestamp = expectedTimestamp
+	e2.Severity = entry.Error
+	e2.Set(entry.NewRecordField("msg"), "Something bad happened!")
+	e2.AddLabel("file_name", "simple.log")
+
+	e3 := entry.New()
+	e3.Timestamp = expectedTimestamp
+	e3.Severity = entry.Debug
+	e3.Set(entry.NewRecordField("msg"), "Some details...")
+	e3.AddLabel("file_name", "simple.log")
+
+	expectedLogs := []pdata.Logs{convert(e1), convert(e2), convert(e3)}
+
 	f := NewFactory()
 	sink := &exportertest.SinkLogsExporter{}
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
@@ -65,13 +90,21 @@ func TestReadStaticFile(t *testing.T) {
 	cfg.Pipeline = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
-  start_at: beginning`)
-
+  start_at: beginning
+- type: regex_parser
+  regex: '^(?P<ts>\d{4}-\d{2}-\d{2}) (?P<sev>[A-Z]+) (?P<msg>[^\n]+)'
+  timestamp:
+    parse_from: ts
+    layout: '%Y-%m-%d'
+  severity:
+    parse_from: sev
+`)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), params, cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 
 	require.NoError(t, rcvr.Start(context.Background(), &testHost{t: t}))
 	require.Eventually(t, expectNLogs(sink, 3), time.Second, time.Millisecond)
+	require.Equal(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
