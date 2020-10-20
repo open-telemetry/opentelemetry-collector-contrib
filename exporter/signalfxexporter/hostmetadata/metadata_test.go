@@ -201,7 +201,7 @@ func TestSyncMetadata(t *testing.T) {
 			hostStatErr: errors.New("failed"),
 			pushFail:    false,
 			metricsData: generateSampleMetricsData(map[string]string{
-				conventions.AttributeCloudProvider: "gcp",
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccount:  "1234",
 				conventions.AttributeHostID:        "i-abc",
 			}),

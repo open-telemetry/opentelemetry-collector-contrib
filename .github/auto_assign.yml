@@ -1,0 +1,25 @@
+# Set to true to add reviewers to pull requests
+addReviewers: false
+
+# Set to true to add assignees to pull requests
+addAssignees: true
+
+# Set to true to add assignees from different groups to pull requests
+useAssigneeGroups: true
+
+# A list of assignees, split into different groups, to be added to pull requests (GitHub user name)
+assigneeGroups:
+  approvers_maintainers:
+    - anuraaga
+    - bogdandrutu
+    - dmitryax
+    - james-bebbington
+    - jrcamp
+    - jpkrohling
+    - nilebox
+    - owais
+    - tigrannajaryan
+
+# A number of assignees added to the pull request
+# Set 0 to add all the assignees (default: 0)
+numberOfAssignees: 1

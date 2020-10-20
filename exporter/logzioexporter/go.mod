@@ -1,7 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
 go 1.14
-
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/go-hclog v0.14.0
