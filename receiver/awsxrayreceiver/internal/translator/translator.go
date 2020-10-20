@@ -167,6 +167,10 @@ func populateSpan(
 		}
 	}
 
+	if parentID == nil{
+		span.SetKind(2)
+	}
+
 	// decode span id
 	spanIDBytes, err := decodeXRaySpanID(seg.ID)
 	if err != nil {
