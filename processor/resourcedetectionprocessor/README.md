@@ -31,6 +31,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * cloud.zone
     * host.id
     * host.image.id
+    * host.name
     * host.type
 
 ## Configuration
