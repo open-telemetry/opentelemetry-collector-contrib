@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -63,8 +63,8 @@ func TestExecKeyMissing(t *testing.T) {
 
 // assertErrorWhenExecKeyMissing makes sure the config passed throws an error, since it's missing the exec key
 func assertErrorWhenExecKeyMissing(t *testing.T, errorReceiverConfig configmodels.Receiver) {
-	_, err := new(component.ReceiverCreateParams{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
-	assert.Error(t, err, "new() didn't return an error")
+	_, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, errorReceiverConfig.(*Config), nil)
+	assert.Error(t, err, "newPromExecReceiver() didn't return an error")
 }
 
 // TestEndToEnd loads the test config and completes an 2e2 test where Prometheus metrics are scrapped twice from `test_prometheus_exporter.go`
@@ -77,9 +77,9 @@ func TestEndToEnd(t *testing.T) {
 
 // endToEndScrapeTest creates a receiver that invokes `go run test_prometheus_exporter.go` and waits until it has scraped the /metrics endpoint twice - the application will crash between each scrape
 func endToEndScrapeTest(t *testing.T, receiverConfig configmodels.Receiver, testName string) {
-	sink := &exportertest.SinkMetricsExporter{}
-	wrapper, err := new(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
-	assert.NoError(t, err, "new() returned an error")
+	sink := new(consumertest.MetricsSink)
+	wrapper, err := newPromExecReceiver(component.ReceiverCreateParams{Logger: zap.NewNop()}, receiverConfig.(*Config), sink)
+	assert.NoError(t, err, "newPromExecReceiver() returned an error")
 
 	ctx := context.Background()
 	err = wrapper.Start(ctx, componenttest.NewNopHost())

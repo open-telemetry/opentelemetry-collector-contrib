@@ -23,8 +23,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 )
@@ -49,7 +49,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.Nil(t, err)
@@ -63,7 +63,7 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.Error(t, err)
@@ -89,7 +89,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoExporters))
@@ -111,7 +111,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoTableItems))
@@ -137,7 +137,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoMissingFromAttribute))
@@ -162,7 +162,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 			},
 		},
 	}
-	next, err := processorhelper.NewTraceProcessor(cfg, exportertest.NewNopTraceExporter(), &mockProcessor{})
+	next, err := processorhelper.NewTraceProcessor(cfg, consumertest.NewTracesNop(), &mockProcessor{})
 	require.NoError(t, err)
 
 	// test
@@ -192,7 +192,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, exp)
 

@@ -42,7 +42,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -74,7 +74,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 	}
@@ -106,7 +106,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 	r := newReceiver(zap.NewNop(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 
@@ -311,7 +311,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterMetricsConsumer(sink)
 
@@ -468,7 +468,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterLogsConsumer(sink)
 
@@ -497,7 +497,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 	r := newReceiver(zap.NewNop(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 	defer r.Shutdown(context.Background())
@@ -624,7 +624,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterMetricsConsumer(sink)
 
@@ -702,7 +702,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterLogsConsumer(sink)
 
