@@ -15,7 +15,7 @@
 // This file includes software developed at Datadog (https://www.datadoghq.com/)
 // for the Datadog Agent (https://github.com/DataDog/datadog-agent)
 
-package metadata
+package valid
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ var (
 
 // ValidHostname determines whether the passed string is a valid hostname.
 // In case it's not, the returned error contains the details of the failure.
-func validHostname(hostname string) error {
+func ValidHostname(hostname string) error {
 	const maxLength = 255
 
 	if hostname == "" {

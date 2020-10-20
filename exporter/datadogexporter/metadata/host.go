@@ -15,12 +15,11 @@
 package metadata
 
 import (
-	"runtime"
-
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
@@ -32,7 +31,7 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 		return cacheVal.(*string)
 	}
 
-	if err := validHostname(cfg.Hostname); err == nil {
+	if err := valid.ValidHostname(cfg.Hostname); err == nil {
 		cache.SetNoExpire(cache.CanonicalHostnameKey, &cfg.Hostname)
 		return &cfg.Hostname
 	} else if cfg.Hostname != "" {
@@ -41,19 +40,9 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 
 	// Get system hostname
 	hostInfo := system.GetHostInfo(logger)
-	hostname := hostInfo.FQDN
-	if err := validHostname(hostInfo.FQDN); err != nil {
-		// FQDN is always empty on Windows
-		// so we don't report the validity there
-		if runtime.GOOS != "windows" {
-			logger.Info("FQDN is not valid", zap.Error(err))
-		}
+	hostname := hostInfo.GetHostname(logger)
 
-		// FQDN was not valid, fall back to OS hostname
-		hostname = hostInfo.OS
-	}
-
-	if err := validHostname(hostname); err != nil {
+	if err := valid.ValidHostname(hostname); err != nil {
 		// If invalid log but continue
 		logger.Error("Detected hostname is not valid", zap.Error(err))
 	}

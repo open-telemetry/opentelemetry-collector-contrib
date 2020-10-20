@@ -20,6 +20,10 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 )
 
 func getSystemFQDN() (string, error) {
@@ -33,4 +37,14 @@ func getSystemFQDN() (string, error) {
 
 	out, err := cmd.Output()
 	return strings.TrimSpace(string(out)), err
+}
+
+func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
+	if err := valid.ValidHostname(hi.FQDN); err != nil {
+		logger.Info("FQDN is not valid", zap.Error(err))
+		return hi.OS
+	} else {
+		return hi.FQDN
+	}
+
 }

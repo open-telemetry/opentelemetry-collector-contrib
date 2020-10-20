@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package valid
 
 import (
 	"strings"
@@ -23,17 +23,17 @@ import (
 
 func TestValidHostname(t *testing.T) {
 	// Empty
-	require.Error(t, validHostname(""))
+	require.Error(t, ValidHostname(""))
 
 	// Local
-	require.Error(t, validHostname("localhost"))
+	require.Error(t, ValidHostname("localhost"))
 
 	// Max length exceeded
-	require.Error(t, validHostname(strings.Repeat("a", 256)))
+	require.Error(t, ValidHostname(strings.Repeat("a", 256)))
 
 	// non RFC1123 compliant
-	require.Error(t, validHostname("***"))
-	require.Error(t, validHostname("invalid_hostname"))
+	require.Error(t, ValidHostname("***"))
+	require.Error(t, ValidHostname("invalid_hostname"))
 
-	require.NoError(t, validHostname("valid-hostname"))
+	require.NoError(t, ValidHostname("valid-hostname"))
 }
