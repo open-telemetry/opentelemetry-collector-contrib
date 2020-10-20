@@ -20,7 +20,7 @@ exporter/awsxrayexporter/                @kbrockhoff @anuraaga
 exporter/azuremonitorexporter/           @pcwiese
 exporter/carbonexporter/                 @pjanotti
 exporter/datadogexporter/                @KSerrania @ericmustin @mx-psi
-exporter/elasticexporter/                @axw
+exporter/elasticexporter/                @axw @simitt @jalvz
 exporter/honeycombexporter/              @paulosman @lizthegrey
 exporter/jaegerthrifthttpexporter/       @jpkrohling @pavolloffay
 exporter/kinesisexporter/                @owais
