@@ -19,15 +19,30 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
 func TestNewExporter(t *testing.T) {
-	cfg := &config.Config{}
-	cfg.API.Key = "ddog_32_characters_long_api_key1"
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &Config{
+		API: APIConfig{
+			Key: "ddog_32_characters_long_api_key1",
+		},
+		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
+		},
+	}
+
+	cfg.Sanitize()
 	logger := zap.NewNop()
 
 	// The client should have been created correctly
@@ -37,16 +52,27 @@ func TestNewExporter(t *testing.T) {
 }
 
 func TestProcessMetrics(t *testing.T) {
-	cfg := &config.Config{
-		TagsConfig: config.TagsConfig{
-			Hostname: "test-host",
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &Config{
+		API: APIConfig{
+			Key: "ddog_32_characters_long_api_key1",
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test_host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
 		Metrics: config.MetricsConfig{
 			Namespace: "test.",
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
 		},
 	}
+	cfg.Sanitize()
+
 	logger := zap.NewNop()
 
 	exp, err := newMetricsExporter(logger, cfg)

@@ -44,7 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
 
-func Test_splunkhecreceiver_New(t *testing.T) {
+func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	defaultConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig := createDefaultConfig().(*Config)
 	emptyEndpointConfig.Endpoint = ""
@@ -93,7 +93,67 @@ func Test_splunkhecreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(zap.NewNop(), tt.args.config, tt.args.logsConsumer)
+			got, err := NewLogsReceiver(zap.NewNop(), tt.args.config, tt.args.logsConsumer)
+			assert.Equal(t, tt.wantErr, err)
+			if err == nil {
+				assert.NotNil(t, got)
+			} else {
+				assert.Nil(t, got)
+			}
+		})
+	}
+}
+
+func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	emptyEndpointConfig := createDefaultConfig().(*Config)
+	emptyEndpointConfig.Endpoint = ""
+	type args struct {
+		config          Config
+		metricsConsumer consumer.MetricsConsumer
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		{
+			name: "nil_nextConsumer",
+			args: args{
+				config: *defaultConfig,
+			},
+			wantErr: errNilNextConsumer,
+		},
+		{
+			name: "empty_endpoint",
+			args: args{
+				config:          *emptyEndpointConfig,
+				metricsConsumer: new(exportertest.SinkMetricsExporter),
+			},
+			wantErr: errEmptyEndpoint,
+		},
+		{
+			name: "default_endpoint",
+			args: args{
+				config:          *defaultConfig,
+				metricsConsumer: exportertest.NewNopMetricsExporter(),
+			},
+		},
+		{
+			name: "happy_path",
+			args: args{
+				config: Config{
+					HTTPServerSettings: confighttp.HTTPServerSettings{
+						Endpoint: "localhost:1234",
+					},
+				},
+				metricsConsumer: exportertest.NewNopMetricsExporter(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewMetricsReceiver(zap.NewNop(), tt.args.config, tt.args.metricsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -246,7 +306,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(exportertest.SinkLogsExporter)
-			rcv, err := New(zap.NewNop(), *config, sink)
+			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -272,7 +332,37 @@ func Test_consumer_err(t *testing.T) {
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	sink := new(exportertest.SinkLogsExporter)
 	sink.SetConsumeLogError(errors.New("bad consumer"))
-	rcv, err := New(zap.NewNop(), *config, sink)
+	rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
+	assert.NoError(t, err)
+
+	r := rcv.(*splunkReceiver)
+	w := httptest.NewRecorder()
+	msgBytes, err := json.Marshal(splunkMsg)
+	require.NoError(t, err)
+	req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+	req.Header.Set("Content-Type", "application/json")
+	r.handleReq(w, req)
+
+	resp := w.Result()
+	respBytes, err := ioutil.ReadAll(resp.Body)
+	assert.NoError(t, err)
+
+	var bodyStr string
+	assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	assert.Equal(t, "Internal Server Error", bodyStr)
+}
+
+func Test_consumer_err_metrics(t *testing.T) {
+	currentTime := float64(time.Now().UnixNano()) / 1e6
+	splunkMsg := buildSplunkHecMetricsMsg(currentTime, 13, 3)
+	assert.True(t, splunkMsg.IsMetric())
+	config := createDefaultConfig().(*Config)
+	config.Endpoint = "localhost:0" // Actually not creating the endpoint
+	sink := new(exportertest.SinkMetricsExporter)
+	sink.SetConsumeMetricsError(errors.New("bad consumer"))
+	rcv, err := NewMetricsReceiver(zap.NewNop(), *config, sink)
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -305,7 +395,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(exportertest.SinkLogsExporter)
-	r, err := New(zap.NewNop(), *cfg, sink)
+	r, err := NewLogsReceiver(zap.NewNop(), *cfg, sink)
 	require.NoError(t, err)
 	defer r.Shutdown(context.Background())
 
@@ -411,7 +501,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(exportertest.SinkLogsExporter)
-			rcv, err := New(zap.NewNop(), *config, sink)
+			rcv, err := NewLogsReceiver(zap.NewNop(), *config, sink)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -456,6 +546,21 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}
 		})
 	}
+}
+
+func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
+	ev := &splunk.Event{
+		Time:  time,
+		Event: "metric",
+		Fields: map[string]interface{}{
+			"metric_name:foo": value,
+		},
+	}
+	for dim := uint(0); dim < dimensions; dim++ {
+		ev.Fields[fmt.Sprintf("k%d", dim)] = fmt.Sprintf("v%d", dim)
+	}
+
+	return ev
 }
 
 func buildSplunkHecMsg(time float64, value string, dimensions uint) *splunk.Event {

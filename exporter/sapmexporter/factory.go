@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/conventions"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
 )
@@ -55,6 +56,10 @@ func createDefaultConfig() configmodels.Exporter {
 		Correlation: CorrelationConfig{
 			Enabled:             false,
 			StaleServiceTimeout: 5 * time.Minute,
+			SyncAttributes: map[string]string{
+				conventions.AttributeK8sPodUID:   conventions.AttributeK8sPodUID,
+				conventions.AttributeContainerID: conventions.AttributeContainerID,
+			},
 			Config: correlations.Config{
 				MaxRequests:     20,
 				MaxBuffered:     10_000,

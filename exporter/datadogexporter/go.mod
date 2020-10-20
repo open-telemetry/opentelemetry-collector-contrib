@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
 
-go 1.15
+go 1.14
+
+replace gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 => github.com/zorkian/go-datadog-api v2.29.1-0.20201007103024-437d51d487bf+incompatible
 
 require (
 	github.com/DataDog/datadog-agent v0.0.0-20200417180928-f454c60bc16f
@@ -13,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.6.1
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197
+	go.opentelemetry.io/collector v0.13.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0
