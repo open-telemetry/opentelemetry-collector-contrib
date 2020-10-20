@@ -228,3 +228,27 @@ func TestMetadataErrorCases(t *testing.T) {
 		})
 	}
 }
+
+func TestNilHandling(t *testing.T) {
+	acc := metricDataAccumulator{
+		metricGroupsToCollect: map[MetricGroup]bool{
+			PodMetricGroup:       true,
+			NodeMetricGroup:      true,
+			ContainerMetricGroup: true,
+			VolumeMetricGroup:    true,
+		},
+	}
+	resource := &resourcepb.Resource{}
+	assert.NotPanics(t, func() {
+		acc.nodeStats(stats.NodeStats{})
+	})
+	assert.NotPanics(t, func() {
+		acc.podStats(resource, stats.PodStats{})
+	})
+	assert.NotPanics(t, func() {
+		acc.containerStats(resource, stats.ContainerStats{})
+	})
+	assert.NotPanics(t, func() {
+		acc.volumeStats(resource, stats.VolumeStats{})
+	})
+}
