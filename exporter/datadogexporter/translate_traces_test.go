@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
-
 package datadogexporter
 
 import (
@@ -21,8 +19,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
@@ -178,18 +177,20 @@ func TestObfuscation(t *testing.T) {
 
 	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
 
-	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{
-		ES: obfuscate.JSONSettings{
+	obfuscator := obfuscate.NewObfuscator(&configdefs.ObfuscationConfig{
+		ES: configdefs.JSONObfuscationConfig{
 			Enabled: true,
 		},
-		Mongo: obfuscate.JSONSettings{
+		Mongo: configdefs.JSONObfuscationConfig{
 			Enabled: true,
 		},
-		RemoveQueryString: true,
-		RemovePathDigits:  true,
+		HTTP: configdefs.HTTPObfuscationConfig{
+			RemoveQueryString: true,
+			RemovePathDigits:  true,
+		},
 		RemoveStackTraces: true,
-		Redis:             true,
-		Memcached:         true,
+		Redis:             configdefs.Enablable{true},
+		Memcached:         configdefs.Enablable{true},
 	})
 
 	ObfuscatePayload(obfuscator, aggregatedTraces)
