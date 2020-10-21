@@ -100,6 +100,9 @@ func components() (component.Factories, error) {
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 	}
+
+	receivers = append(receivers, extraReceivers()...)
+
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
