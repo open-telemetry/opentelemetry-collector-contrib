@@ -47,7 +47,8 @@ func TestDefaultConfig(t *testing.T) {
 				NameVal: "kinesis",
 			},
 			AWS: AWSConfig{
-				Region: "us-west-2",
+				Region:     "us-west-2",
+				StreamName: "test-stream",
 			},
 			KPL: KPLConfig{
 				BatchSize:            5242880,
