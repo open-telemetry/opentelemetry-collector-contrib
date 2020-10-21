@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package system
 
-import "os"
+import (
+	"os"
+	"testing"
 
-// GetHost gets the hostname according to configuration.
-// It gets the configuration hostname and if
-// not available it relies on the OS hostname
-func GetHost(cfg *Config) *string {
-	if cfg.TagsConfig.Hostname != "" {
-		return &cfg.TagsConfig.Hostname
-	}
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
 
-	host, err := os.Hostname()
-	if err != nil || host == "" {
-		host = "unknown"
-	}
-	return &host
+func TestGetHostInfo(t *testing.T) {
+	logger := zap.NewNop()
+
+	hostInfo := GetHostInfo(logger)
+	require.NotNil(t, hostInfo)
+
+	osHostname, err := os.Hostname()
+	require.NoError(t, err)
+	assert.Equal(t, hostInfo.OS, osHostname)
 }

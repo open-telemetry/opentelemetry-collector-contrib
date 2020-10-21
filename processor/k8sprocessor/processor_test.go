@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
@@ -36,13 +36,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, nextTraceConsumer consumer.TraceConsumer, options ...Option) (component.TraceProcessor, error) {
+func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TraceProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
 		component.ProcessorCreateParams{Logger: zap.NewNop()},
 		cfg,
-		nextTraceConsumer,
+		next,
 		opts...,
 	)
 }
@@ -91,9 +91,9 @@ type multiTest struct {
 	mp component.MetricsProcessor
 	lp component.LogsProcessor
 
-	nextTrace   *exportertest.SinkTraceExporter
-	nextMetrics *exportertest.SinkMetricsExporter
-	nextLogs    *exportertest.SinkLogsExporter
+	nextTrace   *consumertest.TracesSink
+	nextMetrics *consumertest.MetricsSink
+	nextLogs    *consumertest.LogsSink
 
 	kpMetrics *kubernetesprocessor
 	kpTrace   *kubernetesprocessor
@@ -108,9 +108,9 @@ func newMultiTest(
 ) *multiTest {
 	m := &multiTest{
 		t:           t,
-		nextTrace:   &exportertest.SinkTraceExporter{},
-		nextMetrics: &exportertest.SinkMetricsExporter{},
-		nextLogs:    &exportertest.SinkLogsExporter{},
+		nextTrace:   new(consumertest.TracesSink),
+		nextMetrics: new(consumertest.MetricsSink),
+		nextLogs:    new(consumertest.LogsSink),
 	}
 
 	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
@@ -577,7 +577,7 @@ func TestProcessorPicksUpPassthoughPodIp(t *testing.T) {
 }
 
 func TestMetricsProcessorHostname(t *testing.T) {
-	next := &exportertest.SinkMetricsExporter{}
+	next := new(consumertest.MetricsSink)
 	var kp *kubernetesprocessor
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
@@ -647,7 +647,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 }
 
 func TestPassthroughStart(t *testing.T) {
-	next := &exportertest.SinkTraceExporter{}
+	next := new(consumertest.TracesSink)
 	opts := []Option{WithPassthrough()}
 
 	p, err := newTraceProcessor(
@@ -678,7 +678,7 @@ func TestRealClient(t *testing.T) {
 func TestCapabilities(t *testing.T) {
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		exportertest.NewNopTraceExporter(),
+		consumertest.NewTracesNop(),
 	)
 	assert.NoError(t, err)
 	caps := p.GetCapabilities()
@@ -689,7 +689,7 @@ func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
 	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
-		exportertest.NewNopTraceExporter(),
+		consumertest.NewTracesNop(),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)

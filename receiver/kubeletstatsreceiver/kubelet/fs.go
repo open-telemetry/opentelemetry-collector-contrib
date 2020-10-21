@@ -20,6 +20,9 @@ import (
 )
 
 func fsMetrics(prefix string, s *stats.FsStats) []*metricspb.Metric {
+	if s == nil {
+		return nil
+	}
 	return []*metricspb.Metric{
 		fsAvailableMetric(prefix, s),
 		fsCapacityMetric(prefix, s),
