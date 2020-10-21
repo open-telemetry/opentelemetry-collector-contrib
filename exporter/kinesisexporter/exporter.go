@@ -24,6 +24,10 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	errInvalidContext = "invalid context"
+)
+
 // Exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
 type Exporter struct {
 	producer producer
@@ -74,7 +78,7 @@ func (e *Exporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
 			spanBytes, err := span.Marshal()
 			if err != nil {
 				e.logger.Error("error marshaling span to bytes", zap.Error(err))
-				return td.SpanCount(), consumererror.Permanent(err)
+				exportErr = err
 			}
 
 			if err = e.producer.put(spanBytes, span.SpanID.String()); err != nil {
