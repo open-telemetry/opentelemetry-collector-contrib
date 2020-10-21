@@ -17,12 +17,14 @@
 package datadogexporter
 
 import (
+	"time"
+
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
 )
 
 const (
-	statsBucketDuration int64 = 1e10 // 10 seconds
+	statsBucketDuration int64 = int64(10 * time.Second)
 )
 
 // ComputeAPMStats calculates the stats that should be submitted to APM about a given trace

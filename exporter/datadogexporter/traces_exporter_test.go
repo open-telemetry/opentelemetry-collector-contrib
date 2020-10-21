@@ -27,20 +27,13 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
@@ -200,116 +193,41 @@ func TestPushTraceData(t *testing.T) {
 		return traces
 	}())
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, tracesLength)
 
 }
 
 func TestTraceAndStatsExporter(t *testing.T) {
-	td := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test_service"},
-			Attributes: map[string]string{
-				"A": "B",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Type: "foobar",
-			Labels: map[string]string{
-				"B": "C",
-			},
-		},
-		Spans: []*tracepb.Span{
-			{
-				TraceId:                 []byte{0x01},
-				SpanId:                  []byte{0x02},
-				Name:                    &tracepb.TruncatableString{Value: "root"},
-				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
-				Attributes: &tracepb.Span_Attributes{
-					AttributeMap: map[string]*tracepb.AttributeValue{
-						"span_attr_name": {
-							Value: &tracepb.AttributeValue_StringValue{
-								StringValue: &tracepb.TruncatableString{Value: "Span Attribute"},
-							},
-						},
-					},
-				},
-				Resource: &resourcepb.Resource{
-					Type: "override",
-					Labels: map[string]string{
-						"B": "D",
-					},
-				},
-				TimeEvents: &tracepb.Span_TimeEvents{
-					TimeEvent: []*tracepb.Span_TimeEvent{
-						{
-							Time: &timestamppb.Timestamp{
-								Seconds: 0,
-								Nanos:   0,
-							},
-							Value: &tracepb.Span_TimeEvent_Annotation_{
-								Annotation: &tracepb.Span_TimeEvent_Annotation{
-									Description: &tracepb.TruncatableString{Value: "Some Description"},
-									Attributes: &tracepb.Span_Attributes{
-										AttributeMap: map[string]*tracepb.AttributeValue{
-											"attribute_name": {
-												Value: &tracepb.AttributeValue_StringValue{
-													StringValue: &tracepb.TruncatableString{Value: "Hello MessageEvent"},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				TraceId:                 []byte{0x01},
-				SpanId:                  []byte{0x03},
-				ParentSpanId:            []byte{0x02},
-				Name:                    &tracepb.TruncatableString{Value: "client"},
-				Kind:                    tracepb.Span_CLIENT,
-				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: true},
-				Links: &tracepb.Span_Links{
-					Link: []*tracepb.Span_Link{
-						{
-							TraceId: []byte{0x04},
-							SpanId:  []byte{0x05},
-							Type:    tracepb.Span_Link_PARENT_LINKED_SPAN,
-							Attributes: &tracepb.Span_Attributes{
-								AttributeMap: map[string]*tracepb.AttributeValue{
-									"span_link_attr": {
-										Value: &tracepb.AttributeValue_IntValue{
-											IntValue: 12345,
-										},
-									},
-								},
-							},
-						},
-					},
-					DroppedLinksCount: 0,
-				},
-			},
-			{
-				TraceId:                 []byte{0x01},
-				SpanId:                  []byte{0x04},
-				ParentSpanId:            []byte{0x03},
-				Name:                    &tracepb.TruncatableString{Value: "server"},
-				Kind:                    tracepb.Span_SERVER,
-				SameProcessAsParentSpan: &wrapperspb.BoolValue{Value: false},
-			},
-		},
-	}
-
 	// ensure that the protobuf serialized traces payload contains HostName Env and Traces
 	// ensure that the json gzipped stats payload contains HostName Env and Stats
-	got := testTraceExporterHelper(internaldata.OCToTraceData(td), t)
+	got := testTraceExporterHelper(simpleTraces(), t)
 
 	// ensure a protobuf and json payload are sent
 	assert.Equal(t, 2, len(got))
 	assert.Equal(t, "application/json", got[1])
 	assert.Equal(t, "application/x-protobuf", got[0])
+}
+
+func simpleTraces() pdata.Traces {
+	return simpleTracesWithID(pdata.NewTraceID([]byte{1, 2, 3, 4}))
+}
+
+func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(traceID)
+
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.InitEmpty()
+	ils.Spans().Append(span)
+
+	rs := pdata.NewResourceSpans()
+	rs.InitEmpty()
+	rs.InstrumentationLibrarySpans().Append(ils)
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Append(rs)
+
+	return traces
 }

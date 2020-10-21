@@ -128,7 +128,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
 }
 
@@ -137,7 +137,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
 }
 
@@ -174,7 +174,7 @@ func TestObfuscation(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
 
