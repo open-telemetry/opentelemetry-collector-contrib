@@ -18,7 +18,6 @@ package datadogexporter
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
@@ -65,6 +64,17 @@ func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
 	return exporter, nil
 }
 
+// TODO: when component.Host exposes a way to retrieve processors, check for batch processors
+// and log a warning if not set
+
+// Start tells the exporter to start. The exporter may prepare for exporting
+// by connecting to the endpoint. Host parameter can be used for communicating
+// with the host after Start() has already returned. If error is returned by
+// Start() then the collector startup will be aborted.
+// func (exp *traceExporter) Start(_ context.Context, _ component.Host) error {
+// 	return nil
+// }
+
 func (exp *traceExporter) pushTraceData(
 	ctx context.Context,
 	td pdata.Traces,
@@ -76,7 +86,7 @@ func (exp *traceExporter) pushTraceData(
 	ddTraces, err := ConvertToDatadogTd(td, exp.cfg, exp.tags)
 
 	if err != nil {
-		exp.logger.Info(fmt.Sprintf("Failed to convert traces with error %v\n", err))
+		exp.logger.Info("failed to convert traces", zap.Error(err))
 		return 0, err
 	}
 
@@ -91,7 +101,7 @@ func (exp *traceExporter) pushTraceData(
 	for _, ddTracePayload := range aggregatedTraces {
 		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
 		// adding a helper function here to make custom retry logic easier in the future
-		exp.pushWithRetry(ddTracePayload, 1, pushTime, func() error {
+		exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
 			return nil
 		})
 	}
@@ -100,11 +110,11 @@ func (exp *traceExporter) pushTraceData(
 }
 
 // gives us flexibility to add custom retry logic later
-func (exp *traceExporter) pushWithRetry(ddTracePayload *pb.TracePayload, maxRetries int, pushTime int64, fn func() error) error {
-	err := exp.edgeConnection.SendTraces(context.Background(), ddTracePayload, maxRetries)
+func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.TracePayload, maxRetries int, pushTime int64, fn func() error) error {
+	err := exp.edgeConnection.SendTraces(ctx, ddTracePayload, maxRetries)
 
 	if err != nil {
-		exp.logger.Info(fmt.Sprintf("Failed to send traces with error %v\n", err))
+		exp.logger.Info("failed to send traces", zap.Error(err))
 	}
 
 	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
@@ -112,7 +122,7 @@ func (exp *traceExporter) pushWithRetry(ddTracePayload *pb.TracePayload, maxRetr
 	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
 
 	if errStats != nil {
-		exp.logger.Info(fmt.Sprintf("Failed to send trace stats with error %v\n", errStats))
+		exp.logger.Info("failed to send trace stats", zap.Error(errStats))
 	}
 
 	return fn()

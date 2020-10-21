@@ -44,8 +44,8 @@ type traceEdgeConnection struct {
 }
 
 const (
-	traceEdgeTimout        time.Duration = 10 * time.Second
-	traceEdgeRetryInterval time.Duration = 1 * time.Second
+	traceEdgeTimeout       time.Duration = 10 * time.Second
+	traceEdgeRetryInterval time.Duration = 10 * time.Second
 )
 
 // CreateTraceEdgeConnection returns a new TraceEdgeConnection
@@ -69,13 +69,11 @@ type Payload struct {
 func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TracePayload, maxRetries int) error {
 	binary, marshallErr := proto.Marshal(trace)
 	if marshallErr != nil {
-		return fmt.Errorf("failed to serialize trace payload to protobuf: %v", marshallErr)
+		return fmt.Errorf("failed to serialize trace payload to protobuf: %w", marshallErr)
 	}
 	if len(trace.Traces) == 0 {
 		return fmt.Errorf("no traces in payload")
 	}
-
-	fmt.Printf("Sending trace %d\n", trace.Traces[0].TraceID)
 
 	// Set Headers
 	headers := utils.ProtobufHeaders
@@ -103,7 +101,7 @@ func (con *traceEdgeConnection) SendTraces(ctx context.Context, trace *pb.TraceP
 
 		time.Sleep(traceEdgeRetryInterval)
 	}
-	return fmt.Errorf("failed to send trace payload to trace edge: %v", sendErr)
+	return fmt.Errorf("failed to send trace payload to trace edge: %w", sendErr)
 }
 
 // SendStats serializes a stats payload to json and sends it to Trace Edge
@@ -111,7 +109,7 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 	var b bytes.Buffer
 	err := stats.EncodePayload(&b, sts)
 	if err != nil {
-		return fmt.Errorf("failed to encode stats payload: %v", err)
+		return fmt.Errorf("failed to encode stats payload: %w", err)
 	}
 	binary := b.Bytes()
 
@@ -140,14 +138,13 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 
 		time.Sleep(traceEdgeRetryInterval)
 	}
-	return fmt.Errorf("failed to send stats payload to trace edge: %v", sendErr)
+	return fmt.Errorf("failed to send stats payload to trace edge: %w", sendErr)
 }
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
 func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
 	// Create the request to be sent to the API
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload.Bytes))
-	req = req.WithContext(ctx)
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload.Bytes))
 
 	if err != nil {
 		return false, err
@@ -156,7 +153,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 	utils.SetDDHeaders(req.Header, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
-	client := utils.NewHTTPClient(traceEdgeTimout)
+	client := utils.NewHTTPClient(traceEdgeTimeout)
 	resp, err := client.Do(req)
 
 	if err != nil {

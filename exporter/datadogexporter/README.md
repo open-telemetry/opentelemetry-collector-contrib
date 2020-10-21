@@ -26,7 +26,7 @@ See the sample configuration file under the `example` folder for other available
 
 ## Trace Export Configuration
 
-_Note: Trace Export is not supported on windows at the moment_
+_Note: Trace Export is not supported on Windows at the moment_
 
 ### **Important Pipeline Setup Details** 
 

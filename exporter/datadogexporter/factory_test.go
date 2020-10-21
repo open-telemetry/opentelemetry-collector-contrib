@@ -67,7 +67,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
@@ -88,7 +88,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 		cfg.Exporters["datadog/api"],
 	)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
 
@@ -101,7 +101,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
@@ -117,6 +117,6 @@ func TestCreateAPITracesExporter(t *testing.T) {
 		cfg.Exporters["datadog/api"],
 	)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }

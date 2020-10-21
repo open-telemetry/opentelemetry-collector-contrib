@@ -32,6 +32,7 @@ import (
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -49,59 +50,13 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 
 		contentType := req.Header.Get("Content-Type")
 
-		data := []string{req.Header.Get("Content-Type")}
+		data := []string{contentType}
 		got = append(got, data...)
 
 		if contentType == "application/x-protobuf" {
-			var traceData pb.TracePayload
-			b, err := ioutil.ReadAll(req.Body)
-
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				assert.NoError(t, err, "http server received malformed trace payload")
-				return
-			}
-
-			defer req.Body.Close()
-
-			if marshallErr := proto.Unmarshal(b, &traceData); marshallErr != nil {
-				http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
-				assert.NoError(t, marshallErr, "http server received malformed trace payload")
-				return
-			}
-
-			assert.NotNil(t, traceData.Env)
-			assert.NotNil(t, traceData.HostName)
-			assert.NotNil(t, traceData.Traces)
+			testProtobufTracePayload(t, rw, req)
 		} else if contentType == "application/json" {
-			var statsData stats.Payload
-
-			gz, err := gzip.NewReader(req.Body)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				assert.NoError(t, err, "http server received malformed stats payload")
-				return
-			}
-
-			defer req.Body.Close()
-			defer gz.Close()
-
-			statsBytes, err := ioutil.ReadAll(gz)
-			if err != nil {
-				http.Error(rw, err.Error(), http.StatusInternalServerError)
-				assert.NoError(t, err, "http server received malformed stats payload")
-				return
-			}
-
-			if marshallErr := json.Unmarshal(statsBytes, &statsData); marshallErr != nil {
-				http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
-				assert.NoError(t, marshallErr, "http server received malformed stats payload")
-				return
-			}
-
-			assert.NotNil(t, statsData.Env)
-			assert.NotNil(t, statsData.HostName)
-			assert.NotNil(t, statsData.Stats)
+			testJSONTraceStatsPayload(t, rw, req)
 		}
 		rw.WriteHeader(http.StatusAccepted)
 	}))
@@ -130,12 +85,67 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 
 	assert.NoError(t, err)
 
+	defer exporter.Shutdown(context.Background())
+
 	ctx := context.Background()
 	errConsume := exporter.ConsumeTraces(ctx, td)
 	assert.NoError(t, errConsume)
-	exporter.Shutdown(context.Background())
 
 	return got
+}
+
+func testProtobufTracePayload(t *testing.T, rw http.ResponseWriter, req *http.Request) {
+	var traceData pb.TracePayload
+	b, err := ioutil.ReadAll(req.Body)
+
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		assert.NoError(t, err, "http server received malformed trace payload")
+		return
+	}
+
+	defer req.Body.Close()
+
+	if marshallErr := proto.Unmarshal(b, &traceData); marshallErr != nil {
+		http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
+		assert.NoError(t, marshallErr, "http server received malformed trace payload")
+		return
+	}
+
+	assert.NotNil(t, traceData.Env)
+	assert.NotNil(t, traceData.HostName)
+	assert.NotNil(t, traceData.Traces)
+}
+
+func testJSONTraceStatsPayload(t *testing.T, rw http.ResponseWriter, req *http.Request) {
+	var statsData stats.Payload
+
+	gz, err := gzip.NewReader(req.Body)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		require.NoError(t, err, "http server received malformed stats payload")
+		return
+	}
+
+	defer req.Body.Close()
+	defer gz.Close()
+
+	statsBytes, err := ioutil.ReadAll(gz)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		require.NoError(t, err, "http server received malformed stats payload")
+		return
+	}
+
+	if marshallErr := json.Unmarshal(statsBytes, &statsData); marshallErr != nil {
+		http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
+		require.NoError(t, marshallErr, "http server received malformed stats payload")
+		return
+	}
+
+	assert.NotNil(t, statsData.Env)
+	assert.NotNil(t, statsData.HostName)
+	assert.NotNil(t, statsData.Stats)
 }
 
 func TestNewTraceExporter(t *testing.T) {

@@ -37,13 +37,11 @@ func ComputeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 		sublayers := stats.ComputeSublayers(trace.Spans)
 		for _, span := range spans {
 
-			// TODO: This is all hardcoded to assume 10s buckets for now
-
-			// Aggregate the span to a bucket by rounding its end timestamp to the closest bucket ts.
-			// E.g., for buckets of size 10, a span ends on 36 should be aggregated to the second bucket
-			// with bucketTS 30 (36 - 36 % 10). Create a new bucket if needed.
-			// spanEnd := span.Start + span.Duration
-			// bucketTS := spanEnd - (spanEnd % statsBucketDuration)
+			// TODO: While this is hardcoded to assume a single 10s buckets for now,
+			// An improvement would be to support keeping multiple 10s buckets in buffer
+			// ala, [0-10][10-20][20-30], only flushing the oldest bucket, to allow traces that
+			// get reported late to still be counted in the correct bucket. This is how the
+			// datadog- agent handles stats buckets, but would be non trivial to add.
 
 			var statsRawBucket *stats.RawBucket
 			if existingBucket, ok := statsRawBuckets[bucketTS]; ok {
