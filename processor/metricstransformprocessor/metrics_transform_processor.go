@@ -27,10 +27,11 @@ import (
 )
 
 type internalTransform struct {
-	MetricName string
-	Action     ConfigAction
-	NewName    string
-	Operations []internalOperation
+	MetricName           string
+	Action               ConfigAction
+	NewName              string
+	Operations           []internalOperation
+	resourceAttributeMap map[string]string
 }
 
 type internalOperation struct {
@@ -65,7 +66,26 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			nameToMetricMapping[metric.MetricDescriptor.Name] = metric
 		}
 
+		resourceAttributes := make(map[string]string)
+		if data.Resource != nil {
+			resourceAttributes = data.Resource.Labels
+		}
 		for _, transform := range mtp.transforms {
+			transform.resourceAttributeMap = resourceAttributes
+
+			// When user sets "metric_name=all_metrics", these operations are going to be applied
+			// to all metric data points. Right now, this batch operation only works and is tested for
+			// `convert_resource_attributes_to_labels` operation, and does not break existing experience
+			// for other operations. After updating the metrics, it will continue for the next iteration.
+			// TODO: add more unit tests and update README to pubicly anounce this feature for other
+			// operations as well.
+			if transform.MetricName == "all_metrics" {
+				for _, metric := range data.Metrics {
+					mtp.update(metric, transform)
+				}
+				continue
+			}
+
 			metric, ok := nameToMetricMapping[transform.MetricName]
 			if !ok {
 				continue
@@ -110,6 +130,8 @@ func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform
 			mtp.addLabelOp(metric, op)
 		case DeleteLabelValue:
 			mtp.deleteLabelValueOp(metric, op)
+		case ConvertResourceAttributesToLabels:
+			mtp.convertResourceAttributesToLabels(metric, transform.resourceAttributeMap, op)
 		}
 	}
 }

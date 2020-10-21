@@ -5,7 +5,7 @@ Supported pipeline types: metrics
   - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
 ## Description
-The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values.
+The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values. Additionally, it supports converting resource attributes to metric labels. 
 
 ## Capabilities
 - Rename metrics (e.g. rename `cpu/usage` to `cpu/usage_time`)
@@ -17,12 +17,15 @@ The metrics transform processor can be used to rename metrics, labels, or label 
   - Aggregation_type: sum, mean, max
 - Add label to an existing metric
 - When adding or updating a label value, specify `{{version}}` to include the application version number
+- Convert resource attributes to metric labels
 
 ## Configuration
 ```yaml
 # transforms is a list of transformations with each element transforming a metric selected by metric name
 transforms:
   # name is used to match with the metric to operate on. This implementation doesn’t utilize the filtermetric’s MatchProperties struct because it doesn’t match well with what I need at this phase. All is needed for this processor at this stage is a single name string that can be used to match with selected metrics. The list of metric names and the match type in the filtermetric’s MatchProperties struct are unnecessary. Also, based on the issue about improving filtering configuration, it seems like this struct is subject to be slightly modified.
+
+  # new addition: now it accepts `all_metrics` as the value of 'metric_name' field. This batch operation applies changes to all the metrics. However, currently, it only works and is tested for the 'convert_resource_attributes_to_labels' operation. For other operations (e.g. update_label, add_label), it may not work properly. But, it shouldn't break existing user experience.
   - metric_name: <current_metric_name>
 
   # action specifies if the operations are performed on the current copy of the metric or on a newly created metric that will be inserted
@@ -55,6 +58,9 @@ transforms:
       aggregated_values: [values...]
       new_value: <new_value> 
       aggregation_type: {sum, mean, max}
+
+    # convert_resource_attributes_to_labels action converts all the resourde attributes to metric labels by default. Right now, it doesn't support selecting specific resource attributes as metric labels.
+    - action: convert_resource_attributes_to_labels
 ```
 
 ## Examples
@@ -147,4 +153,12 @@ operation:
   - action: delete_label_value
     label: label
     label_value: value
+```
+
+### Convert Resource Attributes to Metric Labels
+```yaml
+# converts resource attributes to metric labels. 
+...
+operation:
+  - action: convert_resource_attributes_to_labels
 ```

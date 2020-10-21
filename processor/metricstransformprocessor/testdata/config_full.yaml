@@ -22,6 +22,10 @@ processors:
                   aggregated_values: [value1,  value2]
                   new_value: new_value
                   aggregation_type: sum
+            - metric_name: all_metrics
+              action: update
+              operations:
+                - action: convert_resource_attributes_to_labels
     metricstransform/addlabel:
       transforms:
         - metric_name: some_name

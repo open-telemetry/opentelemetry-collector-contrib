@@ -76,6 +76,15 @@ var (
 						NewName:    "new_name",
 						Operations: testDataOperations,
 					},
+					{
+						MetricName: "all_metrics",
+						Action:     Update,
+						Operations: []Operation{
+							{
+								Action: ConvertResourceAttributesToLabels,
+							},
+						},
+					},
 				},
 			},
 		},

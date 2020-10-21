@@ -570,6 +570,68 @@ var (
 					build(),
 			},
 		},
+		{
+			name: "all_metrics_batch_operation_test",
+			transforms: []internalTransform{
+				{
+					MetricName: "all_metrics",
+					Action:     Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   UpdateLabel,
+								Label:    "label1",
+								NewLabel: "new/label1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"new/label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
+		{
+			name: "convert_resource_attributes_to_labels",
+			transforms: []internalTransform{
+				{
+					MetricName: "all_metrics",
+					Action:     Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ConvertResourceAttributesToLabels,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilderWithResource().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setResourceAttributes(map[string]string{"label1": "value1"}).
+					addTimeseries(1, []string{}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
 		// INSERT
 		{
 			name: "metric_name_insert",

@@ -16,6 +16,7 @@ package metricstransformprocessor
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -29,6 +30,17 @@ func metricBuilder() builder {
 		metric: &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{},
 			Timeseries:       make([]*metricspb.TimeSeries, 0),
+		},
+	}
+}
+
+// metricBuilderWithResource is used to build metrics with Resource for testing
+func metricBuilderWithResource() builder {
+	return builder{
+		metric: &metricspb.Metric{
+			MetricDescriptor: &metricspb.MetricDescriptor{},
+			Timeseries:       make([]*metricspb.TimeSeries, 0),
+			Resource:         &resourcepb.Resource{},
 		},
 	}
 }
@@ -48,6 +60,12 @@ func (b builder) setLabels(labels []string) builder {
 		}
 	}
 	b.metric.MetricDescriptor.LabelKeys = labelKeys
+	return b
+}
+
+// setResourceAttributes sets resource attributes
+func (b builder) setResourceAttributes(attributes map[string]string) builder {
+	b.metric.Resource.Labels = attributes
 	return b
 }
 

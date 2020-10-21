@@ -138,6 +138,11 @@ const (
 	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
 	DeleteLabelValue OperationAction = "delete_label_value"
 
+	// ConvertResourceAttributesToLabels converts resource attributes to metric labels.
+	// TODO: right now it converts all the attributes to metric labels by default. Make it
+	// configurable to select specific resource attributes as metric labels.
+	ConvertResourceAttributesToLabels OperationAction = "convert_resource_attributes_to_labels"
+
 	// Mean indicates taking the mean of the aggregated data.
 	Mean AggregationType = "mean"
 
