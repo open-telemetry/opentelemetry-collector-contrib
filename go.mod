@@ -15,6 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/gcloudpubsubexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kinesisexporter v0.0.0-00010101000000-000000000000
@@ -40,6 +41,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gcloudpubsubreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver v0.0.0-00010101000000-000000000000
@@ -61,7 +63,7 @@ require (
 	go.opentelemetry.io/collector v0.17.0
 	go.opentelemetry.io/collector/cmd/issuegenerator v0.0.0-20201201185019-f4f68db25d1f
 	go.opentelemetry.io/collector/cmd/mdatagen v0.0.0-20201201185019-f4f68db25d1f
-	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba
+	golang.org/x/sys v0.0.0-20201201145000-ef89a241ccb3
 	honnef.co/go/tools v0.0.1-2020.1.6
 )
 
@@ -113,6 +115,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splun
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter => ./exporter/stackdriverexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter => ./exporter/elasticexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/gcloudpubsubexporter => ./exporter/gcloudpubsubexporter/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder => ./extension/httpforwarder
 
@@ -167,6 +171,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zooke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanzareceiver => ./receiver/stanzareceiver/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver => ./receiver/memcachedreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gcloudpubsubreceiver => ./receiver/gcloudpubsubreceiver/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor
 

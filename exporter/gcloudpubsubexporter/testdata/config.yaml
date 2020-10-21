@@ -1,0 +1,25 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  gcloudpubsub:
+  gcloudpubsub/customname:
+    project: my-project
+    endpoint: test-endpoint
+    user_agent: opentelemetry-collector-contrib {{version}}
+    use_insecure: true
+    timeout: 20s
+    traces_topic: otlp-traces
+    metrics_topic: otlp-metrics
+    logs_topic: otlp-logs
+
+service:
+  pipelines:
+    traces:
+        receivers: [examplereceiver]
+        processors: [exampleprocessor]
+        exporters: [gcloudpubsub/customname]
+
