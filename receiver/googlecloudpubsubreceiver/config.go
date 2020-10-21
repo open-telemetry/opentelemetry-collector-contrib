@@ -42,6 +42,8 @@ type Config struct {
 	Subscription string `mapstructure:"subscription"`
 	// Lock down the encoding of the payload, leave empty for attribute based detection
 	Encoding string `mapstructure:"encoding"`
+	// Lock down the encoding of the payload, leave empty for attribute based detection
+	Compression string `mapstructure:"compression"`
 
 	// The client id that will be used by Pubsub to make load balancing decisions
 	ClientID string `mapstructure:"client_id"`
@@ -94,6 +96,12 @@ func (config *Config) validateForMetric() error {
 func (config *Config) validate() error {
 	if !subscriptionMatcher.MatchString(config.Subscription) {
 		return fmt.Errorf("subscription '%s' is not a valid format, use 'projects/<project_id>/subscriptions/<name>'", config.Subscription)
+	}
+	switch config.Compression {
+	case "":
+	case "gzip":
+	default:
+		return fmt.Errorf("if specified, only gzip is supported")
 	}
 	return nil
 }

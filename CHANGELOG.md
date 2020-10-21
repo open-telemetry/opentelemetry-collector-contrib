@@ -29,7 +29,10 @@
 
 - `resourcedetectionprocessor`: Update `os.type` attribute values according to semantic conventions (#7544)
 
-## 🚀 New components 🚀
+## 💡 Enhancements 💡
+
+- `googlecloudpubsubreceiver` Added implementation of Google Cloud Pubsub receiver. (#1802)
+- `googlecloudpubsubexporter` Added implementation of Google Cloud Pubsub exporter. (#1802)
 
 ## 🧰 Bug fixes 🧰
 

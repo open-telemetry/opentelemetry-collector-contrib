@@ -17,6 +17,7 @@ package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelem
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -41,11 +42,58 @@ type Config struct {
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`
+	// Compression of the payload (only gzip or is supported, no compression is the default)
+	Compression string `mapstructure:"compression"`
+	// Watermark defines the watermark (the ce-time attribute on the message) behavior
+	Watermark WatermarkConfig `mapstructure:"watermark"`
+}
+
+// WatermarkConfig customizes the behavior of the watermark
+type WatermarkConfig struct {
+	// Behavior of the watermark. Currently, only  of the message (none, latest, earliest and current, current being the default)
+	// will set the timestamp on pubsub based on timestamps of the events inside the message
+	Behavior string `mapstructure:"behavior"`
+	// Indication on how much the timestamp can drift from the current time.
+	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
 }
 
 func (config *Config) validate() error {
 	if !topicMatcher.MatchString(config.Topic) {
-		return fmt.Errorf("topic '%s' is not a valide  format, use 'projects/<project_id>/topics/<name>'", config.Topic)
+		return fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic)
+	}
+	_, err := config.parseCompression()
+	if err != nil {
+		return err
+	}
+	return config.Watermark.validate()
+}
+
+func (config *WatermarkConfig) validate() error {
+	_, err := config.parseWatermarkBehavior()
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+func (config *Config) parseCompression() (Compression, error) {
+	switch config.Compression {
+	case "gzip":
+		return GZip, nil
+	case "":
+		return Uncompressed, nil
+	}
+	return Uncompressed, fmt.Errorf("if specified, compression should be gzip ")
+}
+
+func (config *WatermarkConfig) parseWatermarkBehavior() (WatermarkBehavior, error) {
+	switch config.Behavior {
+	case "earliest":
+		return Earliest, nil
+	case "current":
+		return Current, nil
+	case "":
+		return Current, nil
+	}
+	return Current, fmt.Errorf("if specified, behavior should be earliest or current ")
 }

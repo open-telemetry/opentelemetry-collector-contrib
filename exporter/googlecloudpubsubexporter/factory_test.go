@@ -33,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, config.Type("googlecloudpubsub"), factory.Type())
+	assert.Equal(t, config.Type(typeStr), factory.Type())
 }
 
 func TestCreateTracesExporter(t *testing.T) {

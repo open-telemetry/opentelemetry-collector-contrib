@@ -22,7 +22,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/model/otlp"
 )
 
 const (
@@ -31,6 +33,7 @@ const (
 	defaultTimeout = 12 * time.Second
 )
 
+// NewFactory creates a factory for Google Cloud Pub/Sub exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -48,12 +51,27 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 		return receiver
 	}
 	receiver = &pubsubExporter{
-		instanceName: pCfg.ID().Name(),
-		logger:       params.Logger,
-		userAgent:    strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
-		ceSource:     fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
-		config:       pCfg,
-		topicName:    pCfg.Topic,
+		instanceName:     pCfg.ID().Name(),
+		logger:           params.Logger,
+		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
+		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
+		config:           pCfg,
+		topicName:        pCfg.Topic,
+		tracesMarshaler:  otlp.NewProtobufTracesMarshaler(),
+		metricsMarshaler: otlp.NewProtobufMetricsMarshaler(),
+		logsMarshaler:    otlp.NewProtobufLogsMarshaler(),
+	}
+	receiver.ceCompression, _ = pCfg.parseCompression()
+	watermarkBehavior, _ := pCfg.Watermark.parseWatermarkBehavior()
+	switch watermarkBehavior {
+	case Earliest:
+		receiver.tracesWatermarkFunc = earliestTracesWatermark
+		receiver.metricsWatermarkFunc = earliestMetricsWatermark
+		receiver.logsWatermarkFunc = earliestLogsWatermark
+	case Current:
+		receiver.tracesWatermarkFunc = currentTracesWatermark
+		receiver.metricsWatermarkFunc = currentMetricsWatermark
+		receiver.logsWatermarkFunc = currentLogsWatermark
 	}
 	exporters[pCfg] = receiver
 	return receiver
@@ -80,6 +98,7 @@ func createTracesExporter(
 		cfg,
 		set,
 		pubsubExporter.consumeTraces,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),
@@ -95,11 +114,11 @@ func createMetricsExporter(
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		set,
 		pubsubExporter.consumeMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),
@@ -120,6 +139,7 @@ func createLogsExporter(
 		cfg,
 		set,
 		pubsubExporter.consumeLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.RetrySettings),
 		exporterhelper.WithQueue(pCfg.QueueSettings),

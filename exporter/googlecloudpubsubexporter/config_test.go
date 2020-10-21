@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,16 +28,15 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[config.Type(typeStr)] = factory
 	cfg, err := servicetest.LoadConfig(
 		path.Join(".", "testdata", "config.yaml"), factories,
 	)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	assert.NoError(t, err)
+	assert.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Exporters), 2)
 
@@ -56,17 +54,50 @@ func TestLoadConfig(t *testing.T) {
 		Timeout: 20 * time.Second,
 	}
 	customConfig.Topic = "projects/my-project/topics/otlp-topic"
+	customConfig.Compression = "gzip"
+	customConfig.Watermark.Behavior = "earliest"
+	customConfig.Watermark.AllowedDrift = time.Hour
 	assert.Equal(t, cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")], customConfig)
 }
 
-func TestTraceConfigValidation(t *testing.T) {
+func TestTopicConfigValidation(t *testing.T) {
 	factory := NewFactory()
-	config := factory.CreateDefaultConfig().(*Config)
-	assert.Error(t, config.validate())
-	config.Topic = "projects/000project/topics/my-topic"
-	assert.Error(t, config.validate())
-	config.Topic = "projects/my-project/subscriptions/my-subscription"
-	assert.Error(t, config.validate())
-	config.Topic = "projects/my-project/topics/my-topic"
-	assert.NoError(t, config.validate())
+	c := factory.CreateDefaultConfig().(*Config)
+	assert.Error(t, c.validate())
+	c.Topic = "projects/000project/topics/my-topic"
+	assert.Error(t, c.validate())
+	c.Topic = "projects/my-project/subscriptions/my-subscription"
+	assert.Error(t, c.validate())
+	c.Topic = "projects/my-project/topics/my-topic"
+	assert.NoError(t, c.validate())
+}
+
+func TestCompressionConfigValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Topic = "projects/my-project/topics/my-topic"
+	assert.NoError(t, c.validate())
+	c.Compression = "xxx"
+	assert.Error(t, c.validate())
+	c.Compression = "gzip"
+	assert.NoError(t, c.validate())
+	c.Compression = "none"
+	assert.Error(t, c.validate())
+	c.Compression = ""
+	assert.NoError(t, c.validate())
+}
+
+func TestWatermarkBehaviorConfigValidation(t *testing.T) {
+	factory := NewFactory()
+	c := factory.CreateDefaultConfig().(*Config)
+	c.Topic = "projects/my-project/topics/my-topic"
+	assert.NoError(t, c.validate())
+	c.Watermark.Behavior = "xxx"
+	assert.Error(t, c.validate())
+	c.Watermark.Behavior = "earliest"
+	assert.NoError(t, c.validate())
+	c.Watermark.Behavior = "none"
+	assert.Error(t, c.validate())
+	c.Watermark.Behavior = "current"
+	assert.NoError(t, c.validate())
 }

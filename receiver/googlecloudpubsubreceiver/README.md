@@ -11,6 +11,7 @@ The following configuration options are supported:
   fully qualified resource name (eg: `projects/otel-project/subscriptions/otlp`).
 * `encoding` (Optional): The encoding that will be used to received data from the subscription. This can either be
   `otlp_proto_trace`, `otlp_proto_metric`, `otlp_proto_log`, or `raw_text` (see `encoding`)
+* `compression` (Optional): TODO
 
 ```yaml
 receivers:
@@ -23,13 +24,13 @@ receivers:
 ## Encoding
 
 You should not need to set the encoding of the subscription as the receiver will try to discover the type of the data
-by looking at the `ce-type` and `ce-datacontenttype` attributes of the message. Only when those attributes are not set 
+by looking at the `ce-type` and `content-type` attributes of the message. Only when those attributes are not set 
 must the `encoding` field in the configuration be set. 
 
 | ce-type] | ce-datacontenttype | encoding | description |
 | --- | --- | --- | --- |
-| org.opentelemetry.otlp.traces.v1 | application/x-protobuf |  | Decode OTLP trace message |
-| org.opentelemetry.otlp.metrics.v1 | application/x-protobuf |  | Decode OTLP metric message |
+| org.opentelemetry.otlp.traces.v1 | application/protobuf |  | Decode OTLP trace message |
+| org.opentelemetry.otlp.metrics.v1 | application/protobuf |  | Decode OTLP metric message |
 | org.opentelemetry.otlp.logs.v1 | application/json |  | Decode OTLP log message |
 | - | - | otlp_proto_trace | Decode OTLP trace message |
 | - | - | otlp_proto_metric | Decode OTLP trace message |
@@ -59,5 +60,5 @@ An example of filtering on trace message only:
 ```
 attributes.ce-type = "org.opentelemetry.otlp.traces.v1"
 AND
-attributes.ce-datacontenttype = "application/x-protobuf"
+attributes.content-type = "application/protobuf"
 ```

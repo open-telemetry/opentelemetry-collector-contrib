@@ -9,6 +9,7 @@ The following configuration options are supported:
 * `project` (Optional): The Google Cloud Project of the topics.
 * `topic` (Required): The topic name to receive OTLP data over. The topic name should be a fully qualified resource
   name (eg: `projects/otel-project/topics/otlp`).
+* `compression` (Optional): TODO
 
 ```yaml
 exporters:
@@ -31,12 +32,61 @@ defined in the
 .
 
 The data field is either a `ExportTraceServiceRequest`, `ExportMetricsServiceRequest` or `ExportLogsServiceRequest` for 
-traces, metrics or logs respectively.  Each message is accompanied with the following attributes:
+traces, metrics or logs respectively.  Each message is accompanied by the following attributes:
 
 | attributes | description |
 | --- | --- |
 | ce-specversion | Follow version `1.0` of the CloudEvent spec |
-| ce-source | The source is this `/opentelemetry/collector/googlecloudpubsub/v0.27.0` exporter |
+| ce-source | The source is this `/opentelemetry/collector/googlecloudpubsub/<version>` exporter |
 | ce-id | a random `UUID` to uniquely define the message |
+| ce-time | a watermark indicating when the events, encapsulated in the OTLP message, where generated. The behavior will depend on the watermark setting in the configuration |
 | ce-type | depending on the data `org.opentelemetry.otlp.traces.v1`, `org.opentelemetry.otlp.metrics.v1` or `org.opentelemetry.otlp.logs.v1` |
-| ce-datacontenttype | the content type is `application/x-protobuf` | 
+| content-type | the content type is `application/protobuf` | 
+| content-encoding | indicates that payload is compressed. Only gzip compression is supported |
+
+### Compression
+ 
+By default, the messages are not compressed. By compressing the messages, the cost of Pubsub can be reduced to
+up to 20% of the cost. This can be done by setting the `compression` to `gzip`.
+
+```yaml
+exporters:
+  googlecloudpubsub:
+    project: my-project
+    topic: otlp-traces
+    compression: gzip
+```
+
+The exporter with add the `content-encoding` attribute to the message. The receiver will look at this attribute
+to detect the compression that is used on the payload.
+
+Only `gzip` is supported.
+
+### Watermark
+
+The exporters automatically adds a unique id (`ce-id`) and a timestamp (`ce-time`) to the message attributes. These 
+attributes are useful for real time streaming analytics, de-duplication or anomaly detection. The behavior of the 
+watermark can be changed by setting in the configuration file.
+
+```yaml
+exporters:
+  googlecloudpubsub:
+    project: my-project
+    topic: otlp-traces
+    watermark: 
+      behavior: earliest
+      allow_drift: 1h
+```
+
+The **default** behavior is that the watermark is set to the current time of the processor. This timestamp will not differ
+that much as the timestamp that is attached to a Pubsub message. Most users that don't do anything outside using Pubsub
+as a global distribution system will not need anything else.
+
+If you use Google Cloud [Dataflow](https://cloud.google.com/dataflow) and want to rely on the advanced streaming 
+feature you may want to change the behavior of the watermark and de-duplication. You can set the attributes names on
+the [Pubsub connector](https://beam.apache.org/releases/javadoc/2.31.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubIO.Read.html#withTimestampAttribute-java.lang.String-)
+via the `.withTimestampAttribute("ce-time")` and `.withIdAttribute("ce-id")` methods.  A good settings for this 
+scenario is `behavior: earliest` with a reasonable `allow_drift` of `1h`.
+
+Allowed behavior values are `current` or `earliest`. For `allow_drift` the default is `0s`, so make sure to set the 
+value.
