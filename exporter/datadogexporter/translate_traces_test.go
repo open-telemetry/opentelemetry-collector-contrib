@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/stretchr/testify/assert"
@@ -177,21 +176,7 @@ func TestObfuscation(t *testing.T) {
 
 	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
 
-	obfuscator := obfuscate.NewObfuscator(&configdefs.ObfuscationConfig{
-		ES: configdefs.JSONObfuscationConfig{
-			Enabled: true,
-		},
-		Mongo: configdefs.JSONObfuscationConfig{
-			Enabled: true,
-		},
-		HTTP: configdefs.HTTPObfuscationConfig{
-			RemoveQueryString: true,
-			RemovePathDigits:  true,
-		},
-		RemoveStackTraces: true,
-		Redis:             configdefs.Enablable{Enabled: true},
-		Memcached:         configdefs.Enablable{Enabled: true},
-	})
+	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
 	ObfuscatePayload(obfuscator, aggregatedTraces)
 
