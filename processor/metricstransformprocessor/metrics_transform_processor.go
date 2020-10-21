@@ -77,8 +77,6 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 			// to all metric data points. Right now, this batch operation only works and is tested for
 			// `convert_resource_attributes_to_labels` operation, and does not break existing experience
 			// for other operations. After updating the metrics, it will continue for the next iteration.
-			// TODO: add more unit tests and update README to pubicly anounce this feature for other
-			// operations as well.
 			if transform.MetricName == "all_metrics" {
 				for _, metric := range data.Metrics {
 					mtp.update(metric, transform)

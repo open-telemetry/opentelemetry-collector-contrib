@@ -81,7 +81,8 @@ var (
 						Action:     Update,
 						Operations: []Operation{
 							{
-								Action: ConvertResourceAttributesToLabels,
+								Action:             ConvertResourceAttributesToLabels,
+								ResourceAttributes: []string{"ecs.cluster"},
 							},
 						},
 					},

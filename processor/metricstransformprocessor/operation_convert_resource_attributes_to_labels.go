@@ -14,11 +14,25 @@
 
 package metricstransformprocessor
 
-import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+import (
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+)
 
 func (mtp *metricsTransformProcessor) convertResourceAttributesToLabels(metric *metricspb.Metric, resourceAttributes map[string]string, op internalOperation) {
+	expectedLabelMap := make(map[string]string)
 
-	for key, value := range resourceAttributes {
+	if len(op.configOperation.ResourceAttributes) > 0 {
+		for _, attribute := range op.configOperation.ResourceAttributes {
+			attributeValue, ok := resourceAttributes[attribute]
+			if ok {
+				expectedLabelMap[attribute] = attributeValue
+			}
+		}
+	} else {
+		expectedLabelMap = resourceAttributes
+	}
+
+	for key, value := range expectedLabelMap {
 		lablelKey := &metricspb.LabelKey{
 			Key: key,
 		}

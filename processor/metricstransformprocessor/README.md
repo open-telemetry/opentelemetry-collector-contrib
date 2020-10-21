@@ -5,7 +5,7 @@ Supported pipeline types: metrics
   - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
 ## Description
-The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values. Additionally, it supports converting resource attributes to metric labels. 
+The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values. Additionally, it supports converting resource attributes to metric labels. Customers can select which resource attributes they want to set as metric labels.
 
 ## Capabilities
 - Rename metrics (e.g. rename `cpu/usage` to `cpu/usage_time`)
@@ -59,8 +59,13 @@ transforms:
       new_value: <new_value> 
       aggregation_type: {sum, mean, max}
 
-    # convert_resource_attributes_to_labels action converts all the resourde attributes to metric labels by default.
+    # convert_resource_attributes_to_labels action converts the resourde attributes to metric labels.
     - action: convert_resource_attributes_to_labels
+      # customers can select which resource attributes they want to set as metric labels. If `resource_attributes` are not set or the list is empty,
+      # it convert all the resource attributes to metric labels by default.
+      resource_attributes:
+        - resource_attribute_1
+        - resource_attribute_2
 ```
 
 ## Examples
@@ -161,4 +166,7 @@ operation:
 ...
 operation:
   - action: convert_resource_attributes_to_labels
+    resource_attributes:
+      - ecs.cluster
+      - ecs.task_id
 ```

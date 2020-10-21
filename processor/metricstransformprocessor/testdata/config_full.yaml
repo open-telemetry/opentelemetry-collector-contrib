@@ -26,6 +26,9 @@ processors:
               action: update
               operations:
                 - action: convert_resource_attributes_to_labels
+                  resource_attributes:
+                    - ecs.cluster
+
     metricstransform/addlabel:
       transforms:
         - metric_name: some_name

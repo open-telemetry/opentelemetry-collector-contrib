@@ -91,6 +91,9 @@ type Operation struct {
 
 	// LabelValue identifies the exact label value to operate on
 	LabelValue string `mapstructure:"label_value"`
+
+	// ResourceAttributes identifies the resource attributes to convert them to metric labels
+	ResourceAttributes []string `mapstructure:"resource_attributes"`
 }
 
 // ValueAction renames label values.
