@@ -189,8 +189,8 @@ func TestObfuscation(t *testing.T) {
 			RemovePathDigits:  true,
 		},
 		RemoveStackTraces: true,
-		Redis:             configdefs.Enablable{true},
-		Memcached:         configdefs.Enablable{true},
+		Redis:             configdefs.Enablable{Enabled: true},
+		Memcached:         configdefs.Enablable{Enabled: true},
 	})
 
 	ObfuscatePayload(obfuscator, aggregatedTraces)
