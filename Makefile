@@ -25,10 +25,10 @@ INTEGRATION_TEST_MODULES := \
 .DEFAULT_GOAL := all
 
 .PHONY: all
-all: common otelcontribcol
+all: common otelcontribcol otelcontribcol-unstable
 
 .PHONY: e2e-test
-e2e-test: otelcontribcol
+e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
 
 .PHONY: test-with-cover
@@ -137,10 +137,17 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
+# Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
-	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) $(BUILD_INFO) ./cmd/otelcontribcol
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) ./cmd/otelcontribcol
 
+# Build the Collector executable, including unstable functionality.
+.PHONY: otelcontribcol-unstable
+otelcontribcol-unstable:
+	GO111MODULE=on CGO_ENABLED=0 go build -o ./bin/otelcontribcol_unstable_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		$(BUILD_INFO) -tags enable_unstable ./cmd/otelcontribcol
 
 .PHONY: otelcontribcol-all-sys
 otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
