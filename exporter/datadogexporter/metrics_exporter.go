@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -58,17 +59,18 @@ func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporte
 	return &metricsExporter{logger, cfg, client, tags}, nil
 }
 
-func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
-	addNamespace := exp.cfg.Metrics.Namespace != ""
+func (exp *metricsExporter) addNamespace(metrics []datadog.Metric) {
+	for i := range metrics {
+		newName := exp.cfg.Metrics.Namespace + *metrics[i].Metric
+		metrics[i].Metric = &newName
+	}
+}
+
+func (exp *metricsExporter) addHostname(metrics []datadog.Metric) {
 	overrideHostname := exp.cfg.Hostname != ""
 	addTags := len(exp.tags) > 0
 
 	for i := range metrics {
-		if addNamespace {
-			newName := exp.cfg.Metrics.Namespace + *metrics[i].Metric
-			metrics[i].Metric = &newName
-		}
-
 		if overrideHostname || metrics[i].GetHost() == "" {
 			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
 		}
@@ -80,9 +82,33 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 	}
 }
 
+func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
+	addNamespace := exp.cfg.Metrics.Namespace != ""
+
+	if addNamespace {
+		exp.addNamespace(metrics)
+	}
+
+	exp.addHostname(metrics)
+}
+
+// AddRunningMetric adds the otel.running metric to the exported metrics
+func (exp *metricsExporter) AddRunningMetric(metrics []datadog.Metric) []datadog.Metric {
+	timestamp := uint64(time.Now().UnixNano())
+	runningMetric := []datadog.Metric{
+		newGauge("otel.exporter.running", timestamp, float64(1.0), []string{"exporter:metrics"}),
+	}
+
+	exp.addHostname(runningMetric)
+
+	return append(metrics, runningMetric...)
+}
+
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	metrics, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
 	exp.processMetrics(metrics)
+
+	metrics = exp.AddRunningMetric(metrics)
 
 	err := exp.client.PostMetrics(metrics)
 	return droppedTimeSeries, err
