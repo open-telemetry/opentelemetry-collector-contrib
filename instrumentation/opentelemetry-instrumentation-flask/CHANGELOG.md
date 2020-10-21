@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Record span status and http.status_code attribute on exception 
+  ([#1257](https://github.com/open-telemetry/opentelemetry-python/pull/1257))
+
 ## Version 0.13b0
 
 Released 2020-09-17
