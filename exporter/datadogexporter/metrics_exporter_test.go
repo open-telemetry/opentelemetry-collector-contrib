@@ -89,7 +89,6 @@ func TestProcessMetrics(t *testing.T) {
 	}
 
 	exp.processMetrics(metrics)
-
 	assert.Equal(t, "test-host", *metrics[0].Host)
 	assert.Equal(t, "test.metric_name", *metrics[0].Metric)
 	assert.ElementsMatch(t,

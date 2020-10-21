@@ -31,6 +31,9 @@ var (
 		"Content-Type":     "application/x-protobuf",
 		"Content-Encoding": "identity",
 	}
+	Flavor    = "opentelemetry-collector-contrib"
+	Version   = "0.13.1"
+	UserAgent = fmt.Sprintf("%s/%s", Flavor, Version)
 )
 
 // NewClient returns a http.Client configured with the Agent options.
@@ -58,14 +61,24 @@ func SetExtraHeaders(h http.Header, extras map[string]string) {
 	}
 }
 
+// SetDDHeaders sets the Datadog-specific headers
 func SetDDHeaders(reqHeader http.Header, apiKey string) {
-	// userAgent is the computed user agent we'll use when
-	// communicating with Datadog
-	var userAgent = fmt.Sprintf(
-		"%s/%s/%s (+%s)",
-		"otel-collector-exporter", "0.1", "1", "http://localhost",
-	)
-
 	reqHeader.Set("DD-Api-Key", apiKey)
-	reqHeader.Set("User-Agent", userAgent)
+	reqHeader.Set("User-Agent", UserAgent)
+}
+
+// DoWithRetries repeats a fallible action up to `maxRetries` times
+// with exponential backoff
+func DoWithRetries(maxRetries int, fn func() error) (n int, err error) {
+	wait := 1 * time.Second
+	for i := 0; i < maxRetries; i++ {
+		err := fn()
+		if err == nil {
+			return i, nil
+		}
+		time.Sleep(wait)
+		wait = 2 * wait
+	}
+
+	return 0, err
 }

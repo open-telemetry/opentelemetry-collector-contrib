@@ -32,6 +32,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 // Test that the factory creates the default configuration
@@ -145,6 +146,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 		component.ExporterCreateParams{Logger: logger},
 		cfg.Exporters["datadog/api"],
 	)
+	defer cache.Cache.Delete(cache.CanonicalHostnameKey)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)

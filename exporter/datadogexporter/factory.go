@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 const (
@@ -79,7 +80,7 @@ func createDefaultConfig() configmodels.Exporter {
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.MetricsExporter, error) {
@@ -96,11 +97,19 @@ func createMetricsExporter(
 		return nil, err
 	}
 
+	// Start goroutine for pushing metadata
+	ctx, cancel := context.WithCancel(ctx)
+	go metadata.MetadataPusher(ctx, params.Logger, cfg)
+
 	return exporterhelper.NewMetricsExporter(
 		cfg,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
 	)
 }
 

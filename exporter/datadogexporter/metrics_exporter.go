@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 type metricsExporter struct {
@@ -49,6 +51,8 @@ func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
 func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
+	client.ExtraHeader["User-Agent"] = utils.UserAgent
+	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
 	validateAPIKey(logger, client)
 
