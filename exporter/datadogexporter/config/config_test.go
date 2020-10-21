@@ -12,75 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package datadogexporter
+package config
 
 import (
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/config/configtest"
 )
-
-// TestLoadConfig tests that the configuration is loaded correctly
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Exporters[typeStr] = factory
-	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	apiConfig := cfg.Exporters["datadog/api"].(*Config)
-	err = apiConfig.Sanitize()
-
-	require.NoError(t, err)
-	assert.Equal(t, &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			NameVal: "datadog/api",
-			TypeVal: typeStr,
-		},
-
-		TagsConfig: TagsConfig{
-			Hostname: "customhostname",
-			Env:      "prod",
-			Service:  "myservice",
-			Version:  "myversion",
-			Tags:     []string{"example:tag"},
-		},
-
-		API: APIConfig{
-			Key:  "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			Site: "datadoghq.eu",
-		},
-
-		Metrics: MetricsConfig{
-			Namespace: "opentelemetry.",
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "https://api.datadoghq.eu",
-			},
-		},
-
-		Traces: TracesConfig{
-			SampleRate: 1,
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: "https://trace.agent.datadoghq.eu",
-			},
-		},
-	}, apiConfig)
-
-	invalidConfig2 := cfg.Exporters["datadog/invalid"].(*Config)
-	err = invalidConfig2.Sanitize()
-	require.Error(t, err)
-
-}
 
 func TestTags(t *testing.T) {
 	tc := TagsConfig{

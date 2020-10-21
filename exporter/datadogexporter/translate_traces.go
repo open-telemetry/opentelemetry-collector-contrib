@@ -28,7 +28,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	"go.uber.org/zap"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 // codeDetails specifies information about a trace status code.
@@ -67,10 +71,11 @@ var statusCodes = map[int32]codeDetails{
 }
 
 // converts Traces into an array of datadog trace payloads grouped by env
-func ConvertToDatadogTd(td pdata.Traces, cfg *Config, globalTags []string) ([]*pb.TracePayload, error) {
+func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config, globalTags []string) ([]*pb.TracePayload, error) {
 	// get hostname tag
 	// this is getting abstracted out to config
-	hostname := *GetHost(cfg)
+	// TODO pass logger here once traces code stabilizes
+	hostname := *metadata.GetHost(zap.NewNop(), cfg)
 
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
@@ -126,7 +131,7 @@ func AggregateTracePayloadsByEnv(tracePayloads []*pb.TracePayload) []*pb.TracePa
 }
 
 // converts a Trace's resource spans into a trace payload
-func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *Config, globalTags []string) (pb.TracePayload, error) {
+func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *config.Config, globalTags []string) (pb.TracePayload, error) {
 	// get env tag
 	env := cfg.Env
 
@@ -208,7 +213,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *C
 func spanToDatadogSpan(s pdata.Span,
 	serviceName string,
 	datadogTags map[string]string,
-	cfg *Config,
+	cfg *config.Config,
 	globalTags []string,
 ) (*pb.Span, error) {
 	// otel specification resource service.name takes precedence

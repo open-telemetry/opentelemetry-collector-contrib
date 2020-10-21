@@ -19,12 +19,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
 func TestRedisRunnable(t *testing.T) {
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	logger, _ := zap.NewDevelopment()
 	runner := newRedisRunnable(context.Background(), newFakeClient(), "", consumer, logger)
 	err := runner.Setup()

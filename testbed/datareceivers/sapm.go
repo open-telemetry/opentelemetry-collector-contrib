@@ -40,7 +40,7 @@ func NewSapmDataReceiver(port int) *SapmDataReceiver {
 }
 
 // Start the receiver.
-func (sr *SapmDataReceiver) Start(tc consumer.TraceConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
+func (sr *SapmDataReceiver) Start(tc consumer.TracesConsumer, _ consumer.MetricsConsumer, _ consumer.LogsConsumer) error {
 	sapmCfg := sapmreceiver.Config{
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: fmt.Sprintf("localhost:%d", sr.Port),
