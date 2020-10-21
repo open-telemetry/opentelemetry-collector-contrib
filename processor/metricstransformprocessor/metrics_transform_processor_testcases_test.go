@@ -603,6 +603,36 @@ var (
 			},
 		},
 		{
+			name: "convert_resource_attributes_to_labels_with_nil_resource",
+			transforms: []internalTransform{
+				{
+					MetricName: "all_metrics",
+					Action:     Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ConvertResourceAttributesToLabels,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
+		{
 			name: "convert_resource_attributes_to_labels",
 			transforms: []internalTransform{
 				{

@@ -25,7 +25,7 @@ The metrics transform processor can be used to rename metrics, labels, or label 
 transforms:
   # name is used to match with the metric to operate on. This implementation doesn’t utilize the filtermetric’s MatchProperties struct because it doesn’t match well with what I need at this phase. All is needed for this processor at this stage is a single name string that can be used to match with selected metrics. The list of metric names and the match type in the filtermetric’s MatchProperties struct are unnecessary. Also, based on the issue about improving filtering configuration, it seems like this struct is subject to be slightly modified.
 
-  # new addition: now it accepts `all_metrics` as the value of 'metric_name' field. This batch operation applies changes to all the metrics. However, currently, it only works and is tested for the 'convert_resource_attributes_to_labels' operation. For other operations (e.g. update_label, add_label), it may not work properly. But, it shouldn't break existing user experience.
+  # it also accepts `all_metrics` as the value of 'metric_name' field. This batch operation applies changes to all the metrics. However, currently, it only works and is tested for the 'convert_resource_attributes_to_labels' operation.
   - metric_name: <current_metric_name>
 
   # action specifies if the operations are performed on the current copy of the metric or on a newly created metric that will be inserted
@@ -59,7 +59,7 @@ transforms:
       new_value: <new_value> 
       aggregation_type: {sum, mean, max}
 
-    # convert_resource_attributes_to_labels action converts all the resourde attributes to metric labels by default. Right now, it doesn't support selecting specific resource attributes as metric labels.
+    # convert_resource_attributes_to_labels action converts all the resourde attributes to metric labels by default.
     - action: convert_resource_attributes_to_labels
 ```
 
