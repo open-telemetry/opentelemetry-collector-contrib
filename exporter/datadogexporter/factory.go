@@ -11,10 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package datadogexporter
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -35,6 +38,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithTraces(createTraceExporter),
 	)
 }
 
@@ -97,5 +101,34 @@ func createMetricsExporter(
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+	)
+}
+
+// createTraceExporter creates a trace exporter based on this config.
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	c configmodels.Exporter,
+) (component.TraceExporter, error) {
+	// TODO review if trace export can be supported on Windows
+	if runtime.GOOS == "windows" {
+		return nil, errors.New("datadog trace export is currently not supported on Windows")
+	}
+
+	cfg := c.(*config.Config)
+
+	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(); err != nil {
+		return nil, err
+	}
+
+	exp, err := newTraceExporter(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		exp.pushTraceData,
 	)
 }

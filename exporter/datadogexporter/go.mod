@@ -7,6 +7,7 @@ replace gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 => github.com/zorkian/go-data
 require (
 	github.com/DataDog/datadog-agent v0.0.0-20200417180928-f454c60bc16f
 	github.com/DataDog/viper v1.8.0 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/klauspost/compress v1.10.10
