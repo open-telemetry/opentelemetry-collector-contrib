@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use `url.rule` instead of `request.endpoint` for span name
+  ([#1260](https://github.com/open-telemetry/opentelemetry-python/pull/1260))
 - Record span status and http.status_code attribute on exception 
   ([#1257](https://github.com/open-telemetry/opentelemetry-python/pull/1257))
 
