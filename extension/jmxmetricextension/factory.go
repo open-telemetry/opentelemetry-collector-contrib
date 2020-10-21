@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsextension
+package jmxmetricextension
 
 import (
 	"context"
@@ -24,7 +24,12 @@ import (
 )
 
 const (
-	typeStr = "jmx_metrics"
+	typeStr            = "jmx_metrics"
+	otlpExporter       = "otlp"
+	otlpEndpoint       = "localhost:55680"
+	prometheusExporter = "prometheus"
+	prometheusEndpoint = "localhost"
+	prometheusPort     = 9090
 )
 
 func NewFactory() component.ExtensionFactory {
@@ -40,8 +45,13 @@ func createDefaultConfig() configmodels.Extension {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		Interval:    10 * time.Second,
-		OtlpTimeout: 5 * time.Second,
+		JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		Interval:       10 * time.Second,
+		Exporter:       otlpExporter,
+		OTLPEndpoint:   otlpEndpoint,
+		OTLPTimeout:    5 * time.Second,
+		PrometheusHost: prometheusEndpoint,
+		PrometheusPort: prometheusPort,
 	}
 }
 
@@ -54,6 +64,5 @@ func createExtension(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-
-	return newJmxMetricsExtension(params.Logger, jmxConfig), nil
+	return newJMXMetricExtension(params.Logger, jmxConfig), nil
 }
