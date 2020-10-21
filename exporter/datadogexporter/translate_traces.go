@@ -384,9 +384,9 @@ func attributeMapToStringMap(attrMap pdata.AttributeMap) map[string]string {
 func spanKindToDatadogType(kind pdata.SpanKind) string {
 	switch kind {
 	case pdata.SpanKindCLIENT:
-		return "client"
+		return "http"
 	case pdata.SpanKindSERVER:
-		return "server"
+		return "web"
 	default:
 		return "custom"
 	}
@@ -450,18 +450,18 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return fmt.Sprintf("%s.%s", ilnOtlp, s.Kind())
+		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()), "::", "_")
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind())
+		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()), "::", "_")
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind())
+		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()), "::", "_")
 	}
 
-	return fmt.Sprintf("%s.%s", "opentelemetry", s.Kind())
+	return strings.ReplaceAll(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()), "::", "_")
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {

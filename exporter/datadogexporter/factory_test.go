@@ -11,11 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package datadogexporter
 
 import (
 	"context"
 	"path"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -123,7 +125,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[configmodels.Type(typeStr)] = factory
@@ -144,6 +146,35 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 		cfg.Exporters["datadog/api"],
 	)
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
+	assert.NotNil(t, exp)
+}
+
+func TestCreateAPITracesExporter(t *testing.T) {
+	// TODO review if test should succeed on Windows
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
+
+	logger := zap.NewNop()
+
+	factories, err := componenttest.ExampleComponents()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[configmodels.Type(typeStr)] = factory
+	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	ctx := context.Background()
+	exp, err := factory.CreateTraceExporter(
+		ctx,
+		component.ExporterCreateParams{Logger: logger},
+		cfg.Exporters["datadog/api"],
+	)
+
+	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
