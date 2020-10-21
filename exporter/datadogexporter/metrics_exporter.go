@@ -20,11 +20,14 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 type metricsExporter struct {
 	logger *zap.Logger
-	cfg    *Config
+	cfg    *config.Config
 	client *datadog.Client
 	tags   []string
 }
@@ -43,7 +46,7 @@ func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
 	}
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
 
@@ -67,7 +70,7 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 		}
 
 		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = GetHost(exp.cfg)
+			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
 		}
 
 		if addTags {

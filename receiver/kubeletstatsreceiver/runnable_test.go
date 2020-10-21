@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -56,7 +56,7 @@ var allMetricGroups = map[kubelet.MetricGroup]bool{
 }
 
 func TestRunnable(t *testing.T) {
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	options := &receiverOptions{
 		metricGroupsToCollect: allMetricGroups,
 	}
@@ -107,7 +107,7 @@ func TestRunnableWithMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			consumer := &exportertest.SinkMetricsExporter{}
+			consumer := new(consumertest.MetricsSink)
 			options := &receiverOptions{
 				extraMetadataLabels:   tt.metadataLabels,
 				metricGroupsToCollect: tt.metricGroups,
@@ -189,7 +189,7 @@ func TestRunnableWithMetricGroups(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			consumer := &exportertest.SinkMetricsExporter{}
+			consumer := new(consumertest.MetricsSink)
 			r := newRunnable(
 				context.Background(),
 				consumer,
@@ -341,7 +341,7 @@ func TestRunnableWithPVCDetailedLabels(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			consumer := &exportertest.SinkMetricsExporter{}
+			consumer := new(consumertest.MetricsSink)
 			r := newRunnable(
 				context.Background(),
 				consumer,
@@ -452,7 +452,7 @@ func TestClientErrors(t *testing.T) {
 			}
 			r := newRunnable(
 				context.Background(),
-				&exportertest.SinkMetricsExporter{},
+				new(consumertest.MetricsSink),
 				&fakeRestClient{
 					statsSummaryFail: test.statsSummaryFail,
 					podsFail:         test.podsFail,
@@ -485,9 +485,9 @@ func TestConsumerErrors(t *testing.T) {
 				extraMetadataLabels:   nil,
 				metricGroupsToCollect: allMetricGroups,
 			}
-			sink := &exportertest.SinkMetricsExporter{}
+			sink := new(consumertest.MetricsSink)
 			if test.fail {
-				sink.SetConsumeMetricsError(errors.New("failed"))
+				sink.SetConsumeError(errors.New("failed"))
 			}
 			r := newRunnable(
 				context.Background(),

@@ -20,6 +20,9 @@ import (
 )
 
 func networkMetrics(prefix string, s *stats.NetworkStats) []*metricspb.Metric {
+	if s == nil {
+		return nil
+	}
 	// todo s.RxErrors s.TxErrors?
 	return []*metricspb.Metric{
 		rxBytesMetric(prefix, s),

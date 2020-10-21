@@ -42,7 +42,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -74,7 +74,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 			name: "default_endpoint",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func Test_signalfxeceiver_New(t *testing.T) {
 						Endpoint: "localhost:1234",
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 	}
@@ -106,7 +106,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	addr := fmt.Sprintf("localhost:%d", port)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 	r := newReceiver(zap.NewNop(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 
@@ -181,9 +181,10 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		name             string
+		req              *http.Request
+		skipRegistration bool
+		assertResponse   func(t *testing.T, status int, body string)
 	}{
 		{
 			name: "incorrect_method",
@@ -191,6 +192,21 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
+			},
+		},
+		{
+			name: "incorrect_pipeline",
+			req: func() *http.Request {
+				msgBytes, err := sFxMsg.Marshal()
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			skipRegistration: true,
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrMetricsNotConfigured, body)
 			},
 		},
 		{
@@ -311,9 +327,11 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
-			rcv.RegisterMetricsConsumer(sink)
+			if !tt.skipRegistration {
+				rcv.RegisterMetricsConsumer(sink)
+			}
 
 			w := httptest.NewRecorder()
 			rcv.handleDatapointReq(w, tt.req)
@@ -338,9 +356,10 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	sFxMsg := buildSFxEventMsg(currentTime, 13, 3)
 
 	tests := []struct {
-		name           string
-		req            *http.Request
-		assertResponse func(t *testing.T, status int, body string)
+		name             string
+		req              *http.Request
+		skipRegistration bool
+		assertResponse   func(t *testing.T, status int, body string)
 	}{
 		{
 			name: "incorrect_method",
@@ -348,6 +367,21 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			assertResponse: func(t *testing.T, status int, body string) {
 				assert.Equal(t, http.StatusBadRequest, status)
 				assert.Equal(t, responseInvalidMethod, body)
+			},
+		},
+		{
+			name: "incorrect_pipeline",
+			req: func() *http.Request {
+				msgBytes, err := sFxMsg.Marshal()
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			skipRegistration: true,
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrLogsNotConfigured, body)
 			},
 		},
 		{
@@ -468,9 +502,11 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
-			rcv.RegisterLogsConsumer(sink)
+			if !tt.skipRegistration {
+				rcv.RegisterLogsConsumer(sink)
+			}
 
 			w := httptest.NewRecorder()
 			rcv.handleEventReq(w, tt.req)
@@ -497,7 +533,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 			KeyFile:  "./testdata/testkey.key",
 		},
 	}
-	sink := new(exportertest.SinkMetricsExporter)
+	sink := new(consumertest.MetricsSink)
 	r := newReceiver(zap.NewNop(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 	defer r.Shutdown(context.Background())
@@ -624,7 +660,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterMetricsConsumer(sink)
 
@@ -702,7 +738,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.Endpoint = "localhost:0"
 			config.AccessTokenPassthrough = tt.passthrough
 
-			sink := new(exportertest.SinkLogsExporter)
+			sink := new(consumertest.LogsSink)
 			rcv := newReceiver(zap.NewNop(), *config)
 			rcv.RegisterLogsConsumer(sink)
 

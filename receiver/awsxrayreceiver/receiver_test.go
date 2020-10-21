@@ -34,8 +34,8 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
@@ -78,7 +78,7 @@ func TestProxyCreationFailed(t *testing.T) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	_, err = newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -98,7 +98,7 @@ func TestProxyCreationFailed(t *testing.T) {
 }
 
 func TestPollerCreationFailed(t *testing.T) {
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	_, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -121,7 +121,7 @@ func TestCantStartAnInstanceTwice(t *testing.T) {
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	rcvr, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -157,7 +157,7 @@ func TestCantStopAnInstanceTwice(t *testing.T) {
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
-	sink := new(exportertest.SinkTraceExporter)
+	sink := new(consumertest.TracesSink)
 	rcvr, err := newReceiver(
 		&Config{
 			NetAddr: confignet.NetAddr{
@@ -224,7 +224,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 	err = writePacket(t, addr, segmentHeader+string(content))
 	assert.NoError(t, err, "can not write packet in the happy case")
 
-	sink := rcvr.(*xrayReceiver).consumer.(*exportertest.SinkTraceExporter)
+	sink := rcvr.(*xrayReceiver).consumer.(*consumertest.TracesSink)
 
 	testutil.WaitFor(t, func() bool {
 		got := sink.AllTraces()
@@ -386,15 +386,15 @@ func (m *mockProxy) Close() error {
 func createAndOptionallyStartReceiver(
 	t *testing.T,
 	receiverName string,
-	csu consumer.TraceConsumer,
+	csu consumer.TracesConsumer,
 	start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 
-	var sink consumer.TraceConsumer
+	var sink consumer.TracesConsumer
 	if csu == nil {
-		sink = new(exportertest.SinkTraceExporter)
+		sink = new(consumertest.TracesSink)
 	} else {
 		sink = csu
 	}

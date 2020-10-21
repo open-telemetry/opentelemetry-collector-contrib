@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -35,7 +35,7 @@ import (
 func TestMetricsTransformProcessor(t *testing.T) {
 	for _, test := range standardTests {
 		t.Run(test.name, func(t *testing.T) {
-			next := &exportertest.SinkMetricsExporter{}
+			next := new(consumertest.MetricsSink)
 
 			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
 
@@ -174,7 +174,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	md := consumerdata.MetricsData{Metrics: in}
 
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, exportertest.NewNopMetricsExporter(), p)
+	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewMetricsNop(), p)
 
 	b.ResetTimer()
 
