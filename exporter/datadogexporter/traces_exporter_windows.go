@@ -22,11 +22,13 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 type traceExporterStub struct {}
 
-func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporterStub, error) {
+func newTraceExporter(logger *zap.Logger, cfg *config.Config) (*traceExporterStub, error) {
 	return &traceExporterStub{}, errors.New("datadog trace export is currently not supported on Windows")
 }
 

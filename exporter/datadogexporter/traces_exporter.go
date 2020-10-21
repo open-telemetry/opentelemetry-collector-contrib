@@ -24,17 +24,19 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 type traceExporter struct {
 	logger         *zap.Logger
-	cfg            *Config
+	cfg            *config.Config
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
 	tags           []string
 }
 
-func newTraceExporter(logger *zap.Logger, cfg *Config) (*traceExporter, error) {
+func newTraceExporter(logger *zap.Logger, cfg *config.Config) (*traceExporter, error) {
 	// removes potentially sensitive info and PII, approach taken from serverless approach
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{

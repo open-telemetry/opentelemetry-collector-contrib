@@ -115,7 +115,7 @@ func createTraceExporter(
 		return nil, errors.New("datadog trace export is currently not supported on Windows")
 	}
 
-	cfg := c.(*Config)
+	cfg := c.(*config.Config)
 
 	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {

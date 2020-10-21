@@ -41,6 +41,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
@@ -62,16 +64,16 @@ func testTraceExporterHelper(td pdata.Traces, t *testing.T) []string {
 	}))
 
 	defer server.Close()
-	cfg := Config{
-		API: APIConfig{
+	cfg := config.Config{
+		API: config.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: config.TagsConfig{
 			Hostname: "test_host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Traces: TracesConfig{
+		Traces: config.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
@@ -149,7 +151,7 @@ func testJSONTraceStatsPayload(t *testing.T, rw http.ResponseWriter, req *http.R
 }
 
 func TestNewTraceExporter(t *testing.T) {
-	cfg := &Config{}
+	cfg := &config.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	logger := zap.NewNop()
 
@@ -166,16 +168,16 @@ func TestPushTraceData(t *testing.T) {
 	}))
 
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &config.Config{
+		API: config.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: config.TagsConfig{
 			Hostname: "test_host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Traces: TracesConfig{
+		Traces: config.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
