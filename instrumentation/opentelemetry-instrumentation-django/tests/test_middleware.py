@@ -194,7 +194,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
         self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.UNKNOWN
+            span.status.canonical_code, StatusCanonicalCode.INTERNAL
         )
         self.assertEqual(span.attributes["http.method"], "GET")
         self.assertEqual(
@@ -202,13 +202,22 @@ class TestMiddleware(TestBase, WsgiTestBase):
         )
         self.assertEqual(span.attributes["http.route"], "^error/")
         self.assertEqual(span.attributes["http.scheme"], "http")
+        self.assertEqual(span.attributes["http.status_code"], 500)
         self.assertIsNotNone(_django_instrumentor.meter)
         self.assertEqual(len(_django_instrumentor.meter.metrics), 1)
+
+        self.assertEqual(len(span.events), 1)
+        event = span.events[0]
+        self.assertEqual(event.name, "exception")
+        self.assertEqual(event.attributes["exception.type"], "ValueError")
+        self.assertEqual(event.attributes["exception.message"], "error")
+
         recorder = _django_instrumentor.meter.metrics.pop()
         match_key = get_dict_as_key(
             {
                 "http.flavor": "1.1",
                 "http.method": "GET",
+                "http.status_code": "500",
                 "http.url": "http://testserver/error/",
             }
         )

@@ -60,6 +60,7 @@ class _DjangoMiddleware(MiddlewareMixin):
     )
     _environ_token = "opentelemetry-instrumentor-django.token"
     _environ_span_key = "opentelemetry-instrumentor-django.span_key"
+    _environ_exception_key = "opentelemetry-instrumentor-django.exception_key"
 
     _excluded_urls = Configuration().DJANGO_EXCLUDED_URLS or []
     if _excluded_urls:
@@ -177,22 +178,11 @@ class _DjangoMiddleware(MiddlewareMixin):
                         span.set_attribute("http.route", route)
 
     def process_exception(self, request, exception):
-        # Django can call this method and process_response later. In order
-        # to avoid __exit__ and detach from being called twice then, the
-        # respective keys are being removed here.
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
             return
 
         if self._environ_activation_key in request.META.keys():
-            request.META[self._environ_activation_key].__exit__(
-                type(exception),
-                exception,
-                getattr(exception, "__traceback__", None),
-            )
-            request.META.pop(self._environ_activation_key)
-
-            detach(request.environ[self._environ_token])
-            request.META.pop(self._environ_token, None)
+            request.META[self._environ_exception_key] = exception
 
     def process_response(self, request, response):
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
@@ -213,9 +203,17 @@ class _DjangoMiddleware(MiddlewareMixin):
             )
             request.META.pop(self._environ_span_key)
 
-            request.META[self._environ_activation_key].__exit__(
-                None, None, None
-            )
+            exception = request.META.pop(self._environ_exception_key, None)
+            if exception:
+                request.META[self._environ_activation_key].__exit__(
+                    type(exception),
+                    exception,
+                    getattr(exception, "__traceback__", None),
+                )
+            else:
+                request.META[self._environ_activation_key].__exit__(
+                    None, None, None
+                )
             request.META.pop(self._environ_activation_key)
 
         if self._environ_token in request.META.keys():
@@ -231,5 +229,4 @@ class _DjangoMiddleware(MiddlewareMixin):
                 )
         except Exception as ex:  # pylint: disable=W0703
             _logger.warning("Error recording duration metrics: %s", ex)
-
         return response
