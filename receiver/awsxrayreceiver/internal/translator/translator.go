@@ -167,10 +167,6 @@ func populateSpan(
 		}
 	}
 
-	if parentID == nil{
-		span.SetKind(2)
-	}
-
 	// decode span id
 	spanIDBytes, err := decodeXRaySpanID(seg.ID)
 	if err != nil {
@@ -182,6 +178,8 @@ func populateSpan(
 
 	if parentIDBytes != nil {
 		span.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
+	} else {
+		span.SetKind(2)
 	}
 
 	addStartTime(seg.StartTime, span)
