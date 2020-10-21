@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsextension
+package jmxmetricextension
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func TestWithInvalidConfig(t *testing.T) {
 		cfg,
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics missing required fields: [`service_url` `groovy_script`]", err.Error())
+	assert.Equal(t, "jmx_metrics missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
 	require.Nil(t, r)
 }
 
@@ -54,7 +54,7 @@ func TestWithValidConfig(t *testing.T) {
 	r, err := f.CreateExtension(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	extension := r.(*jmxMetricsExtension)
+	extension := r.(*jmxMetricExtension)
 	assert.Same(t, extension.logger, params.Logger)
 	assert.Same(t, extension.config, cfg)
 }

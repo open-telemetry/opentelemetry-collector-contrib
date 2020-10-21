@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricsextension
+package jmxmetricextension
 
 import (
 	"path"
@@ -45,27 +45,32 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics missing required fields: [`service_url` `groovy_script`]", err.Error())
+	assert.Equal(t, "jmx_metrics missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
 
 	r1 := cfg.Extensions["jmx_metrics/all"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r1))
 	require.NoError(t, r1.validate())
-	assert.Equal(t, r1,
+	assert.Equal(t,
 		&config{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/all",
 			},
-			ServiceURL:   "myserviceurl",
-			GroovyScript: "mygroovyscriptpath",
-			Username:     "myusername",
-			Password:     "mypassword",
-			OtlpHeaders: map[string]string{
+			JARPath:        "myjarpath",
+			ServiceURL:     "myserviceurl",
+			GroovyScript:   "mygroovyscriptpath",
+			Interval:       15 * time.Second,
+			Username:       "myusername",
+			Password:       "mypassword",
+			Exporter:       "myexporter",
+			OTLPEndpoint:   "myotlpendpoint",
+			PrometheusHost: "myprometheushost",
+			PrometheusPort: 12345,
+			OTLPHeaders: map[string]string{
 				"x-header-1": "value1",
 				"x-header-2": "value2",
 			},
-			OtlpTimeout:        5 * time.Second,
-			Interval:           15 * time.Second,
+			OTLPTimeout:        5 * time.Second,
 			KeystorePath:       "mykeystorepath",
 			KeystorePassword:   "mykeystorepassword",
 			KeystoreType:       "mykeystoretype",
@@ -73,70 +78,90 @@ func TestLoadConfig(t *testing.T) {
 			TruststorePassword: "mytruststorepassword",
 			RemoteProfile:      "myremoteprofile",
 			Realm:              "myrealm",
-		})
+		}, r1)
 
 	r2 := cfg.Extensions["jmx_metrics/missingservice"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
-	assert.Equal(t, r2,
+	assert.Equal(t,
 		&config{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/missingservice",
 			},
-			GroovyScript: "mygroovyscriptpath",
-			Interval:     10 * time.Second,
-			OtlpTimeout:  5 * time.Second,
-		})
+			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			GroovyScript:   "mygroovyscriptpath",
+			Interval:       10 * time.Second,
+			Exporter:       "otlp",
+			OTLPEndpoint:   "localhost:55680",
+			OTLPTimeout:    5 * time.Second,
+			PrometheusHost: "localhost",
+			PrometheusPort: 9090,
+		}, r2)
 	err = r2.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/missingservice missing required field: [`service_url`]", err.Error())
+	assert.Equal(t, "jmx_metrics/missingservice missing required field: `service_url`", err.Error())
 
 	r3 := cfg.Extensions["jmx_metrics/missinggroovy"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r3))
-	assert.Equal(t, r3,
+	assert.Equal(t,
 		&config{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/missinggroovy",
 			},
-			ServiceURL:  "myserviceurl",
-			Interval:    10 * time.Second,
-			OtlpTimeout: 5 * time.Second,
-		})
+			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			ServiceURL:     "myserviceurl",
+			Interval:       10 * time.Second,
+			Exporter:       "otlp",
+			OTLPEndpoint:   "localhost:55680",
+			OTLPTimeout:    5 * time.Second,
+			PrometheusHost: "localhost",
+			PrometheusPort: 9090,
+		}, r3)
 	err = r3.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/missinggroovy missing required field: [`groovy_script`]", err.Error())
+	assert.Equal(t, "jmx_metrics/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
 
 	r4 := cfg.Extensions["jmx_metrics/invalidinterval"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r4))
-	assert.Equal(t, r4,
+	assert.Equal(t,
 		&config{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/invalidinterval",
 			},
-			ServiceURL:   "myserviceurl",
-			GroovyScript: "mygroovyscriptpath",
-			Interval:     -100 * time.Millisecond,
-			OtlpTimeout:  5 * time.Second,
-		})
+			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			ServiceURL:     "myserviceurl",
+			GroovyScript:   "mygroovyscriptpath",
+			Interval:       -100 * time.Millisecond,
+			Exporter:       "otlp",
+			OTLPEndpoint:   "localhost:55680",
+			OTLPTimeout:    5 * time.Second,
+			PrometheusHost: "localhost",
+			PrometheusPort: 9090,
+		}, r4)
 	err = r4.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics/invalidinterval `interval` must be positive: -100ms", err.Error())
 
 	r5 := cfg.Extensions["jmx_metrics/invalidotlptimeout"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r5))
-	assert.Equal(t, r5,
+	assert.Equal(t,
 		&config{
 			ExtensionSettings: configmodels.ExtensionSettings{
 				TypeVal: "jmx_metrics",
 				NameVal: "jmx_metrics/invalidotlptimeout",
 			},
-			ServiceURL:   "myserviceurl",
-			GroovyScript: "mygroovyscriptpath",
-			Interval:     10 * time.Second,
-			OtlpTimeout:  -100 * time.Millisecond,
-		})
+			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+			ServiceURL:     "myserviceurl",
+			GroovyScript:   "mygroovyscriptpath",
+			Interval:       10 * time.Second,
+			Exporter:       "otlp",
+			OTLPEndpoint:   "localhost:55680",
+			OTLPTimeout:    -100 * time.Millisecond,
+			PrometheusHost: "localhost",
+			PrometheusPort: 9090,
+		}, r5)
 	err = r5.validate()
 	require.Error(t, err)
 	assert.Equal(t, "jmx_metrics/invalidotlptimeout `otlp_timeout` must be positive: -100ms", err.Error())
