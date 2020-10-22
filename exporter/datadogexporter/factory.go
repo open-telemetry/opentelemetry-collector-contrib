@@ -103,7 +103,7 @@ func createMetricsExporter(
 	if cfg.SendMetadata {
 		once := cfg.OnceMetadata()
 		once.Do(func() {
-			go metadata.MetadataPusher(ctx, params.Logger, cfg)
+			go metadata.Pusher(ctx, params.Logger, cfg)
 		})
 	}
 
@@ -146,7 +146,7 @@ func createTraceExporter(
 	if cfg.SendMetadata {
 		once := cfg.OnceMetadata()
 		once.Do(func() {
-			go metadata.MetadataPusher(ctx, params.Logger, cfg)
+			go metadata.Pusher(ctx, params.Logger, cfg)
 		})
 	}
 

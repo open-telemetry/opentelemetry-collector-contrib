@@ -69,16 +69,16 @@ func SetDDHeaders(reqHeader http.Header, apiKey string) {
 
 // DoWithRetries repeats a fallible action up to `maxRetries` times
 // with exponential backoff
-func DoWithRetries(maxRetries int, fn func() error) (n int, err error) {
+func DoWithRetries(maxRetries int, fn func() error) (i int, err error) {
 	wait := 1 * time.Second
-	for i := 0; i < maxRetries; i++ {
-		err := fn()
+	for i = 0; i < maxRetries; i++ {
+		err = fn()
 		if err == nil {
-			return i, nil
+			return
 		}
 		time.Sleep(wait)
 		wait = 2 * wait
 	}
 
-	return 0, err
+	return
 }

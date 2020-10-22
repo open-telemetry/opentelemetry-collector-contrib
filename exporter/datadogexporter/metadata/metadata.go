@@ -147,8 +147,8 @@ func getAndPushMetadata(logger *zap.Logger, cfg *config.Config) {
 
 }
 
-// MetadataPusher pushes host metadata payloads periodically to Datadog intake
-func MetadataPusher(ctx context.Context, logger *zap.Logger, cfg *config.Config) {
+// Pusher pushes host metadata payloads periodically to Datadog intake
+func Pusher(ctx context.Context, logger *zap.Logger, cfg *config.Config) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
