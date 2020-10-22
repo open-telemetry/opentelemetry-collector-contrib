@@ -56,7 +56,8 @@ func RunningMetric(exporterType string, timestamp uint64, logger *zap.Logger, cf
 	return runningMetric
 }
 
-// AddHostname adds the hostname to metrics
+// AddHostname adds an hostname to metrics, either using the hostname given
+// in the config, or retrieved from the host metadata
 func AddHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Config) {
 	overrideHostname := cfg.Hostname != ""
 
@@ -67,7 +68,7 @@ func AddHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Confi
 	}
 }
 
-// AddTags adds the given tags to all metrics
+// AddTags adds the given tags to all metrics in the provided list
 func AddTags(metrics []datadog.Metric, tags []string) {
 	for i := range metrics {
 		metrics[i].Tags = append(metrics[i].Tags, tags...)
