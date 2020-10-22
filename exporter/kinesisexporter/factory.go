@@ -52,12 +52,6 @@ func createDefaultConfig() configmodels.Exporter {
 			FlushIntervalSeconds: 5,
 			MaxConnections:       24,
 		},
-
-		QueueSize:            100000,
-		NumWorkers:           8,
-		FlushIntervalSeconds: 5,
-		MaxBytesPerBatch:     100000,
-		MaxBytesPerSpan:      900000,
 	}
 }
 

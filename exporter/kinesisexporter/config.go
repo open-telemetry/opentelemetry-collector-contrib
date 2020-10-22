@@ -46,10 +46,4 @@ type Config struct {
 
 	AWS AWSConfig `mapstructure:"aws"`
 	KPL KPLConfig `mapstructure:"kpl"`
-
-	QueueSize            int `mapstructure:"queue_size"`
-	NumWorkers           int `mapstructure:"num_workers"`
-	MaxBytesPerBatch     int `mapstructure:"max_bytes_per_batch"`
-	MaxBytesPerSpan      int `mapstructure:"max_bytes_per_span"`
-	FlushIntervalSeconds int `mapstructure:"flush_interval_seconds"`
 }
