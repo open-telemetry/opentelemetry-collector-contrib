@@ -20,6 +20,8 @@ exporters:
         max_retries: 17
         max_backoff_seconds: 18
 
+    encoding: "otlp_proto"
+
 processors:
   exampleprocessor:
 

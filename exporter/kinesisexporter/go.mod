@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.9
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/googleapis v1.3.1 // indirect
+	github.com/google/uuid v1.1.2
 	github.com/signalfx/omnition-kinesis-producer v0.5.0
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.13.1-0.20201026193812-7de4bf9a2b47

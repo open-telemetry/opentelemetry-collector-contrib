@@ -46,4 +46,6 @@ type Config struct {
 
 	AWS AWSConfig `mapstructure:"aws"`
 	KPL KPLConfig `mapstructure:"kpl"`
+
+	Encoding string `mapstructure:"encoding"`
 }

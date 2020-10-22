@@ -17,32 +17,42 @@ package kinesisexporter
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component/componenterror"
+
+	"github.com/google/uuid"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 )
 
 const (
-	errInvalidContext = "invalid context"
+	errInvalidContext    = "invalid context"
+	errInvalidMarshaller = "invalid marshaller encoding"
 )
 
 // Exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
 type Exporter struct {
-	producer producer
-	logger   *zap.Logger
+	producer   producer
+	logger     *zap.Logger
+	marshaller Marshaller
 }
 
 // newExporter creates a new exporter with the passed in configurations.
 // It starts the AWS session and setups the relevant connections.
 func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
+	marshaller, valid := defaultMarshallers()[c.Encoding]
+	if !valid {
+		return nil, fmt.Errorf(errInvalidMarshaller)
+	}
+
 	pr, err := newKinesisProducer(c, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Exporter{producer: pr, logger: logger}, nil
+	return &Exporter{producer: pr, logger: logger, marshaller: marshaller}, nil
 }
 
 // Start tells the exporter to start. The exporter may prepare for exporting
@@ -60,33 +70,39 @@ func (e *Exporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
+<<<<<<< HEAD
 func (e *Exporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
 	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
-	if err != nil {
-		e.logger.Error("error translating span batch", zap.Error(err))
-		return td.SpanCount(), consumererror.Permanent(err)
+=======
+func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
+	if ctx == nil || ctx.Err() != nil {
+		return 0, fmt.Errorf(errInvalidContext)
 	}
 
-	// TODO: Use a multi error type
-	var exportErr error
-	for _, pBatch := range pBatches {
-		for _, span := range pBatch.GetSpans() {
-			if span.Process == nil {
-				span.Process = pBatch.Process
-			}
+	var exportErr []error
+	data, err := e.marshaller.MarshalTraces(td)
+>>>>>>> 075b7b0c... Added data marshallers to pushTraces function
+	if err != nil {
+		e.logger.Error("error translating span batch", zap.Error(err))
+		exportErr = append(exportErr, consumererror.Permanent(err))
 
-			spanBytes, err := span.Marshal()
-			if err != nil {
-				e.logger.Error("error marshaling span to bytes", zap.Error(err))
-				exportErr = err
-			}
-
-			if err = e.producer.put(spanBytes, span.SpanID.String()); err != nil {
-				e.logger.Error("error exporting span to kinesis", zap.Error(err))
-				exportErr = err
-			}
+		if data == nil {
+			return td.SpanCount(), err
 		}
 	}
 
-	return 0, exportErr
+	var droppedSpans int
+	for _, msg := range data {
+		if msg.Value != nil {
+			if err = e.producer.put(msg.Value, uuid.New().String()); err != nil {
+				e.logger.Error("error exporting span to kinesis", zap.Error(err))
+				exportErr = append(exportErr, err)
+			}
+		} else {
+			// if the value is nil then the marshalling was unsuccessful
+			droppedSpans++
+		}
+	}
+
+	return droppedSpans, componenterror.CombineErrors(exportErr)
 }
