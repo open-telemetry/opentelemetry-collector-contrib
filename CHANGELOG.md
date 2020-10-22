@@ -8,6 +8,11 @@
 
 The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.13.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
 
+## 🛑 Breaking changes 🛑
+- `kinesis` exporter: Refactor kinesis exporter to use exporter helper functionality with new producer implementation (#1345)
+  - Moved to omnition kinesis producer library from opencensus-go-exporter which was serializing the data to jaeger format as prep to support more formats
+  - Removed configs related to setting up opencensus-go-exporter
+
 ## 💡 Enhancements 💡
 
 - `sapm` exporter:
