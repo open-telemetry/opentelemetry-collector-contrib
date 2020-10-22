@@ -12,6 +12,7 @@ datadog:
  ```
  
  To send data to the Datadog EU site, set the `api.site` parameter to `datadoghq.eu`:
+
  ```yaml
 datadog:
   api:
@@ -25,4 +26,45 @@ See the sample configuration file under the `example` folder for other available
 
 ## Trace Export Configuration
 
-_Note: Trace Export is not supported on windows at the moment_
+_Note: Trace Export is not supported on Windows at the moment_
+
+### **Important Pipeline Setup Details** 
+
+This exporter assumes a pipeline using the datadog exporter also includes a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/batchprocessor) configured with the following: 
+  - a `timeout` setting of `10s`(10 seconds). 
+
+Please make sure to include this processor in your pipeline. An example pipeline can be found below.
+
+A batch representing 10 seconds of traces is a constraint of Datadog's API Intake for Trace Related Statistics. Without this setting, trace related metrics including `.hits` `.errors` and `.duration` for different services and service resources may be inaccurate over periods of time.
+
+Example:
+
+ ```
+receivers:
+  examplereceiver:
+
+processors:
+  batch:
+    timeout: 10s
+
+exporters:
+  datadog/api:
+    hostname: customhostname
+    env: prod
+    service: myservice
+    version: myversion
+
+    tags:
+      - example:tag
+
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      site: datadoghq.eu
+
+service:
+  pipelines:
+    traces:
+      receivers: [examplereceiver]
+      processors: [batch]
+      exporters: [datadog/api]
+ ```

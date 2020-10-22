@@ -128,7 +128,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
 }
 
@@ -137,7 +137,7 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
 }
 
@@ -174,7 +174,7 @@ func TestObfuscation(t *testing.T) {
 
 	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
 
@@ -244,7 +244,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
-	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
+	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
@@ -441,8 +441,8 @@ func TestSpanTypeTranslation(t *testing.T) {
 	spanTypeServer := spanKindToDatadogType(pdata.SpanKindSERVER)
 	spanTypeCustom := spanKindToDatadogType(pdata.SpanKindUNSPECIFIED)
 
-	assert.Equal(t, "client", spanTypeClient)
-	assert.Equal(t, "server", spanTypeServer)
+	assert.Equal(t, "http", spanTypeClient)
+	assert.Equal(t, "web", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
 
 }
