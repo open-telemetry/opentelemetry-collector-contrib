@@ -12,16 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
-
 package datadogexporter
 
 import (
 	"context"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
@@ -36,22 +35,28 @@ type traceExporter struct {
 	tags           []string
 }
 
+var (
+	obfuscatorConfig = &configdefs.ObfuscationConfig{
+		ES: configdefs.JSONObfuscationConfig{
+			Enabled: true,
+		},
+		Mongo: configdefs.JSONObfuscationConfig{
+			Enabled: true,
+		},
+		HTTP: configdefs.HTTPObfuscationConfig{
+			RemoveQueryString: true,
+			RemovePathDigits:  true,
+		},
+		RemoveStackTraces: true,
+		Redis:             configdefs.Enablable{Enabled: true},
+		Memcached:         configdefs.Enablable{Enabled: true},
+	}
+)
+
 func newTraceExporter(logger *zap.Logger, cfg *config.Config) (*traceExporter, error) {
 	// removes potentially sensitive info and PII, approach taken from serverless approach
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
-	obfuscator := obfuscate.NewObfuscator(&obfuscate.Config{
-		ES: obfuscate.JSONSettings{
-			Enabled: true,
-		},
-		Mongo: obfuscate.JSONSettings{
-			Enabled: true,
-		},
-		RemoveQueryString: true,
-		RemovePathDigits:  true,
-		RemoveStackTraces: true,
-		Redis:             true,
-		Memcached:         true,
-	})
+	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)

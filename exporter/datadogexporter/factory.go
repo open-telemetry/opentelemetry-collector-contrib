@@ -16,8 +16,6 @@ package datadogexporter
 
 import (
 	"context"
-	"errors"
-	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -110,10 +108,6 @@ func createTraceExporter(
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.TraceExporter, error) {
-	// TODO review if trace export can be supported on Windows
-	if runtime.GOOS == "windows" {
-		return nil, errors.New("datadog trace export is currently not supported on Windows")
-	}
 
 	cfg := c.(*config.Config)
 
