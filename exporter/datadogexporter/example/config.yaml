@@ -14,19 +14,16 @@ exporters:
 
     ## @param env - string - optional
     ## The environment for unified service tagging.
-    ## If unset it will be determined from the `DD_ENV` environment variable.
     #
     # env: prod
 
     ## @param service - string - optional
     ## The service for unified service tagging.
-    ## If unset it will be determined from the `DD_SERVICE` environment variable.
     #
     # service: myservice
 
     ## @param version - string - optional
     ## The version for unified service tagging.
-    ## If unset it will be determined from the `DD_VERSION` environment variable.
     #
     # version: myversion
 
