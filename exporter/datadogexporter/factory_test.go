@@ -44,14 +44,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 		},
 
-		// These are filled when loading using the helper methods
-		TagsConfig: config.TagsConfig{
-			Hostname: "${DD_HOST}",
-			Env:      "${DD_ENV}",
-			Service:  "${DD_SERVICE}",
-			Version:  "${DD_VERSION}",
-		},
-
 		API: config.APIConfig{Site: "datadoghq.com"},
 		Traces: config.TracesConfig{
 			SampleRate: 1,
