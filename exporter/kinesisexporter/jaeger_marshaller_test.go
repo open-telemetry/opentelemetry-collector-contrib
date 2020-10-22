@@ -18,10 +18,45 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 )
 
 func TestCorrectJaegerEncoding(t *testing.T) {
 	t.Parallel()
 	m := otlpProtoMarshaller{}
 	assert.Equal(t, otlpProto, m.Encoding())
+}
+
+func TestJaegerMarshaller(t *testing.T) {
+	t.Parallel()
+	td := generateValidTrace(2)
+
+	batches, err := jaegertranslator.InternalTracesToJaegerProto(td)
+	var expectedMsgs []Message
+	for _, batch := range batches {
+		for _, span := range batch.Spans {
+			msg, marshalErr := span.Marshal()
+			require.NoError(t, marshalErr)
+			expectedMsgs = append(expectedMsgs, Message{Value: msg})
+		}
+	}
+
+	require.NoError(t, err)
+	require.NotEmpty(t, expectedMsgs)
+
+	m := jaegerMarshaller{}
+	bytes, err := m.MarshalTraces(td)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedMsgs, bytes)
+}
+
+func TestJaegerMarshallerErrorInvalidTraces(t *testing.T) {
+	t.Parallel()
+	td := generateEmptyTrace(1)
+
+	m := jaegerMarshaller{}
+	msgs, err := m.MarshalTraces(td)
+	assert.Error(t, err)
+	assert.Nil(t, msgs)
 }

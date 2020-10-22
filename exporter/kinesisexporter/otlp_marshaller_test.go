@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestCorrectEncoding(t *testing.T) {
@@ -30,11 +29,7 @@ func TestCorrectEncoding(t *testing.T) {
 
 func TestOTLPTracesMarshaller(t *testing.T) {
 	t.Parallel()
-	td := pdata.NewTraces()
-	td.ResourceSpans().Resize(1)
-	span := td.ResourceSpans().At(0).Resource()
-	span.InitEmpty()
-	span.Attributes().InsertString("foo", "bar")
+	td := generateValidTrace(1)
 
 	expected, err := td.ToOtlpProtoBytes()
 	require.NoError(t, err)

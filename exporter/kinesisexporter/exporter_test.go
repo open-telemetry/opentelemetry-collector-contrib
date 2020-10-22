@@ -16,6 +16,7 @@ package kinesisexporter
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,16 @@ func (m *producerMock) put(data []byte, partitionKey string) error {
 	return args.Error(0)
 }
 
+type marshallerMock struct {
+	Marshaller
+	mock.Mock
+}
+
+func (m *marshallerMock) MarshalTraces(td pdata.Traces) ([]Message, error) {
+	args := m.Called(td)
+	return args.Get(0).([]Message), args.Error(1)
+}
+
 func TestNewKinesisExporter(t *testing.T) {
 	t.Parallel()
 	cfg := createDefaultConfig().(*Config)
@@ -65,6 +76,81 @@ func TestPushingTracesToKinesisQueue(t *testing.T) {
 	mockProducer.On("put", mock.Anything, mock.AnythingOfType("string")).Return(nil)
 
 	dropped, err := exp.pushTraces(context.Background(), pdata.NewTraces())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, dropped)
+}
+
+func TestPushingTracesNilData(t *testing.T) {
+	t.Parallel()
+	cfg := createDefaultConfig().(*Config)
+	require.NotNil(t, cfg)
+
+	exp, _ := newExporter(cfg, zaptest.NewLogger(t))
+	mockMarshaller := new(marshallerMock)
+	exp.marshaller = mockMarshaller
+	require.NotNil(t, exp)
+
+	mockMarshaller.On("MarshalTraces", mock.AnythingOfType("pdata.Traces")).Return([]Message(nil), errors.New(""))
+	spanCount := 2
+	trace := generateEmptyTrace(spanCount)
+	dropped, err := exp.pushTraces(context.Background(), trace)
+	assert.Error(t, err)
+	assert.Equal(t, trace.SpanCount(), dropped)
+}
+
+func TestPushingSomeBadSpans(t *testing.T) {
+	t.Parallel()
+	cfg := createDefaultConfig().(*Config)
+	require.NotNil(t, cfg)
+
+	exp, _ := newExporter(cfg, zaptest.NewLogger(t))
+	mockMarshaller := new(marshallerMock)
+	exp.marshaller = mockMarshaller
+	require.NotNil(t, exp)
+
+	spanCount := 1
+	data, err := generateEmptyTrace(spanCount).ToOtlpProtoBytes()
 	require.NoError(t, err)
-	require.Equal(t, 0, dropped)
+
+	returnMsgs := []Message{{Value: nil}, {Value: data}, {Value: nil}}
+	expectedSpansDropped := 2
+	mockMarshaller.On("MarshalTraces", mock.AnythingOfType("pdata.Traces")).Return(returnMsgs, errors.New(""))
+
+	dropped, err := exp.pushTraces(context.Background(), pdata.NewTraces())
+	assert.Error(t, err)
+	assert.Equal(t, expectedSpansDropped, dropped)
+}
+
+func generateEmptyTrace(spanCount int) pdata.Traces {
+	td := pdata.NewTraces()
+	spans := createSpanSlice(td)
+	spans.Resize(spanCount)
+	for i := 0; i < spanCount; i++ {
+		spans.At(i).InitEmpty()
+	}
+	return td
+}
+
+func generateValidTrace(spanCount int) pdata.Traces {
+	td := pdata.NewTraces()
+	spans := createSpanSlice(td)
+	spans.Resize(spanCount)
+	for i := 0; i < spanCount; i++ {
+		span := spans.At(i)
+		span.SetName("foo")
+		span.SetStartTime(pdata.TimestampUnixNano(10))
+		span.SetEndTime(pdata.TimestampUnixNano(20))
+		span.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
+		span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	}
+
+	return td
+}
+
+func createSpanSlice(td pdata.Traces) pdata.SpanSlice {
+	td.ResourceSpans().Resize(1)
+	ils := td.ResourceSpans().At(0).InstrumentationLibrarySpans()
+	ils.Resize(1)
+	spans := ils.At(0).Spans()
+	return spans
 }
