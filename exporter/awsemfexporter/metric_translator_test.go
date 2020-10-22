@@ -779,9 +779,9 @@ func TestBuildCWMetric(t *testing.T) {
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
 		expectedMeasurement := CwMeasurement{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Dimensions: [][]string{{"label1", OTelLib}},
-			Metrics: metricSlice,
+			Metrics:    metricSlice,
 		}
 		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
@@ -806,9 +806,9 @@ func TestBuildCWMetric(t *testing.T) {
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
 		expectedMeasurement := CwMeasurement{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Dimensions: [][]string{{"label1", OTelLib}},
-			Metrics: metricSlice,
+			Metrics:    metricSlice,
 		}
 		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
@@ -835,9 +835,9 @@ func TestBuildCWMetric(t *testing.T) {
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
 		expectedMeasurement := CwMeasurement{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Dimensions: [][]string{{"label1", OTelLib}},
-			Metrics: metricSlice,
+			Metrics:    metricSlice,
 		}
 		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
@@ -864,9 +864,9 @@ func TestBuildCWMetric(t *testing.T) {
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
 		expectedMeasurement := CwMeasurement{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Dimensions: [][]string{{"label1", OTelLib}},
-			Metrics: metricSlice,
+			Metrics:    metricSlice,
 		}
 		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
@@ -894,14 +894,14 @@ func TestBuildCWMetric(t *testing.T) {
 		assert.NotNil(t, cwMetric)
 		assert.Equal(t, 1, len(cwMetric.Measurements))
 		expectedMeasurement := CwMeasurement{
-			Namespace: namespace,
+			Namespace:  namespace,
 			Dimensions: [][]string{{"label1", OTelLib}},
-			Metrics: metricSlice,
+			Metrics:    metricSlice,
 		}
 		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
 		expectedFields := map[string]interface{}{
-			OTelLib:  instrLibName,
-			"foo":    &CWMetricStats{
+			OTelLib: instrLibName,
+			"foo": &CWMetricStats{
 				Min:   1,
 				Max:   3,
 				Sum:   17.13,
@@ -911,7 +911,7 @@ func TestBuildCWMetric(t *testing.T) {
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
 	})
-	
+
 	t.Run("Invalid datapoint type", func(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntGauge)
 		dp := pdata.NewIntHistogramDataPoint()
