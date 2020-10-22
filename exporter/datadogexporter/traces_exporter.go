@@ -73,6 +73,7 @@ func newTraceExporter(logger *zap.Logger, cfg *config.Config) (*traceExporter, e
 		cfg:            cfg,
 		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key),
 		obfuscator:     obfuscator,
+		client:         client,
 		tags:           tags,
 	}
 
@@ -121,7 +122,7 @@ func (exp *traceExporter) pushTraceData(
 		})
 	}
 
-	ms := metrics.RunningMetric("metrics", uint64(pushTime), exp.logger, exp.cfg)
+	ms := metrics.RunningMetric("traces", uint64(pushTime), exp.logger, exp.cfg)
 	exp.client.PostMetrics(ms)
 
 	return len(aggregatedTraces), nil
