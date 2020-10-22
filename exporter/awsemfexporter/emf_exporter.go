@@ -174,13 +174,15 @@ func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption stri
 	cwMetricLists := []*CWMetrics{}
 	var cwm []*CWMetrics
 	var totalDroppedMetrics int
+	cwMetricsMap := make(map[string]*CWMetrics)
+	groupedCWMetricMap := make(map[string]*GroupedCWMetric) 
 
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		if rm.IsNil() {
 			continue
 		}
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, dimensionRollupOption, namespace)
+		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, dimensionRollupOption, cwMetricsMap, groupedCWMetricMap, namespace)
 		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
 			namespace = cwm[0].Measurements[0].Namespace
 		}
@@ -188,7 +190,7 @@ func generateLogEventFromMetric(metric pdata.Metrics, dimensionRollupOption stri
 		cwMetricLists = append(cwMetricLists, cwm...)
 	}
 
-	return TranslateCWMetricToEMF(cwMetricLists), totalDroppedMetrics, namespace
+	return TranslateBatchedMetricToEMF(groupedCWMetricMap), totalDroppedMetrics, namespace
 }
 
 func wrapErrorIfBadRequest(err *error) error {

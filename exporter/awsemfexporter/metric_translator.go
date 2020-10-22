@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"time"
+	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -60,6 +61,13 @@ type CWMetrics struct {
 	Fields       map[string]interface{}
 }
 
+type GroupedCWMetric struct {
+	Namespace    string
+	Metrics      map[string]interface{}
+	Timestamp    int64
+	Dimensions   map[string]interface{}
+}
+
 // CwMeasurement defines
 type CwMeasurement struct {
 	Namespace  string
@@ -76,7 +84,7 @@ type CWMetricStats struct {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, cwMetricsMap map[string]*CWMetrics, groupedCWMetricMap map[string]*GroupedCWMetric, namespace string) ([]*CWMetrics, int) {
 	var cwMetricLists []*CWMetrics
 	totalDroppedMetrics := 0
 
@@ -116,10 +124,71 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 				continue
 			}
 			cwMetricList := getMeasurements(&metric, namespace, OTLib, dimensionRollupOption)
+			batchCWMetrics(cwMetricList, groupedCWMetricMap, cwMetricsMap)
 			cwMetricLists = append(cwMetricLists, cwMetricList...)
 		}
 	}
 	return cwMetricLists, totalDroppedMetrics
+}
+
+func batchCWMetrics(cwMetricList []*CWMetrics, groupedCWMetricMap map[string]*GroupedCWMetric, cwMetricsMap map[string]*CWMetrics) {
+	for _, i := range cwMetricList {
+		if len(i.Measurements[0].Dimensions[0]) > 0 {
+			var key = strings.Join(i.Measurements[0].Dimensions[0],"")
+			if _, ok := cwMetricsMap[key]; ok {
+				for _, v := range i.Measurements[0].Metrics {
+					groupedCWMetricMap[key].Metrics[v["Name"]] = i.Fields[v["Name"]]
+				}
+			} else {
+				cwMetricsMap[key]=i
+				metricMap := make(map[string]interface{})
+				dimensionMap := make(map[string]interface{})
+				
+				for _, v := range i.Measurements[0].Dimensions[0] {
+					dimensionMap[v] = i.Fields[v]
+				}
+				
+				for _, v := range i.Measurements[0].Metrics {
+					metricMap[v["Name"]] = i.Fields[v["Name"]]
+				}
+
+				m := &GroupedCWMetric{Namespace: i.Measurements[0].Namespace, Metrics: metricMap, Dimensions: dimensionMap, Timestamp: i.Timestamp}
+
+				groupedCWMetricMap[key] = m
+			}
+		}
+	}
+}
+
+func TranslateBatchedMetricToEMF(groupedCWMetricMap map[string]*GroupedCWMetric) []*LogEvent {
+	// convert CWMetric into map format for compatible with PLE input
+	ples := make([]*LogEvent, 0, maximumLogEventsPerPut)
+	for _, v := range groupedCWMetricMap {
+		dMap := make(map[string]interface{})
+		mMap := make(map[string]interface{})
+		fieldMap := make(map[string]interface{})
+		dMap = v.Dimensions
+		mMap = v.Metrics
+		
+		fieldMap["Namespace"] = v.Namespace
+		fieldMap["Timestamp"] = v.Timestamp
+		fieldMap["Dimensions"] = dMap
+		fieldMap["Metrics"] = mMap 
+
+		pleMsg, err := json.Marshal(fieldMap)
+		if err != nil {
+			continue
+		}
+		metricCreationTime := v.Timestamp
+
+		logEvent := NewLogEvent(
+			metricCreationTime,
+			string(pleMsg),
+		)
+		logEvent.LogGeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
+		ples = append(ples, logEvent)
+	}
+	return ples
 }
 
 func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
