@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxmetricreceiver
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jmxmetricextension/subprocess"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxmetricreceiver/subprocess"
 )
 
 var _ component.ServiceExtension = (*jmxMetricExtension)(nil)
