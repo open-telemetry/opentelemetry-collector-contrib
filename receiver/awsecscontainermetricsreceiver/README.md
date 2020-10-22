@@ -33,19 +33,19 @@ Task Level Metrics | Container Level Metrics | Unit
 ecs.task.memory.usage | container.memory.usage | Bytes
 ecs.task.memory.usage.max | container.memory.usage.max | Bytes
 ecs.task.memory.usage.limit | container.memory.usage.limit | Bytes
-ecs.task.memory.reserved | Bcontainer.memory.reserved | MB
-ecs.task.memory.utilized | container.memory.utilized | MB
-ecs.task.cpu.usage.total | container.cpu.usage.total | NS
-ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | NS
-ecs.task.cpu.usage.usermode | container.cpu.usage.usermode | NS
-ecs.task.cpu.usage.system | container.cpu.usage.system | NS
+ecs.task.memory.reserved | Bcontainer.memory.reserved | Megabytes
+ecs.task.memory.utilized | container.memory.utilized | Megabytes
+ecs.task.cpu.usage.total | container.cpu.usage.total | Nanoseconds
+ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | Nanoseconds
+ecs.task.cpu.usage.usermode | container.cpu.usage.usermode | Nanoseconds
+ecs.task.cpu.usage.system | container.cpu.usage.system | Nanoseconds
 ecs.task.cpu.usage.vcpu | container.cpu.usage.vcpu | vCPU
 ecs.task.cpu.cores | container.cpu.cores | Count
 ecs.task.cpu.onlines | container.cpu.onlines | Count
 ecs.task.cpu.reserved | container.cpu.reserved | vCPU
 ecs.task.cpu.utilized | container.cpu.utilized | Percent
-ecs.task.network.rate.rx	| container.network.rate.rx	| Bytes/Sec
-ecs.task.network.rate.tx	| container.network.rate.tx	| Bytes/Sec
+ecs.task.network.rate.rx	| container.network.rate.rx	| Bytes/Second
+ecs.task.network.rate.tx	| container.network.rate.tx	| Bytes/Second
 ecs.task.network.io.usage.rx_bytes	| container.network.io.usage.rx_bytes	| Bytes
 ecs.task.network.io.usage.rx_packets	| container.network.io.usage.rx_packets	| Count
 ecs.task.network.io.usage.rx_errors |	container.network.io.usage.rx_errors	| Count
@@ -69,9 +69,9 @@ ecs.task-arn | ecs.task-arn
 ecs.task-id | ecs.task-id
 ecs.task-definition-version | ecs.task-definition-version
 ecs.service | ecs.service
-"" | `container.name`
-"" | `container.id`
-"" | `ecs.docker-name` 
+&nbsp; | container.name
+&nbsp; | container.id
+&nbsp; | ecs.docker-name 
 
 ## Full Configuration Examples
 This receiver emits 52 unique metrics. Customer may not want to send all of them to destinations. This section will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 
