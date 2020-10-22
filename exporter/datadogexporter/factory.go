@@ -101,8 +101,10 @@ func createMetricsExporter(
 
 	ctx, cancel := context.WithCancel(ctx)
 	if cfg.SendMetadata {
-		// Start goroutine for pushing metadata
-		go metadata.MetadataPusher(ctx, params.Logger, cfg)
+		once := cfg.OnceMetadata()
+		once.Do(func() {
+			go metadata.MetadataPusher(ctx, params.Logger, cfg)
+		})
 	}
 
 	return exporterhelper.NewMetricsExporter(
@@ -142,8 +144,10 @@ func createTraceExporter(
 
 	ctx, cancel := context.WithCancel(ctx)
 	if cfg.SendMetadata {
-		// Start goroutine for pushing metadata
-		go metadata.MetadataPusher(ctx, params.Logger, cfg)
+		once := cfg.OnceMetadata()
+		once.Do(func() {
+			go metadata.MetadataPusher(ctx, params.Logger, cfg)
+		})
 	}
 
 	return exporterhelper.NewTraceExporter(

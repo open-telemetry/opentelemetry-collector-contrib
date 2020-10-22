@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -144,6 +145,13 @@ type Config struct {
 
 	// SendMetadata defines whether to send host metadata
 	SendMetadata bool `mapstructure:"send_metadata"`
+
+	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
+	onceMetadata sync.Once
+}
+
+func (c *Config) OnceMetadata() *sync.Once {
+	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration
