@@ -90,7 +90,7 @@ func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error)
 
 			spanBytes, err := span.Marshal()
 			if err != nil {
-				e.logger.Error("error marshalling span to bytes", zap.Error(err))
+				e.logger.Error("error marshaling span to bytes", zap.Error(err))
 				exportErr = err
 			}
 
