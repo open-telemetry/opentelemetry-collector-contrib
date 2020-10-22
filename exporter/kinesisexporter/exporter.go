@@ -16,6 +16,7 @@ package kinesisexporter
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -26,7 +27,6 @@ import (
 )
 
 const (
-	errInvalidContext    = "invalid context"
 	errInvalidMarshaller = "invalid marshaller encoding"
 )
 
@@ -68,18 +68,9 @@ func (e *Exporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
-<<<<<<< HEAD
 func (e *Exporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
-	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
-=======
-func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
-	if ctx == nil || ctx.Err() != nil {
-		return 0, fmt.Errorf(errInvalidContext)
-	}
-
-	var exportErr []error
 	data, err := e.marshaller.MarshalTraces(td)
->>>>>>> 075b7b0c... Added data marshallers to pushTraces function
+	var exportErr []error
 	if err != nil {
 		e.logger.Error("error translating span batch", zap.Error(err))
 		exportErr = append(exportErr, consumererror.Permanent(err))
