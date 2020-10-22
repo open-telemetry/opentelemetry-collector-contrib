@@ -87,15 +87,12 @@ type TagsConfig struct {
 	Hostname string `mapstructure:"hostname"`
 
 	// Env is the environment for unified service tagging.
-	// It can also be set through the `DD_ENV` environment variable.
 	Env string `mapstructure:"env"`
 
 	// Service is the service for unified service tagging.
-	// It can also be set through the `DD_SERVICE` environment variable.
 	Service string `mapstructure:"service"`
 
 	// Version is the version for unified service tagging.
-	// It can also be set through the `DD_VERSION` version variable.
 	Version string `mapstructure:"version"`
 
 	// Tags is the list of default tags to add to every metric or trace.
