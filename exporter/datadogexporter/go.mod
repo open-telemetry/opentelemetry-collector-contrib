@@ -10,9 +10,9 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
 	github.com/gogo/protobuf v1.3.1
+	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/klauspost/compress v1.10.10
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/zorkian/go-datadog-api v2.29.0+incompatible // indirect
 	go.opencensus.io v0.22.4
@@ -22,3 +22,5 @@ require (
 	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.29.0
 )
+
+replace go.opentelemetry.io/collector => /Users/armiros/opentelemetry/collector-contrib/willarmiros/opentelemetry-collector-contrib/../opentelemetry-collector

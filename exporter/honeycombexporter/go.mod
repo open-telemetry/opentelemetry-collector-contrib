@@ -14,3 +14,5 @@ require (
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 	google.golang.org/protobuf v1.25.0
 )
+
+replace go.opentelemetry.io/collector => /Users/armiros/opentelemetry/collector-contrib/willarmiros/opentelemetry-collector-contrib/../opentelemetry-collector
