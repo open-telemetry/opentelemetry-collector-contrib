@@ -12,15 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build !windows
-
 package datadogexporter
 
 import (
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
-	"github.com/DataDog/datadog-agent/pkg/trace/stats"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 )
 
 const (
@@ -36,7 +34,8 @@ func ComputeAPMStats(tracePayload *pb.TracePayload, pushTime int64) *stats.Paylo
 
 	for _, trace := range tracePayload.Traces {
 		spans := GetAnalyzedSpans(trace.Spans)
-		sublayers := stats.ComputeSublayers(trace.Spans)
+		calculator := stats.NewSublayerCalculator()
+		sublayers := calculator.ComputeSublayers(trace.Spans)
 		for _, span := range spans {
 
 			// TODO: While this is hardcoded to assume a single 10s buckets for now,

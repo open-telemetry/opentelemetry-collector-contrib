@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"context"
 	"path"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -151,11 +150,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPITracesExporter(t *testing.T) {
-	// TODO review if test should succeed on Windows
-	if runtime.GOOS == "windows" {
-		t.Skip()
-	}
-
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()

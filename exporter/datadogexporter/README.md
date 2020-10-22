@@ -26,8 +26,6 @@ See the sample configuration file under the `example` folder for other available
 
 ## Trace Export Configuration
 
-_Note: Trace Export is not supported on Windows at the moment_
-
 ### **Important Pipeline Setup Details** 
 
 This exporter assumes a pipeline using the datadog exporter also includes a [batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/master/processor/batchprocessor) configured with the following: 
