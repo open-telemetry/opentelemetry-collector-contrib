@@ -17,11 +17,9 @@ package kinesisexporter
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component/componenterror"
-
 	"github.com/google/uuid"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -99,7 +97,7 @@ func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error)
 				exportErr = append(exportErr, err)
 			}
 		} else {
-			// if the value is nil then the marshalling was unsuccessful
+			// if the value is nil then the marshaling was unsuccessful
 			droppedSpans++
 		}
 	}
