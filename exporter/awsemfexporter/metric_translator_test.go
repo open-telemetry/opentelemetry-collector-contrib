@@ -756,7 +756,7 @@ func TestBuildCWMetric(t *testing.T) {
 	instrLibName := "InstrLibName"
 	OTelLib := "OTelLib"
 	metricSlice := []map[string]string{
-		map[string]string{
+		{
 			"Name": "foo",
 			"Unit": "",
 		},
