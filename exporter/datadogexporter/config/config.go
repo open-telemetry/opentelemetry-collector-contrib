@@ -141,6 +141,9 @@ type Config struct {
 
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
+
+	// SendMetadata defines whether to send host metadata
+	SendMetadata bool `mapstructure:"send_metadata"`
 }
 
 // Sanitize tries to sanitize a given configuration

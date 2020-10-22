@@ -75,6 +75,8 @@ func createDefaultConfig() configmodels.Exporter {
 				Endpoint: "", // set during config sanitization
 			},
 		},
+
+		SendMetadata: true,
 	}
 }
 
@@ -97,9 +99,11 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	// Start goroutine for pushing metadata
 	ctx, cancel := context.WithCancel(ctx)
-	go metadata.MetadataPusher(ctx, params.Logger, cfg)
+	if cfg.SendMetadata {
+		// Start goroutine for pushing metadata
+		go metadata.MetadataPusher(ctx, params.Logger, cfg)
+	}
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
@@ -115,7 +119,7 @@ func createMetricsExporter(
 
 // createTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.TraceExporter, error) {
@@ -136,8 +140,18 @@ func createTraceExporter(
 		return nil, err
 	}
 
+	ctx, cancel := context.WithCancel(ctx)
+	if cfg.SendMetadata {
+		// Start goroutine for pushing metadata
+		go metadata.MetadataPusher(ctx, params.Logger, cfg)
+	}
+
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		exp.pushTraceData,
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
 	)
 }
