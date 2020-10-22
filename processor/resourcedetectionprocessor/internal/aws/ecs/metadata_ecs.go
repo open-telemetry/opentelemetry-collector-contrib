@@ -7,37 +7,42 @@ import (
 )
 
 type TaskMetaData struct {
-	Cluster string
-	LaunchType string  // TODO: Change to enum when defined in otel collector conventions
-	TaskARN string
-	Family string
+	Cluster          string
+	LaunchType       string // TODO: Change to enum when defined in otel collector conventions
+	TaskARN          string
+	Family           string
 	AvailabilityZone string
-	Containers []Container
+	Containers       []Container
 }
 
 type Container struct {
-	DockerId string
+	DockerId     string
 	ContainerARN string
-	Type string
-	KnownStatus string
-	LogDriver string
-	LogOptions LogData
+	Type         string
+	KnownStatus  string
+	LogDriver    string
+	LogOptions   LogData
 }
 
 type LogData struct {
 	LogGroup string `json:"awslogs-group"`
-	Region string `json:"awslogs-region"`
-	Stream string `json:"awslogs-stream"`
+	Region   string `json:"awslogs-region"`
+	Stream   string `json:"awslogs-stream"`
 }
 
+type ecsMetadataProviderImpl struct {
+}
+
+var _ ecsMetadataProvider = &ecsMetadataProviderImpl{}
+
 // Retrieves the metadata for a task running on Amazon ECS
-func fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
-	ret, err := fetch(tmde + "/task", true)
+func (md *ecsMetadataProviderImpl) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
+	ret, err := fetch(tmde+"/task", true)
 	return ret.(*TaskMetaData), err
 }
 
 // Retrieves the metadata for the Amazon ECS Container the collector is running on
-func fetchContainerMetaData(tmde string) (*Container, error) {
+func (md *ecsMetadataProviderImpl) fetchContainerMetaData(tmde string) (*Container, error) {
 	ret, err := fetch(tmde, false)
 	return ret.(*Container), err
 }

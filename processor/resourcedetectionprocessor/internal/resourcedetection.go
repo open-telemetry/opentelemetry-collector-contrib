@@ -139,6 +139,8 @@ func AttributesToMap(am pdata.AttributeMap) map[string]interface{} {
 			mp[k] = v.DoubleVal()
 		case pdata.AttributeValueSTRING:
 			mp[k] = v.StringVal()
+		case pdata.AttributeValueARRAY:
+			mp[k] = v.ArrayVal()
 		case pdata.AttributeValueMAP:
 			mp[k] = AttributesToMap(v.MapVal())
 		}

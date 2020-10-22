@@ -21,10 +21,11 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
+	provider ecsMetadataProvider
 }
 
 func NewDetector() (internal.Detector, error) {
-	return &Detector{}, nil
+	return &Detector{provider: &ecsMetadataProviderImpl{}}, nil
 }
 
 // Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
@@ -33,10 +34,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	res.InitEmpty()
 
-	var tmde string
-	if tmde = strings.TrimSpace(os.Getenv(tmde4EnvVar)); tmde == "" {
-		tmde = strings.TrimSpace(os.Getenv(tmde3EnvVar))
-	}
+	tmde := getTmdeFromEnv()
 
 	// Fail fast if neither env var is present
 	if tmde == "" {
@@ -44,22 +42,27 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		return res, nil
 	}
 
-	tmdeResp, err := fetchTaskMetaData(tmde)
+	tmdeResp, err := d.provider.fetchTaskMetaData(tmde)
 
 	if err != nil || tmdeResp == nil {
 		return res, err
 	}
 
 	attr := res.Attributes()
+	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
 	attr.InsertString("cloud.infrastructure_service", "ECS")
 	attr.InsertString("aws.ecs.cluster", tmdeResp.Cluster)
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
-	attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
 
-	account := parseAccount(tmdeResp.TaskARN)
+	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
 		attr.InsertString(conventions.AttributeCloudAccount, account)
+	}
+
+	if region != "" {
+		attr.InsertString(conventions.AttributeCloudRegion, region)
 	}
 
 	// The launch type and log data attributes are only available in v4 of TMDE
@@ -71,7 +74,7 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		attr.InsertString("aws.ecs.launchtype", "Fargate")
 	}
 
-	selfMetaData, err := fetchContainerMetaData(tmde)
+	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)
 
 	if err != nil || selfMetaData == nil {
 		return res, err
@@ -80,25 +83,34 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	logAttributes := [4]string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
 
 	for i, attribVal := range getValidLogData(tmdeResp.Containers, selfMetaData, account) {
-		fmt.Printf("On index %d, on attrib %s and val %v\n", i, logAttributes[i], attribVal.At(0).StringVal())
-		ava := pdata.NewAttributeValueArray()
-		ava.SetArrayVal(attribVal)
-		fmt.Printf("Array val: %v\n", ava.ArrayVal().At(0).StringVal())
-		attr.Insert(logAttributes[i], ava)
+		if attribVal.Len() > 0 {
+			ava := pdata.NewAttributeValueArray()
+			ava.SetArrayVal(attribVal)
+			attr.Insert(logAttributes[i], ava)
+		}
 	}
 
 	return res, nil
 }
 
-// Parses the AWS Account ID from a task ARN
-// See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
-func parseAccount(taskARN string) string {
-	parts := strings.Split(taskARN, ":")
-	if len(parts) >= 5 {
-		return parts[4]
+func getTmdeFromEnv() string {
+	var tmde string
+	if tmde = strings.TrimSpace(os.Getenv(tmde4EnvVar)); tmde == "" {
+		tmde = strings.TrimSpace(os.Getenv(tmde3EnvVar))
 	}
 
-	return ""
+	return tmde
+}
+
+// Parses the AWS Account ID and AWS Region from a task ARN
+// See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#ecs-resource-ids
+func parseRegionAndAccount(taskARN string) (region string, account string) {
+	parts := strings.Split(taskARN, ":")
+	if len(parts) >= 5 {
+		return parts[3], parts[4]
+	}
+
+	return "", ""
 }
 
 // Filter out non-normal containers, our own container since we assume the collector is run as a sidecar,
@@ -120,9 +132,9 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			logData != (LogData{}) {
 
 			lgn.Append(pdata.NewAttributeValueString(logData.LogGroup))
-			lga.Append(pdata.NewAttributeValueString(constructLogGroupArn(account, logData.Region, logData.LogGroup)))
+			lga.Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
 			lsn.Append(pdata.NewAttributeValueString(logData.Stream))
-			lsa.Append(pdata.NewAttributeValueString(constructLogStreamArn(account, logData.Region, logData.LogGroup, logData.Stream)))
+			lsa.Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
 		}
 	}
 

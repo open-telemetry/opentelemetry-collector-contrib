@@ -19,7 +19,7 @@ const (
 	}`
 
 	containerMeta = `{
-		"DockerId":"abcdef12345"
+		"DockerId":"abcdef12345",
 		"Type":"NORMAL",
 		"KnownStatus":"RUNNING",
 		"LogDriver":"awslogs",
@@ -39,7 +39,8 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	fetchResp, err := fetchTaskMetaData(ts.URL)
+	md := ecsMetadataProviderImpl{}
+	fetchResp, err := md.fetchTaskMetaData(ts.URL)
 
 	assert.Nil(t, err)
 	assert.Equal(t, "myCluster", fetchResp.Cluster)
@@ -57,7 +58,8 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	fetchResp, err := fetchContainerMetaData(ts.URL)
+	md := ecsMetadataProviderImpl{}
+	fetchResp, err := md.fetchContainerMetaData(ts.URL)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, fetchResp)
