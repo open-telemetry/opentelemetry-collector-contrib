@@ -41,6 +41,8 @@ internal/awsxray/                        @open-telemetry/collector-contrib-appro
 internal/k8sconfig/                      @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 internal/splunk/                         @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 
+pkg/batchpertrace/                       @open-telemetry/collector-contrib-approvers @jpkrohling
+
 processor/groupbytraceprocessor/         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sprocessor/                  @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/metricstransformprocessor/     @open-telemetry/collector-contrib-approvers @james-bebbington
