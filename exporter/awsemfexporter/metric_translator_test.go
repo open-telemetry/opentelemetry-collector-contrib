@@ -33,6 +33,25 @@ import (
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
 
+// Asserts whether dimension sets are equal (i.e. has same sets of dimensions)
+func assertDimsEqual(t *testing.T, expected, actual [][]string) {
+	// Convert to string for easier sorting
+	expectedStringified := make([]string, len(expected))
+	actualStringified := make([]string, len(actual))
+	for i, v := range expected {
+		sort.Strings(v)
+		expectedStringified[i] = strings.Join(v, ",")
+	}
+	for i, v := range actual {
+		sort.Strings(v)
+		actualStringified[i] = strings.Join(v, ",")
+	}
+	// Sort across dimension sets for equality checking
+	sort.Strings(expectedStringified)
+	sort.Strings(actualStringified)
+	assert.Equal(t, expectedStringified, actualStringified)
+}
+
 func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 
 	md := createMetricTestData()
@@ -956,17 +975,6 @@ func TestCreateDimensions(t *testing.T) {
 		},
 	}
 
-	sliceSorter := func(slice [][]string) func(a, b int) bool {
-		stringified := make([]string, len(slice))
-		for i, v := range slice {
-			sort.Strings(v)
-			stringified[i] = strings.Join(v, ",")
-		}
-		return func(i, j int) bool {
-			return stringified[i] > stringified[j]
-		}
-	}
-
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
 			dp := pdata.NewIntDataPoint()
@@ -974,11 +982,7 @@ func TestCreateDimensions(t *testing.T) {
 			dp.LabelsMap().InitFromMap(tc.labels)
 			dimensions, fields := createDimensions(dp, OTelLib, ZeroAndSingleDimensionRollup)
 
-			// Sort slice for equality check
-			sort.Slice(tc.dims, sliceSorter(tc.dims))
-			sort.Slice(dimensions, sliceSorter(dimensions))
-
-			assert.Equal(t, tc.dims, dimensions)
+			assertDimsEqual(t, tc.dims, dimensions)
 
 			expectedFields := make(map[string]interface{})
 			for k, v := range tc.labels {
