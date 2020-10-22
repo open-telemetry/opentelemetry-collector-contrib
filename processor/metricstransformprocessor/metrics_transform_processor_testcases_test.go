@@ -571,10 +571,10 @@ var (
 			},
 		},
 		{
-			name: "all_metrics_batch_operation_test",
+			name: "empty_metric_name_batch_operation_test",
 			transforms: []internalTransform{
 				{
-					MetricName: "all_metrics",
+					MetricName: "",
 					Action:     Update,
 					Operations: []internalOperation{
 						{
@@ -606,7 +606,7 @@ var (
 			name: "convert_resource_attributes_to_labels_with_nil_resource",
 			transforms: []internalTransform{
 				{
-					MetricName: "all_metrics",
+					MetricName: "",
 					Action:     Update,
 					Operations: []internalOperation{
 						{
@@ -636,7 +636,7 @@ var (
 			name: "convert_resource_attributes_to_labels_empty_list_config",
 			transforms: []internalTransform{
 				{
-					MetricName: "all_metrics",
+					MetricName: "",
 					Action:     Update,
 					Operations: []internalOperation{
 						{
@@ -666,7 +666,7 @@ var (
 			name: "convert_resource_attributes_to_labels_with_config_value",
 			transforms: []internalTransform{
 				{
-					MetricName: "all_metrics",
+					MetricName: "",
 					Action:     Update,
 					Operations: []internalOperation{
 						{

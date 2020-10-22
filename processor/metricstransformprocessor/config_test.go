@@ -77,7 +77,7 @@ var (
 						Operations: testDataOperations,
 					},
 					{
-						MetricName: "all_metrics",
+						MetricName: "",
 						Action:     Update,
 						Operations: []Operation{
 							{

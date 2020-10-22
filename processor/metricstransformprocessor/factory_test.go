@@ -67,9 +67,8 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
 		}, {
-			configName:   "config_invalid_metricname.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", MetricNameFieldName),
+			configName: "config_missing_metricname.yaml",
+			succeed:    true,
 		}, {
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,

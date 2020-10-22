@@ -22,7 +22,7 @@ processors:
                   aggregated_values: [value1,  value2]
                   new_value: new_value
                   aggregation_type: sum
-            - metric_name: all_metrics
+            - metric_name: # empty metric_name means a batch operation to all metrics
               action: update
               operations:
                 - action: convert_resource_attributes_to_labels

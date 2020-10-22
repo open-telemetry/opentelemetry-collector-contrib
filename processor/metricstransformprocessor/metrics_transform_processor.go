@@ -73,11 +73,11 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 		for _, transform := range mtp.transforms {
 			transform.resourceAttributeMap = resourceAttributes
 
-			// When user sets "metric_name=all_metrics", these operations are going to be applied
+			// When user does not set the value for `metric_name` (empty string), these operations are going to be applied
 			// to all metric data points. Right now, this batch operation only works and is tested for
 			// `convert_resource_attributes_to_labels` operation, and does not break existing experience
 			// for other operations. After updating the metrics, it will continue for the next iteration.
-			if transform.MetricName == "all_metrics" {
+			if transform.MetricName == "" {
 				for _, metric := range data.Metrics {
 					mtp.update(metric, transform)
 				}
