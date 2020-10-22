@@ -17,6 +17,7 @@ package zookeeperreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -36,5 +37,6 @@ func TestReceiver(t *testing.T) {
 	require.NotNil(t, r)
 
 	require.Nil(t, r.Start(ctx, componenttest.NewNopHost()))
+	time.Sleep(100 * time.Millisecond)
 	require.Nil(t, r.Shutdown(ctx))
 }
