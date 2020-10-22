@@ -91,7 +91,7 @@ func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error)
 			spanBytes, err := span.Marshal()
 			if err != nil {
 				e.logger.Error("error marshaling span to bytes", zap.Error(err))
-				exportErr = err
+				return td.SpanCount(), consumererror.Permanent(err)
 			}
 
 			if err = e.producer.put(spanBytes, span.SpanID.String()); err != nil {
