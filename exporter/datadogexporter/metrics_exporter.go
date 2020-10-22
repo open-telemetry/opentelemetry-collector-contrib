@@ -23,7 +23,8 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 type metricsExporter struct {
@@ -33,25 +34,9 @@ type metricsExporter struct {
 	tags   []string
 }
 
-func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
-	logger.Info("Validating API key.")
-	res, err := client.Validate()
-	if err != nil {
-		logger.Warn("Error while validating API key.", zap.Error(err))
-	}
-
-	if res {
-		logger.Info("API key validation successful.")
-	} else {
-		logger.Warn("API key validation failed.")
-	}
-}
-
 func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
-	client := datadog.NewClient(cfg.API.Key, "")
-	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
-
-	validateAPIKey(logger, client)
+	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	utils.ValidateAPIKey(logger, client)
 
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
@@ -59,57 +44,24 @@ func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporte
 	return &metricsExporter{logger, cfg, client, tags}, nil
 }
 
-func (exp *metricsExporter) addNamespace(metrics []datadog.Metric) {
-	for i := range metrics {
-		newName := exp.cfg.Metrics.Namespace + *metrics[i].Metric
-		metrics[i].Metric = &newName
-	}
-}
-
-func (exp *metricsExporter) addHostname(metrics []datadog.Metric) {
-	overrideHostname := exp.cfg.Hostname != ""
-	addTags := len(exp.tags) > 0
-
-	for i := range metrics {
-		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
-		}
-
-		if addTags {
-			metrics[i].Tags = append(metrics[i].Tags, exp.tags...)
-		}
-
-	}
-}
-
-func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
+func (exp *metricsExporter) processMetrics(ms []datadog.Metric) {
 	addNamespace := exp.cfg.Metrics.Namespace != ""
 
 	if addNamespace {
-		exp.addNamespace(metrics)
+		metrics.AddNamespace(ms, exp.cfg.Metrics.Namespace)
 	}
+	metrics.AddHostname(ms, exp.logger, exp.cfg)
 
-	exp.addHostname(metrics)
-}
-
-// AddRunningMetric adds the otel.running metric to the exported metrics
-func (exp *metricsExporter) AddRunningMetric(metrics []datadog.Metric) []datadog.Metric {
-	timestamp := uint64(time.Now().UnixNano())
-	runningMetric := []datadog.Metric{
-		newGauge("otel.exporter.running", timestamp, float64(1.0), []string{"exporter:metrics"}),
-	}
-
-	exp.addHostname(runningMetric)
-
-	return append(metrics, runningMetric...)
+	metrics.AddTags(ms, exp.tags)
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	metrics, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
-	exp.processMetrics(metrics)
+	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
+	exp.processMetrics(ms)
 
-	metrics = exp.AddRunningMetric(metrics)
+	pushTime := uint64(time.Now().UTC().UnixNano())
+	ms = append(ms, metrics.RunningMetric("metrics", pushTime, exp.logger, exp.cfg)...)
 
-	err := exp.client.PostMetrics(metrics)
+	err := exp.client.PostMetrics(ms)
 	return droppedTimeSeries, err
 }
