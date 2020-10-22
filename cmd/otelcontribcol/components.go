@@ -37,6 +37,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
@@ -99,6 +100,9 @@ func components() (component.Factories, error) {
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 	}
+
+	receivers = append(receivers, extraReceivers()...)
+
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
@@ -133,6 +137,7 @@ func components() (component.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactory{
+		groupbytraceprocessor.NewFactory(),
 		k8sprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),

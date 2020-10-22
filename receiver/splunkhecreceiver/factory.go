@@ -92,7 +92,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TraceConsumer,
+	consumer consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 
 	return nil, configerror.ErrDataTypeIsNotSupported
@@ -106,7 +106,14 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 
-	return nil, configerror.ErrDataTypeIsNotSupported
+	rCfg := cfg.(*Config)
+
+	err := rCfg.validate()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewMetricsReceiver(params.Logger, *rCfg, consumer)
 }
 
 // createLogsReceiver creates a logs receiver based on provided config.
@@ -124,5 +131,5 @@ func createLogsReceiver(
 		return nil, err
 	}
 
-	return New(params.Logger, *rCfg, consumer)
+	return NewLogsReceiver(params.Logger, *rCfg, consumer)
 }

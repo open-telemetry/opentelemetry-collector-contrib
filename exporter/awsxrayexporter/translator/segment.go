@@ -222,7 +222,7 @@ func determineAwsOrigin(resource pdata.Resource) string {
 	}
 
 	if provider, ok := resource.Attributes().Get(semconventions.AttributeCloudProvider); ok {
-		if provider.StringVal() != "aws" {
+		if provider.StringVal() != semconventions.AttributeCloudProviderAWS {
 			return ""
 		}
 	}

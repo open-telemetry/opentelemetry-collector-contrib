@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
@@ -41,30 +41,30 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
+	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	mp, err := factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewMetricsNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), params, cfg, exportertest.NewNopLogsExporter())
+	lp, err := factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewLogsNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, exportertest.NewNopTraceExporter())
+	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, exportertest.NewNopMetricsExporter())
+	mp, err = factory.CreateMetricsProcessor(context.Background(), params, cfg, consumertest.NewMetricsNop())
 	assert.NotNil(t, mp)
 	assert.NoError(t, err)
 
-	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, exportertest.NewNopLogsExporter())
+	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewLogsNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 

@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -52,7 +52,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -68,7 +68,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: defaultConfig.ReceiverSettings,
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 						Transport: "unknown",
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown\" for receiver \"statsd\""),
 		},
@@ -128,7 +128,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.NetAddr.Endpoint = addr
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)

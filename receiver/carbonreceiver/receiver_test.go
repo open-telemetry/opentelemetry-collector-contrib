@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/testutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
@@ -55,7 +55,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 			name: "default_config",
 			args: args{
 				config:       *defaultConfig,
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -69,7 +69,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 					},
 					TCPIdleTimeout: defaultConfig.TCPIdleTimeout,
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -85,7 +85,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 				config: Config{
 					ReceiverSettings: configmodels.ReceiverSettings{},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 			wantErr: errEmptyEndpoint,
 		},
@@ -105,7 +105,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 			wantErr: errors.New("unsupported transport \"unknown_transp\" for receiver \"invalid_transport_rcv\""),
 		},
@@ -131,7 +131,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						},
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 		},
 		{
@@ -151,7 +151,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 						Config: &protocol.PlaintextConfig{},
 					},
 				},
-				nextConsumer: exportertest.NewNopMetricsExporter(),
+				nextConsumer: consumertest.NewMetricsNop(),
 			},
 			wantErr: errors.New("invalid idle timeout: -1s"),
 		},
@@ -211,7 +211,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.Endpoint = addr
-			sink := new(exportertest.SinkMetricsExporter)
+			sink := new(consumertest.MetricsSink)
 			rcv, err := New(zap.NewNop(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*carbonReceiver)

@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 const (
@@ -168,7 +170,7 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
-func MapMetrics(logger *zap.Logger, cfg MetricsConfig, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
+func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) (series []datadog.Metric, droppedTimeSeries int) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)

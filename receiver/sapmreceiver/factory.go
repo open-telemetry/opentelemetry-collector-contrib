@@ -89,7 +89,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	nextConsumer consumer.TraceConsumer,
+	nextConsumer consumer.TracesConsumer,
 ) (component.TraceReceiver, error) {
 	// assert config is SAPM config
 	rCfg := cfg.(*Config)

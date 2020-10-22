@@ -20,18 +20,37 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 type metricsExporter struct {
 	logger *zap.Logger
-	cfg    *Config
+	cfg    *config.Config
 	client *datadog.Client
 	tags   []string
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*metricsExporter, error) {
+func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
+	logger.Info("Validating API key.")
+	res, err := client.Validate()
+	if err != nil {
+		logger.Warn("Error while validating API key.", zap.Error(err))
+	}
+
+	if res {
+		logger.Info("API key validation successful.")
+	} else {
+		logger.Warn("API key validation failed.")
+	}
+}
+
+func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
+
+	validateAPIKey(logger, client)
 
 	// Calculate tags at startup
 	tags := cfg.TagsConfig.GetTags(false)
@@ -51,7 +70,7 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 		}
 
 		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = GetHost(exp.cfg)
+			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
 		}
 
 		if addTags {

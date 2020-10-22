@@ -27,8 +27,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
@@ -173,7 +173,7 @@ func TestResourceProcessor(t *testing.T) {
 			cfg := &Config{Override: tt.override, Detectors: tt.detectorKeys, Timeout: time.Second}
 
 			// Test trace consuner
-			ttn := &exportertest.SinkTraceExporter{}
+			ttn := new(consumertest.TracesSink)
 			rtp, err := factory.createTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, ttn)
 
 			if tt.expectedNewError != "" {
@@ -207,7 +207,7 @@ func TestResourceProcessor(t *testing.T) {
 			assert.Equal(t, tt.expectedResource, got)
 
 			// Test metrics consumer
-			tmn := &exportertest.SinkMetricsExporter{}
+			tmn := new(consumertest.MetricsSink)
 			rmp, err := factory.createMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tmn)
 
 			if tt.expectedNewError != "" {
@@ -240,7 +240,7 @@ func TestResourceProcessor(t *testing.T) {
 			assert.Equal(t, tt.expectedResource, got)
 
 			// Test logs consumer
-			tln := &exportertest.SinkLogsExporter{}
+			tln := new(consumertest.LogsSink)
 			rlp, err := factory.createLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, tln)
 
 			if tt.expectedNewError != "" {
@@ -291,7 +291,7 @@ func oCensusResource(res pdata.Resource) *resourcepb.Resource {
 
 func benchmarkConsumeTraces(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkTraceExporter{}
+	sink := new(consumertest.TracesSink)
 	processor, _ := factory.CreateTraceProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
@@ -313,7 +313,7 @@ func BenchmarkConsumeTracesAll(b *testing.B) {
 
 func benchmarkConsumeMetrics(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkMetricsExporter{}
+	sink := new(consumertest.MetricsSink)
 	processor, _ := factory.CreateMetricsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()
@@ -335,7 +335,7 @@ func BenchmarkConsumeMetricsAll(b *testing.B) {
 
 func benchmarkConsumeLogs(b *testing.B, cfg *Config) {
 	factory := NewFactory()
-	sink := &exportertest.SinkLogsExporter{}
+	sink := new(consumertest.LogsSink)
 	processor, _ := factory.CreateLogsProcessor(context.Background(), component.ProcessorCreateParams{Logger: zap.NewNop()}, cfg, sink)
 
 	b.ResetTimer()

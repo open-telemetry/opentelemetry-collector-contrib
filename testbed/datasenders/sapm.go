@@ -29,7 +29,7 @@ import (
 // SapmDataSender implements TraceDataSender for SAPM protocol.
 type SapmDataSender struct {
 	testbed.DataSenderBase
-	consumer.TraceConsumer
+	consumer.TracesConsumer
 }
 
 // Ensure SapmDataSender implements TraceDataSenderOld.
@@ -63,7 +63,7 @@ func (je *SapmDataSender) Start() error {
 		return err
 	}
 
-	je.TraceConsumer = exporter
+	je.TracesConsumer = exporter
 	return err
 }
 

@@ -26,6 +26,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanID []byte, shouldErr bool, resourceEnvAndService bool) pdata.ResourceSpans {
@@ -124,18 +126,18 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 
-	outputTraces, err := ConvertToDatadogTd(traces, &Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
 }
 
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 
-	outputTraces, err := ConvertToDatadogTd(traces, &Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
 }
 
@@ -170,9 +172,9 @@ func TestObfuscation(t *testing.T) {
 	ilss.Spans().Resize(1)
 	span.CopyTo(ilss.Spans().At(0))
 
-	outputTraces, err := ConvertToDatadogTd(traces, &Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
 
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	aggregatedTraces := AggregateTracePayloadsByEnv(outputTraces)
 
@@ -209,7 +211,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 
 	mockGlobalTags := []string{"global_key:global_value"}
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{}, mockGlobalTags)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, mockGlobalTags)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -242,7 +244,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
-	assert.Equal(t, "server", datadogPayload.Traces[0].Spans[0].Type)
+	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
 	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
@@ -275,7 +277,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &Config{}, []string{})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, []string{})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -312,8 +314,8 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// toggle on errors and custom service naming to test edge case code paths
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
-	cfg := Config{
-		TagsConfig: TagsConfig{
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
 			Version: "v1",
 			Service: "alt-service",
 		},
@@ -353,8 +355,8 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
 
-	cfg := Config{
-		TagsConfig: TagsConfig{
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
 			Version: "v1",
 			Service: "alt-service",
 		},
@@ -439,8 +441,8 @@ func TestSpanTypeTranslation(t *testing.T) {
 	spanTypeServer := spanKindToDatadogType(pdata.SpanKindSERVER)
 	spanTypeCustom := spanKindToDatadogType(pdata.SpanKindUNSPECIFIED)
 
-	assert.Equal(t, "client", spanTypeClient)
-	assert.Equal(t, "server", spanTypeServer)
+	assert.Equal(t, "http", spanTypeClient)
+	assert.Equal(t, "web", spanTypeServer)
 	assert.Equal(t, "custom", spanTypeCustom)
 
 }

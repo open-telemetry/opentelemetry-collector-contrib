@@ -11,23 +11,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package datadogexporter
 
 import (
 	"context"
+	"errors"
+	"runtime"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
-
-	// DefaultSite is the default site of the Datadog intake to send data to
-	DefaultSite = "datadoghq.com"
 )
 
 // NewFactory creates a Datadog exporter factory
@@ -36,36 +38,37 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithTraces(createTraceExporter),
 	)
 }
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() configmodels.Exporter {
-	return &Config{
+	return &config.Config{
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
 		},
 
-		TagsConfig: TagsConfig{
+		TagsConfig: config.TagsConfig{
 			Hostname: "${DD_HOST}",
 			Env:      "${DD_ENV}",
 			Service:  "${DD_SERVICE}",
 			Version:  "${DD_VERSION}",
 		},
 
-		API: APIConfig{
+		API: config.APIConfig{
 			Key:  "", // must be set if using API
-			Site: DefaultSite,
+			Site: config.DefaultSite,
 		},
 
-		Metrics: MetricsConfig{
+		Metrics: config.MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
 			},
 		},
 
-		Traces: TracesConfig{
+		Traces: config.TracesConfig{
 			SampleRate: 1,
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "", // set during config sanitization
@@ -81,7 +84,7 @@ func createMetricsExporter(
 	c configmodels.Exporter,
 ) (component.MetricsExporter, error) {
 
-	cfg := c.(*Config)
+	cfg := c.(*config.Config)
 
 	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
 	if err := cfg.Sanitize(); err != nil {
@@ -98,5 +101,34 @@ func createMetricsExporter(
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+	)
+}
+
+// createTraceExporter creates a trace exporter based on this config.
+func createTraceExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	c configmodels.Exporter,
+) (component.TraceExporter, error) {
+	// TODO review if trace export can be supported on Windows
+	if runtime.GOOS == "windows" {
+		return nil, errors.New("datadog trace export is currently not supported on Windows")
+	}
+
+	cfg := c.(*config.Config)
+
+	params.Logger.Info("sanitizing Datadog metrics exporter configuration")
+	if err := cfg.Sanitize(); err != nil {
+		return nil, err
+	}
+
+	exp, err := newTraceExporter(params.Logger, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewTraceExporter(
+		cfg,
+		exp.pushTraceData,
 	)
 }
