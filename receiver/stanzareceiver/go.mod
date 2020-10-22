@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stanza
 go 1.14
 
 require (
-	github.com/observiq/nanojack v0.0.0-20200910202758-a0af1c611319
+	github.com/observiq/nanojack v0.0.0-20201022202228-3d04d52263ae
 	github.com/observiq/stanza v0.12.0
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.12.1-0.20201012183541-526f34200197

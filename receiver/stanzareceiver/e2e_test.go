@@ -109,8 +109,26 @@ func TestReadStaticFile(t *testing.T) {
 
 func TestReadRotatingFiles(t *testing.T) {
 	tests := []rotationTest{
-		{"CopyTruncate", true},
-		{"NoCopyTruncate", false},
+		{
+			name:         "CopyTruncateTimestamped",
+			copyTruncate: true,
+			sequential:   false,
+		},
+		{
+			name:         "MoveCreateTimestamped",
+			copyTruncate: false,
+			sequential:   false,
+		},
+		{
+			name:         "CopyTruncateSequential",
+			copyTruncate: true,
+			sequential:   true,
+		},
+		{
+			name:         "MoveCreateSequential",
+			copyTruncate: false,
+			sequential:   true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -121,6 +139,7 @@ func TestReadRotatingFiles(t *testing.T) {
 type rotationTest struct {
 	name         string
 	copyTruncate bool
+	sequential   bool
 }
 
 func (rt *rotationTest) Run(t *testing.T) {
@@ -135,7 +154,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion after 200 logs are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate)
+	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
 	numLogs := 300
 
 	// Build input lines and expected outputs
@@ -179,13 +198,14 @@ func (rt *rotationTest) Run(t *testing.T) {
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
-func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, copyTruncate bool) *log.Logger {
+func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
 	path := filepath.Join(tempDir, "test.log")
 	rotator := &nanojack.Logger{
 		Filename:     path,
 		MaxLines:     maxLines,
 		MaxBackups:   maxBackups,
 		CopyTruncate: copyTruncate,
+		Sequential:   sequential,
 	}
 
 	t.Cleanup(func() { _ = rotator.Close() })
