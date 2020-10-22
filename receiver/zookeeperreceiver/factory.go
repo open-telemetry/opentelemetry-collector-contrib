@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -28,7 +29,7 @@ const (
 	typeStr = "zookeeper"
 
 	defaultCollectionInterval = 10 * time.Second
-	defaultConnectionTimeout  = 10 * time.Second
+	defaultTimeout            = 10 * time.Second
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -41,13 +42,17 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
+		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+			CollectionInterval: defaultCollectionInterval,
 		},
-		Endpoint:           ":2181",
-		Timeout:            defaultConnectionTimeout,
-		CollectionInterval: defaultCollectionInterval,
+		TCPAddr: confignet.TCPAddr{
+			Endpoint: ":2181",
+		},
+		Timeout: defaultTimeout,
 	}
 }
 
@@ -58,5 +63,7 @@ func createMetricsReceiver(
 	_ configmodels.Receiver,
 	_ consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	return &zookeeperMetricsReceiver{}, nil
+	zr := &zookeeperMetricsReceiver{}
+	zr.scraper = receiverhelper.NewMetricsScraper(zr.scrape)
+	return zr, nil
 }

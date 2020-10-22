@@ -7,7 +7,7 @@ The Zookeeper receiver collects metrics from a Zookeeper instance, using the `mn
 ## Configuration
 
 - `endpoint`: (default = `:2181`) Endpoint to connect to collect metrics. Takes the form `host:port`.
-- `timeout`: (default = `10s`) Timeout within which the connection should be established.
+- `timeout`: (default = `10s`) Timeout within which requests should be completed.
 
 Example configuration.
 

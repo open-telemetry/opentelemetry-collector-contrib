@@ -18,19 +18,26 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 type zookeeperMetricsReceiver struct {
+	scraper receiverhelper.MetricsScraper
 }
 
-var _ component.Receiver = (*zookeeperMetricsReceiver)(nil)
+var _ component.MetricsReceiver = (*zookeeperMetricsReceiver)(nil)
 
-func (z zookeeperMetricsReceiver) Start(_ context.Context, _ component.Host) error {
-	//TODO: Implement Start
+func (z *zookeeperMetricsReceiver) Start(ctx context.Context, _ component.Host) error {
+	z.scraper.Initialize(ctx)
 	return nil
 }
 
-func (z zookeeperMetricsReceiver) Shutdown(_ context.Context) error {
-	//TODO: Implement Shutdown
+func (z *zookeeperMetricsReceiver) Shutdown(ctx context.Context) error {
+	z.scraper.Close(ctx)
 	return nil
+}
+
+func (z *zookeeperMetricsReceiver) scrape(_ context.Context) (pdata.MetricSlice, error) {
+	return pdata.MetricSlice{}, nil
 }
