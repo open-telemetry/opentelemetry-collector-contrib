@@ -959,6 +959,7 @@ func TestCreateDimensions(t *testing.T) {
 	sliceSorter := func(slice [][]string) func(a, b int) bool {
 		stringified := make([]string, len(slice))
 		for i, v := range slice {
+			sort.Strings(v)
 			stringified[i] = strings.Join(v, ",")
 		}
 		return func(i, j int) bool {
@@ -967,24 +968,26 @@ func TestCreateDimensions(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		dp := pdata.NewIntDataPoint()
-		dp.InitEmpty()
-		dp.LabelsMap().InitFromMap(tc.labels)
-		dimensions, fields := createDimensions(dp, OTelLib, ZeroAndSingleDimensionRollup)
+		t.Run(tc.testName, func(t *testing.T) {
+			dp := pdata.NewIntDataPoint()
+			dp.InitEmpty()
+			dp.LabelsMap().InitFromMap(tc.labels)
+			dimensions, fields := createDimensions(dp, OTelLib, ZeroAndSingleDimensionRollup)
 
-		// Sort slice for equality check
-		sort.Slice(tc.dims, sliceSorter(tc.dims))
-		sort.Slice(dimensions, sliceSorter(dimensions))
+			// Sort slice for equality check
+			sort.Slice(tc.dims, sliceSorter(tc.dims))
+			sort.Slice(dimensions, sliceSorter(dimensions))
 
-		assert.Equal(t, tc.dims, dimensions)
+			assert.Equal(t, tc.dims, dimensions)
 
-		expectedFields := make(map[string]interface{})
-		for k, v := range tc.labels {
-			expectedFields[k] = v
-		}
-		expectedFields[OTellibDimensionKey] = OTelLib
+			expectedFields := make(map[string]interface{})
+			for k, v := range tc.labels {
+				expectedFields[k] = v
+			}
+			expectedFields[OTellibDimensionKey] = OTelLib
 
-		assert.Equal(t, expectedFields, fields)
+			assert.Equal(t, expectedFields, fields)
+		})
 	}
 
 }
