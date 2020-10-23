@@ -46,7 +46,6 @@ class TestJaegerSpanExporter(unittest.TestCase):
         thrift_port = None
         agent_port = 6831
         collector_endpoint = "/api/traces?format=jaeger.thrift"
-        collector_protocol = "http"
         exporter = jaeger_exporter.JaegerSpanExporter(service_name)
 
         self.assertEqual(exporter.service_name, service_name)
@@ -54,7 +53,6 @@ class TestJaegerSpanExporter(unittest.TestCase):
         self.assertEqual(exporter.agent_host_name, host_name)
         self.assertEqual(exporter.agent_port, agent_port)
         self.assertEqual(exporter.collector_port, thrift_port)
-        self.assertEqual(exporter.collector_protocol, collector_protocol)
         self.assertEqual(exporter.collector_endpoint, collector_endpoint)
         self.assertEqual(exporter.username, None)
         self.assertEqual(exporter.password, None)
@@ -67,7 +65,6 @@ class TestJaegerSpanExporter(unittest.TestCase):
         collector_host_name = "opentelemetry.io"
         collector_port = 15875
         collector_endpoint = "/myapi/traces?format=jaeger.thrift"
-        collector_protocol = "https"
 
         agent_port = 14268
         agent_host_name = "opentelemetry.io"
@@ -81,7 +78,6 @@ class TestJaegerSpanExporter(unittest.TestCase):
             collector_host_name=collector_host_name,
             collector_port=collector_port,
             collector_endpoint=collector_endpoint,
-            collector_protocol="https",
             agent_host_name=agent_host_name,
             agent_port=agent_port,
             username=username,
@@ -92,7 +88,6 @@ class TestJaegerSpanExporter(unittest.TestCase):
         self.assertEqual(exporter.agent_port, agent_port)
         self.assertEqual(exporter.collector_host_name, collector_host_name)
         self.assertEqual(exporter.collector_port, collector_port)
-        self.assertEqual(exporter.collector_protocol, collector_protocol)
         self.assertTrue(exporter.collector is not None)
         self.assertEqual(exporter.collector.auth, auth)
         # property should not construct new object
