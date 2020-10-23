@@ -24,6 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
@@ -100,6 +101,9 @@ func components() (component.Factories, error) {
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
 	}
+
+	receivers = append(receivers, extraReceivers()...)
+
 	for _, rcv := range factories.Receivers {
 		receivers = append(receivers, rcv)
 	}
@@ -114,6 +118,7 @@ func components() (component.Factories, error) {
 		awsxrayexporter.NewFactory(),
 		azuremonitorexporter.NewFactory(),
 		carbonexporter.NewFactory(),
+		datadogexporter.NewFactory(),
 		elasticexporter.NewFactory(),
 		honeycombexporter.NewFactory(),
 		jaegerthrifthttpexporter.NewFactory(),

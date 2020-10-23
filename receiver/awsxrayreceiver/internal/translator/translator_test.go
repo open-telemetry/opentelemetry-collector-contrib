@@ -148,7 +148,7 @@ func TestTranslation(t *testing.T) {
 					name:         *seg.Name,
 					startTimeSec: *seg.StartTime,
 					endTimeSec:   seg.EndTime,
-					spanKind:     pdata.SpanKindINTERNAL,
+					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
 						code: pdata.StatusCodeInvalidArgument,
 					},
@@ -654,7 +654,7 @@ func TestTranslation(t *testing.T) {
 					name:         *seg.Name,
 					startTimeSec: *seg.StartTime,
 					endTimeSec:   seg.EndTime,
-					spanKind:     pdata.SpanKindINTERNAL,
+					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
 						message: *seg.Cause.ExceptionID,
 						code:    pdata.StatusCodeUnknownError,
