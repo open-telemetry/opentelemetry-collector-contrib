@@ -46,22 +46,24 @@ func TestRunningMetric(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &config.Config{}
 
-	ms := RunningMetric("metrics", 0, logger, cfg)
+	ms := RunningMetric("metrics", uint64(2e9), logger, cfg)
 
 	assert.Equal(t, "otel.exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
 	assert.Equal(t, 1, len(ms))
 	// Assert timestamp
-	assert.Equal(t, 0.0, *ms[0].Points[0][0])
+	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
 }
 
 func TestAddHostname(t *testing.T) {
-	// With hostname in config
+	logger := zap.NewNop()
+
+	// Reset hostname cache
 	cache.Cache.Flush()
 
-	logger := zap.NewNop()
+	// With hostname in config
 	cfg := &config.Config{
 		TagsConfig: config.TagsConfig{
 			Hostname: "thishost",
@@ -83,9 +85,10 @@ func TestAddHostname(t *testing.T) {
 	assert.Equal(t, "thishost", *ms[0].Host)
 	assert.Equal(t, "thishost", *ms[1].Host)
 
-	// Without hostname in config
+	// Reset hostname cache
 	cache.Cache.Flush()
 
+	// Without hostname in config
 	cfg = &config.Config{}
 
 	ms = []datadog.Metric{
