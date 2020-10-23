@@ -50,11 +50,13 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
 	attr.InsertString("cloud.infrastructure_service", "ECS")
-	attr.InsertString("aws.ecs.cluster", tmdeResp.Cluster)
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
+
+	// TMDE returns the the short name or ARN, so we need to parse out the short name from ARN if applicable
+	cluster := parseCluster(tmdeResp.Cluster)
+	attr.InsertString("aws.ecs.cluster", cluster)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
@@ -65,7 +67,12 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		attr.InsertString(conventions.AttributeCloudRegion, region)
 	}
 
-	// The launch type and log data attributes are only available in v4 of TMDE
+	// The Availability Zone is not available in all Fargate runtimes
+	if tmdeResp.AvailabilityZone != "" {
+		attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
+	}
+
+	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
 		attr.InsertString("aws.ecs.launchtype", "EC2")
@@ -100,6 +107,15 @@ func getTmdeFromEnv() string {
 	}
 
 	return tmde
+}
+
+func parseCluster(cluster string) string {
+	parts := strings.Split(cluster, "/")
+	if len(parts) > 1 {
+		return parts[1]
+	}
+
+	return cluster
 }
 
 // Parses the AWS Account ID and AWS Region from a task ARN
