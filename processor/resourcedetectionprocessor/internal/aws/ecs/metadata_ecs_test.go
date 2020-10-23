@@ -19,7 +19,7 @@ const (
 	}`
 
 	containerMeta = `{
-		"DockerId":"abcdef12345",
+		"DockerID":"abcdef12345",
 		"Type":"NORMAL",
 		"KnownStatus":"RUNNING",
 		"LogDriver":"awslogs",
@@ -63,7 +63,7 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, fetchResp)
-	assert.Equal(t, "abcdef12345", fetchResp.DockerId)
+	assert.Equal(t, "abcdef12345", fetchResp.DockerID)
 	assert.Equal(t, "arn:aws:ecs:ap-southeast-1:123456789123:container/123", fetchResp.ContainerARN)
 	assert.Equal(t, "RUNNING", fetchResp.KnownStatus)
 	assert.Equal(t, "awslogs", fetchResp.LogDriver)

@@ -2,12 +2,13 @@ package ecs
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"os"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 type mockMetaDataProvider struct {
@@ -18,7 +19,7 @@ var _ ecsMetadataProvider = (*mockMetaDataProvider)(nil)
 
 func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
 	c := createTestContainer(md.isV4)
-	c.DockerId = "05281997" // Simulate one "application" and one "collector" container
+	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
 	cs := []Container{createTestContainer(md.isV4), c}
 	tmd := &TaskMetaData{
 		Cluster:          "cluster",
@@ -152,7 +153,7 @@ func Test_ecsDetectV3(t *testing.T) {
 
 func createTestContainer(isV4 bool) Container {
 	c := Container{
-		DockerId:    "123",
+		DockerID:    "123",
 		Type:        "NORMAL",
 		KnownStatus: "RUNNING",
 	}

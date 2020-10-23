@@ -8,7 +8,7 @@ import (
 
 type TaskMetaData struct {
 	Cluster          string
-	LaunchType       string // TODO: Change to enum when defined in otel collector conventions
+	LaunchType       string // TODO: Change to enum when defined in otel collector convent
 	TaskARN          string
 	Family           string
 	AvailabilityZone string
@@ -16,7 +16,7 @@ type TaskMetaData struct {
 }
 
 type Container struct {
-	DockerId     string
+	DockerID     string `json:"DockerId"`
 	ContainerARN string
 	Type         string
 	KnownStatus  string

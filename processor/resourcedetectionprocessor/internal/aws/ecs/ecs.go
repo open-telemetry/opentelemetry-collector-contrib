@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/collector/translator/conventions"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 )
 
 const (
@@ -145,7 +146,7 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 		if container.Type == "NORMAL" &&
 			container.KnownStatus == "RUNNING" &&
 			container.LogDriver == "awslogs" &&
-			self.DockerId != container.DockerId &&
+			self.DockerID != container.DockerID &&
 			logData != (LogData{}) {
 
 			logGroupNames.Append(pdata.NewAttributeValueString(logData.LogGroup))
