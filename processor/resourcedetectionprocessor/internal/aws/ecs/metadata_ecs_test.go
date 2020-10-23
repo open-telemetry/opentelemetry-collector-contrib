@@ -19,7 +19,7 @@ const (
 	}`
 
 	containerMeta = `{
-		"DockerID":"abcdef12345",
+		"DockerId":"abcdef12345",
 		"Type":"NORMAL",
 		"KnownStatus":"RUNNING",
 		"LogDriver":"awslogs",
