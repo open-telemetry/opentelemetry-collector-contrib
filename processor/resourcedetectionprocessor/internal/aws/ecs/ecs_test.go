@@ -1,6 +1,7 @@
 package ecs
 
 import (
+	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"os"
@@ -49,7 +50,7 @@ func Test_ecsNewDetector(t *testing.T) {
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
 	os.Clearenv()
 	d, _ := NewDetector()
-	res, err := d.Detect(nil)
+	res, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, 0, res.Attributes().Len())
@@ -118,7 +119,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	}
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
-	got, err := d.Detect(nil)
+	got, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)
@@ -142,7 +143,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.InsertString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
-	got, err := d.Detect(nil)
+	got, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
 	assert.NotNil(t, got)

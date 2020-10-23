@@ -336,6 +336,7 @@ jobs:
       shell: powershell.exe
     environment:
       GOPATH=~/go
+      SYSTEMROOT="C:/"
     steps:
       - checkout
       - restore_module_cache
