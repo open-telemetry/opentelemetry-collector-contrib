@@ -223,15 +223,7 @@ class TestZipkinSpanExporter(unittest.TestCase):
                 "annotations": [
                     {
                         "timestamp": event_timestamp // 10 ** 3,
-                        "value": json.dumps(
-                            {
-                                "event0": {
-                                    "annotation_bool": True,
-                                    "annotation_string": "annotation_test",
-                                    "key_float": 0.3,
-                                }
-                            }
-                        ),
+                        "value": "event0",
                     }
                 ],
                 "debug": True,

@@ -237,25 +237,20 @@ class ZipkinSpanExporter(SpanExporter):
             tags.update(self._extract_tags_from_dict(span.resource.attributes))
         return tags
 
-    def _extract_annotations_from_events(self, events):
-        if not events:
-            return None
-
-        annotations = []
-        for event in events:
-            attrs = {}
-            for key, value in event.attributes.items():
-                if isinstance(value, str):
-                    value = value[: self.max_tag_value_length]
-                attrs[key] = value
-
-            annotations.append(
+    def _extract_annotations_from_events(
+        self, events
+    ):  # pylint: disable=R0201
+        return (
+            [
                 {
-                    "timestamp": _nsec_to_usec_round(event.timestamp),
-                    "value": json.dumps({event.name: attrs}),
+                    "timestamp": _nsec_to_usec_round(e.timestamp),
+                    "value": e.name,
                 }
-            )
-        return annotations
+                for e in events
+            ]
+            if events
+            else None
+        )
 
 
 def _nsec_to_usec_round(nsec):
