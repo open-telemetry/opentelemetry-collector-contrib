@@ -2,8 +2,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 
 go 1.14
 
-replace gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 => github.com/zorkian/go-datadog-api v2.29.1-0.20201007103024-437d51d487bf+incompatible
-
 require (
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/gogo/protobuf v1.3.1
@@ -14,5 +12,5 @@ require (
 	go.opentelemetry.io/collector v0.13.1-0.20201020175630-99cb5b244aad
 	go.uber.org/zap v1.16.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0
-	gopkg.in/zorkian/go-datadog-api.v2 v2.29.0
+	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 )

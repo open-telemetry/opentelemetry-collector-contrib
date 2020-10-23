@@ -91,8 +91,16 @@ github.com/CloudyKit/jet v2.1.3-0.20180809161101-62edd43e4f88+incompatible/go.mo
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/datadog-agent v0.0.0-20200417180928-f454c60bc16f h1:xxXb5hVZlZaqorgnkoLKiaUj4Qr09iV/mLhmnDVxmQ8=
 github.com/DataDog/datadog-agent v0.0.0-20200417180928-f454c60bc16f/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
+github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
+github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
+github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db h1:anQGy1tCkgx8uhOWks3KDhW5/S2mZ3pqFVoIT1XWaCk=
+github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009092105-58e18918b2db/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
+github.com/DataDog/datadog-agent/pkg/util/winutil v0.0.0-20201009092105-58e18918b2db/go.mod h1:EtS4X73GXAyrpVddkLQ4SewSQX+zv284e8iIkVBXgtk=
 github.com/DataDog/datadog-go v3.2.0+incompatible h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/DataDog/datadog-go v3.5.0+incompatible h1:AShr9cqkF+taHjyQgcBcQUt/ZNK+iPq4ROaZwSX5c/U=
+github.com/DataDog/datadog-go v3.5.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/sketches-go v0.0.1/go.mod h1:Q5DbzQ+3AkgGwymQO7aZFNP7ns2lZKGtvRBzRXfdi60=
 github.com/DataDog/viper v1.8.0 h1:+0s6jzOzQEpMCW+c4bkirz+4vNoWm4jmiQNmKfO2p38=
 github.com/DataDog/viper v1.8.0/go.mod h1:Gx7+/WONkbQIh3ac52KqcFTzipQ1OYHhCQGWAgHlzpc=
@@ -269,6 +277,8 @@ github.com/dgraph-io/badger v1.6.0/go.mod h1:zwt7syl517jmP8s94KqSxTlM6IMsdhYy6ps
 github.com/dgraph-io/ristretto v0.0.1/go.mod h1:T40EBc7CJke8TkpiYfGGKAeFjSaxuFXhuXRyumBd6RE=
 github.com/dgraph-io/ristretto v0.0.2 h1:a5WaUrDa0qm0YrAAS1tUykT5El3kt62KNZZeMxQn3po=
 github.com/dgraph-io/ristretto v0.0.2/go.mod h1:KPxhHT9ZxKefz+PCeOGsrHpl1qZ7i70dGTu2u+Ahh6E=
+github.com/dgraph-io/ristretto v0.0.3 h1:jh22xisGBjrEVnRZ1DVTpBVQm0Xndu8sMl0CWDzSIBI=
+github.com/dgraph-io/ristretto v0.0.3/go.mod h1:KPxhHT9ZxKefz+PCeOGsrHpl1qZ7i70dGTu2u+Ahh6E=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-bitstream v0.0.0-20180413035011-3522498ce2c8/go.mod h1:VMaSuZ+SZcx/wljOQKvp5srsbCiKDEb6K2wC4+PiBmQ=
@@ -1916,6 +1926,8 @@ gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 h1:tQIYjPdBoyREyB9XMu+nnTclp
 gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 h1:S4AsWFkQ6JDG7WZfYk6C3EggsO/4IvGUsCfz7I3zjPk=
 gopkg.in/zorkian/go-datadog-api.v2 v2.29.0/go.mod h1:kx0CSMRpzEZfx/nFH62GLU4stZjparh/BRpM89t4XCQ=
+gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 h1:umQdVO0Ytx+kYadhuJNjFtDgIsIEBnKrOTvNuu8ClKI=
+gopkg.in/zorkian/go-datadog-api.v2 v2.30.0/go.mod h1:kx0CSMRpzEZfx/nFH62GLU4stZjparh/BRpM89t4XCQ=
 gotest.tools v2.2.0+incompatible h1:VsBPFP1AI068pPrMxtb/S8Zkgf9xEmTLJjfM+P5UIEo=
 gotest.tools v2.2.0+incompatible/go.mod h1:DsYFclhRJ6vuDpmuTbkuFWG+y2sxOXAzmJt81HFBacw=
 honnef.co/go/tools v0.0.0-20180728063816-88497007e858/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
