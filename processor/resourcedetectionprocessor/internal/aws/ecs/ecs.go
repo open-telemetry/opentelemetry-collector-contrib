@@ -1,6 +1,7 @@
 package ecs
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -110,9 +111,9 @@ func getTmdeFromEnv() string {
 }
 
 func parseCluster(cluster string) string {
-	parts := strings.Split(cluster, "/")
-	if len(parts) > 1 {
-		return parts[1]
+	i := bytes.IndexByte([]byte(cluster), byte('/'))
+	if i != -1 {
+		return cluster[i+1:]
 	}
 
 	return cluster
@@ -134,10 +135,10 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
 func getValidLogData(containers []Container, self *Container, account string) [4]pdata.AnyValueArray {
-	lgn := pdata.NewAnyValueArray()
-	lga := pdata.NewAnyValueArray()
-	lsn := pdata.NewAnyValueArray()
-	lsa := pdata.NewAnyValueArray()
+	logGroupNames := pdata.NewAnyValueArray()
+	logGroupArns := pdata.NewAnyValueArray()
+	logStreamNames := pdata.NewAnyValueArray()
+	logStreamArns := pdata.NewAnyValueArray()
 
 	for _, container := range containers {
 		logData := container.LogOptions
@@ -147,14 +148,14 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			self.DockerId != container.DockerId &&
 			logData != (LogData{}) {
 
-			lgn.Append(pdata.NewAttributeValueString(logData.LogGroup))
-			lga.Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
-			lsn.Append(pdata.NewAttributeValueString(logData.Stream))
-			lsa.Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
+			logGroupNames.Append(pdata.NewAttributeValueString(logData.LogGroup))
+			logGroupArns.Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
+			logStreamNames.Append(pdata.NewAttributeValueString(logData.Stream))
+			logStreamArns.Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
 		}
 	}
 
-	return [4]pdata.AnyValueArray{lgn, lga, lsn, lsa}
+	return [4]pdata.AnyValueArray{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
 }
 
 func constructLogGroupArn(region, account, group string) string {
