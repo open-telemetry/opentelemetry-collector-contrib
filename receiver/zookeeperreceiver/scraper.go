@@ -17,27 +17,25 @@ package zookeeperreceiver
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 )
 
-type zookeeperMetricsReceiver struct {
-	scraper receiverhelper.MetricsScraper
+type zookeeperMetricsScraper struct {
 }
 
-var _ component.MetricsReceiver = (*zookeeperMetricsReceiver)(nil)
+func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
+	return &zookeeperMetricsScraper{}, nil
+}
 
-func (z *zookeeperMetricsReceiver) Start(ctx context.Context, _ component.Host) error {
-	z.scraper.Initialize(ctx)
+func (z *zookeeperMetricsScraper) Initialize(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsReceiver) Shutdown(ctx context.Context) error {
-	z.scraper.Close(ctx)
+func (z *zookeeperMetricsScraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsReceiver) scrape(_ context.Context) (pdata.MetricSlice, error) {
-	return pdata.MetricSlice{}, nil
+func (z *zookeeperMetricsScraper) Scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+	return pdata.ResourceMetricsSlice{}, nil
 }
