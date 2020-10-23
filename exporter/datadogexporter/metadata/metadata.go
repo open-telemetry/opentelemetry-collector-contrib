@@ -82,7 +82,7 @@ type Meta struct {
 
 func getHostMetadata(logger *zap.Logger, cfg *config.Config) *HostMetadata {
 	hostname := *GetHost(logger, cfg)
-	tags := cfg.Tags
+	tags := cfg.GetHostTags()
 
 	ec2HostInfo := ec2.GetHostInfo(logger)
 	systemHostInfo := system.GetHostInfo(logger)
