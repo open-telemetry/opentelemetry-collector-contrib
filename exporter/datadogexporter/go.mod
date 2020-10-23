@@ -5,7 +5,7 @@ go 1.14
 replace gopkg.in/zorkian/go-datadog-api.v2 v2.29.0 => github.com/zorkian/go-datadog-api v2.29.1-0.20201007103024-437d51d487bf+incompatible
 
 require (
-  github.com/aws/aws-sdk-go v1.34.9
+	github.com/aws/aws-sdk-go v1.34.9
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02
 	github.com/gogo/protobuf v1.3.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
