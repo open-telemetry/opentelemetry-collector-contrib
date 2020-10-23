@@ -74,7 +74,6 @@ from opentelemetry.trace import Span, SpanContext, SpanKind
 
 DEFAULT_RETRY = False
 DEFAULT_URL = "http://localhost:9411/api/v2/spans"
-DEFAULT_MAX_TAG_VALUE_LENGTH = 128
 ZIPKIN_HEADERS = {"Content-Type": "application/json"}
 
 SPAN_KIND_MAP = {
@@ -109,7 +108,6 @@ class ZipkinSpanExporter(SpanExporter):
         ipv4: Optional[str] = None,
         ipv6: Optional[str] = None,
         retry: Optional[str] = DEFAULT_RETRY,
-        max_tag_value_length: Optional[int] = DEFAULT_MAX_TAG_VALUE_LENGTH,
     ):
         self.service_name = service_name
         if url is None:
@@ -124,7 +122,6 @@ class ZipkinSpanExporter(SpanExporter):
         self.ipv4 = ipv4
         self.ipv6 = ipv6
         self.retry = retry
-        self.max_tag_value_length = max_tag_value_length
 
     def export(self, spans: Sequence[Span]) -> SpanExportResult:
         zipkin_spans = self._translate_to_zipkin(spans)
@@ -143,9 +140,6 @@ class ZipkinSpanExporter(SpanExporter):
                 return SpanExportResult.FAILURE
             return SpanExportResult.FAILURE
         return SpanExportResult.SUCCESS
-
-    def shutdown(self) -> None:
-        pass
 
     def _translate_to_zipkin(self, spans: Sequence[Span]):
 
@@ -177,10 +171,8 @@ class ZipkinSpanExporter(SpanExporter):
                 "duration": duration_mus,
                 "localEndpoint": local_endpoint,
                 "kind": SPAN_KIND_MAP[span.kind],
-                "tags": self._extract_tags_from_span(span),
-                "annotations": self._extract_annotations_from_events(
-                    span.events
-                ),
+                "tags": _extract_tags_from_span(span),
+                "annotations": _extract_annotations_from_events(span.events),
             }
 
             if span.instrumentation_info is not None:
@@ -213,44 +205,42 @@ class ZipkinSpanExporter(SpanExporter):
             zipkin_spans.append(zipkin_span)
         return zipkin_spans
 
-    def _extract_tags_from_dict(self, tags_dict):
-        tags = {}
-        if not tags_dict:
-            return tags
-        for attribute_key, attribute_value in tags_dict.items():
-            if isinstance(attribute_value, (int, bool, float)):
-                value = str(attribute_value)
-            elif isinstance(attribute_value, str):
-                value = attribute_value
-            else:
-                logger.warning("Could not serialize tag %s", attribute_key)
-                continue
+    def shutdown(self) -> None:
+        pass
 
-            if self.max_tag_value_length > 0:
-                value = value[: self.max_tag_value_length]
-            tags[attribute_key] = value
+
+def _extract_tags_from_dict(tags_dict):
+    tags = {}
+    if not tags_dict:
         return tags
+    for attribute_key, attribute_value in tags_dict.items():
+        if isinstance(attribute_value, (int, bool, float)):
+            value = str(attribute_value)
+        elif isinstance(attribute_value, str):
+            value = attribute_value[:128]
+        else:
+            logger.warning("Could not serialize tag %s", attribute_key)
+            continue
+        tags[attribute_key] = value
+    return tags
 
-    def _extract_tags_from_span(self, span: Span):
-        tags = self._extract_tags_from_dict(getattr(span, "attributes", None))
-        if span.resource:
-            tags.update(self._extract_tags_from_dict(span.resource.attributes))
-        return tags
 
-    def _extract_annotations_from_events(
-        self, events
-    ):  # pylint: disable=R0201
-        return (
-            [
-                {
-                    "timestamp": _nsec_to_usec_round(e.timestamp),
-                    "value": e.name,
-                }
-                for e in events
-            ]
-            if events
-            else None
-        )
+def _extract_tags_from_span(span: Span):
+    tags = _extract_tags_from_dict(getattr(span, "attributes", None))
+    if span.resource:
+        tags.update(_extract_tags_from_dict(span.resource.attributes))
+    return tags
+
+
+def _extract_annotations_from_events(events):
+    return (
+        [
+            {"timestamp": _nsec_to_usec_round(e.timestamp), "value": e.name}
+            for e in events
+        ]
+        if events
+        else None
+    )
 
 
 def _nsec_to_usec_round(nsec):
