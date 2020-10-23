@@ -39,9 +39,3 @@ services:
         - "16686:16686"
         - "14268:14268"
         - "9411:9411"
-  otopencensus:
-    image: omnition/opencensus-collector:0.1.11
-    command: --logging-exporter DEBUG
-    ports:
-        - "8888:8888"
-        - "55678:55678"
