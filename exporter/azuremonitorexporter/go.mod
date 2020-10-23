@@ -13,5 +13,3 @@ require (
 	google.golang.org/grpc v1.32.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )
-
-replace go.opentelemetry.io/collector => /Users/armiros/opentelemetry/collector-contrib/willarmiros/opentelemetry-collector-contrib/../opentelemetry-collector

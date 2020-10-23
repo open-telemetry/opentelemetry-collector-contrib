@@ -22,5 +22,3 @@ require (
 	gopkg.in/DataDog/dd-trace-go.v1 v1.26.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.29.0
 )
-
-replace go.opentelemetry.io/collector => /Users/armiros/opentelemetry/collector-contrib/willarmiros/opentelemetry-collector-contrib/../opentelemetry-collector
