@@ -28,7 +28,7 @@ type HostInfo struct {
 	EC2Hostname string
 }
 
-// IsDefaultHostname checks if a hostname is an EC2 default
+// isDefaultHostname checks if a hostname is an EC2 default
 func isDefaultHostname(hostname string) bool {
 	for _, val := range defaultPrefixes {
 		if strings.HasPrefix(hostname, val) {

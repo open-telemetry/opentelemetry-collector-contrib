@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
-// hostMetadata includes metadata about the host tags,
+// HostMetadata includes metadata about the host tags,
 // host aliases and identifies the host as an OpenTelemetry host
 type HostMetadata struct {
 	// Meta includes metadata about the host.
@@ -52,14 +52,14 @@ type HostMetadata struct {
 	Tags *HostTags `json:"host-tags"`
 }
 
-// hostTags are the host tags.
+// HostTags are the host tags.
 // Currently only system (configuration) tags are considered.
 type HostTags struct {
 	// OTel are host tags set in the configuration
 	OTel []string `json:"otel,omitempty"`
 }
 
-// meta includes metadata about the host aliases
+// Meta includes metadata about the host aliases
 type Meta struct {
 	// InstanceID is the EC2 instance id the Collector is running on, if available
 	InstanceID string `json:"instance-id,omitempty"`

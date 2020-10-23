@@ -100,7 +100,7 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// GetHostmTags gets the host tags extracted from the configuration
+// GetHostTags gets the host tags extracted from the configuration
 func (t *TagsConfig) GetHostTags() []string {
 	tags := t.Tags
 	if t.Env != "none" {
