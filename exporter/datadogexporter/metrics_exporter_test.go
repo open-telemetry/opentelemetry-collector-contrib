@@ -59,6 +59,7 @@ func TestProcessMetrics(t *testing.T) {
 		API: config.APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
+		// Global tags should be ignored and sent as metadata
 		TagsConfig: config.TagsConfig{
 			Hostname: "test-host",
 			Env:      "test_env",
@@ -92,7 +93,7 @@ func TestProcessMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *metrics[0].Host)
 	assert.Equal(t, "test.metric_name", *metrics[0].Metric)
 	assert.ElementsMatch(t,
-		[]string{"key:val", "env:test_env", "key2:val2"},
+		[]string{"key2:val2"},
 		metrics[0].Tags,
 	)
 

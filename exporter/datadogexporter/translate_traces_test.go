@@ -124,7 +124,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(outputTraces))
@@ -133,7 +133,7 @@ func TestConvertToDatadogTd(t *testing.T) {
 func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(outputTraces))
@@ -170,7 +170,7 @@ func TestObfuscation(t *testing.T) {
 	ilss.Spans().Resize(1)
 	span.CopyTo(ilss.Spans().At(0))
 
-	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{}, []string{})
+	outputTraces, err := ConvertToDatadogTd(traces, &config.Config{})
 
 	assert.NoError(t, err)
 
@@ -195,9 +195,8 @@ func TestBasicTracesTranslation(t *testing.T) {
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, false, false)
 
-	mockGlobalTags := []string{"global_key:global_value"}
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, mockGlobalTags)
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -233,7 +232,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
 
 	// ensure that span.meta and span.metrics pick up attibutes, instrumentation ibrary and resource attribs
-	assert.Equal(t, 10, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 9, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans[0].Metrics))
 
 	// ensure that span error is based on otlp span status
@@ -263,7 +262,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{}, []string{})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -308,7 +307,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example", "invalidthings"})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -329,9 +328,8 @@ func TestTracesTranslationConfig(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
-	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
 	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
-	assert.Equal(t, "example", datadogPayload.Traces[0].Spans[0].Meta["other_tag"])
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
@@ -349,7 +347,7 @@ func TestTracesTranslationNoIls(t *testing.T) {
 	}
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg, []string{"other_tag:example", "invalidthings"})
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -459,14 +457,6 @@ func TestHttpResourceTag(t *testing.T) {
 	resourceName := getDatadogResourceName(pdata.Span{}, ddTags)
 
 	assert.Equal(t, "POST", resourceName)
-}
-
-func TestCanonicalSpanTag(t *testing.T) {
-	baseCase := isCanonicalSpanTag("notenv")
-	isCanonicalCase := isCanonicalSpanTag("env")
-
-	assert.Equal(t, false, baseCase)
-	assert.Equal(t, true, isCanonicalCase)
 }
 
 // ensure that payloads get aggregated by env to reduce number of flushes

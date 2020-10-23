@@ -32,7 +32,6 @@ type traceExporter struct {
 	cfg            *config.Config
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
-	tags           []string
 }
 
 var (
@@ -58,14 +57,11 @@ func newTraceExporter(logger *zap.Logger, cfg *config.Config) (*traceExporter, e
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
 
-	// Calculate tags at startup
-	tags := cfg.TagsConfig.GetTags(false)
 	exporter := &traceExporter{
 		logger:         logger,
 		cfg:            cfg,
 		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key),
 		obfuscator:     obfuscator,
-		tags:           tags,
 	}
 
 	return exporter, nil
@@ -90,7 +86,7 @@ func (exp *traceExporter) pushTraceData(
 	// convert traces to datadog traces and group trace payloads by env
 	// we largely apply the same logic as the serverless implementation, simplified a bit
 	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	ddTraces, err := ConvertToDatadogTd(td, exp.cfg, exp.tags)
+	ddTraces, err := ConvertToDatadogTd(td, exp.cfg)
 
 	if err != nil {
 		exp.logger.Info("failed to convert traces", zap.Error(err))

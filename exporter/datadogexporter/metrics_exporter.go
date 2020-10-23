@@ -31,7 +31,6 @@ type metricsExporter struct {
 	logger *zap.Logger
 	cfg    *config.Config
 	client *datadog.Client
-	tags   []string
 }
 
 func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
@@ -56,16 +55,12 @@ func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporte
 
 	validateAPIKey(logger, client)
 
-	// Calculate tags at startup
-	tags := cfg.TagsConfig.GetTags(false)
-
-	return &metricsExporter{logger, cfg, client, tags}, nil
+	return &metricsExporter{logger, cfg, client}, nil
 }
 
 func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 	addNamespace := exp.cfg.Metrics.Namespace != ""
 	overrideHostname := exp.cfg.Hostname != ""
-	addTags := len(exp.tags) > 0
 
 	for i := range metrics {
 		if addNamespace {
@@ -76,11 +71,6 @@ func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
 		if overrideHostname || metrics[i].GetHost() == "" {
 			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
 		}
-
-		if addTags {
-			metrics[i].Tags = append(metrics[i].Tags, exp.tags...)
-		}
-
 	}
 }
 
