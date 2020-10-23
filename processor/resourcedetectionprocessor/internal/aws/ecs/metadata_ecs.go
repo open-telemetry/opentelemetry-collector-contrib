@@ -45,27 +45,43 @@ type LogData struct {
 }
 
 type ecsMetadataProviderImpl struct {
+	client HTTPClient
 }
 
 var _ ecsMetadataProvider = &ecsMetadataProviderImpl{}
 
 // Retrieves the metadata for a task running on Amazon ECS
 func (md *ecsMetadataProviderImpl) fetchTaskMetaData(tmde string) (*TaskMetaData, error) {
-	ret, err := fetch(tmde+"/task", true)
+	ret, err := fetch(tmde+"/task", md, true)
+	if ret == nil {
+		return nil, err
+	}
+
 	return ret.(*TaskMetaData), err
 }
 
 // Retrieves the metadata for the Amazon ECS Container the collector is running on
 func (md *ecsMetadataProviderImpl) fetchContainerMetaData(tmde string) (*Container, error) {
-	ret, err := fetch(tmde, false)
+	ret, err := fetch(tmde, md, false)
+	if ret == nil {
+		return nil, err
+	}
+
 	return ret.(*Container), err
 }
 
-func fetch(tmde string, task bool) (tmdeResp interface{}, err error) {
-	resp, err := http.Get(tmde)
+func fetch(tmde string, md *ecsMetadataProviderImpl, task bool) (tmdeResp interface{}, err error) {
+	req, err := http.NewRequest(http.MethodGet, tmde, nil)
 
 	if err != nil {
-		log.Panicf("Received error from ECS Task Metadata Endpoint: %v", err)
+		log.Printf("Received error constructing request to ECS Task Metadata Endpoint: %v", err)
+		return nil, err
+	}
+
+	resp, err := md.client.Do(req)
+
+	if err != nil {
+		log.Printf("Received error from ECS Task Metadata Endpoint: %v", err)
 		return nil, err
 	}
 
@@ -79,7 +95,7 @@ func fetch(tmde string, task bool) (tmdeResp interface{}, err error) {
 	defer resp.Body.Close()
 
 	if err != nil {
-		log.Panicf("Encountered unexpected error reading response from ECS Task Metadata Endpoint: %v", err)
+		log.Printf("Encountered unexpected error reading response from ECS Task Metadata Endpoint: %v", err)
 		return nil, err
 	}
 

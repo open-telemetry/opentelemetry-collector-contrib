@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
@@ -41,7 +42,7 @@ type Detector struct {
 }
 
 func NewDetector() (internal.Detector, error) {
-	return &Detector{provider: &ecsMetadataProviderImpl{}}, nil
+	return &Detector{provider: &ecsMetadataProviderImpl{client: &http.Client{}}}, nil
 }
 
 // Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes

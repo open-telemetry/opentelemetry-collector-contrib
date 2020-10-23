@@ -14,6 +14,12 @@
 
 package ecs
 
+import "net/http"
+
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type ecsMetadataProvider interface {
 	fetchTaskMetaData(tmde string) (*TaskMetaData, error)
 	fetchContainerMetaData(tmde string) (*Container, error)

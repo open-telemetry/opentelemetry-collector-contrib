@@ -15,9 +15,10 @@
 package ecs
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,15 +47,26 @@ const (
 	}`
 )
 
-func Test_ecsMetadata_fetchTask(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, taskMeta)
-	}))
-	defer ts.Close()
+type mockClient struct {
+	response string
+	retErr   bool
+}
 
-	md := ecsMetadataProviderImpl{}
-	fetchResp, err := md.fetchTaskMetaData(ts.URL)
+func (mc *mockClient) Do(req *http.Request) (*http.Response, error) {
+	if mc.retErr {
+		return nil, errors.New("fake error")
+	}
+
+	r := ioutil.NopCloser(bytes.NewReader([]byte(mc.response)))
+	return &http.Response{
+		StatusCode: 200,
+		Body:       r,
+	}, nil
+}
+
+func Test_ecsMetadata_fetchTask(t *testing.T) {
+	md := ecsMetadataProviderImpl{client: &mockClient{response: taskMeta, retErr: false}}
+	fetchResp, err := md.fetchTaskMetaData("url")
 
 	assert.Nil(t, err)
 	assert.Equal(t, "myCluster", fetchResp.Cluster)
@@ -66,14 +78,8 @@ func Test_ecsMetadata_fetchTask(t *testing.T) {
 }
 
 func Test_ecsMetadata_fetchContainer(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, containerMeta)
-	}))
-	defer ts.Close()
-
-	md := ecsMetadataProviderImpl{}
-	fetchResp, err := md.fetchContainerMetaData(ts.URL)
+	md := ecsMetadataProviderImpl{client: &mockClient{response: containerMeta, retErr: false}}
+	fetchResp, err := md.fetchContainerMetaData("url")
 
 	assert.Nil(t, err)
 	assert.NotNil(t, fetchResp)
@@ -84,4 +90,12 @@ func Test_ecsMetadata_fetchContainer(t *testing.T) {
 	assert.Equal(t, "helloworld", fetchResp.LogOptions.LogGroup)
 	assert.Equal(t, "ap-southeast-1", fetchResp.LogOptions.Region)
 	assert.Equal(t, "logs/main/456", fetchResp.LogOptions.Stream)
+}
+
+func Test_ecsMetadata_returnsError(t *testing.T) {
+	md := ecsMetadataProviderImpl{client: &mockClient{response: "{}", retErr: true}}
+	fetchResp, err := md.fetchContainerMetaData("url")
+
+	assert.Nil(t, fetchResp)
+	assert.NotNil(t, err)
 }
