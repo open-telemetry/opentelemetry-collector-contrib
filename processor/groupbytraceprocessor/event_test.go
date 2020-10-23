@@ -320,7 +320,12 @@ func TestEventShutdown(t *testing.T) {
 func TestPeriodicMetrics(t *testing.T) {
 	// prepare
 	views := MetricViews()
+
+	// ensure that we are starting with a clean state
+	view.Unregister(views...)
 	view.Register(views...)
+
+	// try to be nice with the next consumer (test)
 	defer view.Unregister(views...)
 
 	logger, err := zap.NewDevelopment()
