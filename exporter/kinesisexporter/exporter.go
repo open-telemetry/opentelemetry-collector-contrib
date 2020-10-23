@@ -16,17 +16,12 @@ package kinesisexporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
-)
-
-const (
-	errInvalidContext = "invalid context"
 )
 
 // Exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
@@ -50,30 +45,18 @@ func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
 // by connecting to the endpoint. Host parameter can be used for communicating
 // with the host after start() has already returned. If error is returned by
 // start() then the collector startup will be aborted.
-func (e *Exporter) Start(ctx context.Context, _ component.Host) error {
-	if ctx == nil || ctx.Err() != nil {
-		return fmt.Errorf(errInvalidContext)
-	}
-
+func (e *Exporter) Start(_ context.Context, _ component.Host) error {
 	e.producer.start()
 	return nil
 }
 
 // Shutdown is invoked during exporter shutdown
-func (e *Exporter) Shutdown(ctx context.Context) error {
-	if ctx == nil || ctx.Err() != nil {
-		return fmt.Errorf(errInvalidContext)
-	}
-
+func (e *Exporter) Shutdown(_ context.Context) error {
 	e.producer.stop()
 	return nil
 }
 
-func (e *Exporter) pushTraces(ctx context.Context, td pdata.Traces) (int, error) {
-	if ctx == nil || ctx.Err() != nil {
-		return 0, fmt.Errorf(errInvalidContext)
-	}
-
+func (e *Exporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
 	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
 		e.logger.Error("error translating span batch", zap.Error(err))
