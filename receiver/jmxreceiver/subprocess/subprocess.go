@@ -35,7 +35,7 @@ const (
 	noPid                  = -1
 )
 
-// exported to be used by jmx metrics extension
+// exported to be used by jmx metric receiver
 type Config struct {
 	ExecutablePath       string            `mapstructure:"executable_path"`
 	Args                 []string          `mapstructure:"args"`
@@ -46,7 +46,7 @@ type Config struct {
 	ShutdownTimeout      *time.Duration    `mapstructure:"shutdown_timeout"`
 }
 
-// exported to be used by jmx metrics extension
+// exported to be used by jmx metric receiver
 type Subprocess struct {
 	Stdout         chan string
 	cancel         context.CancelFunc
@@ -84,7 +84,7 @@ func (subprocess *Subprocess) Pid() int {
 	return pid
 }
 
-// exported to be used by jmx metrics extension
+// exported to be used by jmx metric receiver
 func NewSubprocess(conf *Config, logger *zap.Logger) *Subprocess {
 	if conf.RestartDelay == nil {
 		restartDelay := defaultRestartDelay
