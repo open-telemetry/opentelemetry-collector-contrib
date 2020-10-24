@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"math/rand"
 	"net/url"
 	"regexp"
@@ -285,7 +285,7 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	//
 	// In that case, we return invalid traceid error
 	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", errors.New("invalid xray traceid: " + traceID.HexString())
+		return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
 	}
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
