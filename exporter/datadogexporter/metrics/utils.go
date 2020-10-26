@@ -48,7 +48,7 @@ func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metr
 // RunningMetric creates a metric to report that an exporter is running
 func RunningMetric(exporterType string, timestamp uint64, logger *zap.Logger, cfg *config.Config) []datadog.Metric {
 	runningMetric := []datadog.Metric{
-		NewGauge(fmt.Sprintf("otel.exporter.%s.running", exporterType), timestamp, float64(1.0), []string{}),
+		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, float64(1.0), []string{}),
 	}
 
 	AddHostname(runningMetric, logger, cfg)
