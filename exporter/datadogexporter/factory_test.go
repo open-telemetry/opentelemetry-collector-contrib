@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"context"
 	"path"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,14 +42,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 		ExporterSettings: configmodels.ExporterSettings{
 			TypeVal: configmodels.Type(typeStr),
 			NameVal: typeStr,
-		},
-
-		// These are filled when loading using the helper methods
-		TagsConfig: config.TagsConfig{
-			Hostname: "${DD_HOST}",
-			Env:      "${DD_ENV}",
-			Service:  "${DD_SERVICE}",
-			Version:  "${DD_VERSION}",
 		},
 
 		API: config.APIConfig{Site: "datadoghq.com"},
@@ -151,11 +142,6 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPITracesExporter(t *testing.T) {
-	// TODO review if test should succeed on Windows
-	if runtime.GOOS == "windows" {
-		t.Skip()
-	}
-
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
