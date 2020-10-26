@@ -24,6 +24,7 @@ import (
 func DatadogServerMock() *httptest.Server {
 	handler := http.NewServeMux()
 	handler.HandleFunc("/api/v1/validate", validateAPIKeyEndpoint)
+	handler.HandleFunc("/api/v1/series", metricsEndpoint)
 
 	srv := httptest.NewServer(handler)
 
@@ -39,5 +40,18 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	resJSON, _ := json.Marshal(res)
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Write(resJSON)
+}
+
+type metricsResponse struct {
+	Status string `json:"status"`
+}
+
+func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+	res := metricsResponse{Status: "ok"}
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
 	w.Write(resJSON)
 }
