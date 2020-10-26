@@ -34,6 +34,10 @@ func NewFactory() component.ExporterFactory {
 
 func createDefaultConfig() configmodels.Exporter {
 	return &Config{
+		ExporterSettings: configmodels.ExporterSettings{
+			TypeVal: configmodels.Type(typeStr),
+			NameVal: typeStr,
+		},
 		Region: "",
 		Token:  "",
 	}
