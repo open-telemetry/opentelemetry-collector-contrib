@@ -27,12 +27,12 @@ func Split(batch pdata.Traces) []pdata.Traces {
 
 		for j := 0; j < rs.InstrumentationLibrarySpans().Len(); j++ {
 			// the batches for this ILS
-			batches := map[string]pdata.ResourceSpans{}
+			batches := map[[16]byte]pdata.ResourceSpans{}
 
 			ils := rs.InstrumentationLibrarySpans().At(j)
 			for k := 0; k < ils.Spans().Len(); k++ {
 				span := ils.Spans().At(k)
-				key := string(span.TraceID().Bytes())
+				key := span.TraceID().Bytes()
 
 				// for the first traceID in the ILS, initialize the map entry
 				// and add the singleTraceBatch to the result list

@@ -182,7 +182,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r[:])
+	return pdata.NewTraceID(r)
 }
 
 func newSegmentID() pdata.SpanID {
@@ -191,5 +191,5 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r[:])
+	return pdata.NewSpanID(r)
 }
