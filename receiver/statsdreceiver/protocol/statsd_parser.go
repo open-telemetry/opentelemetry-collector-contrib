@@ -31,7 +31,7 @@ var (
 )
 
 func getSupportedTypes() []string {
-	return []string{"c", "g"}
+	return []string{"c", "g", "ms"}
 }
 
 // StatsDParser supports the Parse method for parsing StatsD messages with Tags.
@@ -41,6 +41,7 @@ type statsDMetric struct {
 	name             string
 	value            string
 	statsdMetricType string
+	unit             string
 	metricType       metricspb.MetricDescriptor_Type
 	sampleRate       float64
 	labelKeys        []*metricspb.LabelKey
@@ -128,7 +129,6 @@ func parseMessageToMetric(line string) (*statsDMetric, error) {
 			return nil, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}
-
 	return result, nil
 }
 
@@ -147,6 +147,7 @@ func buildMetric(metric *statsDMetric, point *metricspb.Point) *metricspb.Metric
 			Name:      metric.name,
 			Type:      metric.metricType,
 			LabelKeys: metric.labelKeys,
+			Unit:      metric.unit,
 		},
 		Timeseries: []*metricspb.TimeSeries{
 			{
@@ -181,6 +182,10 @@ func buildPoint(parsedMetric *statsDMetric) (*metricspb.Point, error) {
 			}
 			parsedMetric.metricType = metricspb.MetricDescriptor_GAUGE_INT64
 		})
+	case "ms":
+		return buildTimerPoint(parsedMetric, now, func(parsedMetric *statsDMetric) {
+			parsedMetric.metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
+		})
 	}
 
 	return nil, fmt.Errorf("unhandled metric type: %s", parsedMetric.statsdMetricType)
@@ -213,5 +218,22 @@ func buildGaugeOrCounterPoint(parsedMetric *statsDMetric, now *timestamppb.Times
 		}
 	}
 	metricTypeSetter(parsedMetric, isDouble)
+	return point, nil
+}
+
+func buildTimerPoint(parsedMetric *statsDMetric, now *timestamppb.Timestamp, metricTypeSetter func(parsedMetric *statsDMetric)) (*metricspb.Point, error) {
+	var point *metricspb.Point
+	parsedMetric.unit = "ms"
+	f, err := strconv.ParseFloat(parsedMetric.value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("timer: failed to parse metric value to float: %s", parsedMetric.value)
+	}
+	point = &metricspb.Point{
+		Timestamp: now,
+		Value: &metricspb.Point_DoubleValue{
+			DoubleValue: f,
+		},
+	}
+	metricTypeSetter(parsedMetric)
 	return point, nil
 }

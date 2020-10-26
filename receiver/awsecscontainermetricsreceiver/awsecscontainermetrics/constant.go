@@ -66,9 +66,9 @@ const (
 	AttributeStorageWrite = "storage.write_bytes"
 
 	UnitBytes       = "Bytes"
-	UnitMegaBytes   = "MB"
-	UnitNanoSecond  = "NS"
-	UnitBytesPerSec = "Bytes/Sec"
+	UnitMegaBytes   = "Megabytes"
+	UnitNanoSecond  = "Nanoseconds"
+	UnitBytesPerSec = "Bytes/Second"
 	UnitCount       = "Count"
 	UnitVCpu        = "vCPU"
 	UnitPercent     = "Percent"
