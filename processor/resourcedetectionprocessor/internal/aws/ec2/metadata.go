@@ -22,5 +22,6 @@ import (
 
 type ec2MetadataProvider interface {
 	get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error)
+	hostname(ctx context.Context) (string, error)
 	available(ctx context.Context) bool
 }

@@ -32,6 +32,11 @@ func (md *ec2MetadataImpl) available(ctx context.Context) bool {
 	return meta.AvailableWithContext(ctx)
 }
 
+func (md *ec2MetadataImpl) hostname(ctx context.Context) (string, error) {
+	meta := ec2metadata.New(md.sess)
+	return meta.GetMetadataWithContext(ctx, "hostname")
+}
+
 func (md *ec2MetadataImpl) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	meta := ec2metadata.New(md.sess)
 	return meta.GetInstanceIdentityDocumentWithContext(ctx)
