@@ -16,13 +16,21 @@ package stanzareceiver
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/observiq/stanza/entry"
+	"github.com/observiq/stanza/pipeline"
+	"github.com/observiq/stanza/testutil"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+	"gopkg.in/yaml.v2"
 )
 
 func TestStart(t *testing.T) {
@@ -71,4 +79,108 @@ func TestHandleConsumeError(t *testing.T) {
 	obsReceiver.emitter.logChan <- entry.New()
 	receiver.Shutdown(context.Background())
 	require.Equal(t, 1, mockConsumer.rejected, "one log entry expected")
+}
+
+func BenchmarkReadLine(b *testing.B) {
+
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		b.Errorf(err.Error())
+		b.FailNow()
+	}
+
+	filePath := filepath.Join(tempDir, "bench.log")
+
+	pipelineYaml := fmt.Sprintf(`
+- type: file_input
+  include:
+    - %s
+  start_at: beginning`,
+		filePath)
+
+	pipelineCfg := pipeline.Config{}
+	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
+
+	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	defer emitter.Stop()
+
+	buildContext := testutil.NewBuildContext(b)
+	buildContext.Logger = zap.NewNop().Sugar() // be quiet
+
+	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	require.NoError(b, err)
+
+	// Populate the file that will be consumed
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	require.NoError(b, err)
+	for i := 0; i < b.N; i++ {
+		file.WriteString("testlog\n")
+	}
+
+	// // Run the actual benchmark
+	b.ResetTimer()
+	require.NoError(b, pl.Start())
+	for i := 0; i < b.N; i++ {
+		convert(<-emitter.logChan)
+	}
+}
+
+func BenchmarkParseAndMap(b *testing.B) {
+
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		b.Errorf(err.Error())
+		b.FailNow()
+	}
+
+	filePath := filepath.Join(tempDir, "bench.log")
+
+	fileInputYaml := fmt.Sprintf(`
+- type: file_input
+  include:
+    - %s
+  start_at: beginning`, filePath)
+
+	regexParserYaml := `
+- type: regex_parser
+  regex: '(?P<remote_host>[^\s]+) - (?P<remote_user>[^\s]+) \[(?P<timestamp>[^\]]+)\] "(?P<http_method>[A-Z]+) (?P<path>[^\s]+)[^"]+" (?P<http_status>\d+) (?P<bytes_sent>[^\s]+)'
+  timestamp:
+    parse_from: timestamp
+    layout: '%d/%b/%Y:%H:%M:%S %z'
+  severity:
+    parse_from: http_status
+    preserve: true
+    mapping:
+      critical: 5xx
+      error: 4xx
+      info: 3xx
+      debug: 2xx`
+
+	pipelineYaml := fmt.Sprintf("%s%s", fileInputYaml, regexParserYaml)
+
+	pipelineCfg := pipeline.Config{}
+	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
+
+	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	defer emitter.Stop()
+
+	buildContext := testutil.NewBuildContext(b)
+	buildContext.Logger = zap.NewNop().Sugar() // be quiet
+
+	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	require.NoError(b, err)
+
+	// Populate the file that will be consumed
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0666)
+	require.NoError(b, err)
+	for i := 0; i < b.N; i++ {
+		file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
+	}
+
+	// // Run the actual benchmark
+	b.ResetTimer()
+	require.NoError(b, pl.Start())
+	for i := 0; i < b.N; i++ {
+		convert(<-emitter.logChan)
+	}
 }
