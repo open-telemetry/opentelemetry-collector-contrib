@@ -14,7 +14,7 @@
 
 // +build integration
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"context"
@@ -140,7 +140,7 @@ func newPrometheusMetricReceiver(t *testing.T, logger *zap.Logger) (int, *compon
 	cfg.PrometheusConfig = &promconfig.Config{
 		ScrapeConfigs: []*promconfig.ScrapeConfig{
 			{
-				JobName:         "jmx_metrics",
+				JobName:         "jmx",
 				ScrapeInterval:  prommodel.Duration(100 * time.Millisecond),
 				ScrapeTimeout:   prommodel.Duration(1 * time.Second),
 				Scheme:          "http",
@@ -174,13 +174,13 @@ func newPrometheusMetricReceiver(t *testing.T, logger *zap.Logger) (int, *compon
 	return port, &receiver, consumer
 }
 
-func getJavaStdout(extension *jmxMetricExtension) string {
+func getJavaStdout(receiver *jmxMetricReceiver) string {
 	msg := ""
 LOOP:
 	for i := 0; i < 70; i++ {
 		t := time.NewTimer(5 * time.Second)
 		select {
-		case m, ok := <-extension.subprocess.Stdout:
+		case m, ok := <-receiver.subprocess.Stdout:
 			if ok {
 				msg = msg + m + "\n"
 			} else {
@@ -214,9 +214,9 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	port, receiver, consumer := newOTLPMetricReceiver(t, logger)
+	port, otlpReceiver, consumer := newOTLPMetricReceiver(t, logger)
 	defer func() {
-		require.Nil(t, (*receiver).Shutdown(context.Background()))
+		require.Nil(t, (*otlpReceiver).Shutdown(context.Background()))
 	}()
 
 	otlp := "localhost"
@@ -234,14 +234,13 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 		Password:     "cassandra",
 	}
 
-	extension := newJMXMetricExtension(logger, config)
-	require.NotNil(t, extension)
+	receiver := newJMXMetricReceiver(logger, config, nil)
+	require.NotNil(t, receiver)
 	defer func() {
-		require.Nil(t, extension.Shutdown(context.Background()))
+		require.Nil(t, receiver.Shutdown(context.Background()))
 	}()
 
-	require.NoError(t, extension.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, extension.Ready())
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
 		found := consumer.MetricsCount() == 1
@@ -285,7 +284,7 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 		require.False(t, sum.IsMonotonic())
 
 		return true
-	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(extension))
+	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
 }
 
 func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration() {
@@ -299,9 +298,9 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration(
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	port, receiver, consumer := newPrometheusMetricReceiver(t, logger)
+	port, prometheusReceiver, consumer := newPrometheusMetricReceiver(t, logger)
 	defer func() {
-		require.Nil(t, (*receiver).Shutdown(context.Background()))
+		require.Nil(t, (*prometheusReceiver).Shutdown(context.Background()))
 	}()
 
 	config := &config{
@@ -316,14 +315,14 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration(
 		Password:       "cassandra",
 	}
 
-	extension := newJMXMetricExtension(logger, config)
-	require.NotNil(t, extension)
+	receiver := newJMXMetricReceiver(logger, config, nil)
+	require.NotNil(t, receiver)
 	defer func() {
-		require.Nil(t, extension.Shutdown(context.Background()))
+		require.Nil(t, receiver.Shutdown(context.Background()))
 	}()
 
-	require.NoError(t, extension.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, extension.Ready())
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, receiver.Ready())
 
 	require.Eventually(t, func() bool {
 		metrics := consumer.AllMetrics()
@@ -354,5 +353,5 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration(
 			require.Greater(t, dp.Value(), 0.0)
 		}
 		return true
-	}, 30*time.Second, 10*time.Millisecond, getJavaStdout(extension))
+	}, 30*time.Second, 10*time.Millisecond, getJavaStdout(receiver))
 }

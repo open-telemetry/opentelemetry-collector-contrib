@@ -12,39 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jmxmetricextension/subprocess"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxmetricreceiver/subprocess"
 )
 
-var _ component.ServiceExtension = (*jmxMetricExtension)(nil)
-var _ component.PipelineWatcher = (*jmxMetricExtension)(nil)
+var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
 
-type jmxMetricExtension struct {
+type jmxMetricReceiver struct {
 	logger     *zap.Logger
 	config     *config
 	subprocess *subprocess.Subprocess
 }
 
-func newJMXMetricExtension(
+func newJMXMetricReceiver(
 	logger *zap.Logger,
 	config *config,
-) *jmxMetricExtension {
-	return &jmxMetricExtension{
+	consumer consumer.MetricsConsumer,
+) *jmxMetricReceiver {
+	return &jmxMetricReceiver{
 		logger: logger,
 		config: config,
 	}
 }
 
-func (jmx *jmxMetricExtension) Start(ctx context.Context, host component.Host) error {
-	jmx.logger.Debug("Starting JMX Metric Extension")
+func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
+	jmx.logger.Debug("Starting JMX Receiver")
 	javaConfig, err := jmx.buildJMXMetricGathererConfig()
 	if err != nil {
 		return err
@@ -56,24 +57,15 @@ func (jmx *jmxMetricExtension) Start(ctx context.Context, host component.Host) e
 	}
 
 	jmx.subprocess = subprocess.NewSubprocess(&subprocessConfig, jmx.logger)
-	return nil
-}
-
-func (jmx *jmxMetricExtension) Shutdown(ctx context.Context) error {
-	jmx.logger.Debug("Shutting down JMX Metric Extension")
-	return jmx.subprocess.Shutdown(ctx)
-}
-
-func (jmx *jmxMetricExtension) Ready() error {
-	jmx.logger.Debug("JMX Metric Extension is ready.  Starting subprocess.")
 	return jmx.subprocess.Start(context.Background())
 }
 
-func (jmx *jmxMetricExtension) NotReady() error {
-	return nil
+func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
+	jmx.logger.Debug("Shutting down JMX Receiver")
+	return jmx.subprocess.Shutdown(ctx)
 }
 
-func (jmx *jmxMetricExtension) buildJMXMetricGathererConfig() (string, error) {
+func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
 `, jmx.config.ServiceURL, jmx.config.Interval.Milliseconds())

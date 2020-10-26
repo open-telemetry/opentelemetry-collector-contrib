@@ -1,6 +1,6 @@
-extensions:
-  jmx_metrics:
-  jmx_metrics/all:
+receivers:
+  jmx:
+  jmx/all:
     jar_path: myjarpath
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
@@ -22,21 +22,18 @@ extensions:
     truststore_password: mytruststorepassword
     remote_profile: myremoteprofile
     realm: myrealm
-  jmx_metrics/missingservice:
+  jmx/missingservice:
     groovy_script: mygroovyscriptpath
-  jmx_metrics/missinggroovy:
+  jmx/missinggroovy:
     service_url: myserviceurl
-  jmx_metrics/invalidinterval:
+  jmx/invalidinterval:
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
     interval: -100ms
-  jmx_metrics/invalidotlptimeout:
+  jmx/invalidotlptimeout:
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
     otlp_timeout: -100ms
-
-receivers:
-  examplereceiver:
 
 processors:
   exampleprocessor:
@@ -45,9 +42,8 @@ exporters:
   exampleexporter:
 
 service:
-  extensions: [jmx_metrics, jmx_metrics/all]
   pipelines:
     metrics:
-      receivers: [examplereceiver]
+      receivers: [jmx, jmx/all]
       processors: [exampleprocessor]
       exporters: [exampleexporter]

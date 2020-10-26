@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"path"
@@ -32,29 +32,29 @@ func TestLoadConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	factory := NewFactory()
-	factories.Extensions[configmodels.Type(typeStr)] = factory
+	factories.Receivers[configmodels.Type(typeStr)] = factory
 	cfg, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Extensions), 6)
+	assert.Equal(t, len(cfg.Receivers), 6)
 
-	r0 := cfg.Extensions["jmx_metrics"].(*config)
+	r0 := cfg.Receivers["jmx"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r0))
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
 
-	r1 := cfg.Extensions["jmx_metrics/all"].(*config)
+	r1 := cfg.Receivers["jmx/all"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r1))
 	require.NoError(t, r1.validate())
 	assert.Equal(t,
 		&config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "jmx_metrics",
-				NameVal: "jmx_metrics/all",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "jmx",
+				NameVal: "jmx/all",
 			},
 			JARPath:        "myjarpath",
 			ServiceURL:     "myserviceurl",
@@ -80,13 +80,13 @@ func TestLoadConfig(t *testing.T) {
 			Realm:              "myrealm",
 		}, r1)
 
-	r2 := cfg.Extensions["jmx_metrics/missingservice"].(*config)
+	r2 := cfg.Receivers["jmx/missingservice"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
 	assert.Equal(t,
 		&config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "jmx_metrics",
-				NameVal: "jmx_metrics/missingservice",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "jmx",
+				NameVal: "jmx/missingservice",
 			},
 			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			GroovyScript:   "mygroovyscriptpath",
@@ -99,15 +99,15 @@ func TestLoadConfig(t *testing.T) {
 		}, r2)
 	err = r2.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/missingservice missing required field: `service_url`", err.Error())
+	assert.Equal(t, "jmx/missingservice missing required field: `service_url`", err.Error())
 
-	r3 := cfg.Extensions["jmx_metrics/missinggroovy"].(*config)
+	r3 := cfg.Receivers["jmx/missinggroovy"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r3))
 	assert.Equal(t,
 		&config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "jmx_metrics",
-				NameVal: "jmx_metrics/missinggroovy",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "jmx",
+				NameVal: "jmx/missinggroovy",
 			},
 			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			ServiceURL:     "myserviceurl",
@@ -120,15 +120,15 @@ func TestLoadConfig(t *testing.T) {
 		}, r3)
 	err = r3.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx/missinggroovy missing required field: `target_system` or `groovy_script`", err.Error())
 
-	r4 := cfg.Extensions["jmx_metrics/invalidinterval"].(*config)
+	r4 := cfg.Receivers["jmx/invalidinterval"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r4))
 	assert.Equal(t,
 		&config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "jmx_metrics",
-				NameVal: "jmx_metrics/invalidinterval",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "jmx",
+				NameVal: "jmx/invalidinterval",
 			},
 			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			ServiceURL:     "myserviceurl",
@@ -142,15 +142,15 @@ func TestLoadConfig(t *testing.T) {
 		}, r4)
 	err = r4.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/invalidinterval `interval` must be positive: -100ms", err.Error())
+	assert.Equal(t, "jmx/invalidinterval `interval` must be positive: -100ms", err.Error())
 
-	r5 := cfg.Extensions["jmx_metrics/invalidotlptimeout"].(*config)
+	r5 := cfg.Receivers["jmx/invalidotlptimeout"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r5))
 	assert.Equal(t,
 		&config{
-			ExtensionSettings: configmodels.ExtensionSettings{
-				TypeVal: "jmx_metrics",
-				NameVal: "jmx_metrics/invalidotlptimeout",
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: "jmx",
+				NameVal: "jmx/invalidotlptimeout",
 			},
 			JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			ServiceURL:     "myserviceurl",
@@ -164,5 +164,5 @@ func TestLoadConfig(t *testing.T) {
 		}, r5)
 	err = r5.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics/invalidotlptimeout `otlp_timeout` must be positive: -100ms", err.Error())
+	assert.Equal(t, "jmx/invalidotlptimeout `otlp_timeout` must be positive: -100ms", err.Error())
 }
