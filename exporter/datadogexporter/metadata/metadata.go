@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -80,17 +81,17 @@ type Meta struct {
 	HostAliases []string `json:"host-aliases,omitempty"`
 }
 
-func getHostMetadata(logger *zap.Logger, cfg *config.Config) *HostMetadata {
-	hostname := *GetHost(logger, cfg)
+func getHostMetadata(params component.ExporterCreateParams, cfg *config.Config) *HostMetadata {
+	hostname := *GetHost(params.Logger, cfg)
 	tags := cfg.GetHostTags()
 
-	ec2HostInfo := ec2.GetHostInfo(logger)
-	systemHostInfo := system.GetHostInfo(logger)
+	ec2HostInfo := ec2.GetHostInfo(params.Logger)
+	systemHostInfo := system.GetHostInfo(params.Logger)
 
 	return &HostMetadata{
 		InternalHostname: hostname,
-		Flavor:           utils.Flavor,
-		Version:          utils.Version,
+		Flavor:           params.ApplicationStartInfo.ExeName,
+		Version:          params.ApplicationStartInfo.Version,
 		Tags:             &HostTags{tags},
 		Meta: &Meta{
 			InstanceID:     ec2HostInfo.InstanceID,
@@ -102,11 +103,11 @@ func getHostMetadata(logger *zap.Logger, cfg *config.Config) *HostMetadata {
 	}
 }
 
-func pushMetadata(cfg *config.Config, metadata *HostMetadata) error {
+func pushMetadata(cfg *config.Config, startInfo component.ApplicationStartInfo, metadata *HostMetadata) error {
 	path := cfg.Metrics.TCPAddr.Endpoint + "/intake"
 	buf, _ := json.Marshal(metadata)
 	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
-	utils.SetDDHeaders(req.Header, cfg.API.Key)
+	utils.SetDDHeaders(req.Header, startInfo, cfg.API.Key)
 	utils.SetExtraHeaders(req.Header, utils.JSONHeaders)
 	client := utils.NewHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
@@ -129,40 +130,40 @@ func pushMetadata(cfg *config.Config, metadata *HostMetadata) error {
 	return nil
 }
 
-func getAndPushMetadata(logger *zap.Logger, cfg *config.Config) {
+func getAndPushMetadata(params component.ExporterCreateParams, cfg *config.Config) {
 	const maxRetries = 5
-	hostMetadata := getHostMetadata(logger, cfg)
+	hostMetadata := getHostMetadata(params, cfg)
 
-	logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
+	params.Logger.Debug("Sending host metadata payload", zap.Any("payload", hostMetadata))
 
 	numRetries, err := utils.DoWithRetries(maxRetries, func() error {
-		return pushMetadata(cfg, hostMetadata)
+		return pushMetadata(cfg, params.ApplicationStartInfo, hostMetadata)
 	})
 
 	if err != nil {
-		logger.Warn("Sending host metadata failed", zap.Error(err))
+		params.Logger.Warn("Sending host metadata failed", zap.Error(err))
 	} else {
-		logger.Info("Sent host metadata", zap.Int("retries", numRetries))
+		params.Logger.Info("Sent host metadata", zap.Int("retries", numRetries))
 	}
 
 }
 
 // Pusher pushes host metadata payloads periodically to Datadog intake
-func Pusher(ctx context.Context, logger *zap.Logger, cfg *config.Config) {
+func Pusher(ctx context.Context, params component.ExporterCreateParams, cfg *config.Config) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
-	defer logger.Debug("Shut down host metadata routine")
+	defer params.Logger.Debug("Shut down host metadata routine")
 
 	// Run one first time at startup
-	getAndPushMetadata(logger, cfg)
+	getAndPushMetadata(params, cfg)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C: // Send host metadata
-			getAndPushMetadata(logger, cfg)
+			getAndPushMetadata(params, cfg)
 		}
 	}
 }

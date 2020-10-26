@@ -85,7 +85,7 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newMetricsExporter(params.Logger, cfg)
+	exp, err := newMetricsExporter(params, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func createMetricsExporter(
 	if cfg.SendMetadata {
 		once := cfg.OnceMetadata()
 		once.Do(func() {
-			go metadata.Pusher(ctx, params.Logger, cfg)
+			go metadata.Pusher(ctx, params, cfg)
 		})
 	}
 
@@ -124,7 +124,7 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	exp, err := newTraceExporter(params.Logger, cfg)
+	exp, err := newTraceExporter(params, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func createTraceExporter(
 	if cfg.SendMetadata {
 		once := cfg.OnceMetadata()
 		once.Do(func() {
-			go metadata.Pusher(ctx, params.Logger, cfg)
+			go metadata.Pusher(ctx, params, cfg)
 		})
 	}
 

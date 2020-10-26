@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -47,15 +48,15 @@ func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
 	}
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
+func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*metricsExporter, error) {
 	client := datadog.NewClient(cfg.API.Key, "")
 	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
-	client.ExtraHeader["User-Agent"] = utils.UserAgent
+	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
-	validateAPIKey(logger, client)
+	validateAPIKey(params.Logger, client)
 
-	return &metricsExporter{logger, cfg, client}, nil
+	return &metricsExporter{params.Logger, cfg, client}, nil
 }
 
 func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
