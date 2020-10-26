@@ -37,6 +37,19 @@ type logMsg struct {
 }
 
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
+	commonMetrics := []pdata.Metric{
+		avgLatencyDescriptor,
+		maxLatencyDescriptor,
+		minLatencyDescriptor,
+		numAliveConnectionsDescriptor,
+		outstandingRequestsDescriptor,
+		zNodeCountDescriptor,
+		watchCountDescriptor,
+		ephemeralsCountDescriptor,
+		approximateDataSizeDescriptor,
+		openFileDescriptorCountDescriptor,
+		maxFileDescriptorCountDescriptor,
+	}
 	localAddr := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name                         string
@@ -50,11 +63,14 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.4.14",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetrics: []pdata.Metric{
-				avgLatencyDescriptor,
-				maxLatencyDescriptor,
-				minLatencyDescriptor,
-			},
+			expectedMetrics: func() []pdata.Metric {
+				out := make([]pdata.Metric, 0, len(commonMetrics)+1)
+				for _, metric := range commonMetrics {
+					out = append(out, metric)
+				}
+
+				return out
+			}(),
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 			},
@@ -62,14 +78,21 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.5.5",
 			mockedZKOutputSourceFilename: "mntr-3.5.5",
-			expectedMetrics: []pdata.Metric{
-				avgLatencyDescriptor,
-				maxLatencyDescriptor,
-				minLatencyDescriptor,
-				followersDescriptor,
-				syncedFollowersDescriptor,
-				pendingSyncsDescriptor,
-			},
+			expectedMetrics: func() []pdata.Metric {
+				out := make([]pdata.Metric, 0, len(commonMetrics)+3)
+				for _, metric := range commonMetrics {
+					out = append(out, metric)
+				}
+
+				for _, metric := range []pdata.Metric{
+					followersDescriptor,
+					syncedFollowersDescriptor,
+					pendingSyncsDescriptor,
+				} {
+					out = append(out, metric)
+				}
+				return out
+			}(),
 			expectedResourceAttributes: map[string]string{
 				"server.state": "leader",
 			},
