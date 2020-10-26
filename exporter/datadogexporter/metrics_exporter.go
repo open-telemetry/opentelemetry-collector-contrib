@@ -59,6 +59,8 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metric
 	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
 	exp.processMetrics(ms)
 
+	// The running metric is added after metrics are processed, as the running metric is already
+	// processed in a special way in RunningMetric (eg. no namespace is added)
 	pushTime := uint64(time.Now().UTC().UnixNano())
 	ms = append(ms, metrics.RunningMetric("metrics", pushTime, exp.logger, exp.cfg)...)
 

@@ -55,6 +55,25 @@ func TestRunningMetric(t *testing.T) {
 	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
+
+	// Test that the namespace set in config does not get used: the running
+	// metric needs to follow a specific format
+	cfg = &config.Config{
+		Metrics: config.MetricsConfig{
+			Namespace: "test.",
+		},
+	}
+
+	ms = RunningMetric("metrics", uint64(2e9), logger, cfg)
+
+	// Check that the namespace isn't used
+	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
+	// Assert metrics list length (should be 1)
+	assert.Equal(t, 1, len(ms))
+	// Assert timestamp
+	assert.Equal(t, 2.0, *ms[0].Points[0][0])
+	// Assert value (should always be 1.0)
+	assert.Equal(t, 1.0, *ms[0].Points[0][1])
 }
 
 func TestAddHostname(t *testing.T) {
