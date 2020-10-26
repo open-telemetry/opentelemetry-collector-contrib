@@ -112,7 +112,7 @@ func TestWriteSpanError(tester *testing.T) {
 	exporter, _ := newLogzioExporter(&cfg, params)
 	oldFunc := exporter.WriteSpanFunc
 	defer func() { exporter.WriteSpanFunc = oldFunc }()
-	exporter.WriteSpanFunc = func(*model.Span) error {
+	exporter.WriteSpanFunc = func(context.Context, *model.Span) error {
 		return errors.New("fail")
 	}
 	droppedSpans, _ := exporter.pushTraceData(context.Background(), internaldata.OCToTraceData(td))
