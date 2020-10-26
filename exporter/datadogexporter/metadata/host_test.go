@@ -30,6 +30,10 @@ func TestHost(t *testing.T) {
 
 	logger := zap.NewNop()
 
+	// Start with a fresh cache, the following test would fail
+	// if the cache key is already set.
+	cache.Cache.Delete(cache.CanonicalHostnameKey)
+
 	host := GetHost(logger, &config.Config{
 		TagsConfig: config.TagsConfig{Hostname: "test-host"},
 	})

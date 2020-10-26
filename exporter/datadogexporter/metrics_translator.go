@@ -22,28 +22,8 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 )
-
-const (
-	// Gauge is the Datadog Gauge metric type
-	Gauge string = "gauge"
-)
-
-// newGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
-// a value and a slice of tags
-func newGauge(name string, ts uint64, value float64, tags []string) datadog.Metric {
-	// Transform UnixNano timestamp into Unix timestamp
-	// 1 second = 1e9 ns
-	timestamp := float64(ts / 1e9)
-
-	gauge := datadog.Metric{
-		Points: []datadog.DataPoint{[2]*float64{&timestamp, &value}},
-		Tags:   tags,
-	}
-	gauge.SetMetric(name)
-	gauge.SetType(Gauge)
-	return gauge
-}
 
 // getTags maps a stringMap into a slice of Datadog tags
 func getTags(labels pdata.StringMap) []string {
@@ -62,33 +42,33 @@ func getTags(labels pdata.StringMap) []string {
 // mapIntMetrics maps int datapoints into Datadog metrics
 func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric {
 	// Allocate assuming none are nil
-	metrics := make([]datadog.Metric, 0, slice.Len())
+	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		if p.IsNil() {
 			continue
 		}
-		metrics = append(metrics,
-			newGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
+		ms = append(ms,
+			metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
 		)
 	}
-	return metrics
+	return ms
 }
 
 // mapDoubleMetrics maps double datapoints into Datadog metrics
 func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.Metric {
 	// Allocate assuming none are nil
-	metrics := make([]datadog.Metric, 0, slice.Len())
+	ms := make([]datadog.Metric, 0, slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		if p.IsNil() {
 			continue
 		}
-		metrics = append(metrics,
-			newGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
+		ms = append(ms,
+			metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
 		)
 	}
-	return metrics
+	return ms
 }
 
 // mapIntHistogramMetrics maps histogram metrics slices to Datadog metrics
@@ -106,7 +86,7 @@ func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.M
 // be reported (opt-in), but bounds are ignored.
 func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice, buckets bool) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
-	metrics := make([]datadog.Metric, 0, 2*slice.Len())
+	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		if p.IsNil() {
@@ -115,9 +95,9 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 
-		metrics = append(metrics,
-			newGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			newGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
+		ms = append(ms,
+			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
+			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
 		)
 
 		if buckets {
@@ -126,13 +106,13 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 			fullName := fmt.Sprintf("%s.count_per_bucket", name)
 			for idx, count := range p.BucketCounts() {
 				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				metrics = append(metrics,
-					newGauge(fullName, ts, float64(count), bucketTags),
+				ms = append(ms,
+					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
 				)
 			}
 		}
 	}
-	return metrics
+	return ms
 }
 
 // mapIntHistogramMetrics maps double histogram metrics slices to Datadog metrics
@@ -140,7 +120,7 @@ func mapIntHistogramMetrics(name string, slice pdata.IntHistogramDataPointSlice,
 // see mapIntHistogramMetrics docs for further details.
 func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPointSlice, buckets bool) []datadog.Metric {
 	// Allocate assuming none are nil and no buckets
-	metrics := make([]datadog.Metric, 0, 2*slice.Len())
+	ms := make([]datadog.Metric, 0, 2*slice.Len())
 	for i := 0; i < slice.Len(); i++ {
 		p := slice.At(i)
 		if p.IsNil() {
@@ -149,9 +129,9 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 		ts := uint64(p.Timestamp())
 		tags := getTags(p.LabelsMap())
 
-		metrics = append(metrics,
-			newGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			newGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
+		ms = append(ms,
+			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
+			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
 		)
 
 		if buckets {
@@ -160,13 +140,13 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 			fullName := fmt.Sprintf("%s.count_per_bucket", name)
 			for idx, count := range p.BucketCounts() {
 				bucketTags := append(tags, fmt.Sprintf("bucket_idx:%d", idx))
-				metrics = append(metrics,
-					newGauge(fullName, ts, float64(count), bucketTags),
+				ms = append(ms,
+					metrics.NewGauge(fullName, ts, float64(count), bucketTags),
 				)
 			}
 		}
 	}
-	return metrics
+	return ms
 }
 
 // MapMetrics maps OTLP metrics into the DataDog format
