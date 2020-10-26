@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"context"
@@ -22,39 +22,40 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
 func TestWithInvalidConfig(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, configmodels.Type("jmx_metrics"), f.Type())
+	assert.Equal(t, configmodels.Type("jmx"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	require.NotNil(t, cfg)
 
-	r, err := f.CreateExtension(
+	r, err := f.CreateMetricsReceiver(
 		context.Background(),
-		component.ExtensionCreateParams{Logger: zap.NewNop()},
-		cfg,
+		component.ReceiverCreateParams{Logger: zap.NewNop()},
+		cfg, consumertest.NewMetricsNop(),
 	)
 	require.Error(t, err)
-	assert.Equal(t, "jmx_metrics missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
 	require.Nil(t, r)
 }
 
 func TestWithValidConfig(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, configmodels.Type("jmx_metrics"), f.Type())
+	assert.Equal(t, configmodels.Type("jmx"), f.Type())
 
 	cfg := f.CreateDefaultConfig()
 	cfg.(*config).ServiceURL = "myserviceurl"
 	cfg.(*config).GroovyScript = "mygroovyscriptpath"
 
-	params := component.ExtensionCreateParams{Logger: zap.NewNop()}
-	r, err := f.CreateExtension(context.Background(), params, cfg)
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	r, err := f.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewMetricsNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
-	extension := r.(*jmxMetricExtension)
-	assert.Same(t, extension.logger, params.Logger)
-	assert.Same(t, extension.config, cfg)
+	receiver := r.(*jmxMetricReceiver)
+	assert.Same(t, receiver.logger, params.Logger)
+	assert.Same(t, receiver.config, cfg)
 }

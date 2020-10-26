@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"context"
@@ -20,11 +20,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/extension/extensionhelper"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
-	typeStr            = "jmx_metrics"
+	typeStr            = "jmx"
 	otlpExporter       = "otlp"
 	otlpEndpoint       = "localhost:55680"
 	prometheusExporter = "prometheus"
@@ -32,16 +33,16 @@ const (
 	prometheusPort     = 9090
 )
 
-func NewFactory() component.ExtensionFactory {
-	return extensionhelper.NewFactory(
+func NewFactory() component.ReceiverFactory {
+	return receiverhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		receiverhelper.WithMetrics(createReceiver))
 }
 
-func createDefaultConfig() configmodels.Extension {
+func createDefaultConfig() configmodels.Receiver {
 	return &config{
-		ExtensionSettings: configmodels.ExtensionSettings{
+		ReceiverSettings: configmodels.ReceiverSettings{
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
@@ -55,14 +56,15 @@ func createDefaultConfig() configmodels.Extension {
 	}
 }
 
-func createExtension(
-	ctx context.Context,
-	params component.ExtensionCreateParams,
-	cfg configmodels.Extension,
-) (component.ServiceExtension, error) {
+func createReceiver(
+	_ context.Context,
+	params component.ReceiverCreateParams,
+	cfg configmodels.Receiver,
+	consumer consumer.MetricsConsumer,
+) (component.MetricsReceiver, error) {
 	jmxConfig := cfg.(*config)
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJMXMetricExtension(params.Logger, jmxConfig), nil
+	return newJMXMetricReceiver(params.Logger, jmxConfig, consumer), nil
 }

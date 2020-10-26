@@ -34,7 +34,6 @@ exporter/splunkhecexporter/              @open-telemetry/collector-contrib-appro
 exporter/stackdriverexporter/            @open-telemetry/collector-contrib-approvers @nilebox @james-bebbington
 
 extension/httpforwarder/                 @open-telemetry/collector-contrib-approvers @asuresh4
-extension/jmxmetricsextension/           @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/                      @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp
 
 internal/awsxray/                        @open-telemetry/collector-contrib-approvers @anuraaga @mxiamxia
@@ -54,6 +53,7 @@ receiver/awsxrayreceiver/                @open-telemetry/collector-contrib-appro
 receiver/carbonreceiver/                 @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/collectdreceiver/               @open-telemetry/collector-contrib-approvers @owais
 receiver/dockerstatsreceiver/            @open-telemetry/collector-contrib-approvers @rmfitzpatrick
+receiver/jmxreceiver/                    @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/k8sclusterreceiver/             @open-telemetry/collector-contrib-approvers @asuresh4
 receiver/kubeletstatsreceiver/           @open-telemetry/collector-contrib-approvers @pmcollins @asuresh4
 receiver/prometheusexecreceiver/         @open-telemetry/collector-contrib-approvers @keitwb @james-bebbington

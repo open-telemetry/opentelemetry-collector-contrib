@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"fmt"
@@ -23,7 +23,7 @@ import (
 )
 
 type config struct {
-	configmodels.ExtensionSettings `mapstructure:",squash"`
+	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	JARPath string `mapstructure:"jar_path"`
 	// The target JMX service url.

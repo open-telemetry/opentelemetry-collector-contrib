@@ -1,8 +1,8 @@
-# JMX Metric Extension
+# JMX Receiver
 
 ### Overview
 
-The JMX Metric Extension will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
+The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/master/contrib/jmx-metrics/README.md)
 to report metrics from a target MBean server using a built-in or your custom `otel` helper-utilizing
 Groovy script.
 
@@ -10,21 +10,21 @@ Status: alpha
 
 ### Details
 
-This extension will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
+This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
 connection information and target Groovy script.  It can report metrics to an existing otlp or prometheus metric
 receiver in your pipeline.  In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
-of the JMX Metric Gatherer JAR and configure the extension with its path.  It is assumed that the JRE is
+of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 
 # Configuration
 
-Note: this extension is in alpha and functionality and configuration fields are subject to change.
+Note: this receiver is in alpha and functionality and configuration fields are subject to change.
 
 Example configuration:
 
 ```yaml
-extensions:
-  jmx_metrics:
+receivers:
+  jmx:
     jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
     service_url: service:jmx:rmi:///jndi/rmi://<my-jmx-host>:<my-jmx-port>/jmxrmi
     groovy_script: /opt/my/groovy.script

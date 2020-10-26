@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jmxmetricextension
+package jmxreceiver
 
 import (
 	"context"
@@ -21,22 +21,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 )
 
-func TestExtension(t *testing.T) {
+func TestReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{}
 
-	extension := newJMXMetricExtension(logger, config)
-	require.NotNil(t, extension)
-	require.Same(t, logger, extension.logger)
-	require.Same(t, config, extension.config)
+	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
+	require.NotNil(t, receiver)
+	require.Same(t, logger, receiver.logger)
+	require.Same(t, config, receiver.config)
 
-	require.Nil(t, extension.Start(context.Background(), componenttest.NewNopHost()))
-	require.Nil(t, extension.Ready())
-	require.Nil(t, extension.Shutdown(context.Background()))
-	require.Nil(t, extension.NotReady())
+	require.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
+	require.Nil(t, receiver.Shutdown(context.Background()))
 }
 
 func TestBuildJMXMetricGathererOTLPConfig(t *testing.T) {
@@ -60,8 +59,8 @@ otel.exporter = otlp
 otel.otlp.endpoint = myotlpendpoint
 otel.otlp.metric.timeout = 234000
 `
-	extension := newJMXMetricExtension(logger, config)
-	jmxConfig, err := extension.buildJMXMetricGathererConfig()
+	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
+	jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)
 }
@@ -86,8 +85,8 @@ otel.exporter = prometheus
 otel.prometheus.host = myprometheushost
 otel.prometheus.port = 12345
 `
-	extension := newJMXMetricExtension(logger, config)
-	jmxConfig, err := extension.buildJMXMetricGathererConfig()
+	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
+	jmxConfig, err := receiver.buildJMXMetricGathererConfig()
 	require.NoError(t, err)
 	require.Equal(t, expectedConfig, jmxConfig)
 }
