@@ -37,7 +37,8 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.Equal(t, 0, w.buffer.Len())
 	resource := pdata.NewResource()
 	resource.InitEmpty()
-	if err := w.Encode(MakeSegment(span, resource, nil, false)); err != nil {
+	segment, _ := MakeSegment(span, resource, nil, false)
+	if err := w.Encode(*segment); err != nil {
 		assert.Fail(t, "invalid json")
 	}
 	jsonStr := w.String()
@@ -53,7 +54,8 @@ func BenchmarkWithoutPool(b *testing.B) {
 		b.StartTimer()
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
-		encoder.Encode(MakeSegment(span, pdata.NewResource(), nil, false))
+		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
+		encoder.Encode(*segment)
 		logger.Info(buffer.String())
 	}
 }
@@ -66,7 +68,8 @@ func BenchmarkWithPool(b *testing.B) {
 		span := constructWriterPoolSpan()
 		b.StartTimer()
 		w := wp.borrow()
-		w.Encode(MakeSegment(span, pdata.NewResource(), nil, false))
+		segment, _ := MakeSegment(span, pdata.NewResource(), nil, false)
+		w.Encode(*segment)
 		logger.Info(w.String())
 	}
 }
