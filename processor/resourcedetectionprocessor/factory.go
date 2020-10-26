@@ -28,6 +28,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
 )
@@ -54,6 +55,7 @@ func NewFactory() component.ProcessorFactory {
 		env.TypeStr: env.NewDetector,
 		gce.TypeStr: gce.NewDetector,
 		ec2.TypeStr: ec2.NewDetector,
+		ecs.TypeStr: ecs.NewDetector,
 	})
 
 	f := &factory{

@@ -34,10 +34,26 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * host.name
     * host.type
 
+* Amazon ECS: Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
+
+    * cloud.provider (aws)
+    * cloud.account.id
+    * cloud.region
+    * cloud.zone
+    * cloud.infrastructure_service
+    * aws.ecs.cluster
+    * aws.ecs.task.arn
+    * aws.ecs.task.family
+    * aws.ecs.launchtype (V4 only)
+    * aws.log.group.names (V4 only)
+    * aws.log.group.arns (V4 only)
+    * aws.log.stream.names (V4 only)
+    * aws.log.stream.arns (V4 only)
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "gce", "ec2"
+# a list of resource detectors to run, valid options are: "env", "gce", "ec2", "ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
