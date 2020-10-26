@@ -5,8 +5,8 @@ go 1.14
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/go-hclog v0.14.0
-	github.com/jaegertracing/jaeger v1.19.2
-	github.com/logzio/jaeger-logzio v0.0.0-20201022141315-1444d8800b9d
+	github.com/jaegertracing/jaeger v1.20.0
+	github.com/logzio/jaeger-logzio v0.0.0-20201026090333-8336e3e13ec6
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/collector v0.11.1-0.20201001213035-035aa5cf6c92
 	go.uber.org/zap v1.16.0
