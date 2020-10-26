@@ -1,0 +1,8 @@
+pipeline:
+  - type: generate_input
+    entry:
+      record:
+        message: Hello, {{ .name }}!
+  - type: rate_limit
+    interval: 1s
+    output: {{ .output }}
