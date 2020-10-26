@@ -48,7 +48,7 @@ func TestRunningMetric(t *testing.T) {
 
 	ms := RunningMetric("metrics", uint64(2e9), logger, cfg)
 
-	assert.Equal(t, "otel.exporter.metrics.running", *ms[0].Metric)
+	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
 	assert.Equal(t, 1, len(ms))
 	// Assert timestamp
