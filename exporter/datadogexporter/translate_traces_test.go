@@ -16,6 +16,7 @@ package datadogexporter
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
-func NewResourceSpansData(mockTraceID []byte, mockSpanID []byte, mockParentSpanID []byte, shouldErr bool, resourceEnvAndService bool) pdata.ResourceSpans {
+func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSpanID [8]byte, shouldErr bool, resourceEnvAndService bool) pdata.ResourceSpans {
 	// The goal of this test is to ensure that each span in
 	// pdata.ResourceSpans is transformed to its *trace.SpanData correctly!
 
@@ -187,9 +188,9 @@ func TestBasicTracesTranslation(t *testing.T) {
 	hostname := "testhostname"
 
 	// generate mock trace, span and parent span ids
-	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
-	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
-	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
 	// create mock resource span data
 	// set shouldError and resourceServiceandEnv to false to test defaut behavior
@@ -211,7 +212,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, 1, len(datadogPayload.Traces))
 
 	// ensure trace id gets translated to uint64 correctly
-	assert.Equal(t, decodeAPMId(mockTraceID), datadogPayload.Traces[0].TraceID)
+	assert.Equal(t, decodeAPMTraceID(mockTraceID), datadogPayload.Traces[0].TraceID)
 
 	// ensure the correct number of spans are expected
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans))
@@ -220,14 +221,14 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, datadogPayload.Traces[0].TraceID, datadogPayload.Traces[0].Spans[0].TraceID)
 
 	// ensure span's spanId and parentSpanId are set correctly
-	assert.Equal(t, decodeAPMId(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
-	assert.Equal(t, decodeAPMId(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
+	assert.Equal(t, decodeAPMSpanID(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
+	assert.Equal(t, decodeAPMSpanID(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
 
 	// ensure that span.resource defaults to otlp span.name
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
 
 	// ensure that span.name defaults to string representing instrumentation library if present
-	assert.Equal(t, fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER), datadogPayload.Traces[0].Spans[0].Name)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", datadogPayload.Traces[0].Spans[0].Meta[tracetranslator.TagInstrumentationName], pdata.SpanKindSERVER)), datadogPayload.Traces[0].Spans[0].Name)
 
 	// ensure that span.type is based on otlp span.kind
 	assert.Equal(t, "web", datadogPayload.Traces[0].Spans[0].Type)
@@ -254,9 +255,9 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	hostname := "testhostname"
 
 	// generate mock trace, span and parent span ids
-	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
-	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
-	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
@@ -292,9 +293,9 @@ func TestTracesTranslationConfig(t *testing.T) {
 	hostname := "testhostname"
 
 	// generate mock trace, span and parent span ids
-	mockTraceID := []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
-	mockSpanID := []byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
-	mockParentSpanID := []byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
+	mockTraceID := [16]byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}
+	mockSpanID := [8]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8}
+	mockParentSpanID := [8]byte{0xEF, 0xEE, 0xED, 0xEC, 0xEB, 0xEA, 0xE9, 0xE8}
 
 	// create mock resource span data
 	// toggle on errors and custom service naming to test edge case code paths
@@ -410,15 +411,21 @@ func TestSpanNameTranslation(t *testing.T) {
 		"otel.library.name": "current_value",
 	}
 
+	ddIlTagsUnusual := map[string]string{
+		"otel.library.name": "@unusual/\\::value",
+	}
+
 	spanNameIl := getDatadogSpanName(span, ddIlTags)
 	spanNameDefault := getDatadogSpanName(span, ddNoIlTags)
 	spanNameOld := getDatadogSpanName(span, ddIlTagsOld)
 	spanNameCur := getDatadogSpanName(span, ddIlTagsCur)
+	spanNameUnusual := getDatadogSpanName(span, ddIlTagsUnusual)
 
-	assert.Equal(t, fmt.Sprintf("%s.%s", "il_name", pdata.SpanKindSERVER), spanNameIl)
-	assert.Equal(t, fmt.Sprintf("%s.%s", "opentelemetry", pdata.SpanKindSERVER), spanNameDefault)
-	assert.Equal(t, fmt.Sprintf("%s.%s", "old_value", pdata.SpanKindSERVER), spanNameOld)
-	assert.Equal(t, fmt.Sprintf("%s.%s", "current_value", pdata.SpanKindSERVER), spanNameCur)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "il_name", pdata.SpanKindSERVER)), spanNameIl)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "opentelemetry", pdata.SpanKindSERVER)), spanNameDefault)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "old_value", pdata.SpanKindSERVER)), spanNameOld)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "current_value", pdata.SpanKindSERVER)), spanNameCur)
+	assert.Equal(t, strings.ToLower(fmt.Sprintf("%s.%s", "unusual_value", pdata.SpanKindSERVER)), spanNameUnusual)
 }
 
 // ensure that the datadog span type gets mapped from span kind

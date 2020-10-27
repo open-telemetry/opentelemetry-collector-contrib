@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 // codeDetails specifies information about a trace status code.
@@ -248,8 +249,8 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogType := spanKindToDatadogType(s.Kind())
 
 	span := &pb.Span{
-		TraceID:  decodeAPMId(s.TraceID().Bytes()[:]),
-		SpanID:   decodeAPMId(s.SpanID().Bytes()[:]),
+		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
+		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
 		Service:  serviceName,
@@ -260,8 +261,8 @@ func spanToDatadogSpan(s pdata.Span,
 		Type:     datadogType,
 	}
 
-	if len(s.ParentSpanID().Bytes()) > 0 {
-		span.ParentID = decodeAPMId(s.ParentSpanID().Bytes()[:])
+	if s.ParentSpanID().IsValid() {
+		span.ParentID = decodeAPMSpanID(s.ParentSpanID().Bytes())
 	}
 
 	// Set Span Status and any response or error details
@@ -428,8 +429,15 @@ func addToAPITrace(apiTrace *pb.APITrace, sp *pb.Span) {
 	}
 }
 
-func decodeAPMId(apmID []byte) uint64 {
-	id := hex.EncodeToString(apmID)
+func decodeAPMSpanID(rawID [8]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
+}
+
+func decodeAPMTraceID(rawID [16]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
+}
+
+func decodeAPMId(id string) uint64 {
 	if len(id) > 16 {
 		id = id[len(id)-16:]
 	}
@@ -448,18 +456,18 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()), "::", "_")
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()))
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()), "::", "_")
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()))
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return strings.ReplaceAll(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()), "::", "_")
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()))
 	}
 
-	return strings.ReplaceAll(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()), "::", "_")
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()))
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {

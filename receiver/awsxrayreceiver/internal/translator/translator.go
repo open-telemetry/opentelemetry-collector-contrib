@@ -137,7 +137,7 @@ func populateSpan(
 	}
 
 	// decode trace id
-	var traceIDBytes []byte
+	var traceIDBytes [16]byte
 	if seg.TraceID == nil {
 		// if seg.TraceID is nil, then `seg` must be an embedded subsegment.
 		traceIDBytes, err = decodeXRayTraceID(traceID)
@@ -154,7 +154,7 @@ func populateSpan(
 	}
 
 	// decode parent id
-	var parentIDBytes []byte
+	var parentIDBytes [8]byte
 	if parentID != nil {
 		parentIDBytes, err = decodeXRaySpanID(parentID)
 		if err != nil {
@@ -176,7 +176,7 @@ func populateSpan(
 	span.SetTraceID(pdata.NewTraceID(traceIDBytes))
 	span.SetSpanID(pdata.NewSpanID(spanIDBytes))
 
-	if parentIDBytes != nil {
+	if parentIDBytes != [8]byte{} {
 		span.SetParentSpanID(pdata.NewSpanID(parentIDBytes))
 	} else {
 		span.SetKind(pdata.SpanKindSERVER)
@@ -234,24 +234,30 @@ decodeXRayTraceID decodes the traceid from xraysdk
 one example of xray format: "1-5f84c7a1-e7d1852db8c4fd35d88bf49a"
 decodeXRayTraceID transfers it to "5f84c7a1e7d1852db8c4fd35d88bf49a" and decode it from hex
 */
-func decodeXRayTraceID(traceID *string) ([]byte, error) {
+func decodeXRayTraceID(traceID *string) ([16]byte, error) {
+	tid := [16]byte{}
+
 	if traceID == nil {
-		return nil, errors.New("traceID is null")
+		return tid, errors.New("traceID is null")
 	}
 	if len(*traceID) < 35 {
-		return nil, errors.New("traceID length is wrong")
+		return tid, errors.New("traceID length is wrong")
 	}
 	traceIDtoBeDecoded := (*traceID)[2:10] + (*traceID)[11:]
-	return hex.DecodeString(traceIDtoBeDecoded)
+
+	_, err := hex.Decode(tid[:], []byte(traceIDtoBeDecoded))
+	return tid, err
 }
 
 // decodeXRaySpanID decodes the spanid from xraysdk
-func decodeXRaySpanID(spanID *string) ([]byte, error) {
+func decodeXRaySpanID(spanID *string) ([8]byte, error) {
+	sid := [8]byte{}
 	if spanID == nil {
-		return nil, errors.New("spanid is null")
+		return sid, errors.New("spanid is null")
 	}
 	if len(*spanID) != 16 {
-		return nil, errors.New("spanID length is wrong")
+		return sid, errors.New("spanID length is wrong")
 	}
-	return hex.DecodeString(*spanID)
+	_, err := hex.Decode(sid[:], []byte(*spanID))
+	return sid, err
 }

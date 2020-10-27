@@ -17,7 +17,6 @@ package kinesisexporter
 import (
 	"context"
 
-	kinesis "github.com/signalfx/opencensus-go-exporter-kinesis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -25,35 +24,45 @@ import (
 	"go.uber.org/zap"
 )
 
-// Exporter implements an OpenTelemetry trace exporter that exports all spans to AWS Kinesis
+// Exporter implements an OpenTelemetry exporter that pushes OpenTelemetry data to AWS Kinesis
 type Exporter struct {
-	kinesis *kinesis.Exporter
-	logger  *zap.Logger
+	producer producer
+	logger   *zap.Logger
 }
 
-var _ component.TraceExporter = (*Exporter)(nil)
+// newExporter creates a new exporter with the passed in configurations.
+// It starts the AWS session and setups the relevant connections.
+func newExporter(c *Config, logger *zap.Logger) (*Exporter, error) {
+	pr, err := newKinesisProducer(c, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Exporter{producer: pr, logger: logger}, nil
+}
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
-// with the host after Start() has already returned. If error is returned by
-// Start() then the collector startup will be aborted.
-func (e Exporter) Start(_ context.Context, _ component.Host) error {
+// with the host after start() has already returned. If error is returned by
+// start() then the collector startup will be aborted.
+func (e *Exporter) Start(_ context.Context, _ component.Host) error {
+	e.producer.start()
 	return nil
 }
 
-// Shutdown is invoked during exporter shutdown.
-func (e Exporter) Shutdown(context.Context) error {
-	e.kinesis.Flush()
+// Shutdown is invoked during exporter shutdown
+func (e *Exporter) Shutdown(_ context.Context) error {
+	e.producer.stop()
 	return nil
 }
 
-// ConsumeTraceData receives a span batch and exports it to AWS Kinesis
-func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
+func (e *Exporter) pushTraces(_ context.Context, td pdata.Traces) (int, error) {
 	pBatches, err := jaegertranslator.InternalTracesToJaegerProto(td)
 	if err != nil {
 		e.logger.Error("error translating span batch", zap.Error(err))
-		return consumererror.Permanent(err)
+		return td.SpanCount(), consumererror.Permanent(err)
 	}
+
 	// TODO: Use a multi error type
 	var exportErr error
 	for _, pBatch := range pBatches {
@@ -61,12 +70,19 @@ func (e Exporter) ConsumeTraces(_ context.Context, td pdata.Traces) error {
 			if span.Process == nil {
 				span.Process = pBatch.Process
 			}
-			err := e.kinesis.ExportSpan(span)
+
+			spanBytes, err := span.Marshal()
 			if err != nil {
+				e.logger.Error("error marshaling span to bytes", zap.Error(err))
+				return td.SpanCount(), consumererror.Permanent(err)
+			}
+
+			if err = e.producer.put(spanBytes, span.SpanID.String()); err != nil {
 				e.logger.Error("error exporting span to kinesis", zap.Error(err))
 				exportErr = err
 			}
 		}
 	}
-	return exportErr
+
+	return 0, exportErr
 }

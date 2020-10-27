@@ -35,10 +35,10 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	ils.Spans().Resize(2)
 	firstSpan := ils.Spans().At(0)
 	firstSpan.SetName("first-batch-first-span")
-	firstSpan.SetTraceID(pdata.NewTraceID([]byte{1, 2, 3, 4}))
+	firstSpan.SetTraceID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 	secondSpan := ils.Spans().At(1)
 	secondSpan.SetName("first-batch-second-span")
-	secondSpan.SetTraceID(pdata.NewTraceID([]byte{2, 3, 4, 5}))
+	secondSpan.SetTraceID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
 
 	inBatch := pdata.NewTraces()
 	inBatch.ResourceSpans().Append(rs)
