@@ -249,8 +249,8 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogType := spanKindToDatadogType(s.Kind())
 
 	span := &pb.Span{
-		TraceID:  decodeAPMId(s.TraceID().Bytes()[:]),
-		SpanID:   decodeAPMId(s.SpanID().Bytes()[:]),
+		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
+		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
 		Service:  serviceName,
@@ -261,8 +261,8 @@ func spanToDatadogSpan(s pdata.Span,
 		Type:     datadogType,
 	}
 
-	if len(s.ParentSpanID().Bytes()) > 0 {
-		span.ParentID = decodeAPMId(s.ParentSpanID().Bytes()[:])
+	if s.ParentSpanID().IsValid() {
+		span.ParentID = decodeAPMSpanID(s.ParentSpanID().Bytes())
 	}
 
 	// Set Span Status and any response or error details
@@ -429,8 +429,15 @@ func addToAPITrace(apiTrace *pb.APITrace, sp *pb.Span) {
 	}
 }
 
-func decodeAPMId(apmID []byte) uint64 {
-	id := hex.EncodeToString(apmID)
+func decodeAPMSpanID(rawID [8]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
+}
+
+func decodeAPMTraceID(rawID [16]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
+}
+
+func decodeAPMId(id string) uint64 {
 	if len(id) > 16 {
 		id = id[len(id)-16:]
 	}

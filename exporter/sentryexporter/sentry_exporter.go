@@ -183,7 +183,7 @@ func convertToSentrySpan(span pdata.Span, library pdata.InstrumentationLibrary, 
 	}
 
 	parentSpanID := ""
-	if psID := span.ParentSpanID(); !isAllZero(psID.Bytes()) {
+	if psID := span.ParentSpanID(); psID.IsValid() {
 		parentSpanID = psID.HexString()
 	}
 

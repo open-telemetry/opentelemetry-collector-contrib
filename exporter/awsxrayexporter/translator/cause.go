@@ -16,7 +16,6 @@ package translator
 
 import (
 	"bufio"
-	"encoding/hex"
 	"net/textproto"
 	"strconv"
 	"strings"
@@ -102,7 +101,7 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 
 		if message != "" {
 			id := newSegmentID()
-			hexID := hex.EncodeToString(id.Bytes())
+			hexID := id.HexString()
 
 			cause = &awsxray.CauseData{
 				Type: awsxray.CauseTypeObject,
@@ -141,7 +140,7 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 	r.ReadLine()
 	exceptions := make([]awsxray.Exception, 0, 1)
 	exceptions = append(exceptions, awsxray.Exception{
-		ID:      aws.String(hex.EncodeToString(newSegmentID().Bytes())),
+		ID:      aws.String(newSegmentID().HexString()),
 		Type:    aws.String(exceptionType),
 		Message: aws.String(message),
 	})
@@ -217,7 +216,7 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 				}
 			}
 			exceptions = append(exceptions, awsxray.Exception{
-				ID:      aws.String(hex.EncodeToString(newSegmentID().Bytes())),
+				ID:      aws.String(newSegmentID().HexString()),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
 				Stack:   make([]awsxray.StackFrame, 0),

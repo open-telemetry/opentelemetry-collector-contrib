@@ -1068,7 +1068,7 @@ func TestDecodeXRayTraceID(t *testing.T) {
 	// normal
 	traceID := "1-5f84c7a1-e7d1852db8c4fd35d88bf49a"
 	traceIDBytes, err := decodeXRayTraceID(&traceID)
-	expectedTraceIDBytes := []byte("\x5f\x84\xc7\xa1\xe7\xd1\x85\x2d\xb8\xc4\xfd\x35\xd8\x8b\xf4\x9a")
+	expectedTraceIDBytes := [16]byte{0x5f, 0x84, 0xc7, 0xa1, 0xe7, 0xd1, 0x85, 0x2d, 0xb8, 0xc4, 0xfd, 0x35, 0xd8, 0x8b, 0xf4, 0x9a}
 	if assert.NoError(t, err) {
 		assert.Equal(t, traceIDBytes, expectedTraceIDBytes)
 	}
@@ -1087,7 +1087,7 @@ func TestDecodeXRaySpanID(t *testing.T) {
 	// normal
 	spanID := "defdfd9912dc5a56"
 	spanIDBytes, err := decodeXRaySpanID(&spanID)
-	expectedSpanIDBytes := []byte("\xde\xfd\xfd\x99\x12\xdc\x5a\x56")
+	expectedSpanIDBytes := [8]byte{0xde, 0xfd, 0xfd, 0x99, 0x12, 0xdc, 0x5a, 0x56}
 	if assert.NoError(t, err) {
 		assert.Equal(t, spanIDBytes, expectedSpanIDBytes)
 	}

@@ -135,7 +135,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
+	parentSpanID := pdata.InvalidSpanID()
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil)
 
@@ -272,7 +272,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(pdata.NewSpanID(nil), spanName, 0, "OK", attributes)
+	span := constructClientSpan(pdata.InvalidSpanID(), spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
 	traceID := span.TraceID().Bytes()
@@ -289,10 +289,10 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	TempTraceID := newTraceID()
-	binary.BigEndian.PutUint32(TempTraceID.Bytes()[0:4], uint32(ExpiredEpoch))
+	tempTraceID := newTraceID().Bytes()
+	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
-	_, err := convertToAmazonTraceID(TempTraceID)
+	_, err := convertToAmazonTraceID(pdata.NewTraceID(tempTraceID))
 	assert.NotNil(t, err)
 }
 
