@@ -154,7 +154,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion after 200 logs are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 50, 1, rt.copyTruncate, rt.sequential)
+	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
 	numLogs := 300
 
 	// Build input lines and expected outputs
