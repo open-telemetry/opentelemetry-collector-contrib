@@ -68,7 +68,11 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		se.pushTraceData,
-		exporterhelper.WithShutdown(se.Shutdown))
+		exporterhelper.WithShutdown(se.Shutdown),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+	)
 }
 
 // tracesByAccessToken takes a pdata.Traces struct and will iterate through its ResourceSpans' attributes,
