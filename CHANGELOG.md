@@ -11,7 +11,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 ## 🛑 Breaking changes 🛑
 - `kinesis` exporter: Refactor kinesis exporter to use exporter helper functionality with new producer implementation (#1345)
   - Moved to omnition kinesis producer library from opencensus-go-exporter which was serializing the data to jaeger format as prep to support more formats
-  - Removed the ff configs related to setting up opencensus-go-exporter
+  - Removed the ff kinesis configs related to setting up opencensus-go-exporter
     - `queue_size`
     - `num_workers`
     - `max_bytes_per_batch`
