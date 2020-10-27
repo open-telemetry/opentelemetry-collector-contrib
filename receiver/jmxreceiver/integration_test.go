@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"runtime"
 	"testing"
 	"time"
 
@@ -219,16 +218,11 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 		require.Nil(t, (*otlpReceiver).Shutdown(context.Background()))
 	}()
 
-	otlp := "localhost"
-	if runtime.GOOS == "darwin" {
-		otlp = "host.docker.internal"
-	}
-
 	config := &config{
 		JARPath:      suite.JARPath,
 		ServiceURL:   fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
 		Exporter:     "otlp",
-		OTLPEndpoint: fmt.Sprintf("%v:%v", otlp, port),
+		OTLPEndpoint: fmt.Sprintf("localhost:%v", port),
 		GroovyScript: path.Join(".", "testdata", "script.groovy"),
 		Username:     "cassandra",
 		Password:     "cassandra",
@@ -322,7 +316,6 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration(
 	}()
 
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-	require.NoError(t, receiver.Ready())
 
 	require.Eventually(t, func() bool {
 		metrics := consumer.AllMetrics()
