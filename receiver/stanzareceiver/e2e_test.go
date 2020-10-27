@@ -195,7 +195,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// likely because log files will exists for much longer durations, except in the
 		// most extreme scenarios. This test attempts to establish a stable scenario that
 		// does not consume much time by balancing the max lines per file with a duration
-		// of existance that is low enough to be practical in a unit test. The following
+		// of existence that is low enough to be practical in a unit test. The following
 		// sleep provides a level of consistency to file lifespan.
 		time.Sleep(2 * time.Millisecond)
 	}
