@@ -57,6 +57,10 @@ gotidy:
 gofmt:
 	$(MAKE) for-all CMD="make fmt"
 
+.PHONY: golint
+golint:
+	$(MAKE) for-all CMD="make lint"
+
 .PHONY: for-all
 for-all:
 	@echo "running $${CMD} in root"
