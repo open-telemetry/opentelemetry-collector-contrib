@@ -154,7 +154,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
 	// when more than 100 logs are written, and deletion after 200 logs are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
+	logger := newRotatingLogger(t, tempDir, 50, 1, rt.copyTruncate, rt.sequential)
 	numLogs := 300
 
 	// Build input lines and expected outputs
@@ -190,10 +190,20 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	for _, line := range lines {
 		logger.Print(line)
-		time.Sleep(time.Millisecond)
+		// At a high enough rate of file rotation, it is possible for a file to be deleted
+		// before all lines can be read from it. In production settings, this is far less
+		// likely because log files will exists for much longer durations, except in the
+		// most extreme scenarios. This test attempts to establish a stable scenario that
+		// does not consume much time by balancing the max lines per file with a duration
+		// of existance that is low enough to be practical in a unit test. The following
+		// sleep provides a level of consistency to file lifespan.
+		time.Sleep(2 * time.Millisecond)
 	}
 
-	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
+	missingMsg := func(exp, act int) string { return fmt.Sprintf("%d out of expected %d received", act, exp) }
+
+	waitFor, tick := 2*time.Second, time.Millisecond
+	require.Eventually(t, expectNLogs(sink, numLogs), waitFor, tick, missingMsg(numLogs, sink.LogRecordsCount()))
 	require.ElementsMatch(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
