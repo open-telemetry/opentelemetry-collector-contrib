@@ -449,18 +449,18 @@ func getDatadogSpanName(s pdata.Span, datadogTags map[string]string) string {
 	// The spec has changed over time and, depending on the original exporter, IL Name could represented a few different ways
 	// so we try to account for all permutations
 	if ilnOtlp, okOtlp := datadogTags[tracetranslator.TagInstrumentationName]; okOtlp {
-		return utils.NormalizeTag(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtlp, s.Kind()))
 	}
 
 	if ilnOtelCur, okOtelCur := datadogTags[currentILNameTag]; okOtelCur {
-		return utils.NormalizeTag(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelCur, s.Kind()))
 	}
 
 	if ilnOtelOld, okOtelOld := datadogTags[oldILNameTag]; okOtelOld {
-		return utils.NormalizeTag(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()))
+		return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", ilnOtelOld, s.Kind()))
 	}
 
-	return utils.NormalizeTag(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()))
+	return utils.NormalizeSpanName(fmt.Sprintf("%s.%s", "opentelemetry", s.Kind()))
 }
 
 func getDatadogResourceName(s pdata.Span, datadogTags map[string]string) string {

@@ -25,8 +25,8 @@ const (
 	MaxTagLength = 200
 )
 
-// NormalizeTag returns a cleaned up, normalized tags. If the tag can't be normalized
-// it will return the empty string. Here are the rules:
+// NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
+// and they also are used throughout the UI to connect metrics and traces. Here are the rules:
 //
 // 	1. Convert to all lowercase unicode string
 // 	2. Convert bad characters to underscores
@@ -39,7 +39,7 @@ const (
 //
 // 	https://docs.datadoghq.com/getting_started/tagging/#defining-tags
 //
-func NormalizeTag(tag string) string {
+func NormalizeSpanName(tag string) string {
 	// unless you just throw out unicode, this is already as fast as it gets
 	bufSize := len(tag)
 	if bufSize > MaxTagLength {
