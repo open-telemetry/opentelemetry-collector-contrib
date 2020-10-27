@@ -47,7 +47,8 @@ func TestDefaultConfig(t *testing.T) {
 				NameVal: "kinesis",
 			},
 			AWS: AWSConfig{
-				Region: "us-west-2",
+				Region:     "us-west-2",
+				StreamName: "test-stream",
 			},
 			KPL: KPLConfig{
 				BatchSize:            5242880,
@@ -56,12 +57,6 @@ func TestDefaultConfig(t *testing.T) {
 				FlushIntervalSeconds: 5,
 				MaxConnections:       24,
 			},
-
-			QueueSize:            100000,
-			NumWorkers:           8,
-			FlushIntervalSeconds: 5,
-			MaxBytesPerBatch:     100000,
-			MaxBytesPerSpan:      900000,
 		},
 	)
 }
@@ -104,12 +99,6 @@ func TestConfig(t *testing.T) {
 				MaxRetries:           17,
 				MaxBackoffSeconds:    18,
 			},
-
-			QueueSize:            1,
-			NumWorkers:           2,
-			FlushIntervalSeconds: 3,
-			MaxBytesPerBatch:     4,
-			MaxBytesPerSpan:      5,
 		},
 	)
 }
