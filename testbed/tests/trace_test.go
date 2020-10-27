@@ -59,15 +59,6 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 85,
 			},
 		},
-		{
-			"AwsXray",
-			testbed.NewOTLPTraceDataSender("localhost", testbed.GetAvailablePort(t)),
-			datareceivers.NewMockAwsXrayDataReceiver(testbed.GetAvailablePort(t)),
-			testbed.ResourceSpec{
-				ExpectedMaxCPU: 75,
-				ExpectedMaxRAM: 85,
-			},
-		},
 	}
 
 	processors := map[string]string{
