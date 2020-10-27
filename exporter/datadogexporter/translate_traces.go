@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"go.opencensus.io/trace"
