@@ -249,8 +249,8 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogType := spanKindToDatadogType(s.Kind())
 
 	span := &pb.Span{
-		TraceID:  decodeAPMTraceId(s.TraceID().Bytes()),
-		SpanID:   decodeAPMSpanId(s.SpanID().Bytes()),
+		TraceID:  decodeAPMTraceID(s.TraceID().Bytes()),
+		SpanID:   decodeAPMSpanID(s.SpanID().Bytes()),
 		Name:     getDatadogSpanName(s, tags),
 		Resource: getDatadogResourceName(s, tags),
 		Service:  serviceName,
@@ -262,7 +262,7 @@ func spanToDatadogSpan(s pdata.Span,
 	}
 
 	if s.ParentSpanID().IsValid() {
-		span.ParentID = decodeAPMSpanId(s.ParentSpanID().Bytes())
+		span.ParentID = decodeAPMSpanID(s.ParentSpanID().Bytes())
 	}
 
 	// Set Span Status and any response or error details
@@ -429,12 +429,12 @@ func addToAPITrace(apiTrace *pb.APITrace, sp *pb.Span) {
 	}
 }
 
-func decodeAPMSpanId(rawId [8]byte) uint64 {
-	return decodeAPMId(hex.EncodeToString(rawId[:]))
+func decodeAPMSpanID(rawID [8]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
 }
 
-func decodeAPMTraceId(rawId [16]byte) uint64 {
-	return decodeAPMId(hex.EncodeToString(rawId[:]))
+func decodeAPMTraceID(rawID [16]byte) uint64 {
+	return decodeAPMId(hex.EncodeToString(rawID[:]))
 }
 
 func decodeAPMId(id string) uint64 {

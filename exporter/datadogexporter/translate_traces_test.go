@@ -212,7 +212,7 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, 1, len(datadogPayload.Traces))
 
 	// ensure trace id gets translated to uint64 correctly
-	assert.Equal(t, decodeAPMTraceId(mockTraceID), datadogPayload.Traces[0].TraceID)
+	assert.Equal(t, decodeAPMTraceID(mockTraceID), datadogPayload.Traces[0].TraceID)
 
 	// ensure the correct number of spans are expected
 	assert.Equal(t, 1, len(datadogPayload.Traces[0].Spans))
@@ -221,8 +221,8 @@ func TestBasicTracesTranslation(t *testing.T) {
 	assert.Equal(t, datadogPayload.Traces[0].TraceID, datadogPayload.Traces[0].Spans[0].TraceID)
 
 	// ensure span's spanId and parentSpanId are set correctly
-	assert.Equal(t, decodeAPMSpanId(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
-	assert.Equal(t, decodeAPMSpanId(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
+	assert.Equal(t, decodeAPMSpanID(mockSpanID), datadogPayload.Traces[0].Spans[0].SpanID)
+	assert.Equal(t, decodeAPMSpanID(mockParentSpanID), datadogPayload.Traces[0].Spans[0].ParentID)
 
 	// ensure that span.resource defaults to otlp span.name
 	assert.Equal(t, "End-To-End Here", datadogPayload.Traces[0].Spans[0].Resource)
