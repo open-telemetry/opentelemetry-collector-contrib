@@ -27,8 +27,8 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	st := newMemoryStorage()
 
 	traceIDs := []pdata.TraceID{
-		pdata.NewTraceID([]byte{1, 2, 3, 4}),
-		pdata.NewTraceID([]byte{2, 3, 4, 5}),
+		pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		pdata.NewTraceID([16]byte{2, 3, 4, 5}),
 	}
 
 	baseTrace := pdata.NewResourceSpans()
@@ -62,7 +62,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	trace := pdata.NewResourceSpans()
 	trace.InitEmpty()
@@ -90,7 +90,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
 
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
 	batch.InitEmpty()
@@ -99,7 +99,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 
 	st.createOrAppend(traceID, batch)
 
@@ -111,7 +111,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	secondSpan := secondIls.Spans().At(0)
 	secondSpan.SetName("second-name")
 	secondSpan.SetTraceID(traceID)
-	secondSpan.SetSpanID(pdata.NewSpanID([]byte{5, 6, 7, 8}))
+	secondSpan.SetSpanID(pdata.NewSpanID([8]byte{5, 6, 7, 8}))
 
 	expected := []pdata.ResourceSpans{
 		pdata.NewResourceSpans(),
@@ -144,7 +144,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	batch := pdata.NewResourceSpans()
 	batch.InitEmpty()
@@ -153,7 +153,7 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	ils.Spans().Resize(1)
 	span := ils.Spans().At(0)
 	span.SetTraceID(traceID)
-	span.SetSpanID(pdata.NewSpanID([]byte{1, 2, 3, 4}))
+	span.SetSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4}))
 	span.SetName("should-not-be-changed")
 
 	// test
@@ -170,7 +170,7 @@ func TestMemoryTraceIsBeingCloned(t *testing.T) {
 func TestCreateWithNilParameter(t *testing.T) {
 	// prepare
 	st := newMemoryStorage()
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	err := st.createOrAppend(traceID, pdata.NewResourceSpans())

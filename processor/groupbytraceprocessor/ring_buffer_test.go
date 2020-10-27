@@ -27,12 +27,12 @@ func TestRingBufferCapacity(t *testing.T) {
 
 	// test
 	traceIDs := []pdata.TraceID{
-		pdata.NewTraceID([]byte{1, 2, 3, 4}),
-		pdata.NewTraceID([]byte{2, 3, 4, 5}),
-		pdata.NewTraceID([]byte{3, 4, 5, 6}),
-		pdata.NewTraceID([]byte{4, 5, 6, 7}),
-		pdata.NewTraceID([]byte{5, 6, 7, 8}),
-		pdata.NewTraceID([]byte{6, 7, 8, 9}),
+		pdata.NewTraceID([16]byte{1, 2, 3, 4}),
+		pdata.NewTraceID([16]byte{2, 3, 4, 5}),
+		pdata.NewTraceID([16]byte{3, 4, 5, 6}),
+		pdata.NewTraceID([16]byte{4, 5, 6, 7}),
+		pdata.NewTraceID([16]byte{5, 6, 7, 8}),
+		pdata.NewTraceID([16]byte{6, 7, 8, 9}),
 	}
 	for _, traceID := range traceIDs {
 		buffer.put(traceID)
@@ -51,7 +51,7 @@ func TestRingBufferCapacity(t *testing.T) {
 func TestDeleteFromBuffer(t *testing.T) {
 	// prepare
 	buffer := newRingBuffer(2)
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 	buffer.put(traceID)
 
 	// test
@@ -65,7 +65,7 @@ func TestDeleteFromBuffer(t *testing.T) {
 func TestDeleteNonExistingFromBuffer(t *testing.T) {
 	// prepare
 	buffer := newRingBuffer(2)
-	traceID := pdata.NewTraceID([]byte{1, 2, 3, 4})
+	traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	deleted := buffer.delete(traceID)
