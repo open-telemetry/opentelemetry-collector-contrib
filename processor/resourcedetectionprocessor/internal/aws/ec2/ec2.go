@@ -16,6 +16,7 @@ package ec2
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -52,7 +53,12 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 
 	meta, err := d.provider.get(ctx)
 	if err != nil {
-		return res, err
+		return res, fmt.Errorf("failed getting identity document: %w", err)
+	}
+
+	hostname, err := d.provider.hostname(ctx)
+	if err != nil {
+		return res, fmt.Errorf("failed getting hostname: %w", err)
 	}
 
 	attr := res.Attributes()
@@ -63,6 +69,7 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	attr.InsertString(conventions.AttributeHostID, meta.InstanceID)
 	attr.InsertString(conventions.AttributeHostImageID, meta.ImageID)
 	attr.InsertString(conventions.AttributeHostType, meta.InstanceType)
+	attr.InsertString(conventions.AttributeHostName, hostname)
 
 	return res, nil
 }

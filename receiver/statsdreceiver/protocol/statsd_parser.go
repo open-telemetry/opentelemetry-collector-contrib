@@ -167,20 +167,12 @@ func buildPoint(parsedMetric *statsDMetric) (*metricspb.Point, error) {
 
 	switch parsedMetric.statsdMetricType {
 	case "c":
-		return buildGaugeOrCounterPoint(parsedMetric, now, func(parsedMetric *statsDMetric, isDouble bool) {
-			if isDouble {
-				parsedMetric.metricType = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-				return
-			}
+		return buildCounterPoint(parsedMetric, now, func(parsedMetric *statsDMetric) {
 			parsedMetric.metricType = metricspb.MetricDescriptor_CUMULATIVE_INT64
 		})
 	case "g":
-		return buildGaugeOrCounterPoint(parsedMetric, now, func(parsedMetric *statsDMetric, isDouble bool) {
-			if isDouble {
-				parsedMetric.metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-				return
-			}
-			parsedMetric.metricType = metricspb.MetricDescriptor_GAUGE_INT64
+		return buildGaugePoint(parsedMetric, now, func(parsedMetric *statsDMetric) {
+			parsedMetric.metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 		})
 	case "ms":
 		return buildTimerPoint(parsedMetric, now, func(parsedMetric *statsDMetric) {
@@ -191,33 +183,44 @@ func buildPoint(parsedMetric *statsDMetric) (*metricspb.Point, error) {
 	return nil, fmt.Errorf("unhandled metric type: %s", parsedMetric.statsdMetricType)
 }
 
-func buildGaugeOrCounterPoint(parsedMetric *statsDMetric, now *timestamppb.Timestamp,
-	metricTypeSetter func(parsedMetric *statsDMetric, isDouble bool)) (*metricspb.Point, error) {
+func buildCounterPoint(parsedMetric *statsDMetric, now *timestamppb.Timestamp,
+	metricTypeSetter func(parsedMetric *statsDMetric)) (*metricspb.Point, error) {
 	var point *metricspb.Point
-	var isDouble bool
+	var i int64
 
-	i, err := strconv.ParseInt(parsedMetric.value, 10, 64)
+	f, err := strconv.ParseFloat(parsedMetric.value, 64)
 	if err != nil {
-		f, err := strconv.ParseFloat(parsedMetric.value, 64)
-		if err != nil {
-			return nil, fmt.Errorf("parse metric value string: %s", parsedMetric.value)
-		}
-		point = &metricspb.Point{
-			Timestamp: now,
-			Value: &metricspb.Point_DoubleValue{
-				DoubleValue: f,
-			},
-		}
-		isDouble = true
-	} else {
-		point = &metricspb.Point{
-			Timestamp: now,
-			Value: &metricspb.Point_Int64Value{
-				Int64Value: i,
-			},
-		}
+		return nil, fmt.Errorf("counter: parse metric value string: %s", parsedMetric.value)
 	}
-	metricTypeSetter(parsedMetric, isDouble)
+	i = int64(f)
+	if 0 < parsedMetric.sampleRate && parsedMetric.sampleRate < 1 {
+		i = int64(f / parsedMetric.sampleRate)
+	}
+	point = &metricspb.Point{
+		Timestamp: now,
+		Value: &metricspb.Point_Int64Value{
+			Int64Value: i,
+		},
+	}
+	metricTypeSetter(parsedMetric)
+	return point, nil
+}
+
+func buildGaugePoint(parsedMetric *statsDMetric, now *timestamppb.Timestamp,
+	metricTypeSetter func(parsedMetric *statsDMetric)) (*metricspb.Point, error) {
+	var point *metricspb.Point
+
+	f, err := strconv.ParseFloat(parsedMetric.value, 64)
+	if err != nil {
+		return nil, fmt.Errorf("gauge: parse metric value string: %s", parsedMetric.value)
+	}
+	point = &metricspb.Point{
+		Timestamp: now,
+		Value: &metricspb.Point_DoubleValue{
+			DoubleValue: f,
+		},
+	}
+	metricTypeSetter(parsedMetric)
 	return point, nil
 }
 

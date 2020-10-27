@@ -24,7 +24,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
@@ -34,51 +34,35 @@ type metricsExporter struct {
 	client *datadog.Client
 }
 
-func validateAPIKey(logger *zap.Logger, client *datadog.Client) {
-	logger.Info("Validating API key.")
-	res, err := client.Validate()
-	if err != nil {
-		logger.Warn("Error while validating API key.", zap.Error(err))
-	}
-
-	if res {
-		logger.Info("API key validation successful.")
-	} else {
-		logger.Warn("API key validation failed.")
-	}
-}
-
 func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*metricsExporter, error) {
-	client := datadog.NewClient(cfg.API.Key, "")
-	client.SetBaseUrl(cfg.Metrics.TCPAddr.Endpoint)
+	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
 	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
-	validateAPIKey(params.Logger, client)
+	utils.ValidateAPIKey(params.Logger, client)
 
 	return &metricsExporter{params.Logger, cfg, client}, nil
 }
 
-func (exp *metricsExporter) processMetrics(metrics []datadog.Metric) {
+func (exp *metricsExporter) processMetrics(ms []datadog.Metric) {
 	addNamespace := exp.cfg.Metrics.Namespace != ""
-	overrideHostname := exp.cfg.Hostname != ""
 
-	for i := range metrics {
-		if addNamespace {
-			newName := exp.cfg.Metrics.Namespace + *metrics[i].Metric
-			metrics[i].Metric = &newName
-		}
-
-		if overrideHostname || metrics[i].GetHost() == "" {
-			metrics[i].Host = metadata.GetHost(exp.logger, exp.cfg)
-		}
+	if addNamespace {
+		metrics.AddNamespace(ms, exp.cfg.Metrics.Namespace)
 	}
+
+	metrics.AddHostname(ms, exp.logger, exp.cfg)
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
-	metrics, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
-	exp.processMetrics(metrics)
+	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
+	exp.processMetrics(ms)
 
-	err := exp.client.PostMetrics(metrics)
+	// The running metric is added after metrics are processed, as the running metric is already
+	// processed in a special way in RunningMetric (eg. no namespace is added)
+	pushTime := uint64(time.Now().UTC().UnixNano())
+	ms = append(ms, metrics.RunningMetric("metrics", pushTime, exp.logger, exp.cfg)...)
+
+	err := exp.client.PostMetrics(ms)
 	return droppedTimeSeries, err
 }

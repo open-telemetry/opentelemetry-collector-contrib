@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"io/ioutil"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +32,25 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 )
+
+// Asserts whether dimension sets are equal (i.e. has same sets of dimensions)
+func assertDimsEqual(t *testing.T, expected, actual [][]string) {
+	// Convert to string for easier sorting
+	expectedStringified := make([]string, len(expected))
+	actualStringified := make([]string, len(actual))
+	for i, v := range expected {
+		sort.Strings(v)
+		expectedStringified[i] = strings.Join(v, ",")
+	}
+	for i, v := range actual {
+		sort.Strings(v)
+		actualStringified[i] = strings.Join(v, ",")
+	}
+	// Sort across dimension sets for equality checking
+	sort.Strings(expectedStringified)
+	sort.Strings(actualStringified)
+	assert.Equal(t, expectedStringified, actualStringified)
+}
 
 func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 
@@ -245,7 +265,734 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent[0].InputLogEvent.Message, "Expect to be equal")
 }
 
-func TestGetMeasurements(t *testing.T) {
+func TestGetCWMetrics(t *testing.T) {
+	namespace := "Namespace"
+	OTelLib := "OTelLib"
+	instrumentationLibName := "InstrLibName"
+
+	testCases := []struct {
+		testName string
+		metric   *metricspb.Metric
+		expected []*CWMetrics
+	}{
+		{
+			"Int gauge",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_GAUGE_INT64,
+					Unit: "Count",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 3,
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    int64(1),
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    int64(3),
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double gauge",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					Unit: "Count",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.1,
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.3,
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0.1,
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0.3,
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Int sum",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					Unit: "Count",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 3,
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0,
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0,
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double sum",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+					Unit: "Count",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.1,
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.3,
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0,
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Count"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib:  instrumentationLibName,
+						"foo":    0,
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double histogram",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+					Unit: "Seconds",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DistributionValue{
+									DistributionValue: &metricspb.DistributionValue{
+										Sum:   15.0,
+										Count: 5,
+										BucketOptions: &metricspb.DistributionValue_BucketOptions{
+											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+													Bounds: []float64{0, 10},
+												},
+											},
+										},
+										Buckets: []*metricspb.DistributionValue_Bucket{
+											{
+												Count: 0,
+											},
+											{
+												Count: 4,
+											},
+											{
+												Count: 1,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_DistributionValue{
+									DistributionValue: &metricspb.DistributionValue{
+										Sum:   35.0,
+										Count: 18,
+										BucketOptions: &metricspb.DistributionValue_BucketOptions{
+											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+													Bounds: []float64{0, 10},
+												},
+											},
+										},
+										Buckets: []*metricspb.DistributionValue_Bucket{
+											{
+												Count: 5,
+											},
+											{
+												Count: 6,
+											},
+											{
+												Count: 7,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Min:   0,
+							Max:   10,
+							Sum:   15.0,
+							Count: 5,
+						},
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Min:   0,
+							Max:   10,
+							Sum:   35.0,
+							Count: 18,
+						},
+						"label2": "value2",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			oc := consumerdata.MetricsData{
+				Node: &commonpb.Node{},
+				Resource: &resourcepb.Resource{
+					Labels: map[string]string{
+						conventions.AttributeServiceName:      "myServiceName",
+						conventions.AttributeServiceNamespace: "myServiceNS",
+					},
+				},
+				Metrics: []*metricspb.Metric{tc.metric},
+			}
+
+			// Retrieve *pdata.Metric
+			rms := internaldata.OCToMetrics(oc).ResourceMetrics()
+			assert.Equal(t, 1, rms.Len())
+			ilms := rms.At(0).InstrumentationLibraryMetrics()
+			assert.Equal(t, 1, ilms.Len())
+			metrics := ilms.At(0).Metrics()
+			assert.Equal(t, 1, metrics.Len())
+			metric := metrics.At(0)
+
+			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, "")
+			assert.Equal(t, len(tc.expected), len(cwMetrics))
+
+			for i, expected := range tc.expected {
+				cwMetric := cwMetrics[i]
+				assert.Equal(t, len(expected.Measurements), len(cwMetric.Measurements))
+				assert.Equal(t, expected.Measurements, cwMetric.Measurements)
+				assert.Equal(t, len(expected.Fields), len(cwMetric.Fields))
+				assert.Equal(t, expected.Fields, cwMetric.Fields)
+			}
+		})
+	}
+}
+
+func TestBuildCWMetric(t *testing.T) {
+	namespace := "Namespace"
+	instrLibName := "InstrLibName"
+	OTelLib := "OTelLib"
+	metricSlice := []map[string]string{
+		{
+			"Name": "foo",
+			"Unit": "",
+		},
+	}
+	metric := pdata.NewMetric()
+	metric.InitEmpty()
+	metric.SetName("foo")
+
+	t.Run("Int gauge", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		dp := pdata.NewIntDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"label1": "value1",
+		})
+		dp.SetValue(int64(-17))
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+
+		assert.NotNil(t, cwMetric)
+		assert.Equal(t, 1, len(cwMetric.Measurements))
+		expectedMeasurement := CwMeasurement{
+			Namespace:  namespace,
+			Dimensions: [][]string{{"label1", OTelLib}},
+			Metrics:    metricSlice,
+		}
+		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
+		expectedFields := map[string]interface{}{
+			OTelLib:  instrLibName,
+			"foo":    int64(-17),
+			"label1": "value1",
+		}
+		assert.Equal(t, expectedFields, cwMetric.Fields)
+	})
+
+	t.Run("Double gauge", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		dp := pdata.NewDoubleDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"label1": "value1",
+		})
+		dp.SetValue(0.3)
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+
+		assert.NotNil(t, cwMetric)
+		assert.Equal(t, 1, len(cwMetric.Measurements))
+		expectedMeasurement := CwMeasurement{
+			Namespace:  namespace,
+			Dimensions: [][]string{{"label1", OTelLib}},
+			Metrics:    metricSlice,
+		}
+		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
+		expectedFields := map[string]interface{}{
+			OTelLib:  instrLibName,
+			"foo":    0.3,
+			"label1": "value1",
+		}
+		assert.Equal(t, expectedFields, cwMetric.Fields)
+	})
+
+	t.Run("Int sum", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeIntSum)
+		metric.IntSum().InitEmpty()
+		metric.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		dp := pdata.NewIntDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"label1": "value1",
+		})
+		dp.SetValue(int64(-17))
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+
+		assert.NotNil(t, cwMetric)
+		assert.Equal(t, 1, len(cwMetric.Measurements))
+		expectedMeasurement := CwMeasurement{
+			Namespace:  namespace,
+			Dimensions: [][]string{{"label1", OTelLib}},
+			Metrics:    metricSlice,
+		}
+		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
+		expectedFields := map[string]interface{}{
+			OTelLib:  instrLibName,
+			"foo":    0,
+			"label1": "value1",
+		}
+		assert.Equal(t, expectedFields, cwMetric.Fields)
+	})
+
+	t.Run("Double sum", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeDoubleSum)
+		metric.DoubleSum().InitEmpty()
+		metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+		dp := pdata.NewDoubleDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"label1": "value1",
+		})
+		dp.SetValue(0.3)
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+
+		assert.NotNil(t, cwMetric)
+		assert.Equal(t, 1, len(cwMetric.Measurements))
+		expectedMeasurement := CwMeasurement{
+			Namespace:  namespace,
+			Dimensions: [][]string{{"label1", OTelLib}},
+			Metrics:    metricSlice,
+		}
+		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
+		expectedFields := map[string]interface{}{
+			OTelLib:  instrLibName,
+			"foo":    0,
+			"label1": "value1",
+		}
+		assert.Equal(t, expectedFields, cwMetric.Fields)
+	})
+
+	t.Run("Double histogram", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+		dp := pdata.NewDoubleHistogramDataPoint()
+		dp.InitEmpty()
+		dp.LabelsMap().InitFromMap(map[string]string{
+			"label1": "value1",
+		})
+		dp.SetCount(uint64(17))
+		dp.SetSum(float64(17.13))
+		dp.SetBucketCounts([]uint64{1, 2, 3})
+		dp.SetExplicitBounds([]float64{1, 2, 3})
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+
+		assert.NotNil(t, cwMetric)
+		assert.Equal(t, 1, len(cwMetric.Measurements))
+		expectedMeasurement := CwMeasurement{
+			Namespace:  namespace,
+			Dimensions: [][]string{{"label1", OTelLib}},
+			Metrics:    metricSlice,
+		}
+		assert.Equal(t, expectedMeasurement, cwMetric.Measurements[0])
+		expectedFields := map[string]interface{}{
+			OTelLib: instrLibName,
+			"foo": &CWMetricStats{
+				Min:   1,
+				Max:   3,
+				Sum:   17.13,
+				Count: 17,
+			},
+			"label1": "value1",
+		}
+		assert.Equal(t, expectedFields, cwMetric.Fields)
+	})
+
+	t.Run("Invalid datapoint type", func(t *testing.T) {
+		metric.SetDataType(pdata.MetricDataTypeIntGauge)
+		dp := pdata.NewIntHistogramDataPoint()
+		dp.InitEmpty()
+
+		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
+		assert.Nil(t, cwMetric)
+	})
+}
+
+func TestCreateDimensions(t *testing.T) {
+	OTelLib := "OTelLib"
+	testCases := []struct {
+		testName string
+		labels   map[string]string
+		dims     [][]string
+	}{
+		{
+			"single label",
+			map[string]string{"a": "foo"},
+			[][]string{
+				{"a", OTelLib},
+				{OTelLib},
+			},
+		},
+		{
+			"multiple labels",
+			map[string]string{"a": "foo", "b": "bar"},
+			[][]string{
+				{"a", "b", OTelLib},
+				{OTelLib},
+				{OTelLib, "a"},
+				{OTelLib, "b"},
+			},
+		},
+		{
+			"no labels",
+			map[string]string{},
+			[][]string{
+				{OTelLib},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			dp := pdata.NewIntDataPoint()
+			dp.InitEmpty()
+			dp.LabelsMap().InitFromMap(tc.labels)
+			dimensions, fields := createDimensions(dp, OTelLib, ZeroAndSingleDimensionRollup)
+
+			assertDimsEqual(t, tc.dims, dimensions)
+
+			expectedFields := make(map[string]interface{})
+			for k, v := range tc.labels {
+				expectedFields[k] = v
+			}
+			expectedFields[OTellibDimensionKey] = OTelLib
+
+			assert.Equal(t, expectedFields, fields)
+		})
+	}
 
 }
 

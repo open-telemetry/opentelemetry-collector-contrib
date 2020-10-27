@@ -228,6 +228,10 @@ func TestAttributesToMap(t *testing.T) {
 		"map": map[string]interface{}{
 			"inner": "val",
 		},
+		"array": []interface{}{
+			"inner",
+			int64(42),
+		},
 	}
 	attr := pdata.NewAttributeMap()
 	attr.InsertString("str", "a")
@@ -239,6 +243,12 @@ func TestAttributesToMap(t *testing.T) {
 	innerAttr.InsertString("inner", "val")
 	avm.SetMapVal(innerAttr)
 	attr.Insert("map", avm)
+	ava := pdata.NewAttributeValueArray()
+	arrayAttr := pdata.NewAnyValueArray()
+	arrayAttr.Append(pdata.NewAttributeValueString("inner"))
+	arrayAttr.Append(pdata.NewAttributeValueInt(42))
+	ava.SetArrayVal(arrayAttr)
+	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))
 }

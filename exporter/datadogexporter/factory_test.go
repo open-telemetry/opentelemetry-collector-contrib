@@ -145,6 +145,9 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 }
 
 func TestCreateAPITracesExporter(t *testing.T) {
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
 	logger := zap.NewNop()
 
 	factories, err := componenttest.ExampleComponents()
@@ -157,9 +160,12 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	ctx := context.Background()
+	// Use the mock server for API key validation
 	c := (cfg.Exporters["datadog/api"]).(*config.Config)
+	c.Metrics.TCPAddr.Endpoint = server.URL
 	c.SendMetadata = false
+
+	ctx := context.Background()
 	exp, err := factory.CreateTraceExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},

@@ -28,8 +28,12 @@ import (
 )
 
 type mockMetadata struct {
-	ret         ec2metadata.EC2InstanceIdentityDocument
-	returnErr   error
+	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
+	retErrIDDoc error
+
+	retHostname    string
+	retErrHostname error
+
 	isAvailable bool
 }
 
@@ -40,10 +44,17 @@ func (mm mockMetadata) available(ctx context.Context) bool {
 }
 
 func (mm mockMetadata) get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
-	if mm.returnErr != nil {
-		return ec2metadata.EC2InstanceIdentityDocument{}, mm.returnErr
+	if mm.retErrIDDoc != nil {
+		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
-	return mm.ret, nil
+	return mm.retIDDoc, nil
+}
+
+func (mm mockMetadata) hostname(ctx context.Context) (string, error) {
+	if mm.retErrHostname != nil {
+		return "", mm.retErrHostname
+	}
+	return mm.retHostname, nil
 }
 
 func TestNewDetector(t *testing.T) {
@@ -68,14 +79,16 @@ func TestDetector_Detect(t *testing.T) {
 	}{
 		{
 			name: "success",
-			fields: fields{provider: &mockMetadata{ret: ec2metadata.EC2InstanceIdentityDocument{
-				Region:           "us-west-2",
-				AccountID:        "account1234",
-				AvailabilityZone: "us-west-2a",
-				InstanceID:       "i-abcd1234",
-				ImageID:          "abcdef",
-				InstanceType:     "c4.xlarge",
-			},
+			fields: fields{provider: &mockMetadata{
+				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
 				isAvailable: true}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
@@ -89,13 +102,14 @@ func TestDetector_Detect(t *testing.T) {
 				attr.InsertString("host.id", "i-abcd1234")
 				attr.InsertString("host.image.id", "abcdef")
 				attr.InsertString("host.type", "c4.xlarge")
+				attr.InsertString("host.name", "example-hostname")
 				return res
 			}()},
 		{
 			name: "endpoint not available",
 			fields: fields{provider: &mockMetadata{
-				ret:         ec2metadata.EC2InstanceIdentityDocument{},
-				returnErr:   errors.New("should not be called"),
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
 			args: args{ctx: context.Background()},
@@ -108,9 +122,24 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "get fails",
 			fields: fields{provider: &mockMetadata{
-				ret:         ec2metadata.EC2InstanceIdentityDocument{},
-				returnErr:   errors.New("get failed"),
+				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
+			}},
+			args: args{ctx: context.Background()},
+			want: func() pdata.Resource {
+				res := pdata.NewResource()
+				res.InitEmpty()
+				return res
+			}(),
+			wantErr: true},
+		{
+			name: "hostname fails",
+			fields: fields{provider: &mockMetadata{
+				retIDDoc:       ec2metadata.EC2InstanceIdentityDocument{},
+				retHostname:    "",
+				retErrHostname: errors.New("hostname failed"),
+				isAvailable:    true,
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {

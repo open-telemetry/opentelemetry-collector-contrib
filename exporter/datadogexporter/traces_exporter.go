@@ -24,8 +24,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
 
 type traceExporter struct {
@@ -33,6 +36,7 @@ type traceExporter struct {
 	cfg            *config.Config
 	edgeConnection TraceEdgeConnection
 	obfuscator     *obfuscate.Obfuscator
+	client         *datadog.Client
 }
 
 var (
@@ -54,6 +58,10 @@ var (
 )
 
 func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config) (*traceExporter, error) {
+	// client to send running metric to the backend & perform API key validation
+	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
+	utils.ValidateAPIKey(params.Logger, client)
+
 	// removes potentially sensitive info and PII, approach taken from serverless approach
 	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
 	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
@@ -63,6 +71,7 @@ func newTraceExporter(params component.ExporterCreateParams, cfg *config.Config)
 		cfg:            cfg,
 		edgeConnection: CreateTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.ApplicationStartInfo),
 		obfuscator:     obfuscator,
+		client:         client,
 	}
 
 	return exporter, nil
@@ -109,6 +118,9 @@ func (exp *traceExporter) pushTraceData(
 			return nil
 		})
 	}
+
+	ms := metrics.RunningMetric("traces", uint64(pushTime), exp.logger, exp.cfg)
+	exp.client.PostMetrics(ms)
 
 	return len(aggregatedTraces), nil
 }
