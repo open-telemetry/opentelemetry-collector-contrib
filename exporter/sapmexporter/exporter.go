@@ -31,15 +31,13 @@ import (
 
 // sapmExporter is a wrapper struct of SAPM exporter
 type sapmExporter struct {
-	client  *sapmclient.Client
-	logger  *zap.Logger
-	config  *Config
-	tracker *Tracker
+	client *sapmclient.Client
+	logger *zap.Logger
+	config *Config
 }
 
 func (se *sapmExporter) Shutdown(context.Context) error {
 	se.client.Stop()
-	se.tracker.Shutdown()
 	return nil
 }
 
@@ -54,17 +52,10 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 		return sapmExporter{}, err
 	}
 
-	var tracker *Tracker
-
-	if cfg.Correlation.Enabled {
-		tracker = NewTracker(cfg, params)
-	}
-
 	return sapmExporter{
-		client:  client,
-		logger:  params.Logger,
-		config:  cfg,
-		tracker: tracker,
+		client: client,
+		logger: params.Logger,
+		config: cfg,
 	}, err
 }
 
@@ -144,9 +135,6 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (dro
 			}
 			droppedSpansCount += trace.SpanCount()
 		}
-
-		// NOTE: Correlation does not currently support inline access token.
-		se.tracker.AddSpans(ctx, trace)
 	}
 	return
 }
