@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sapmexporter
+package signalfxcorrelationexporter
 
 import (
 	"context"
@@ -25,14 +25,12 @@ import (
 )
 
 func TestTrackerAddSpans(t *testing.T) {
-	tracker := NewTracker(&Config{
-		Correlation: CorrelationConfig{
-			Enabled: true,
+	tracker := NewTracker(
+		&Config{},
+		component.ExporterCreateParams{
+			Logger: zap.NewNop(),
 		},
-		AccessToken: "",
-	}, component.ExporterCreateParams{
-		Logger: zap.NewNop(),
-	})
+	)
 
 	traces := pdata.NewTraces()
 	spans := pdata.NewResourceSpans()
