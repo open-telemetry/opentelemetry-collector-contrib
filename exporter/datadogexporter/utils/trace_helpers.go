@@ -26,18 +26,14 @@ const (
 )
 
 // NormalizeSpanName returns a cleaned up, normalized span name. Span names are used to formulate tags,
-// and they also are used throughout the UI to connect metrics and traces. Here are the rules:
+// and they also are used throughout the UI to connect metrics and traces. This helper function will:
 //
 // 	1. Convert to all lowercase unicode string
 // 	2. Convert bad characters to underscores
 // 	3. Dedupe contiguous underscores
-// 	4. Remove leading non-alpha chars except `:`
+// 	4. Remove leading non-alpha chars
 // 	5. Truncate to MaxTagLength (200) characters
 // 	6. Strip trailing underscores
-//
-//  Needs to stay in sync with:
-//
-// 	https://docs.datadoghq.com/getting_started/tagging/#defining-tags
 //
 func NormalizeSpanName(tag string) string {
 	// unless you just throw out unicode, this is already as fast as it gets
