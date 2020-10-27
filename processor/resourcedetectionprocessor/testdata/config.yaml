@@ -15,6 +15,10 @@ processors:
     detectors: [env, ecs]
     timeout: 2s
     override: false
+  resourcedetection/system:
+    detectors: [env, system]
+    timeout: 2s
+    override: false
 
 exporters:
   exampleexporter:
@@ -25,6 +29,7 @@ service:
       receivers: [examplereceiver]
       processors:
       # Choose one depending on your cloud provider and environment:
+      # - resourcedetection/system
       # - resourcedetection/gce
       # - resourcedetection/ec2
       # - resourcedetection/ecs
