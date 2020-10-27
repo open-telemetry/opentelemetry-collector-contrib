@@ -25,11 +25,13 @@ import (
 
 // corrExporter is a wrapper struct of the correlation exporter
 type corrExporter struct {
-	logger *zap.Logger
-	config *Config
+	logger  *zap.Logger
+	config  *Config
+	tracker *Tracker
 }
 
 func (se *corrExporter) Shutdown(context.Context) error {
+	se.tracker.Shutdown()
 	return nil
 }
 
@@ -40,8 +42,9 @@ func newCorrExporter(cfg *Config, params component.ExporterCreateParams) (corrEx
 	}
 
 	return corrExporter{
-		logger: params.Logger,
-		config: cfg,
+		logger:  params.Logger,
+		config:  cfg,
+		tracker: NewTracker(cfg, params),
 	}, err
 }
 
@@ -59,5 +62,7 @@ func newTraceExporter(cfg *Config, params component.ExporterCreateParams) (compo
 
 // pushTraceData processes traces to extract services and environments to associate them to their emitting host/pods.
 func (se *corrExporter) pushTraceData(ctx context.Context, td pdata.Traces) (droppedSpansCount int, err error) {
+	// NOTE: Correlation does not currently support inline access token.
+	se.tracker.AddSpans(ctx, td)
 	return 0, nil
 }
