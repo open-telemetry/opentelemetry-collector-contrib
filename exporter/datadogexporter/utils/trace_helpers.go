@@ -21,7 +21,7 @@ import (
 
 // constants for tags
 const (
-	// maximums for tag string lengths
+	// maximum for tag string lengths
 	MaxTagLength = 200
 )
 
