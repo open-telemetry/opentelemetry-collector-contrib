@@ -1102,6 +1102,20 @@ func TestDimensionRollup(t *testing.T) {
 				{OTellibDimensionKey, "c"},
 			},
 		},
+		{
+			"zero dim rollup w/o instrumentation library name and no labels",
+			ZeroAndSingleDimensionRollup,
+			[]string{},
+			noInstrumentationLibraryName,
+			nil,
+		},
+		{
+			"zero dim rollup w/ instrumentation library name and no labels",
+			ZeroAndSingleDimensionRollup,
+			[]string{},
+			"cloudwatch-otel",
+			nil,
+		},
 	}
 
 	for _, tc := range testCases {
