@@ -26,7 +26,6 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.pymemcache import PymemcacheInstrumentor
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import get_tracer
-from opentelemetry.trace.status import StatusCanonicalCode
 
 from .utils import MockSocket, _str
 
@@ -278,7 +277,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["delete key"])
 
@@ -304,7 +303,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["incr key"])
 
@@ -321,7 +320,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["get key"])
 
@@ -338,7 +337,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["get key"])
 
@@ -373,7 +372,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["set key"])
 
@@ -390,7 +389,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["set key"])
 
@@ -407,7 +406,7 @@ class PymemcacheClientTestCase(
 
         span = spans[0]
 
-        self.assertNotEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertFalse(span.status.is_ok)
 
         self.check_spans(spans, 1, ["set key has space"])
 
