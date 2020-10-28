@@ -1286,3 +1286,74 @@ func TestNeedsCalculateRate(t *testing.T) {
 	metric.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityDelta)
 	assert.False(t, needsCalculateRate(&metric))
 }
+
+func BenchmarkTranslateOtToCWMetricWithInstrLibrary(b *testing.B) {
+	md := createMetricTestData()
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().InitEmpty()
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	}
+}
+
+func BenchmarkTranslateOtToCWMetricWithoutInstrLibrary(b *testing.B) {
+	md := createMetricTestData()
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	}
+}
+
+func BenchmarkTranslateOtToCWMetricWithNamespace(b *testing.B) {
+	md := consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName: "myServiceName",
+			},
+		},
+		Metrics: []*metricspb.Metric{},
+	}
+	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		TranslateOtToCWMetric(&rm, ZeroAndSingleDimensionRollup, "")
+	}
+}
+
+func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
+	cwMeasurement := CwMeasurement{
+		Namespace:  "test-emf",
+		Dimensions: [][]string{{"OTelLib"}, {"OTelLib", "spanName"}},
+		Metrics: []map[string]string{{
+			"Name": "spanCounter",
+			"Unit": "Count",
+		}},
+	}
+	timestamp := int64(1596151098037)
+	fields := make(map[string]interface{})
+	fields["OTelLib"] = "cloudwatch-otel"
+	fields["spanName"] = "test"
+	fields["spanCounter"] = 0
+
+	met := &CWMetrics{
+		Timestamp:    timestamp,
+		Fields:       fields,
+		Measurements: []CwMeasurement{cwMeasurement},
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		TranslateCWMetricToEMF([]*CWMetrics{met})
+	}
+}
