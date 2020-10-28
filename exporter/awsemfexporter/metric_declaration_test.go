@@ -25,53 +25,92 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	m := &MetricDeclaration{
-		MetricNameSelectors: []string{"a", "b", "aa"},
-	}
 	logger := zap.NewNop()
-	err := m.Init(logger)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(m.metricRegexList))
+	t.Run("no dimensions", func(t *testing.T) {
+		m := &MetricDeclaration{
+			MetricNameSelectors: []string{"a", "b", "aa"},
+		}
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 3, len(m.metricRegexList))
+	})
 
-	m = &MetricDeclaration{
-		Dimensions: [][]string{
-			{"foo"},
-			{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
-		},
-		MetricNameSelectors: []string{"a.*", "b$", "aa+"},
-	}
-	err = m.Init(logger)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(m.metricRegexList))
-	assert.Equal(t, 2, len(m.Dimensions))
+	t.Run("with dimensions", func(t *testing.T) {
+		m := &MetricDeclaration{
+			Dimensions: [][]string{
+				{"foo"},
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"},
+			},
+			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
+		}
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 3, len(m.metricRegexList))
+		assert.Equal(t, 2, len(m.Dimensions))
+	})
 
 	// Test removal of dimension sets with more than 10 elements
-	m = &MetricDeclaration{
-		Dimensions: [][]string{
-			{"foo"},
-			{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
-		},
-		MetricNameSelectors: []string{"a.*", "b$", "aa+"},
-	}
-	obs, logs := observer.New(zap.WarnLevel)
-	logger = zap.New(obs)
-	err = m.Init(logger)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(m.metricRegexList))
-	assert.Equal(t, 1, len(m.Dimensions))
-	// Check logged warning message
-	expectedLogs := []observer.LoggedEntry{{
-		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: > 10 dimensions specified."},
-		Context: []zapcore.Field{zap.String("dimensions", "a,b,c,d,e,f,g,h,i,j,k")},
-	}}
-	assert.Equal(t, 1, logs.Len())
-	assert.Equal(t, expectedLogs, logs.AllUntimed())
+	t.Run("dimension set with more than 10 elements", func(t *testing.T) {
+		m := &MetricDeclaration{
+			Dimensions: [][]string{
+				{"foo"},
+				{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+			},
+			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
+		}
+		obs, logs := observer.New(zap.WarnLevel)
+		logger := zap.New(obs)
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 3, len(m.metricRegexList))
+		assert.Equal(t, 1, len(m.Dimensions))
+		// Check logged warning message
+		expectedLogs := []observer.LoggedEntry{{
+			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: > 10 dimensions specified."},
+			Context: []zapcore.Field{zap.String("dimensions", "a,b,c,d,e,f,g,h,i,j,k")},
+		}}
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, expectedLogs, logs.AllUntimed())
+	})
+
+	// Test removal of duplicate dimensions within a dimension set, and removal of
+	// duplicate dimension sets
+	t.Run("remove duplicate dimensions and dimension sets", func(t *testing.T) {
+		m := &MetricDeclaration{
+			Dimensions: [][]string{
+				{"a", "c", "b", "c"},
+				{"c", "b", "a"},
+			},
+			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
+		}
+		obs, logs := observer.New(zap.WarnLevel)
+		logger := zap.New(obs)
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(m.Dimensions))
+		assert.Equal(t, []string{"a", "b", "c"}, m.Dimensions[0])
+		// Check logged warning message
+		expectedLogs := []observer.LoggedEntry{
+			{
+				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Removed duplicates from dimension set."},
+				Context: []zapcore.Field{zap.String("dimensions", "a,c,b,c")},
+			},
+			{
+				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: duplicated dimension set."},
+				Context: []zapcore.Field{zap.String("dimensions", "c,b,a")},
+			},
+		}
+		assert.Equal(t, 2, logs.Len())
+		assert.Equal(t, expectedLogs, logs.AllUntimed())
+	})
 
 	// Test invalid metric declaration
-	m = &MetricDeclaration{}
-	err = m.Init(logger)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Invalid metric declaration: no metric name selectors defined.")
+	t.Run("invalid metric declaration", func(t *testing.T) {
+		m := &MetricDeclaration{}
+		err := m.Init(logger)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "Invalid metric declaration: no metric name selectors defined.")
+	})
 }
 
 func TestMatches(t *testing.T) {

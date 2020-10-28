@@ -17,6 +17,7 @@ package awsemfexporter
 import (
 	"errors"
 	"regexp"
+	"sort"
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -38,6 +39,26 @@ type MetricDeclaration struct {
 	metricRegexList []*regexp.Regexp
 }
 
+// Remove duplicated entries from dimension set.
+func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool) {
+	seen := make(map[string]bool, len(dimensions))
+	for _, v := range dimensions {
+		seen[v] = true
+	}
+	hasDuplicate = (len(seen) < len(dimensions))
+	if !hasDuplicate {
+		deduped = dimensions
+		return
+	}
+	deduped = make([]string, len(seen))
+	idx := 0
+	for dim, _ := range seen {
+		deduped[idx] = dim
+		idx++
+	}
+	return
+}
+
 // Init initializes the MetricDeclaration struct. Performs validation and compiles
 // regex strings.
 func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
@@ -46,14 +67,33 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		return errors.New("Invalid metric declaration: no metric name selectors defined.")
 	}
 
-	// Filter out dimension sets with more than 10 elements
+	// Filter out duplicate dimension sets and those with more than 10 elements
 	validDims := make([][]string, 0, len(m.Dimensions))
+	seen := make(map[string]bool, len(m.Dimensions))
 	for _, dimSet := range m.Dimensions {
-		if len(dimSet) <= 10 {
-			validDims = append(validDims, dimSet)
-		} else {
-			logger.Warn("Dropped dimension set: > 10 dimensions specified.", zap.String("dimensions", strings.Join(dimSet, ",")))
+		concatenatedDims := strings.Join(dimSet, ",")
+		if len(dimSet) > 10 {
+			logger.Warn("Dropped dimension set: > 10 dimensions specified.", zap.String("dimensions", concatenatedDims))
+			continue
 		}
+
+		// Dedup dimensions within dimension set
+		dimSet, hasDuplicate := dedupDimensionSet(dimSet)
+		if hasDuplicate {
+			logger.Warn("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
+		}
+
+		// Sort dimensions
+		sort.Strings(dimSet)
+
+		// Dedup dimension sets
+		key := strings.Join(dimSet, ",")
+		if _, ok := seen[key]; ok {
+			logger.Warn("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
+			continue
+		}
+		seen[key] = true
+		validDims = append(validDims, dimSet)
 	}
 	m.Dimensions = validDims
 

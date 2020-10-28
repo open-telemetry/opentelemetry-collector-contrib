@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -302,9 +303,7 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 	// Build list of CW Measurements
 	cwMeasurements := make([]CwMeasurement, len(dimensionsArray))
 	for i, dimensions := range dimensionsArray {
-		if len(rollupDimensionArray) > 0 {
-			dimensions = append(dimensions, rollupDimensionArray...)
-		}
+		dimensions = dedupDimensions(dimensions, rollupDimensionArray)
 		cwMeasurements[i] = CwMeasurement{
 			Namespace:  namespace,
 			Dimensions: dimensions,
@@ -424,14 +423,38 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 	}
 	if dimensionRollupOption == ZeroAndSingleDimensionRollup || dimensionRollupOption == SingleDimensionRollupOnly {
 		//"One" dimension rollup
-		if len(originalDimensionSlice) > 1 {
-			for _, dimensionKey := range originalDimensionSlice {
-				rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
-			}
+		for _, dimensionKey := range originalDimensionSlice {
+			rollupDimensionArray = append(rollupDimensionArray, append(dimensionZero, dimensionKey))
 		}
 	}
 
 	return rollupDimensionArray
+}
+
+// dedupDimensions appends rolled-up dimensions to existing dimensions and removes duplicate dimension sets.
+func dedupDimensions(dimensions, rolledUpDims [][]string) [][]string {
+	deduped := make([][]string, len(dimensions)+len(rolledUpDims))
+	seen := make(map[string]bool, len(deduped))
+	idx := 0
+
+	addDeduped := func(dimSet []string) {
+		sort.Strings(dimSet)
+		key := strings.Join(dimSet, ",")
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = true
+		deduped[idx] = dimSet
+		idx++
+	}
+
+	for _, dimSet := range dimensions {
+		addDeduped(dimSet)
+	}
+	for _, dimSet := range rolledUpDims {
+		addDeduped(dimSet)
+	}
+	return deduped[:idx]
 }
 
 func needsCalculateRate(pmd *pdata.Metric) bool {
