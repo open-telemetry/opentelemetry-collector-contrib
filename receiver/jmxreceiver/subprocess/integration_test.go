@@ -289,3 +289,9 @@ func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
 	require.Eventually(t, matched, 10*time.Second, 10*time.Millisecond)
 	requireDesiredStdout(t, subprocess, "finished")
 }
+
+func TestShutdownBeforeStartIntegration(t *testing.T) {
+	t.Parallel()
+	subprocess := NewSubprocess(&Config{ExecutablePath: "sh", Args: []string{}}, zap.NewNop())
+	require.EqualError(t, subprocess.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+}
