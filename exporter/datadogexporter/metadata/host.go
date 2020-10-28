@@ -18,14 +18,18 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata/valid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
 // GetHost gets the hostname according to configuration.
-// It gets the configuration hostname and if
-// not available it relies on the OS hostname
+// It checks in the following order
+// 1. Cache
+// 2. Configuration
+// 3. EC2 instance metadata
+// 4. System
 func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	if cacheVal, ok := cache.Cache.Get(cache.CanonicalHostnameKey); ok {
 		return cacheVal.(*string)
@@ -38,9 +42,14 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 		logger.Error("Hostname set in configuration is invalid", zap.Error(err))
 	}
 
-	// Get system hostname
-	hostInfo := system.GetHostInfo(logger)
-	hostname := hostInfo.GetHostname(logger)
+	ec2Info := ec2.GetHostInfo(logger)
+	hostname := ec2Info.GetHostname(logger)
+
+	if hostname == "" {
+		// Get system hostname
+		systemInfo := system.GetHostInfo(logger)
+		hostname = systemInfo.GetHostname(logger)
+	}
 
 	if err := valid.Hostname(hostname); err != nil {
 		// If invalid log but continue

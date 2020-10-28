@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 )
 
 const (
@@ -65,12 +66,14 @@ func createDefaultConfig() configmodels.Exporter {
 				Endpoint: "", // set during config sanitization
 			},
 		},
+
+		SendMetadata: true,
 	}
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.MetricsExporter, error) {
@@ -82,9 +85,17 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exp, err := newMetricsExporter(params.Logger, cfg)
+	exp, err := newMetricsExporter(params, cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	if cfg.SendMetadata {
+		once := cfg.OnceMetadata()
+		once.Do(func() {
+			go metadata.Pusher(ctx, params, cfg)
+		})
 	}
 
 	return exporterhelper.NewMetricsExporter(
@@ -92,12 +103,16 @@ func createMetricsExporter(
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
 	)
 }
 
 // createTraceExporter creates a trace exporter based on this config.
 func createTraceExporter(
-	_ context.Context,
+	ctx context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
 ) (component.TraceExporter, error) {
@@ -109,13 +124,25 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	exp, err := newTraceExporter(params.Logger, cfg)
+	exp, err := newTraceExporter(params, cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	if cfg.SendMetadata {
+		once := cfg.OnceMetadata()
+		once.Do(func() {
+			go metadata.Pusher(ctx, params, cfg)
+		})
 	}
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		exp.pushTraceData,
+		exporterhelper.WithShutdown(func(context.Context) error {
+			cancel()
+			return nil
+		}),
 	)
 }

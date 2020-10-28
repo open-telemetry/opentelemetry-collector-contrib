@@ -20,6 +20,8 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 var (
@@ -58,14 +60,28 @@ func SetExtraHeaders(h http.Header, extras map[string]string) {
 	}
 }
 
-func SetDDHeaders(reqHeader http.Header, apiKey string) {
-	// userAgent is the computed user agent we'll use when
-	// communicating with Datadog
-	var userAgent = fmt.Sprintf(
-		"%s/%s/%s (+%s)",
-		"otel-collector-exporter", "0.1", "1", "http://localhost",
-	)
+func UserAgent(startInfo component.ApplicationStartInfo) string {
+	return fmt.Sprintf("%s/%s", startInfo.ExeName, startInfo.Version)
+}
 
+// SetDDHeaders sets the Datadog-specific headers
+func SetDDHeaders(reqHeader http.Header, startInfo component.ApplicationStartInfo, apiKey string) {
 	reqHeader.Set("DD-Api-Key", apiKey)
-	reqHeader.Set("User-Agent", userAgent)
+	reqHeader.Set("User-Agent", UserAgent(startInfo))
+}
+
+// DoWithRetries repeats a fallible action up to `maxRetries` times
+// with exponential backoff
+func DoWithRetries(maxRetries int, fn func() error) (i int, err error) {
+	wait := 1 * time.Second
+	for i = 0; i < maxRetries; i++ {
+		err = fn()
+		if err == nil {
+			return
+		}
+		time.Sleep(wait)
+		wait = 2 * wait
+	}
+
+	return
 }

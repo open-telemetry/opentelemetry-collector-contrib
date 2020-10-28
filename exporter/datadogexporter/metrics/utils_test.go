@@ -133,15 +133,3 @@ func TestAddNamespace(t *testing.T) {
 	assert.Equal(t, "namespace.test.metric", *ms[0].Metric)
 	assert.Equal(t, "namespace.test.metric2", *ms[1].Metric)
 }
-
-func TestAddTags(t *testing.T) {
-	ms := []datadog.Metric{
-		NewGauge("test.metric", 0, 1.0, []string{}),
-		NewGauge("test.metric2", 0, 2.0, []string{"tag:value"}),
-	}
-
-	AddTags(ms, []string{"othertag:othervalue"})
-
-	assert.Equal(t, []string{"othertag:othervalue"}, ms[0].Tags)
-	assert.Equal(t, []string{"tag:value", "othertag:othervalue"}, ms[1].Tags)
-}
