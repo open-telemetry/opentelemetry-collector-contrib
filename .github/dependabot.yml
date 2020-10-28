@@ -157,6 +157,10 @@ updates:
     directory: "/processor/routingprocessor"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/processor/tailsamplingprocessor"
+    schedule:
+      interval: "weekly"
 
   #################
   #   RECEIVERS   #
