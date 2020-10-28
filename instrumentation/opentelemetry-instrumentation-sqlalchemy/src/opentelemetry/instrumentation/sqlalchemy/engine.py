@@ -16,7 +16,7 @@ from sqlalchemy.event import listen
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
-from opentelemetry.trace.status import Status, StatusCanonicalCode
+from opentelemetry.trace.status import Status, StatusCode
 
 # Network attribute semantic convention here:
 # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
@@ -112,10 +112,7 @@ class EngineTracer:
         try:
             if self.current_span.is_recording():
                 self.current_span.set_status(
-                    Status(
-                        StatusCanonicalCode.UNKNOWN,
-                        str(context.original_exception),
-                    )
+                    Status(StatusCode.ERROR, str(context.original_exception),)
                 )
         finally:
             self.current_span.end()
