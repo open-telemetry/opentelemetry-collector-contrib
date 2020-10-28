@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 💡 Enhancements 💡
+
+- `kinesis` exporter: Add support for exporting in the OTLP format (#1403)
+
 ## v0.13.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.13.0 (Beta) 🎉

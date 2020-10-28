@@ -19,6 +19,7 @@ The following settings can be optionally configured:
   - `max_connections` (default = 24): Number of requests to send concurrently
   - `max_retries` (default = 10): Number of retry attempts to make before dropping records
   - `max_backoff_seconds` (default = 60): Maximum time to backoff. Must be greater than 1s
+- `encoding` (default = jaeger_proto): Data encoding format to use. Supported formats: `otlp_proto`, `jaeger_proto`
 
 Example configuration:
 
@@ -40,6 +41,8 @@ exporters:
           max_connections: 24
           max_retries: 10
           max_backoff_seconds: 60
+      encoding: otlp_proto
+      
 ```
 
 [kpl-url]: https://github.com/awslabs/amazon-kinesis-producer
