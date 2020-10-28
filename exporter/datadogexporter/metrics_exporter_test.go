@@ -19,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -44,10 +45,10 @@ func TestNewExporter(t *testing.T) {
 	}
 
 	cfg.Sanitize()
-	logger := zap.NewNop()
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp, err := newMetricsExporter(logger, cfg)
+	exp, err := newMetricsExporter(params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
 }
@@ -60,6 +61,7 @@ func TestProcessMetrics(t *testing.T) {
 		API: config.APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
+		// Global tags should be ignored and sent as metadata
 		TagsConfig: config.TagsConfig{
 			Hostname: "test-host",
 			Env:      "test_env",
@@ -74,9 +76,8 @@ func TestProcessMetrics(t *testing.T) {
 	}
 	cfg.Sanitize()
 
-	logger := zap.NewNop()
-
-	exp, err := newMetricsExporter(logger, cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := newMetricsExporter(params, cfg)
 
 	require.NoError(t, err)
 
@@ -94,7 +95,7 @@ func TestProcessMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms[0].Host)
 	assert.Equal(t, "test.metric_name", *ms[0].Metric)
 	assert.ElementsMatch(t,
-		[]string{"key:val", "env:test_env", "key2:val2"},
+		[]string{"key2:val2"},
 		ms[0].Tags,
 	)
 
