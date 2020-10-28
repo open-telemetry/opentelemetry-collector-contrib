@@ -77,7 +77,6 @@ class MysqlConnectorTestCase(SQLAlchemyTestMixin):
         self.assertTrue(span.end_time - span.start_time > 0)
         # check the error
         self.assertIs(
-            span.status.canonical_code,
-            trace.status.StatusCanonicalCode.UNKNOWN,
+            span.status.status_code, trace.status.StatusCode.ERROR,
         )
         self.assertIn("a_wrong_table", span.status.description)
