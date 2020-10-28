@@ -59,8 +59,8 @@ func TestInit(t *testing.T) {
 			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
 		}
 		obs, logs := observer.New(zap.WarnLevel)
-		logger := zap.New(obs)
-		err := m.Init(logger)
+		obsLogger := zap.New(obs)
+		err := m.Init(obsLogger)
 		assert.Nil(t, err)
 		assert.Equal(t, 3, len(m.metricRegexList))
 		assert.Equal(t, 1, len(m.Dimensions))
@@ -84,8 +84,8 @@ func TestInit(t *testing.T) {
 			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
 		}
 		obs, logs := observer.New(zap.WarnLevel)
-		logger := zap.New(obs)
-		err := m.Init(logger)
+		obsLogger := zap.New(obs)
+		err := m.Init(obsLogger)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(m.Dimensions))
 		assert.Equal(t, []string{"a", "b", "c"}, m.Dimensions[0])
@@ -109,7 +109,7 @@ func TestInit(t *testing.T) {
 		m := &MetricDeclaration{}
 		err := m.Init(logger)
 		assert.NotNil(t, err)
-		assert.EqualError(t, err, "Invalid metric declaration: no metric name selectors defined.")
+		assert.EqualError(t, err, "invalid metric declaration: no metric name selectors defined")
 	})
 }
 

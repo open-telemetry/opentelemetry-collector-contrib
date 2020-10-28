@@ -281,7 +281,7 @@ func TestNewExporterWithMetricDeclarations(t *testing.T) {
 	// Test output warning logs
 	expectedLogs := []observer.LoggedEntry{
 		{
-			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric declaration. Error: Invalid metric declaration: no metric name selectors defined."},
+			Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric declaration. Error: invalid metric declaration: no metric name selectors defined."},
 			Context: []zapcore.Field{},
 		},
 		{

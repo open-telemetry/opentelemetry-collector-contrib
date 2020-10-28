@@ -52,7 +52,7 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 	}
 	deduped = make([]string, len(seen))
 	idx := 0
-	for dim, _ := range seen {
+	for dim := range seen {
 		deduped[idx] = dim
 		idx++
 	}
@@ -64,7 +64,7 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 	// Return error if no metric name selectors are defined
 	if len(m.MetricNameSelectors) == 0 {
-		return errors.New("Invalid metric declaration: no metric name selectors defined.")
+		return errors.New("invalid metric declaration: no metric name selectors defined")
 	}
 
 	// Filter out duplicate dimension sets and those with more than 10 elements
@@ -78,22 +78,22 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		}
 
 		// Dedup dimensions within dimension set
-		dimSet, hasDuplicate := dedupDimensionSet(dimSet)
+		dedupedDims, hasDuplicate := dedupDimensionSet(dimSet)
 		if hasDuplicate {
 			logger.Warn("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
 		}
 
 		// Sort dimensions
-		sort.Strings(dimSet)
+		sort.Strings(dedupedDims)
 
 		// Dedup dimension sets
-		key := strings.Join(dimSet, ",")
+		key := strings.Join(dedupedDims, ",")
 		if _, ok := seen[key]; ok {
 			logger.Warn("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
 			continue
 		}
 		seen[key] = true
-		validDims = append(validDims, dimSet)
+		validDims = append(validDims, dedupedDims)
 	}
 	m.Dimensions = validDims
 

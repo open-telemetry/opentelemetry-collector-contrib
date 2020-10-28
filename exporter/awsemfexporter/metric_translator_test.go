@@ -84,25 +84,23 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	met := cwm[0]
 
 	assert.Equal(t, met.Fields["spanCounter"], 0)
-	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
-	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
-	dimensionSetOne := met.Measurements[0].Dimensions[0]
-	sort.Strings(dimensionSetOne)
-	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError", "spanName"}, dimensionSetOne)
-	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
-	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
-	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
 
-	dimensionSetTwo := met.Measurements[0].Dimensions[1]
-	assert.Equal(t, []string{OTellibDimensionKey}, dimensionSetTwo)
-
-	dimensionSetThree := met.Measurements[0].Dimensions[2]
-	sort.Strings(dimensionSetThree)
-	assert.Equal(t, []string{OTellibDimensionKey, "spanName"}, dimensionSetThree)
-
-	dimensionSetFour := met.Measurements[0].Dimensions[3]
-	sort.Strings(dimensionSetFour)
-	assert.Equal(t, []string{OTellibDimensionKey, "isItAnError"}, dimensionSetFour)
+	expectedMeasurement := CwMeasurement{
+		Namespace: "myServiceNS/myServiceName",
+		Dimensions: [][]string{
+			{OTellibDimensionKey, "isItAnError", "spanName"},
+			{OTellibDimensionKey},
+			{OTellibDimensionKey, "spanName"},
+			{OTellibDimensionKey, "isItAnError"},
+		},
+		Metrics: []map[string]string{
+			{
+				"Name": "spanCounter",
+				"Unit": "Count",
+			},
+		},
+	}
+	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
 }
 
 func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
@@ -123,26 +121,22 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	assert.NotContains(t, met.Fields, OTellibDimensionKey)
 	assert.Equal(t, met.Fields["spanCounter"], 0)
 
-	assert.Equal(t, "myServiceNS/myServiceName", met.Measurements[0].Namespace)
-	assert.Equal(t, 4, len(met.Measurements[0].Dimensions))
-	dimensionSetOne := met.Measurements[0].Dimensions[0]
-	sort.Strings(dimensionSetOne)
-	assert.Equal(t, []string{"isItAnError", "spanName"}, dimensionSetOne)
-	assert.Equal(t, 1, len(met.Measurements[0].Metrics))
-	assert.Equal(t, "spanCounter", met.Measurements[0].Metrics[0]["Name"])
-	assert.Equal(t, "Count", met.Measurements[0].Metrics[0]["Unit"])
-
-	// zero dimension metric
-	dimensionSetTwo := met.Measurements[0].Dimensions[1]
-	assert.Equal(t, []string{}, dimensionSetTwo)
-
-	dimensionSetThree := met.Measurements[0].Dimensions[2]
-	sort.Strings(dimensionSetTwo)
-	assert.Equal(t, []string{"spanName"}, dimensionSetThree)
-
-	dimensionSetFour := met.Measurements[0].Dimensions[3]
-	sort.Strings(dimensionSetFour)
-	assert.Equal(t, []string{"isItAnError"}, dimensionSetFour)
+	expectedMeasurement := CwMeasurement{
+		Namespace: "myServiceNS/myServiceName",
+		Dimensions: [][]string{
+			{"isItAnError", "spanName"},
+			{},
+			{"spanName"},
+			{"isItAnError"},
+		},
+		Metrics: []map[string]string{
+			{
+				"Name": "spanCounter",
+				"Unit": "Count",
+			},
+		},
+	}
+	assertCwMeasurementEqual(t, expectedMeasurement, met.Measurements[0])
 }
 
 func TestTranslateOtToCWMetricWithNameSpace(t *testing.T) {
@@ -314,25 +308,38 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 
 	testCases := []struct {
-		testName            string
-		metricNameSelectors []string
-		dimensions          [][]string
-		numMeasurements     int
+		testName              string
+		metricNameSelectors   []string
+		dimensionRollupOption string
+		expectedDimensions    [][]string
+		numMeasurements       int
 	}{
 		{
-			"With match",
+			"has match w/ Zero + Single dim rollup",
 			[]string{"spanCounter"},
+			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{"spanName", "isItAnError"},
-				{OTellibDimensionKey, "spanName"},
+				{"spanName", OTellibDimensionKey},
 				{OTellibDimensionKey, "isItAnError"},
 				{OTellibDimensionKey},
 			},
 			1,
 		},
 		{
+			"has match w/ no dim rollup",
+			[]string{"spanCounter"},
+			"",
+			[][]string{
+				{"spanName", "isItAnError"},
+				{"spanName", OTellibDimensionKey},
+			},
+			1,
+		},
+		{
 			"No match",
 			[]string{"invalid"},
+			ZeroAndSingleDimensionRollup,
 			nil,
 			0,
 		},
@@ -341,12 +348,12 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 
 	for _, tc := range testCases {
 		m := MetricDeclaration{
-			Dimensions:          [][]string{{"isItAnError", "spanName"}},
+			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
 			MetricNameSelectors: tc.metricNameSelectors,
 		}
 		config := &Config{
 			Namespace:             "",
-			DimensionRollupOption: ZeroAndSingleDimensionRollup,
+			DimensionRollupOption: tc.dimensionRollupOption,
 			MetricDeclarations:    []*MetricDeclaration{&m},
 		}
 		t.Run(tc.testName, func(t *testing.T) {
@@ -361,16 +368,44 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 
 			if tc.numMeasurements > 0 {
 				dimensions := cwm[0].Measurements[0].Dimensions
-				assertDimsEqual(t, tc.dimensions, dimensions)
+				assertDimsEqual(t, tc.expectedDimensions, dimensions)
 			}
 		})
 	}
+
+	t.Run("No instrumentation library name w/ no dim rollup", func(t *testing.T) {
+		rm = internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+		m := MetricDeclaration{
+			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
+			MetricNameSelectors: []string{"spanCounter"},
+		}
+		config := &Config{
+			Namespace:             "",
+			DimensionRollupOption: "",
+			MetricDeclarations:    []*MetricDeclaration{&m},
+		}
+		err := m.Init(logger)
+		assert.Nil(t, err)
+		cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
+		assert.Equal(t, 0, totalDroppedMetrics)
+		assert.Equal(t, 1, len(cwm))
+		assert.NotNil(t, cwm)
+
+		assert.Equal(t, 1, len(cwm[0].Measurements))
+
+		// No OTelLib present
+		expectedDims := [][]string{
+			{"spanName", "isItAnError"},
+		}
+		dimensions := cwm[0].Measurements[0].Dimensions
+		assertDimsEqual(t, expectedDims, dimensions)
+	})
 }
 
 func TestTranslateCWMetricToEMF(t *testing.T) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
-		Dimensions: [][]string{{"OTelLib"}, {"OTelLib", "spanName"}},
+		Dimensions: [][]string{{OTellibDimensionKey}, {OTellibDimensionKey, "spanName"}},
 		Metrics: []map[string]string{{
 			"Name": "spanCounter",
 			"Unit": "Count",
@@ -378,7 +413,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	}
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields["OTelLib"] = "cloudwatch-otel"
+	fields[OTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 
@@ -396,7 +431,7 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields["OTelLib"] = "cloudwatch-otel"
+	fields[OTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 
@@ -424,7 +459,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 
 func TestGetCWMetrics(t *testing.T) {
 	namespace := "Namespace"
-	OTelLib := "OTelLib"
+	OTelLib := OTellibDimensionKey
 	instrumentationLibName := "InstrLibName"
 	config := &Config{
 		Namespace:             "",
@@ -983,6 +1018,8 @@ func TestBuildCWMetric(t *testing.T) {
 			"Unit": "",
 		},
 	}
+
+	// Test data types
 	metric := pdata.NewMetric()
 	metric.InitEmpty()
 	metric.SetName("foo")
@@ -1590,7 +1627,7 @@ func TestCalculateRate(t *testing.T) {
 	prevValue := int64(0)
 	curValue := int64(10)
 	fields := make(map[string]interface{})
-	fields["OTelLib"] = "cloudwatch-otel"
+	fields[OTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = prevValue
 	fields["type"] = "Int64"
@@ -2114,22 +2151,23 @@ func BenchmarkTranslateOtToCWMetricWithoutInstrLibrary(b *testing.B) {
 	}
 }
 
-func BenchmarkTranslateOtToCWMetricWithNamespace(b *testing.B) {
-	md := consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				conventions.AttributeServiceName: "myServiceName",
-			},
-		},
-		Metrics: []*metricspb.Metric{},
-	}
+func BenchmarkTranslateOtToCWMetricWithFiltering(b *testing.B) {
+	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
+	ilms := rm.InstrumentationLibraryMetrics()
+	ilm := ilms.At(0)
+	ilm.InstrumentationLibrary().InitEmpty()
+	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
+	m := MetricDeclaration{
+		Dimensions:          [][]string{{"spanName"}},
+		MetricNameSelectors: []string{"spanCounter", "spanGaugeCounter"},
+	}
+	logger := zap.NewNop()
+	m.Init(logger)
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		MetricDeclarations:    []*MetricDeclaration{&m},
 	}
 
 	b.ResetTimer()
@@ -2141,7 +2179,7 @@ func BenchmarkTranslateOtToCWMetricWithNamespace(b *testing.B) {
 func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	cwMeasurement := CwMeasurement{
 		Namespace:  "test-emf",
-		Dimensions: [][]string{{"OTelLib"}, {"OTelLib", "spanName"}},
+		Dimensions: [][]string{{OTellibDimensionKey}, {OTellibDimensionKey, "spanName"}},
 		Metrics: []map[string]string{{
 			"Name": "spanCounter",
 			"Unit": "Count",
@@ -2149,7 +2187,7 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	}
 	timestamp := int64(1596151098037)
 	fields := make(map[string]interface{})
-	fields["OTelLib"] = "cloudwatch-otel"
+	fields[OTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
 

@@ -73,7 +73,7 @@ func New(
 	for _, declaration := range emfConfig.MetricDeclarations {
 		err := declaration.Init(logger)
 		if err != nil {
-			logger.Warn("Dropped metric declaration. Error: " + err.Error())
+			logger.Warn("Dropped metric declaration. Error: " + err.Error() + ".")
 		} else {
 			validDeclarations = append(validDeclarations, declaration)
 		}

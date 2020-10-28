@@ -267,7 +267,7 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 	// `fields` contains metric and dimensions key/value pairs
 	fields := make(map[string]interface{}, labelsMap.Len()+2)
 	idx := 0
-	labelsMap.ForEach(func(k string, v string) {
+	labelsMap.ForEach(func(k, v string) {
 		fields[k] = v
 		labels[k] = v
 		labelsSlice[idx] = k
