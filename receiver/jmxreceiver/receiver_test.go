@@ -16,22 +16,27 @@ package jmxreceiver
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
 
 func TestReceiver(t *testing.T) {
-	logger := zap.NewNop()
-	config := &config{}
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	config := &config{
+		OTLPEndpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+	}
 
-	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
+	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
 	require.NotNil(t, receiver)
-	require.Same(t, logger, receiver.logger)
+	require.Same(t, params.Logger, receiver.logger)
 	require.Same(t, config, receiver.config)
 
 	require.Nil(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -39,25 +44,84 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestBuildJMXMetricGathererConfig(t *testing.T) {
-	logger := zap.NewNop()
-	config := &config{
-		ServiceURL:         "myserviceurl",
-		TargetSystem:       "mytargetsystem",
-		GroovyScript:       "mygroovyscript",
-		CollectionInterval: 123 * time.Second,
-		OTLPEndpoint:       "myotlpendpoint",
-		OTLPTimeout:        234 * time.Second,
-	}
-
-	expectedConfig := `otel.jmx.service.url = myserviceurl
+	tests := []struct {
+		name           string
+		config         config
+		expectedConfig string
+	}{
+		{
+			"uses target system",
+			config{
+				ServiceURL:         "myserviceurl",
+				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPEndpoint:       "myotlpendpoint",
+				OTLPTimeout:        234 * time.Second,
+			},
+			`otel.jmx.service.url = myserviceurl
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.target.system = mytargetsystem
 otel.exporter = otlp
 otel.otlp.endpoint = myotlpendpoint
 otel.otlp.metric.timeout = 234000
-`
-	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
-	jmxConfig, err := receiver.buildJMXMetricGathererConfig()
-	require.NoError(t, err)
-	require.Equal(t, expectedConfig, jmxConfig)
+`,
+		},
+		{
+			"uses groovy script",
+			config{
+				ServiceURL:         "myserviceurl",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPEndpoint:       "myotlpendpoint",
+				OTLPTimeout:        234 * time.Second,
+			},
+			`otel.jmx.service.url = myserviceurl
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.groovy.script = mygroovyscript
+otel.exporter = otlp
+otel.otlp.endpoint = myotlpendpoint
+otel.otlp.metric.timeout = 234000
+`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
+			require.NoError(t, err)
+			require.Equal(t, test.expectedConfig, jmxConfig)
+		})
+	}
+}
+
+func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      config
+		expectedErr string
+	}{
+		{
+			"missing OTLPEndpoint",
+			config{},
+			"failed to parse OTLPEndpoint : missing port in address",
+		},
+		{
+			"invalid OTLPEndpoint host with 0 port",
+			config{OTLPEndpoint: ".:0"},
+			"failed determining desired port from OTLPEndpoint .:0: listen tcp: lookup .: no such host",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(tt *testing.T) {
+			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
+			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
+			require.Error(t, err)
+			require.EqualError(t, err, test.expectedErr)
+			require.Nil(t, otlpReceiver)
+		})
+	}
 }

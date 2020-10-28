@@ -60,5 +60,5 @@ func createReceiver(
 	if err := jmxConfig.validate(); err != nil {
 		return nil, err
 	}
-	return newJMXMetricReceiver(params.Logger, jmxConfig, consumer), nil
+	return newJMXMetricReceiver(params, jmxConfig, consumer), nil
 }

@@ -33,11 +33,9 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -97,31 +95,6 @@ func cassandraContainer(t *testing.T) testcontainers.Container {
 	return cassandra
 }
 
-func newOTLPMetricReceiver(t *testing.T, logger *zap.Logger) (int, *component.MetricsReceiver, *exportertest.SinkMetricsExporter) {
-	consumer := &exportertest.SinkMetricsExporter{}
-	require.NotNil(t, consumer)
-
-	port := testbed.GetAvailablePort(t)
-
-	factory := otlpreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
-	cfg.SetName("otlp")
-
-	cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("0.0.0.0:%d", port), Transport: "tcp"}
-	cfg.HTTP = nil
-	params := component.ReceiverCreateParams{Logger: logger}
-
-	var err error
-	var receiver component.MetricsReceiver
-	if receiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, consumer); err == nil {
-		err = receiver.Start(context.Background(), componenttest.NewNopHost())
-	}
-	require.NotNil(t, receiver)
-	require.NoError(t, err)
-
-	return port, &receiver, consumer
-}
-
 func getJavaStdout(receiver *jmxMetricReceiver) string {
 	msg := ""
 LOOP:
@@ -151,7 +124,7 @@ func getLogsOnFailure(t *testing.T, logObserver *observer.ObservedLogs) {
 	}
 }
 
-func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
+func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	t := suite.T()
 	cassandra := cassandraContainer(t)
 	defer cassandra.Terminate(context.Background())
@@ -162,21 +135,23 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 	defer getLogsOnFailure(t, logObserver)
 
 	logger := zap.New(logCore)
-	port, otlpReceiver, consumer := newOTLPMetricReceiver(t, logger)
-	defer func() {
-		require.Nil(t, (*otlpReceiver).Shutdown(context.Background()))
-	}()
+	params := component.ReceiverCreateParams{Logger: logger}
 
 	config := &config{
-		JARPath:      suite.JARPath,
-		ServiceURL:   fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
-		OTLPEndpoint: fmt.Sprintf("localhost:%v", port),
-		GroovyScript: path.Join(".", "testdata", "script.groovy"),
-		Username:     "cassandra",
-		Password:     "cassandra",
+		CollectionInterval: 100 * time.Millisecond,
+		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
+		JARPath:            suite.JARPath,
+		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+		OTLPEndpoint:       "127.0.0.1:0",
+		OTLPTimeout:        1000 * time.Millisecond,
+		Password:           "cassandra",
+		Username:           "cassandra",
 	}
 
-	receiver := newJMXMetricReceiver(logger, config, nil)
+	consumer := &exportertest.SinkMetricsExporter{}
+	require.NotNil(t, consumer)
+
+	receiver := newJMXMetricReceiver(params, config, consumer)
 	require.NotNil(t, receiver)
 	defer func() {
 		require.Nil(t, receiver.Shutdown(context.Background()))
@@ -185,7 +160,7 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.Eventually(t, func() bool {
-		found := consumer.MetricsCount() == 1
+		found := consumer.MetricsCount() > 0
 		if !found {
 			return false
 		}
@@ -227,4 +202,24 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 
 		return true
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
+}
+
+func TestJMXReceiverInvalidEndpointIntegration(t *testing.T) {
+	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
+	config := &config{
+		CollectionInterval: 100 * time.Millisecond,
+		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
+		JARPath:            "/notavalidpath",
+		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
+		OTLPEndpoint:       "<invalid>:123",
+		OTLPTimeout:        1000 * time.Millisecond,
+	}
+	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
+	require.NotNil(t, receiver)
+	defer func() {
+		require.EqualError(t, receiver.Shutdown(context.Background()), "no subprocess.cancel().  Has it been started properly?")
+	}()
+
+	err := receiver.Start(context.Background(), componenttest.NewNopHost())
+	require.EqualError(t, err, "listen tcp: lookup <invalid>: no such host")
 }
