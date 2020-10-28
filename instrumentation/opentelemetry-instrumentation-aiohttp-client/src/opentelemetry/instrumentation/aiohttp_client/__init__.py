@@ -74,11 +74,11 @@ from opentelemetry import propagators, trace
 from opentelemetry.instrumentation.aiohttp_client.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import (
-    http_status_to_canonical_code,
+    http_status_to_status_code,
     unwrap,
 )
 from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
-from opentelemetry.trace.status import Status, StatusCanonicalCode
+from opentelemetry.trace.status import Status, StatusCode
 
 _UrlFilterT = typing.Optional[typing.Callable[[str], str]]
 _SpanNameT = typing.Optional[
@@ -194,9 +194,7 @@ def create_trace_config(
 
         if trace_config_ctx.span.is_recording():
             trace_config_ctx.span.set_status(
-                Status(
-                    http_status_to_canonical_code(int(params.response.status))
-                )
+                Status(http_status_to_status_code(int(params.response.status)))
             )
             trace_config_ctx.span.set_attribute(
                 "http.status_code", params.response.status
@@ -214,22 +212,8 @@ def create_trace_config(
         if trace_config_ctx.span is None:
             return
 
-        if trace_config_ctx.span.is_recording():
-            if isinstance(
-                params.exception,
-                (aiohttp.ServerTimeoutError, aiohttp.TooManyRedirects),
-            ):
-                status = StatusCanonicalCode.DEADLINE_EXCEEDED
-            # Assume any getaddrinfo error is a DNS failure.
-            elif isinstance(
-                params.exception, aiohttp.ClientConnectorError
-            ) and isinstance(params.exception.os_error, socket.gaierror):
-                # DNS resolution failed
-                status = StatusCanonicalCode.UNKNOWN
-            else:
-                status = StatusCanonicalCode.UNAVAILABLE
-
-            trace_config_ctx.span.set_status(Status(status))
+        if trace_config_ctx.span.is_recording() and params.exception:
+            trace_config_ctx.span.set_status(Status(StatusCode.ERROR))
             trace_config_ctx.span.record_exception(params.exception)
         _end_trace(trace_config_ctx)
 
