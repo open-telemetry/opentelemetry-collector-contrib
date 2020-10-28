@@ -3,7 +3,7 @@ import functools
 from tornado.httpclient import HTTPError, HTTPRequest
 
 from opentelemetry import propagators, trace
-from opentelemetry.instrumentation.utils import http_status_to_canonical_code
+from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.trace.status import Status
 from opentelemetry.util import time_ns
 
@@ -74,7 +74,7 @@ def _finish_tracing_callback(future, span):
         span.set_attribute("http.status_code", status_code)
         span.set_status(
             Status(
-                canonical_code=http_status_to_canonical_code(status_code),
+                status_code=http_status_to_status_code(status_code),
                 description=description,
             )
         )

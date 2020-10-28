@@ -51,7 +51,7 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.tornado.version import __version__
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
-    http_status_to_canonical_code,
+    http_status_to_status_code,
     unwrap,
 )
 from opentelemetry.trace.status import Status
@@ -269,7 +269,7 @@ def _finish_span(tracer, handler, error=None):
         ctx.span.set_attribute("http.status_code", status_code)
         ctx.span.set_status(
             Status(
-                canonical_code=http_status_to_canonical_code(status_code),
+                status_code=http_status_to_status_code(status_code),
                 description=reason,
             )
         )
