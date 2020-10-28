@@ -55,7 +55,7 @@ from opentelemetry.instrumentation.falcon.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
-    http_status_to_canonical_code,
+    http_status_to_status_code,
 )
 from opentelemetry.trace.status import Status
 from opentelemetry.util import ExcludeList, time_ns
@@ -216,7 +216,7 @@ class _TraceMiddleware:
             span.set_attribute("http.status_code", status_code)
             span.set_status(
                 Status(
-                    canonical_code=http_status_to_canonical_code(status_code),
+                    status_code=http_status_to_status_code(status_code),
                     description=reason,
                 )
             )
