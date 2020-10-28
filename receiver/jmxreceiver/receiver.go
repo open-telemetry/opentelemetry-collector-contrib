@@ -68,7 +68,7 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
-`, jmx.config.ServiceURL, jmx.config.Interval.Milliseconds())
+`, jmx.config.ServiceURL, jmx.config.CollectionInterval.Milliseconds())
 
 	if jmx.config.TargetSystem != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)
@@ -76,17 +76,10 @@ otel.jmx.interval.milliseconds = %v
 		javaConfig += fmt.Sprintf("otel.jmx.groovy.script = %v\n", jmx.config.GroovyScript)
 	}
 
-	if jmx.config.Exporter == otlpExporter {
-		javaConfig += fmt.Sprintf(`otel.exporter = otlp
+	javaConfig += fmt.Sprintf(`otel.exporter = otlp
 otel.otlp.endpoint = %v
 otel.otlp.metric.timeout = %v
 `, jmx.config.OTLPEndpoint, jmx.config.OTLPTimeout.Milliseconds())
-	} else if jmx.config.Exporter == prometheusExporter {
-		javaConfig += fmt.Sprintf(`otel.exporter = prometheus
-otel.prometheus.host = %v
-otel.prometheus.port = %v
-`, jmx.config.PrometheusHost, jmx.config.PrometheusPort)
-	}
 
 	if jmx.config.Username != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.username = %v\n", jmx.config.Username)

@@ -25,12 +25,9 @@ import (
 )
 
 const (
-	typeStr            = "jmx"
-	otlpExporter       = "otlp"
-	otlpEndpoint       = "localhost:55680"
-	prometheusExporter = "prometheus"
-	prometheusEndpoint = "localhost"
-	prometheusPort     = 9090
+	typeStr      = "jmx"
+	otlpExporter = "otlp"
+	otlpEndpoint = "0.0.0.0:0"
 )
 
 func NewFactory() component.ReceiverFactory {
@@ -46,13 +43,10 @@ func createDefaultConfig() configmodels.Receiver {
 			TypeVal: typeStr,
 			NameVal: typeStr,
 		},
-		JARPath:        "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-		Interval:       10 * time.Second,
-		Exporter:       otlpExporter,
-		OTLPEndpoint:   otlpEndpoint,
-		OTLPTimeout:    5 * time.Second,
-		PrometheusHost: prometheusEndpoint,
-		PrometheusPort: prometheusPort,
+		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
+		CollectionInterval: 10 * time.Second,
+		OTLPEndpoint:       otlpEndpoint,
+		OTLPTimeout:        5 * time.Second,
 	}
 }
 

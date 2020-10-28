@@ -38,18 +38,15 @@ func TestReceiver(t *testing.T) {
 	require.Nil(t, receiver.Shutdown(context.Background()))
 }
 
-func TestBuildJMXMetricGathererOTLPConfig(t *testing.T) {
+func TestBuildJMXMetricGathererConfig(t *testing.T) {
 	logger := zap.NewNop()
 	config := &config{
-		ServiceURL:     "myserviceurl",
-		TargetSystem:   "mytargetsystem",
-		GroovyScript:   "mygroovyscript",
-		Interval:       123 * time.Second,
-		Exporter:       "otlp",
-		OTLPEndpoint:   "myotlpendpoint",
-		OTLPTimeout:    234 * time.Second,
-		PrometheusHost: "myprometheushost",
-		PrometheusPort: 12345,
+		ServiceURL:         "myserviceurl",
+		TargetSystem:       "mytargetsystem",
+		GroovyScript:       "mygroovyscript",
+		CollectionInterval: 123 * time.Second,
+		OTLPEndpoint:       "myotlpendpoint",
+		OTLPTimeout:        234 * time.Second,
 	}
 
 	expectedConfig := `otel.jmx.service.url = myserviceurl
@@ -58,32 +55,6 @@ otel.jmx.target.system = mytargetsystem
 otel.exporter = otlp
 otel.otlp.endpoint = myotlpendpoint
 otel.otlp.metric.timeout = 234000
-`
-	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
-	jmxConfig, err := receiver.buildJMXMetricGathererConfig()
-	require.NoError(t, err)
-	require.Equal(t, expectedConfig, jmxConfig)
-}
-
-func TestBuildJMXMetricGathererPrometheusConfig(t *testing.T) {
-	logger := zap.NewNop()
-	config := &config{
-		ServiceURL:     "myserviceurl",
-		GroovyScript:   "mygroovyscript",
-		Interval:       123 * time.Second,
-		Exporter:       "prometheus",
-		OTLPEndpoint:   "myotlpendpoint",
-		OTLPTimeout:    234 * time.Second,
-		PrometheusHost: "myprometheushost",
-		PrometheusPort: 12345,
-	}
-
-	expectedConfig := `otel.jmx.service.url = myserviceurl
-otel.jmx.interval.milliseconds = 123000
-otel.jmx.groovy.script = mygroovyscript
-otel.exporter = prometheus
-otel.prometheus.host = myprometheushost
-otel.prometheus.port = 12345
 `
 	receiver := newJMXMetricReceiver(logger, config, consumertest.NewMetricsNop())
 	jmxConfig, err := receiver.buildJMXMetricGathererConfig()

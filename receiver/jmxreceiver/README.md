@@ -11,8 +11,8 @@ Status: alpha
 ### Details
 
 This receiver will launch a child JRE process running the JMX Metric Gatherer configured with your specified JMX
-connection information and target Groovy script.  It can report metrics to an existing otlp or prometheus metric
-receiver in your pipeline.  In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
+connection information and target Groovy script.  It then reports metrics to an implicitly created OTLP receiver.
+In order to use you will need to download the most [recent release](https://oss.jfrog.org/artifactory/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/)
 of the JMX Metric Gatherer JAR and configure the receiver with its path.  It is assumed that the JRE is
 available on your system.
 
@@ -27,9 +27,9 @@ receivers:
   jmx:
     jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
     service_url: service:jmx:rmi:///jndi/rmi://<my-jmx-host>:<my-jmx-port>/jmxrmi
-    groovy_script: /opt/my/groovy.script
-    interval: 10s
-    exporter: otlp
+    target_system: jvm
+    collection_interval: 10s
+    # optional: the same as specifying OTLP receiver endpoint.
     otlp_endpoint: mycollectorotlpreceiver:55680
     username: my_jmx_username
     # determined by the environment variable value
@@ -64,7 +64,7 @@ Corresponds to the `otel.jmx.groovy.script` property.
 
 One of `groovy_script` or `target_system` is _required_.  Both cannot be specified at the same time.
 
-### interval (default: `10s`)
+### collection_interval (default: `10s`)
 
 The interval time for the Groovy script to be run and metrics to be exported by the JMX Metric Gatherer within the persistent JRE process.
 
@@ -82,15 +82,9 @@ The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
 
-### exporter (default: `otlp`)
+### otlp_endpoint (default: `0.0.0.0:<random open port>`)
 
-The metric exporter to use, which matches a desired existing `otlp` or `prometheus` receiver type.
-
-Corresponds to the `otel.exporter` property.
-
-### otlp_endpoint (default: `localhost:55680`)
-
-The otlp exporter endpoint to submit metrics.  Must coincide with an existing `otlp` receiver `endpoint`.
+The otlp exporter endpoint to which to listen and submit metrics.
 
 Corresponds to the `otel.otlp.endpoint` property.
 
@@ -105,18 +99,6 @@ Corresponds to the `otel.otlp.metric.timeout` property.
 The headers to include in otlp metric submission requests.
 
 Corresponds to the `otel.otlp.metadata` property.
-
-### prometheus_host (default: `localhost`)
-
-The JMX Metric Gatherer prometheus server host interface to listen to.
-
-Corresponds to the `otel.prometheus.host` property.
-
-### prometheus_port (default: `9090`)
-
-The JMX Metric Gatherer prometheus server port to listen to.
-
-Corresponds to the `otel.prometheus.port` property.
 
 ### keystore_path
 

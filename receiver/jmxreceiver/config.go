@@ -34,23 +34,17 @@ type config struct {
 	GroovyScript string `mapstructure:"groovy_script"`
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
-	Interval time.Duration `mapstructure:"interval"`
+	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// The JMX username
 	Username string `mapstructure:"username"`
 	// The JMX password
 	Password string `mapstructure:"password"`
-	// The metric exporter to use ("otlp" or "prometheus", "otlp" by default).
-	Exporter string `mapstructure:"exporter"`
-	// The OTLP Receiver endpoint to send metrics to ("localhost:55680" by default).
+	// The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
 	OTLPEndpoint string `mapstructure:"otlp_endpoint"`
 	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
 	OTLPTimeout time.Duration `mapstructure:"otlp_timeout"`
 	// The headers to include in OTLP metric submission requests.
 	OTLPHeaders map[string]string `mapstructure:"otlp_headers"`
-	// The Prometheus Host
-	PrometheusHost string `mapstructure:"prometheus_host"`
-	// The Prometheus Port
-	PrometheusPort int `mapstructure:"prometheus_port"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
@@ -85,8 +79,8 @@ func (c *config) validate() error {
 		return fmt.Errorf("%v: %v", baseMsg, strings.Join(missingFields, ", "))
 	}
 
-	if c.Interval < 0 {
-		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.Interval.Milliseconds())
+	if c.CollectionInterval < 0 {
+		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.CollectionInterval.Milliseconds())
 	}
 
 	if c.OTLPTimeout < 0 {

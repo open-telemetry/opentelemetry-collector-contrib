@@ -27,9 +27,6 @@ import (
 	"testing"
 	"time"
 
-	prommodel "github.com/prometheus/common/model"
-	promconfig "github.com/prometheus/prometheus/config"
-	promdiscovery "github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -40,7 +37,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"go.opentelemetry.io/collector/receiver/prometheusreceiver"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -126,53 +122,6 @@ func newOTLPMetricReceiver(t *testing.T, logger *zap.Logger) (int, *component.Me
 	return port, &receiver, consumer
 }
 
-func newPrometheusMetricReceiver(t *testing.T, logger *zap.Logger) (int, *component.MetricsReceiver, *exportertest.SinkMetricsExporter) {
-	consumer := &exportertest.SinkMetricsExporter{}
-	require.NotNil(t, consumer)
-
-	port := testbed.GetAvailablePort(t)
-
-	factory := prometheusreceiver.NewFactory()
-	cfg := factory.CreateDefaultConfig().(*prometheusreceiver.Config)
-	cfg.SetName("prometheus")
-
-	cfg.PrometheusConfig = &promconfig.Config{
-		ScrapeConfigs: []*promconfig.ScrapeConfig{
-			{
-				JobName:         "jmx",
-				ScrapeInterval:  prommodel.Duration(100 * time.Millisecond),
-				ScrapeTimeout:   prommodel.Duration(1 * time.Second),
-				Scheme:          "http",
-				MetricsPath:     "/metrics",
-				HonorTimestamps: true,
-				ServiceDiscoveryConfigs: promdiscovery.Configs{
-					&promdiscovery.StaticConfig{
-						{
-							Targets: []prommodel.LabelSet{
-								{prommodel.AddressLabel: prommodel.LabelValue(fmt.Sprintf("localhost:%v", port))},
-							},
-							Labels: prommodel.LabelSet{
-								"myPrometheusLabel": "myPrometheusLabelValue",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	params := component.ReceiverCreateParams{Logger: logger}
-
-	var err error
-	var receiver component.MetricsReceiver
-	if receiver, err = factory.CreateMetricsReceiver(context.Background(), params, cfg, consumer); err == nil {
-		err = receiver.Start(context.Background(), componenttest.NewNopHost())
-	}
-	require.NotNil(t, receiver)
-	require.NoError(t, err)
-
-	return port, &receiver, consumer
-}
-
 func getJavaStdout(receiver *jmxMetricReceiver) string {
 	msg := ""
 LOOP:
@@ -221,7 +170,6 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 	config := &config{
 		JARPath:      suite.JARPath,
 		ServiceURL:   fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
-		Exporter:     "otlp",
 		OTLPEndpoint: fmt.Sprintf("localhost:%v", port),
 		GroovyScript: path.Join(".", "testdata", "script.groovy"),
 		Username:     "cassandra",
@@ -279,72 +227,4 @@ func (suite *JMXIntegrationSuite) TestJMXMetricViaOTLPReceiverIntegration() {
 
 		return true
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
-}
-
-func (suite *JMXIntegrationSuite) TestJMXMetricViaPrometheusReceiverIntegration() {
-	t := suite.T()
-	cassandra := cassandraContainer(t)
-	defer cassandra.Terminate(context.Background())
-	hostname, err := cassandra.Host(context.Background())
-	require.NoError(t, err)
-
-	logCore, logObserver := observer.New(zap.DebugLevel)
-	defer getLogsOnFailure(t, logObserver)
-
-	logger := zap.New(logCore)
-	port, prometheusReceiver, consumer := newPrometheusMetricReceiver(t, logger)
-	defer func() {
-		require.Nil(t, (*prometheusReceiver).Shutdown(context.Background()))
-	}()
-
-	config := &config{
-		JARPath:        suite.JARPath,
-		ServiceURL:     fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
-		Exporter:       "prometheus",
-		PrometheusHost: "localhost",
-		PrometheusPort: port,
-		Interval:       100 * time.Millisecond,
-		GroovyScript:   path.Join(".", "testdata", "script.groovy"),
-		Username:       "cassandra",
-		Password:       "cassandra",
-	}
-
-	receiver := newJMXMetricReceiver(logger, config, nil)
-	require.NotNil(t, receiver)
-	defer func() {
-		require.Nil(t, receiver.Shutdown(context.Background()))
-	}()
-
-	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()))
-
-	require.Eventually(t, func() bool {
-		metrics := consumer.AllMetrics()
-		if len(metrics) == 0 {
-			return false
-		}
-		for _, metric := range metrics {
-			rms := metric.ResourceMetrics()
-			rmsLen := rms.Len()
-			require.Equal(t, 1, rmsLen)
-			rm := rms.At(0)
-			ilms := rm.InstrumentationLibraryMetrics()
-			ilmsLen := ilms.Len()
-			require.Equal(t, 1, ilmsLen)
-			ilm := rm.InstrumentationLibraryMetrics().At(0)
-			mets := ilm.Metrics()
-			metsLen := mets.Len()
-			require.Equal(t, 1, metsLen)
-			met := mets.At(0)
-			require.False(t, met.IsNil())
-			require.Equal(t, "cassandra_storage_load", met.Name())
-			require.Equal(t, "Size, in bytes, of the on disk data size this node manages", met.Description())
-			require.Equal(t, pdata.MetricDataTypeDoubleGauge, met.DataType())
-			gauge := met.DoubleGauge()
-			dps := gauge.DataPoints()
-			require.Equal(t, 1, dps.Len())
-			dp := dps.At(0)
-			require.Greater(t, dp.Value(), 0.0)
-		}
-		return true
-	}, 30*time.Second, 10*time.Millisecond, getJavaStdout(receiver))
 }
