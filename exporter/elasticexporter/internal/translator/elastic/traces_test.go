@@ -43,7 +43,7 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	rootSpan := pdata.NewSpan()
 	rootSpan.InitEmpty()
-	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID[:]))
+	rootSpan.SetSpanID(pdata.NewSpanID(rootTransactionID))
 	rootSpan.SetName("root_span")
 	rootSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
@@ -54,8 +54,8 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	clientSpan := pdata.NewSpan()
 	clientSpan.InitEmpty()
-	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID[:]))
-	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID[:]))
+	clientSpan.SetSpanID(pdata.NewSpanID(clientSpanID))
+	clientSpan.SetParentSpanID(pdata.NewSpanID(rootTransactionID))
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
 	clientSpan.Status().InitEmpty()
@@ -68,15 +68,15 @@ func TestEncodeResourceSpan(t *testing.T) {
 
 	serverSpan := pdata.NewSpan()
 	serverSpan.InitEmpty()
-	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID[:]))
-	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID[:]))
+	serverSpan.SetSpanID(pdata.NewSpanID(serverTransactionID))
+	serverSpan.SetParentSpanID(pdata.NewSpanID(clientSpanID))
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
 	serverSpan.Status().InitEmpty()
 	serverSpan.Status().SetCode(-1)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
-		span.SetTraceID(pdata.NewTraceID(traceID[:]))
+		span.SetTraceID(pdata.NewTraceID(traceID))
 		span.SetStartTime(pdata.TimestampUnixNano(startTime.UnixNano()))
 		span.SetEndTime(pdata.TimestampUnixNano(endTime.UnixNano()))
 	}
@@ -496,7 +496,7 @@ func spanWithAttributes(t *testing.T, attrs map[string]pdata.AttributeValue) mod
 
 	span := pdata.NewSpan()
 	span.InitEmpty()
-	span.SetParentSpanID(pdata.NewSpanID([]byte{1}))
+	span.SetParentSpanID(pdata.NewSpanID([8]byte{1}))
 	span.Attributes().InitFromMap(attrs)
 
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)

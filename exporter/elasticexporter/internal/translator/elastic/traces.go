@@ -34,11 +34,9 @@ import (
 //
 // TODO(axw) otlpLibrary is currently not used. We should consider recording it as metadata.
 func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w *fastjson.Writer) error {
-	var spanID, parentID model.SpanID
-	var traceID model.TraceID
-	copy(spanID[:], otlpSpan.SpanID().Bytes())
-	copy(traceID[:], otlpSpan.TraceID().Bytes())
-	copy(parentID[:], otlpSpan.ParentSpanID().Bytes())
+	spanID := model.SpanID(otlpSpan.SpanID().Bytes())
+	traceID := model.TraceID(otlpSpan.TraceID().Bytes())
+	parentID := model.SpanID(otlpSpan.ParentSpanID().Bytes())
 	root := parentID == model.SpanID{}
 
 	startTime := time.Unix(0, int64(otlpSpan.StartTime())).UTC()

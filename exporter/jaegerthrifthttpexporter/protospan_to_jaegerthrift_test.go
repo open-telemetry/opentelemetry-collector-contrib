@@ -44,14 +44,12 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 		{
 			name:         "nil TraceID",
 			ocSpans:      []*tracepb.Span{{}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilTraceID,
+			wrappedError: errInvalidTraceID,
 		},
 		{
 			name:         "empty TraceID",
 			ocSpans:      []*tracepb.Span{{TraceId: []byte{}}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrWrongLenTraceID,
+			wrappedError: errInvalidTraceID,
 		},
 		{
 			name:    "zero TraceID",
@@ -61,14 +59,12 @@ func TestThriftInvalidOCProtoIDs(t *testing.T) {
 		{
 			name:         "nil SpanID",
 			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrNilSpanID,
+			wrappedError: errInvalidSpanID,
 		},
 		{
 			name:         "empty SpanID",
 			ocSpans:      []*tracepb.Span{{TraceId: fakeTraceID, SpanId: []byte{}}},
-			wantErr:      nil,
-			wrappedError: tracetranslator.ErrWrongLenSpanID,
+			wrappedError: errInvalidSpanID,
 		},
 		{
 			name:    "zero SpanID",

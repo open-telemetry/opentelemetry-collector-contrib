@@ -15,7 +15,6 @@
 package translator
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -38,10 +37,6 @@ const (
 	OriginECS = "AWS::ECS::Container"
 	OriginEB  = "AWS::ElasticBeanstalk::Environment"
 	OriginEKS = "AWS::EKS::Container"
-)
-
-var (
-	zeroSpanID = []byte{0, 0, 0, 0, 0, 0, 0, 0}
 )
 
 var (
@@ -180,12 +175,12 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 	}
 
 	return &awsxray.Segment{
-		ID:          awsxray.String(convertToAmazonSpanID(span.SpanID().Bytes())),
+		ID:          awsxray.String(span.SpanID().HexString()),
 		TraceID:     awsxray.String(traceID),
 		Name:        awsxray.String(name),
 		StartTime:   awsP.Float64(startTime),
 		EndTime:     awsP.Float64(endTime),
-		ParentID:    awsxray.String(convertToAmazonSpanID(span.ParentSpanID().Bytes())),
+		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
 		Throttle:    awsP.Bool(isThrottled),
@@ -212,7 +207,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r[:])
+	return pdata.NewTraceID(r)
 }
 
 // newSegmentID generates a new valid X-Ray SegmentID
@@ -222,7 +217,7 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r[:])
+	return pdata.NewSpanID(r)
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
@@ -273,10 +268,11 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	)
 
 	var (
-		content  = [traceIDLength]byte{}
-		epochNow = time.Now().Unix()
-		epoch    = int64(binary.BigEndian.Uint32(traceID.Bytes()[0:4]))
-		b        = [4]byte{}
+		content      = [traceIDLength]byte{}
+		epochNow     = time.Now().Unix()
+		traceIDBytes = traceID.Bytes()
+		epoch        = int64(binary.BigEndian.Uint32(traceIDBytes[0:4]))
+		b            = [4]byte{}
 	)
 
 	// If AWS traceID originally came from AWS, no problem.  However, if oc generated
@@ -294,18 +290,9 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	content[1] = '-'
 	hex.Encode(content[2:10], b[0:4])
 	content[10] = '-'
-	hex.Encode(content[identifierOffset:], traceID.Bytes()[4:16]) // overwrite with identifier
+	hex.Encode(content[identifierOffset:], traceIDBytes[4:16]) // overwrite with identifier
 
 	return string(content[0:traceIDLength]), nil
-}
-
-// convertToAmazonSpanID generates an Amazon spanID from a trace.SpanID - a 64-bit identifier
-// for the Segment, unique among segments in the same trace, in 16 hexadecimal digits.
-func convertToAmazonSpanID(v []byte) string {
-	if v == nil || bytes.Equal(v, zeroSpanID) {
-		return ""
-	}
-	return hex.EncodeToString(v[0:8])
 }
 
 func timestampToFloatSeconds(ts pdata.TimestampUnixNano) float64 {

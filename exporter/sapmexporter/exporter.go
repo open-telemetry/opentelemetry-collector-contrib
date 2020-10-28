@@ -31,15 +31,13 @@ import (
 
 // sapmExporter is a wrapper struct of SAPM exporter
 type sapmExporter struct {
-	client  *sapmclient.Client
-	logger  *zap.Logger
-	config  *Config
-	tracker *Tracker
+	client *sapmclient.Client
+	logger *zap.Logger
+	config *Config
 }
 
 func (se *sapmExporter) Shutdown(context.Context) error {
 	se.client.Stop()
-	se.tracker.Shutdown()
 	return nil
 }
 
@@ -54,17 +52,10 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 		return sapmExporter{}, err
 	}
 
-	var tracker *Tracker
-
-	if cfg.Correlation.Enabled {
-		tracker = NewTracker(cfg, params)
-	}
-
 	return sapmExporter{
-		client:  client,
-		logger:  params.Logger,
-		config:  cfg,
-		tracker: tracker,
+		client: client,
+		logger: params.Logger,
+		config: cfg,
 	}, err
 }
 
@@ -77,7 +68,11 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 	return exporterhelper.NewTraceExporter(
 		cfg,
 		se.pushTraceData,
-		exporterhelper.WithShutdown(se.Shutdown))
+		exporterhelper.WithShutdown(se.Shutdown),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+	)
 }
 
 // tracesByAccessToken takes a pdata.Traces struct and will iterate through its ResourceSpans' attributes,
@@ -97,13 +92,13 @@ func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Tr
 		accessToken := ""
 		if !resourceSpan.Resource().IsNil() {
 			attrs := resourceSpan.Resource().Attributes()
-			attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
-			if ok {
-				attrs.Delete(splunk.SFxAccessTokenLabel)
-				if se.config.AccessTokenPassthrough {
+			if se.config.AccessTokenPassthrough {
+				attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
+				if ok {
 					accessToken = attributeValue.StringVal()
 				}
 			}
+			attrs.Delete(splunk.SFxAccessTokenLabel)
 		}
 
 		traceForToken, ok := tracesByToken[accessToken]
@@ -144,9 +139,6 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td pdata.Traces) (dro
 			}
 			droppedSpansCount += trace.SpanCount()
 		}
-
-		// NOTE: Correlation does not currently support inline access token.
-		se.tracker.AddSpans(ctx, trace)
 	}
 	return
 }

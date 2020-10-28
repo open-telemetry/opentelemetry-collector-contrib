@@ -21,6 +21,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/newrelicexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxcorrelationexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stackdriverexporter v0.0.0-00010101000000-000000000000
@@ -52,7 +53,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.13.1-0.20201020175630-99cb5b244aad
+	go.opentelemetry.io/collector v0.13.1-0.20201027215027-6ae66159741d
 	golang.org/x/sys v0.0.0-20201005172224-997123666555
 	honnef.co/go/tools v0.0.1-2020.1.6
 )
@@ -91,6 +92,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzi
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter => ./exporter/sapmexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter => ./exporter/sentryexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxcorrelationexporter => ./exporter/signalfxcorrelationexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter => ./exporter/signalfxexporter
 

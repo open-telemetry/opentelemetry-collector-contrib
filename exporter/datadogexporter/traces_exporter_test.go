@@ -229,7 +229,7 @@ func TestTraceAndStatsExporter(t *testing.T) {
 }
 
 func simpleTraces() pdata.Traces {
-	return simpleTracesWithID(pdata.NewTraceID([]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {

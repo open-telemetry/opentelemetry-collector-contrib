@@ -29,17 +29,6 @@ trace resource attribute, if any, as SFx access token.  In either case this attr
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
-- `correlation`
-  - `enabled` (default = false): Whether to enable spans to metric correlation. If this block is not set at all then correlation is not enabled due to the default.
-  - `endpoint` (default = ""): Required if `enabled` is `true`. This is the base URL for API requests (e.g. https://api.signalfx.com).
-  - `stale_service_timeout` (default = 5 minutes): How long to wait after a span's service name is last seen before uncorrelating it.
-  - `max_requests` (default = 20): Max HTTP requests to be made in parallel.
-  - `max_buffered` (default = 10,000): Max number of correlation updates that can be buffered before updates are dropped.
-  - `max_retries` (default = 2): Max number of retries that will be made for failed correlation updates.
-  - `log_updates` (default = false): Whether or not to log correlation updates to dimensions (at `DEBUG` level).
-  - `retry_delay` (default = 30 seconds): How long to wait between retries.
-  - `cleanup_interval` (default = 1 minute): How frequently to purge duplicate requests.
-  - `sync_attributes` (default = `{"k8s.pod.uid": "k8s.pod.uid", "container.id": "container.id"}`) Map containing key of the attribute to read from spans to sync to dimensions specified as the value.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found

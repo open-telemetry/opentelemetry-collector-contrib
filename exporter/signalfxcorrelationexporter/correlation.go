@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sapmexporter
+package signalfxcorrelationexporter
 
 import (
 	"context"
@@ -56,12 +56,12 @@ func NewTracker(cfg *Config, params component.ExporterCreateParams) *Tracker {
 func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.Correlation.Endpoint)
+	corrURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Correlation.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Endpoint, err)
 	}
 
-	httpClient, err := cfg.Correlation.ToClient()
+	httpClient, err := cfg.ToClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %v", err)
 	}
@@ -69,7 +69,7 @@ func newCorrelationClient(cfg *Config, params component.ExporterCreateParams) (
 	ctx, cancel := context.WithCancel(context.Background())
 
 	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
-		Config:      cfg.Correlation.Config,
+		Config:      cfg.Config,
 		AccessToken: cfg.AccessToken,
 		URL:         corrURL,
 	})
@@ -112,14 +112,14 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces pdata.Traces) {
 
 		cor.traceTracker = tracetracker.New(
 			newZapShim(cor.params.Logger),
-			cor.cfg.Correlation.StaleServiceTimeout,
+			cor.cfg.StaleServiceTimeout,
 			cor.correlation,
 			map[string]string{
 				string(hostID.Key): hostID.ID,
 			},
 			false,
 			nil,
-			cor.cfg.Correlation.SyncAttributes)
+			cor.cfg.SyncAttributes)
 		cor.Start()
 	})
 
