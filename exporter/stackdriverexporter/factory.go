@@ -64,7 +64,7 @@ func createDefaultConfig() configmodels.Exporter {
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
-	cfg configmodels.Exporter) (component.TraceExporter, error) {
+	cfg configmodels.Exporter) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
 	return newStackdriverTraceExporter(eCfg, params)
 }

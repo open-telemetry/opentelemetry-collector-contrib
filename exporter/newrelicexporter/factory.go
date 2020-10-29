@@ -44,12 +44,12 @@ func createDefaultConfig() configmodels.Exporter {
 	}
 }
 
-// CreateTraceExporter creates a New Relic trace exporter for this configuration.
+// CreateTracesExporter creates a New Relic trace exporter for this configuration.
 func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	exp, err := newExporter(params.Logger, cfg)
 	if err != nil {
 		return nil, err

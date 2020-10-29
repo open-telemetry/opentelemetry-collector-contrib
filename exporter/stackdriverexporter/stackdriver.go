@@ -92,7 +92,7 @@ func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, 
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 		cloudtrace.WithTimeout(cfg.Timeout),

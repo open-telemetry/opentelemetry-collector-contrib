@@ -61,7 +61,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}

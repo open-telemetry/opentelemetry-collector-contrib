@@ -59,7 +59,7 @@ func newSAPMExporter(cfg *Config, params component.ExporterCreateParams) (sapmEx
 	}, err
 }
 
-func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	se, err := newSAPMExporter(cfg, params)
 	if err != nil {
 		return nil, err
