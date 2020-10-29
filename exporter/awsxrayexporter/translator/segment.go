@@ -34,10 +34,12 @@ import (
 
 // AWS X-Ray acceptable values for origin field.
 const (
-	OriginEC2 = "AWS::EC2::Instance"
-	OriginECS = "AWS::ECS::Container"
-	OriginEB  = "AWS::ElasticBeanstalk::Environment"
-	OriginEKS = "AWS::EKS::Container"
+	OriginEC2        = "AWS::EC2::Instance"
+	OriginECS        = "AWS::ECS::Container"
+	OriginECSEC2     = "AWS::ECS::EC2"
+	OriginECSFargate = "AWS::ECS::Fargate"
+	OriginEB         = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS        = "AWS::EKS::Container"
 )
 
 var (
@@ -235,6 +237,34 @@ func determineAwsOrigin(resource pdata.Resource) string {
 			return ""
 		}
 	}
+
+	// TODO(willarmiros): Only use infrastructure_service for origin resolution once detectors for all AWS environments are
+	// implemented for robustness
+	is, present := resource.Attributes().Get("cloud.infrastructure_service")
+	if present {
+		switch is.StringVal() {
+		case "EKS":
+			return OriginEKS
+		case "ElasticBeanstalk":
+			return OriginEB
+		case "ECS":
+			switch lt, _ := resource.Attributes().Get("aws.ecs.launchtype"); lt.StringVal() {
+			case "EC2":
+				return OriginECSEC2
+			case "Fargate":
+				return OriginECSFargate
+			default:
+				return OriginECS
+			}
+		case "EC2":
+			return OriginEC2
+
+		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
+		default:
+			return ""
+		}
+	}
+
 	// EKS > EB > ECS > EC2
 	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
 	if eks {
@@ -248,7 +278,11 @@ func determineAwsOrigin(resource pdata.Resource) string {
 	if ecs {
 		return OriginECS
 	}
-	return OriginEC2
+	_, ec2 := resource.Attributes().Get(semconventions.AttributeHostID)
+	if ec2 {
+		return OriginEC2
+	}
+	return ""
 }
 
 // convertToAmazonTraceID converts a trace ID to the Amazon format.
@@ -284,11 +318,11 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	// past 30 days.
 	//
 	// In that case, we return invalid traceid error
-	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
-	}
+	//if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
+	//	return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
+	//}
 
-	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
+	binary.BigEndian.PutUint32(b[0:4], uint32(epochNow))
 
 	content[0] = '1'
 	content[1] = '-'
