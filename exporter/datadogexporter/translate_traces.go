@@ -70,11 +70,6 @@ var statusCodes = map[int32]codeDetails{
 
 // converts Traces into an array of datadog trace payloads grouped by env
 func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload, error) {
-	// get hostname tag
-	// this is getting abstracted out to config
-	// TODO pass logger here once traces code stabilizes
-	hostname := *metadata.GetHost(zap.NewNop(), cfg)
-
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -89,7 +84,15 @@ func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload
 			continue
 		}
 
-		// TODO: Also pass in globalTags here when we know what to do with them
+		// TODO pass logger here once traces code stabilizes
+		hostname := *metadata.GetHost(zap.NewNop(), cfg)
+		if !rs.Resource().IsNil() {
+			resHostname, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
+			if ok {
+				hostname = resHostname
+			}
+		}
+
 		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
 		if err != nil {
 			return traces, err

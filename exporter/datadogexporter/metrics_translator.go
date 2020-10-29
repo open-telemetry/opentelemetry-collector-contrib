@@ -22,6 +22,7 @@ import (
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 )
 
@@ -187,6 +188,17 @@ func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) 
 				case pdata.MetricDataTypeDoubleHistogram:
 					datapoints = mapDoubleHistogramMetrics(md.Name(), md.DoubleHistogram().DataPoints(), cfg.Buckets)
 				}
+
+				// Try to get host from resource
+				if !rm.Resource().IsNil() {
+					host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
+					if ok {
+						for i := range datapoints {
+							datapoints[i].SetHost(host)
+						}
+					}
+				}
+
 				series = append(series, datapoints...)
 			}
 		}

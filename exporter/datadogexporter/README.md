@@ -21,6 +21,7 @@ datadog:
  ```
 
 The hostname, environment, service and version can be set in the configuration for unified service tagging.
+The exporter will try to retrieve a hostname following the OpenTelemetry semantic conventions if there is one available.
 
 See the sample configuration file under the `example` folder for other available options.
 

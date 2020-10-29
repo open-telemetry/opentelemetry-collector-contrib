@@ -18,6 +18,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 )
 
@@ -77,4 +79,19 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	}
 
 	return hi.EC2Hostname
+}
+
+// HostnameFromAttributes gets a valid hostname from labels
+// if available
+func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+	hostName, ok := attrs.Get(conventions.AttributeHostName)
+	if ok && !isDefaultHostname(hostName.StringVal()) {
+		return hostName.StringVal(), true
+	}
+
+	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
+		return hostID.StringVal(), true
+	}
+
+	return "", false
 }
