@@ -39,18 +39,26 @@ Meetings take place via [Zoom video conference](https://zoom.us/j/6729396170).
 
 Meeting notes are available as a public [Google doc](https://docs.google.com/document/d/1CIMGoIOZ-c3-igzbd6_Pnxx1SjAkjwqoYSUWxPY8XIs/edit). For edit access, get in touch on [Gitter](https://gitter.im/open-telemetry/opentelemetry-python).
 
-Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telemetry/teams/opentelemetry-python-contrib-approvers)):
+Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telemetry/teams/python-approvers)):
 
-- [Chris Kleinknecht](https://github.com/c24t), Google
+- [Aaron Abbott](https://github.com/aabmass), Google
+- [Diego Hurtado](https://github.com/ocelotl)
 - [Hector Hernandez](https://github.com/hectorhdzg), Microsoft
-- [Reiley Yang](https://github.com/reyang), Microsoft
+- [Owais Lone](https://github.com/owais), Splunk
+- [Yusuke Tsutsumi](https://github.com/toumorokoshi), Google
 
 *Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#approver).*
 
-Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-telemetry/teams/opentelemetry-python-contrib-maintainers)):
+Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-telemetry/teams/python-maintainers)):
 
 - [Alex Boten](https://github.com/codeboten), Lightstep
-- [Carlos Alberto Cortez](https://github.com/carlosalberto), Lightstep
+- [Leighton Chen](https://github.com/lzchen), Microsoft
 
 *Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/master/community-membership.md#maintainer).*
+
+### Thanks to all the people who already contributed!
+
+<a href="https://github.com/open-telemetry/opentelemetry-python-contrib/graphs/contributors">
+  <img src="https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-python-contrib" />
+</a>
 
