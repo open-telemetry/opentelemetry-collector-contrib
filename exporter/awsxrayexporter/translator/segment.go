@@ -318,11 +318,11 @@ func convertToAmazonTraceID(traceID pdata.TraceID) (string, error) {
 	// past 30 days.
 	//
 	// In that case, we return invalid traceid error
-	//if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-	//	return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
-	//}
+	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
+		return "", fmt.Errorf("invalid xray traceid: %s", traceID.HexString())
+	}
 
-	binary.BigEndian.PutUint32(b[0:4], uint32(epochNow))
+	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
 
 	content[0] = '1'
 	content[1] = '-'
