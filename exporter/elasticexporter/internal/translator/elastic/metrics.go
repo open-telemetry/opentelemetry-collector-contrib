@@ -164,10 +164,10 @@ func asTime(in pdata.TimestampUnixNano) model.Time {
 func asStringMap(in pdata.StringMap) model.StringMap {
 	var out model.StringMap
 	in.Sort()
-	in.ForEach(func(k string, v pdata.StringValue) {
+	in.ForEach(func(k string, v string) {
 		out = append(out, model.StringMapItem{
 			Key:   k,
-			Value: v.Value(),
+			Value: v,
 		})
 	})
 	return out
