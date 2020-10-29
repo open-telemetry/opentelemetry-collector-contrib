@@ -68,6 +68,7 @@ func createTraceExporter(
 
 	return exporterhelper.NewTraceExporter(
 		c,
+		params.Logger,
 		exp.pushTraces,
 		exporterhelper.WithStart(exp.Start),
 		exporterhelper.WithShutdown(exp.Shutdown))

@@ -55,7 +55,7 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTraceExporter(cfg, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
+	return exporterhelper.NewTraceExporter(cfg, params.Logger, exp.pushTraceData, exporterhelper.WithShutdown(exp.Shutdown))
 }
 
 // CreateMetricsExporter creates a New Relic metrics exporter for this configuration.
@@ -69,5 +69,5 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(cfg, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
+	return exporterhelper.NewMetricsExporter(cfg, params.Logger, exp.pushMetricData, exporterhelper.WithShutdown(exp.Shutdown))
 }

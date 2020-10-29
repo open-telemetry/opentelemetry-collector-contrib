@@ -88,7 +88,7 @@ func TestCreateProcessors(t *testing.T) {
 
 		for name, cfg := range config.Processors {
 			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				tp, tErr := factory.CreateTraceProcessor(
+				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
 					component.ProcessorCreateParams{Logger: zap.NewNop()},
 					cfg,

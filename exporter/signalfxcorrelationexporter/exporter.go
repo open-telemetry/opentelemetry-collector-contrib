@@ -56,6 +56,7 @@ func newTraceExporter(cfg *Config, params component.ExporterCreateParams) (compo
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown))
 }

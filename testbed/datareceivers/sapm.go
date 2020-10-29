@@ -31,7 +31,7 @@ import (
 // SapmDataReceiver implements Sapm format receiver.
 type SapmDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 // NewSapmDataReceiver creates a new SapmDataReceiver.

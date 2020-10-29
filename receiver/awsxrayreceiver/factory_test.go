@@ -52,7 +52,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, configmodels.Type(awsxray.TypeStr), factory.Type())
 }
 
-func TestCreateTraceReceiver(t *testing.T) {
+func TestCreateTracesReceiver(t *testing.T) {
 	// TODO review if test should succeed on Windows
 	if runtime.GOOS == "windows" {
 		t.Skip()
@@ -63,7 +63,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	os.Setenv(defaultRegionEnvName, mockRegion)
 
 	factory := NewFactory()
-	_, err := factory.CreateTraceReceiver(
+	_, err := factory.CreateTracesReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{
 			Logger: zap.NewNop(),

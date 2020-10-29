@@ -87,13 +87,13 @@ func (rCfg *Config) validate() error {
 	return err
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
+// CreateTracesReceiver creates a trace receiver based on provided config.
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

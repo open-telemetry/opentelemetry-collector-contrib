@@ -100,6 +100,7 @@ func createMetricsExporter(
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		exp.PushMetricsData,
 		exporterhelper.WithQueue(exporterhelper.CreateDefaultQueueSettings()),
 		exporterhelper.WithRetry(exporterhelper.CreateDefaultRetrySettings()),
@@ -139,6 +140,7 @@ func createTraceExporter(
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

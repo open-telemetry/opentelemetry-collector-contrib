@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
@@ -71,5 +72,5 @@ func createTraceExporter(
 		return nil, err
 	}
 
-	return newTraceExporter(config, expCfg.URL, expCfg.Headers, expCfg.Timeout)
+	return newTraceExporter(config, component.ExporterCreateParams{Logger: zap.NewNop()}, expCfg.URL, expCfg.Headers, expCfg.Timeout)
 }

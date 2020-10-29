@@ -41,7 +41,7 @@ func TestCreateProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	params := component.ProcessorCreateParams{Logger: zap.NewNop()}
 
-	tp, err := factory.CreateTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
+	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
@@ -56,7 +56,7 @@ func TestCreateProcessor(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Passthrough = true
 
-	tp, err = factory.CreateTraceProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
+	tp, err = factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewTracesNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
