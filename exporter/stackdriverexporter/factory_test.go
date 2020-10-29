@@ -42,7 +42,7 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{
+	te, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{
 		Logger: zap.NewNop(),
 	}, eCfg)
 	assert.Nil(t, err)

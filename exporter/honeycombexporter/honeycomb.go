@@ -82,7 +82,7 @@ type spanRefType int64
 
 // newHoneycombTraceExporter creates and returns a new honeycombExporter. It
 // wraps the exporter in the component.TraceExporterOld helper method.
-func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TraceExporter, error) {
+func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 	libhoneyConfig := libhoney.Config{
 		WriteKey:   cfg.APIKey,
 		Dataset:    cfg.Dataset,

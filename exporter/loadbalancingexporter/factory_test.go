@@ -39,7 +39,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceExporter(context.Background(), creationParams, cfg)
+	exp, err := factory.CreateTracesExporter(context.Background(), creationParams, cfg)
 
 	// verify
 	assert.Nil(t, err)

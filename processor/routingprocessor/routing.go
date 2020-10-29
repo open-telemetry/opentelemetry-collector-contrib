@@ -40,8 +40,8 @@ type processorImp struct {
 	logger *zap.Logger
 	config Config
 
-	defaultTraceExporters []component.TraceExporter
-	traceExporters        map[string][]component.TraceExporter
+	defaultTraceExporters []component.TracesExporter
+	traceExporters        map[string][]component.TracesExporter
 }
 
 // Crete new processor
@@ -70,16 +70,16 @@ func newProcessor(logger *zap.Logger, cfg configmodels.Exporter) (*processorImp,
 	return &processorImp{
 		logger:         logger,
 		config:         *oCfg,
-		traceExporters: make(map[string][]component.TraceExporter),
+		traceExporters: make(map[string][]component.TracesExporter),
 	}, nil
 }
 
 func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	// first, let's build a map of exporter names with the exporter instances
 	source := host.GetExporters()
-	availableExporters := map[string]component.TraceExporter{}
+	availableExporters := map[string]component.TracesExporter{}
 	for k, exp := range source[configmodels.TracesDataType] {
-		traceExp, ok := exp.(component.TraceExporter)
+		traceExp, ok := exp.(component.TracesExporter)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a trace exporter", k.Name())
 		}
@@ -101,7 +101,7 @@ func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *processorImp) registerExportersForDefaultRoute(available map[string]component.TraceExporter, requested []string) error {
+func (e *processorImp) registerExportersForDefaultRoute(available map[string]component.TracesExporter, requested []string) error {
 	for _, exp := range requested {
 		v, ok := available[exp]
 		if !ok {
@@ -113,7 +113,7 @@ func (e *processorImp) registerExportersForDefaultRoute(available map[string]com
 	return nil
 }
 
-func (e *processorImp) registerExportersForRoute(route string, available map[string]component.TraceExporter, requested []string) error {
+func (e *processorImp) registerExportersForRoute(route string, available map[string]component.TracesExporter, requested []string) error {
 	for _, exp := range requested {
 		v, ok := available[exp]
 		if !ok {
@@ -149,7 +149,7 @@ func (e *processorImp) GetCapabilities() component.ProcessorCapabilities {
 	return component.ProcessorCapabilities{MutatesConsumedData: false}
 }
 
-func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TraceExporter) error {
+func (e *processorImp) pushDataToExporters(ctx context.Context, td pdata.Traces, exporters []component.TracesExporter) error {
 	// TODO: determine the proper action when errors happen
 	for _, exp := range exporters {
 		if err := exp.ConsumeTraces(ctx, td); err != nil {

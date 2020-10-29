@@ -49,7 +49,7 @@ func newTraceExporter(
 	httpAddress string,
 	headers map[string]string,
 	timeout time.Duration,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	clientTimeout := defaultHTTPTimeout
 	if timeout != 0 {

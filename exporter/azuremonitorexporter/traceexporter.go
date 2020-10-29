@@ -70,7 +70,7 @@ func (exporter *traceExporter) onTraceData(context context.Context, traceData pd
 }
 
 // Returns a new instance of the trace exporter
-func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TraceExporter, error) {
+func newTraceExporter(config *Config, transportChannel transportChannel, logger *zap.Logger) (component.TracesExporter, error) {
 
 	exporter := &traceExporter{
 		config:           config,
