@@ -71,7 +71,9 @@ var (
 				},
 				Transforms: []Transform{
 					{
-						MetricName: "old_name",
+						MetricIncludeFilter: FilterConfig{
+							Include: "old_name",
+						},
 						Action:     Update,
 						NewName:    "new_name",
 						Operations: testDataOperations,
@@ -88,8 +90,11 @@ var (
 				},
 				Transforms: []Transform{
 					{
-						MetricName: "some_name",
-						Action:     Update,
+						MetricIncludeFilter: FilterConfig{
+							Include:   "some_name",
+							MatchType: "regexp",
+						},
+						Action: Update,
 						Operations: []Operation{
 							{
 								Action:   AddLabel,

@@ -17,6 +17,7 @@ package metricstransformprocessor
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -60,7 +61,12 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	metricsProcessor := newMetricsTransformProcessor(params.Logger, buildHelperConfig(oCfg, params.ApplicationStartInfo.Version))
+	internalTransforms, err := buildHelperConfig(oCfg, params.ApplicationStartInfo.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	metricsProcessor := newMetricsTransformProcessor(params.Logger, internalTransforms)
 
 	return processorhelper.NewMetricsProcessor(
 		cfg,
@@ -73,8 +79,26 @@ func createMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
-		if transform.MetricName == "" {
-			return fmt.Errorf("missing required field %q", MetricNameFieldName)
+		if transform.MetricIncludeFilter.Include == "" && transform.MetricName == "" {
+			return fmt.Errorf("missing required field %q", IncludeFieldName)
+		}
+
+		if transform.MetricIncludeFilter.MatchType != "" {
+			var validMatchType bool
+			for _, matchType := range MatchTypes {
+				if transform.MetricIncludeFilter.MatchType == matchType {
+					validMatchType = true
+					break
+				}
+			}
+
+			if !validMatchType {
+				return fmt.Errorf("%q must be in %q", MatchTypeFieldName, MatchTypes)
+			}
+		}
+
+		if transform.MetricIncludeFilter.Include != "" && transform.MetricName != "" {
+			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
 		}
 
 		if transform.Action != Update && transform.Action != Insert {
@@ -101,15 +125,29 @@ func validateConfiguration(config *Config) error {
 }
 
 // buildHelperConfig constructs the maps that will be useful for the operations
-func buildHelperConfig(config *Config, version string) []internalTransform {
+func buildHelperConfig(config *Config, version string) ([]internalTransform, error) {
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
-		helperT := internalTransform{
-			MetricName: t.MetricName,
-			Action:     t.Action,
-			NewName:    t.NewName,
-			Operations: make([]internalOperation, len(t.Operations)),
+		// for backwards compatibility, convert metric name to an include filter
+		if t.MetricName != "" {
+			t.MetricIncludeFilter = FilterConfig{
+				Include:   t.MetricName,
+				MatchType: StrictMatchType,
+			}
 		}
+
+		filter, err := createFilter(t.MetricIncludeFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		helperT := internalTransform{
+			MetricIncludeFilter: filter,
+			Action:              t.Action,
+			NewName:             t.NewName,
+			Operations:          make([]internalOperation, len(t.Operations)),
+		}
+
 		for j, op := range t.Operations {
 			op.NewValue = strings.ReplaceAll(op.NewValue, "{{version}}", version)
 
@@ -128,7 +166,20 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 		}
 		helperDataTransforms[i] = helperT
 	}
-	return helperDataTransforms
+	return helperDataTransforms, nil
+}
+
+func createFilter(filterConfig FilterConfig) (internalFilter, error) {
+	switch filterConfig.MatchType {
+	case RegexpMatchType:
+		r, err := regexp.Compile(filterConfig.Include)
+		if err != nil {
+			return nil, err
+		}
+		return internalFilterRegexp{include: r}, nil
+	default:
+		return internalFilterStrict{include: filterConfig.Include}, nil
+	}
 }
 
 // createLabelValueMapping creates the labelValue rename mappings based on the valueActions

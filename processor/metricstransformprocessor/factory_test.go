@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -58,19 +59,33 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName: "config_full.yaml",
 			succeed:    true,
-		}, {
+		},
+		{
 			configName:   "config_invalid_newname.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v", NewNameFieldName, ActionFieldName, Insert),
-		}, {
+		},
+		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
-		}, {
-			configName:   "config_invalid_metricname.yaml",
+		},
+		{
+			configName:   "config_invalid_include.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("missing required field %q", MetricNameFieldName),
-		}, {
+			errorMessage: fmt.Sprintf("missing required field %q", IncludeFieldName),
+		},
+		{
+			configName:   "config_invalid_include_and_metricname.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType),
+		},
+		{
+			configName:   "config_invalid_matchtype.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, MatchTypes),
+		},
+		{
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, 0),
@@ -195,9 +210,9 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 
 	expData := []internalTransform{
 		{
-			MetricName: "name",
-			Action:     Update,
-			NewName:    "new-name",
+			MetricIncludeFilter: internalFilterStrict{include: "name"},
+			Action:              Update,
+			NewName:             "new-name",
 			Operations: []internalOperation{
 				{
 					configOperation: Operation{
@@ -248,13 +263,14 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
+	internalTransforms, err := buildHelperConfig(oCfg, "v0.0.1")
+	require.NoError(t, err)
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]
 		assert.Equal(t, expTr.NewName, mtpT.NewName)
 		assert.Equal(t, expTr.Action, mtpT.Action)
-		assert.Equal(t, expTr.MetricName, mtpT.MetricName)
+		assert.Equal(t, expTr.MetricIncludeFilter.(internalFilterStrict).include, mtpT.MetricIncludeFilter.(internalFilterStrict).include)
 		for j, expOp := range expTr.Operations {
 			mtpOp := mtpT.Operations[j]
 			assert.Equal(t, expOp.configOperation, mtpOp.configOperation)
