@@ -39,7 +39,7 @@ import (
 func newElasticTraceExporter(
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), params.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)

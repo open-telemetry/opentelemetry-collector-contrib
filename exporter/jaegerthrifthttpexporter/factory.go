@@ -52,7 +52,7 @@ func createTraceExporter(
 	_ context.Context,
 	_ component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	expCfg := config.(*Config)
 	_, err := url.ParseRequestURI(expCfg.URL)

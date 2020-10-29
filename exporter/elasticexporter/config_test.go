@@ -63,7 +63,7 @@ func TestConfigValidate(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	_, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err)
 	assert.EqualError(t, err, "cannot configure Elastic APM trace exporter: invalid config: APMServerURL must be specified")
 
@@ -72,7 +72,7 @@ func TestConfigValidate(t *testing.T) {
 	assert.EqualError(t, err, "cannot configure Elastic APM metrics exporter: invalid config: APMServerURL must be specified")
 
 	cfg.APMServerURL = "foo"
-	_, err = factory.CreateTraceExporter(context.Background(), params, cfg)
+	_, err = factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	_, err = factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -100,7 +100,7 @@ func testAuth(t *testing.T, apiKey, secretToken, expectedAuthorization string) {
 	defer srv.Close()
 	cfg.APMServerURL = srv.URL
 
-	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 

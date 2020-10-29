@@ -116,7 +116,7 @@ func createTraceExporter(
 	ctx context.Context,
 	params component.ExporterCreateParams,
 	c configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 
 	cfg := c.(*config.Config)
 

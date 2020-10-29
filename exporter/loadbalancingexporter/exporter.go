@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ component.TraceExporter = (*exporterImp)(nil)
+var _ component.TracesExporter = (*exporterImp)(nil)
 
 type exporterImp struct {
 	logger *zap.Logger

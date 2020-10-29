@@ -40,7 +40,7 @@ func TestTraceExporter(t *testing.T) {
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 

@@ -57,7 +57,7 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	cfg configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	eCfg := cfg.(*Config)
 	return newSAPMTraceExporter(eCfg, params)
 }

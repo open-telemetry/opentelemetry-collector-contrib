@@ -27,7 +27,7 @@ import (
 )
 
 // newTraceExporter return a new LogSerice trace exporter.
-func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TraceExporter, error) {
+func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.TracesExporter, error) {
 
 	l := &logServiceTraceSender{
 		logger: logger,

@@ -166,7 +166,7 @@ func TestCreateAPITracesExporter(t *testing.T) {
 	c.SendMetadata = false
 
 	ctx := context.Background()
-	exp, err := factory.CreateTraceExporter(
+	exp, err := factory.CreateTracesExporter(
 		ctx,
 		component.ExporterCreateParams{Logger: logger},
 		cfg.Exporters["datadog/api"],

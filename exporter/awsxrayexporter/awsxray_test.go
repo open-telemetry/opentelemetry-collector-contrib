@@ -49,7 +49,7 @@ func BenchmarkForTraceExporter(b *testing.B) {
 	}
 }
 
-func initializeTraceExporter() component.TraceExporter {
+func initializeTraceExporter() component.TracesExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
