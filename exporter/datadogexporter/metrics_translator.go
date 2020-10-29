@@ -28,8 +28,7 @@ import (
 // getTags maps a stringMap into a slice of Datadog tags
 func getTags(labels pdata.StringMap) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.ForEach(func(key string, v pdata.StringValue) {
-		value := v.Value()
+	labels.ForEach(func(key string, value string) {
 		if value == "" {
 			// Tags can't end with ":" so we replace empty values with "n/a"
 			value = "n/a"
