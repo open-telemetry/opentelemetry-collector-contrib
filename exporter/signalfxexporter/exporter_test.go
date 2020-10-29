@@ -999,7 +999,7 @@ func TestSignalFxExporterConsumeMetadata(t *testing.T) {
 	rCfg := cfg.(*Config)
 	rCfg.AccessToken = "token"
 	rCfg.Realm = "realm"
-	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{}, rCfg)
+	exp, err := f.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, rCfg)
 	require.NoError(t, err)
 
 	kme, ok := exp.(collection.MetadataExporter)

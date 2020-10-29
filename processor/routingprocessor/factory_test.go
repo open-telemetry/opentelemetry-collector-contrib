@@ -49,7 +49,7 @@ func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.Nil(t, err)
@@ -63,7 +63,7 @@ func TestFailOnEmptyConfiguration(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.Error(t, err)
@@ -89,7 +89,7 @@ func TestProcessorFailsToBeCreatedWhenRouteHasNoExporters(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoExporters))
@@ -111,7 +111,7 @@ func TestProcessorFailsToBeCreatedWhenNoRoutesExist(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoTableItems))
@@ -137,7 +137,7 @@ func TestProcessorFailsWithNoFromAttribute(t *testing.T) {
 	}
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 
 	// verify
 	assert.True(t, errors.Is(err, errNoMissingFromAttribute))
@@ -166,7 +166,7 @@ func TestShouldNotFailWhenNextIsProcessor(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, next)
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -192,7 +192,7 @@ func TestShutdown(t *testing.T) {
 		},
 	}
 
-	exp, err := factory.CreateTraceProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
+	exp, err := factory.CreateTracesProcessor(context.Background(), creationParams, cfg, consumertest.NewTracesNop())
 	require.Nil(t, err)
 	require.NotNil(t, exp)
 

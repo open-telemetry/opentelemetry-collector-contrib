@@ -56,6 +56,6 @@ func createTraceExporter(
 	}
 
 	// Create exporter based on sentry config.
-	exp, err := CreateSentryExporter(sentryConfig)
+	exp, err := CreateSentryExporter(sentryConfig, params)
 	return exp, err
 }

@@ -34,7 +34,7 @@ var (
 	errExporterNotFound       = errors.New("exporter not found")
 )
 
-var _ component.TraceProcessor = (*processorImp)(nil)
+var _ component.TracesProcessor = (*processorImp)(nil)
 
 type processorImp struct {
 	logger *zap.Logger

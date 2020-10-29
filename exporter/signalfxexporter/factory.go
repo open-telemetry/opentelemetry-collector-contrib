@@ -82,6 +82,7 @@ func createMetricsExporter(
 
 	me, err := exporterhelper.NewMetricsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushMetrics,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -137,6 +138,7 @@ func createLogsExporter(
 
 	return exporterhelper.NewLogsExporter(
 		expCfg,
+		params.Logger,
 		exp.pushLogs,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

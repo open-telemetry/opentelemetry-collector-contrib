@@ -111,6 +111,7 @@ func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.Trace
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		logger,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }

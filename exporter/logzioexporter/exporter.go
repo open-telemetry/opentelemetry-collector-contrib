@@ -81,6 +81,7 @@ func newLogzioTraceExporter(config *Config, params component.ExporterCreateParam
 
 	return exporterhelper.NewTraceExporter(
 		config,
+		params.Logger,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown))
 }

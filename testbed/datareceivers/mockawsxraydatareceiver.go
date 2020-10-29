@@ -34,7 +34,7 @@ import (
 // MockAwsXrayDataReceiver implements AwsXray format receiver.
 type MockAwsXrayDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 // NewMockAwsXrayDataReceiver creates a new  MockDataReceiver
