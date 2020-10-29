@@ -68,13 +68,6 @@ func AddHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Confi
 	}
 }
 
-// AddTags adds the given tags to all metrics in the provided list
-func AddTags(metrics []datadog.Metric, tags []string) {
-	for i := range metrics {
-		metrics[i].Tags = append(metrics[i].Tags, tags...)
-	}
-}
-
 // AddNamespace prepends all metric names with a given namespace
 func AddNamespace(metrics []datadog.Metric, namespace string) {
 	for i := range metrics {

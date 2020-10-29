@@ -47,6 +47,7 @@ processor/k8sprocessor/                  @open-telemetry/collector-contrib-appro
 processor/metricstransformprocessor/     @open-telemetry/collector-contrib-approvers @james-bebbington
 processor/resourcedetectionprocessor/    @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @anuraaga @james-bebbington
 processor/routingprocessor/              @open-telemetry/collector-contrib-approvers @jpkrohling
+processor/tailsamplingprocessor/         @open-telemetry/collector-contrib-approvers @jpkrohling
 
 receiver/awsecscontainermetricsreceiver/ @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga
 receiver/awsxrayreceiver/                @open-telemetry/collector-contrib-approvers @kbrockhoff @anuraaga

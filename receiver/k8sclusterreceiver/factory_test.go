@@ -49,7 +49,7 @@ func TestFactory(t *testing.T) {
 		},
 	}, rCfg)
 
-	r, err := f.CreateTraceReceiver(
+	r, err := f.CreateTracesReceiver(
 		context.Background(), component.ReceiverCreateParams{},
 		&configmodels.ReceiverSettings{}, consumertest.NewTracesNop(),
 	)

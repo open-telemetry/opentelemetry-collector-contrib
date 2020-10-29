@@ -59,7 +59,7 @@ func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
-	consumer consumer.TracesConsumer) (component.TraceReceiver, error) {
+	consumer consumer.TracesConsumer) (component.TracesReceiver, error) {
 	rcfg := cfg.(*Config)
 	return newReceiver(rcfg, consumer, params.Logger)
 }

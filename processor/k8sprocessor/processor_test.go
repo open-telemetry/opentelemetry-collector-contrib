@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TraceProcessor, error) {
+func newTraceProcessor(cfg configmodels.Processor, next consumer.TracesConsumer, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
 	return createTraceProcessorWithOptions(
 		context.Background(),
@@ -87,7 +87,7 @@ func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) Option {
 type multiTest struct {
 	t *testing.T
 
-	tp component.TraceProcessor
+	tp component.TracesProcessor
 	mp component.MetricsProcessor
 	lp component.LogsProcessor
 

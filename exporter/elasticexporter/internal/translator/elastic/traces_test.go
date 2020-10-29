@@ -15,6 +15,7 @@
 package elastic_test
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 )
 
-func TestEncodeResourceSpan(t *testing.T) {
+func TestEncodeSpan(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
 	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
@@ -148,6 +149,23 @@ func TestEncodeResourceSpan(t *testing.T) {
 	}}, payloads.Spans)
 
 	assert.Empty(t, payloads.Errors)
+}
+
+func TestEncodeSpanTruncation(t *testing.T) {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetName(strings.Repeat("x", 1300))
+
+	var w fastjson.Writer
+	var recorder transporttest.RecorderTransport
+	elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+	err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+	require.NoError(t, err)
+	sendStream(t, &w, &recorder)
+
+	payloads := recorder.Payloads()
+	require.Len(t, payloads.Transactions, 1)
+	assert.Equal(t, strings.Repeat("x", 1024), payloads.Transactions[0].Name)
 }
 
 func TestTransactionHTTPRequestURL(t *testing.T) {

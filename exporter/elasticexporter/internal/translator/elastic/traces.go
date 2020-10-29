@@ -43,7 +43,7 @@ func EncodeSpan(otlpSpan pdata.Span, otlpLibrary pdata.InstrumentationLibrary, w
 	endTime := time.Unix(0, int64(otlpSpan.EndTime())).UTC()
 	durationMillis := endTime.Sub(startTime).Seconds() * 1000
 
-	name := otlpSpan.Name()
+	name := truncate(otlpSpan.Name())
 	var transactionContext transactionContext
 	if root || otlpSpan.Kind() == pdata.SpanKindSERVER {
 		transaction := model.Transaction{

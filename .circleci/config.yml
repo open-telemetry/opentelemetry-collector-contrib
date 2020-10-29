@@ -320,6 +320,8 @@ jobs:
   loadtest:
     executor: golang
     resource_class: medium+
+    environment:
+      TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
       - restore_workspace
       - run:
@@ -329,6 +331,7 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
+      - github_issue_generator
 
   windows-test:
     executor:

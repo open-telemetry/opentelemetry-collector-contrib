@@ -412,7 +412,7 @@ func float64ToDimValue(f float64) string {
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
 func appendResourceAttributesToDimensions(dims []*sfxpb.Dimension, resourceAttr map[string]string) []*sfxpb.Dimension {
-	// TODO: Replace with internal/common/splunk/hostid.go once signalfxexporter is converted to pdata.
+	// TODO: Replace with internal/splunk/hostid.go once signalfxexporter is converted to pdata.
 	accountID := resourceAttr[conventions.AttributeCloudAccount]
 	region := resourceAttr[conventions.AttributeCloudRegion]
 	instanceID := resourceAttr[conventions.AttributeHostID]

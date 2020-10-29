@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -99,28 +100,12 @@ type TagsConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// GetTags gets the default tags extracted from the configuration
-func (t *TagsConfig) GetTags(addHost bool) []string {
-	tags := make([]string, 0, 4)
-
-	vars := map[string]string{
-		"env":     t.Env,
-		"service": t.Service,
-		"version": t.Version,
+// GetHostTags gets the host tags extracted from the configuration
+func (t *TagsConfig) GetHostTags() []string {
+	tags := t.Tags
+	if t.Env != "none" {
+		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
 	}
-
-	if addHost {
-		vars["host"] = t.Hostname
-	}
-
-	for name, val := range vars {
-		if val != "" {
-			tags = append(tags, fmt.Sprintf("%s:%s", name, val))
-		}
-	}
-
-	tags = append(tags, t.Tags...)
-
 	return tags
 }
 
@@ -138,6 +123,16 @@ type Config struct {
 
 	// Traces defines the Traces exporter specific configuration
 	Traces TracesConfig `mapstructure:"traces"`
+
+	// SendMetadata defines whether to send host metadata
+	SendMetadata bool `mapstructure:"send_metadata"`
+
+	// onceMetadata ensures only one exporter (metrics/traces) sends host metadata
+	onceMetadata sync.Once
+}
+
+func (c *Config) OnceMetadata() *sync.Once {
+	return &c.onceMetadata
 }
 
 // Sanitize tries to sanitize a given configuration

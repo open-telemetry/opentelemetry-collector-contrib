@@ -40,6 +40,7 @@ func newMetricsExporter(logger *zap.Logger, cfg configmodels.Exporter) (componen
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		logger,
 		l.pushMetricsData)
 }
 

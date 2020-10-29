@@ -25,10 +25,12 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	cloudmetricpb "google.golang.org/genproto/googleapis/api/metric"
 	cloudtracepb "google.golang.org/genproto/googleapis/devtools/cloudtrace/v2"
@@ -68,7 +70,12 @@ func TestStackdriverTraceExport(t *testing.T) {
 
 	sde, err := newStackdriverTraceExporter(
 		&Config{ProjectID: "idk", Endpoint: "127.0.0.1:8080", UseInsecure: true},
-		"v0.0.1",
+		component.ExporterCreateParams{
+			Logger: zap.NewNop(),
+			ApplicationStartInfo: component.ApplicationStartInfo{
+				Version: "v0.0.1",
+			},
+		},
 	)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
@@ -162,7 +169,14 @@ func TestStackdriverMetricExport(t *testing.T) {
 		GetClientOptions: func() []option.ClientOption {
 			return clientOptions
 		},
-	}, "v0.0.1")
+	},
+		component.ExporterCreateParams{
+			Logger: zap.NewNop(),
+			ApplicationStartInfo: component.ApplicationStartInfo{
+				Version: "v0.0.1",
+			},
+		},
+	)
 	require.NoError(t, err)
 	defer func() { require.NoError(t, sde.Shutdown(context.Background())) }()
 
