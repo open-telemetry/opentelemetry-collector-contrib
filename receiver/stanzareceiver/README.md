@@ -35,6 +35,7 @@ It can also be easily configured to tail and parse any structured or unstructure
 - [timestamp](https://github.com/observIQ/stanza/blob/master/docs/types/timestamp.md) parsing is available as a block within all parser operators, and also as a standalone operator. Many common timestamp layouts are supported.
 - [severity](https://github.com/observIQ/stanza/blob/master/docs/types/severity.md) parsing is available as a block within all parser operators, and also as a standalone operator. Stanza uses a flexible severity representation which is automatically interpreted by the stanza receiver.
 
+
 ## Example - Tailing a simple json file
 
 Receiver Configuration
