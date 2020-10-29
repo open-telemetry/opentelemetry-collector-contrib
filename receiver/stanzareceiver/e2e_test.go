@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -108,6 +109,10 @@ func TestReadStaticFile(t *testing.T) {
 }
 
 func TestReadRotatingFiles(t *testing.T) {
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1382
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 
 	tests := []rotationTest{
 		{
@@ -191,20 +196,10 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	for _, line := range lines {
 		logger.Print(line)
-		// At a high enough rate of file rotation, it is possible for a file to be deleted
-		// before all lines can be read from it. In production settings, this is far less
-		// likely because log files will exists for much longer durations, except in the
-		// most extreme scenarios. This test attempts to establish a stable scenario that
-		// does not consume much time by balancing the max lines per file with a duration
-		// of existence that is low enough to be practical in a unit test. The following
-		// sleep provides a level of consistency to file lifespan.
-		time.Sleep(2 * time.Millisecond)
+		time.Sleep(time.Millisecond)
 	}
 
-	missingMsg := func(exp, act int) string { return fmt.Sprintf("%d out of expected %d received", act, exp) }
-
-	waitFor, tick := 2*time.Second, time.Millisecond
-	require.Eventually(t, expectNLogs(sink, numLogs), waitFor, tick, missingMsg(numLogs, sink.LogRecordsCount()))
+	require.Eventually(t, expectNLogs(sink, numLogs), 2*time.Second, time.Millisecond)
 	require.ElementsMatch(t, expectedLogs, sink.AllLogs())
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
