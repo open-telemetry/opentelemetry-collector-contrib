@@ -26,6 +26,9 @@ import (
 
 func Test_SplunkHecToLogData(t *testing.T) {
 
+	time := 0.123
+	nanoseconds := 123000000
+
 	tests := []struct {
 		name    string
 		event   splunk.Event
@@ -35,7 +38,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "happy_path",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -46,14 +49,14 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				return createLogsSlice("value")
+				return createLogsSlice("value", nanoseconds)
 			}(),
 			wantErr: nil,
 		},
 		{
 			name: "double",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -64,7 +67,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
+				logsSlice := createLogsSlice("value", nanoseconds)
 				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetDoubleVal(12.3)
 				return logsSlice
 			}(),
@@ -73,7 +76,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "array",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -84,7 +87,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
+				logsSlice := createLogsSlice("value", nanoseconds)
 				arr := pdata.NewAnyValueArray()
 				arr.Append(pdata.NewAttributeValueString("foo"))
 				arr.Append(pdata.NewAttributeValueString("bar"))
@@ -96,7 +99,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 		{
 			name: "complex_structure",
 			event: splunk.Event{
-				Time:       0.123,
+				Time:       &time,
 				Host:       "localhost",
 				Source:     "mysource",
 				SourceType: "mysourcetype",
@@ -107,7 +110,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				},
 			},
 			output: func() pdata.ResourceLogsSlice {
-				logsSlice := createLogsSlice("value")
+				logsSlice := createLogsSlice("value", nanoseconds)
 				attMap := pdata.NewAttributeMap()
 				foos := pdata.NewAnyValueArray()
 				foos.Append(pdata.NewAttributeValueString("foo"))
@@ -123,6 +126,24 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			}(),
 			wantErr: nil,
 		},
+		{
+			name: "nil_timestamp",
+			event: splunk.Event{
+				Time:       new(float64),
+				Host:       "localhost",
+				Source:     "mysource",
+				SourceType: "mysourcetype",
+				Index:      "myindex",
+				Event:      "value",
+				Fields: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			output: func() pdata.ResourceLogsSlice {
+				return createLogsSlice("value", 0)
+			}(),
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,7 +155,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 	}
 }
 
-func createLogsSlice(body string) pdata.ResourceLogsSlice {
+func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
 	lrs := pdata.NewResourceLogsSlice()
 	lrs.Resize(1)
 	lr := lrs.At(0)
@@ -145,7 +166,7 @@ func createLogsSlice(body string) pdata.ResourceLogsSlice {
 
 	logRecord.SetName("mysourcetype")
 	logRecord.Body().SetStringVal(body)
-	logRecord.SetTimestamp(pdata.TimestampUnixNano(123000000))
+	logRecord.SetTimestamp(pdata.TimestampUnixNano(nanoseconds))
 	lr.Resource().Attributes().InsertString("host.hostname", "localhost")
 	lr.Resource().Attributes().InsertString("service.name", "mysource")
 	lr.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")

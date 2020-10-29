@@ -550,7 +550,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 
 func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:  time,
+		Time:  &time,
 		Event: "metric",
 		Fields: map[string]interface{}{
 			"metric_name:foo": value,
@@ -565,7 +565,7 @@ func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splun
 
 func buildSplunkHecMsg(time float64, value string, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:   time,
+		Time:   &time,
 		Event:  value,
 		Fields: map[string]interface{}{},
 	}

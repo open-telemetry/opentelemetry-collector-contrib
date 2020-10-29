@@ -53,7 +53,9 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
-		logRecord.SetTimestamp(pdata.TimestampUnixNano(event.Time * 1e9))
+		if event.Time != nil {
+			logRecord.SetTimestamp(pdata.TimestampUnixNano(*event.Time * 1e9))
+		}
 
 		rl.Resource().InitEmpty()
 		attrs := rl.Resource().Attributes()
