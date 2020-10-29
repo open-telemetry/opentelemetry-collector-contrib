@@ -192,7 +192,7 @@ func getFieldValue(metric *splunk.Event) string {
 
 func commonSplunkMetric(
 	metricName string,
-	ts float64,
+	ts *float64,
 	keys []string,
 	values []string,
 	val interface{},
@@ -213,7 +213,7 @@ func commonSplunkMetric(
 
 func expectedFromDistribution(
 	metricName string,
-	ts float64,
+	ts *float64,
 	keys []string,
 	values []string,
 	distributionTimeSeries *metricspb.TimeSeries,
@@ -250,10 +250,15 @@ func expectedFromDistribution(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := timestamppb.Timestamp{Seconds: 32, Nanos: 1000345}
-	assert.Equal(t, 32.001, timestampToEpochMilliseconds(&ts))
+	assert.Equal(t, 32.001, *timestampToEpochMilliseconds(&ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := timestamppb.Timestamp{Seconds: 32, Nanos: 1999345}
-	assert.Equal(t, 32.002, timestampToEpochMilliseconds(&ts))
+	assert.Equal(t, 32.002, *timestampToEpochMilliseconds(&ts))
+}
+
+func TestNilTimeWhenTimestampIsZero(t *testing.T) {
+	ts := timestamppb.Timestamp{Seconds: 0, Nanos: 0}
+	assert.True(t, nil == timestampToEpochMilliseconds(&ts))
 }

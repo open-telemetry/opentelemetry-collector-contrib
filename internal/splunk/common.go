@@ -36,7 +36,7 @@ type AccessTokenPassthroughConfig struct {
 
 // Event represents a metric in Splunk HEC format
 type Event struct {
-	Time       float64                `json:"time"`                 // epoch time
+	Time       *float64               `json:"time,omitempty"`       // optional epoch time - set to nil if the event timestamp is missing or unknown
 	Host       string                 `json:"host"`                 // hostname
 	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk

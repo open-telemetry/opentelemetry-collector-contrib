@@ -138,11 +138,12 @@ func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metr
 	metric.DoubleGauge().DataPoints().Append(doublePt)
 }
 
-func convertTimestamp(sec float64) pdata.TimestampUnixNano {
-	if sec == 0 {
+func convertTimestamp(sec *float64) pdata.TimestampUnixNano {
+	if sec == nil {
 		return 0
 	}
-	return pdata.TimestampUnixNano(sec * 1e9)
+
+	return pdata.TimestampUnixNano(*sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point labels.
