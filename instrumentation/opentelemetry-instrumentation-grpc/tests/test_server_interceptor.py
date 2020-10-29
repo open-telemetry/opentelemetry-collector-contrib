@@ -26,7 +26,6 @@ from opentelemetry.instrumentation.grpc import (
     GrpcInstrumentorServer,
     server_interceptor,
 )
-from opentelemetry.instrumentation.grpc.grpcext import intercept_server
 from opentelemetry.sdk import trace as trace_sdk
 from opentelemetry.test.test_base import TestBase
 
@@ -123,10 +122,9 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=1),
             options=(("grpc.so_reuseport", 0),),
+            interceptors=[interceptor],
         )
-        # FIXME: grpcext interceptor doesn't apply to handlers passed to server
-        # init, should use intercept_service API instead.
-        server = intercept_server(server, interceptor)
+
         server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
         port = server.add_insecure_port("[::]:0")
@@ -166,8 +164,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=1),
             options=(("grpc.so_reuseport", 0),),
+            interceptors=[interceptor],
         )
-        server = intercept_server(server, interceptor)
         server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
         port = server.add_insecure_port("[::]:0")
@@ -201,8 +199,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=1),
             options=(("grpc.so_reuseport", 0),),
+            interceptors=[interceptor],
         )
-        server = intercept_server(server, interceptor)
         server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
         port = server.add_insecure_port("[::]:0")
@@ -248,8 +246,8 @@ class TestOpenTelemetryServerInterceptor(TestBase):
         server = grpc.server(
             futures.ThreadPoolExecutor(max_workers=2),
             options=(("grpc.so_reuseport", 0),),
+            interceptors=[interceptor],
         )
-        server = intercept_server(server, interceptor)
         server.add_generic_rpc_handlers((UnaryUnaryRpcHandler(handler),))
 
         port = server.add_insecure_port("[::]:0")

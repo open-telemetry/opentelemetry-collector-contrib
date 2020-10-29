@@ -17,12 +17,11 @@
 # pylint:disable=no-member
 # pylint:disable=signature-differs
 
-"""Implementation of the service-side open-telemetry interceptor.
-
-This library borrows heavily from the OpenTracing gRPC integration:
-https://github.com/opentracing-contrib/python-grpc
+"""
+Implementation of the service-side open-telemetry interceptor.
 """
 
+import logging
 from contextlib import contextmanager
 from typing import List
 
@@ -30,9 +29,37 @@ import grpc
 
 from opentelemetry import propagators, trace
 from opentelemetry.context import attach, detach
+from opentelemetry.trace.status import Status, StatusCode
 
-from . import grpcext
-from ._utilities import RpcInfo
+logger = logging.getLogger(__name__)
+
+
+# wrap an RPC call
+# see https://github.com/grpc/grpc/issues/18191
+def _wrap_rpc_behavior(handler, continuation):
+    if handler is None:
+        return None
+
+    if handler.request_streaming and handler.response_streaming:
+        behavior_fn = handler.stream_stream
+        handler_factory = grpc.stream_stream_rpc_method_handler
+    elif handler.request_streaming and not handler.response_streaming:
+        behavior_fn = handler.stream_unary
+        handler_factory = grpc.stream_unary_rpc_method_handler
+    elif not handler.request_streaming and handler.response_streaming:
+        behavior_fn = handler.unary_stream
+        handler_factory = grpc.unary_stream_rpc_method_handler
+    else:
+        behavior_fn = handler.unary_unary
+        handler_factory = grpc.unary_unary_rpc_method_handler
+
+    return handler_factory(
+        continuation(
+            behavior_fn, handler.request_streaming, handler.response_streaming
+        ),
+        request_deserializer=handler.request_deserializer,
+        response_serializer=handler.response_serializer,
+    )
 
 
 # pylint:disable=abstract-method
@@ -42,7 +69,7 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
         self._active_span = active_span
         self.code = grpc.StatusCode.OK
         self.details = None
-        super(_OpenTelemetryServicerContext, self).__init__()
+        super().__init__()
 
     def is_active(self, *args, **kwargs):
         return self._servicer_context.is_active(*args, **kwargs)
@@ -56,20 +83,26 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
     def add_callback(self, *args, **kwargs):
         return self._servicer_context.add_callback(*args, **kwargs)
 
+    def disable_next_message_compression(self):
+        return self._service_context.disable_next_message_compression()
+
     def invocation_metadata(self, *args, **kwargs):
         return self._servicer_context.invocation_metadata(*args, **kwargs)
 
-    def peer(self, *args, **kwargs):
-        return self._servicer_context.peer(*args, **kwargs)
+    def peer(self):
+        return self._servicer_context.peer()
 
-    def peer_identities(self, *args, **kwargs):
-        return self._servicer_context.peer_identities(*args, **kwargs)
+    def peer_identities(self):
+        return self._servicer_context.peer_identities()
 
-    def peer_identity_key(self, *args, **kwargs):
-        return self._servicer_context.peer_identity_key(*args, **kwargs)
+    def peer_identity_key(self):
+        return self._servicer_context.peer_identity_key()
 
-    def auth_context(self, *args, **kwargs):
-        return self._servicer_context.auth_context(*args, **kwargs)
+    def auth_context(self):
+        return self._servicer_context.auth_context()
+
+    def set_compression(self, compression):
+        return self._servicer_context.set_compression(compression)
 
     def send_initial_metadata(self, *args, **kwargs):
         return self._servicer_context.send_initial_metadata(*args, **kwargs)
@@ -77,47 +110,62 @@ class _OpenTelemetryServicerContext(grpc.ServicerContext):
     def set_trailing_metadata(self, *args, **kwargs):
         return self._servicer_context.set_trailing_metadata(*args, **kwargs)
 
-    def abort(self, *args, **kwargs):
-        if not hasattr(self._servicer_context, "abort"):
-            raise RuntimeError(
-                "abort() is not supported with the installed version of grpcio"
-            )
-        return self._servicer_context.abort(*args, **kwargs)
+    def abort(self, code, details):
+        self.code = code
+        self.details = details
+        self._active_span.set_status(
+            Status(status_code=StatusCode(code.value[0]), description=details)
+        )
+        return self._servicer_context.abort(code, details)
 
-    def abort_with_status(self, *args, **kwargs):
-        if not hasattr(self._servicer_context, "abort_with_status"):
-            raise RuntimeError(
-                "abort_with_status() is not supported with the installed "
-                "version of grpcio"
-            )
-        return self._servicer_context.abort_with_status(*args, **kwargs)
+    def abort_with_status(self, status):
+        return self._servicer_context.abort_with_status(status)
 
     def set_code(self, code):
         self.code = code
+        # use details if we already have it, otherwise the status description
+        details = self.details or code.value[1]
+        self._active_span.set_status(
+            Status(status_code=StatusCode(code.value[0]), description=details)
+        )
         return self._servicer_context.set_code(code)
 
     def set_details(self, details):
         self.details = details
+        self._active_span.set_status(
+            Status(
+                status_code=StatusCode(self.code.value[0]),
+                description=details,
+            )
+        )
         return self._servicer_context.set_details(details)
 
 
-# On the service-side, errors can be signaled either by exceptions or by
-# calling `set_code` on the `servicer_context`. This function checks for the
-# latter and updates the span accordingly.
+# pylint:disable=abstract-method
+# pylint:disable=no-self-use
 # pylint:disable=unused-argument
-def _check_error_code(span, servicer_context, rpc_info):
-    if servicer_context.code != grpc.StatusCode.OK:
-        rpc_info.error = servicer_context.code
+class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
+    """
+    A gRPC server interceptor, to add OpenTelemetry.
 
+    Usage::
 
-class OpenTelemetryServerInterceptor(
-    grpcext.UnaryServerInterceptor, grpcext.StreamServerInterceptor
-):
+        tracer = some OpenTelemetry tracer
+
+        interceptors = [
+            OpenTelemetryServerInterceptor(tracer),
+        ]
+
+        server = grpc.server(
+            futures.ThreadPoolExecutor(max_workers=concurrency),
+            interceptors = interceptors)
+
+    """
+
     def __init__(self, tracer):
         self._tracer = tracer
 
     @contextmanager
-    # pylint:disable=no-self-use
     def _set_remote_context(self, servicer_context):
         metadata = servicer_context.invocation_metadata()
         if metadata:
@@ -136,74 +184,67 @@ class OpenTelemetryServerInterceptor(
         else:
             yield
 
-    def _start_span(self, method):
-        span = self._tracer.start_as_current_span(
-            name=method, kind=trace.SpanKind.SERVER
-        )
-        return span
+    def _start_span(self, handler_call_details, context):
 
-    def intercept_unary(self, request, servicer_context, server_info, handler):
+        attributes = {
+            "rpc.method": handler_call_details.method,
+            "rpc.system": "grpc",
+        }
 
-        with self._set_remote_context(servicer_context):
-            with self._start_span(server_info.full_method) as span:
-                rpc_info = RpcInfo(
-                    full_method=server_info.full_method,
-                    metadata=servicer_context.invocation_metadata(),
-                    timeout=servicer_context.time_remaining(),
-                    request=request,
-                )
-                servicer_context = _OpenTelemetryServicerContext(
-                    servicer_context, span
-                )
-                response = handler(request, servicer_context)
+        metadata = dict(context.invocation_metadata())
+        if "user-agent" in metadata:
+            attributes["rpc.user_agent"] = metadata["user-agent"]
 
-                _check_error_code(span, servicer_context, rpc_info)
-
-                rpc_info.response = response
-
-                return response
-
-    # For RPCs that stream responses, the result can be a generator. To record
-    # the span across the generated responses and detect any errors, we wrap
-    # the result in a new generator that yields the response values.
-    def _intercept_server_stream(
-        self, request_or_iterator, servicer_context, server_info, handler
-    ):
-        with self._set_remote_context(servicer_context):
-            with self._start_span(server_info.full_method) as span:
-                rpc_info = RpcInfo(
-                    full_method=server_info.full_method,
-                    metadata=servicer_context.invocation_metadata(),
-                    timeout=servicer_context.time_remaining(),
-                )
-                if not server_info.is_client_stream:
-                    rpc_info.request = request_or_iterator
-                servicer_context = _OpenTelemetryServicerContext(
-                    servicer_context, span
-                )
-                result = handler(request_or_iterator, servicer_context)
-                for response in result:
-                    yield response
-                _check_error_code(span, servicer_context, rpc_info)
-
-    def intercept_stream(
-        self, request_or_iterator, servicer_context, server_info, handler
-    ):
-        if server_info.is_server_stream:
-            return self._intercept_server_stream(
-                request_or_iterator, servicer_context, server_info, handler
+        # Split up the peer to keep with how other telemetry sources
+        # do it.  This looks like:
+        # * ipv6:[::1]:57284
+        # * ipv4:127.0.0.1:57284
+        # * ipv4:10.2.1.1:57284,127.0.0.1:57284
+        #
+        try:
+            host, port = (
+                context.peer().split(",")[0].split(":", 1)[1].rsplit(":", 1)
             )
-        with self._set_remote_context(servicer_context):
-            with self._start_span(server_info.full_method) as span:
-                rpc_info = RpcInfo(
-                    full_method=server_info.full_method,
-                    metadata=servicer_context.invocation_metadata(),
-                    timeout=servicer_context.time_remaining(),
-                )
-                servicer_context = _OpenTelemetryServicerContext(
-                    servicer_context, span
-                )
-                response = handler(request_or_iterator, servicer_context)
-                _check_error_code(span, servicer_context, rpc_info)
-                rpc_info.response = response
-                return response
+
+            # other telemetry sources convert this, so we will too
+            if host in ("[::1]", "127.0.0.1"):
+                host = "localhost"
+
+            attributes.update({"net.peer.name": host, "net.peer.port": port})
+        except IndexError:
+            logger.warning("Failed to parse peer address '%s'", context.peer())
+
+        return self._tracer.start_as_current_span(
+            name=handler_call_details.method,
+            kind=trace.SpanKind.SERVER,
+            attributes=attributes,
+        )
+
+    def intercept_service(self, continuation, handler_call_details):
+        def telemetry_wrapper(behavior, request_streaming, response_streaming):
+            def telemetry_interceptor(request_or_iterator, context):
+
+                with self._set_remote_context(context):
+                    with self._start_span(
+                        handler_call_details, context
+                    ) as span:
+                        # wrap the context
+                        context = _OpenTelemetryServicerContext(context, span)
+
+                        # And now we run the actual RPC.
+                        try:
+                            return behavior(request_or_iterator, context)
+                        except Exception as error:
+                            # Bare exceptions are likely to be gRPC aborts, which
+                            # we handle in our context wrapper.
+                            # Here, we're interested in uncaught exceptions.
+                            # pylint:disable=unidiomatic-typecheck
+                            if type(error) != Exception:
+                                span.record_exception(error)
+                            raise error
+
+            return telemetry_interceptor
+
+        return _wrap_rpc_behavior(
+            continuation(handler_call_details), telemetry_wrapper
+        )

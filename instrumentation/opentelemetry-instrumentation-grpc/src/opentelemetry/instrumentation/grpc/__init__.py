@@ -77,8 +77,7 @@ Usage Server
     import grpc
 
     from opentelemetry import trace
-    from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer, server_interceptor
-    from opentelemetry.instrumentation.grpc.grpcext import intercept_server
+    from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import (
         ConsoleSpanExporter,
@@ -94,9 +93,9 @@ Usage Server
     trace.get_tracer_provider().add_span_processor(
         SimpleExportSpanProcessor(ConsoleSpanExporter())
     )
+
     grpc_server_instrumentor = GrpcInstrumentorServer()
     grpc_server_instrumentor.instrument()
-
 
     class Greeter(helloworld_pb2_grpc.GreeterServicer):
         def SayHello(self, request, context):
@@ -106,7 +105,6 @@ Usage Server
     def serve():
 
         server = grpc.server(futures.ThreadPoolExecutor())
-        server = intercept_server(server, server_interceptor())
 
         helloworld_pb2_grpc.add_GreeterServicer_to_server(Greeter(), server)
         server.add_insecure_port("[::]:50051")
@@ -117,18 +115,25 @@ Usage Server
     if __name__ == "__main__":
         logging.basicConfig()
         serve()
+
+You can also add the instrumentor manually, rather than using
+:py:class:`~opentelemetry.instrumentation.grpc.GrpcInstrumentorServer`:
+
+.. code-block:: python
+
+    from opentelemetry.instrumentation.grpc import server_interceptor
+
+    server = grpc.server(futures.ThreadPoolExecutor(),
+                         interceptors = [server_interceptor()])
+
 """
-from contextlib import contextmanager
 from functools import partial
 
 import grpc
 from wrapt import wrap_function_wrapper as _wrap
 
 from opentelemetry import trace
-from opentelemetry.instrumentation.grpc.grpcext import (
-    intercept_channel,
-    intercept_server,
-)
+from opentelemetry.instrumentation.grpc.grpcext import intercept_channel
 from opentelemetry.instrumentation.grpc.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
@@ -140,15 +145,33 @@ from opentelemetry.instrumentation.utils import unwrap
 
 
 class GrpcInstrumentorServer(BaseInstrumentor):
+    """
+    Globally instrument the grpc server.
+
+    Usage::
+
+        grpc_server_instrumentor = GrpcInstrumentorServer()
+        grpc_server_instrumentor.instrument()
+
+    """
+
+    # pylint:disable=attribute-defined-outside-init
+
     def _instrument(self, **kwargs):
-        _wrap("grpc", "server", self.wrapper_fn)
+        self._original_func = grpc.server
+
+        def server(*args, **kwargs):
+            if "interceptors" in kwargs:
+                # add our interceptor as the first
+                kwargs["interceptors"].insert(0, server_interceptor())
+            else:
+                kwargs["interceptors"] = [server_interceptor()]
+            return self._original_func(*args, **kwargs)
+
+        grpc.server = server
 
     def _uninstrument(self, **kwargs):
-        unwrap(grpc, "server")
-
-    def wrapper_fn(self, original_func, instance, args, kwargs):
-        server = original_func(*args, **kwargs)
-        return intercept_server(server, server_interceptor())
+        grpc.server = self._original_func
 
 
 class GrpcInstrumentorClient(BaseInstrumentor):
