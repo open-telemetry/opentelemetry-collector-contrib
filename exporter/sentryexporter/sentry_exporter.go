@@ -369,7 +369,7 @@ func transactionFromSpan(span *sentry.Span) *sentry.Event {
 }
 
 // CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config) (component.TraceExporter, error) {
+func CreateSentryExporter(config *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
 	transport := newSentryTransport()
 	transport.Configure(sentry.ClientOptions{
 		Dsn: config.DSN,
@@ -381,6 +381,7 @@ func CreateSentryExporter(config *Config) (component.TraceExporter, error) {
 
 	return exporterhelper.NewTraceExporter(
 		config,
+		params.Logger,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

@@ -45,6 +45,7 @@ func NewTraceExporter(config configmodels.Exporter, logger *zap.Logger, cn connA
 	xrayClient := NewXRay(logger, awsConfig, session)
 	return exporterhelper.NewTraceExporter(
 		config,
+		logger,
 		func(ctx context.Context, td pdata.Traces) (totalDroppedSpans int, err error) {
 			logger.Debug("TraceExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 			totalDroppedSpans = 0

@@ -701,7 +701,7 @@ type mockProcessor struct {
 	onTraces func(context.Context, pdata.Traces) error
 }
 
-var _ component.TraceProcessor = (*mockProcessor)(nil)
+var _ component.TracesProcessor = (*mockProcessor)(nil)
 
 func (m *mockProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
 	if m.onTraces != nil {

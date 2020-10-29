@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -63,7 +64,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 	assert.Equal(t, &expectedCfg, e1)
 
-	te, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{}, e1)
+	te, err := factory.CreateTraceExporter(context.Background(), component.ExporterCreateParams{Logger: zap.NewNop()}, e1)
 	require.NoError(t, err)
 	require.NotNil(t, te)
 }

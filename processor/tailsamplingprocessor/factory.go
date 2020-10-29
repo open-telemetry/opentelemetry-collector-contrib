@@ -53,7 +53,7 @@ func createTraceProcessor(
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	tCfg := cfg.(*Config)
 	return newTraceProcessor(params.Logger, nextConsumer, *tCfg)
 }

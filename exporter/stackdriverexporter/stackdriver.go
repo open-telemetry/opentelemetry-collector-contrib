@@ -92,12 +92,12 @@ func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, 
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 		cloudtrace.WithTimeout(cfg.Timeout),
 	}
-	copts, err := generateClientOptions(cfg, version)
+	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +113,7 @@ func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceEx
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -120,7 +121,7 @@ func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceEx
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
-func newStackdriverMetricsExporter(cfg *Config, version string) (component.MetricsExporter, error) {
+func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -136,7 +137,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 		Timeout: cfg.Timeout,
 	}
 
-	copts, err := generateClientOptions(cfg, version)
+	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +165,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

@@ -67,6 +67,7 @@ func newSAPMTraceExporter(cfg *Config, params component.ExporterCreateParams) (c
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),

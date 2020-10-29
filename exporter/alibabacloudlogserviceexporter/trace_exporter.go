@@ -40,6 +40,7 @@ func newTraceExporter(logger *zap.Logger, cfg configmodels.Exporter) (component.
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		logger,
 		l.pushTraceData)
 }
 
