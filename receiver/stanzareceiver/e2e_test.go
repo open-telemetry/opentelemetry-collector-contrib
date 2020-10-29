@@ -152,11 +152,11 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	tempDir := newTempDir(t)
 
-	// With a max of 100 logs per file and 1 backup file, rotation will occur
-	// when more than 100 logs are written, and deletion after 200 logs are written.
-	// Write 300 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
-	numLogs := 300
+	// With a max of 2 logs per file and 1 backup file, rotation will occur
+	// when more than 2 logs are written, and deletion when more than 4 logs are written.
+	// Write 10 and validate that we got the all despite rotation and deletion.
+	logger := newRotatingLogger(t, tempDir, 2, 1, rt.copyTruncate, rt.sequential)
+	numLogs := 10
 
 	// Build input lines and expected outputs
 	lines := make([]string, numLogs)
@@ -178,7 +178,7 @@ func (rt *rotationTest) Run(t *testing.T) {
     include: [%s/*]
     include_file_name: false
     start_at: beginning
-    poll_interval: 10ms
+    poll_interval: 5ms
   - type: regex_parser
     regex: '^(?P<ts>\d{4}-\d{2}-\d{2}) (?P<msg>[^\n]+)'
     timestamp:
@@ -198,7 +198,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// does not consume much time by balancing the max lines per file with a duration
 		// of existence that is low enough to be practical in a unit test. The following
 		// sleep provides a level of consistency to file lifespan.
-		time.Sleep(2 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	missingMsg := func(exp, act int) string { return fmt.Sprintf("%d out of expected %d received", act, exp) }

@@ -349,7 +349,8 @@ jobs:
             refreshenv
       - run:
           name: Unit tests
-          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+          # Do Not Merge - Temporary code to assess whether this can run consistently on windows
+          command: (Get-Childitem -Include e2e_test.go -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./... -count 100; if ($LastExitCode -gt 0) { exit $LastExitCode } }
       - save_module_cache
       - github_issue_generator
 
