@@ -15,18 +15,16 @@
 package system
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"runtime"
+
+	"github.com/Showmax/go-fqdn"
 )
 
 type systemMetadata interface {
-	// FQDNAvailable states whether the FQDN can be retrieved
-	FQDNAvailable() bool
-
 	// FQDN returns the fully qualified domain name
-	FQDN(ctx context.Context) (string, error)
+	FQDN() (string, error)
 
 	// Hostname returns the system hostname
 	Hostname() (string, error)
@@ -43,4 +41,8 @@ func (*systemMetadataImpl) Hostname() (string, error) {
 
 func (*systemMetadataImpl) HostType() (string, error) {
 	return fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), nil
+}
+
+func (*systemMetadataImpl) FQDN() (string, error) {
+	return fqdn.FqdnHostname()
 }

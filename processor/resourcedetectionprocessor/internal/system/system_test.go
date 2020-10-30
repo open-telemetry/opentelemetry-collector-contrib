@@ -31,11 +31,7 @@ type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) FQDNAvailable() bool {
-	return m.MethodCalled("FQDNAvailable").Bool(0)
-}
-
-func (m *mockMetadata) FQDN(_ context.Context) (string, error) {
+func (m *mockMetadata) FQDN() (string, error) {
 	args := m.MethodCalled("FQDN")
 	return args.String(0), args.Error(1)
 }
@@ -58,7 +54,6 @@ func TestNewDetector(t *testing.T) {
 
 func TestDetectFQDNAvailable(t *testing.T) {
 	md := &mockMetadata{}
-	md.On("FQDNAvailable").Return(true)
 	md.On("FQDN").Return("fqdn", nil)
 	md.On("Hostname").Return("hostname", nil)
 	md.On("HostType").Return("darwin/amd64", nil)
@@ -80,33 +75,11 @@ func TestDetectFQDNAvailable(t *testing.T) {
 
 }
 
-func TestDetectFQDNNoAvailable(t *testing.T) {
-	md := &mockMetadata{}
-	md.On("FQDNAvailable").Return(false)
-	md.On("Hostname").Return("hostname", nil)
-	md.On("HostType").Return("darwin/amd64", nil)
-
-	detector := &Detector{provider: md}
-	res, err := detector.Detect(context.Background())
-	require.NoError(t, err)
-	res.Attributes().Sort()
-
-	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeHostHostname: "hostname",
-		conventions.AttributeHostType:     "darwin/amd64",
-	})
-	expected.Attributes().Sort()
-
-	assert.Equal(t, expected, res)
-
-}
-
 func TestDetectError(t *testing.T) {
 	// FQDN fails
 	mdFQDN := &mockMetadata{}
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostType").Return("windows/arm64", nil)
-	mdFQDN.On("FQDNAvailable").Return(true)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 
 	detector := &Detector{provider: mdFQDN}
@@ -116,7 +89,6 @@ func TestDetectError(t *testing.T) {
 
 	// Hostname fails
 	mdHostname := &mockMetadata{}
-	mdHostname.On("FQDNAvailable").Return(true)
 	mdHostname.On("FQDN").Return("fqdn", nil)
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostType").Return("windows/arm64", nil)

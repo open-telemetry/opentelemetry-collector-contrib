@@ -41,7 +41,7 @@ func NewDetector() (internal.Detector, error) {
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
+func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
 	res.InitEmpty()
 	attrs := res.Attributes()
@@ -56,15 +56,12 @@ func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 		return res, err
 	}
 
-	if d.provider.FQDNAvailable() {
-		fqdn, err := d.provider.FQDN(ctx)
-		if err != nil {
-			return res, err
-		}
-
-		attrs.InsertString(conventions.AttributeHostName, fqdn)
+	fqdn, err := d.provider.FQDN()
+	if err != nil {
+		return res, err
 	}
 
+	attrs.InsertString(conventions.AttributeHostName, fqdn)
 	attrs.InsertString(conventions.AttributeHostHostname, hostname)
 	attrs.InsertString(conventions.AttributeHostType, hostType)
 
