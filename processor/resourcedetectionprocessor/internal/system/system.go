@@ -46,11 +46,6 @@ func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 	res.InitEmpty()
 	attrs := res.Attributes()
 
-	hostname, err := d.provider.Hostname()
-	if err != nil {
-		return res, err
-	}
-
 	osType, err := d.provider.OSType()
 	if err != nil {
 		return res, err
@@ -62,7 +57,6 @@ func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, fqdn)
-	attrs.InsertString(conventions.AttributeHostHostname, hostname)
 	attrs.InsertString(conventions.AttributeOSType, osType)
 
 	return res, nil

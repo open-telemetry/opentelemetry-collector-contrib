@@ -36,11 +36,6 @@ func (m *mockMetadata) FQDN() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) Hostname() (string, error) {
-	args := m.MethodCalled("Hostname")
-	return args.String(0), args.Error(1)
-}
-
 func (m *mockMetadata) OSType() (string, error) {
 	args := m.MethodCalled("OSType")
 	return args.String(0), args.Error(1)
@@ -55,7 +50,6 @@ func TestNewDetector(t *testing.T) {
 func TestDetectFQDNAvailable(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("FQDN").Return("fqdn", nil)
-	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("DARWIN", nil)
 
 	detector := &Detector{provider: md}
@@ -65,9 +59,8 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	res.Attributes().Sort()
 
 	expected := internal.NewResource(map[string]interface{}{
-		conventions.AttributeHostName:     "fqdn",
-		conventions.AttributeHostHostname: "hostname",
-		conventions.AttributeOSType:       "DARWIN",
+		conventions.AttributeHostName: "fqdn",
+		conventions.AttributeOSType:   "DARWIN",
 	})
 	expected.Attributes().Sort()
 
@@ -78,7 +71,6 @@ func TestDetectFQDNAvailable(t *testing.T) {
 func TestDetectError(t *testing.T) {
 	// FQDN fails
 	mdFQDN := &mockMetadata{}
-	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("OSType").Return("WINDOWS", nil)
 	mdFQDN.On("FQDN").Return("", errors.New("err"))
 
@@ -90,8 +82,7 @@ func TestDetectError(t *testing.T) {
 	// Hostname fails
 	mdHostname := &mockMetadata{}
 	mdHostname.On("FQDN").Return("fqdn", nil)
-	mdHostname.On("Hostname").Return("", errors.New("err"))
-	mdHostname.On("OSType").Return("WINDOWS", nil)
+	mdHostname.On("OSType").Return("", errors.New("err"))
 
 	detector = &Detector{provider: mdHostname}
 	res, err = detector.Detect(context.Background())

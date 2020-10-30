@@ -15,7 +15,6 @@
 package system
 
 import (
-	"os"
 	"runtime"
 	"strings"
 
@@ -26,18 +25,11 @@ type systemMetadata interface {
 	// FQDN returns the fully qualified domain name
 	FQDN() (string, error)
 
-	// Hostname returns the system hostname
-	Hostname() (string, error)
-
 	// OSType returns the host operating system
 	OSType() (string, error)
 }
 
 type systemMetadataImpl struct{}
-
-func (*systemMetadataImpl) Hostname() (string, error) {
-	return os.Hostname()
-}
 
 func (*systemMetadataImpl) OSType() (string, error) {
 	return strings.ToUpper(runtime.GOOS), nil

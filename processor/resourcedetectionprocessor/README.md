@@ -14,7 +14,6 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
 
 * System metadata: Queries the host machine to retrieve the following resource attributes:
 
-    * host.hostname
     * host.name
     * os.type
 
