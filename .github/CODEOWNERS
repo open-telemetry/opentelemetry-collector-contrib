@@ -21,7 +21,7 @@ exporter/azuremonitorexporter/           @open-telemetry/collector-contrib-appro
 exporter/carbonexporter/                 @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/datadogexporter/                @open-telemetry/collector-contrib-approvers @KSerrania @ericmustin @mx-psi
 exporter/elasticexporter/                @open-telemetry/collector-contrib-approvers @axw @simitt @jalvz
-exporter/honeycombexporter/              @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey
+exporter/honeycombexporter/              @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
 exporter/jaegerthrifthttpexporter/       @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/kinesisexporter/                @open-telemetry/collector-contrib-approvers @owais
 exporter/loadbalancingexporter/          @open-telemetry/collector-contrib-approvers @jpkrohling
