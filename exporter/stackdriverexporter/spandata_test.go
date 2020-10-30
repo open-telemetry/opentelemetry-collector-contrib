@@ -21,10 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
-	"google.golang.org/grpc/codes"
 )
 
 func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
@@ -150,7 +150,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []label.KeyValue{},
 			},
 		},
-		StatusCode:    codes.Internal,
+		StatusCode:    codes.Error,
 		StatusMessage: "This is not a drill!",
 		Attributes: []label.KeyValue{
 			label.String("namespace", "kube-system"),
