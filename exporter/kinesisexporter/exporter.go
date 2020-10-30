@@ -31,7 +31,7 @@ type Exporter struct {
 	logger  *zap.Logger
 }
 
-var _ component.TraceExporter = (*Exporter)(nil)
+var _ component.TracesExporter = (*Exporter)(nil)
 
 // Start tells the exporter to start. The exporter may prepare for exporting
 // by connecting to the endpoint. Host parameter can be used for communicating
