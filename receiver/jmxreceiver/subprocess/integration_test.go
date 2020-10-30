@@ -27,7 +27,9 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/process"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -40,43 +42,66 @@ echo "Stdin:" $(cat -)
 sleep 60
 `
 
-// prepareSubprocess will create a Subprocess based on a temporary script.
-// It returns a pointer to the pointer to psutil process info and a closure to set its
-// value from the running process once started.
-func prepareSubprocess(t *testing.T, conf *Config) (*Subprocess, **process.Process, func() bool) {
-	logCore, _ := observer.New(zap.DebugLevel)
-	logger := zap.New(logCore)
+type SubprocessIntegrationSuite struct {
+	suite.Suite
+	scriptPath string
+}
 
+func TestSubprocessIntegration(t *testing.T) {
+	suite.Run(t, new(SubprocessIntegrationSuite))
+}
+
+func (suite *SubprocessIntegrationSuite) SetupSuite() {
+	t := suite.T()
 	scriptFile, err := ioutil.TempFile("", "subproc")
 	require.NoError(t, err)
-
-	t.Cleanup(func() { os.Remove(scriptFile.Name()) })
 
 	_, err = scriptFile.Write([]byte(scriptContents))
 	require.NoError(t, err)
 	require.NoError(t, scriptFile.Chmod(0700))
 	scriptFile.Close()
 
-	conf.ExecutablePath = scriptFile.Name()
+	suite.scriptPath = scriptFile.Name()
+}
+
+func (suite *SubprocessIntegrationSuite) TearDownSuite() {
+	require.NoError(suite.T(), os.Remove(suite.scriptPath))
+}
+
+// prepareSubprocess will create a Subprocess based on a temporary script.
+// It returns a pointer to the pointer to psutil process info and a closure to set its
+// value from the running process once started.
+func (suite *SubprocessIntegrationSuite) prepareSubprocess(conf *Config) (*Subprocess, **process.Process, func() bool) {
+	t := suite.T()
+	logCore, _ := observer.New(zap.DebugLevel)
+	logger := zap.New(logCore)
+
+	conf.ExecutablePath = suite.scriptPath
 	subprocess := NewSubprocess(conf, logger)
 
 	selfPid := int32(os.Getpid())
-	expectedExecutable := fmt.Sprintf("/bin/sh %v", scriptFile.Name())
+	expectedExecutable := fmt.Sprintf("/bin/sh %v", suite.scriptPath)
 
 	var procInfo *process.Process
 	findProcessInfo := func() bool {
 		pid := int32(subprocess.Pid())
-		if pid != -1 {
-			if proc, err := process.NewProcess(int32(subprocess.Pid())); err == nil {
-				if ppid, err := proc.Ppid(); err == nil && ppid == selfPid {
-					if cmdline, err := proc.Cmdline(); err == nil && strings.HasPrefix(cmdline, expectedExecutable) {
-						procInfo = proc
-						return true
-					}
-				}
-			}
+		if pid == -1 {
+			return false
 		}
-		return false
+		proc, err := process.NewProcess(pid)
+		require.NoError(t, err)
+		ppid, err := proc.Ppid()
+		require.NoError(t, err)
+		require.Equal(t, selfPid, ppid)
+
+		cmdline, err := proc.Cmdline()
+		if cmdline == "" {
+			return false
+		}
+		require.NoError(t, err)
+		require.True(t, strings.HasPrefix(cmdline, expectedExecutable), fmt.Sprintf("%v doesn't have prefix %v", cmdline, expectedExecutable))
+		procInfo = proc
+		return true
 	}
 
 	return subprocess, &procInfo, findProcessInfo
@@ -98,29 +123,29 @@ loop:
 	t.Fatal("Failed to receive desired stdout")
 }
 
-func TestHappyPathIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestHappyPath() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{})
+	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
-	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
+	assert.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
 	require.NotNil(t, *procInfo)
 
 	cmdline, err := (*procInfo).Cmdline()
-	require.NoError(t, err)
-	require.Equal(t, "/bin/sh "+subprocess.config.ExecutablePath, cmdline)
+	assert.NoError(t, err)
+	assert.Equal(t, "/bin/sh "+subprocess.config.ExecutablePath, cmdline)
 }
 
-func TestWithArgsIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestWithArgs() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{Args: []string{"myArgs"}})
+	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{Args: []string{"myArgs"}})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
@@ -132,8 +157,8 @@ func TestWithArgsIntegration(t *testing.T) {
 	require.Equal(t, fmt.Sprintf("/bin/sh %v myArgs", subprocess.config.ExecutablePath), cmdline)
 }
 
-func TestWithEnvVarsIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestWithEnvVars() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -144,7 +169,7 @@ func TestWithEnvVarsIntegration(t *testing.T) {
 		},
 	}
 
-	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, config)
+	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(config)
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 	require.Eventually(t, findProcessInfo, 5*time.Second, 10*time.Millisecond)
@@ -156,13 +181,13 @@ func TestWithEnvVarsIntegration(t *testing.T) {
 	require.Contains(t, stdout, "MyEnv2=MyVal2")
 }
 
-func TestWithAutoRestartIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestWithAutoRestart() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	restartDelay := 100 * time.Millisecond
-	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{RestartOnError: true, RestartDelay: &restartDelay})
+	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{RestartOnError: true, RestartDelay: &restartDelay})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
@@ -178,18 +203,17 @@ func TestWithAutoRestartIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Should be restarted
-	require.Eventually(t, findProcessInfo, restartDelay+5*time.Second, 10*time.Millisecond)
-	require.NotNil(t, *procInfo)
-
-	require.NotEqual(t, (*procInfo).Pid, oldProcPid)
+	require.Eventually(t, func() bool {
+		return findProcessInfo() && *procInfo != nil && (*procInfo).Pid != oldProcPid
+	}, restartDelay+5*time.Second, 10*time.Millisecond)
 }
 
-func TestSendingStdinIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestSendingStdin() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	subprocess, procInfo, findProcessInfo := prepareSubprocess(t, &Config{StdInContents: "mystdincontents"})
+	subprocess, procInfo, findProcessInfo := suite.prepareSubprocess(&Config{StdInContents: "mystdincontents"})
 	subprocess.Start(ctx)
 	defer subprocess.Shutdown(ctx)
 
@@ -199,8 +223,8 @@ func TestSendingStdinIntegration(t *testing.T) {
 	requireDesiredStdout(t, subprocess, "Stdin: mystdincontents")
 }
 
-func TestSendingStdinFailsIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -226,8 +250,8 @@ func TestSendingStdinFailsIntegration(t *testing.T) {
 	require.Eventually(t, matched, 10*time.Second, 10*time.Millisecond)
 }
 
-func TestSubprocessBadExecIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestSubprocessBadExec() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -245,8 +269,8 @@ func TestSubprocessBadExecIntegration(t *testing.T) {
 	require.Eventually(t, matched, 10*time.Second, 10*time.Millisecond)
 }
 
-func TestSubprocessSuccessfullyReturnsIntegration(t *testing.T) {
-	t.Parallel()
+func (suite *SubprocessIntegrationSuite) TestSubprocessSuccessfullyReturns() {
+	t := suite.T()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
