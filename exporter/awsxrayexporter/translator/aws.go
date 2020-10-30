@@ -52,6 +52,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		clusterName  string
 		podUID       string
 		clusterArn   string
+		containerArn string
 		taskArn      string
 		taskFamily   string
 		launchType   string
@@ -108,6 +109,8 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				clusterName = value.StringVal()
 			case "aws.ecs.cluster.arn":
 				clusterArn = value.StringVal()
+			case "aws.ecs.container.arn":
+				containerArn = value.StringVal()
 			case "aws.ecs.task.arn":
 				taskArn = value.StringVal()
 			case "aws.ecs.task.family":
@@ -162,12 +165,14 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	}
 	if service == "ECS" || container != "" {
 		ecs = &awsxray.ECSMetadata{
-			ContainerName: awsxray.String(container),
-			ContainerID:   awsxray.String(containerID),
-			ClusterArn:    awsxray.String(clusterArn),
-			TaskArn:       awsxray.String(taskArn),
-			TaskFamily:    awsxray.String(taskFamily),
-			LaunchType:    awsxray.String(launchType),
+			ContainerName:    awsxray.String(container),
+			ContainerID:      awsxray.String(containerID),
+			AvailabilityZone: awsxray.String(zone),
+			ContainerArn:     awsxray.String(containerArn),
+			ClusterArn:       awsxray.String(clusterArn),
+			TaskArn:          awsxray.String(taskArn),
+			TaskFamily:       awsxray.String(taskFamily),
+			LaunchType:       awsxray.String(launchType),
 		}
 	}
 
@@ -193,9 +198,9 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
 	// names from the ARN, then fall back to just recording the names
-	if logGroupArns.Len() > 0 {
+	if logGroupArns != (pdata.AnyValueArray{}) && logGroupArns.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups.Len() > 0 {
+	} else if logGroups != (pdata.AnyValueArray{}) && logGroups.Len() > 0 {
 		cwl = getLogGroupMetadata(logGroups, false)
 	}
 

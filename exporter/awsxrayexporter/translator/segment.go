@@ -248,10 +248,14 @@ func determineAwsOrigin(resource pdata.Resource) string {
 		case "ElasticBeanstalk":
 			return OriginEB
 		case "ECS":
-			switch lt, _ := resource.Attributes().Get("aws.ecs.launchtype"); lt.StringVal() {
-			case "EC2":
+			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
+			if !present {
+				return OriginECS
+			}
+			switch lt.StringVal() {
+			case "ec2":
 				return OriginECSEC2
-			case "Fargate":
+			case "fargate":
 				return OriginECSFargate
 			default:
 				return OriginECS
