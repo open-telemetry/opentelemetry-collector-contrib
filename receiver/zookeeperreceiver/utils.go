@@ -18,9 +18,6 @@ import (
 	"bufio"
 	"fmt"
 	"net"
-	"time"
-
-	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func sendCmd(conn net.Conn, cmd string) *bufio.Scanner {
@@ -28,18 +25,4 @@ func sendCmd(conn net.Conn, cmd string) *bufio.Scanner {
 	reader := bufio.NewReader(conn)
 	scanner := bufio.NewScanner(reader)
 	return scanner
-}
-
-func initializeMetric(metric pdata.Metric, metricDescriptor pdata.Metric, now pdata.TimestampUnixNano, value int64) {
-	metricDescriptor.CopyTo(metric)
-
-	idps := metric.IntGauge().DataPoints()
-	idps.Resize(1)
-	dp := idps.At(0)
-	dp.SetTimestamp(now)
-	dp.SetValue(value)
-}
-
-func timeToUnixNano(t time.Time) pdata.TimestampUnixNano {
-	return pdata.TimestampUnixNano(uint64(t.UnixNano()))
 }

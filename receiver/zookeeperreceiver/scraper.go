@@ -24,7 +24,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/consumer/simple"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
 )
 
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
@@ -83,59 +86,18 @@ func (z *zookeeperMetricsScraper) Scrape(ctx context.Context) (pdata.ResourceMet
 		conn.SetDeadline(deadline)
 	}
 
-	rawStats, serverInfo := z.getRawMNTRStats(conn)
-
-	metricsSlice := pdata.NewMetricSlice()
-	metricsSlice.Resize(len(rawStats))
-
-	now := timeToUnixNano(time.Now())
-
-	var idx int
-	for _, rawStat := range rawStats {
-		metricDescriptor := getOTLPMetricDescriptor(rawStat.metric)
-		initializeMetric(metricsSlice.At(idx), metricDescriptor, now, rawStat.val)
-		idx++
-	}
-
-	return resourceMetricSlice(serverInfo, metricsSlice), nil
+	return z.getResourceMetrics(conn), nil
 }
 
-func resourceMetricSlice(serverInfo serverInfo, metricsSlice pdata.MetricSlice) pdata.ResourceMetricsSlice {
-	resourceMetricSlice := pdata.NewResourceMetricsSlice()
-
-	// If no stats are collected, return empty value.
-	if metricsSlice.Len() == 0 {
-		return resourceMetricSlice
-	}
-
-	resourceMetricSlice.Resize(1)
-	rm := resourceMetricSlice.At(0)
-	rm.Resource().InitEmpty()
-	rm.Resource().Attributes().Insert(serverStateResourceLabel, pdata.NewAttributeValueString(serverInfo.serverState))
-	rm.Resource().Attributes().Insert(zkVersionResourceLabel, pdata.NewAttributeValueString(serverInfo.version))
-
-	ilms := rm.InstrumentationLibraryMetrics()
-	ilms.Resize(1)
-	ilm := ilms.At(0)
-	metricsSlice.MoveAndAppendTo(ilm.Metrics())
-
-	return resourceMetricSlice
-}
-
-type rawStat struct {
-	metric string
-	val    int64
-}
-
-type serverInfo struct {
-	serverState string
-	version     string
-}
-
-func (z *zookeeperMetricsScraper) getRawMNTRStats(conn net.Conn) ([]rawStat, serverInfo) {
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) pdata.ResourceMetricsSlice {
 	scanner := sendCmd(conn, mntrCommand)
-	rawStats := make([]rawStat, 0, maxMetricsLen)
-	info := serverInfo{}
+	metrics := simple.Metrics{
+		Metrics:                    pdata.NewMetrics(),
+		Timestamp:                  time.Now(),
+		InstrumentationLibraryName: "otelcol/zookeeper",
+		MetricFactoriesByName:      metadata.M.FactoriesByName(),
+		ResourceAttributes:         map[string]string{},
+	}
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -150,14 +112,15 @@ func (z *zookeeperMetricsScraper) getRawMNTRStats(conn net.Conn) ([]rawStat, ser
 
 		switch parts[1] {
 		case zkVersionKey:
-			info.version = parts[2]
+			metrics.ResourceAttributes[zkVersionResourceLabel] = parts[2]
 			continue
 		case serverStateKey:
-			info.serverState = parts[2]
+			metrics.ResourceAttributes[serverStateResourceLabel] = parts[2]
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			if getOTLPMetricDescriptor(parts[1]).IsNil() {
+			metricDescriptor := getOTLPMetricDescriptor(parts[1])
+			if metricDescriptor.IsNil() {
 				continue
 			}
 
@@ -169,9 +132,14 @@ func (z *zookeeperMetricsScraper) getRawMNTRStats(conn net.Conn) ([]rawStat, ser
 				)
 				continue
 			}
-			rawStats = append(rawStats, rawStat{metric: parts[1], val: int64Val})
+
+			// Currently the receiver only deals with one metric type.
+			switch metricDescriptor.DataType() {
+			case pdata.MetricDataTypeIntGauge:
+				metrics.AddGaugeDataPoint(metricDescriptor.Name(), int64Val)
+			}
 
 		}
 	}
-	return rawStats, info
+	return metrics.ResourceMetrics()
 }

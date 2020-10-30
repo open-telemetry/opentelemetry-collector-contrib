@@ -43,8 +43,6 @@ const (
 
 	serverStateResourceLabel = "server.state"
 	zkVersionResourceLabel   = "version"
-
-	maxMetricsLen = 14
 )
 
 func getOTLPMetricDescriptor(metric string) pdata.Metric {
