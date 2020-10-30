@@ -1021,12 +1021,12 @@ func TestCalculateRate(t *testing.T) {
 }
 
 func TestDimensionRollup(t *testing.T) {
-	testCases := []struct{
-		testName string
-		dimensionRollupOption string
-		dims []string
+	testCases := []struct {
+		testName               string
+		dimensionRollupOption  string
+		dims                   []string
 		instrumentationLibName string
-		expected [][]string
+		expected               [][]string
 	}{
 		{
 			"no rollup w/o instrumentation library name",
