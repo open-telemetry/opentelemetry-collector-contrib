@@ -16,7 +16,7 @@ details of which are currently pending confirmation in the OpenTelemetry specifi
 
     * host.hostname
     * host.name
-    * host.type
+    * os.type
 
 * GCE Metadata: Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
 to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:

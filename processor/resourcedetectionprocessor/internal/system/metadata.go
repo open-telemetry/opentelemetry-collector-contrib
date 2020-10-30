@@ -15,9 +15,9 @@
 package system
 
 import (
-	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/Showmax/go-fqdn"
 )
@@ -29,8 +29,8 @@ type systemMetadata interface {
 	// Hostname returns the system hostname
 	Hostname() (string, error)
 
-	// HostType returns the host operating system and architecture
-	HostType() (string, error)
+	// OSType returns the host operating system
+	OSType() (string, error)
 }
 
 type systemMetadataImpl struct{}
@@ -39,8 +39,8 @@ func (*systemMetadataImpl) Hostname() (string, error) {
 	return os.Hostname()
 }
 
-func (*systemMetadataImpl) HostType() (string, error) {
-	return fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH), nil
+func (*systemMetadataImpl) OSType() (string, error) {
+	return strings.ToUpper(runtime.GOOS), nil
 }
 
 func (*systemMetadataImpl) FQDN() (string, error) {
