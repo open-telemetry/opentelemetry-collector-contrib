@@ -16,6 +16,7 @@ package system
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
@@ -48,12 +49,12 @@ func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 
 	osType, err := d.provider.OSType()
 	if err != nil {
-		return res, err
+		return res, fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	fqdn, err := d.provider.FQDN()
 	if err != nil {
-		return res, err
+		return res, fmt.Errorf("failed getting FQDN: %w", err)
 	}
 
 	attrs.InsertString(conventions.AttributeHostName, fqdn)
