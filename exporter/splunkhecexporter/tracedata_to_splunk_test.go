@@ -17,7 +17,6 @@ package splunkhecexporter
 import (
 	"testing"
 
-	v1 "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -82,13 +81,18 @@ func commonSplunkEvent(
 	name string,
 	ts pdata.TimestampUnixNano,
 ) *splunk.Event {
-	trunceableName := &v1.TruncatableString{
-		Value: name,
-	}
-	span := v1.Span{Name: trunceableName, StartTime: pdata.UnixNanoToTimestamp(ts)}
 	return &splunk.Event{
-		Time:  timestampToEpochMilliseconds(ts),
-		Host:  "unknown",
-		Event: &span,
+		Time: timestampToEpochMilliseconds(ts),
+		Host: "unknown",
+		Event: HecSpan{Name: name, StartTime: ts,
+			TraceID:    []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			SpanID:     []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			ParentSpan: []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+			Attributes: map[string]interface{}{},
+			EndTime:    0x0,
+			Kind:       "SPAN_KIND_UNSPECIFIED",
+			Status:     HecSpanStatus{Message: "", Code: ""},
+			Events:     []HecEvent{},
+			Links:      []HecLink{}},
 	}
 }

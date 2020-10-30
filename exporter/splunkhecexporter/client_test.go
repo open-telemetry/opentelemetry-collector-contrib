@@ -88,8 +88,17 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 		span.InitEmpty()
 		span.SetName("root")
 		span.SetStartTime(pdata.TimestampUnixNano((i + 1) * 1e9))
+		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+		span.SetTraceState(pdata.TraceState("foo"))
+		if i%2 == 0 {
+			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.Status().InitEmpty()
+			span.Status().SetCode(pdata.StatusCodeOk)
+			span.Status().SetMessage("ok")
+
+		}
 		ils.Spans().Append(span)
 	}
 
@@ -262,11 +271,11 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1}}}`
+	expected := `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","parent_span_id":"AQIDBAUGBwg=","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2}}}`
+	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","parent_span_id":"AAAAAAAAAAA=","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":""},"start_time":2000000000}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":3,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":3}}}`
+	expected += `{"time":3,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","parent_span_id":"AQIDBAUGBwg=","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
