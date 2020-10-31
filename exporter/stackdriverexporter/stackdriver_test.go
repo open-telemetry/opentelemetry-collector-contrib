@@ -66,6 +66,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Standard",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 			},
@@ -73,6 +74,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Standard_WithBundling",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{
@@ -87,6 +89,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Err_InvalidBundleDelayThreshold",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{BundleDelayThreshold: -1},
@@ -96,6 +99,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Err_InvalidBundleCountThreshold",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{BundleCountThreshold: -1},
@@ -105,6 +109,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Err_InvalidBundleByteThreshold",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{BundleByteThreshold: -1},
@@ -114,6 +119,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Err_InvalidBundleByteLimit",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{BundleByteLimit: -1},
@@ -123,6 +129,7 @@ func TestStackdriverTraceExport(t *testing.T) {
 		{
 			name: "Err_InvalidBufferMaxBytes",
 			cfg: &Config{
+				ProjectID:   "idk",
 				Endpoint:    "127.0.0.1:8080",
 				UseInsecure: true,
 				TraceConfig: TraceConfig{BufferMaxBytes: -1},
