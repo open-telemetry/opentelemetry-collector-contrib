@@ -45,7 +45,7 @@ func TestCreateTraceReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []string{"counter"}}}
 
-	tReceiver, err := factory.CreateTraceReceiver(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), creationParams, cfg, exportertest.NewNopTraceExporter())
 
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 	assert.Nil(t, tReceiver)
