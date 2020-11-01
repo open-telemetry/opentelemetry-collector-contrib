@@ -15,6 +15,8 @@
 package metadata
 
 import (
+	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
@@ -59,4 +61,33 @@ func GetHost(logger *zap.Logger, cfg *config.Config) *string {
 	logger.Debug("Canonical hostname automatically set", zap.String("hostname", hostname))
 	cache.Cache.Set(cache.CanonicalHostnameKey, &hostname, cache.NoExpiration)
 	return &hostname
+}
+
+// HostnameFromAttributes tries to get a valid hostname from attributes by checking, in order:
+//
+//   1. the container ID,
+//   2. the cloud provider host ID and
+//   3. the host.name attribute.
+//
+//  It returns a boolean value indicated if any name was found
+func HostnameFromAttributes(attrs pdata.AttributeMap) (string, bool) {
+	if containerID, ok := attrs.Get(conventions.AttributeContainerID); ok {
+		return containerID.StringVal(), true
+	}
+
+	// handle AWS case separately to have similar behavior to the Datadog Agent
+	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
+	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+		return ec2.HostnameFromAttributes(attrs)
+	}
+
+	if hostID, ok := attrs.Get(conventions.AttributeHostID); ok {
+		return hostID.StringVal(), true
+	}
+
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
+		return hostName.StringVal(), true
+	}
+
+	return "", false
 }
