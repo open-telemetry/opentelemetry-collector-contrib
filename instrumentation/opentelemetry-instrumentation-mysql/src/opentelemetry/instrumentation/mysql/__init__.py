@@ -25,7 +25,7 @@ Usage
 
     import mysql.connector
     from opentelemetry import trace
-    from opentelemetry.trace import TracerProvider
+    from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.instrumentation.mysql import MySQLInstrumentor
 
     trace.set_tracer_provider(TracerProvider())

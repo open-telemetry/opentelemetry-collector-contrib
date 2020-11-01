@@ -25,7 +25,7 @@ Usage
 
     import sqlite3
     from opentelemetry import trace
-    from opentelemetry.trace import TracerProvider
+    from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.instrumentation.sqlite3 import SQLite3Instrumentor
 
     trace.set_tracer_provider(TracerProvider())

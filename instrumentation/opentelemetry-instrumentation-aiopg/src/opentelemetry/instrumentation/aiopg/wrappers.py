@@ -23,7 +23,7 @@ Usage
 
     from opentelemetry import trace
     from opentelemetry.instrumentation.aiopg import trace_integration
-    from opentelemetry.trace import TracerProvider
+    from opentelemetry.sdk.trace import TracerProvider
 
     trace.set_tracer_provider(TracerProvider())
 
