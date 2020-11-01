@@ -43,6 +43,7 @@ func createMetricsReceiver(
 		consumer,
 		receiverhelper.AddMetricsScraper(
 			receiverhelper.NewMetricsScraper(
+				cfg.Name(),
 				scraper.scrape,
 				receiverhelper.WithInitialize(scraper.initialize),
 				receiverhelper.WithClose(scraper.close),
