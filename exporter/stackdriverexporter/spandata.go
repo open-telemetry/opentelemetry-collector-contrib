@@ -21,11 +21,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	"google.golang.org/grpc/codes"
 )
 
 var errNilSpan = errors.New("expected a non-nil span")
@@ -89,7 +89,7 @@ func pdataSpanToOTSpanData(
 		}
 	}
 	if status := span.Status(); !status.IsNil() {
-		sd.StatusCode = pdataStatusCodeToGRPCCode(status.Code())
+		sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
 		sd.StatusMessage = status.Message()
 	}
 
@@ -115,8 +115,30 @@ func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
 	}
 }
 
-func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
-	return codes.Code(c)
+func pdataStatusCodeToOTCode(c pdata.StatusCode) codes.Code {
+	switch c {
+	case pdata.StatusCodeOk:
+		return codes.Ok
+	case pdata.StatusCodeCancelled,
+		pdata.StatusCodeUnknownError,
+		pdata.StatusCodeInvalidArgument,
+		pdata.StatusCodeDeadlineExceeded,
+		pdata.StatusCodeNotFound,
+		pdata.StatusCodeAlreadyExists,
+		pdata.StatusCodePermissionDenied,
+		pdata.StatusCodeResourceExhausted,
+		pdata.StatusCodeFailedPrecondition,
+		pdata.StatusCodeAborted,
+		pdata.StatusCodeOutOfRange,
+		pdata.StatusCodeUnimplemented,
+		pdata.StatusCodeInternalError,
+		pdata.StatusCodeUnavailable,
+		pdata.StatusCodeDataLoss,
+		pdata.StatusCodeUnauthenticated:
+		return codes.Error
+	default:
+		return codes.Unset
+	}
 }
 
 func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []label.KeyValue {
