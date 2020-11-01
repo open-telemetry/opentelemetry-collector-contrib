@@ -141,10 +141,6 @@ endif
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
 
-.PHONY: generate
-generate:
-	$(MAKE) for-all CMD="go generate ./..."
-
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
