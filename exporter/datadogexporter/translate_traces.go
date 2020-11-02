@@ -216,19 +216,26 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogTags map[string]string,
 	cfg *config.Config,
 ) (*pb.Span, error) {
+
+	tags := aggregateSpanTags(s, datadogTags)
+
 	// otel specification resource service.name takes precedence
 	// and configuration DD_ENV as fallback if it exists
 	if serviceName == "" && cfg.Service != "" {
 		serviceName = cfg.Service
 	}
 
-	version := cfg.Version
-	tags := aggregateSpanTags(s, datadogTags)
+	//  canonical resource attribute version should override others if it exists
+	if rsTagVersion := tags[conventions.AttributeServiceVersion]; rsTagVersion != "" {
+		tags[versionTag] = rsTagVersion
+	} else {
+		version := cfg.Version
 
-	// if no version tag exists, set it if provided via config
-	if version != "" {
-		if tagVersion := tags[versionTag]; tagVersion == "" {
-			tags[versionTag] = version
+		// if no version tag exists, set it if provided via config
+		if version != "" {
+			if tagVersion := tags[versionTag]; tagVersion == "" {
+				tags[versionTag] = version
+			}
 		}
 	}
 
