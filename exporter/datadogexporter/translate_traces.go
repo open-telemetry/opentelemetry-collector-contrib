@@ -41,6 +41,7 @@ type codeDetails struct {
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
+	rsVersionTag        string = "service.version"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -230,6 +231,11 @@ func spanToDatadogSpan(s pdata.Span,
 		if tagVersion := tags[versionTag]; tagVersion == "" {
 			tags[versionTag] = version
 		}
+	}
+
+	//  canonical resource attribute version should override others if it exists
+	if rsTagVersion := tags[conventions.AttributeVersionName]; rsTagVersion != "" {
+		tags[versionTag] = rsTagVersion
 	}
 
 	// get tracestate as just a general tag

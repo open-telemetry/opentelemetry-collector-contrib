@@ -95,6 +95,7 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 			"namespace":              pdata.NewAttributeValueString("kube-system"),
 			"service.name":           pdata.NewAttributeValueString("test-resource-service-name"),
 			"deployment.environment": pdata.NewAttributeValueString("test-env"),
+			"service.version":        pdata.NewAttributeValueString("test-version"),
 		}).CopyTo(resource.Attributes())
 
 	} else {
@@ -284,6 +285,10 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
+
+	// ensure that env gives resource deployment.environment priority
+	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
 	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
@@ -329,8 +334,11 @@ func TestTracesTranslationConfig(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
+
+	// ensure that version gives resource service.version priority
+	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
 	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
-	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans
