@@ -77,11 +77,6 @@ from platform import python_implementation
 import psutil
 
 from opentelemetry import metrics
-from opentelemetry.sdk.metrics import (
-    SumObserver,
-    UpDownSumObserver,
-    ValueObserver,
-)
 from opentelemetry.sdk.metrics.export import MetricsExporter
 from opentelemetry.sdk.metrics.export.controller import PushController
 from opentelemetry.sdk.util import get_dict_as_key
@@ -160,178 +155,159 @@ class SystemMetrics:
         self._runtime_cpu_time_labels = self._labels.copy()
         self._runtime_gc_count_labels = self._labels.copy()
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_cpu_time,
             name="system.cpu.time",
             description="System CPU time",
             unit="seconds",
             value_type=float,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_valueobserver(
             callback=self._get_system_cpu_utilization,
             name="system.cpu.utilization",
             description="System CPU utilization",
             unit="1",
             value_type=float,
-            observer_type=ValueObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_valueobserver(
             callback=self._get_system_memory_usage,
             name="system.memory.usage",
             description="System memory usage",
             unit="bytes",
             value_type=int,
-            observer_type=ValueObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_valueobserver(
             callback=self._get_system_memory_utilization,
             name="system.memory.utilization",
             description="System memory utilization",
             unit="1",
             value_type=float,
-            observer_type=ValueObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_valueobserver(
             callback=self._get_system_swap_usage,
             name="system.swap.usage",
             description="System swap usage",
             unit="pages",
             value_type=int,
-            observer_type=ValueObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_valueobserver(
             callback=self._get_system_swap_utilization,
             name="system.swap.utilization",
             description="System swap utilization",
             unit="1",
             value_type=float,
-            observer_type=ValueObserver,
         )
 
-        # self.meter.register_observer(
+        # self.meter.register_sumobserver(
         #     callback=self._get_system_swap_page_faults,
         #     name="system.swap.page_faults",
         #     description="System swap page faults",
         #     unit="faults",
         #     value_type=int,
-        #     observer_type=SumObserver,
         # )
 
-        # self.meter.register_observer(
+        # self.meter.register_sumobserver(
         #     callback=self._get_system_swap_page_operations,
         #     name="system.swap.page_operations",
         #     description="System swap page operations",
         #     unit="operations",
         #     value_type=int,
-        #     observer_type=SumObserver,
         # )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_disk_io,
             name="system.disk.io",
             description="System disk IO",
             unit="bytes",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_disk_operations,
             name="system.disk.operations",
             description="System disk operations",
             unit="operations",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_disk_time,
             name="system.disk.time",
             description="System disk time",
             unit="seconds",
             value_type=float,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_disk_merged,
             name="system.disk.merged",
             description="System disk merged",
             unit="1",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        # self.meter.register_observer(
+        # self.meter.register_valueobserver(
         #     callback=self._get_system_filesystem_usage,
         #     name="system.filesystem.usage",
         #     description="System filesystem usage",
         #     unit="bytes",
         #     value_type=int,
-        #     observer_type=ValueObserver,
         # )
 
-        # self.meter.register_observer(
+        # self.meter.register_valueobserver(
         #     callback=self._get_system_filesystem_utilization,
         #     name="system.filesystem.utilization",
         #     description="System filesystem utilization",
         #     unit="1",
         #     value_type=float,
-        #     observer_type=ValueObserver,
         # )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_network_dropped_packets,
             name="system.network.dropped_packets",
             description="System network dropped_packets",
             unit="packets",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_network_packets,
             name="system.network.packets",
             description="System network packets",
             unit="packets",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_network_errors,
             name="system.network.errors",
             description="System network errors",
             unit="errors",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_system_network_io,
             name="system.network.io",
             description="System network io",
             unit="bytes",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_updownsumobserver(
             callback=self._get_system_network_connections,
             name="system.network.connections",
             description="System network connections",
             unit="connections",
             value_type=int,
-            observer_type=UpDownSumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_runtime_memory,
             name="runtime.{}.memory".format(self._python_implementation),
             description="Runtime {} memory".format(
@@ -339,10 +315,9 @@ class SystemMetrics:
             ),
             unit="bytes",
             value_type=int,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_runtime_cpu_time,
             name="runtime.{}.cpu_time".format(self._python_implementation),
             description="Runtime {} CPU time".format(
@@ -350,10 +325,9 @@ class SystemMetrics:
             ),
             unit="seconds",
             value_type=float,
-            observer_type=SumObserver,
         )
 
-        self.meter.register_observer(
+        self.meter.register_sumobserver(
             callback=self._get_runtime_gc_count,
             name="runtime.{}.gc_count".format(self._python_implementation),
             description="Runtime {} GC count".format(
@@ -361,7 +335,6 @@ class SystemMetrics:
             ),
             unit="bytes",
             value_type=int,
-            observer_type=SumObserver,
         )
 
     def _get_system_cpu_time(self, observer: metrics.ValueObserver) -> None:
