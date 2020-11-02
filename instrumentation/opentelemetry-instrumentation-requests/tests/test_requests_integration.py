@@ -25,7 +25,7 @@ from opentelemetry.sdk import resources
 from opentelemetry.sdk.util import get_dict_as_key
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 
 
 class RequestsIntegrationTestBase(abc.ABC):
@@ -81,9 +81,7 @@ class RequestsIntegrationTestBase(abc.ABC):
             },
         )
 
-        self.assertIs(
-            span.status.canonical_code, trace.status.StatusCanonicalCode.OK
-        )
+        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
 
         self.check_span_instrumentation_info(
             span, opentelemetry.instrumentation.requests
@@ -123,8 +121,7 @@ class RequestsIntegrationTestBase(abc.ABC):
         self.assertEqual(span.attributes.get("http.status_text"), "Not Found")
 
         self.assertIs(
-            span.status.canonical_code,
-            trace.status.StatusCanonicalCode.NOT_FOUND,
+            span.status.status_code, trace.status.StatusCode.ERROR,
         )
 
     def test_uninstrument(self):
@@ -263,9 +260,7 @@ class RequestsIntegrationTestBase(abc.ABC):
             span.attributes,
             {"component": "http", "http.method": "GET", "http.url": self.URL},
         )
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.UNKNOWN
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
         self.assertIsNotNone(RequestsInstrumentor().meter)
         self.assertEqual(len(RequestsInstrumentor().meter.metrics), 1)
@@ -307,9 +302,7 @@ class RequestsIntegrationTestBase(abc.ABC):
                 "http.status_text": "Internal Server Error",
             },
         )
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.INTERNAL
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
         self.assertIsNotNone(RequestsInstrumentor().meter)
         self.assertEqual(len(RequestsInstrumentor().meter.metrics), 1)
         recorder = RequestsInstrumentor().meter.metrics.pop()
@@ -334,9 +327,7 @@ class RequestsIntegrationTestBase(abc.ABC):
             self.perform_request(self.URL)
 
         span = self.assert_span()
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.UNKNOWN
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
     @mock.patch(
         "requests.adapters.HTTPAdapter.send", side_effect=requests.Timeout
@@ -346,9 +337,7 @@ class RequestsIntegrationTestBase(abc.ABC):
             self.perform_request(self.URL)
 
         span = self.assert_span()
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.DEADLINE_EXCEEDED
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
 
 class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
@@ -371,9 +360,7 @@ class TestRequestsIntegration(RequestsIntegrationTestBase, TestBase):
             span.attributes,
             {"component": "http", "http.method": "POST", "http.url": url},
         )
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.INVALID_ARGUMENT
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
 
     def test_if_headers_equals_none(self):
         result = requests.get(self.URL, headers=None)
