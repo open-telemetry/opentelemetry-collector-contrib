@@ -23,8 +23,8 @@ from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.utils import extract_attributes_from_object
 from opentelemetry.instrumentation.wsgi import (
     add_response_attributes,
+    carrier_getter,
     collect_request_attributes,
-    get_header_from_environ,
 )
 from opentelemetry.propagators import extract
 from opentelemetry.trace import SpanKind, get_tracer
@@ -81,7 +81,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             if getattr(request, "resolver_match"):
                 match = request.resolver_match
             else:
-                match = resolve(request.get_full_path())
+                match = resolve(request.path)
 
             if hasattr(match, "route"):
                 return match.route
@@ -125,7 +125,7 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         environ = request.META
 
-        token = attach(extract(get_header_from_environ, environ))
+        token = attach(extract(carrier_getter, environ))
 
         tracer = get_tracer(__name__, __version__)
 
