@@ -27,7 +27,7 @@ from opentelemetry.sdk.util import get_dict_as_key
 from opentelemetry.test.test_base import TestBase
 from opentelemetry.test.wsgitestutil import WsgiTestBase
 from opentelemetry.trace import SpanKind
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 from opentelemetry.util import ExcludeList
 
 # pylint: disable=import-error
@@ -87,7 +87,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
             else "tests.views.traced",
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
-        self.assertEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertEqual(span.status.status_code, StatusCode.UNSET)
         self.assertEqual(span.attributes["http.method"], "GET")
         self.assertEqual(
             span.attributes["http.url"],
@@ -113,7 +113,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.name, "^traced/" if DJANGO_2_2 else "tests.views.traced"
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
-        self.assertEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertEqual(span.status.status_code, StatusCode.UNSET)
         self.assertEqual(span.attributes["http.method"], "GET")
         self.assertEqual(
             span.attributes["http.url"], "http://testserver/traced/"
@@ -170,7 +170,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.name, "^traced/" if DJANGO_2_2 else "tests.views.traced"
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
-        self.assertEqual(span.status.canonical_code, StatusCanonicalCode.OK)
+        self.assertEqual(span.status.status_code, StatusCode.UNSET)
         self.assertEqual(span.attributes["http.method"], "POST")
         self.assertEqual(
             span.attributes["http.url"], "http://testserver/traced/"
@@ -193,9 +193,7 @@ class TestMiddleware(TestBase, WsgiTestBase):
             span.name, "^error/" if DJANGO_2_2 else "tests.views.error"
         )
         self.assertEqual(span.kind, SpanKind.SERVER)
-        self.assertEqual(
-            span.status.canonical_code, StatusCanonicalCode.INTERNAL
-        )
+        self.assertEqual(span.status.status_code, StatusCode.ERROR)
         self.assertEqual(span.attributes["http.method"], "GET")
         self.assertEqual(
             span.attributes["http.url"], "http://testserver/error/"
@@ -252,7 +250,24 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.assertEqual(len(span_list), 1)
 
     def test_span_name(self):
+        # test no query_string
         Client().get("/span_name/1234/")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
+        span = span_list[0]
+        self.assertEqual(
+            span.name,
+            "^span_name/([0-9]{4})/$"
+            if DJANGO_2_2
+            else "tests.views.route_span_name",
+        )
+
+    def test_span_name_for_query_string(self):
+        """
+        request not have query string
+        """
+        Client().get("/span_name/1234/?query=test")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
