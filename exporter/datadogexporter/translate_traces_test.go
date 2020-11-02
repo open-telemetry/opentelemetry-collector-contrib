@@ -289,7 +289,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -338,7 +338,7 @@ func TestTracesTranslationConfig(t *testing.T) {
 	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
-	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans

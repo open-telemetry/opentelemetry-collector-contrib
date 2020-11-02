@@ -41,7 +41,6 @@ type codeDetails struct {
 
 const (
 	keySamplingPriority string = "_sampling_priority_v1"
-	rsVersionTag        string = "service.version"
 	versionTag          string = "version"
 	oldILNameTag        string = "otel.instrumentation_library.name"
 	currentILNameTag    string = "otel.library.name"
@@ -234,7 +233,7 @@ func spanToDatadogSpan(s pdata.Span,
 	}
 
 	//  canonical resource attribute version should override others if it exists
-	if rsTagVersion := tags[conventions.AttributeVersionName]; rsTagVersion != "" {
+	if rsTagVersion := tags[conventions.AttributeServiceVersion]; rsTagVersion != "" {
 		tags[versionTag] = rsTagVersion
 	}
 
