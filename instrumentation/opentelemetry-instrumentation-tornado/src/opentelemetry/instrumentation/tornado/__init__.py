@@ -51,9 +51,10 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.tornado.version import __version__
 from opentelemetry.instrumentation.utils import (
     extract_attributes_from_object,
-    http_status_to_canonical_code,
+    http_status_to_status_code,
     unwrap,
 )
+from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status
 from opentelemetry.util import ExcludeList, time_ns
 
@@ -83,6 +84,8 @@ def get_traced_request_attrs():
 
 _excluded_urls = get_excluded_urls()
 _traced_attrs = get_traced_request_attrs()
+
+carrier_getter = DictGetter()
 
 
 class TornadoInstrumentor(BaseInstrumentor):
@@ -185,13 +188,6 @@ def _log_exception(tracer, func, handler, args, kwargs):
     return func(*args, **kwargs)
 
 
-def _get_header_from_request_headers(
-    headers: dict, header_name: str
-) -> typing.List[str]:
-    header = headers.get(header_name)
-    return [header] if header else []
-
-
 def _get_attributes_from_request(request):
     attrs = {
         "component": "tornado",
@@ -218,9 +214,7 @@ def _get_operation_name(handler, request):
 
 def _start_span(tracer, handler, start_time) -> _TraceContext:
     token = context.attach(
-        propagators.extract(
-            _get_header_from_request_headers, handler.request.headers,
-        )
+        propagators.extract(carrier_getter, handler.request.headers,)
     )
 
     span = tracer.start_span(
@@ -269,7 +263,7 @@ def _finish_span(tracer, handler, error=None):
         ctx.span.set_attribute("http.status_code", status_code)
         ctx.span.set_status(
             Status(
-                canonical_code=http_status_to_canonical_code(status_code),
+                status_code=http_status_to_status_code(status_code),
                 description=reason,
             )
         )
