@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## Version 0.15b0
+
+Released 2020-11-02
+
+- Rewrite gRPC server interceptor
+  ([#1171](https://github.com/open-telemetry/opentelemetry-python/pull/1171))
+
 ## Version 0.13b0
 
 Released 2020-09-17
