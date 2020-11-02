@@ -31,7 +31,7 @@ from opentelemetry.instrumentation.aiohttp_client import (
     AioHttpClientInstrumentor,
 )
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 
 
 def run_with_test_server(
@@ -61,7 +61,7 @@ class TestAioHttpIntegration(TestBase):
             [
                 (
                     span.name,
-                    (span.status.canonical_code, span.status.description),
+                    (span.status.status_code, span.status.description),
                     dict(span.attributes),
                 )
                 for span in self.memory_exporter.get_finished_spans()
@@ -111,13 +111,10 @@ class TestAioHttpIntegration(TestBase):
 
     def test_status_codes(self):
         for status_code, span_status in (
-            (HTTPStatus.OK, StatusCanonicalCode.OK),
-            (HTTPStatus.TEMPORARY_REDIRECT, StatusCanonicalCode.OK),
-            (HTTPStatus.SERVICE_UNAVAILABLE, StatusCanonicalCode.UNAVAILABLE),
-            (
-                HTTPStatus.GATEWAY_TIMEOUT,
-                StatusCanonicalCode.DEADLINE_EXCEEDED,
-            ),
+            (HTTPStatus.OK, StatusCode.UNSET),
+            (HTTPStatus.TEMPORARY_REDIRECT, StatusCode.UNSET),
+            (HTTPStatus.SERVICE_UNAVAILABLE, StatusCode.ERROR),
+            (HTTPStatus.GATEWAY_TIMEOUT, StatusCode.ERROR,),
         ):
             with self.subTest(status_code=status_code):
                 host, port = self._http_request(
@@ -188,7 +185,7 @@ class TestAioHttpIntegration(TestBase):
                     [
                         (
                             expected,
-                            (StatusCanonicalCode.OK, None),
+                            (StatusCode.UNSET, None),
                             {
                                 "component": "http",
                                 "http.method": method,
@@ -220,7 +217,7 @@ class TestAioHttpIntegration(TestBase):
             [
                 (
                     "HTTP GET",
-                    (StatusCanonicalCode.OK, None),
+                    (StatusCode.UNSET, None),
                     {
                         "component": "http",
                         "http.method": "GET",
@@ -238,8 +235,8 @@ class TestAioHttpIntegration(TestBase):
         trace_configs = [aiohttp_client.create_trace_config()]
 
         for url, expected_status in (
-            ("http://this-is-unknown.local/", StatusCanonicalCode.UNKNOWN),
-            ("http://127.0.0.1:1/", StatusCanonicalCode.UNAVAILABLE),
+            ("http://this-is-unknown.local/", StatusCode.ERROR),
+            ("http://127.0.0.1:1/", StatusCode.ERROR),
         ):
             with self.subTest(expected_status=expected_status):
 
@@ -286,7 +283,7 @@ class TestAioHttpIntegration(TestBase):
             [
                 (
                     "HTTP GET",
-                    (StatusCanonicalCode.DEADLINE_EXCEEDED, None),
+                    (StatusCode.ERROR, None),
                     {
                         "component": "http",
                         "http.method": "GET",
@@ -316,7 +313,7 @@ class TestAioHttpIntegration(TestBase):
             [
                 (
                     "HTTP GET",
-                    (StatusCanonicalCode.DEADLINE_EXCEEDED, None),
+                    (StatusCode.ERROR, None),
                     {
                         "component": "http",
                         "http.method": "GET",
