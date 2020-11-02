@@ -1,5 +1,7 @@
 # StatsD Receiver
 
+Test for this issue: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1426
+
 StatsD receiver for ingesting StatsD messages into the OpenTelemetry Collector.
 
 Supported pipeline types: metrics
