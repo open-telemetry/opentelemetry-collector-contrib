@@ -23,12 +23,12 @@ Implementation of the service-side open-telemetry interceptor.
 
 import logging
 from contextlib import contextmanager
-from typing import List
 
 import grpc
 
 from opentelemetry import propagators, trace
 from opentelemetry.context import attach, detach
+from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
 logger = logging.getLogger(__name__)
@@ -163,18 +163,14 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
 
     def __init__(self, tracer):
         self._tracer = tracer
+        self._carrier_getter = DictGetter()
 
     @contextmanager
     def _set_remote_context(self, servicer_context):
         metadata = servicer_context.invocation_metadata()
         if metadata:
             md_dict = {md.key: md.value for md in metadata}
-
-            def get_from_grpc_metadata(metadata, key) -> List[str]:
-                return [md_dict[key]] if key in md_dict else []
-
-            # Update the context with the traceparent from the RPC metadata.
-            ctx = propagators.extract(get_from_grpc_metadata, metadata)
+            ctx = propagators.extract(self._carrier_getter, md_dict)
             token = attach(ctx)
             try:
                 yield
