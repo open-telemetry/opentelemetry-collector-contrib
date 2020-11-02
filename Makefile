@@ -30,6 +30,7 @@ all: common otelcontribcol otelcontribcol-unstable
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
+	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
 .PHONY: test-with-cover
 unit-tests-with-cover:
@@ -140,10 +141,6 @@ endif
 .PHONY: docker-otelcontribcol
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
-
-.PHONY: generate
-generate:
-	$(MAKE) for-all CMD="go generate ./..."
 
 # Build the Collector executable.
 .PHONY: otelcontribcol

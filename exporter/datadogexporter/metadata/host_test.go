@@ -20,9 +20,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
@@ -44,4 +46,35 @@ func TestHost(t *testing.T) {
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Equal(t, *host, osHostname)
+}
+
+func TestHostnameFromAttributes(t *testing.T) {
+	testHostID := "example-host-id"
+	testHostName := "example-host-name"
+
+	// AWS cloud provider means relying on the EC2 function
+	attrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeHostID:        testHostID,
+		conventions.AttributeHostName:      testHostName,
+	})
+	hostname, ok := HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostName)
+
+	// Host Id takes preference
+	attrs = testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeHostID:   testHostID,
+		conventions.AttributeHostName: testHostName,
+	})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testHostID)
+
+	// No labels means no hostname
+	attrs = testutils.NewAttributeMap(map[string]string{})
+	hostname, ok = HostnameFromAttributes(attrs)
+	assert.False(t, ok)
+	assert.Empty(t, hostname)
+
 }
