@@ -27,7 +27,7 @@ from opentelemetry.instrumentation.elasticsearch import (
     ElasticsearchInstrumentor,
 )
 from opentelemetry.test.test_base import TestBase
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 
 major_version = elasticsearch.VERSION[0]
 
@@ -153,14 +153,14 @@ class TestElasticsearchIntegration(TestBase):
     def test_trace_error_unknown(self, request_mock):
         exc = RuntimeError("custom error")
         request_mock.side_effect = exc
-        self._test_trace_error(StatusCanonicalCode.UNKNOWN, exc)
+        self._test_trace_error(StatusCode.ERROR, exc)
 
     def test_trace_error_not_found(self, request_mock):
         msg = "record not found"
         exc = elasticsearch.exceptions.NotFoundError(404, msg)
         request_mock.return_value = (1, {}, {})
         request_mock.side_effect = exc
-        self._test_trace_error(StatusCanonicalCode.NOT_FOUND, exc)
+        self._test_trace_error(StatusCode.ERROR, exc)
 
     def _test_trace_error(self, code, exc):
         es = Elasticsearch()
@@ -173,7 +173,7 @@ class TestElasticsearchIntegration(TestBase):
         self.assertEqual(1, len(spans))
         span = spans[0]
         self.assertFalse(span.status.is_ok)
-        self.assertEqual(span.status.canonical_code, code)
+        self.assertEqual(span.status.status_code, code)
         self.assertEqual(span.status.description, str(exc))
 
     def test_parent(self, request_mock):

@@ -64,7 +64,7 @@ from opentelemetry.instrumentation.elasticsearch.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.trace.status import Status, StatusCanonicalCode
+from opentelemetry.trace.status import Status, StatusCode
 
 logger = getLogger(__name__)
 
@@ -156,11 +156,7 @@ def _wrap_perform_request(tracer, span_name_prefix):
                 return rv
             except Exception as ex:  # pylint: disable=broad-except
                 if span.is_recording():
-                    if isinstance(ex, elasticsearch.exceptions.NotFoundError):
-                        status = StatusCanonicalCode.NOT_FOUND
-                    else:
-                        status = StatusCanonicalCode.UNKNOWN
-                    span.set_status(Status(status, str(ex)))
+                    span.set_status(Status(StatusCode.ERROR, str(ex)))
                 raise ex
 
     return wrapper
