@@ -61,24 +61,35 @@ import wsgiref.util as wsgiref_util
 from opentelemetry import context, propagators, trace
 from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.instrumentation.wsgi.version import __version__
+from opentelemetry.trace.propagation.textmap import DictGetter
 from opentelemetry.trace.status import Status, StatusCode
 
 _HTTP_VERSION_PREFIX = "HTTP/"
 
 
-def get_header_from_environ(
-    environ: dict, header_name: str
-) -> typing.List[str]:
-    """Retrieve a HTTP header value from the PEP3333-conforming WSGI environ.
+class CarrierGetter(DictGetter):
+    def get(self, carrier: dict, key: str) -> typing.List[str]:
+        """Getter implementation to retrieve a HTTP header value from the
+            PEP3333-conforming WSGI environ
 
-    Returns:
-        A list with a single string with the header value if it exists, else an empty list.
-    """
-    environ_key = "HTTP_" + header_name.upper().replace("-", "_")
-    value = environ.get(environ_key)
-    if value is not None:
-        return [value]
-    return []
+        Args:
+            carrier: WSGI environ object
+            key: header name in environ object
+        Returns:
+            A list with a single string with the header value if it exists,
+            else an empty list.
+        """
+        environ_key = "HTTP_" + key.upper().replace("-", "_")
+        value = carrier.get(environ_key)
+        if value is not None:
+            return [value]
+        return []
+
+    def keys(self, carrier):
+        return []
+
+
+carrier_getter = CarrierGetter()
 
 
 def setifnotnone(dic, key, value):
@@ -195,9 +206,7 @@ class OpenTelemetryMiddleware:
             start_response: The WSGI start_response callable.
         """
 
-        token = context.attach(
-            propagators.extract(get_header_from_environ, environ)
-        )
+        token = context.attach(propagators.extract(carrier_getter, environ))
         span_name = self.name_callback(environ)
 
         span = self.tracer.start_span(
