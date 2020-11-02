@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
 go 1.14
 
 require (
-	github.com/go-logr/logr v0.2.1
+	github.com/go-logr/logr v0.3.0
 	github.com/go-logr/zapr v0.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/stretchr/testify v1.6.1
