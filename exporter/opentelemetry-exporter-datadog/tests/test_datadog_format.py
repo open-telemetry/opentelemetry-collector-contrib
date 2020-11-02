@@ -18,13 +18,11 @@ from opentelemetry import trace as trace_api
 from opentelemetry.exporter.datadog import constants, propagator
 from opentelemetry.sdk import trace
 from opentelemetry.trace import get_current_span, set_span_in_context
+from opentelemetry.trace.propagation.textmap import DictGetter
 
 FORMAT = propagator.DatadogFormat()
 
-
-def get_as_list(dict_object, key):
-    value = dict_object.get(key)
-    return [value] if value is not None else []
+carrier_getter = DictGetter()
 
 
 class TestDatadogFormat(unittest.TestCase):
@@ -45,7 +43,7 @@ class TestDatadogFormat(unittest.TestCase):
         malformed_parent_id_key = FORMAT.PARENT_ID_KEY + "-x"
         context = get_current_span(
             FORMAT.extract(
-                get_as_list,
+                carrier_getter,
                 {
                     malformed_trace_id_key: self.serialized_trace_id,
                     malformed_parent_id_key: self.serialized_parent_id,
@@ -63,7 +61,7 @@ class TestDatadogFormat(unittest.TestCase):
             FORMAT.PARENT_ID_KEY: self.serialized_parent_id,
         }
 
-        ctx = FORMAT.extract(get_as_list, carrier)
+        ctx = FORMAT.extract(carrier_getter, carrier)
         span_context = get_current_span(ctx).get_span_context()
         self.assertEqual(span_context.trace_id, trace_api.INVALID_TRACE_ID)
 
@@ -73,7 +71,7 @@ class TestDatadogFormat(unittest.TestCase):
             FORMAT.TRACE_ID_KEY: self.serialized_trace_id,
         }
 
-        ctx = FORMAT.extract(get_as_list, carrier)
+        ctx = FORMAT.extract(carrier_getter, carrier)
         span_context = get_current_span(ctx).get_span_context()
         self.assertEqual(span_context.span_id, trace_api.INVALID_SPAN_ID)
 
@@ -81,7 +79,7 @@ class TestDatadogFormat(unittest.TestCase):
         """Test the propagation of Datadog headers."""
         parent_span_context = get_current_span(
             FORMAT.extract(
-                get_as_list,
+                carrier_getter,
                 {
                     FORMAT.TRACE_ID_KEY: self.serialized_trace_id,
                     FORMAT.PARENT_ID_KEY: self.serialized_parent_id,
@@ -138,7 +136,7 @@ class TestDatadogFormat(unittest.TestCase):
         """Test sampling priority rejected."""
         parent_span_context = get_current_span(
             FORMAT.extract(
-                get_as_list,
+                carrier_getter,
                 {
                     FORMAT.TRACE_ID_KEY: self.serialized_trace_id,
                     FORMAT.PARENT_ID_KEY: self.serialized_parent_id,
