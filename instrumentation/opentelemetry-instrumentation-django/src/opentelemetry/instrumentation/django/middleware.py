@@ -81,7 +81,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             if getattr(request, "resolver_match"):
                 match = request.resolver_match
             else:
-                match = resolve(request.get_full_path())
+                match = resolve(request.path)
 
             if hasattr(match, "route"):
                 return match.route

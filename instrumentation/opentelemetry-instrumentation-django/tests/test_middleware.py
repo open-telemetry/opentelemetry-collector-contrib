@@ -250,7 +250,24 @@ class TestMiddleware(TestBase, WsgiTestBase):
         self.assertEqual(len(span_list), 1)
 
     def test_span_name(self):
+        # test no query_string
         Client().get("/span_name/1234/")
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+
+        span = span_list[0]
+        self.assertEqual(
+            span.name,
+            "^span_name/([0-9]{4})/$"
+            if DJANGO_2_2
+            else "tests.views.route_span_name",
+        )
+
+    def test_span_name_for_query_string(self):
+        """
+        request not have query string
+        """
+        Client().get("/span_name/1234/?query=test")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
