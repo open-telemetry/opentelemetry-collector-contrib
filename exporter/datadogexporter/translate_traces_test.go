@@ -264,7 +264,13 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -286,7 +292,7 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
 
-	// ensure that env gives resource deployment.environment priority
+	// ensure that version gives resource service.version priority
 	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
 
 	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
