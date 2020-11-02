@@ -63,6 +63,6 @@ accomplish this as shown in the example above.
 
 References
 ----------
-* `OpenTelemetry Celery Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/ext/celery/celery.html>`_
+* `OpenTelemetry Celery Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/celery/celery.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 
