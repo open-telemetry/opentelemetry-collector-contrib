@@ -18,9 +18,6 @@ exporters:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
 
-    metrics:
-      namespace: opentelemetry
-
     traces:
       sample_rate: 1
 

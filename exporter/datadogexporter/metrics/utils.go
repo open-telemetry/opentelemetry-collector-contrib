@@ -26,7 +26,8 @@ import (
 
 const (
 	// Gauge is the Datadog Gauge metric type
-	Gauge string = "gauge"
+	Gauge               string = "gauge"
+	otelNamespacePrefix string = "otel"
 )
 
 // NewGauge creates a new Datadog Gauge metric given a name, a Unix nanoseconds timestamp
@@ -45,20 +46,23 @@ func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metr
 	return gauge
 }
 
-// RunningMetric creates a metric to report that an exporter is running
-func RunningMetric(exporterType string, timestamp uint64, logger *zap.Logger, cfg *config.Config) []datadog.Metric {
-	runningMetric := []datadog.Metric{
-		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, float64(1.0), []string{}),
+// DefaultMetrics creates built-in metrics to report that an exporter is running
+func DefaultMetrics(exporterType string, timestamp uint64) []datadog.Metric {
+	return []datadog.Metric{
+		NewGauge(fmt.Sprintf("datadog_exporter.%s.running", exporterType), timestamp, float64(1.0), []string{}),
 	}
-
-	AddHostname(runningMetric, logger, cfg)
-
-	return runningMetric
 }
 
-// AddHostname adds an hostname to metrics, either using the hostname given
+// ProcessMetrics adds the hostname to the metric and prefixes it with the "otel"
+// namespace as the Datadog backend expects
+func ProcessMetrics(ms []datadog.Metric, logger *zap.Logger, cfg *config.Config) {
+	addNamespace(ms, otelNamespacePrefix)
+	addHostname(ms, logger, cfg)
+}
+
+// addHostname adds an hostname to metrics, either using the hostname given
 // in the config, or retrieved from the host metadata
-func AddHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Config) {
+func addHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Config) {
 	overrideHostname := cfg.Hostname != ""
 
 	for i := range metrics {
@@ -68,10 +72,10 @@ func AddHostname(metrics []datadog.Metric, logger *zap.Logger, cfg *config.Confi
 	}
 }
 
-// AddNamespace prepends all metric names with a given namespace
-func AddNamespace(metrics []datadog.Metric, namespace string) {
+// addNamespace prepends all metric names with a given namespace
+func addNamespace(metrics []datadog.Metric, namespace string) {
 	for i := range metrics {
-		newName := namespace + *metrics[i].Metric
+		newName := namespace + "." + *metrics[i].Metric
 		metrics[i].Metric = &newName
 	}
 }

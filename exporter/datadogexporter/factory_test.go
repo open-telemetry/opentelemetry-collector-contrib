@@ -90,7 +90,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 
 		Metrics: config.MetricsConfig{
-			Namespace: "opentelemetry.",
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://api.datadoghq.eu",
 			},
