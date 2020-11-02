@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.15b0
+
+Released 2020-11-02
+
 - Add support for tracking http metrics
   ([#1230](https://github.com/open-telemetry/opentelemetry-python/pull/1230))
 
