@@ -37,6 +37,245 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
+func readFromFile(filename string) string {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		panic(err)
+	}
+	str := string(data)
+	return str
+}
+
+func createMetricTestData() consumerdata.MetricsData {
+	return consumerdata.MetricsData{
+		Node: &commonpb.Node{
+			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
+		},
+		Resource: &resourcepb.Resource{
+			Labels: map[string]string{
+				conventions.AttributeServiceName:      "myServiceName",
+				conventions.AttributeServiceNamespace: "myServiceNS",
+			},
+		},
+		Metrics: []*metricspb.Metric{
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_Int64Value{
+									Int64Value: 1,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.1,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanGaugeDoubleCounter",
+					Description: "Counting all the spans",
+					Unit:        "Count",
+					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+						{Key: "isItAnError"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+							{Value: "false", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DoubleValue{
+									DoubleValue: 0.1,
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanTimer",
+					Description: "How long the spans take",
+					Unit:        "Seconds",
+					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_DistributionValue{
+									DistributionValue: &metricspb.DistributionValue{
+										Sum:   15.0,
+										Count: 5,
+										BucketOptions: &metricspb.DistributionValue_BucketOptions{
+											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
+												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
+													Bounds: []float64{0, 10},
+												},
+											},
+										},
+										Buckets: []*metricspb.DistributionValue_Bucket{
+											{
+												Count: 0,
+											},
+											{
+												Count: 4,
+											},
+											{
+												Count: 1,
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name:        "spanTimer",
+					Description: "How long the spans take",
+					Unit:        "Seconds",
+					Type:        metricspb.MetricDescriptor_SUMMARY,
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "spanName"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "testSpan"},
+						},
+						Points: []*metricspb.Point{
+							{
+								Timestamp: &timestamp.Timestamp{
+									Seconds: 100,
+								},
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 5,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{{
+												Percentile: 0,
+												Value:      1,
+											},
+												{
+													Percentile: 100,
+													Value:      5,
+												}},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 // Asserts whether dimension sets are equal (i.e. has same sets of dimensions)
 func assertDimsEqual(t *testing.T, expected, actual [][]string) {
 	// Convert to string for easier sorting
@@ -1750,245 +1989,6 @@ func TestDimensionRollup(t *testing.T) {
 			rolledUp := dimensionRollup(tc.dimensionRollupOption, tc.dims, tc.instrumentationLibName)
 			assert.Equal(t, tc.expected, rolledUp)
 		})
-	}
-}
-
-func readFromFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	str := string(data)
-	return str
-}
-
-func createMetricTestData() consumerdata.MetricsData {
-	return consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				conventions.AttributeServiceName:      "myServiceName",
-				conventions.AttributeServiceNamespace: "myServiceNS",
-			},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DoubleValue{
-									DoubleValue: 0.1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DoubleValue{
-									DoubleValue: 0.1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanTimer",
-					Description: "How long the spans take",
-					Unit:        "Seconds",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DistributionValue{
-									DistributionValue: &metricspb.DistributionValue{
-										Sum:   15.0,
-										Count: 5,
-										BucketOptions: &metricspb.DistributionValue_BucketOptions{
-											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-													Bounds: []float64{0, 10},
-												},
-											},
-										},
-										Buckets: []*metricspb.DistributionValue_Bucket{
-											{
-												Count: 0,
-											},
-											{
-												Count: 4,
-											},
-											{
-												Count: 1,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanTimer",
-					Description: "How long the spans take",
-					Unit:        "Seconds",
-					Type:        metricspb.MetricDescriptor_SUMMARY,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan"},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_SummaryValue{
-									SummaryValue: &metricspb.SummaryValue{
-										Sum: &wrappers.DoubleValue{
-											Value: 15.0,
-										},
-										Count: &wrappers.Int64Value{
-											Value: 5,
-										},
-										Snapshot: &metricspb.SummaryValue_Snapshot{
-											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{{
-												Percentile: 0,
-												Value:      1,
-											},
-												{
-													Percentile: 100,
-													Value:      5,
-												}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 }
 
