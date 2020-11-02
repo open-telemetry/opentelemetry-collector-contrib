@@ -65,8 +65,7 @@ class TestDBApiIntegration(TestBase):
         self.assertEqual(span.attributes["net.peer.name"], "testhost")
         self.assertEqual(span.attributes["net.peer.port"], 123)
         self.assertIs(
-            span.status.canonical_code,
-            trace_api.status.StatusCanonicalCode.OK,
+            span.status.status_code, trace_api.status.StatusCode.UNSET,
         )
 
     def test_span_not_recording(self):
@@ -117,8 +116,7 @@ class TestDBApiIntegration(TestBase):
         span = spans_list[0]
         self.assertEqual(span.attributes["db.statement"], "Test query")
         self.assertIs(
-            span.status.canonical_code,
-            trace_api.status.StatusCanonicalCode.UNKNOWN,
+            span.status.status_code, trace_api.status.StatusCode.ERROR,
         )
         self.assertEqual(span.status.description, "Test Exception")
 
