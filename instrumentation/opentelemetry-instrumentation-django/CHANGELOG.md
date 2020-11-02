@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Version 0.15b0
+
+Released 2020-11-02
+
 - Django instrumentation is now enabled by default but can be disabled by setting `OTEL_PYTHON_DJANGO_INSTRUMENT` to `False`
   ([#1239](https://github.com/open-telemetry/opentelemetry-python/pull/1239))
 - Bugfix use request.path replace request.get_full_path(). It will get correct span name
