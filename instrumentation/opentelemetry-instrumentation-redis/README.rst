@@ -19,5 +19,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry Redis Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/ext/opentelemetry-instrumentation-redis/opentelemetry-instrumentation-redis.html>`_
+* `OpenTelemetry Redis Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/opentelemetry-instrumentation-redis/opentelemetry-instrumentation-redis.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
