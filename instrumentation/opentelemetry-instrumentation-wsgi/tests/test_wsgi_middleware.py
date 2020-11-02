@@ -21,7 +21,7 @@ from urllib.parse import urlsplit
 import opentelemetry.instrumentation.wsgi as otel_wsgi
 from opentelemetry import trace as trace_api
 from opentelemetry.test.wsgitestutil import WsgiTestBase
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 
 
 class Response:
@@ -177,7 +177,7 @@ class TestWsgiApplication(WsgiTestBase):
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
         self.assertEqual(
-            span_list[0].status.canonical_code, StatusCanonicalCode.INTERNAL,
+            span_list[0].status.status_code, StatusCode.ERROR,
         )
 
     def test_override_span_name(self):
