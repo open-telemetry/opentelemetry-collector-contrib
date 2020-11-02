@@ -40,7 +40,7 @@ class MockDatadogSpanExporter(datadog.DatadogSpanExporter):
 
 def get_spans(tracer, exporter, shutdown=True):
     if shutdown:
-        tracer.source.shutdown()
+        tracer.span_processor.shutdown()
 
     spans = [
         call_args[-1]["spans"]
