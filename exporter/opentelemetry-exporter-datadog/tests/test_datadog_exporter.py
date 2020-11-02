@@ -40,7 +40,7 @@ class MockDatadogSpanExporter(datadog.DatadogSpanExporter):
 
 def get_spans(tracer, exporter, shutdown=True):
     if shutdown:
-        tracer.source.shutdown()
+        tracer.span_processor.shutdown()
 
     spans = [
         call_args[-1]["spans"]
@@ -482,6 +482,42 @@ class TestDatadogSpanExporter(unittest.TestCase):
         self.assertEqual(len(datadog_spans), 1)
 
         tracer_provider.shutdown()
+
+    def test_batch_span_processor_reset_timeout(self):
+        """Test that the scheduled timeout is reset on cycles without spans"""
+        delay = 50
+        # pylint: disable=protected-access
+        exporter = MockDatadogSpanExporter()
+        exporter._agent_writer.write.side_effect = lambda spans: time.sleep(
+            0.05
+        )
+        span_processor = datadog.DatadogExportSpanProcessor(
+            exporter, schedule_delay_millis=delay
+        )
+        tracer_provider = trace.TracerProvider()
+        tracer_provider.add_span_processor(span_processor)
+        tracer = tracer_provider.get_tracer(__name__)
+        with mock.patch.object(span_processor.condition, "wait") as mock_wait:
+            with tracer.start_span("foo"):
+                pass
+
+            # give some time for exporter to loop
+            # since wait is mocked it should return immediately
+            time.sleep(0.1)
+            mock_wait_calls = list(mock_wait.mock_calls)
+
+            # find the index of the call that processed the singular span
+            for idx, wait_call in enumerate(mock_wait_calls):
+                _, args, __ = wait_call
+                if args[0] <= 0:
+                    after_calls = mock_wait_calls[idx + 1 :]
+                    break
+
+            self.assertTrue(
+                all(args[0] >= 0.05 for _, args, __ in after_calls)
+            )
+
+        span_processor.shutdown()
 
     def test_span_processor_accepts_parent_context(self):
         span_processor = mock.Mock(

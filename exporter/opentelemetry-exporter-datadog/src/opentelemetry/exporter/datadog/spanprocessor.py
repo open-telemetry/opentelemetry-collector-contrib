@@ -119,7 +119,8 @@ class DatadogExportSpanProcessor(SpanProcessor):
                 with self.condition:
                     self.condition.wait(timeout)
                     if not self.check_traces_queue:
-                        # spurious notification, let's wait again
+                        # spurious notification, let's wait again, reset timeout
+                        timeout = self.schedule_delay_millis / 1e3
                         continue
                     if self.done:
                         # missing spans will be sent when calling flush
