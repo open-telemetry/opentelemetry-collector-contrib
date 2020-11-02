@@ -1935,14 +1935,14 @@ func TestDimensionRollup(t *testing.T) {
 			SingleDimensionRollupOnly,
 			[]string{"a"},
 			noInstrumentationLibraryName,
-			nil,
+			[][]string{{"a"}},
 		},
 		{
 			"single dim w/ instrumentation library name and only one label",
 			SingleDimensionRollupOnly,
 			[]string{"a"},
 			"cloudwatch-otel",
-			nil,
+			[][]string{{OTellibDimensionKey, "a"}},
 		},
 		{
 			"zero + single dim w/o instrumentation library name",
