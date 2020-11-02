@@ -43,19 +43,9 @@ from opentelemetry.instrumentation.asyncpg.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.trace import SpanKind
-from opentelemetry.trace.status import Status, StatusCanonicalCode
+from opentelemetry.trace.status import Status, StatusCode
 
 _APPLIED = "_opentelemetry_tracer"
-
-
-def _exception_to_canonical_code(exc: Exception) -> StatusCanonicalCode:
-    if isinstance(
-        exc, (exceptions.InterfaceError, exceptions.SyntaxOrAccessError),
-    ):
-        return StatusCanonicalCode.INVALID_ARGUMENT
-    if isinstance(exc, exceptions.IdleInTransactionSessionTimeoutError):
-        return StatusCanonicalCode.DEADLINE_EXCEEDED
-    return StatusCanonicalCode.UNKNOWN
 
 
 def _hydrate_span_from_args(connection, query, parameters) -> dict:
@@ -134,12 +124,7 @@ class AsyncPGInstrumentor(BaseInstrumentor):
                 exception = exc
                 raise
             finally:
-                if span.is_recording():
-                    if exception is not None:
-                        span.set_status(
-                            Status(_exception_to_canonical_code(exception))
-                        )
-                    else:
-                        span.set_status(Status(StatusCanonicalCode.OK))
+                if span.is_recording() and exception is not None:
+                    span.set_status(Status(StatusCode.ERROR))
 
         return result
