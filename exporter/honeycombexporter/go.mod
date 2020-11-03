@@ -8,7 +8,7 @@ require (
 	github.com/honeycombio/libhoney-go v1.14.1
 	github.com/klauspost/compress v1.11.2
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.13.1-0.20201103180041-ab843b20c2fb
+	go.opentelemetry.io/collector v0.13.1-0.20201103222843-de104da4f136
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc v1.33.1
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
