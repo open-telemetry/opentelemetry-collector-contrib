@@ -22,10 +22,15 @@ import (
 )
 
 type zookeeperMetricsScraper struct {
+	cfg *Config
 }
 
-func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
-	return &zookeeperMetricsScraper{}, nil
+func newZookeeperMetricsScraper(_ *zap.Logger, cfg *Config) (*zookeeperMetricsScraper, error) {
+	return &zookeeperMetricsScraper{cfg: cfg}, nil
+}
+
+func (z *zookeeperMetricsScraper) Name() string {
+	return z.cfg.Name()
 }
 
 func (z *zookeeperMetricsScraper) Initialize(_ context.Context) error {
@@ -36,6 +41,6 @@ func (z *zookeeperMetricsScraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) Scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) Scrape(_ context.Context, _ string) (pdata.ResourceMetricsSlice, error) {
 	return pdata.ResourceMetricsSlice{}, nil
 }

@@ -47,7 +47,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exporter, err := factory.CreateTraceExporter(context.Background(), params, cfg.Exporters["logzio/2"])
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg.Exporters["logzio/2"])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }

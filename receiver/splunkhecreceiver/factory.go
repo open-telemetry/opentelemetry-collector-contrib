@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // This file implements factory for Splunk HEC receiver.
@@ -87,13 +87,13 @@ func (rCfg *Config) validate() error {
 	return err
 }
 
-// CreateTraceReceiver creates a trace receiver based on provided config.
+// CreateTracesReceiver creates a trace receiver based on provided config.
 func createTraceReceiver(
 	ctx context.Context,
 	params component.ReceiverCreateParams,
 	cfg configmodels.Receiver,
 	consumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 
 	return nil, configerror.ErrDataTypeIsNotSupported
 }

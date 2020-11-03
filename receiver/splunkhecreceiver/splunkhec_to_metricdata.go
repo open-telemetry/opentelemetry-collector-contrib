@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // SplunkHecToMetricsData converts Splunk HEC metric points to
@@ -138,11 +138,12 @@ func addDoubleGauge(ts pdata.TimestampUnixNano, value float64, metric pdata.Metr
 	metric.DoubleGauge().DataPoints().Append(doublePt)
 }
 
-func convertTimestamp(sec float64) pdata.TimestampUnixNano {
-	if sec == 0 {
+func convertTimestamp(sec *float64) pdata.TimestampUnixNano {
+	if sec == nil {
 		return 0
 	}
-	return pdata.TimestampUnixNano(sec * 1e9)
+
+	return pdata.TimestampUnixNano(*sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point labels.

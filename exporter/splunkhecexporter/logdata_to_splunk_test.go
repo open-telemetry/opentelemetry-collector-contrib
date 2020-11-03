@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_logDataToSplunk(t *testing.T) {
@@ -344,7 +344,9 @@ func Test_nilInstrumentationLogs(t *testing.T) {
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, splunkTs)
+	assert.Equal(t, 1.001, *splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, splunkTs)
+	assert.Equal(t, 1.002, *splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(0)
+	assert.True(t, nil == splunkTs)
 }

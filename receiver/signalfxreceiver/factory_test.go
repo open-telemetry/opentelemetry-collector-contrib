@@ -43,7 +43,7 @@ func TestCreateReceiverMetricsFirst(t *testing.T) {
 	assert.Nil(t, err, "receiver creation failed")
 	assert.NotNil(t, mReceiver, "receiver creation failed")
 
-	_, err = factory.CreateTraceReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
+	_, err = factory.CreateTracesReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, nil)
 	assert.Equal(t, err, configerror.ErrDataTypeIsNotSupported)
 
 	lReceiver, err := factory.CreateLogsReceiver(context.Background(), component.ReceiverCreateParams{Logger: zap.NewNop()}, cfg, consumertest.NewLogsNop())

@@ -8,13 +8,11 @@ exporters:
   stackdriver:
   stackdriver/customname:
     project: my-project
-    metric_prefix: prefix
-    user_agent: opentelemetry-collector-contrib {{version}}
     endpoint: test-endpoint
-    number_of_workers: 3
-    skip_create_metric_descriptor: true
+    user_agent: opentelemetry-collector-contrib {{version}}
     use_insecure: true
     timeout: 20s
+    number_of_workers: 3
     resource_mappings:
       - source_type: source.resource1
         target_type: target-resource1
@@ -26,6 +24,15 @@ exporters:
             target_key: target_label_1
       - source_type: source.resource2
         target_type: target-resource2
+    trace:
+      bundle_delay_threshold: 2s
+      bundle_count_threshold: 50
+      bundle_byte_threshold: 15e3
+      bundle_byte_limit: 0
+      buffer_max_bytes: 8e6
+    metric:
+      prefix: prefix
+      skip_create_descriptor: true
 
 service:
   pipelines:

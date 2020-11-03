@@ -48,7 +48,7 @@ func newCorrExporter(cfg *Config, params component.ExporterCreateParams) (corrEx
 	}, err
 }
 
-func newTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TraceExporter, error) {
+func newTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	se, err := newCorrExporter(cfg, params)
 	if err != nil {
 		return nil, err
@@ -56,6 +56,7 @@ func newTraceExporter(cfg *Config, params component.ExporterCreateParams) (compo
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown))
 }

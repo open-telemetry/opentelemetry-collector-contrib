@@ -44,7 +44,7 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
@@ -211,7 +211,7 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	return resp, nil
 }
 
-func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TraceReceiver {
+func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TracesReceiver {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	sr, err := New(context.Background(), params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")

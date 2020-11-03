@@ -62,7 +62,7 @@ func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
 	c := f.CreateDefaultConfig().(*Config)
 	c.APIKey, c.SpansURLOverride = "1", srv.URL
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := f.CreateTraceExporter(context.Background(), params, c)
+	exp, err := f.CreateTracesExporter(context.Background(), params, c)
 	require.NoError(t, err)
 	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
 	require.NoError(t, exp.Shutdown(ctx))

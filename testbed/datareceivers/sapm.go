@@ -24,14 +24,14 @@ import (
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 )
 
 // SapmDataReceiver implements Sapm format receiver.
 type SapmDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver component.TraceReceiver
+	receiver component.TracesReceiver
 }
 
 // NewSapmDataReceiver creates a new SapmDataReceiver.

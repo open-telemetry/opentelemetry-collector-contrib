@@ -64,7 +64,7 @@ func TestCreateTraceExporter(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTraceExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
+	exporter, err := factory.CreateTracesExporter(ctx, component.ExporterCreateParams{Logger: logger}, cfg.Exporters["awsxray/customname"])
 	assert.Nil(t, err)
 	assert.NotNil(t, exporter)
 }

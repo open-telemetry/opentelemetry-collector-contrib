@@ -292,8 +292,8 @@ func createDimensions(dp DataPoint, instrumentationLibName string, dimensionRoll
 
 	dimensionSlice := make([]string, dimensionKV.Len(), dimensionKV.Len()+1)
 	idx := 0
-	dimensionKV.ForEach(func(k string, v pdata.StringValue) {
-		fields[k] = v.Value()
+	dimensionKV.ForEach(func(k string, v string) {
+		fields[k] = v
 		dimensionSlice[idx] = k
 		idx++
 	})

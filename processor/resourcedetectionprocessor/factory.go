@@ -95,7 +95,7 @@ func (f *factory) createTraceProcessor(
 	params component.ProcessorCreateParams,
 	cfg configmodels.Processor,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceProcessor, error) {
+) (component.TracesProcessor, error) {
 	rdp, err := f.getResourceDetectionProcessor(params.Logger, cfg)
 	if err != nil {
 		return nil, err

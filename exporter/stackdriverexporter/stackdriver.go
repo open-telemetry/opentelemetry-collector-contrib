@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	cloudtrace "github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
@@ -92,12 +93,13 @@ func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, 
 	return copts, nil
 }
 
-func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceExporter, error) {
+func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 		cloudtrace.WithTimeout(cfg.Timeout),
 	}
-	copts, err := generateClientOptions(cfg, version)
+
+	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -105,14 +107,22 @@ func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceEx
 	if cfg.NumOfWorkers > 0 {
 		topts = append(topts, cloudtrace.WithMaxNumberOfWorkers(cfg.NumOfWorkers))
 	}
+
+	topts, err = appendBundleOptions(topts, cfg.TraceConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	exp, err := cloudtrace.NewExporter(topts...)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Stackdriver Trace exporter: %w", err)
 	}
+
 	tExp := &traceExporter{texporter: exp}
 
 	return exporterhelper.NewTraceExporter(
 		cfg,
+		params.Logger,
 		tExp.pushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -120,7 +130,60 @@ func newStackdriverTraceExporter(cfg *Config, version string) (component.TraceEx
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}))
 }
 
-func newStackdriverMetricsExporter(cfg *Config, version string) (component.MetricsExporter, error) {
+func appendBundleOptions(topts []cloudtrace.Option, cfg TraceConfig) ([]cloudtrace.Option, error) {
+	topts, err := validateAndAppendDurationOption(topts, "BundleDelayThreshold", cfg.BundleDelayThreshold, cloudtrace.WithBundleDelayThreshold(cfg.BundleDelayThreshold))
+	if err != nil {
+		return nil, err
+	}
+
+	topts, err = validateAndAppendIntOption(topts, "BundleCountThreshold", cfg.BundleCountThreshold, cloudtrace.WithBundleCountThreshold(cfg.BundleCountThreshold))
+	if err != nil {
+		return nil, err
+	}
+
+	topts, err = validateAndAppendIntOption(topts, "BundleByteThreshold", cfg.BundleByteThreshold, cloudtrace.WithBundleByteThreshold(cfg.BundleByteThreshold))
+	if err != nil {
+		return nil, err
+	}
+
+	topts, err = validateAndAppendIntOption(topts, "BundleByteLimit", cfg.BundleByteLimit, cloudtrace.WithBundleByteLimit(cfg.BundleByteLimit))
+	if err != nil {
+		return nil, err
+	}
+
+	topts, err = validateAndAppendIntOption(topts, "BufferMaxBytes", cfg.BufferMaxBytes, cloudtrace.WithBufferMaxBytes(cfg.BufferMaxBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return topts, nil
+}
+
+func validateAndAppendIntOption(topts []cloudtrace.Option, name string, val int, opt cloudtrace.Option) ([]cloudtrace.Option, error) {
+	if val < 0 {
+		return nil, fmt.Errorf("invalid value for: %s", name)
+	}
+
+	if val > 0 {
+		topts = append(topts, opt)
+	}
+
+	return topts, nil
+}
+
+func validateAndAppendDurationOption(topts []cloudtrace.Option, name string, val time.Duration, opt cloudtrace.Option) ([]cloudtrace.Option, error) {
+	if val < 0 {
+		return nil, fmt.Errorf("invalid value for: %s", name)
+	}
+
+	if val > 0 {
+		topts = append(topts, opt)
+	}
+
+	return topts, nil
+}
+
+func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -128,7 +191,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 		// the project this is running on in GCP.
 		ProjectID: cfg.ProjectID,
 
-		MetricPrefix: cfg.Prefix,
+		MetricPrefix: cfg.MetricConfig.Prefix,
 
 		// Set DefaultMonitoringLabels to an empty map to avoid getting the "opencensus_task" label
 		DefaultMonitoringLabels: &stackdriver.Labels{},
@@ -136,7 +199,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 		Timeout: cfg.Timeout,
 	}
 
-	copts, err := generateClientOptions(cfg, version)
+	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +209,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 	if cfg.NumOfWorkers > 0 {
 		options.NumberOfWorkers = cfg.NumOfWorkers
 	}
-	if cfg.SkipCreateMetricDescriptor {
+	if cfg.MetricConfig.SkipCreateMetricDescriptor {
 		options.SkipCMD = true
 	}
 	if len(cfg.ResourceMappings) > 0 {
@@ -164,6 +227,7 @@ func newStackdriverMetricsExporter(cfg *Config, version string) (component.Metri
 
 	return exporterhelper.NewMetricsExporter(
 		cfg,
+		params.Logger,
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

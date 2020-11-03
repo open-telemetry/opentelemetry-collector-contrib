@@ -57,7 +57,7 @@ type groupByTraceProcessor struct {
 	st storage
 }
 
-var _ component.TraceProcessor = (*groupByTraceProcessor)(nil)
+var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 
 // newGroupByTraceProcessor returns a new processor.
 func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) (*groupByTraceProcessor, error) {
