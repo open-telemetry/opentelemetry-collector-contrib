@@ -32,7 +32,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
 	tsUnix := time.Unix(unixSecs, unixNSecs)
-	tsMSecs := timestampToEpochMilliseconds(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+	tsMSecs := timestampToSecondsWithMillisecondPrecision(pdata.TimestampUnixNano(tsUnix.UnixNano()))
 
 	doubleVal := 1234.5678
 	int64Val := int64(123)
@@ -232,16 +232,21 @@ func commonSplunkMetric(
 
 func TestTimestampFormat(t *testing.T) {
 	ts := pdata.TimestampUnixNano(32001000345)
-	assert.Equal(t, 32.001, *timestampToEpochMilliseconds(ts))
+	assert.Equal(t, 32.001, *timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestTimestampFormatRounding(t *testing.T) {
 	ts := pdata.TimestampUnixNano(32001999345)
-	assert.Equal(t, 32.002, *timestampToEpochMilliseconds(ts))
+	assert.Equal(t, 32.002, *timestampToSecondsWithMillisecondPrecision(ts))
+}
+
+func TestTimestampFormatRoundingWithNanos(t *testing.T) {
+	ts := pdata.TimestampUnixNano(9999999999991500001)
+	assert.Equal(t, 9999999999.992, *timestampToSecondsWithMillisecondPrecision(ts))
 }
 
 func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 	ts := pdata.TimestampUnixNano(0)
-	assert.True(t, nil == timestampToEpochMilliseconds(ts))
+	assert.Nil(t, timestampToSecondsWithMillisecondPrecision(ts))
 
 }

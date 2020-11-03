@@ -82,7 +82,7 @@ func commonSplunkEvent(
 	ts pdata.TimestampUnixNano,
 ) *splunk.Event {
 	return &splunk.Event{
-		Time: timestampToEpochMilliseconds(ts),
+		Time: timestampToSecondsWithMillisecondPrecision(ts),
 		Host: "unknown",
 		Event: HecSpan{Name: name, StartTime: ts,
 			TraceID:    "",

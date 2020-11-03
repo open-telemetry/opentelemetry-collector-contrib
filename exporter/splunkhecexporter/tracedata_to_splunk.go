@@ -86,7 +86,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 				}
 
 				se := &splunk.Event{
-					Time:       timestampToEpochMilliseconds(span.StartTime()),
+					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTime()),
 					Host:       host,
 					Source:     source,
 					SourceType: sourceType,

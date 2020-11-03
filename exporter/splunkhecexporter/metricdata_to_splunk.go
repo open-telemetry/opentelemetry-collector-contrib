@@ -90,7 +90,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
 
@@ -107,7 +107,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -123,7 +123,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
 						fields[metricFieldName] = dataPt.Sum()
@@ -145,7 +145,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
 						fields[metricFieldName] = dataPt.Sum()
@@ -164,7 +164,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
 
@@ -181,7 +181,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						if dataPt.IsNil() {
 							continue
 						}
-						fields := copyMap(commonFields)
+						fields := cloneMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[metricFieldName] = dataPt.Value()
 
@@ -205,7 +205,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 
 func createEvent(timestamp pdata.TimestampUnixNano, host string, source string, sourceType string, index string, fields map[string]interface{}) *splunk.Event {
 	return &splunk.Event{
-		Time:       timestampToEpochMilliseconds(timestamp),
+		Time:       timestampToSecondsWithMillisecondPrecision(timestamp),
 		Host:       host,
 		Source:     source,
 		SourceType: sourceType,
@@ -222,7 +222,7 @@ func populateLabels(fields map[string]interface{}, labelsMap pdata.StringMap) {
 	})
 }
 
-func copyMap(fields map[string]interface{}) map[string]interface{} {
+func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	newFields := make(map[string]interface{}, len(fields))
 	for k, v := range fields {
 		newFields[k] = v
@@ -230,7 +230,7 @@ func copyMap(fields map[string]interface{}) map[string]interface{} {
 	return newFields
 }
 
-func timestampToEpochMilliseconds(ts pdata.TimestampUnixNano) *float64 {
+func timestampToSecondsWithMillisecondPrecision(ts pdata.TimestampUnixNano) *float64 {
 	if ts == 0 {
 		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
 		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
