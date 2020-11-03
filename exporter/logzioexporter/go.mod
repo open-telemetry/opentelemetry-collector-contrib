@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/hashicorp/go-hclog v0.14.0
+	github.com/hashicorp/go-hclog v0.14.1
 	github.com/jaegertracing/jaeger v1.20.0
 	github.com/logzio/jaeger-logzio v0.0.0-20201026090333-8336e3e13ec6
 	github.com/stretchr/testify v1.6.1
