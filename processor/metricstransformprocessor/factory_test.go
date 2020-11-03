@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcheck"
@@ -89,6 +88,11 @@ func TestCreateProcessors(t *testing.T) {
 			configName:   "config_invalid_label.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("missing required field %q while %q is %v in the %vth operation", LabelFieldName, ActionFieldName, UpdateLabel, 0),
+		},
+		{
+			configName:   "config_invalid_regexp.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q, error parsing regexp: missing closing ]: `[\\da`", IncludeFieldName),
 		},
 	}
 
@@ -263,8 +267,7 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 		},
 	}
 
-	internalTransforms, err := buildHelperConfig(oCfg, "v0.0.1")
-	require.NoError(t, err)
+	internalTransforms := buildHelperConfig(oCfg, "v0.0.1")
 
 	for i, expTr := range expData {
 		mtpT := internalTransforms[i]

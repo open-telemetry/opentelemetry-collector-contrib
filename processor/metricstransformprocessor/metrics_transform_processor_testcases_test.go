@@ -80,14 +80,14 @@ var (
 			name: "metric_names_update_chained",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^metric[12]$")},
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^(metric)(?P<namedsubmatch>[12])$")},
 					Action:              Update,
-					NewName:             "new/metric1",
+					NewName:             "new/$1/$namedsubmatch",
 				},
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "new/metric1"},
+					MetricIncludeFilter: internalFilterStrict{include: "new/metric/1"},
 					Action:              Update,
-					NewName:             "new/metric2",
+					NewName:             "new/new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -99,9 +99,9 @@ var (
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 			},
 			out: []*metricspb.Metric{
-				metricBuilder().setName("new/metric2").
+				metricBuilder().setName("new/new/metric1").
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
-				metricBuilder().setName("new/metric2").
+				metricBuilder().setName("new/metric/2").
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
 				metricBuilder().setName("metric3").
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),

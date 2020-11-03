@@ -69,7 +69,7 @@ type Transform struct {
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
 
 	// MetricName is used to select the metric to operate on.
-	// DEPRECATED
+	// DEPRECATED. Use MetricIncludeFilter instead.
 	MetricName string `mapstructure:"metric_name"`
 
 	// Action specifies the action performed on the matched metric.

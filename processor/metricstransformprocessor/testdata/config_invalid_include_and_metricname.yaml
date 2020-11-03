@@ -4,8 +4,8 @@ receivers:
 processors:
     metricstransform:
         transforms:
-            - metric_name: name1
-              include: name2
+            - include: name1
+              metric_name: name2
               action: update
 
 exporters:

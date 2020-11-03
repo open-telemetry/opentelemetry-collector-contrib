@@ -59,10 +59,12 @@ var (
 	}
 
 	tests = []struct {
+		configFile string
 		filterName string
 		expCfg     *Config
 	}{
 		{
+			configFile: "config_full.yaml",
 			filterName: "metricstransform",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
@@ -82,6 +84,7 @@ var (
 			},
 		},
 		{
+			configFile: "config_full.yaml",
 			filterName: "metricstransform/addlabel",
 			expCfg: &Config{
 				ProcessorSettings: configmodels.ProcessorSettings{
@@ -106,23 +109,40 @@ var (
 				},
 			},
 		},
+		{
+			configFile: "config_deprecated.yaml",
+			filterName: "metricstransform",
+			expCfg: &Config{
+				ProcessorSettings: configmodels.ProcessorSettings{
+					NameVal: "metricstransform",
+					TypeVal: typeStr,
+				},
+				Transforms: []Transform{
+					{
+						MetricName: "old_name",
+						Action:     Update,
+						NewName:    "new_name",
+					},
+				},
+			},
+		},
 	}
 )
 
 // TestLoadingFullConfig tests loading testdata/config_full.yaml.
 func TestLoadingFullConfig(t *testing.T) {
-	factories, err := componenttest.ExampleComponents()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Processors[configmodels.Type(typeStr)] = factory
-	config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", "config_full.yaml"), factories)
-
-	assert.NoError(t, err)
-	require.NotNil(t, config)
-
 	for _, test := range tests {
 		t.Run(test.filterName, func(t *testing.T) {
+
+			factories, err := componenttest.ExampleComponents()
+			assert.NoError(t, err)
+
+			factory := NewFactory()
+			factories.Processors[configmodels.Type(typeStr)] = factory
+			config, err := configtest.LoadConfigFile(t, path.Join(".", "testdata", test.configFile), factories)
+			assert.NoError(t, err)
+			require.NotNil(t, config)
+
 			cfg := config.Processors[test.filterName]
 			assert.Equal(t, test.expCfg, cfg)
 		})

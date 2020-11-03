@@ -31,7 +31,6 @@ processors:
             - action: add_label
               new_label: mylabel
               new_value: myvalue
-            
 
 exporters:
     exampleexporter:
