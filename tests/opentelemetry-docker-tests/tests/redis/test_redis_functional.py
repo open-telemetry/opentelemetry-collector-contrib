@@ -36,9 +36,7 @@ class TestRedisInstrument(TestBase):
     def _check_span(self, span):
         self.assertEqual(span.attributes["service"], self.test_service)
         self.assertEqual(span.name, "redis.command")
-        self.assertIs(
-            span.status.canonical_code, trace.status.StatusCanonicalCode.OK
-        )
+        self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
         self.assertEqual(span.attributes.get("db.instance"), 0)
         self.assertEqual(
             span.attributes.get("db.url"), "redis://localhost:6379"

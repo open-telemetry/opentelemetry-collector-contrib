@@ -22,7 +22,7 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.sdk import resources
 from opentelemetry.sdk.trace import TracerProvider, export
-from opentelemetry.trace.status import StatusCanonicalCode
+from opentelemetry.trace.status import StatusCode
 
 # set a high timeout for async executions due to issues in CI
 ASYNC_GET_TIMEOUT = 120
@@ -257,7 +257,7 @@ def test_fn_exception(celery_app, memory_exporter):
         span.attributes.get("celery.task_name")
         == "test_celery_functional.fn_exception"
     )
-    assert span.status.canonical_code == StatusCanonicalCode.UNKNOWN
+    assert span.status.status_code == StatusCode.ERROR
     assert span.attributes.get("messaging.message_id") == result.task_id
     assert "Task class is failing" in span.status.description
 
@@ -278,7 +278,7 @@ def test_fn_exception_expected(celery_app, memory_exporter):
     span = spans[0]
 
     assert span.status.is_ok is True
-    assert span.status.canonical_code == StatusCanonicalCode.OK
+    assert span.status.status_code == StatusCode.UNSET
     assert span.name == "run/test_celery_functional.fn_exception"
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "FAILURE"
@@ -305,7 +305,7 @@ def test_fn_retry_exception(celery_app, memory_exporter):
     span = spans[0]
 
     assert span.status.is_ok is True
-    assert span.status.canonical_code == StatusCanonicalCode.OK
+    assert span.status.status_code == StatusCode.UNSET
     assert span.name == "run/test_celery_functional.fn_exception"
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "RETRY"
@@ -377,7 +377,7 @@ def test_class_task_exception(celery_app, memory_exporter):
     )
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "FAILURE"
-    assert span.status.canonical_code == StatusCanonicalCode.UNKNOWN
+    assert span.status.status_code == StatusCode.ERROR
     assert span.attributes.get("messaging.message_id") == result.task_id
     assert "Task class is failing" in span.status.description
 
@@ -406,7 +406,7 @@ def test_class_task_exception_excepted(celery_app, memory_exporter):
     span = spans[0]
 
     assert span.status.is_ok is True
-    assert span.status.canonical_code == StatusCanonicalCode.OK
+    assert span.status.status_code == StatusCode.UNSET
     assert span.name == "run/test_celery_functional.BaseTask"
     assert span.attributes.get("celery.action") == "run"
     assert span.attributes.get("celery.state") == "FAILURE"
