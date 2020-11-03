@@ -119,8 +119,10 @@ func (exp *traceExporter) pushTraceData(
 		})
 	}
 
-	ms := metrics.RunningMetric("traces", uint64(pushTime), exp.logger, exp.cfg)
-	exp.client.PostMetrics(ms)
+	ms := metrics.DefaultMetrics("traces", uint64(pushTime))
+
+	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
+	_ = exp.client.PostMetrics(ms)
 
 	return len(aggregatedTraces), nil
 }

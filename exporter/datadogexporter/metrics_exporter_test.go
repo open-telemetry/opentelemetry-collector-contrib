@@ -68,7 +68,6 @@ func TestProcessMetrics(t *testing.T) {
 			Tags:     []string{"key:val"},
 		},
 		Metrics: config.MetricsConfig{
-			Namespace: "test.",
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
@@ -90,10 +89,10 @@ func TestProcessMetrics(t *testing.T) {
 		),
 	}
 
-	exp.processMetrics(ms)
+	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 
 	assert.Equal(t, "test-host", *ms[0].Host)
-	assert.Equal(t, "test.metric_name", *ms[0].Metric)
+	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
 	assert.ElementsMatch(t,
 		[]string{"key2:val2"},
 		ms[0].Tags,

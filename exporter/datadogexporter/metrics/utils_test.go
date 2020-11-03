@@ -42,31 +42,13 @@ func TestNewGauge(t *testing.T) {
 	assert.Equal(t, []string{"tag:value"}, metric.Tags)
 }
 
-func TestRunningMetric(t *testing.T) {
+func TestDefaultMetrics(t *testing.T) {
 	logger := zap.NewNop()
 	cfg := &config.Config{}
 
-	ms := RunningMetric("metrics", uint64(2e9), logger, cfg)
+	ms := DefaultMetrics("metrics", uint64(2e9))
+	ProcessMetrics(ms, logger, cfg)
 
-	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
-	// Assert metrics list length (should be 1)
-	assert.Equal(t, 1, len(ms))
-	// Assert timestamp
-	assert.Equal(t, 2.0, *ms[0].Points[0][0])
-	// Assert value (should always be 1.0)
-	assert.Equal(t, 1.0, *ms[0].Points[0][1])
-
-	// Test that the namespace set in config does not get used: the running
-	// metric needs to follow a specific format
-	cfg = &config.Config{
-		Metrics: config.MetricsConfig{
-			Namespace: "test.",
-		},
-	}
-
-	ms = RunningMetric("metrics", uint64(2e9), logger, cfg)
-
-	// Check that the namespace isn't used
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", *ms[0].Metric)
 	// Assert metrics list length (should be 1)
 	assert.Equal(t, 1, len(ms))
@@ -98,7 +80,7 @@ func TestAddHostname(t *testing.T) {
 
 	ms[0].Host = &hostname
 
-	AddHostname(ms, logger, cfg)
+	addHostname(ms, logger, cfg)
 
 	// Check that all hostnames are set to the config's hostname
 	assert.Equal(t, "thishost", *ms[0].Host)
@@ -116,7 +98,7 @@ func TestAddHostname(t *testing.T) {
 
 	ms[0].Host = &hostname
 
-	AddHostname(ms, logger, cfg)
+	addHostname(ms, logger, cfg)
 
 	// Check that the already set host remains set
 	assert.Equal(t, "thathost", *ms[0].Host)
@@ -128,7 +110,7 @@ func TestAddNamespace(t *testing.T) {
 		NewGauge("test.metric2", 0, 2.0, []string{}),
 	}
 
-	AddNamespace(ms, "namespace.")
+	addNamespace(ms, "namespace")
 
 	assert.Equal(t, "namespace.test.metric", *ms[0].Metric)
 	assert.Equal(t, "namespace.test.metric2", *ms[1].Metric)

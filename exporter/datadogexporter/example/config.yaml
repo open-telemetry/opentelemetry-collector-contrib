@@ -52,12 +52,6 @@ exporters:
     ## Metric exporter specific configuration.
     #
     # metrics:
-      ## @param namespace - string - optional
-      ## The namespace with which to prefix all metrics.
-      ## By default metrics are not namespaced.
-      #
-      # namespace: ""
-
       ## @param report_buckets - boolean - optional - default: false
       ## Whether to report bucket counts for distribution metric types.
       ## Enabling this will increase the number of custom metrics.
