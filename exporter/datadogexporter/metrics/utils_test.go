@@ -18,10 +18,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
@@ -56,6 +58,50 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, 2.0, *ms[0].Points[0][0])
 	// Assert value (should always be 1.0)
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
+}
+
+func TestProcessMetrics(t *testing.T) {
+	logger := zap.NewNop()
+
+	server := testutils.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &config.Config{
+		API: config.APIConfig{
+			Key: "ddog_32_characters_long_api_key1",
+		},
+		// Global tags should be ignored and sent as metadata
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+			Env:      "test_env",
+			Tags:     []string{"key:val"},
+		},
+		Metrics: config.MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: server.URL,
+			},
+		},
+	}
+	cfg.Sanitize()
+
+	ms := []datadog.Metric{
+		NewGauge(
+			"metric_name",
+			0,
+			0,
+			[]string{"key2:val2"},
+		),
+	}
+
+	ProcessMetrics(ms, logger, cfg)
+
+	assert.Equal(t, "test-host", *ms[0].Host)
+	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
+	assert.ElementsMatch(t,
+		[]string{"key2:val2"},
+		ms[0].Tags,
+	)
+
 }
 
 func TestAddHostname(t *testing.T) {
