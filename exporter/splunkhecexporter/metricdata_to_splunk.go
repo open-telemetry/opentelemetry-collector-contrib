@@ -37,7 +37,8 @@ const (
 
 func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) ([]*splunk.Event, int, error) {
 	numDroppedTimeSeries := 0
-	var splunkMetrics []*splunk.Event
+	_, dpCount := data.MetricAndDataPointCount()
+	splunkMetrics := make([]*splunk.Event, 0, dpCount)
 	rms := data.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
