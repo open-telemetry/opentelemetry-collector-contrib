@@ -61,8 +61,12 @@ type HecSpan struct {
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
-	for i := 0; i < data.ResourceSpans().Len(); i++ {
-		rs := data.ResourceSpans().At(i)
+	rss := data.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
+			continue
+		}
 		host := unknownHostName
 		source := config.Source
 		sourceType := config.SourceType
@@ -77,10 +81,15 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 				sourceType = sourcetypeSet.StringVal()
 			}
 		}
-		for sils := 0; sils < rs.InstrumentationLibrarySpans().Len(); sils++ {
-			ils := rs.InstrumentationLibrarySpans().At(sils)
-			for si := 0; si < ils.Spans().Len(); si++ {
-				span := ils.Spans().At(si)
+		ilss := rs.InstrumentationLibrarySpans()
+		for sils := 0; sils < ilss.Len(); sils++ {
+			ils := ilss.At(sils)
+			if ils.IsNil() {
+				continue
+			}
+			spans := ils.Spans()
+			for si := 0; si < spans.Len(); si++ {
+				span := spans.At(si)
 				if span.IsNil() {
 					continue
 				}
