@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -39,6 +40,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 	var splunkMetrics []*splunk.Event
 	for i := 0; i < data.ResourceMetrics().Len(); i++ {
 		rm := data.ResourceMetrics().At(i)
+		if rm.IsNil() {
+			continue
+		}
 
 		host := unknownHostName
 		source := config.Source
@@ -55,44 +59,59 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				sourceType = sourcetypeSet.StringVal()
 			}
 		}
-		rm.InstrumentationLibraryMetrics().Len()
 		commonFields := map[string]interface{}{}
 		if !rm.Resource().IsNil() {
 			rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-				commonFields[k] = v.StringVal()
+				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
 			})
 		}
 		for ilmi := 0; ilmi < rm.InstrumentationLibraryMetrics().Len(); ilmi++ {
 			ilm := rm.InstrumentationLibraryMetrics().At(ilmi)
+			if ilm.IsNil() {
+				continue
+			}
 			for tmi := 0; tmi < ilm.Metrics().Len(); tmi++ {
 				tm := ilm.Metrics().At(tmi)
+				metricFieldName := splunkMetricValue + ":" + tm.Name()
+				if tm.IsNil() {
+					continue
+				}
 				switch tm.DataType() {
 				case pdata.MetricDataTypeIntGauge:
 					for gi := 0; gi < tm.IntGauge().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.IntGauge().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						fields[metricFieldName] = dataPt.Value()
 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleGauge:
 					for gi := 0; gi < tm.DoubleGauge().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.DoubleGauge().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						fields[metricFieldName] = dataPt.Value()
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleHistogram:
 					for gi := 0; gi < tm.DoubleHistogram().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.DoubleHistogram().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Sum()
+						fields[metricFieldName] = dataPt.Sum()
 						for bi := 0; bi < len(dataPt.ExplicitBounds()); bi++ {
 							bound := dataPt.ExplicitBounds()[bi]
 							fields[fmt.Sprintf("%s:%s_%f", splunkMetricValue, tm.Name(), bound)] = dataPt.BucketCounts()[bi]
@@ -103,11 +122,14 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					}
 				case pdata.MetricDataTypeIntHistogram:
 					for gi := 0; gi < tm.IntHistogram().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.IntHistogram().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
 						fields[fmt.Sprintf("%s:%s_%s", splunkMetricValue, tm.Name(), countSuffix)] = dataPt.Count()
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Sum()
+						fields[metricFieldName] = dataPt.Sum()
 						for bi := 0; bi < len(dataPt.ExplicitBounds()); bi++ {
 							bound := dataPt.ExplicitBounds()[bi]
 							fields[fmt.Sprintf("%s:%s_%f", splunkMetricValue, tm.Name(), bound)] = dataPt.BucketCounts()[bi]
@@ -118,20 +140,26 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 					}
 				case pdata.MetricDataTypeDoubleSum:
 					for gi := 0; gi < tm.DoubleSum().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.DoubleSum().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						fields[metricFieldName] = dataPt.Value()
 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntSum:
 					for gi := 0; gi < tm.IntSum().DataPoints().Len(); gi++ {
-						fields := copy(commonFields)
 						dataPt := tm.IntSum().DataPoints().At(gi)
+						if dataPt.IsNil() {
+							continue
+						}
+						fields := copyMap(commonFields)
 						populateLabels(fields, dataPt.LabelsMap())
-						fields[fmt.Sprintf("%s:%s", splunkMetricValue, tm.Name())] = dataPt.Value()
+						fields[metricFieldName] = dataPt.Value()
 
 						sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 						splunkMetrics = append(splunkMetrics, sm)
@@ -170,7 +198,7 @@ func populateLabels(fields map[string]interface{}, labelsMap pdata.StringMap) {
 	})
 }
 
-func copy(fields map[string]interface{}) map[string]interface{} {
+func copyMap(fields map[string]interface{}) map[string]interface{} {
 	newFields := make(map[string]interface{}, len(fields))
 	for k, v := range fields {
 		newFields[k] = v

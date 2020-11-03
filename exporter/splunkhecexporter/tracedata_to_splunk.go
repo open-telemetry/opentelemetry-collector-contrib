@@ -32,8 +32,8 @@ type HecEvent struct {
 // HecLink is a data structure holding a span link to export explicitly to Splunk HEC.
 type HecLink struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	TraceID    []byte                 `json:"trace_id"`
-	SpanID     []byte                 `json:"span_id"`
+	TraceID    string                 `json:"trace_id"`
+	SpanID     string                 `json:"span_id"`
 	TraceState pdata.TraceState       `json:"trace_state"`
 }
 
@@ -45,9 +45,9 @@ type HecSpanStatus struct {
 
 // HecSpan is a data structure used to export explicitly a span to Splunk HEC.
 type HecSpan struct {
-	TraceID    []byte                  `json:"trace_id"`
-	SpanID     []byte                  `json:"span_id"`
-	ParentSpan []byte                  `json:"parent_span_id"`
+	TraceID    string                  `json:"trace_id"`
+	SpanID     string                  `json:"span_id"`
+	ParentSpan string                  `json:"parent_span_id"`
 	Name       string                  `json:"name"`
 	Attributes map[string]interface{}  `json:"attributes,omitempty"`
 	EndTime    pdata.TimestampUnixNano `json:"end_time"`
@@ -116,8 +116,8 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 		})
 		links[i] = HecLink{
 			Attributes: linkAttributes,
-			TraceID:    convert16BytesToBytes(link.TraceID().Bytes()),
-			SpanID:     convert8BytesToBytes(link.SpanID().Bytes()),
+			TraceID:    link.TraceID().HexString(),
+			SpanID:     link.SpanID().HexString(),
 			TraceState: link.TraceState(),
 		}
 	}
@@ -142,9 +142,9 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 		}
 	}
 	return HecSpan{
-		TraceID:    convert16BytesToBytes(span.TraceID().Bytes()),
-		SpanID:     convert8BytesToBytes(span.SpanID().Bytes()),
-		ParentSpan: convert8BytesToBytes(span.ParentSpanID().Bytes()),
+		TraceID:    span.TraceID().HexString(),
+		SpanID:     span.SpanID().HexString(),
+		ParentSpan: span.ParentSpanID().HexString(),
 		Name:       span.Name(),
 		Attributes: attributes,
 		StartTime:  span.StartTime(),
@@ -154,12 +154,4 @@ func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
 		Links:      links,
 		Events:     events,
 	}
-}
-
-func convert16BytesToBytes(bytes [16]byte) []byte {
-	return bytes[:]
-}
-
-func convert8BytesToBytes(bytes [8]byte) []byte {
-	return bytes[:]
 }
