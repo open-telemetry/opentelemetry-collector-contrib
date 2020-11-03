@@ -22,10 +22,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
-	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
@@ -51,51 +49,4 @@ func TestNewExporter(t *testing.T) {
 	exp, err := newMetricsExporter(params, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, exp)
-}
-
-func TestProcessMetrics(t *testing.T) {
-	server := testutils.DatadogServerMock()
-	defer server.Close()
-
-	cfg := &config.Config{
-		API: config.APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
-		},
-		// Global tags should be ignored and sent as metadata
-		TagsConfig: config.TagsConfig{
-			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
-		},
-		Metrics: config.MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: server.URL,
-			},
-		},
-	}
-	cfg.Sanitize()
-
-	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	exp, err := newMetricsExporter(params, cfg)
-
-	require.NoError(t, err)
-
-	ms := []datadog.Metric{
-		metrics.NewGauge(
-			"metric_name",
-			0,
-			0,
-			[]string{"key2:val2"},
-		),
-	}
-
-	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
-
-	assert.Equal(t, "test-host", *ms[0].Host)
-	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
-	assert.ElementsMatch(t,
-		[]string{"key2:val2"},
-		ms[0].Tags,
-	)
-
 }

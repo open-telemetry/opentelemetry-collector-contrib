@@ -58,6 +58,42 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, 1.0, *ms[0].Points[0][1])
 }
 
+func TestProcessMetrics(t *testing.T) {
+	logger := zap.NewNop()
+
+	// Reset hostname cache
+	cache.Cache.Flush()
+
+	cfg := &config.Config{
+		// Global tags should be ignored and sent as metadata
+		TagsConfig: config.TagsConfig{
+			Hostname: "test-host",
+			Env:      "test_env",
+			Tags:     []string{"key:val"},
+		},
+	}
+	cfg.Sanitize()
+
+	ms := []datadog.Metric{
+		NewGauge(
+			"metric_name",
+			0,
+			0,
+			[]string{"key2:val2"},
+		),
+	}
+
+	ProcessMetrics(ms, logger, cfg)
+
+	assert.Equal(t, "test-host", *ms[0].Host)
+	assert.Equal(t, "otel.metric_name", *ms[0].Metric)
+	assert.ElementsMatch(t,
+		[]string{"key2:val2"},
+		ms[0].Tags,
+	)
+
+}
+
 func TestAddHostname(t *testing.T) {
 	logger := zap.NewNop()
 
