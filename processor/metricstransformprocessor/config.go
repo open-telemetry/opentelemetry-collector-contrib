@@ -14,9 +14,17 @@
 
 package metricstransformprocessor
 
-import "go.opentelemetry.io/collector/config/configmodels"
+import (
+	"go.opentelemetry.io/collector/config/configmodels"
+)
 
 const (
+	// IncludeFieldName is the mapstructure field name for Include field
+	IncludeFieldName = "include"
+
+	// MatchTypeFieldName is the mapstructure field name for MatchType field
+	MatchTypeFieldName = "match_type"
+
 	// MetricNameFieldName is the mapstructure field name for MetricName field
 	MetricNameFieldName = "metric_name"
 
@@ -36,6 +44,16 @@ const (
 	NewValueFieldName = "new_value"
 )
 
+const (
+	// StrictMatchType is the FilterType for filtering by exact string matches.
+	StrictMatchType = "strict"
+
+	// RegexpMatchType is the FilterType for filtering by regexp string matches.
+	RegexpMatchType = "regexp"
+)
+
+var MatchTypes = []string{StrictMatchType, RegexpMatchType}
+
 // Config defines configuration for Resource processor.
 type Config struct {
 	configmodels.ProcessorSettings `mapstructure:",squash"`
@@ -46,8 +64,12 @@ type Config struct {
 
 // Transform defines the transformation applied to the specific metric
 type Transform struct {
-	// MetricName is used to select the metric to operate on.
+	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
+	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
+
+	// MetricName is used to select the metric to operate on.
+	// DEPRECATED. Use MetricIncludeFilter instead.
 	MetricName string `mapstructure:"metric_name"`
 
 	// Action specifies the action performed on the matched metric.
@@ -60,6 +82,14 @@ type Transform struct {
 
 	// Operations contains a list of operations that will be performed on the selected metric.
 	Operations []Operation `mapstructure:"operations"`
+}
+
+type FilterConfig struct {
+	// Include specifies the metric(s) to operate on.
+	Include string `mapstructure:"include"`
+
+	// MatchType determines how the Include string is matched: <strict|regexp>.
+	MatchType string `mapstructure:"match_type"`
 }
 
 // Operation defines the specific operation performed on the selected metrics.
@@ -127,6 +157,9 @@ const (
 	// UpdateLabel applies name changes to label and/or label values.
 	UpdateLabel OperationAction = "update_label"
 
+	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
+	DeleteLabelValue OperationAction = "delete_label_value"
+
 	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabels OperationAction = "aggregate_labels"
@@ -134,9 +167,6 @@ const (
 	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
 	AggregateLabelValues OperationAction = "aggregate_label_values"
-
-	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
-	DeleteLabelValue OperationAction = "delete_label_value"
 
 	// Mean indicates taking the mean of the aggregated data.
 	Mean AggregationType = "mean"
