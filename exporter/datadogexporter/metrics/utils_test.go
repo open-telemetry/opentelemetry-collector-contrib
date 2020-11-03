@@ -63,6 +63,9 @@ func TestDefaultMetrics(t *testing.T) {
 func TestProcessMetrics(t *testing.T) {
 	logger := zap.NewNop()
 
+	// Reset hostname cache
+	cache.Cache.Flush()
+
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
