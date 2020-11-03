@@ -18,12 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils/cache"
 )
 
@@ -66,23 +64,12 @@ func TestProcessMetrics(t *testing.T) {
 	// Reset hostname cache
 	cache.Cache.Flush()
 
-	server := testutils.DatadogServerMock()
-	defer server.Close()
-
 	cfg := &config.Config{
-		API: config.APIConfig{
-			Key: "ddog_32_characters_long_api_key1",
-		},
 		// Global tags should be ignored and sent as metadata
 		TagsConfig: config.TagsConfig{
 			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
-		},
-		Metrics: config.MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: server.URL,
-			},
 		},
 	}
 	cfg.Sanitize()
