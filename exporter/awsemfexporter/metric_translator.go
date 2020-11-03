@@ -118,9 +118,10 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
 	var cwMetricList []*CWMetrics
 	totalDroppedMetrics := 0
+	namespace := config.Namespace
 	var instrumentationLibName string
 
 	if len(namespace) == 0 && !rm.Resource().IsNil() {
@@ -158,7 +159,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 				totalDroppedMetrics++
 				continue
 			}
-			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, dimensionRollupOption)
+			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
 			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
 	}
@@ -192,7 +193,7 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 }
 
 // Translates OTLP Metric to list of CW Metrics
-func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, dimensionRollupOption string) []*CWMetrics {
+func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) []*CWMetrics {
 	var result []*CWMetrics
 	var dps DataPoints
 
@@ -225,7 +226,7 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		if dp.IsNil() {
 			continue
 		}
-		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
+		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config.DimensionRollupOption)
 		if cwMetric != nil {
 			result = append(result, cwMetric)
 		}
