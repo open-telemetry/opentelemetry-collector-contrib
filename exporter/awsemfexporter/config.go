@@ -15,6 +15,7 @@
 package awsemfexporter
 
 import (
+	"go.uber.org/zap"
 	"go.opentelemetry.io/collector/config/configmodels"
 )
 
@@ -53,4 +54,7 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+
+	// logger is the Logger used for writing error/warning logs
+	logger *zap.Logger
 }

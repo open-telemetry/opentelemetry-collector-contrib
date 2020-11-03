@@ -229,9 +229,11 @@ func TestNewExporterWithoutConfig(t *testing.T) {
 	defer popEnv(env)
 	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 
+	assert.Nil(t, expCfg.logger)
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.NotNil(t, err)
 	assert.Nil(t, exp)
+	assert.NotNil(t, expCfg.logger)
 }
 
 func TestNewExporterWithoutSession(t *testing.T) {

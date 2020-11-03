@@ -53,8 +53,11 @@ func New(
 	}
 
 	logger := params.Logger
+	expConfig := config.(*Config)
+	expConfig.logger = logger
+
 	// create AWS session
-	awsConfig, session, err := GetAWSConfigSession(logger, &Conn{}, config.(*Config))
+	awsConfig, session, err := GetAWSConfigSession(logger, &Conn{}, expConfig)
 	if err != nil {
 		return nil, err
 	}
