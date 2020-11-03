@@ -60,7 +60,7 @@ func dedupDimensionSet(dimensions []string) (deduped []string, hasDuplicate bool
 }
 
 // Init initializes the MetricDeclaration struct. Performs validation and compiles
-// regex strings.
+// regex strings. Dimensions are deduped and sorted.
 func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 	// Return error if no metric name selectors are defined
 	if len(m.MetricNameSelectors) == 0 {
@@ -116,7 +116,7 @@ func (m *MetricDeclaration) Matches(metric *pdata.Metric) bool {
 }
 
 // ExtractDimensions extracts dimensions within the MetricDeclaration that only
-// contains labels found in `labels`.
+// contains labels found in `labels`. Returned order of dimensions are preserved.
 func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensions [][]string) {
 	for _, dimensionSet := range m.Dimensions {
 		if len(dimensionSet) == 0 {
@@ -136,16 +136,36 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 	return
 }
 
-// processMetricDeclarations processes a list of MetricDeclarations and returns a
-// list of dimensions that matches the given `metric`.
-func processMetricDeclarations(metricDeclarations []*MetricDeclaration, metric *pdata.Metric, labels map[string]string) (dimensionsList [][][]string) {
+// processMetricDeclarations processes a list of MetricDeclarations and creates a
+// list of dimension sets that matches the given `metric`. This list is then aggregated
+// together with the rolled-up dimensions. Returned dimension sets
+// are deduped and the dimensions in each dimension set are sorted.
+// Prerequisite:
+//   1. metricDeclarations' dimensions are sorted.
+func processMetricDeclarations(metricDeclarations []*MetricDeclaration, metric *pdata.Metric,
+	labels map[string]string, rolledUpDimensions [][]string) (dimensions [][]string) {
+	seen := make(map[string]bool)
+	addDimSet := func(dimSet []string) {
+		key := strings.Join(dimSet, ",")
+		// Only add dimension set if not a duplicate
+		if _, ok := seen[key]; !ok {
+			dimensions = append(dimensions, dimSet)
+			seen[key] = true
+		}
+	}
+	// Extract and append dimensions from metric declarations
 	for _, m := range metricDeclarations {
 		if m.Matches(metric) {
-			dimensions := m.ExtractDimensions(labels)
-			if len(dimensions) > 0 {
-				dimensionsList = append(dimensionsList, dimensions)
+			extractedDims := m.ExtractDimensions(labels)
+			for _, dimSet := range extractedDims {
+				addDimSet(dimSet)
 			}
 		}
+	}
+	// Add on rolled-up dimensions
+	for _, dimSet := range rolledUpDimensions {
+		sort.Strings(dimSet)
+		addDimSet(dimSet)
 	}
 	return
 }

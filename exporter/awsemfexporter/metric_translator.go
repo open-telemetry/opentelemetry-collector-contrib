@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -274,6 +273,9 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 		idx++
 	})
 
+	// Apply single/zero dimension rollup to labels
+	rollupDimensionArray := dimensionRollup(dimensionRollupOption, labelsSlice, instrumentationLibName)
+
 	// Add OTel instrumentation lib name as an additional dimension if it is defined
 	if instrumentationLibName != noInstrumentationLibraryName {
 		labels[OTellibDimensionKey] = instrumentationLibName
@@ -281,33 +283,42 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 	}
 
 	// Create list of dimension sets
-	var dimensionsArray [][][]string
+	var dimensions [][]string
 	if len(metricDeclarations) > 0 {
-		// Filter metric declarations and map each metric declaration to a list
-		// of dimension sets
-		dimensionsArray = processMetricDeclarations(metricDeclarations, pmd, labels)
-	} else if instrumentationLibName != noInstrumentationLibraryName {
-		// If no metric declarations defined and OTel instrumentation lib name is defined,
-		// create a single dimension set containing the list of labels +
-		// instrumentationLibName dimension key
-		dimensionsArray = [][][]string{{append(labelsSlice, OTellibDimensionKey)}}
+		// If metric declarations are defined, extract dimension sets from them
+		dimensions = processMetricDeclarations(metricDeclarations, pmd, labels, rollupDimensionArray)
 	} else {
-		// If no metric declarations or OTel instrumentation lib name defined,
-		// create a single dimension set containing only label names
-		dimensionsArray = [][][]string{{labelsSlice}}
+		// If no metric declarations defined, create a single dimension set containing
+		// the list of labels
+		dims := labelsSlice
+		if instrumentationLibName != noInstrumentationLibraryName {
+			// If OTel instrumentation lib name is defined, add instrumentation lib
+			// name as a dimension
+			dims = append(dims, OTellibDimensionKey)
+		}
+
+		if len(rollupDimensionArray) > 0 {
+			// Perform de-duplication check for edge case with a single label and single roll-up
+			// is activated
+			if len(labelsSlice) > 1 || (dimensionRollupOption != SingleDimensionRollupOnly &&
+				dimensionRollupOption != ZeroAndSingleDimensionRollup) {
+				dimensions = [][]string{dims}
+			}
+			dimensions = append(dimensions, rollupDimensionArray...)
+		} else {
+			dimensions = [][]string{dims}
+		}
 	}
 
-	// Apply single/zero dimension rollup to labels
-	rollupDimensionArray := dimensionRollup(dimensionRollupOption, labelsSlice, instrumentationLibName)
-
 	// Build list of CW Measurements
-	cwMeasurements := make([]CwMeasurement, len(dimensionsArray))
-	for i, dimensions := range dimensionsArray {
-		dimensions = dedupDimensions(dimensions, rollupDimensionArray)
-		cwMeasurements[i] = CwMeasurement{
-			Namespace:  namespace,
-			Dimensions: dimensions,
-			Metrics:    metricSlice,
+	var cwMeasurements []CwMeasurement
+	if len(dimensions) > 0 {
+		cwMeasurements = []CwMeasurement{
+			{
+				Namespace:  namespace,
+				Dimensions: dimensions,
+				Metrics:    metricSlice,
+			},
 		}
 	}
 
@@ -409,6 +420,7 @@ func calculateRate(fields map[string]interface{}, val interface{}, timestamp int
 	return metricRate
 }
 
+// dimensionRollup creates rolled-up dimensions from the metric's label set.
 func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []string, instrumentationLibName string) [][]string {
 	var rollupDimensionArray [][]string
 	dimensionZero := []string{}
@@ -429,32 +441,6 @@ func dimensionRollup(dimensionRollupOption string, originalDimensionSlice []stri
 	}
 
 	return rollupDimensionArray
-}
-
-// dedupDimensions appends rolled-up dimensions to existing dimensions and removes duplicate dimension sets.
-func dedupDimensions(dimensions, rolledUpDims [][]string) [][]string {
-	deduped := make([][]string, len(dimensions)+len(rolledUpDims))
-	seen := make(map[string]bool, len(deduped))
-	idx := 0
-
-	addDeduped := func(dimSet []string) {
-		sort.Strings(dimSet)
-		key := strings.Join(dimSet, ",")
-		if _, ok := seen[key]; ok {
-			return
-		}
-		seen[key] = true
-		deduped[idx] = dimSet
-		idx++
-	}
-
-	for _, dimSet := range dimensions {
-		addDeduped(dimSet)
-	}
-	for _, dimSet := range rolledUpDims {
-		addDeduped(dimSet)
-	}
-	return deduped[:idx]
 }
 
 func needsCalculateRate(pmd *pdata.Metric) bool {

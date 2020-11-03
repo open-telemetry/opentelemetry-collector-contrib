@@ -229,7 +229,7 @@ func TestExtractDimensions(t *testing.T) {
 			err := m.Init(logger)
 			assert.Nil(t, err)
 			dimensions := m.ExtractDimensions(tc.labels)
-			assertDimsEqual(t, tc.extractedDimensions, dimensions)
+			assert.Equal(t, tc.extractedDimensions, dimensions)
 		})
 	}
 }
@@ -238,14 +238,14 @@ func TestProcessMetricDeclarations(t *testing.T) {
 	metricDeclarations := []*MetricDeclaration{
 		{
 			Dimensions:          [][]string{{"dim1", "dim2"}},
-			MetricNameSelectors: []string{"a", "b"},
+			MetricNameSelectors: []string{"a", "b", "c"},
 		},
 		{
 			Dimensions:          [][]string{{"dim1"}},
 			MetricNameSelectors: []string{"aa", "b"},
 		},
 		{
-			Dimensions:          [][]string{{"dim1", "dim2"}, {"dim1"}},
+			Dimensions:          [][]string{{"dim2", "dim1"}, {"dim1"}},
 			MetricNameSelectors: []string{"a"},
 		},
 	}
@@ -255,33 +255,22 @@ func TestProcessMetricDeclarations(t *testing.T) {
 		assert.Nil(t, err)
 	}
 	testCases := []struct {
-		testName       string
-		metricName     string
-		labels         map[string]string
-		dimensionsList [][][]string
+		testName     string
+		metricName   string
+		labels       map[string]string
+		rollUpDims   [][]string
+		expectedDims [][]string
 	}{
 		{
-			"Matching multiple dimensions 1",
-			"a",
+			"Matching single declaration",
+			"c",
 			map[string]string{
 				"dim1": "foo",
 				"dim2": "bar",
 			},
-			[][][]string{
-				{{"dim1", "dim2"}},
-				{{"dim1", "dim2"}, {"dim1"}},
-			},
-		},
-		{
-			"Matching multiple dimensions 2",
-			"b",
-			map[string]string{
-				"dim1": "foo",
-				"dim2": "bar",
-			},
-			[][][]string{
-				{{"dim1", "dim2"}},
-				{{"dim1"}},
+			nil,
+			[][]string{
+				{"dim1", "dim2"},
 			},
 		},
 		{
@@ -290,8 +279,63 @@ func TestProcessMetricDeclarations(t *testing.T) {
 			map[string]string{
 				"dim1": "foo",
 			},
-			[][][]string{
-				{{"dim1"}},
+			nil,
+			[][]string{
+				{"dim1"},
+			},
+		},
+		{
+			"Match single dimension set w/ rolled-up dims",
+			"a",
+			map[string]string{
+				"dim1": "foo",
+				"dim3": "car",
+			},
+			[][]string{{"dim1"}, {"dim3"}},
+			[][]string{
+				{"dim1"},
+				{"dim3"},
+			},
+		},
+		{
+			"Matching multiple declarations",
+			"b",
+			map[string]string{
+				"dim1": "foo",
+				"dim2": "bar",
+			},
+			nil,
+			[][]string{
+				{"dim1", "dim2"},
+				{"dim1"},
+			},
+		},
+		{
+			"Matching multiple declarations w/ duplicate",
+			"a",
+			map[string]string{
+				"dim1": "foo",
+				"dim2": "bar",
+			},
+			nil,
+			[][]string{
+				{"dim1", "dim2"},
+				{"dim1"},
+			},
+		},
+		{
+			"Matching multiple declarations w/ duplicate + rolled-up dims",
+			"a",
+			map[string]string{
+				"dim1": "foo",
+				"dim2": "bar",
+				"dim3": "car",
+			},
+			[][]string{{"dim2", "dim1"}, {"dim3"}},
+			[][]string{
+				{"dim1", "dim2"},
+				{"dim1"},
+				{"dim3"},
 			},
 		},
 		{
@@ -301,6 +345,16 @@ func TestProcessMetricDeclarations(t *testing.T) {
 				"dim2": "bar",
 			},
 			nil,
+			nil,
+		},
+		{
+			"No matching dimension set w/ rolled-up dims",
+			"a",
+			map[string]string{
+				"dim2": "bar",
+			},
+			[][]string{{"dim2"}},
+			[][]string{{"dim2"}},
 		},
 		{
 			"No matching metric name",
@@ -309,6 +363,16 @@ func TestProcessMetricDeclarations(t *testing.T) {
 				"dim1": "foo",
 			},
 			nil,
+			nil,
+		},
+		{
+			"No matching metric name w/ rolled-up dims",
+			"c",
+			map[string]string{
+				"dim1": "foo",
+			},
+			[][]string{{"dim1"}},
+			[][]string{{"dim1"}},
 		},
 	}
 
@@ -317,11 +381,8 @@ func TestProcessMetricDeclarations(t *testing.T) {
 		metric.InitEmpty()
 		metric.SetName(tc.metricName)
 		t.Run(tc.testName, func(t *testing.T) {
-			dimensionsList := processMetricDeclarations(metricDeclarations, &metric, tc.labels)
-			assert.Equal(t, len(tc.dimensionsList), len(dimensionsList))
-			for i, dimensions := range dimensionsList {
-				assertDimsEqual(t, tc.dimensionsList[i], dimensions)
-			}
+			dimensions := processMetricDeclarations(metricDeclarations, &metric, tc.labels, tc.rollUpDims)
+			assert.Equal(t, tc.expectedDims, dimensions)
 		})
 	}
 }
