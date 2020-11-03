@@ -5,11 +5,11 @@
 # run arbitrary code.
 extension-pkg-whitelist=
 
-# Add files or directories to the denylist. They should be base names, not
+# Add list of files or directories to be excluded. They should be base names, not
 # paths.
 ignore=CVS,gen
 
-# Add files or directories matching the regex patterns to the denylist. The
+# Add files or directories matching the regex patterns to be excluded. The
 # regex matches against base names, not paths.
 ignore-patterns=
 
@@ -65,6 +65,7 @@ disable=missing-docstring,
       too-few-public-methods, # Might be good to re-enable this later.
       too-many-instance-attributes,
       too-many-arguments,
+      duplicate-code,
       ungrouped-imports, # Leave this up to isort
       wrong-import-order, # Leave this up to isort
       bad-continuation, # Leave this up to black
@@ -226,7 +227,7 @@ dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
 
 # Argument names that match this expression will be ignored. Default to name
 # with leading underscore.
-ignored-argument-names=_.*|^ignored_|^unused_
+ignored-argument-names=_.*|^ignored_|^unused_|^kwargs|^args
 
 # Tells whether we should check for unused import in __init__ files.
 init-import=no
@@ -440,7 +441,8 @@ exclude-protected=_asdict,
                   _fields,
                   _replace,
                   _source,
-                  _make
+                  _make,
+                  _Span
 
 # List of valid names for the first argument in a class method.
 valid-classmethod-first-arg=cls

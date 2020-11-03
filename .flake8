@@ -2,8 +2,9 @@
 ignore =
   E501  # line too long, defer to black
   F401  # unused import, defer to pylint
-  W503  # allow line breaks after binary ops, not after
-  E203  # allow whitespace before ':' (https://github.com/psf/black#slices)
+  W503  # allow line breaks before binary ops
+  W504  # allow line breaks after binary ops
+  E203  # allow whitespace before ':' (https://github.com/psf/black#slices) 
 exclude =
   .bzr
   .git
@@ -16,3 +17,9 @@ exclude =
   target
   reference/
   __pycache__
+  exporter/opentelemetry-exporter-jaeger/src/opentelemetry/exporter/jaeger/gen/
+  exporter/opentelemetry-exporter-jaeger/build/*
+  docs/examples/opentelemetry-example-app/src/opentelemetry_example_app/grpc/gen/
+  docs/examples/opentelemetry-example-app/build/*
+  opentelemetry-proto/build/*
+  opentelemetry-proto/src/opentelemetry/proto/
