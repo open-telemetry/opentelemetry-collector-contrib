@@ -44,24 +44,14 @@ func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Confi
 	return &metricsExporter{params.Logger, cfg, client}, nil
 }
 
-func (exp *metricsExporter) processMetrics(ms []datadog.Metric) {
-	addNamespace := exp.cfg.Metrics.Namespace != ""
-
-	if addNamespace {
-		metrics.AddNamespace(ms, exp.cfg.Metrics.Namespace)
-	}
-
-	metrics.AddHostname(ms, exp.logger, exp.cfg)
-}
-
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
-	exp.processMetrics(ms)
 
-	// The running metric is added after metrics are processed, as the running metric is already
-	// processed in a special way in RunningMetric (eg. no namespace is added)
+	// Append the default 'running' metric
 	pushTime := uint64(time.Now().UTC().UnixNano())
-	ms = append(ms, metrics.RunningMetric("metrics", pushTime, exp.logger, exp.cfg)...)
+	ms = append(ms, metrics.DefaultMetrics("metrics", pushTime)...)
+
+	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
 	return droppedTimeSeries, err
