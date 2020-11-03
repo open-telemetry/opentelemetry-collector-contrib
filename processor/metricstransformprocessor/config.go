@@ -80,6 +80,10 @@ type Transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
+	// AggregationType specifies how to aggregate.
+	// REQUIRED only if Action is COMBINE.
+	AggregationType AggregationType `mapstructure:"aggregation_type"`
+
 	// Operations contains a list of operations that will be performed on the selected metric.
 	Operations []Operation `mapstructure:"operations"`
 }
@@ -148,6 +152,9 @@ const (
 	// Update updates an existing metric.
 	Update ConfigAction = "update"
 
+	// Combine combines multiple metrics into a single metric.
+	Combine ConfigAction = "combine"
+
 	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
 	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
 
@@ -180,3 +187,5 @@ const (
 	// Min indicates taking the minimum of the aggregated data.
 	Min AggregationType = "min"
 )
+
+var Actions = []ConfigAction{Insert, Update, Combine}

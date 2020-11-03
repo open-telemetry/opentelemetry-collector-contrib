@@ -67,7 +67,7 @@ func TestCreateProcessors(t *testing.T) {
 		{
 			configName:   "config_invalid_action.yaml",
 			succeed:      false,
-			errorMessage: fmt.Sprintf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, "invalid", Insert, Update),
+			errorMessage: fmt.Sprintf("%q must be in %q", ActionFieldName, Actions),
 		},
 		{
 			configName:   "config_invalid_include.yaml",

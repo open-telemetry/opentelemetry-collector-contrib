@@ -103,8 +103,16 @@ func validateConfiguration(config *Config) error {
 			}
 		}
 
-		if transform.Action != Update && transform.Action != Insert {
-			return fmt.Errorf("unsupported %q: %v, the supported actions are %q and %q", ActionFieldName, transform.Action, Insert, Update)
+		var validAction bool
+		for _, action := range Actions {
+			if transform.Action == action {
+				validAction = true
+				break
+			}
+		}
+
+		if !validAction {
+			return fmt.Errorf("%q must be in %q", ActionFieldName, Actions)
 		}
 
 		if transform.Action == Insert && transform.NewName == "" {
@@ -144,6 +152,7 @@ func buildHelperConfig(config *Config, version string) []internalTransform {
 			MetricIncludeFilter: createFilter(t.MetricIncludeFilter),
 			Action:              t.Action,
 			NewName:             t.NewName,
+			AggregationType:     t.AggregationType,
 			Operations:          make([]internalOperation, len(t.Operations)),
 		}
 
