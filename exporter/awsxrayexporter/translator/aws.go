@@ -25,6 +25,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
+const (
+	attributeInfrastructureService = "cloud.infrastructure_service"
+	awsEcsClusterArn               = "aws.ecs.cluster.arn"
+	awsEcsContainerArn             = "aws.ecs.container.arn"
+	awsEcsTaskArn                  = "aws.ecs.task.arn"
+	awsEcsTaskFamily               = "aws.ecs.task.family"
+	awsEcsLaunchType               = "aws.ecs.launchtype"
+	awsLogGroupNames               = "aws.log.group.names"
+	awsLogGroupArns                = "aws.log.group.arns"
+)
+
 func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *awsxray.AWSData) {
 	var (
 		cloud        string
@@ -71,7 +82,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			switch key {
 			case semconventions.AttributeCloudProvider:
 				cloud = value.StringVal()
-			case "cloud.infrastructure_service":
+			case attributeInfrastructureService:
 				service = value.StringVal()
 			case semconventions.AttributeCloudAccount:
 				account = value.StringVal()
@@ -107,19 +118,19 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				containerID = value.StringVal()
 			case semconventions.AttributeK8sCluster:
 				clusterName = value.StringVal()
-			case "aws.ecs.cluster.arn":
+			case awsEcsClusterArn:
 				clusterArn = value.StringVal()
-			case "aws.ecs.container.arn":
+			case awsEcsContainerArn:
 				containerArn = value.StringVal()
-			case "aws.ecs.task.arn":
+			case awsEcsTaskArn:
 				taskArn = value.StringVal()
-			case "aws.ecs.task.family":
+			case awsEcsTaskFamily:
 				taskFamily = value.StringVal()
-			case "aws.ecs.launchtype":
+			case awsEcsLaunchType:
 				launchType = value.StringVal()
-			case "aws.log.group.names":
+			case awsLogGroupNames:
 				logGroups = value.ArrayVal()
-			case "aws.log.group.arns":
+			case awsLogGroupArns:
 				logGroupArns = value.ArrayVal()
 			}
 		})
@@ -151,7 +162,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			filtered[key] = value
 		}
 	}
-	if cloud != "aws" && cloud != "" {
+	if cloud != semconventions.AttributeCloudProviderAWS && cloud != "" {
 		return filtered, nil // not AWS so return nil
 	}
 

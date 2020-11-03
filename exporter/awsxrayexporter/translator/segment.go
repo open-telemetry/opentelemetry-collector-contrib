@@ -240,8 +240,7 @@ func determineAwsOrigin(resource pdata.Resource) string {
 
 	// TODO(willarmiros): Only use infrastructure_service for origin resolution once detectors for all AWS environments are
 	// implemented for robustness
-	is, present := resource.Attributes().Get("cloud.infrastructure_service")
-	if present {
+	if is, present := resource.Attributes().Get("cloud.infrastructure_service"); present {
 		switch is.StringVal() {
 		case "EKS":
 			return OriginEKS

@@ -33,7 +33,7 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.infrastructure_service", "EC2")
+	attrs.InsertString(attributeInfrastructureService, "EC2")
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudZone, "us-east-1c")
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
@@ -74,7 +74,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
-	attrs.InsertString("cloud.infrastructure_service", "ECS")
+	attrs.InsertString(attributeInfrastructureService, "ECS")
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
 	attrs.InsertString(semconventions.AttributeCloudZone, az)
 	attrs.InsertString(semconventions.AttributeContainerImage, "otel/signupaggregator")
@@ -86,11 +86,11 @@ func TestAwsFromEcsResource(t *testing.T) {
 	attrs.InsertString(semconventions.AttributeContainerName, containerName)
 	attrs.InsertString(semconventions.AttributeContainerID, containerID)
 	attrs.InsertString(semconventions.AttributeHostID, instanceID)
-	attrs.InsertString("aws.ecs.cluster.arn", clusterArn)
-	attrs.InsertString("aws.ecs.container.arn", containerArn)
-	attrs.InsertString("aws.ecs.task.arn", taskArn)
-	attrs.InsertString("aws.ecs.task.family", family)
-	attrs.InsertString("aws.ecs.launchtype", launchType)
+	attrs.InsertString(awsEcsClusterArn, clusterArn)
+	attrs.InsertString(awsEcsContainerArn, containerArn)
+	attrs.InsertString(awsEcsTaskArn, taskArn)
+	attrs.InsertString(awsEcsTaskFamily, family)
+	attrs.InsertString(awsEcsLaunchType, launchType)
 	attrs.InsertString(semconventions.AttributeHostType, "m5.xlarge")
 
 	attrs.CopyTo(resource.Attributes())
@@ -362,4 +362,64 @@ func TestCustomSDK(t *testing.T) {
 	assert.NotNil(t, awsData)
 	assert.Equal(t, "opentracing for java", *awsData.XRay.SDK)
 	assert.Equal(t, "2.0.3", *awsData.XRay.SDKVersion)
+}
+
+func TestLogGroups(t *testing.T) {
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+	}
+	cwl2 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group2"),
+	}
+
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	ava := pdata.NewAnyValueArray()
+	ava.Append(pdata.NewAttributeValueString("group1"))
+	ava.Append(pdata.NewAttributeValueString("group2"))
+	lg := pdata.NewAttributeValueArray()
+	lg.SetArrayVal(ava)
+
+	resource.Attributes().Insert(awsLogGroupNames, lg)
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
+}
+
+func TestLogGroupsFromArns(t *testing.T) {
+	group1 := "arn:aws:logs:us-east-1:123456789123:log-group:group1"
+	cwl1 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group1"),
+		Arn:      awsxray.String(group1),
+	}
+	group2 := "arn:aws:logs:us-east-1:123456789123:log-group:group2"
+	cwl2 := awsxray.LogGroupMetadata{
+		LogGroup: awsxray.String("group2"),
+		Arn:      awsxray.String(group2),
+	}
+
+	attributes := make(map[string]string)
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	ava := pdata.NewAnyValueArray()
+	ava.Append(pdata.NewAttributeValueString(group1))
+	ava.Append(pdata.NewAttributeValueString(group2))
+	lga := pdata.NewAttributeValueArray()
+	lga.SetArrayVal(ava)
+
+	resource.Attributes().Insert(awsLogGroupArns, lga)
+
+	filtered, awsData := makeAws(attributes, resource)
+
+	assert.NotNil(t, filtered)
+	assert.NotNil(t, awsData)
+	assert.Equal(t, 2, len(awsData.CWLogs))
+	assert.Contains(t, awsData.CWLogs, cwl1)
+	assert.Contains(t, awsData.CWLogs, cwl2)
 }
