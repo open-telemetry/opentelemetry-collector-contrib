@@ -198,7 +198,7 @@ func (lm *LabelMatcher) Matches(labels map[string]string) bool {
 	return lm.compiledRegex.MatchString(concatenatedLabels)
 }
 
-// Concatenate matched labels using separator defined by the LabelMatcher's rules.
+// Concatenate label values of matched labels using separator defined by the LabelMatcher's rules.
 func (lm *LabelMatcher) getConcatenatedLabels(labels map[string]string) string {
 	buf := new(bytes.Buffer)
 	isFirstLabel := true
