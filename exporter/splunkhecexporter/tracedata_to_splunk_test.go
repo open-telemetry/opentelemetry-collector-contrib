@@ -15,6 +15,7 @@
 package splunkhecexporter
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,6 +75,37 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	if ts != nil {
 		span.SetStartTime(*ts)
 	}
+	spanLink := pdata.NewSpanLink()
+	spanLink.InitEmpty()
+	spanLink.SetTraceState(pdata.TraceState("OK"))
+	bytes, _ := hex.DecodeString("12345678")
+	var traceID [16]byte
+	copy(traceID[:], bytes)
+	spanLink.SetTraceID(pdata.NewTraceID(traceID))
+	bytes, _ = hex.DecodeString("1234")
+	var spanID [8]byte
+	copy(spanID[:], bytes)
+	spanLink.SetSpanID(pdata.NewSpanID(spanID))
+	spanLink.Attributes().InsertInt("foo", 1)
+	spanLink.Attributes().InsertBool("bar", false)
+	foobarContents := pdata.NewAttributeValueArray()
+	foobarContents.InitEmpty()
+	arrContents := pdata.NewAnyValueArray()
+	arrContents.Append(pdata.NewAttributeValueString("a"))
+	arrContents.Append(pdata.NewAttributeValueString("b"))
+	foobarContents.SetArrayVal(arrContents)
+	spanLink.Attributes().Insert("foobar", foobarContents)
+
+	span.Links().Append(spanLink)
+
+	spanEvent := pdata.NewSpanEvent()
+	spanEvent.InitEmpty()
+	spanEvent.Attributes().InsertString("foo", "bar")
+	spanEvent.SetName("myEvent")
+	if ts != nil {
+		spanEvent.SetTimestamp(*ts + 3)
+	}
+	span.Events().Append(spanEvent)
 	return span
 }
 
@@ -92,7 +124,21 @@ func commonSplunkEvent(
 			EndTime:    0x0,
 			Kind:       "SPAN_KIND_UNSPECIFIED",
 			Status:     HecSpanStatus{Message: "", Code: ""},
-			Events:     []HecEvent{},
-			Links:      []HecLink{}},
+			Events: []HecEvent{
+				{
+					Attributes: map[string]interface{}{"foo": "bar"},
+					Name:       "myEvent",
+					Timestamp:  ts + 3,
+				},
+			},
+			Links: []HecLink{
+				{
+					Attributes: map[string]interface{}{"foo": int64(1), "bar": false, "foobar": []interface{}{"a", "b"}},
+					TraceID:    "12345678000000000000000000000000",
+					SpanID:     "1234000000000000",
+					TraceState: "OK",
+				},
+			},
+		},
 	}
 }
