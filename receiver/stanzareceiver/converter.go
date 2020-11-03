@@ -101,16 +101,17 @@ func insertToAttributeVal(value interface{}, dest pdata.AttributeValue) {
 	case float32:
 		dest.SetDoubleVal(float64(t))
 	case map[string]interface{}:
-		dest.SetMapVal(toAttributeMap(t))
+		toAttributeMap(t).CopyTo(dest)
 	case []interface{}:
-		dest.SetArrayVal(toAttributeArray(t))
+		toAttributeArray(t).CopyTo(dest)
 	default:
 		dest.SetStringVal(fmt.Sprintf("%v", t))
 	}
 }
 
-func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeMap {
-	attMap := pdata.NewAttributeMap()
+func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeValue {
+	attVal := pdata.NewAttributeValueMap()
+	attMap := attVal.MapVal()
 	attMap.InitEmptyWithCapacity(len(obsMap))
 	for k, v := range obsMap {
 		switch t := v.(type) {
@@ -146,29 +147,26 @@ func toAttributeMap(obsMap map[string]interface{}) pdata.AttributeMap {
 			attMap.InsertDouble(k, float64(t))
 		case map[string]interface{}:
 			subMap := toAttributeMap(t)
-			subMapVal := pdata.NewAttributeValueMap()
-			subMapVal.SetMapVal(subMap)
-			attMap.Insert(k, subMapVal)
+			attMap.Insert(k, subMap)
 		case []interface{}:
 			arr := toAttributeArray(t)
-			arrVal := pdata.NewAttributeValueArray()
-			arrVal.SetArrayVal(arr)
-			attMap.Insert(k, arrVal)
+			attMap.Insert(k, arr)
 		default:
 			attMap.InsertString(k, fmt.Sprintf("%v", t))
 		}
 	}
-	return attMap
+	return attVal
 }
 
-func toAttributeArray(obsArr []interface{}) pdata.AnyValueArray {
-	arr := pdata.NewAnyValueArray()
+func toAttributeArray(obsArr []interface{}) pdata.AttributeValue {
+	arrVal := pdata.NewAttributeValueArray()
+	arr := arrVal.ArrayVal()
 	for _, v := range obsArr {
 		attVal := pdata.NewAttributeValueNull()
 		insertToAttributeVal(v, attVal)
 		arr.Append(attVal)
 	}
-	return arr
+	return arrVal
 }
 
 func convertSeverity(s entry.Severity) (string, pdata.SeverityNumber) {

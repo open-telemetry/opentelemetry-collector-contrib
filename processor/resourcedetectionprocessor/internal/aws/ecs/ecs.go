@@ -107,10 +107,8 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	logAttributes := [4]string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
 
 	for i, attribVal := range getValidLogData(tmdeResp.Containers, selfMetaData, account) {
-		if attribVal.Len() > 0 {
-			ava := pdata.NewAttributeValueArray()
-			ava.SetArrayVal(attribVal)
-			attr.Insert(logAttributes[i], ava)
+		if attribVal.ArrayVal().Len() > 0 {
+			attr.Insert(logAttributes[i], attribVal)
 		}
 	}
 
@@ -150,11 +148,11 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // "init" containers which only run at startup then shutdown (as indicated by the "KnownStatus" attribute),
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
-func getValidLogData(containers []Container, self *Container, account string) [4]pdata.AnyValueArray {
-	logGroupNames := pdata.NewAnyValueArray()
-	logGroupArns := pdata.NewAnyValueArray()
-	logStreamNames := pdata.NewAnyValueArray()
-	logStreamArns := pdata.NewAnyValueArray()
+func getValidLogData(containers []Container, self *Container, account string) [4]pdata.AttributeValue {
+	logGroupNames := pdata.NewAttributeValueArray()
+	logGroupArns := pdata.NewAttributeValueArray()
+	logStreamNames := pdata.NewAttributeValueArray()
+	logStreamArns := pdata.NewAttributeValueArray()
 
 	for _, container := range containers {
 		logData := container.LogOptions
@@ -164,14 +162,14 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			self.DockerID != container.DockerID &&
 			logData != (LogData{}) {
 
-			logGroupNames.Append(pdata.NewAttributeValueString(logData.LogGroup))
-			logGroupArns.Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
-			logStreamNames.Append(pdata.NewAttributeValueString(logData.Stream))
-			logStreamArns.Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
+			logGroupNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.LogGroup))
+			logGroupArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
+			logStreamNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.Stream))
+			logStreamArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
 		}
 	}
 
-	return [4]pdata.AnyValueArray{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
+	return [4]pdata.AttributeValue{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
 }
 
 func constructLogGroupArn(region, account, group string) string {

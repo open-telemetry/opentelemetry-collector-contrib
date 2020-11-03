@@ -498,7 +498,8 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"k2": pdata.NewAttributeValueString("v2"),
 	})
 
-	propMap := pdata.NewAttributeMap()
+	propMapVal := pdata.NewAttributeValueMap()
+	propMap := propMapVal.MapVal()
 	propMap.InitFromMap(map[string]pdata.AttributeValue{
 		"env":      pdata.NewAttributeValueString("prod"),
 		"isActive": pdata.NewAttributeValueBool(true),
@@ -506,8 +507,6 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"temp":     pdata.NewAttributeValueDouble(40.5),
 	})
 	propMap.Sort()
-	propMapVal := pdata.NewAttributeValueMap()
-	propMapVal.SetMapVal(propMap)
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 

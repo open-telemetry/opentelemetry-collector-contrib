@@ -6,7 +6,7 @@ require (
 	github.com/observiq/nanojack v0.0.0-20201022202228-3d04d52263ae
 	github.com/observiq/stanza v0.12.0
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.13.1-0.20201101004512-f4e4382d0e0e
+	go.opentelemetry.io/collector v0.13.1-0.20201103180041-ab843b20c2fb
 	go.uber.org/zap v1.16.0
 	gopkg.in/yaml.v2 v2.3.0
 )
