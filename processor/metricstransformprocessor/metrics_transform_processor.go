@@ -16,8 +16,10 @@ package metricstransformprocessor
 
 import (
 	"context"
+	"regexp"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/translator/internaldata"
@@ -26,11 +28,18 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+type metricsTransformProcessor struct {
+	transforms []internalTransform
+	logger     *zap.Logger
+}
+
+var _ processorhelper.MProcessor = (*metricsTransformProcessor)(nil)
+
 type internalTransform struct {
-	MetricName string
-	Action     ConfigAction
-	NewName    string
-	Operations []internalOperation
+	MetricIncludeFilter internalFilter
+	Action              ConfigAction
+	NewName             string
+	Operations          []internalOperation
 }
 
 type internalOperation struct {
@@ -40,12 +49,72 @@ type internalOperation struct {
 	aggregatedValuesSet map[string]bool
 }
 
-type metricsTransformProcessor struct {
-	transforms []internalTransform
-	logger     *zap.Logger
+type internalFilter interface {
+	getMatches(toMatch metricNameMapping) []*match
 }
 
-var _ processorhelper.MProcessor = (*metricsTransformProcessor)(nil)
+type match struct {
+	metric     *metricspb.Metric
+	pattern    *regexp.Regexp
+	submatches []int
+}
+
+type internalFilterStrict struct {
+	include string
+}
+
+func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
+	if metrics, ok := toMatch[f.include]; ok {
+		matches := make([]*match, len(metrics))
+		for i, metric := range metrics {
+			matches[i] = &match{metric: metric}
+		}
+		return matches
+	}
+
+	return nil
+}
+
+type internalFilterRegexp struct {
+	include *regexp.Regexp
+}
+
+func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
+	matches := make([]*match, 0, 10)
+	for name, metrics := range toMatch {
+		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
+			for _, metric := range metrics {
+				matches = append(matches, &match{metric: metric, pattern: f.include, submatches: submatches})
+			}
+		}
+	}
+	return matches
+}
+
+type metricNameMapping map[string][]*metricspb.Metric
+
+func newMetricNameMapping(data *consumerdata.MetricsData) metricNameMapping {
+	mnm := metricNameMapping(make(map[string][]*metricspb.Metric, len(data.Metrics)))
+	for _, m := range data.Metrics {
+		mnm.add(m.MetricDescriptor.Name, m)
+	}
+	return mnm
+}
+
+func (mnm metricNameMapping) add(name string, metrics ...*metricspb.Metric) {
+	mnm[name] = append(mnm[name], metrics...)
+}
+
+func (mnm metricNameMapping) remove(name string, metrics ...*metricspb.Metric) {
+	for _, metric := range metrics {
+		for j, m := range mnm[name] {
+			if metric == m {
+				mnm[name] = append(mnm[name][:j], mnm[name][j+1:]...)
+				break
+			}
+		}
+	}
+}
 
 func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
@@ -60,29 +129,27 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 
 	for i := range mds {
 		data := &mds[i]
-		nameToMetricMapping := make(map[string]*metricspb.Metric, len(data.Metrics))
-		for _, metric := range data.Metrics {
-			nameToMetricMapping[metric.MetricDescriptor.Name] = metric
-		}
 
+		nameToMetricMapping := newMetricNameMapping(data)
 		for _, transform := range mtp.transforms {
-			metric, ok := nameToMetricMapping[transform.MetricName]
-			if !ok {
-				continue
-			}
+			matchedMetrics := transform.MetricIncludeFilter.getMatches(nameToMetricMapping)
 
-			if transform.Action == Insert {
-				metric = proto.Clone(metric).(*metricspb.Metric)
-				data.Metrics = append(data.Metrics, metric)
-			}
+			for _, match := range matchedMetrics {
+				metricName := match.metric.MetricDescriptor.Name
 
-			mtp.update(metric, transform)
-
-			if transform.NewName != "" {
-				if transform.Action == Update {
-					delete(nameToMetricMapping, transform.MetricName)
+				if transform.Action == Insert {
+					match.metric = proto.Clone(match.metric).(*metricspb.Metric)
+					data.Metrics = append(data.Metrics, match.metric)
 				}
-				nameToMetricMapping[transform.NewName] = metric
+
+				mtp.update(match, transform)
+
+				if transform.NewName != "" {
+					if transform.Action == Update {
+						nameToMetricMapping.remove(metricName, match.metric)
+					}
+					nameToMetricMapping.add(match.metric.MetricDescriptor.Name, match.metric)
+				}
 			}
 		}
 	}
@@ -91,25 +158,29 @@ func (mtp *metricsTransformProcessor) ProcessMetrics(_ context.Context, md pdata
 }
 
 // update updates the metric content based on operations indicated in transform.
-func (mtp *metricsTransformProcessor) update(metric *metricspb.Metric, transform internalTransform) {
+func (mtp *metricsTransformProcessor) update(match *match, transform internalTransform) {
 	if transform.NewName != "" {
-		metric.MetricDescriptor.Name = transform.NewName
+		if match.pattern == nil {
+			match.metric.MetricDescriptor.Name = transform.NewName
+		} else {
+			match.metric.MetricDescriptor.Name = string(match.pattern.ExpandString([]byte{}, transform.NewName, match.metric.MetricDescriptor.Name, match.submatches))
+		}
 	}
 
 	for _, op := range transform.Operations {
 		switch op.configOperation.Action {
 		case UpdateLabel:
-			mtp.updateLabelOp(metric, op)
+			mtp.updateLabelOp(match.metric, op)
 		case AggregateLabels:
-			mtp.aggregateLabelsOp(metric, op)
+			mtp.aggregateLabelsOp(match.metric, op)
 		case AggregateLabelValues:
-			mtp.aggregateLabelValuesOp(metric, op)
+			mtp.aggregateLabelValuesOp(match.metric, op)
 		case ToggleScalarDataType:
-			mtp.ToggleScalarDataType(metric)
+			mtp.ToggleScalarDataType(match.metric)
 		case AddLabel:
-			mtp.addLabelOp(metric, op)
+			mtp.addLabelOp(match.metric, op)
 		case DeleteLabelValue:
-			mtp.deleteLabelValueOp(metric, op)
+			mtp.deleteLabelValueOp(match.metric, op)
 		}
 	}
 }

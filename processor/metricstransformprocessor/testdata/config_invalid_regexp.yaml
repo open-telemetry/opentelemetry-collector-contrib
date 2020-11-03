@@ -4,8 +4,9 @@ receivers:
 processors:
     metricstransform:
         transforms:
-            - include: old_name
-              action: insert # missing new_name
+            - include: old[\da
+              match_type: regexp
+              action: update
 
 exporters:
     exampleexporter:
