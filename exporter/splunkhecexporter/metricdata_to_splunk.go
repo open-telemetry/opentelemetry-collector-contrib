@@ -78,8 +78,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				}
 				switch tm.DataType() {
 				case pdata.MetricDataTypeIntGauge:
-					for gi := 0; gi < tm.IntGauge().DataPoints().Len(); gi++ {
-						dataPt := tm.IntGauge().DataPoints().At(gi)
+					pts := tm.IntGauge().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
@@ -91,8 +92,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleGauge:
-					for gi := 0; gi < tm.DoubleGauge().DataPoints().Len(); gi++ {
-						dataPt := tm.DoubleGauge().DataPoints().At(gi)
+					pts := tm.DoubleGauge().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
@@ -103,8 +105,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleHistogram:
-					for gi := 0; gi < tm.DoubleHistogram().DataPoints().Len(); gi++ {
-						dataPt := tm.DoubleHistogram().DataPoints().At(gi)
+					pts := tm.DoubleHistogram().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
@@ -121,8 +124,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntHistogram:
-					for gi := 0; gi < tm.IntHistogram().DataPoints().Len(); gi++ {
-						dataPt := tm.IntHistogram().DataPoints().At(gi)
+					pts := tm.IntHistogram().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
@@ -139,8 +143,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleSum:
-					for gi := 0; gi < tm.DoubleSum().DataPoints().Len(); gi++ {
-						dataPt := tm.DoubleSum().DataPoints().At(gi)
+					pts := tm.DoubleSum().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
@@ -152,8 +157,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntSum:
-					for gi := 0; gi < tm.IntSum().DataPoints().Len(); gi++ {
-						dataPt := tm.IntSum().DataPoints().At(gi)
+					pts := tm.IntSum().DataPoints()
+					for gi := 0; gi < pts.Len(); gi++ {
+						dataPt := pts.At(gi)
 						if dataPt.IsNil() {
 							continue
 						}
