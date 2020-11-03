@@ -3,7 +3,7 @@ line-length = 79
 exclude = '''
 (
   /(
-    reference|
+    reference| # original files from DataDog
     opentelemetry-python-core
   )/
 )
