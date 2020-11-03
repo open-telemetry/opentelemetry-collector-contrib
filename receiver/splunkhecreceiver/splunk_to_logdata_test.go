@@ -88,10 +88,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			},
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice("value", nanoseconds)
-				arr := pdata.NewAnyValueArray()
+				arrVal := pdata.NewAttributeValueArray()
+				arr := arrVal.ArrayVal()
 				arr.Append(pdata.NewAttributeValueString("foo"))
 				arr.Append(pdata.NewAttributeValueString("bar"))
-				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetArrayVal(arr)
+				arrVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -111,17 +112,18 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			},
 			output: func() pdata.ResourceLogsSlice {
 				logsSlice := createLogsSlice("value", nanoseconds)
-				attMap := pdata.NewAttributeMap()
-				foos := pdata.NewAnyValueArray()
+				foosArr := pdata.NewAttributeValueArray()
+				foos := foosArr.ArrayVal()
 				foos.Append(pdata.NewAttributeValueString("foo"))
 				foos.Append(pdata.NewAttributeValueString("bar"))
 				foos.Append(pdata.NewAttributeValueString("foobar"))
-				foosArr := pdata.NewAttributeValueArray()
-				foosArr.SetArrayVal(foos)
+
+				attVal := pdata.NewAttributeValueMap()
+				attMap := attVal.MapVal()
 				attMap.InsertBool("bool", false)
 				attMap.Insert("foos", foosArr)
 				attMap.InsertInt("someInt", 12)
-				logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body().SetMapVal(attMap)
+				attVal.CopyTo(logsSlice.At(0).InstrumentationLibraryLogs().At(0).Logs().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -207,9 +209,8 @@ func Test_ConvertAttributeValueMap(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), map[string]interface{}{"foo": "bar"})
 	assert.NoError(t, err)
 	atts := pdata.NewAttributeValueMap()
-	attMap := pdata.NewAttributeMap()
+	attMap := atts.MapVal()
 	attMap.InsertString("foo", "bar")
-	atts.SetMapVal(attMap)
 	assert.Equal(t, atts, value)
 }
 
@@ -217,9 +218,8 @@ func Test_ConvertAttributeValueArray(t *testing.T) {
 	value, err := convertInterfaceToAttributeValue(zap.NewNop(), []interface{}{"foo"})
 	assert.NoError(t, err)
 	arr := pdata.NewAttributeValueArray()
-	arrValue := pdata.NewAnyValueArray()
+	arrValue := arr.ArrayVal()
 	arrValue.Append(pdata.NewAttributeValueString("foo"))
-	arr.SetArrayVal(arrValue)
 	assert.Equal(t, arr, value)
 }
 
