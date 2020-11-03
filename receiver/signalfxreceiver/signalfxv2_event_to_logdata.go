@@ -60,7 +60,8 @@ func signalFxV2EventsToLogRecords(
 		}
 
 		if len(event.Properties) > 0 {
-			propMap := pdata.NewAttributeMap()
+			propMapVal := pdata.NewAttributeValueMap()
+			propMap := propMapVal.MapVal()
 			propMap.InitEmptyWithCapacity(len(event.Properties))
 
 			for _, prop := range event.Properties {
@@ -80,8 +81,6 @@ func signalFxV2EventsToLogRecords(
 					propMap.InsertNull(prop.Key)
 				}
 			}
-			propMapVal := pdata.NewAttributeValueMap()
-			propMapVal.SetMapVal(propMap)
 
 			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
