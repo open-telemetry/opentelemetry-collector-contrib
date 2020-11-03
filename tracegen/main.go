@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/zapr"
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel/api/global"
 	"go.opentelemetry.io/otel/exporters/otlp"
@@ -40,15 +39,13 @@ func main() {
 	cfg.Flags(fs)
 	flag.Parse()
 
-	zapLog, err := zap.NewDevelopment()
+	logger, err := zap.NewDevelopment()
 	if err != nil {
 		panic(fmt.Sprintf("failed to obtain logger: %v", err))
 	}
-	grpcZap.ReplaceGrpcLoggerV2(zapLog.WithOptions(
+	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
 		zap.AddCallerSkip(3),
 	))
-
-	logger := zapr.NewLogger(zapLog)
 
 	expOptions := []otlp.ExporterOption{
 		otlp.WithAddress(cfg.Endpoint),
@@ -63,13 +60,13 @@ func main() {
 
 	exp, err := otlp.NewExporter(expOptions...)
 	if err != nil {
-		logger.Error(err, "failed to obtain OTLP exporter")
+		logger.Error("failed to obtain OTLP exporter", zap.Error(err))
 		return
 	}
 	defer func() {
 		logger.Info("stopping the exporter")
 		if err = exp.Shutdown(context.Background()); err != nil {
-			logger.Error(err, "failed to stop the exporter")
+			logger.Error("failed to stop the exporter", zap.Error(err))
 			return
 		}
 	}()
@@ -84,5 +81,7 @@ func main() {
 	tracerProvider.RegisterSpanProcessor(ssp)
 	global.SetTracerProvider(tracerProvider)
 
-	tracegen.Run(cfg, logger)
+	if err := tracegen.Run(cfg, logger); err != nil {
+		logger.Error("failed to stop the exporter", zap.Error(err))
+	}
 }
