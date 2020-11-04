@@ -99,7 +99,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 		},
 		// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
 		//{
-		//	name: "nil_gauge_value",
+		//	name: "nil_double_gauge_value",
 		//	metricsDataFn: func() pdata.Metrics {
 		//
 		//		metrics := pdata.NewMetrics()
@@ -123,8 +123,33 @@ func Test_metricDataToSplunk(t *testing.T) {
 		//	},
 		//	wantSplunkMetrics: []splunk.Event{},
 		//},
+		//{
+		//	name: "nil_int_gauge_value",
+		//	metricsDataFn: func() pdata.Metrics {
+		//
+		//		metrics := pdata.NewMetrics()
+		//		rm := pdata.NewResourceMetrics()
+		//		rm.InitEmpty()
+		//		metrics.ResourceMetrics().Append(rm)
+		//		rm.Resource().InitEmpty()
+		//		rm.Resource().Attributes().InsertString("k0", "v0")
+		//		rm.Resource().Attributes().InsertString("k1", "v1")
+		//		ilm := pdata.NewInstrumentationLibraryMetrics()
+		//		ilm.InitEmpty()
+		//
+		//		intGauge := pdata.NewMetric()
+		//		intGauge.InitEmpty()
+		//		intGauge.SetName("gauge_int_with_dims")
+		//		intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
+		//		ilm.Metrics().Append(intGauge)
+		//
+		//		rm.InstrumentationLibraryMetrics().Append(ilm)
+		//		return metrics
+		//	},
+		//	wantSplunkMetrics: []splunk.Event{},
+		//},
 		{
-			name: "nil_data_point",
+			name: "double_gauge_nil_data_point",
 			metricsDataFn: func() pdata.Metrics {
 
 				metrics := pdata.NewMetrics()
@@ -152,7 +177,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
-			name: "gauges",
+			name: "int_gauge_nil_data_point",
 			metricsDataFn: func() pdata.Metrics {
 
 				metrics := pdata.NewMetrics()
@@ -160,6 +185,94 @@ func Test_metricDataToSplunk(t *testing.T) {
 				rm.InitEmpty()
 				metrics.ResourceMetrics().Append(rm)
 				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				intGauge := pdata.NewMetric()
+				intGauge.InitEmpty()
+				intGauge.SetName("gauge_int_with_dims")
+				intGauge.SetDataType(pdata.MetricDataTypeIntGauge)
+				intGauge.IntGauge().InitEmpty()
+				intDataPt := pdata.NewIntDataPoint()
+				intGauge.IntGauge().DataPoints().Append(intDataPt)
+				ilm.Metrics().Append(intGauge)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "int_histogram_nil_data_point",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				intHistogram := pdata.NewMetric()
+				intHistogram.InitEmpty()
+				intHistogram.SetName("int_histogram_with_dims")
+				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
+				intHistogram.IntHistogram().InitEmpty()
+				histogramDataPt := pdata.NewIntHistogramDataPoint()
+				intHistogram.IntHistogram().DataPoints().Append(histogramDataPt)
+				ilm.Metrics().Append(intHistogram)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "double_histogram_nil_data_point",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleHistogram := pdata.NewMetric()
+				doubleHistogram.InitEmpty()
+				doubleHistogram.SetName("double_histogram_with_dims")
+				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+				doubleHistogram.DoubleHistogram().InitEmpty()
+				doubleHistogramDataPt := pdata.NewDoubleHistogramDataPoint()
+				doubleHistogram.DoubleHistogram().DataPoints().Append(doubleHistogramDataPt)
+				ilm.Metrics().Append(doubleHistogram)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "gauges",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("service.name", "mysource")
+				rm.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rm.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+
+				metrics.ResourceMetrics().Append(rm)
 				rm.Resource().Attributes().InsertString("k0", "v0")
 				rm.Resource().Attributes().InsertString("k1", "v1")
 				ilm := pdata.NewInstrumentationLibraryMetrics()
@@ -194,8 +307,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"k0", "k1"}, []interface{}{"v0", "v1"}, doubleVal),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"k0", "k1"}, []interface{}{"v0", "v1"}, int64Val),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"mysourcetype", "myhost", "mysource", "v0", "v1"}, doubleVal, "mysource", "mysourcetype", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myhost"),
 			},
 		},
 		{
@@ -344,7 +457,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 		},
-
 		{
 			name: "double_sum",
 			metricsDataFn: func() pdata.Metrics {
@@ -388,6 +500,31 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "unknown_type",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleSum := pdata.NewMetric()
+				doubleSum.InitEmpty()
+				doubleSum.SetName("unknown_with_dims")
+				doubleSum.SetDataType(pdata.MetricDataTypeNone)
+				ilm.Metrics().Append(doubleSum)
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics:        []splunk.Event{},
+			wantNumDroppedTimeseries: 1,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -408,6 +545,9 @@ func commonSplunkMetric(
 	keys []string,
 	values []interface{},
 	val interface{},
+	source string,
+	sourcetype string,
+	host string,
 ) splunk.Event {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
 
@@ -416,10 +556,12 @@ func commonSplunkMetric(
 	}
 
 	return splunk.Event{
-		Time:   ts,
-		Host:   "unknown",
-		Event:  "metric",
-		Fields: fields,
+		Time:       ts,
+		Source:     source,
+		SourceType: sourcetype,
+		Host:       host,
+		Event:      "metric",
+		Fields:     fields,
 	}
 }
 

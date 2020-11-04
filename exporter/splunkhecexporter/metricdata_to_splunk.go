@@ -50,6 +50,7 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		source := config.Source
 		sourceType := config.SourceType
 		index := config.Index
+		commonFields := map[string]interface{}{}
 		if !rm.Resource().IsNil() {
 			if conventionHost, isSet := rm.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
 				host = conventionHost.StringVal()
@@ -60,9 +61,6 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 			if sourcetypeSet, isSet := rm.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
 				sourceType = sourcetypeSet.StringVal()
 			}
-		}
-		commonFields := map[string]interface{}{}
-		if !rm.Resource().IsNil() {
 			rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
 			})

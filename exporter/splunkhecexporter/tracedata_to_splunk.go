@@ -17,6 +17,7 @@ package splunkhecexporter
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -70,6 +71,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		host := unknownHostName
 		source := config.Source
 		sourceType := config.SourceType
+		commonFields := map[string]interface{}{}
 		if !rs.Resource().IsNil() {
 			if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
 				host = conventionHost.StringVal()
@@ -80,6 +82,9 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 			if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
 				sourceType = sourcetypeSet.StringVal()
 			}
+			rs.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			})
 		}
 		ilss := rs.InstrumentationLibrarySpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
@@ -101,6 +106,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 					SourceType: sourceType,
 					Index:      config.Index,
 					Event:      toHecSpan(logger, span),
+					Fields:     commonFields,
 				}
 				splunkEvents = append(splunkEvents, se)
 			}
