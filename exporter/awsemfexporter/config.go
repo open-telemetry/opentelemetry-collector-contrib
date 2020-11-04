@@ -15,8 +15,8 @@
 package awsemfexporter
 
 import (
-	"go.uber.org/zap"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for AWS EMF exporter.

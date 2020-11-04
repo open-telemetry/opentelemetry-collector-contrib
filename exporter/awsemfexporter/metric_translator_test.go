@@ -785,7 +785,7 @@ func TestGetCWMetrics(t *testing.T) {
 		})
 	}
 
-	t.Run("Unhandled metric type", func (t *testing.T) {
+	t.Run("Unhandled metric type", func(t *testing.T) {
 		metric := pdata.NewMetric()
 		metric.InitEmpty()
 		metric.SetName("foo")
@@ -793,18 +793,18 @@ func TestGetCWMetrics(t *testing.T) {
 		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
 
 		obs, logs := observer.New(zap.WarnLevel)
-		config := &Config{
+		obsConfig := &Config{
 			DimensionRollupOption: "",
-			logger: zap.New(obs),
+			logger:                zap.New(obs),
 		}
 
-		cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
+		cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, obsConfig)
 		assert.Nil(t, cwMetrics)
 
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{
 			{
-				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
+				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
 				Context: []zapcore.Field{
 					zap.String("DataType", "IntHistogram"),
 					zap.String("Name", "foo"),
@@ -816,7 +816,7 @@ func TestGetCWMetrics(t *testing.T) {
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
 	})
 
-	t.Run("Nil metric", func (t *testing.T) {
+	t.Run("Nil metric", func(t *testing.T) {
 		cwMetrics := getCWMetrics(nil, namespace, instrumentationLibName, config)
 		assert.Nil(t, cwMetrics)
 	})
