@@ -187,7 +187,6 @@ func (p *poller) poll() {
 				continue
 			}
 
-			buffer := make([]byte, pollerBufferSizeKB)
 			bufMessage := buffer[0:rlen]
 
 			header, body, err := tracesegment.SplitHeaderBody(bufMessage)
