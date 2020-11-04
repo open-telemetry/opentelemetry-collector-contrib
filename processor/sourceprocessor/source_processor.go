@@ -76,7 +76,7 @@ type sourceTraceProcessor struct {
 	excludePodRegex       *regexp.Regexp
 	excludeContainerRegex *regexp.Regexp
 	excludeHostRegex      *regexp.Regexp
-	nextConsumer          consumer.TraceConsumer
+	nextConsumer          consumer.TracesConsumer
 	keys                  sourceTraceKeys
 }
 
@@ -123,7 +123,7 @@ func matchRegexMaybe(re *regexp.Regexp, atts pdata.AttributeMap, attributeName s
 	return false
 }
 
-func newSourceTraceProcessor(next consumer.TraceConsumer, cfg *Config) (*sourceTraceProcessor, error) {
+func newSourceTraceProcessor(next consumer.TracesConsumer, cfg *Config) (*sourceTraceProcessor, error) {
 	keys := sourceTraceKeys{
 		annotationPrefix:   cfg.AnnotationPrefix,
 		containerKey:       cfg.ContainerKey,
