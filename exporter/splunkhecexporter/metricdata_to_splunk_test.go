@@ -47,6 +47,110 @@ func Test_metricDataToSplunk(t *testing.T) {
 		wantNumDroppedTimeseries int
 	}{
 		{
+			name: "nil_resource_metrics",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				metrics.ResourceMetrics().Append(rm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "nil_instrumentation_library_metrics",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "nil_metric",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleGauge := pdata.NewMetric()
+				ilm.Metrics().Append(doubleGauge)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
+		//{
+		//	name: "nil_gauge_value",
+		//	metricsDataFn: func() pdata.Metrics {
+		//
+		//		metrics := pdata.NewMetrics()
+		//		rm := pdata.NewResourceMetrics()
+		//		rm.InitEmpty()
+		//		metrics.ResourceMetrics().Append(rm)
+		//		rm.Resource().InitEmpty()
+		//		rm.Resource().Attributes().InsertString("k0", "v0")
+		//		rm.Resource().Attributes().InsertString("k1", "v1")
+		//		ilm := pdata.NewInstrumentationLibraryMetrics()
+		//		ilm.InitEmpty()
+		//
+		//		doubleGauge := pdata.NewMetric()
+		//		doubleGauge.InitEmpty()
+		//		doubleGauge.SetName("gauge_double_with_dims")
+		//		doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		//		ilm.Metrics().Append(doubleGauge)
+		//
+		//		rm.InstrumentationLibraryMetrics().Append(ilm)
+		//		return metrics
+		//	},
+		//	wantSplunkMetrics: []splunk.Event{},
+		//},
+		{
+			name: "nil_data_point",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleGauge := pdata.NewMetric()
+				doubleGauge.InitEmpty()
+				doubleGauge.SetName("gauge_double_with_dims")
+				doubleGauge.SetDataType(pdata.MetricDataTypeDoubleGauge)
+				doubleGauge.DoubleGauge().InitEmpty()
+				doubleDataPt := pdata.NewDoubleDataPoint()
+				doubleGauge.DoubleGauge().DataPoints().Append(doubleDataPt)
+				ilm.Metrics().Append(doubleGauge)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
 			name: "gauges",
 			metricsDataFn: func() pdata.Metrics {
 
