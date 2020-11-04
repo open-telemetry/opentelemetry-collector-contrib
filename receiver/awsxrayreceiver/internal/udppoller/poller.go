@@ -156,7 +156,6 @@ func (p *poller) read(buf *[]byte) (int, error) {
 
 func (p *poller) poll() {
 	defer p.wg.Done()
-	buffer := make([]byte, pollerBufferSizeKB)
 
 	var (
 		errRecv   *recvErr.ErrRecoverable
@@ -173,6 +172,7 @@ func (p *poller) poll() {
 				p.receiverInstanceName,
 				Transport,
 				obsreport.WithLongLivedCtx())
+			buffer := make([]byte, pollerBufferSizeKB)
 			bufPointer := &buffer
 			rlen, err := p.read(bufPointer)
 			if errors.As(err, &errIrrecv) {
