@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/selection"
 
@@ -31,13 +32,21 @@ const (
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
 
-	metdataNamespace   = "namespace"
-	metadataPodName    = "podName"
-	metadataPodUID     = "podUID"
-	metadataStartTime  = "startTime"
-	metadataDeployment = "deployment"
-	metadataCluster    = "cluster"
-	metadataNode       = "node"
+	metadataContainerID     = "containerId"
+	metadataContainerName   = "containerName"
+	metadataContainerImage  = "containerImage"
+	metadataClusterName     = "clusterName"
+	metadataDaemonSetName   = "daemonSetName"
+	metadataDeploymentName  = "deploymentName"
+	metadataHostName        = "hostName"
+	metadataNamespace       = "namespace"
+	metadataNodeName        = "nodeName"
+	metadataPodID           = "podId"
+	metadataPodName         = "podName"
+	metadataReplicaSetName  = "replicaSetName"
+	metadataServiceName     = "serviceName"
+	metadataStartTime       = "startTime"
+	metadataStatefulSetName = "statefulSetName"
 )
 
 // Option represents a configuration option that can be passes.
@@ -62,41 +71,118 @@ func WithPassthrough() Option {
 	}
 }
 
+// WithOwnerLookupEnabled makes the processor pull additional owner data from K8S API
+func WithOwnerLookupEnabled() Option {
+	return func(p *kubernetesprocessor) error {
+		p.rules.OwnerLookupEnabled = true
+		return nil
+	}
+}
+
 // WithExtractMetadata allows specifying options to control extraction of pod metadata.
 // If no fields explicitly provided, all metadata extracted by default.
 func WithExtractMetadata(fields ...string) Option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
 			fields = []string{
-				metdataNamespace,
+				metadataClusterName,
+				metadataContainerID,
+				metadataContainerImage,
+				metadataContainerName,
+				metadataDaemonSetName,
+				metadataDeploymentName,
+				metadataHostName,
+				metadataNamespace,
+				metadataNodeName,
 				metadataPodName,
-				metadataPodUID,
+				metadataPodID,
+				metadataReplicaSetName,
+				metadataServiceName,
 				metadataStartTime,
-				metadataDeployment,
-				metadataCluster,
-				metadataNode,
+				metadataStatefulSetName,
 			}
 		}
 		for _, field := range fields {
 			switch field {
-			case metdataNamespace:
+			case metadataClusterName:
+				p.rules.ClusterName = true
+			case metadataContainerID:
+				p.rules.ContainerID = true
+			case metadataContainerImage:
+				p.rules.ContainerImage = true
+			case metadataContainerName:
+				p.rules.ContainerName = true
+			case metadataDaemonSetName:
+				p.rules.DaemonSetName = true
+			case metadataDeploymentName:
+				p.rules.DeploymentName = true
+			case metadataHostName:
+				p.rules.HostName = true
+			case metadataNamespace:
 				p.rules.Namespace = true
+			case metadataNodeName:
+				p.rules.NodeName = true
+			case metadataPodID:
+				p.rules.PodUID = true
 			case metadataPodName:
 				p.rules.PodName = true
-			case metadataPodUID:
-				p.rules.PodUID = true
+			case metadataReplicaSetName:
+				p.rules.ReplicaSetName = true
+			case metadataServiceName:
+				p.rules.ServiceName = true
 			case metadataStartTime:
 				p.rules.StartTime = true
-			case metadataDeployment:
-				p.rules.Deployment = true
-			case metadataCluster:
-				p.rules.Cluster = true
-			case metadataNode:
-				p.rules.Node = true
+			case metadataStatefulSetName:
+				p.rules.StatefulSetName = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
 		}
+		return nil
+	}
+}
+
+// WithExtractTags allows specifying custom tag names
+func WithExtractTags(tagsMap map[string]string) Option {
+	return func(p *kubernetesprocessor) error {
+		var tags = kube.NewExtractionFieldTags()
+		for field, tag := range tagsMap {
+			switch field {
+			case strings.ToLower(metadataClusterName):
+				tags.ClusterName = tag
+			case strings.ToLower(metadataContainerID):
+				tags.ContainerID = tag
+			case strings.ToLower(metadataContainerName):
+				tags.ContainerName = tag
+			case strings.ToLower(metadataContainerImage):
+				tags.ContainerImage = tag
+			case strings.ToLower(metadataDaemonSetName):
+				tags.DaemonSetName = tag
+			case strings.ToLower(metadataDeploymentName):
+				tags.DeploymentName = tag
+			case strings.ToLower(metadataHostName):
+				tags.HostName = tag
+			case strings.ToLower(metadataNamespace):
+				tags.Namespace = tag
+			case strings.ToLower(metadataNodeName):
+				tags.NodeName = tag
+			case strings.ToLower(metadataPodID):
+				tags.PodUID = tag
+			case strings.ToLower(metadataPodName):
+				tags.PodName = tag
+			case strings.ToLower(metadataReplicaSetName):
+				tags.ReplicaSetName = tag
+			case strings.ToLower(metadataServiceName):
+				tags.ServiceName = tag
+			case strings.ToLower(metadataStartTime):
+				tags.StartTime = tag
+			case strings.ToLower(metadataStatefulSetName):
+				tags.StatefulSetName = tag
+			default:
+				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
+			}
+		}
+		p.rules.Tags = tags
 		return nil
 	}
 }
@@ -130,7 +216,11 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	for _, a := range fields {
 		name := a.TagName
 		if name == "" {
-			name = fmt.Sprintf("k8s.pod.%s.%s", fieldType, a.Key)
+			if a.Key == "*" {
+				name = fmt.Sprintf("k8s.%s.%%s", fieldType)
+			} else {
+				name = fmt.Sprintf("k8s.%s.%s", fieldType, a.Key)
+			}
 		}
 
 		var r *regexp.Regexp

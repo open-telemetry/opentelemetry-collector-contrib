@@ -29,6 +29,9 @@ func init() {
 		viewPodsUpdated,
 		viewPodsAdded,
 		viewPodsDeleted,
+		viewOtherUpdated,
+		viewOtherAdded,
+		viewOtherDeleted,
 		viewIPLookupMiss,
 		viewPodTableSize,
 	)
@@ -39,6 +42,10 @@ var (
 	mPodsAdded    = stats.Int64("otelsvc/k8s/pod_added", "Number of pod add events received", "1")
 	mPodsDeleted  = stats.Int64("otelsvc/k8s/pod_deleted", "Number of pod delete events received", "1")
 	mPodTableSize = stats.Int64("otelsvc/k8s/pod_table_size", "Size of table containing pod info", "1")
+
+	mOtherUpdated = stats.Int64("otelsvc/k8s/other_updated", "Number of other update events received", "1")
+	mOtherAdded   = stats.Int64("otelsvc/k8s/other_added", "Number of other add events received", "1")
+	mOtherDeleted = stats.Int64("otelsvc/k8s/other_deleted", "Number of other delete events received", "1")
 
 	mIPLookupMiss = stats.Int64("otelsvc/k8s/ip_lookup_miss", "Number of times pod by IP lookup failed.", "1")
 )
@@ -61,6 +68,27 @@ var viewPodsDeleted = &view.View{
 	Name:        mPodsDeleted.Name(),
 	Description: mPodsDeleted.Description(),
 	Measure:     mPodsDeleted,
+	Aggregation: view.Sum(),
+}
+
+var viewOtherUpdated = &view.View{
+	Name:        mOtherUpdated.Name(),
+	Description: mOtherUpdated.Description(),
+	Measure:     mOtherUpdated,
+	Aggregation: view.Sum(),
+}
+
+var viewOtherAdded = &view.View{
+	Name:        mOtherAdded.Name(),
+	Description: mOtherAdded.Description(),
+	Measure:     mOtherAdded,
+	Aggregation: view.Sum(),
+}
+
+var viewOtherDeleted = &view.View{
+	Name:        mOtherDeleted.Name(),
+	Description: mOtherDeleted.Description(),
+	Measure:     mOtherDeleted,
 	Aggregation: view.Sum(),
 }
 
@@ -90,6 +118,21 @@ func RecordPodAdded() {
 // RecordPodDeleted increments the metric that records pod events deleted.
 func RecordPodDeleted() {
 	stats.Record(context.Background(), mPodsDeleted.M(int64(1)))
+}
+
+// RecordOtherUpdated increments the metric that records other update events received.
+func RecordOtherUpdated() {
+	stats.Record(context.Background(), mOtherUpdated.M(int64(1)))
+}
+
+// RecordOtherAdded increments the metric that records other add events receiver.
+func RecordOtherAdded() {
+	stats.Record(context.Background(), mOtherAdded.M(int64(1)))
+}
+
+// RecordOtherDeleted increments the metric that records other events deleted.
+func RecordOtherDeleted() {
+	stats.Record(context.Background(), mOtherDeleted.M(int64(1)))
 }
 
 // RecordIPLookupMiss increments the metric that records Pod lookup by IP misses.
