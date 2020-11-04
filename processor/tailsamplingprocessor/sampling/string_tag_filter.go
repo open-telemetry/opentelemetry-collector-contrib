@@ -52,6 +52,11 @@ func (saf *stringAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) e
 	return nil
 }
 
+// EvaluateSecondChance looks at the trace again and if it can/cannot be fit, returns a SamplingDecision
+func (saf *stringAttributeFilter) EvaluateSecondChance(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+	return NotSampled, nil
+}
+
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	saf.logger.Debug("Evaluting spans in string-tag filter")
@@ -105,7 +110,7 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (saf *stringAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
+func (saf *stringAttributeFilter) OnDroppedSpans(_ pdata.TraceID, _ *TraceData) (Decision, error) {
 	saf.logger.Debug("Triggering action for dropped spans in string-tag filter")
 	return NotSampled, nil
 }

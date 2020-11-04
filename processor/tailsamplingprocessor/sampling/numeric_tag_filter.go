@@ -47,6 +47,11 @@ func (naf *numericAttributeFilter) OnLateArrivingSpans(Decision, []*pdata.Span) 
 	return nil
 }
 
+// EvaluateSecondChance looks at the trace again and if it can/cannot be fit, returns a SamplingDecision
+func (naf *numericAttributeFilter) EvaluateSecondChance(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+	return NotSampled, nil
+}
+
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
@@ -85,7 +90,7 @@ func (naf *numericAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (
 
 // OnDroppedSpans is called when the trace needs to be dropped, due to memory
 // pressure, before the decision_wait time has been reached.
-func (naf *numericAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
+func (naf *numericAttributeFilter) OnDroppedSpans(_ pdata.TraceID, _ *TraceData) (Decision, error) {
 	naf.logger.Debug("Triggering action for dropped spans in numeric-attribute filter")
 	return NotSampled, nil
 }

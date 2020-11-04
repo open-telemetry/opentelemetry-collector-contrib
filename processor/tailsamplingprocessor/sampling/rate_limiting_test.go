@@ -20,8 +20,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestRateLimiter(t *testing.T) {

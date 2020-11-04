@@ -23,11 +23,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
 )
@@ -36,17 +37,17 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []config.PolicyCfg{{Name: "test-policy", Type: config.AlwaysSample}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -64,13 +65,13 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		// Add the same traceId twice.
@@ -98,13 +99,13 @@ func TestConcurrentTraceArrival(t *testing.T) {
 func TestSequentialTraceMapSize(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(210)
 	const maxSize = 100
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		tsp.ConsumeTraces(context.Background(), batch)
@@ -121,13 +122,13 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTraceProcessor(zap.NewNop(), consumertest.NewTracesNop(), cfg)
+	sp, _ := newTraceProcessor(zap.NewNop(), exportertest.NewNopTraceExporter(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	for _, batch := range batches {
 		wg.Add(1)
@@ -154,7 +155,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(consumertest.TracesSink)
+	msp := new(exportertest.SinkTraceExporter)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -210,7 +211,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(consumertest.TracesSink)
+	msp := new(exportertest.SinkTraceExporter)
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
@@ -276,7 +277,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	const decisionWaitSeconds = 5
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(consumertest.TracesSink)
+	msp := new(exportertest.SinkTraceExporter)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -335,7 +336,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	const decisionWaitSeconds = 1
 	// For this test explicitly control the timer calls and batcher, and set a mock
 	// sampling policy evaluator.
-	msp := new(consumertest.TracesSink)
+	msp := new(exportertest.SinkTraceExporter)
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
@@ -445,6 +446,29 @@ func generateIdsAndBatches(numIds int) ([]pdata.TraceID, []pdata.Traces) {
 	return traceIds, tds
 }
 
+func simpleTraces() pdata.Traces {
+	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+}
+
+func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	span.SetTraceID(traceID)
+
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.InitEmpty()
+	ils.Spans().Append(span)
+
+	rs := pdata.NewResourceSpans()
+	rs.InitEmpty()
+	rs.InstrumentationLibrarySpans().Append(ils)
+
+	traces := pdata.NewTraces()
+	traces.ResourceSpans().Append(rs)
+
+	return traces
+}
+
 type mockPolicyEvaluator struct {
 	NextDecision           sampling.Decision
 	NextError              error
@@ -459,7 +483,11 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Sp
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) (sampling.Decision, error) {
+	m.EvaluationCount++
+	return m.NextDecision, m.NextError
+}
+func (m *mockPolicyEvaluator) EvaluateSecondChance(_ pdata.TraceID, _ *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
@@ -518,27 +546,4 @@ func (s *syncIDBatcher) CloseCurrentAndTakeFirstBatch() (idbatcher.Batch, bool) 
 }
 
 func (s *syncIDBatcher) Stop() {
-}
-
-func simpleTraces() pdata.Traces {
-	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
-}
-
-func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {
-	span := pdata.NewSpan()
-	span.InitEmpty()
-	span.SetTraceID(traceID)
-
-	ils := pdata.NewInstrumentationLibrarySpans()
-	ils.InitEmpty()
-	ils.Spans().Append(span)
-
-	rs := pdata.NewResourceSpans()
-	rs.InitEmpty()
-	rs.InstrumentationLibrarySpans().Append(ils)
-
-	traces := pdata.NewTraces()
-	traces.ResourceSpans().Append(rs)
-
-	return traces
 }

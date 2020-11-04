@@ -5,7 +5,5 @@ go 1.14
 require (
 	github.com/stretchr/testify v1.6.1
 	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.8.0
+	go.opentelemetry.io/collector v0.13.1-0.20201103180041-ab843b20c2fb
 )
-
-replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.13.0
