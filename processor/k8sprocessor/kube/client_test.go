@@ -69,12 +69,12 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj interfac
 }
 
 func TestDefaultClientset(t *testing.T) {
-	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, nil, nil)
+	c, err := New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, nil, nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
 	assert.Nil(t, c)
 
-	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, newFakeAPIClientset, nil)
+	c, err = New(zap.NewNop(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, newFakeAPIClientset, nil, nil)
 	assert.NoError(t, err)
 	assert.NotNil(t, c)
 }
@@ -87,6 +87,7 @@ func TestBadFilters(t *testing.T) {
 		Filters{Fields: []FieldFilter{{Op: selection.Exists}}},
 		newFakeAPIClientset,
 		NewFakeInformer,
+		newFakeOwnerProvider,
 	)
 	assert.Error(t, err)
 	assert.Nil(t, c)
@@ -122,7 +123,7 @@ func TestConstructorErrors(t *testing.T) {
 			gotAPIConfig = c
 			return nil, fmt.Errorf("error creating k8s client")
 		}
-		c, err := New(zap.NewNop(), apiCfg, er, ff, clientProvider, NewFakeInformer)
+		c, err := New(zap.NewNop(), apiCfg, er, ff, clientProvider, NewFakeInformer, newFakeOwnerProvider)
 		assert.Nil(t, c)
 		assert.Error(t, err)
 		assert.Equal(t, err.Error(), "error creating k8s client")
@@ -303,14 +304,40 @@ func TestHandlerWrongType(t *testing.T) {
 	}
 }
 
-func TestExtractionRules(t *testing.T) {
+func TestNoHostnameExtractionRules(t *testing.T) {
 	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+
+	podName := "auth-service-abc12-xyz3"
+
+	pod := &api_v1.Pod{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: api_v1.PodSpec{},
+		Status: api_v1.PodStatus{
+			PodIP: "1.1.1.1",
+		},
+	}
+
+	c.Rules = ExtractionRules{
+		HostName: true,
+		Tags:     NewExtractionFieldTags(),
+	}
+
+	c.handlePodAdd(pod)
+	p, _ := c.GetPodByIP(pod.Status.PodIP)
+	assert.Equal(t, p.Attributes["k8s.pod.hostname"], podName)
+}
+
+func TestExtractionRules(t *testing.T) {
+	// OwnerLookupEnabled is set to true so the newOwnerProviderFunc can be called in the initializer
+	c, _ := newTestClientWithRulesAndFilters(t, ExtractionRules{OwnerLookupEnabled: true}, Filters{})
 
 	pod := &api_v1.Pod{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name:              "auth-service-abc12-xyz3",
-			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			Namespace:         "ns1",
+			UID:               "33333",
 			CreationTimestamp: meta_v1.Now(),
 			ClusterName:       "cluster1",
 			Labels: map[string]string{
@@ -320,12 +347,31 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: map[string]string{
 				"annotation1": "av1",
 			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					Kind: "ReplicaSet",
+					Name: "foo-bar-rs",
+					UID:  "1a1658f9-7818-11e9-90f1-02324f7e0d1e",
+				},
+			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
+			Hostname: "auth-hostname3",
+			Containers: []api_v1.Container{
+				{
+					Image: "auth-service-image",
+					Name:  "auth-service-container-name",
+				},
+			},
 		},
 		Status: api_v1.PodStatus{
 			PodIP: "1.1.1.1",
+			ContainerStatuses: []api_v1.ContainerStatus{
+				{
+					ContainerID: "111-222-333",
+				},
+			},
 		},
 	}
 
@@ -340,7 +386,8 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "deployment",
 		rules: ExtractionRules{
-			Deployment: true,
+			DeploymentName: true,
+			Tags:           NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
@@ -348,22 +395,67 @@ func TestExtractionRules(t *testing.T) {
 	}, {
 		name: "metadata",
 		rules: ExtractionRules{
-			Deployment: true,
-			Namespace:  true,
-			PodName:    true,
-			PodUID:     true,
-			Node:       true,
-			Cluster:    true,
-			StartTime:  true,
+			ClusterName:        true,
+			ContainerID:        true,
+			ContainerImage:     true,
+			ContainerName:      true,
+			DaemonSetName:      true,
+			DeploymentName:     true,
+			HostName:           true,
+			PodUID:             true,
+			PodName:            true,
+			ReplicaSetName:     true,
+			ServiceName:        true,
+			StatefulSetName:    true,
+			StartTime:          true,
+			Namespace:          true,
+			NodeName:           true,
+			OwnerLookupEnabled: true,
+			Tags:               NewExtractionFieldTags(),
 		},
 		attributes: map[string]string{
-			"k8s.deployment.name": "auth-service",
-			"k8s.namespace.name":  "ns1",
 			"k8s.cluster.name":    "cluster1",
-			"k8s.node.name":       "node1",
+			"k8s.container.id":    "111-222-333",
+			"k8s.container.image": "auth-service-image",
+			"k8s.container.name":  "auth-service-container-name",
+			"k8s.deployment.name": "auth-service",
+			"k8s.pod.hostname":    "auth-hostname3",
+			"k8s.pod.id":          "33333",
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
-			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
 			"k8s.pod.startTime":   pod.GetCreationTimestamp().String(),
+			"k8s.replicaset.name": "SomeReplicaSet",
+			"k8s.service.name":    "foo, bar",
+			"k8s.namespace.name":  "ns1",
+			"k8s.node.name":       "node1",
+		},
+	}, {
+		name: "non-default tags",
+		rules: ExtractionRules{
+			ClusterName:     true,
+			ContainerID:     true,
+			ContainerImage:  false,
+			ContainerName:   true,
+			DaemonSetName:   false,
+			DeploymentName:  false,
+			HostName:        false,
+			PodUID:          false,
+			PodName:         false,
+			ReplicaSetName:  false,
+			ServiceName:     false,
+			StatefulSetName: false,
+			StartTime:       false,
+			Namespace:       false,
+			NodeName:        false,
+			Tags: ExtractionFieldTags{
+				ClusterName:   "cc",
+				ContainerID:   "cid",
+				ContainerName: "cn",
+			},
+		},
+		attributes: map[string]string{
+			"cc":  "cluster1",
+			"cid": "111-222-333",
+			"cn":  "auth-service-container-name",
 		},
 	}, {
 		name: "labels",
@@ -389,6 +481,34 @@ func TestExtractionRules(t *testing.T) {
 			"a1": "av1",
 		},
 	},
+		{
+			name: "generic-labels",
+			rules: ExtractionRules{
+				OwnerLookupEnabled: true,
+				Tags:               NewExtractionFieldTags(),
+				Annotations: []FieldExtractionRule{{
+					Name: "k8s.pod.annotation.%s",
+					Key:  "*",
+				},
+				},
+				Labels: []FieldExtractionRule{{
+					Name: "k8s.pod.label.%s",
+					Key:  "*",
+				},
+				},
+				NamespaceLabels: []FieldExtractionRule{{
+					Name: "namespace_labels_%s",
+					Key:  "*",
+				},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.pod.label.label1":           "lv1",
+				"k8s.pod.label.label2":           "k1=v1 k5=v5 extra!",
+				"k8s.pod.annotation.annotation1": "av1",
+				"namespace_labels_label":         "namespace_label_value",
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -637,7 +757,7 @@ func Test_selectorsFromFilters(t *testing.T) {
 func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters) (*WatchClient, *observer.ObservedLogs) {
 	observedLogger, logs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(observedLogger)
-	c, err := New(logger, k8sconfig.APIConfig{}, e, f, newFakeAPIClientset, NewFakeInformer)
+	c, err := New(logger, k8sconfig.APIConfig{}, e, f, newFakeAPIClientset, NewFakeInformer, newFakeOwnerProvider)
 	require.NoError(t, err)
 	return c.(*WatchClient), logs
 }
@@ -645,3 +765,92 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
 	return newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
 }
+
+//func newBenchmarkClient(b *testing.B) *WatchClient {
+//	e := ExtractionRules{
+//		ClusterName:     true,
+//		ContainerID:     true,
+//		ContainerImage:  true,
+//		ContainerName:   true,
+//		DaemonSetName:   true,
+//		DeploymentName:  true,
+//		HostName:        true,
+//		PodUID:           true,
+//		PodName:         true,
+//		ReplicaSetName:  true,
+//		ServiceName:     true,
+//		StatefulSetName: true,
+//		StartTime:       true,
+//		Namespace:       true,
+//		NodeName:        true,
+//		Tags:            NewExtractionFieldTags(),
+//	}
+//	f := Filters{}
+//
+//	c, _ := New(zap.NewNop(), e, f, newFakeAPIClientset, newFakeInformer, newFakeOwnerProvider, newFakeOwnerProvider)
+//	return c.(*WatchClient)
+//}
+//
+//// benchmark actually checks what's the impact of adding new Pod, which is mostly impacted by duration of API call
+//func benchmark(b *testing.B, podsPerUniqueOwner int) {
+//	c := newBenchmarkClient(b)
+//
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//		pod := &api_v1.Pod{
+//			ObjectMeta: meta_v1.ObjectMeta{
+//				Name:              fmt.Sprintf("pod-number-%d", i),
+//				Namespace:         "ns1",
+//				UID:               types.UID(fmt.Sprintf("33333-%d", i)),
+//				CreationTimestamp: meta_v1.Now(),
+//				ClusterName:       "cluster1",
+//				Labels: map[string]string{
+//					"label1": fmt.Sprintf("lv1-%d", i),
+//					"label2": "k1=v1 k5=v5 extra!",
+//				},
+//				Annotations: map[string]string{
+//					"annotation1": fmt.Sprintf("av%d", i),
+//				},
+//				OwnerReferences: []meta_v1.OwnerReference{
+//					{
+//						Kind: "ReplicaSet",
+//						Name: "foo-bar-rs",
+//						UID:  types.UID(fmt.Sprintf("1a1658f9-7818-11e9-90f1-02324f7e0d1e-%d", i/podsPerUniqueOwner)),
+//					},
+//				},
+//			},
+//			Spec: api_v1.PodSpec{
+//				NodeName: "node1",
+//				Hostname: "auth-hostname3",
+//				Containers: []api_v1.Container{
+//					{
+//						Image: "auth-service-image",
+//						Name:  "auth-service-container-name",
+//					},
+//				},
+//			},
+//			Status: api_v1.PodStatus{
+//				PodIP: fmt.Sprintf("%d.%d.%d.%d", (i>>24)%256, (i>>16)%256, (i>>8)%256, i%256),
+//				ContainerStatuses: []api_v1.ContainerStatus{
+//					{
+//						ContainerID: fmt.Sprintf("111-222-333-%d", i),
+//					},
+//				},
+//			},
+//		}
+//
+//		c.handlePodAdd(pod)
+//		_, ok := c.GetPodByIP(pod.Status.PodIP)
+//		require.True(b, ok)
+//
+//	}
+//
+//}
+//
+//func BenchmarkManyPodsPerOwner(b *testing.B) {
+//	benchmark(b, 100000)
+//}
+//
+//func BenchmarkFewPodsPerOwner(b *testing.B) {
+//	benchmark(b, 10)
+//}

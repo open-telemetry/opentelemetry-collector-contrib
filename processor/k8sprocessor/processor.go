@@ -45,7 +45,7 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, nil, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -139,6 +139,58 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		attrs.InsertString(k, v)
 	}
 }
+
+//func (kp *kubernetesprocessor) consumeZipkinSpan(ctx context.Context, span *tracepb.Span) error {
+//	podIP := ""
+//	if span.Attributes != nil && span.Attributes.AttributeMap != nil {
+//		value := span.Attributes.AttributeMap[k8sIPLabelName]
+//		if value == nil {
+//			value = span.Attributes.AttributeMap[clientIPLabelName]
+//		}
+//		if value != nil {
+//			podIP = value.GetStringValue().Value
+//		}
+//	}
+//
+//	if span.Attributes == nil {
+//		span.Attributes = &tracepb.Span_Attributes{}
+//	}
+//
+//	if span.Attributes.AttributeMap == nil {
+//		span.Attributes.AttributeMap = make(map[string]*tracepb.AttributeValue)
+//	}
+//
+//	// Check if the receiver detected client IP.
+//	if podIP == "" {
+//		if c, ok := client.FromContext(ctx); ok {
+//			podIP = c.IP
+//			span.Attributes.AttributeMap[k8sIPLabelName] = &tracepb.AttributeValue{
+//				Value: &tracepb.AttributeValue_StringValue{
+//					StringValue: &tracepb.TruncatableString{
+//						Value: podIP}}}
+//		}
+//	}
+//
+//	// Don't invoke any k8s client functionality in passthrough mode.
+//	// Just tag the IP and forward the batch.
+//	if kp.passthroughMode {
+//		return nil
+//	}
+//
+//	attrs := kp.getAttributesForPodIP(podIP)
+//	if len(attrs) == 0 {
+//		return nil
+//	}
+//
+//	for k, v := range attrs {
+//		span.Attributes.AttributeMap[k] = &tracepb.AttributeValue{
+//			Value: &tracepb.AttributeValue_StringValue{
+//				StringValue: &tracepb.TruncatableString{
+//					Value: v}}}
+//	}
+//
+//	return nil
+//}
 
 func (kp *kubernetesprocessor) getAttributesForPodIP(ip string) map[string]string {
 	pod, ok := kp.kc.GetPodByIP(ip)

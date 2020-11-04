@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -44,6 +43,7 @@ type WatchClient struct {
 	deploymentRegex *regexp.Regexp
 	deleteQueue     []deleteRequest
 	stopCh          chan struct{}
+	op              OwnerAPI
 
 	Pods    map[string]*Pod
 	Rules   ExtractionRules
@@ -55,7 +55,7 @@ type WatchClient struct {
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, newClientSet APIClientsetProvider, newInformer InformerProvider, newOwnerProviderFunc OwnerProvider) (Client, error) {
 	c := &WatchClient{logger: logger, Rules: rules, Filters: filters, deploymentRegex: dRegex, stopCh: make(chan struct{})}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -74,6 +74,18 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	if err != nil {
 		return nil, err
 	}
+
+	if c.Rules.OwnerLookupEnabled {
+		if newOwnerProviderFunc == nil {
+			newOwnerProviderFunc = newOwnerProvider
+		}
+
+		c.op, err = newOwnerProviderFunc(logger, c.kc, labelSelector, fieldSelector, c.Filters.Namespace)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	logger.Info(
 		"k8s filtering",
 		zap.String("labelSelector", labelSelector.String()),
@@ -89,6 +101,10 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() {
+	if c.op != nil {
+		c.op.Start()
+	}
+
 	c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
@@ -100,6 +116,10 @@ func (c *WatchClient) Start() {
 // Stop signals the the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
+
+	if c.op != nil {
+		c.op.Stop()
+	}
 }
 
 func (c *WatchClient) handlePodAdd(obj interface{}) {
@@ -186,56 +206,137 @@ func (c *WatchClient) GetPodByIP(ip string) (*Pod, bool) {
 func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
 	if c.Rules.PodName {
-		tags[conventions.AttributeK8sPod] = pod.Name
+		tags[c.Rules.Tags.PodName] = pod.Name
 	}
 
 	if c.Rules.Namespace {
-		tags[conventions.AttributeK8sNamespace] = pod.GetNamespace()
+		tags[c.Rules.Tags.Namespace] = pod.GetNamespace()
 	}
 
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			tags[tagStartTime] = ts.String()
+			tags[c.Rules.Tags.StartTime] = ts.String()
 		}
 	}
 
 	if c.Rules.PodUID {
 		uid := pod.GetUID()
-		tags[conventions.AttributeK8sPodUID] = string(uid)
+		tags[c.Rules.Tags.PodUID] = string(uid)
 	}
 
-	if c.Rules.Deployment {
+	if c.Rules.DeploymentName {
 		// format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
-			tags[conventions.AttributeK8sDeployment] = parts[1]
+			tags[c.Rules.Tags.DeploymentName] = parts[1]
 		}
 	}
 
-	if c.Rules.Node {
-		tags[tagNodeName] = pod.Spec.NodeName
+	if c.Rules.NodeName {
+		tags[c.Rules.Tags.NodeName] = pod.Spec.NodeName
 	}
 
-	if c.Rules.Cluster {
+	if c.Rules.HostName {
+		// Basing on v1.17 Kubernetes docs, when a hostname is specified, it takes precedence over
+		// the associated metadata name, see:
+		// https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-hostname-and-subdomain-fields
+		if pod.Spec.Hostname == "" {
+			tags[c.Rules.Tags.HostName] = pod.Name
+		} else {
+			tags[c.Rules.Tags.HostName] = pod.Spec.Hostname
+		}
+	}
+
+	if c.Rules.ClusterName {
 		clusterName := pod.GetClusterName()
 		if clusterName != "" {
-			tags[conventions.AttributeK8sCluster] = clusterName
+			tags[c.Rules.Tags.ClusterName] = clusterName
 		}
+	}
+
+	if c.Rules.OwnerLookupEnabled {
+		owners := c.op.GetOwners(pod)
+
+		for _, owner := range owners {
+			switch owner.kind {
+			case "DaemonSet":
+				if c.Rules.DaemonSetName {
+					tags[c.Rules.Tags.DaemonSetName] = owner.name
+				}
+			case "DeploymentName":
+				// This should be already set earlier
+			case "ReplicaSet":
+				if c.Rules.ReplicaSetName {
+					tags[c.Rules.Tags.ReplicaSetName] = owner.name
+				}
+			case "StatefulSet":
+				if c.Rules.StatefulSetName {
+					tags[c.Rules.Tags.StatefulSetName] = owner.name
+				}
+			default:
+				// Do nothing
+			}
+		}
+
+		if c.Rules.ServiceName {
+			tags[c.Rules.Tags.ServiceName] = strings.Join(c.op.GetServices(pod), ", ")
+		}
+
+	}
+
+	if len(pod.Status.ContainerStatuses) > 0 {
+		cs := pod.Status.ContainerStatuses[0]
+		if c.Rules.ContainerID {
+			tags[c.Rules.Tags.ContainerID] = cs.ContainerID
+		}
+	}
+
+	if len(pod.Spec.Containers) > 0 {
+		container := pod.Spec.Containers[0]
+
+		if c.Rules.ContainerName {
+			tags[c.Rules.Tags.ContainerName] = container.Name
+		}
+		if c.Rules.ContainerImage {
+			tags[c.Rules.Tags.ContainerImage] = container.Image
+		}
+	}
+
+	if c.Rules.PodUID {
+		tags[c.Rules.Tags.PodUID] = string(pod.UID)
 	}
 
 	for _, r := range c.Rules.Labels {
-		if v, ok := pod.Labels[r.Key]; ok {
-			tags[r.Name] = c.extractField(v, r)
+		c.extractLabelsIntoTags(r, pod.Labels, tags)
+	}
+
+	if len(c.Rules.NamespaceLabels) > 0 && c.Rules.OwnerLookupEnabled {
+		namespace := c.op.GetNamespace(pod)
+		if namespace != nil {
+			for _, r := range c.Rules.NamespaceLabels {
+				c.extractLabelsIntoTags(r, namespace.Labels, tags)
+			}
 		}
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if v, ok := pod.Annotations[r.Key]; ok {
+		c.extractLabelsIntoTags(r, pod.Annotations, tags)
+	}
+	return tags
+}
+
+func (c *WatchClient) extractLabelsIntoTags(r FieldExtractionRule, labels map[string]string, tags map[string]string) {
+	if r.Key == "*" {
+		// Special case, extract everything
+		for label, value := range labels {
+			tags[fmt.Sprintf(r.Name, label)] = c.extractField(value, r)
+		}
+	} else {
+		if v, ok := labels[r.Key]; ok {
 			tags[r.Name] = c.extractField(v, r)
 		}
 	}
-	return tags
 }
 
 func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {

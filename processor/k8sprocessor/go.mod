@@ -14,3 +14,5 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ./../../internal/k8sconfig
+
+replace go.opentelemetry.io/collector => github.com/SumoLogic/opentelemetry-collector v0.13.0
