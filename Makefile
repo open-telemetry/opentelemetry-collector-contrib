@@ -131,7 +131,7 @@ run:
 docker-component: check-component
 	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
 	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
-	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
+	docker build -t $(COMPONENT) -f ./cmd/$(COMPONENT)/Dockerfile .
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
 .PHONY: check-component

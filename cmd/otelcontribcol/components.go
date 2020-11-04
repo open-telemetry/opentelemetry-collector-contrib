@@ -47,6 +47,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
@@ -152,6 +153,7 @@ func components() (component.Factories, error) {
 	}
 
 	processors := []component.ProcessorFactory{
+		sourceprocessor.NewFactory(),
 		groupbytraceprocessor.NewFactory(),
 		k8sprocessor.NewFactory(),
 		metricstransformprocessor.NewFactory(),

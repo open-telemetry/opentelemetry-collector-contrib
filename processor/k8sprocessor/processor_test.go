@@ -217,7 +217,7 @@ func TestProcessorBadConfig(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider) (kube.Client, error) {
+	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.OwnerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -698,3 +698,28 @@ func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v strin
 	assert.EqualValues(t, pdata.AttributeValueSTRING, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
 }
+
+//func BenchmarkConsumingTraceData(b *testing.B) {
+//	next := &testConsumer{}
+//	p, _ := NewTraceProcessor(
+//		zap.NewNop(),
+//		next,
+//		kube.NewFakeClient,
+//	)
+//
+//	kp, _ := p.(*kubernetesprocessor)
+//	kc, _ := kp.kc.(*kube.FakeClient)
+//
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//		ip := "1.1.1.1"
+//		attrs := map[string]string{
+//			"pod":         "test-2323",
+//			"ns":          "default",
+//			"another tag": "value",
+//		}
+//		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
+//		ctx := client.NewContext(context.Background(), &client.Client{IP: ip})
+//		p.ConsumeTraceData(ctx, consumerdata.TraceData{})
+//	}
+//}
