@@ -75,6 +75,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSEC2)
+	attr.InsertString("cloud.namespace", "aws/ec2")
 	attr.InsertString(conventions.AttributeCloudRegion, meta.Region)
 	attr.InsertString(conventions.AttributeCloudAccountID, meta.AccountID)
 	attr.InsertString(conventions.AttributeCloudAvailabilityZone, meta.AvailabilityZone)

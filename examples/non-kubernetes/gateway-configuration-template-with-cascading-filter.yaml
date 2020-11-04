@@ -1,0 +1,104 @@
+receivers:
+  jaeger:
+    protocols:
+      thrift_compact:
+        endpoint: "0.0.0.0:6831"
+      thrift_binary:
+        endpoint: "0.0.0.0:6832"
+      grpc:
+        endpoint: "0.0.0.0:14250"
+      thrift_http:
+        endpoint: "0.0.0.0:14268"
+  opencensus:
+    endpoint: "0.0.0.0:55678"
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+      http:
+        endpoint: "0.0.0.0:55681"
+  zipkin:
+    endpoint: "0.0.0.0:9411"
+processors:
+  ## The memory_limiter processor is used to prevent out of memory situations on the collector.
+  memory_limiter:
+    ## check_interval is the time between measurements of memory usage for the
+    ## purposes of avoiding going over the limits. Defaults to zero, so no
+    ## checks will be performed. Values below 1 second are not recommended since
+    ## it can result in unnecessary CPU consumption.
+    check_interval: 5s
+
+    ## Maximum amount of memory, in MiB, targeted to be allocated by the process heap.
+    ## Note that typically the total memory usage of process will be about 50MiB higher
+    ## than this value.
+    limit_mib: 1900
+
+  ## Smart cascading filtering rules with preset limits.
+  cascading_filter:
+    ## (default = 30s): Wait time since the first span of a trace arrived before making
+    ## a filtering decision
+    decision_wait: 30s
+    ## (default = 50000): Maximum number of traces kept in memory
+    num_traces: 100000
+    ## (default = 0): Expected number of new traces (helps in allocating data structures)
+    expected_new_traces_per_sec: 1000
+    ## (default = 0): defines the global limit of maximum number of spans per second
+    ## that are going to be emitted
+    spans_per_second: 1660
+    ## (default = 0.2): Ratio of spans that are always probabilistically filtered
+    ## (hence might be used for metrics calculation).
+    probabilistic_filtering_ratio: 0.2
+    ## (no default): Policies used to make a sampling decision
+    policies:
+      - name: sampling-priority,
+        ## string_attribute: allows to specify conditions that need to be met
+        string_attribute: {
+          key: sampling.priority, values: [ "1" ]
+        },
+        ## Spans_per_second: max number of emitted spans per second by this policy.
+        spans_per_second: 500
+      - name: extended-duration
+        ## Spans_per_second: max number of emitted spans per second by this policy.
+        spans_per_second: 500
+        properties:
+          ## Selects the span if the duration is greater or equal the given
+          ## value (use s or ms as the suffix to indicate unit).
+          min_duration: 5s
+      - name: "status_code_condition",
+        ## Spans_per_second: max number of emitted spans per second by this policy.
+        spans_per_second: 500,
+        ## numeric_attribute: provides a list of conditions that need to be met
+        numeric_attribute: {
+          key: "http.status_code", min_value: 400, max_value: 999
+        }
+      - name: everything-else
+        ## This selects all traces, up the to the global limit
+        spans_per_second: -1
+
+  ## The batch processor accepts spans and places them into batches grouped by node and resource
+  batch:
+    ## Number of spans after which a batch will be sent regardless of time
+    send_batch_size: 256
+    ## Never more than this many spans are being sent in a batch
+    send_batch_max_size: 512
+    ## Time duration after which a batch will be sent regardless of size
+    timeout: 5s
+
+extensions:
+  health_check: {}
+exporters:
+  otlphttp:
+    traces_endpoint: ENDPOINT_URL
+  ## Following generates verbose logs with span content, useful to verify what
+  ## metadata is being tagged. To enable, uncomment and add "logging" to exporters below.
+  ## There are two levels that could be used: `debug` and `info` with the former
+  ## being much more verbose and including (sampled) spans content
+  # logging:
+  #   loglevel: debug
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [jaeger, opencensus, otlp, zipkin]
+      processors: [memory_limiter, cascading_filter, batch]
+      exporters: [otlphttp]

@@ -1,0 +1,242 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template to install AWS OTel Collector on EC2 - Amazon Linux.'
+Parameters:
+  SSHKeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: m4.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  InstanceAMI:
+    Description: Managed AMI ID for EC2 Instance
+    Type : String
+  IAMRole:
+    Description: EC2 attached IAM role
+    Type: String
+    Default: SumologicAWSOTelColRoleEC2
+    ConstraintDescription: must be an existing IAM role which will be attached to EC2 instance.
+  IAMPolicy:
+    Description: IAM Role attached IAM Managed Policy
+    Type: String
+    Default: SumologicAWSOTelColPolicyEC2
+    ConstraintDescription: Must be an existing IAM Managed Policy which will be attached to IAM Role.
+  IAMInstanceProfileName:
+    Description: IAM Role attached IAM Instance Profile
+    Type: String
+    Default: SumologicAWSOTelColRoleEC2
+    ConstraintDescription: Must be an existing IAM Instance Profile which will be attached to IAM Role.
+  SumoHttpTracesURL:
+    Type: String
+    Description: Enther the Sumologic HTTP Traces Endpoint URL
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - 01_setupCfnHup
+            - 02_config-aws-otel-collector
+            - 03_restart-aws-otel-collector
+          UpdateEnvironment:
+            - 02_config-aws-otel-collector
+            - 03_restart-aws-otel-collector
+        # Definition of YAML configuration of aws-otel-collector, you can change the configuration below.
+        02_config-aws-otel-collector:
+          files:
+            '/opt/aws/aws-otel-collector/etc/config.yaml':
+              content: !Sub
+              - |
+                  extensions:
+                    health_check:
+                  receivers:
+                    otlp:
+                      protocols:
+                        grpc:
+                          endpoint: 0.0.0.0:4317
+                        http:
+                          endpoint: 0.0.0.0:55681
+                    awsxray:
+                      endpoint: 0.0.0.0:2000
+                      transport: udp
+                  processors:
+                    batch/traces:
+                      timeout: 1s
+                      send_batch_size: 50
+                    batch/metrics:
+                      timeout: 60s
+                  exporters:
+                    otlphttp:
+                      endpoint: ${sumo_http_traces_url}
+                  service:
+                    extensions: [health_check]
+                    pipelines:
+                      traces:
+                        receivers: [otlp,awsxray]
+                        processors: [batch/traces]
+                        exporters: [otlphttp]
+                      metrics:
+                        receivers: [otlp]
+                        processors: [batch/metrics]
+                        exporters: [otlphttp]
+              - sumo_http_traces_url: !Ref SumoHttpTracesURL
+        # Invoke aws-otel-collector-ctl to restart aws-otel-collector.
+        03_restart-aws-otel-collector:
+          commands:
+            01_stop_service:
+              command: sudo /opt/aws/aws-otel-collector/bin/aws-otel-collector-ctl -a stop
+            02_start_service:
+              command: sudo /opt/aws/aws-otel-collector/bin/aws-otel-collector-ctl -a start
+        # Cfn-hup setting, it is to monitor the change of metadata.
+        # When there is change in the contents of json file in the metadata section, cfn-hup will call cfn-init to restart aws-otel-collector.
+        01_setupCfnHup:
+          files:
+            '/etc/cfn/cfn-hup.conf':
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+              mode: '000400'
+              owner: root
+              group: root
+            '/etc/cfn/hooks.d/aws-otel-collector-auto-reloader.conf':
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.EC2Instance.Metadata.AWS::CloudFormation::Init.02_config-aws-otel-collector
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets UpdateEnvironment
+                runas=root
+              mode: '000400'
+              owner: root
+              group: root
+            "/lib/systemd/system/cfn-hup.service":
+              content: !Sub |
+                [Unit]
+                Description=cfn-hup daemon
+                [Service]
+                Type=simple
+                ExecStart=/opt/aws/bin/cfn-hup
+                Restart=always
+                [Install]
+                WantedBy=multi-user.target
+          commands:
+            01enable_cfn_hup:
+              command: !Sub |
+                systemctl enable cfn-hup.service
+            02start_cfn_hup:
+              command: !Sub |
+                systemctl start cfn-hup.service
+
+    Properties:
+      InstanceType:
+        Ref: InstanceType
+      IamInstanceProfile:
+        Ref: IAMRole
+      KeyName:
+        Ref: SSHKeyName
+      ImageId:
+        Ref: InstanceAMI
+      SecurityGroups:
+        - Ref: InstanceSecurityGroup
+      Tags:
+        - Key: Name
+          Value: sumologic-aws-otel-col-ec2
+      UserData:
+        # This script below is to install aws-otel-collector, restart aws-otel-collector and tell the result to cloudformation.
+        Fn::Base64: !Sub
+        - |
+            #!/bin/bash
+
+            # Download AWS OTel Collector RPM
+            sudo rpm -Uvh https://aws-otel-collector.s3.amazonaws.com/amazon_linux/amd64/latest/aws-otel-collector.rpm
+
+            # Setup Sumologic HTTP Traces URL ENV
+            echo "export SUMO_HTTP_TRACES_URL=${sumo_http_traces_url}" > /etc/profile.d/setSumoVar.sh
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region} --configsets default
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource EC2Instance --region ${AWS::Region}
+        - sumo_http_traces_url: !Ref SumoHttpTracesURL
+    DependsOn:
+      - EC2Role
+      - IAMInstanceProfile
+      - InstanceSecurityGroup
+
+  IAMInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: !Ref IAMInstanceProfileName
+      Path: /
+      Roles:
+        - !Ref IAMRole
+    DependsOn: EC2Role
+
+  EC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      Description: Allows EC2 to call AWS services on your behalf.
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${IAMPolicy}'
+      RoleName: !Ref IAMRole
+    DependsOn: EC2Policy
+
+  EC2Policy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      Description: Allows EC2 to call AWS services on your behalf.
+      Path: /
+      ManagedPolicyName: !Ref IAMPolicy
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:PutLogEvents
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DescribeLogStreams
+              - logs:DescribeLogGroups
+              - xray:PutTraceSegments
+              - xray:PutTelemetryRecords
+              - xray:GetSamplingRules
+              - xray:GetSamplingTargets
+              - xray:GetSamplingStatisticSummaries
+              - ssm:GetParameters
+            Resource: '*'
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access via port 22
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 4317
+          ToPort: 4317
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 55680
+          ToPort: 55680
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 55681
+          ToPort: 55681
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 2000
+          ToPort: 2000
+          CidrIp: 0.0.0.0/0

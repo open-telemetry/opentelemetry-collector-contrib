@@ -220,18 +220,21 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.38.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.38.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.38.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.38.0 // indirect
@@ -592,7 +595,15 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/grou
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ../../processor/groupbytraceprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor => ../../processor/cascadingfilterprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ../../processor/k8sprocessor/
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ../../processor/sourceprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor => ../../processor/sumologicsyslogprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ../../processor/resourcedetectionprocessor/
 

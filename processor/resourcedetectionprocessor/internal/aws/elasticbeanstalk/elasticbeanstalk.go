@@ -79,6 +79,7 @@ func (d Detector) Detect(context.Context) (resource pdata.Resource, schemaURL st
 	attr := res.Attributes()
 	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	attr.InsertString("cloud.namespace", "ElasticBeanstalk")
 	attr.InsertString(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
 	attr.InsertString(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
 	attr.InsertString(conventions.AttributeServiceVersion, ebmd.VersionLabel)

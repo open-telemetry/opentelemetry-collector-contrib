@@ -99,6 +99,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")
+	attr.InsertString("cloud.namespace", "ElasticBeanstalk")
 	attr.InsertString("deployment.environment", "BETA")
 	attr.InsertString("service.instance.id", "23")
 	attr.InsertString("service.version", "env-version-1234")

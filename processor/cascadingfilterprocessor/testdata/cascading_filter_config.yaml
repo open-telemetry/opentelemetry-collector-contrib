@@ -1,0 +1,66 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+processors:
+  cascading_filter/1:
+    probabilistic_filtering_rate: 100
+    trace_reject_filters:
+      - name: healthcheck-rule
+        name_pattern: "health.*"
+    trace_accept_filters:
+      - name: include-errors
+        spans_per_second: 200
+        properties:
+          min_number_of_errors: 2
+      - name: include-long-traces
+        spans_per_second: 300
+        properties:
+          min_number_of_spans: 10
+      - name: include-high-latency
+        spans_per_second: 400
+        properties:
+          min_duration: 9s
+  cascading_filter/2:
+    decision_wait: 10s
+    num_traces: 100
+    expected_new_traces_per_sec: 10
+    spans_per_second: 1000
+    probabilistic_filtering_ratio: 0.1
+    trace_reject_filters:
+      - name: healthcheck-rule
+        name_pattern: "health.*"
+      - name: remove-all-traces-with-healthcheck-service
+        string_attribute: {key: service.name, values: [healthcheck]}
+    trace_accept_filters:
+      - name: test-policy-1
+      - name: test-policy-2
+        numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+      - name: test-policy-3
+        string_attribute: {key: key2, values: [value1, value2]}
+      - name: test-policy-4
+        spans_per_second: 35
+      - name: test-policy-5
+        spans_per_second: 123
+        numeric_attribute: {key: key1, min_value: 50, max_value: 100}
+        invert_match: true
+      - name: test-policy-6
+        spans_per_second: 50
+        properties: {min_duration: 9s }
+      - name: test-policy-7
+        properties:
+          name_pattern: "foo.*"
+          min_number_of_spans: 10
+          min_number_of_errors: 2
+          min_duration: 9s
+      - name: everything_else
+        spans_per_second: -1
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [cascading_filter]
+      exporters: [nop]
