@@ -21,15 +21,12 @@ Usage
 
 .. code-block:: python
 
-    from opentelemetry import trace
-    from opentelemetry.instrumentation.elasticsearch import ElasticsearchInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.instrumentation.elasticsearch import ElasticSearchInstrumentor
     import elasticsearch
 
-    trace.set_tracer_provider(TracerProvider())
 
     # instrument elasticsearch
-    ElasticsearchInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
+    ElasticSearchInstrumentor().instrument()
 
     # Using elasticsearch as normal now will automatically generate spans
     es = elasticsearch.Elasticsearch()
@@ -88,7 +85,8 @@ class ElasticsearchInstrumentor(BaseInstrumentor):
     def __init__(self, span_name_prefix=None):
         if not span_name_prefix:
             span_name_prefix = environ.get(
-                "OTEL_PYTHON_ELASTICSEARCH_NAME_PREFIX", "Elasticsearch",
+                "OTEL_PYTHON_ELASTICSEARCH_NAME_PREFIX",
+                "Elasticsearch",
             )
         self._span_name_prefix = span_name_prefix.strip()
         super().__init__()
@@ -127,7 +125,8 @@ def _wrap_perform_request(tracer, span_name_prefix):
         body = kwargs.get("body", None)
 
         with tracer.start_as_current_span(
-            op_name, kind=SpanKind.CLIENT,
+            op_name,
+            kind=SpanKind.CLIENT,
         ) as span:
             if span.is_recording():
                 attributes = {

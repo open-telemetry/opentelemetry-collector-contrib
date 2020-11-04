@@ -24,11 +24,10 @@ Usage
 
 .. code-block:: python
 
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.instrumentation.pymemcache import PymemcacheInstrumentor
-    trace.set_tracer_provider(TracerProvider())
+
     PymemcacheInstrumentor().instrument()
+
     from pymemcache.client.base import Client
     client = Client(('localhost', 11211))
     client.set('some_key', 'some_value')

@@ -27,15 +27,12 @@ Usage
 
 .. code:: python
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.redis import RedisInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
     import redis
 
-    trace.set_tracer_provider(TracerProvider())
 
     # Instrument redis
-    RedisInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
+    RedisInstrumentor().instrument()
 
     # This will report a span with the default settings
     client = redis.StrictRedis(host="localhost", port=6379)

@@ -27,10 +27,7 @@ Usage
 
     from jinja2 import Environment, FileSystemLoader
     from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
 
-    trace.set_tracer_provider(TracerProvider())
 
     Jinja2Instrumentor().instrument()
 

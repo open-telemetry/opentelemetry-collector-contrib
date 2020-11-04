@@ -25,11 +25,8 @@ Usage
     import mysql.connector
     import pyodbc
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.dbapi import trace_integration
-    from opentelemetry.sdk.trace import TracerProvider
 
-    trace.set_tracer_provider(TracerProvider())
 
     # Ex: mysql.connector
     trace_integration(mysql.connector, "connect", "mysql", "sql")

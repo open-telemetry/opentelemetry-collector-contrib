@@ -27,17 +27,12 @@ Usage
 
 .. code:: python
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
     import botocore
 
-    trace.set_tracer_provider(TracerProvider())
 
     # Instrument Botocore
-    BotocoreInstrumentor().instrument(
-        tracer_provider=trace.get_tracer_provider()
-    )
+    BotocoreInstrumentor().instrument()
 
     # This will create a span with Botocore-specific attributes
     session = botocore.session.get_session()
