@@ -271,11 +271,11 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000}}`
+	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":""},"start_time":2000000000}}`
+	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":""},"start_time":2000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000}}`
+	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
