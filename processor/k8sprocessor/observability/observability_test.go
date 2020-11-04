@@ -56,9 +56,7 @@ func (e *exporter) ExportMetrics(ctx context.Context, data []*metricdata.Metric)
 	return nil
 }
 
-// NOTE:
-// This test can only be run with -count 1 because of static
-// metricproducer.GlobalManager() used in metricexport.NewReader().
+// TODO: FIXME: this is one flaky test
 func TestMetrics(t *testing.T) {
 	type testCase struct {
 		name       string
@@ -81,57 +79,20 @@ func TestMetrics(t *testing.T) {
 			"otelsvc/k8s/ip_lookup_miss",
 			RecordIPLookupMiss,
 		},
-		{
-			"otelsvc/k8s/namespace_added",
-			RecordNamespaceAdded,
-		},
-		{
-			"otelsvc/k8s/namespace_updated",
-			RecordNamespaceUpdated,
-		},
-		{
-			"otelsvc/k8s/namespace_deleted",
-			RecordNamespaceDeleted,
-		},
 	}
 
-	var (
-		fail   = make(chan struct{})
-		chData = make(chan []*metricdata.Metric)
-	)
-
-	go func() {
-		reader := metricexport.NewReader()
-		e := newExporter()
-		ch := e.ReturnAfter(len(tests))
-
-		// Add a manual retry mechanism in case there's a hiccup reading the
-		// metrics from producers in ReadAndExport(): we can wait for the metrics
-		// to come instead of failing because they didn't come right away.
-		for i := 0; i < 10; i++ {
-			go reader.ReadAndExport(e)
-
-			select {
-			case <-time.After(500 * time.Millisecond):
-
-			case data := <-ch:
-				chData <- data
-				return
-			}
-		}
-
-		fail <- struct{}{}
-	}()
-
+	e := newExporter()
+	metricReader := metricexport.NewReader()
 	for _, tt := range tests {
 		tt.recordFunc()
 	}
+	go metricReader.ReadAndExport(e)
 
 	var data []*metricdata.Metric
 	select {
-	case <-fail:
+	case <-time.After(time.Second * 10):
 		t.Fatalf("timedout waiting for metrics to arrive")
-	case data = <-chData:
+	case data = <-e.ReturnAfter(len(tests)):
 	}
 
 	sort.Slice(tests, func(i, j int) bool {
@@ -142,6 +103,7 @@ func TestMetrics(t *testing.T) {
 		return data[i].Descriptor.Name < data[j].Descriptor.Name
 	})
 
+	// TODO: FIXME: this is one flaky test
 	for i, tt := range tests {
 		require.Len(t, data, len(tests))
 		d := data[i]

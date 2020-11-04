@@ -1,0 +1,39 @@
+receivers:
+  nop:
+
+processors:
+  # The following specifies an empty source - it will have no effect on trace or metrics data.
+  source:
+  # The following specifies a non-trivial source
+  source/2:
+    collector: "somecollector"
+    source: "tracesource"
+    source_name: "%{namespace}.%{pod}.%{container}/foo"
+    source_category: "%{namespace}/%{pod_name}/bar"
+    source_category_prefix: "kubernetes/"
+    source_category_replace_dash: "/"
+    exclude:
+      namespace: "excluded_namespace_regex"
+      pod: "excluded_pod_regex"
+      container: "excluded_container_regex"
+      host: "excluded_host_regex"
+      _SYSTEMD_UNIT: "excluded_systemd_unit_regex"
+
+    annotation_prefix: "pod_annotation_"
+    pod_template_hash_key: "pod_labels_pod-template-hash"
+    pod_name_key: "pod_name"
+    namespace_key: "namespace"
+    pod_key: "pod"
+    container_key: "container"
+    source_host_key: "source_host"
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [source/2]
+      exporters: [nop]
+

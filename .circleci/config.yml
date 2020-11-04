@@ -1,26 +1,3 @@
-# Using Contexts:
-#   some jobs depend on secrets like API tokens to work correctly such as publishing to docker hub
-#   or reporting issues to GitHub. All such tokens are stored in CircleCI contexts (https://circleci.com/docs/2.0/contexts).
-#   
-#   All tokens stored in a contexts are injected into a job as environment variables IF the pipeline that runs the job
-#   explicitly enables the context for the job. 
-#
-#   Contexts are protected with security groups. Jobs that use contexts will not run for commits from people who are not
-#   part of the approved security groups for the given context. This means that contributors who are not part of the
-#   OpenTelemetry GitHub organisation will not be able to run jobs that depend on contexts. As a result, PR pipelines
-#   should never depend on any contexts and never use any tokens/secrets.
-#
-#   This CI pipeline uses two contexts:
-#      - github-release-and-issues-api-token
-#        This context makes GITHUB_TOKEN available to jobs. Jobs can use the token to authenticate with the GitHub API.
-#        We use this to report failures as issues back to the GitHub project.
-#        Any member of the OpenTelemetry GitHub organisation can run jobs that require this context e.g, loadtest-with-github-reports.
-#        
-#      - dockerhub-token
-#        This contexts makes DOCKER_HUB_USERNAME and DOCKER_HUB_PASSWORD environment variables available to the jobs.
-#        This is used to publish docker images to Docker Hub.
-#        Only project approvers and maintainers can run jobs that depend on this context such e.g, publish-stable.
-
 version: 2.1
 
 parameters:
@@ -36,11 +13,13 @@ parameters:
 
 orbs:
   win: circleci/windows@2.4.0
+  aws-cli: circleci/aws-cli@1.3.1
+  kubernetes: circleci/kubernetes@0.11.2
 
 executors:
   golang:
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.14
   machine:
     machine:
       image: ubuntu-1604:201903-01
@@ -51,7 +30,6 @@ commands:
       files:
         type: string
         default: |
-            bin/otelcontribcol_darwin_arm64
             bin/otelcontribcol_darwin_amd64
             bin/otelcontribcol_linux_arm64
             bin/otelcontribcol_linux_amd64
@@ -63,7 +41,7 @@ commands:
             dist/otel-contrib-collector-*amd64.msi
     steps:
       - run:
-          name: Check if files exist
+          name: Check if distribution files exist
           command: |
             files="<< parameters.files >>"
             for f in $files; do
@@ -73,6 +51,7 @@ commands:
                   exit 1
               fi
             done
+
 
   setup:
     steps:
@@ -84,15 +63,18 @@ commands:
       - run:
           name: Install tools
           command: make install-tools
+      - run:
+          name: Install testbed tools
+          command: make -C testbed install-tools
       - save_module_cache
 
   setup_go:
     steps:
       - run:
-          name: Install Go 1.17
+          name: Install Go 1.14
           command: |
             sudo rm -rf /usr/local/go
-            curl -L https://golang.org/dl/go1.17.linux-amd64.tar.gz | sudo tar xz -C /usr/local
+            curl -L https://dl.google.com/go/go1.14.4.linux-amd64.tar.gz | sudo tar xz -C /usr/local
       - run:
           name: Add ~/go/bin to PATH
           command: |
@@ -111,7 +93,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -122,7 +104,7 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-{{ checksum "internal/tools/go.sum" }}
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
 
   install_fluentbit:
     steps:
@@ -151,42 +133,27 @@ commands:
         type: string
     steps:
       - run:
+          name: Setup Environment Variables
+          command: |
+            echo "export REGISTRY=public.ecr.aws/sumologic" >> $BASH_ENV
+            echo "export TAG_URL=public.ecr.aws/sumologic/<< parameters.repo >>:<< parameters.tag >>" >> $BASH_ENV
+            echo "export LATEST_URL=public.ecr.aws/sumologic/<< parameters.repo >>:latest" >> $BASH_ENV
+      - run:
           name: Build image
           command: |
             make docker-otelcontribcol
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:<< parameters.tag >>
-            docker tag otelcontribcol:latest otel/<< parameters.repo >>:latest
+            docker tag otelcontribcol:latest ${TAG_URL}
+            docker tag otelcontribcol:latest ${LATEST_URL}
+      - aws-cli/install
       - run:
-          name: Login to Docker Hub
-          command: docker login -u $DOCKER_HUB_USERNAME -p $DOCKER_HUB_PASSWORD
+          name: Login to AWS ECR
+          command: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${REGISTRY}
       - run:
           name: Push image
           command: |
-            docker push otel/<< parameters.repo >>:<< parameters.tag >>
-            docker push otel/<< parameters.repo >>:latest
+            docker push ${TAG_URL}
+            docker push ${LATEST_URL}
 
-  github_issue_generator:
-    steps:
-      - when:
-          condition:
-            equal: [main, << pipeline.git.branch >>]
-          steps:
-            - run:
-                name: Generate GitHub Issue
-                command: issuegenerator ${TEST_RESULTS}
-                when: on_fail
-
-  run_loadtest:
-    steps:
-      - restore_workspace
-      - install_fluentbit
-      - run:
-          name: Loadtest
-          command: TEST_ARGS="-test.run=$(make -C testbed -s list-loadtest-tests | circleci tests split|xargs echo|sed 's/ /|/g')" make e2e-test
-      - store_artifacts:
-          path: testbed/tests/results
-      - store_test_results:
-          path: testbed/tests/results/junit
 
 workflows:
   version: 2
@@ -201,92 +168,94 @@ workflows:
           requires:
             - setup
       - run-stability-tests:
-          context:
-            - github-release-and-issues-api-token
           requires:
-            - cross-compile 
+            - cross-compile
       - publish-dev:
-          context:
-            - dockerhub-token
           requires:
             - run-stability-tests
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+      - run-tracing-tests:
+          repo: opentelemetry-collector-dev
+          tag: ${CIRCLE_SHA1}
+          requires:
+            - publish-dev
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /.*/
+
 
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
+      - windows-test:
+          filters:
+            tags:
+              only: /.*/
       - setup:
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+              only: /.*/
+      - lint:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
       - build-examples:
           requires:
             - setup
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+              only: /.*/
       - cross-compile:
           requires:
             - setup
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      - loadtest-with-github-reports:
-          context:
-            - github-release-and-issues-api-token
-          requires:
-            - cross-compile 
-          filters:
-            branches:
-              only: main
-            tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+              only: /.*/
       - loadtest:
           requires:
-            - cross-compile 
+            - cross-compile
           filters:
-            branches:
-              ignore: main
+            tags:
+              only: /.*/
+      - unit-tests:
+          requires:
+            - setup
+          filters:
+            tags:
+              only: /.*/
       - windows-msi:
           requires:
             - cross-compile
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
-      # this publish-check step only runs on the main branch.
-      # it is identical to the other publish-check step in all ways except
-      # it runs loadtest-with-github-reports instead of loadtest.
-      # This is because these jobs can access the GITHUB_TOKEN secret which is not available to PR builds.
+              only: /.*/
       - publish-check:
           requires:
-            - cross-compile
-            - loadtest-with-github-reports
-            - windows-msi
-            - deb-package
-            - rpm-package
-          filters:
-            branches:
-              only: main
-      # this publish-check step run for PR builds (all branches except main).
-      # it runs the same jobs as the previous public-check step but
-      # it uses the versions that do not need access to the
-      # GITHUB_TOKEN secret. 
-      - publish-check:
-          requires:
+            - lint
+            - unit-tests
+            - integration-tests
             - cross-compile
             - loadtest
+            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
-          filters:
-            branches:
-              ignore: main
       - publish-stable:
-          context:
-            - github-release-and-issues-api-token
-            - dockerhub-token
           requires:
+            - lint
+            - unit-tests
+            - integration-tests
             - cross-compile
-            - loadtest-with-github-reports
+            - loadtest
+            - windows-test
             - windows-msi
             - deb-package
             - rpm-package
@@ -297,13 +266,21 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
       - spawn-stability-tests-job:
           requires:
-            - loadtest-with-github-reports
+            - lint
+            - unit-tests
+            - loadtest
+            - windows-test
+            - integration-tests
             - cross-compile
           filters:
             branches:
-              only: /main|release\/.+/
+              only: /main|release|tracing\/.+/
             tags:
-              ignore: /.*/
+              only: /.*/
+      - integration-tests:
+          filters:
+            tags:
+              only: /.*/
       - build-package:
           name: deb-package
           package_type: deb
@@ -311,7 +288,7 @@ workflows:
             - cross-compile
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+              only: /.*/
       - build-package:
           name: rpm-package
           package_type: rpm
@@ -319,7 +296,8 @@ workflows:
             - cross-compile
           filters:
             tags:
-              only: /^v[0-9]+\.[0-9]+\.[0-9]+.*/
+              only: /.*/
+
 
 jobs:
   setup:
@@ -331,10 +309,20 @@ jobs:
           paths:
             - project
             - go/bin
+  lint:
+    executor: golang
+    steps:
+      - restore_workspace
+      - run:
+          name: Lint
+          command: make -j2 for-all-target TARGET=lint
+      - run:
+          name: Checks
+          command: make -j4 checklicense impi misspell
 
   build-examples:
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.14
     steps:
       - restore_workspace
       - setup_remote_docker
@@ -350,31 +338,55 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
-      - run:
-          name: Log checksums to console
-          command: shasum -a 256 bin/*
       - persist_to_workspace:
           root: ~/
           paths: project/bin
 
-  loadtest-with-github-reports:
+  unit-tests:
     executor: golang
-    parallelism: 6
-    resource_class: medium+
-    environment:
-      TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
-      - run_loadtest
-      - github_issue_generator
+      - restore_workspace
+      - run:
+          name: Unit test coverage
+          command: make unit-tests-with-cover
+      - run:
+          name: Upload unit test coverage
+          command: bash <(curl -s https://codecov.io/bash) -F unit
 
   loadtest:
     executor: golang
-    parallelism: 6
     resource_class: medium+
     environment:
       TEST_RESULTS: testbed/tests/results/junit/results.xml
     steps:
-      - run_loadtest
+      - restore_workspace
+      - install_fluentbit
+      - run:
+          name: Loadtest
+          command: make e2e-test
+      - store_artifacts:
+          path: testbed/tests/results
+      - store_test_results:
+          path: testbed/tests/results/junit
+
+  windows-test:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    environment:
+      GOPATH=~/go
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Upgrade golang
+          command: |
+            choco upgrade golang --version=1.15
+            refreshenv
+      - run:
+          name: Unit tests
+          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+      - save_module_cache
 
   windows-msi:
     executor:
@@ -401,7 +413,7 @@ jobs:
 
   publish-check:
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.14
     steps:
       - attach_to_workspace
       - setup_remote_docker
@@ -415,17 +427,15 @@ jobs:
           command: echo "publish check failed. This means release CI jobs will likely fail as well"
           when: on_fail
 
-  # any pipeline using this job must enable "github-release-and-issues-api-token"
-  # and "dockerhub-token" contexts
   publish-stable:
     docker:
-      - image: cimg/go:1.17
+      - image: cimg/go:1.14
     steps:
       - restore_workspace
       - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
-          repo: opentelemetry-collector-contrib
+          repo: opentelemetry-collector
           tag: ${CIRCLE_TAG:1}
       - run:
           name: Prepare release artifacts
@@ -438,8 +448,6 @@ jobs:
           name: Create Github release and upload artifacts
           command: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME --replace $CIRCLE_TAG dist/
 
-  # any pipeline using this job must enable "github-release-and-issues-api-token"
-  # and "dockerhub-token" contexts
   publish-dev:
     executor: golang
     steps:
@@ -452,7 +460,7 @@ jobs:
             bin/otelcontribcol_windows_amd64.exe
       - setup_remote_docker
       - publish_docker_images:
-          repo: opentelemetry-collector-contrib-dev
+          repo: opentelemetry-collector-dev
           tag: ${CIRCLE_SHA1}
 
   spawn-stability-tests-job:
@@ -461,10 +469,15 @@ jobs:
       - run:
           name: Trigger stability tests job
           command: |
-            curl -f -X POST "https://circleci.com/api/v2/project/github/open-telemetry/${CIRCLE_PROJECT_REPONAME}/pipeline?circle-token=${CIRCLE_API_TOKEN}" \
+            PARAM='"branch": "'"${CIRCLE_BRANCH}"'"'
+            if [ -z "$CIRCLE_BRANCH" ]; then
+              PARAM='"tag": "'"${CIRCLE_TAG}"'"'
+            fi
+            curl -f -X POST "https://circleci.com/api/v2/project/github/SumoLogic/${CIRCLE_PROJECT_REPONAME}/pipeline" \
                 -H 'Content-Type: application/json' \
                 -H 'Accept: application/json' \
-                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, "branch": "'"${CIRCLE_BRANCH}"'"}'
+                -H "Circle-Token: ${CIRCLE_API_TOKEN}" \
+                -d '{"parameters": {"run-build-publish": false, "run-stability-tests": true, "collector-sha": "'"${CIRCLE_SHA1}"'"}, '"${PARAM}"'}'
 
   checkout-commit:
     executor: golang
@@ -476,14 +489,12 @@ jobs:
             git checkout << pipeline.parameters.collector-sha >>
             git status
 
-  # this jobs reports failures as github issues and as a result, any pipeline using this job
-  # must enable "github-release-and-issues-api-token" context
   run-stability-tests:
     parameters:
       # Number of runners must be always in sync with number of stability tests,
       # so every node runs exactly one stability test.
       runners-number:
-        type: integer 
+        type: integer
         default: 9
     executor: golang
     resource_class: medium+
@@ -508,7 +519,51 @@ jobs:
           path: testbed/stabilitytests/results
       - store_test_results:
           path: testbed/stabilitytests/results/junit
-      - github_issue_generator
+      - run:
+          name: Run on fail status
+          command: |
+              curl --request POST \
+              --url https://api.github.com/repos/SumoLogic/opentelemetry-collector-contrib/issues \
+              --header "authorization: Bearer ${GITHUB_TOKEN}" \
+              --header "content-type: application/json" \
+              --data '{
+                "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
+                "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
+                }'
+          when: on_fail
+
+  integration-tests:
+    executor: machine
+    environment:
+      GOPATH: /home/circleci/go
+    steps:
+      - setup_go
+      - setup
+      - run:
+          name: Integration tests with coverage
+          command: |
+            mkdir -p test-results/junit
+            trap "go-junit-report -set-exit-code < test-results/go-integration-tests.out > test-results/junit/results.xml" EXIT
+            make integration-tests-with-cover | tee test-results/go-integration-tests.out
+      - run:
+          name: Upload integration test coverage
+          command: bash <(curl -s https://codecov.io/bash) -F integration
+      - store_test_results:
+          path: test-results/junit
+      - store_artifacts:
+          path: test-results
+      - run:
+          name: Run on fail status
+          command: |
+            curl --request POST \
+            --url https://api.github.com/repos/SumoLogic/opentelemetry-collector-contrib/issues \
+            --header "authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "content-type: application/json" \
+            --data '{
+              "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
+              "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
+              }'
+          when: on_fail
 
   build-package:
     machine:
@@ -543,3 +598,67 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths: project/dist/*.<< parameters.package_type >>
+
+  run-tracing-tests:
+    parameters:
+      repo:
+        type: string
+      tag:
+        type: string
+    docker:
+      - image: ${INFRASTRUCTURE_ACCOUNT_ID}.dkr.ecr.us-west-2.amazonaws.com/tracing-tests/tests:latest
+        aws_auth:
+          aws_access_key_id: ${TRACING_TESTS_AWS_ACCESS_KEY_ID}
+          aws_secret_access_key: ${TRACING_TESTS_AWS_SECRET_ACCESS_KEY}
+    steps:
+      - run:
+          name: "Configure environment variables"
+          command: |
+            echo "export SUMO_API_ENDPOINT=${TRACING_TESTS_SUMO_API_ENDPOINT}" >> $BASH_ENV
+            echo "export OTELCOL_HEALTHCHECK_URL=${TRACING_TESTS_OTELCOL_URL}" >> $BASH_ENV
+            echo "export SUMO_ACCESS_ID=${TRACING_TESTS_SUMO_ACCESS_ID}" >> $BASH_ENV
+            echo "export SUMO_ACCESS_KEY=${TRACING_TESTS_SUMO_ACCESS_KEY}" >> $BASH_ENV
+            echo "export PYTHONWARNINGS=ignore:Unverified HTTPS request"  >> $BASH_ENV
+            echo "export AWS_ACCESS_KEY_ID=${TRACING_TESTS_CLUSTER_AWS_ACCESS_ID}" >> $BASH_ENV
+            echo "export AWS_SECRET_ACCESS_KEY=${TRACING_TESTS_CLUSTER_AWS_ACCESS_KEY}" >> $BASH_ENV
+      - kubernetes/install-kubeconfig:
+          kubeconfig: TRACING_TESTS_CLUSTER_KUBECONFIG_DATA
+      - kubernetes/install-kubectl
+      - aws-cli/install
+      - run:
+          name: "Clean up environment"
+          command: /opt/tracing-tests/deployment_scripts/clean-up-env.sh
+      - run:
+          name: "Deploy Sumologic OpenTelemetry Collector"
+          command: /opt/tracing-tests/deployment_scripts/deploy-otelcol.sh << parameters.repo >> << parameters.tag >>
+      - run:
+          name: "Wait for Sumologic OpenTelemetry Collector to be available"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=120s pod -l app=otelcol
+      - run:
+          name: "Deploy ECR Registry Secret"
+          command: /opt/tracing-tests/deployment_scripts/deploy-ecr-registry-secret.sh
+      - run:
+          name: "Deploy Kubernetes Metadata Provider application"
+          command: /opt/tracing-tests/deployment_scripts/deploy-k8sfeeder.sh
+      - run:
+          name: "Wait for Kubernetes Metadata Provider"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=60s pod -l app=k8s-feeder
+      - run:
+          name: "Get Kubernetes Metadata provider URL"
+          command: echo "export KUBERNETES_METADATA_URL=$(kubectl -n java-app get svc k8s-feeder-svc-pub -o json | jq .status.loadBalancer.ingress[0].hostname)" >> $BASH_ENV
+      - run:
+          name: "Deploy Java App application"
+          command: /opt/tracing-tests/deployment_scripts/deploy-test-applications.sh
+      - run:
+          name: "Wait for Kubernetes Metadata Provider"
+          command: kubectl -n java-app wait --for=condition=ready --timeout=60s pod -l app=server
+      - run:
+          name: "Wait for data..."
+          command: sleep 180
+      - run:
+          name: "Execute Tracing Tests"
+          command: "pytest --rootdir=/opt/tracing-tests --junitxml=/opt/tracing-tests/test-results/junit.xml --html=/opt/tracing-tests/test-results/report.html --self-contained-html -vvv /opt/tracing-tests/tests"
+      - store_test_results:
+          path: /opt/tracing-tests/test-results
+      - store_artifacts:
+          path: /opt/tracing-tests/test-results

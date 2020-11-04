@@ -26,47 +26,58 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	factories.Processors[config.Type(typeStr)] = factory
 	require.NoError(t, err)
 
 	err = configcheck.ValidateConfig(factory.CreateDefaultConfig())
 	require.NoError(t, err)
 
-	cfg, err := configtest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
+	cfg, err := configtest.LoadConfigAndValidate(
+		path.Join(".", "testdata", "config.yaml"),
+		factories)
 
 	require.Nil(t, err)
 	require.NotNil(t, cfg)
 
-	p0 := cfg.Processors[config.NewID(typeStr)]
+	p0 := cfg.Processors[config.NewID("k8s_tagger")]
 	assert.Equal(t, p0,
 		&Config{
 			ProcessorSettings: config.NewProcessorSettings(config.NewID(typeStr)),
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-			Exclude:           ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}},
 		})
 
 	p1 := cfg.Processors[config.NewIDWithName(typeStr, "2")]
 	assert.Equal(t, p1,
 		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
-			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-			Passthrough:       false,
+			ProcessorSettings:  config.NewProcessorSettings(config.NewIDWithName(typeStr, "2")),
+			APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			Passthrough:        false,
+			OwnerLookupEnabled: true,
 			Extract: ExtractConfig{
-				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
+				Metadata: []string{
+					"containerId", "containerName", "containerImage", "clusterName", "daemonSetName",
+					"deploymentName", "hostName", "namespace", "nodeName", "podId", "podName",
+					"replicaSetName", "serviceName", "startTime", "statefulSetName",
+				},
+				Tags: map[string]string{
+					"containerId": "my.namespace.containerId",
+				},
 				Annotations: []FieldExtractConfig{
-					{TagName: "a1", Key: "annotation-one", From: "pod"},
-					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
+					{TagName: "a1", Key: "annotation-one"},
+					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},
 				},
 				Labels: []FieldExtractConfig{
-					{TagName: "l1", Key: "label1", From: "pod"},
-					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
+					{TagName: "l1", Key: "label1"},
+					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
+				},
+				NamespaceLabels: []FieldExtractConfig{
+					{TagName: "namespace_labels_%s", Key: "*"},
 				},
 			},
 			Filter: FilterConfig{
@@ -102,12 +113,6 @@ func TestLoadConfig(t *testing.T) {
 				{
 					From: "resource_attribute",
 					Name: "k8s.pod.uid",
-				},
-			},
-			Exclude: ExcludeConfig{
-				Pods: []ExcludePodConfig{
-					{Name: "jaeger-agent"},
-					{Name: "jaeger-collector"},
 				},
 			},
 		})

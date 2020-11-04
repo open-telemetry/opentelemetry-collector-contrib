@@ -48,6 +48,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.35.0
@@ -60,8 +61,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.35.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.35.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.35.0
@@ -432,6 +435,8 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
+replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
+
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
 
@@ -631,13 +636,19 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filt
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ./processor/groupbyattrsprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor => ./processor/cascadingfilterprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ./processor/sourceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ./processor/resourceprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor => ./processor/sumologicsyslogprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 

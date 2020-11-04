@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"time"
 
+	conventions "go.opentelemetry.io/collector/model/semconv/v1.5.0"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -29,12 +30,18 @@ import (
 const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
-	tagNodeName             = "k8s.node.name"
-	tagStartTime            = "k8s.pod.start_time"
-	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
-	MetadataFromPod = "pod"
-	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
-	MetadataFromNamespace = "namespace"
+
+	defaultTagContainerID     = "k8s.container.id"
+	defaultTagContainerImage  = "k8s.container.image"
+	defaultTagContainerName   = "k8s.container.name"
+	defaultTagDaemonSetName   = "k8s.daemonset.name"
+	defaultTagHostName        = "k8s.pod.hostname"
+	defaultTagNodeName        = "k8s.node.name"
+	defaultTagPodUID          = "k8s.pod.id"
+	defaultTagReplicaSetName  = "k8s.replicaset.name"
+	defaultTagServiceName     = "k8s.service.name"
+	defaultTagStatefulSetName = "k8s.statefulset.name"
+	defaultTagStartTime       = "k8s.pod.startTime"
 )
 
 // PodIdentifier is a custom type to represent IP Address or Pod UID
@@ -42,6 +49,13 @@ type PodIdentifier string
 
 var (
 	// TODO: move these to config with default values
+	podNameIgnorePatterns = []*regexp.Regexp{
+		regexp.MustCompile(`jaeger-agent`),
+		regexp.MustCompile(`jaeger-collector`),
+		regexp.MustCompile(`otel-collector`),
+		regexp.MustCompile(`otel-agent`),
+		regexp.MustCompile(`collection-sumologic-otelcol`),
+	}
 	defaultPodDeleteGracePeriod = time.Second * 120
 	watchSyncPeriod             = time.Minute * 5
 )
@@ -49,13 +63,12 @@ var (
 // Client defines the main interface that allows querying pods by metadata.
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
-	GetNamespace(string) (*Namespace, bool)
 	Start()
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, APIClientsetProvider, InformerProvider, OwnerProvider) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -69,18 +82,8 @@ type Pod struct {
 	Attributes map[string]string
 	StartTime  *metav1.Time
 	Ignore     bool
-	Namespace  string
 
 	DeletedAt time.Time
-}
-
-// Namespace represents a kubernetes namespace.
-type Namespace struct {
-	Name         string
-	NamespaceUID string
-	Attributes   map[string]string
-	StartTime    metav1.Time
-	DeletedAt    time.Time
 }
 
 type deleteRequest struct {
@@ -96,10 +99,11 @@ type deleteRequest struct {
 // for performance reasons. We can support adding additional custom filters
 // in future if there is a real need.
 type Filters struct {
-	Node      string
-	Namespace string
-	Fields    []FieldFilter
-	Labels    []FieldFilter
+	Node            string
+	Namespace       string
+	Fields          []FieldFilter
+	Labels          []FieldFilter
+	NamespaceLabels []FieldFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.
@@ -118,16 +122,68 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment bool
-	Namespace  bool
-	PodName    bool
-	PodUID     bool
-	Node       bool
-	Cluster    bool
-	StartTime  bool
+	ClusterName     bool
+	ContainerID     bool
+	ContainerImage  bool
+	ContainerName   bool
+	DaemonSetName   bool
+	DeploymentName  bool
+	HostName        bool
+	PodUID          bool
+	PodName         bool
+	ReplicaSetName  bool
+	ServiceName     bool
+	StatefulSetName bool
+	StartTime       bool
+	Namespace       bool
+	NodeName        bool
 
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	OwnerLookupEnabled bool
+
+	Tags            ExtractionFieldTags
+	Annotations     []FieldExtractionRule
+	Labels          []FieldExtractionRule
+	NamespaceLabels []FieldExtractionRule
+}
+
+// ExtractionFieldTags is used to describe selected exported key names for the extracted data
+type ExtractionFieldTags struct {
+	ClusterName     string
+	ContainerID     string
+	ContainerImage  string
+	ContainerName   string
+	DaemonSetName   string
+	DeploymentName  string
+	HostName        string
+	PodUID          string
+	PodName         string
+	Namespace       string
+	NodeName        string
+	ReplicaSetName  string
+	ServiceName     string
+	StartTime       string
+	StatefulSetName string
+}
+
+// NewExtractionFieldTags builds a new instance of tags with default values
+func NewExtractionFieldTags() ExtractionFieldTags {
+	tags := ExtractionFieldTags{}
+	tags.ClusterName = conventions.AttributeK8SClusterName
+	tags.ContainerID = defaultTagContainerID
+	tags.ContainerImage = defaultTagContainerImage
+	tags.ContainerName = defaultTagContainerName
+	tags.DaemonSetName = defaultTagDaemonSetName
+	tags.DeploymentName = conventions.AttributeK8SDeploymentName
+	tags.HostName = defaultTagHostName
+	tags.PodUID = defaultTagPodUID
+	tags.PodName = conventions.AttributeK8SPodName
+	tags.Namespace = conventions.AttributeK8SNamespaceName
+	tags.NodeName = defaultTagNodeName
+	tags.ReplicaSetName = defaultTagReplicaSetName
+	tags.ServiceName = defaultTagServiceName
+	tags.StartTime = defaultTagStartTime
+	tags.StatefulSetName = defaultTagStatefulSetName
+	return tags
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
@@ -140,11 +196,6 @@ type FieldExtractionRule struct {
 	// Regex is a regular expression used to extract a sub-part of a field value.
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
-	// From determines the kubernetes object the field should be retrieved from.
-	// Currently only two values are supported,
-	//  - pod
-	//  - namespace
-	From string
 }
 
 // Associations represent a list of rules for Pod metadata associations with resources
@@ -156,14 +207,4 @@ type Associations struct {
 type Association struct {
 	From string
 	Name string
-}
-
-// Excludes represent a list of Pods to ignore
-type Excludes struct {
-	Pods []ExcludePods
-}
-
-// ExcludePods represent a Pod name to ignore
-type ExcludePods struct {
-	Name *regexp.Regexp
 }

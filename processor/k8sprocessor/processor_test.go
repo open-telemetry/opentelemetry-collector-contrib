@@ -36,9 +36,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor/kube"
 )
 
-func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
+func newTraceProcessor(cfg config.Processor, next consumer.Traces, options ...Option) (component.TracesProcessor, error) {
 	opts := append(options, withKubeClientProvider(newFakeClient))
-	return createTracesProcessorWithOptions(
+	return createTraceProcessorWithOptions(
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
 		cfg,
@@ -113,7 +113,7 @@ func newMultiTest(
 		nextLogs:    new(consumertest.LogsSink),
 	}
 
-	tp, err := newTracesProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
+	tp, err := newTraceProcessor(cfg, m.nextTrace, append(options, withExtractKubernetesProcessorInto(&m.kpTrace))...)
 	if errFunc == nil {
 		assert.NotNil(t, tp)
 		require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestProcessorBadConfig(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace) (kube.Client, error) {
+	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.OwnerProvider) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -323,7 +323,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		WithExtractMetadata(metadataPodName),
 	)
 
 	ctx := client.NewContext(context.Background(), &client.Client{IP: "1.1.1.1"})
@@ -701,7 +701,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		WithExtractMetadata(metadataPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -771,7 +771,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		WithExtractMetadata(conventions.AttributeK8SPodName),
+		WithExtractMetadata(metadataPodName),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -845,7 +845,7 @@ func TestPassthroughStart(t *testing.T) {
 	next := new(consumertest.TracesSink)
 	opts := []Option{WithPassthrough()}
 
-	p, err := newTracesProcessor(
+	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
 		opts...,
@@ -871,7 +871,7 @@ func TestRealClient(t *testing.T) {
 }
 
 func TestCapabilities(t *testing.T) {
-	p, err := newTracesProcessor(
+	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -882,7 +882,7 @@ func TestCapabilities(t *testing.T) {
 
 func TestStartStop(t *testing.T) {
 	var kp *kubernetesprocessor
-	p, err := newTracesProcessor(
+	p, err := newTraceProcessor(
 		NewFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 		withExtractKubernetesProcessorInto(&kp),
@@ -908,3 +908,28 @@ func assertResourceHasStringAttribute(t *testing.T, r pdata.Resource, k, v strin
 	assert.EqualValues(t, pdata.AttributeValueTypeString, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.StringVal(), "attribute %s is not equal to %s", k, v)
 }
+
+//func BenchmarkConsumingTraceData(b *testing.B) {
+//	next := &testConsumer{}
+//	p, _ := NewTraceProcessor(
+//		zap.NewNop(),
+//		next,
+//		kube.NewFakeClient,
+//	)
+//
+//	kp, _ := p.(*kubernetesprocessor)
+//	kc, _ := kp.kc.(*kube.FakeClient)
+//
+//	b.ResetTimer()
+//	for i := 0; i < b.N; i++ {
+//		ip := "1.1.1.1"
+//		attrs := map[string]string{
+//			"pod":         "test-2323",
+//			"ns":          "default",
+//			"another tag": "value",
+//		}
+//		kc.Pods[ip] = &kube.Pod{Attributes: attrs}
+//		ctx := client.NewContext(context.Background(), &client.Client{IP: ip})
+//		p.ConsumeTraceData(ctx, consumerdata.TraceData{})
+//	}
+//}
