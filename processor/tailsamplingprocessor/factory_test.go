@@ -23,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -34,13 +36,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
-	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg := factory.CreateDefaultConfig().(*config.Config)
 	// Manually set required fields
 	cfg.ExpectedNewTracesPerSec = 64
-	cfg.PolicyCfgs = []PolicyCfg{
+	cfg.PolicyCfgs = []config.PolicyCfg{
 		{
 			Name: "test-policy",
-			Type: AlwaysSample,
+			Type: config.AlwaysSample,
 		},
 	}
 

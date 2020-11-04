@@ -17,17 +17,18 @@ package tailsamplingprocessor
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"sort"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
 )
@@ -36,11 +37,11 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []config.PolicyCfg{{Name: "test-policy", Type: config.AlwaysSample}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
@@ -64,7 +65,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(2 * len(traceIds)),
 		ExpectedNewTracesPerSec: 64,
@@ -98,7 +99,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 func TestSequentialTraceMapSize(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(210)
 	const maxSize = 100
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
@@ -121,7 +122,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	_, batches := generateIdsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
-	cfg := Config{
+	cfg := config.Config{
 		DecisionWait:            defaultTestDecisionWait,
 		NumTraces:               uint64(maxSize),
 		ExpectedNewTracesPerSec: 64,
@@ -458,7 +459,11 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Sp
 	m.LateArrivingSpansCount++
 	return m.NextError
 }
-func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
+func (m *mockPolicyEvaluator) Evaluate(_ pdata.TraceID, _ *sampling.TraceData) (sampling.Decision, error) {
+	m.EvaluationCount++
+	return m.NextDecision, m.NextError
+}
+func (m *mockPolicyEvaluator) EvaluateSecondChance(_ pdata.TraceID, _ *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
 	return m.NextDecision, m.NextError
 }
