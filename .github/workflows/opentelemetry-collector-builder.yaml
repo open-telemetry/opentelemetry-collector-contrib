@@ -1,0 +1,49 @@
+name: OpenTelemetry Collector Builder
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # otelcolbuilder_post_go1_16:
+  #   runs-on: ubuntu-20.04
+  #   strategy:
+  #     matrix:
+  #       go: [ '1.16' ]
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Setup go
+  #       uses: actions/setup-go@v2
+  #       with:
+  #         go-version: ${{ matrix.go }}
+  #     - name: Print go version
+  #       run: go version
+  #     - name: Build OpenTelemetry distro
+  #       working-directory: ./otelcolbuilder/
+  #       run: |
+  #         go install github.com/open-telemetry/opentelemetry-collector-builder@v0.24.0
+  #         make build
+
+  # Just build on 1.15 for now because of a weird issue:
+  # https://github.com/actions/setup-go/issues/107
+  otelcolbuilder_pre_go1_16:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        go: [ '1.15' ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Print go version
+        run: go version
+      - name: Print go env
+        run: go env
+      - name: Build OpenTelemetry distro
+        working-directory: ./otelcolbuilder/
+        run: |
+          make install-prego1.16
+          make build

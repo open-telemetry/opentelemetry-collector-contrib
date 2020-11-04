@@ -49,18 +49,21 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.38.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.38.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.38.0
@@ -107,6 +110,12 @@ require (
 )
 
 require github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver v0.38.0
+
+require (
+	github.com/onsi/gomega v1.14.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor v0.0.0-00010101000000-000000000000
+	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
+)
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
@@ -255,7 +264,6 @@ require (
 	github.com/observiq/go-syslog/v3 v3.0.2 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect
-	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.38.0 // indirect
@@ -277,7 +285,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.38.0 // indirect
 	github.com/open-telemetry/opentelemetry-log-collection v0.22.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
 	github.com/openlyinc/pointy v1.1.2 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
@@ -386,6 +393,8 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
+
+replace github.com/influxdata/telegraf => github.com/sumologic/telegraf v1.17.3-sumo
 
 // Replace references to modules that are in this repository with their relateive paths
 // so that we always build with current (latest) version of the source code.
@@ -596,13 +605,21 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/filt
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ./processor/groupbyattrsprocessor
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/cascadingfilterprocessor => ./processor/cascadingfilterprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor => ./processor/groupbytraceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ./processor/k8sattributesprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sprocessor => ./processor/k8sprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sourceprocessor => ./processor/sourceprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ./processor/resourceprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/sumologicsyslogprocessor => ./processor/sumologicsyslogprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor => ./processor/metricstransformprocessor/
 

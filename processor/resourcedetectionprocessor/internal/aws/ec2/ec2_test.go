@@ -135,6 +135,7 @@ func TestDetector_Detect(t *testing.T) {
 				attr.InsertString("cloud.account.id", "account1234")
 				attr.InsertString("cloud.provider", "aws")
 				attr.InsertString("cloud.platform", "aws_ec2")
+				attr.InsertString("cloud.namespace", "aws/ec2")
 				attr.InsertString("cloud.region", "us-west-2")
 				attr.InsertString("cloud.availability_zone", "us-west-2a")
 				attr.InsertString("host.id", "i-abcd1234")

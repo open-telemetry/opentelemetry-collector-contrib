@@ -1,0 +1,42 @@
+extensions:
+  health_check:
+receivers:
+  awsxray:
+    endpoint: 0.0.0.0:2000
+    transport: udp
+  jaeger:
+    protocols:
+      thrift_compact:
+        endpoint: 0.0.0.0:6831
+      thrift_binary:
+        endpoint: 0.0.0.0:6832
+      grpc:
+        endpoint: 0.0.0.0:14250
+      thrift_http:
+        endpoint: 0.0.0.0:14268
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:55681
+  zipkin:
+    endpoint: 0.0.0.0:9411
+processors:
+  batch/traces:
+    timeout: 5s
+    send_batch_size: 256
+  resourcedetection:
+    detectors: [env, ec2, ecs]
+    timeout: 5s
+    override: true
+exporters:
+  otlphttp:
+    endpoint: $SUMO_HTTP_TRACES_URL
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [awsxray,jaeger,otlp,zipkin]
+      processors: [resourcedetection,batch/traces]
+      exporters: [otlphttp]
