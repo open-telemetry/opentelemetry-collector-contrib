@@ -18,8 +18,11 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
 )
 
 // Variables related to metrics specific to tail sampling.
@@ -130,6 +133,8 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		countTraceDroppedTooEarlyView,
 		countTraceIDArrivalView,
 		trackTracesOnMemorylView,
+
+		sampling.CountTracesSampledRulesView,
 	}
 
 	return obsreport.ProcessorMetricViews(typeStr, legacyViews)

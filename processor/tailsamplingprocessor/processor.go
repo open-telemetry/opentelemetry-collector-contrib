@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/sampling"
 )
@@ -113,19 +114,23 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 	return tsp, nil
 }
 
-func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
+func getPolicyEvaluator(logger *zap.Logger, cfg *config.PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
-	case AlwaysSample:
+	case config.AlwaysSample:
 		return sampling.NewAlwaysSample(logger), nil
-	case NumericAttribute:
+	case config.NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
 		return sampling.NewNumericAttributeFilter(logger, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
-	case StringAttribute:
+	case config.StringAttribute:
 		safCfg := cfg.StringAttributeCfg
 		return sampling.NewStringAttributeFilter(logger, safCfg.Key, safCfg.Values), nil
-	case RateLimiting:
+	case config.RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
+	case config.Cascading:
+		return sampling.NewCascadingFilter(logger, cfg)
+	case config.Properties:
+		return sampling.NewSpanPropertiesFilter(logger, cfg.PropertiesCfg.NamePattern, cfg.PropertiesCfg.MinDurationMicros, cfg.PropertiesCfg.MinNumberOfSpans)
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -142,6 +147,8 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	batch, _ := tsp.decisionBatcher.CloseCurrentAndTakeFirstBatch()
 	batchLen := len(batch)
 	tsp.logger.Debug("Sampling Policy Evaluation ticked")
+
+	// The first run applies decisions to batches
 	for _, id := range batch {
 		d, ok := tsp.idToTrace.Load(id)
 		if !ok {
@@ -151,7 +158,40 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace := d.(*sampling.TraceData)
 		trace.DecisionTime = time.Now()
 
-		decision, policy := tsp.makeDecision(id, trace, &metrics)
+		_, _ = tsp.makeDecision(id, trace, &metrics)
+	}
+
+	// The second run applies "SecondChance" - we should already know how much space is left
+	for _, id := range batch {
+		d, ok := tsp.idToTrace.Load(id)
+		if !ok {
+			continue
+		}
+		trace := d.(*sampling.TraceData)
+		trace.DecisionTime = time.Now()
+		for i, policy := range tsp.policies {
+			decision := trace.Decisions[i]
+			if decision == sampling.SecondChance {
+				finalDecision, _ := policy.Evaluator.EvaluateSecondChance(id, trace)
+				trace.Decisions[i] = finalDecision
+				if finalDecision == sampling.Sampled {
+					_ = stats.RecordWithTags(
+						policy.ctx,
+						[]tag.Mutator{tag.Insert(tagSampledKey, "second_chance_selected")},
+						statCountTracesSampled.M(int64(1)),
+					)
+				}
+			}
+		}
+	}
+
+	// The third run executes the decisions
+	for _, id := range batch {
+		d, ok := tsp.idToTrace.Load(id)
+		if !ok {
+			continue
+		}
+		trace := d.(*sampling.TraceData)
 
 		// Sampled or not, remove the batches
 		trace.Lock()
@@ -159,17 +199,27 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.ReceivedBatches = nil
 		trace.Unlock()
 
-		if decision == sampling.Sampled {
+		isSampled := false
+		for i, policy := range tsp.policies {
 
-			// Combine all individual batches into a single batch so
-			// consumers may operate on the entire trace
-			allSpans := pdata.NewTraces()
-			for j := 0; j < len(traceBatches); j++ {
-				batch := traceBatches[j]
-				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
+			if trace.Decisions[i] == sampling.Sampled && !isSampled {
+				metrics.decisionSampled++
+				isSampled = true
+
+				// Combine all individual batches into a single batch so
+				// consumers may operate on the entire trace
+				allSpans := pdata.NewTraces()
+				for j := 0; j < len(traceBatches); j++ {
+					batch := traceBatches[j]
+					batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
+				}
+
+				_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
 			}
+		}
 
-			_ = tsp.nextConsumer.ConsumeTraces(policy.ctx, allSpans)
+		if !isSampled {
+			metrics.decisionNotSampled++
 		}
 	}
 
@@ -220,15 +270,18 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 					[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
 					statCountTracesSampled.M(int64(1)),
 				)
-				metrics.decisionSampled++
-
 			case sampling.NotSampled:
 				_ = stats.RecordWithTags(
 					policy.ctx,
 					[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
 					statCountTracesSampled.M(int64(1)),
 				)
-				metrics.decisionNotSampled++
+			case sampling.SecondChance:
+				_ = stats.RecordWithTags(
+					policy.ctx,
+					[]tag.Mutator{tag.Insert(tagSampledKey, "second_chance")},
+					statCountTracesSampled.M(int64(1)),
+				)
 			}
 		}
 	}
@@ -284,6 +337,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 
 		actualData := d.(*sampling.TraceData)
 		if loaded {
+			// PMM: why actualData is not updated with new trace?
 			atomic.AddInt64(&actualData.SpanCount, lenSpans)
 		} else {
 			newTraceIDs++
@@ -291,11 +345,13 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			atomic.AddUint64(&tsp.numTracesOnMap, 1)
 			postDeletion := false
 			currTime := time.Now()
+
 			for !postDeletion {
 				select {
 				case tsp.deleteChan <- id:
 					postDeletion = true
 				default:
+					// Note this is a buffered channel, so this will only delete excessive traces (if they exist)
 					traceKeyToDrop := <-tsp.deleteChan
 					tsp.dropTrace(traceKeyToDrop, currTime)
 				}
@@ -318,7 +374,12 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 			}
 			actualData.Unlock()
 
+			// This section is run in case the decision was already applied earlier
 			switch actualDecision {
+			case sampling.Pending:
+				// All process for pending done above, keep the case so it doesn't go to default.
+			case sampling.SecondChance:
+				// It shouldn't normally get here, keep the case so it doesn't go to default, like above.
 			case sampling.Sampled:
 				// Forward the spans to the policy destinations
 				traceTd := prepareTraceBatch(resourceSpans, spans)

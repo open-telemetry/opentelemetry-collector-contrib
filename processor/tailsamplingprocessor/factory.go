@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+
+	tsconfig "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/config"
 )
 
 const (
@@ -61,6 +63,6 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	tCfg := cfg.(*Config)
+	tCfg := cfg.(*tsconfig.Config)
 	return newTracesProcessor(params.Logger, nextConsumer, *tCfg)
 }
