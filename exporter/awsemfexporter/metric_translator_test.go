@@ -1020,6 +1020,112 @@ func TestCalculateRate(t *testing.T) {
 	assert.Equal(t, 0.5, rate)
 }
 
+func TestDimensionRollup(t *testing.T) {
+	testCases := []struct {
+		testName               string
+		dimensionRollupOption  string
+		dims                   []string
+		instrumentationLibName string
+		expected               [][]string
+	}{
+		{
+			"no rollup w/o instrumentation library name",
+			"",
+			[]string{"a", "b", "c"},
+			noInstrumentationLibraryName,
+			nil,
+		},
+		{
+			"no rollup w/ instrumentation library name",
+			"",
+			[]string{"a", "b", "c"},
+			"cloudwatch-otel",
+			nil,
+		},
+		{
+			"single dim w/o instrumentation library name",
+			SingleDimensionRollupOnly,
+			[]string{"a", "b", "c"},
+			noInstrumentationLibraryName,
+			[][]string{
+				{"a"},
+				{"b"},
+				{"c"},
+			},
+		},
+		{
+			"single dim w/ instrumentation library name",
+			SingleDimensionRollupOnly,
+			[]string{"a", "b", "c"},
+			"cloudwatch-otel",
+			[][]string{
+				{OTellibDimensionKey, "a"},
+				{OTellibDimensionKey, "b"},
+				{OTellibDimensionKey, "c"},
+			},
+		},
+		{
+			"single dim w/o instrumentation library name and only one label",
+			SingleDimensionRollupOnly,
+			[]string{"a"},
+			noInstrumentationLibraryName,
+			nil,
+		},
+		{
+			"single dim w/ instrumentation library name and only one label",
+			SingleDimensionRollupOnly,
+			[]string{"a"},
+			"cloudwatch-otel",
+			nil,
+		},
+		{
+			"zero + single dim w/o instrumentation library name",
+			ZeroAndSingleDimensionRollup,
+			[]string{"a", "b", "c"},
+			noInstrumentationLibraryName,
+			[][]string{
+				{},
+				{"a"},
+				{"b"},
+				{"c"},
+			},
+		},
+		{
+			"zero + single dim w/ instrumentation library name",
+			ZeroAndSingleDimensionRollup,
+			[]string{"a", "b", "c"},
+			"cloudwatch-otel",
+			[][]string{
+				{OTellibDimensionKey},
+				{OTellibDimensionKey, "a"},
+				{OTellibDimensionKey, "b"},
+				{OTellibDimensionKey, "c"},
+			},
+		},
+		{
+			"zero dim rollup w/o instrumentation library name and no labels",
+			ZeroAndSingleDimensionRollup,
+			[]string{},
+			noInstrumentationLibraryName,
+			nil,
+		},
+		{
+			"zero dim rollup w/ instrumentation library name and no labels",
+			ZeroAndSingleDimensionRollup,
+			[]string{},
+			"cloudwatch-otel",
+			nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			rolledUp := dimensionRollup(tc.dimensionRollupOption, tc.dims, tc.instrumentationLibName)
+			assert.Equal(t, tc.expected, rolledUp)
+		})
+	}
+}
+
 func readFromFile(filename string) string {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -1355,5 +1461,12 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		TranslateCWMetricToEMF([]*CWMetrics{met})
+	}
+}
+
+func BenchmarkDimensionRollup(b *testing.B) {
+	dimensions := []string{"a", "b", "c"}
+	for n := 0; n < b.N; n++ {
+		dimensionRollup(ZeroAndSingleDimensionRollup, dimensions, "cloudwatch-otel")
 	}
 }

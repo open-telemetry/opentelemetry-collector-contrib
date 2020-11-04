@@ -42,6 +42,10 @@ type zookeeperMetricsScraper struct {
 	cancel context.CancelFunc
 }
 
+func (z *zookeeperMetricsScraper) Name() string {
+	return typeStr
+}
+
 func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperMetricsScraper, error) {
 	_, _, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	if err != nil {
@@ -67,7 +71,7 @@ func (z *zookeeperMetricsScraper) Close(_ context.Context) error {
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) Scrape(ctx context.Context, _ string) (pdata.ResourceMetricsSlice, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 

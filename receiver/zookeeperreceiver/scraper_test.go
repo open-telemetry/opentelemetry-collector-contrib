@@ -149,7 +149,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			ctx := context.Background()
 			require.NoError(t, z.Initialize(ctx))
 
-			got, err := z.Scrape(ctx)
+			got, err := z.Scrape(ctx, typeStr)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Equal(t, pdata.ResourceMetricsSlice{}, got)
