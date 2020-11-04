@@ -156,7 +156,6 @@ func (p *poller) read(buf *[]byte) (int, error) {
 
 func (p *poller) poll() {
 	defer p.wg.Done()
-	buffer := make([]byte, pollerBufferSizeKB)
 
 	var (
 		errRecv   *recvErr.ErrRecoverable
@@ -187,6 +186,7 @@ func (p *poller) poll() {
 				continue
 			}
 
+			buffer := make([]byte, pollerBufferSizeKB)
 			bufMessage := buffer[0:rlen]
 
 			header, body, err := tracesegment.SplitHeaderBody(bufMessage)
