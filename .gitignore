@@ -30,6 +30,10 @@ integration-coverage.txt
 coverage.html
 integration-coverage.html
 
+# vagrant
+.vagrant
+ubuntu-bionic-18.04-cloudimg-console.log
+
 # Wix
 *.wixobj
 *.wixpdb
