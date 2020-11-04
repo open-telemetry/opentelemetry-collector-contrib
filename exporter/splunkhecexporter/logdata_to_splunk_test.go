@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_logDataToSplunk(t *testing.T) {
@@ -199,10 +199,11 @@ func Test_logDataToSplunk(t *testing.T) {
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
-				attMap := pdata.NewAttributeMap()
+				attVal := pdata.NewAttributeValueMap()
+				attMap := attVal.MapVal()
 				attMap.InsertDouble("23", 45)
 				attMap.InsertString("foo", "bar")
-				logRecord.Body().SetMapVal(attMap)
+				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
@@ -250,9 +251,10 @@ func Test_logDataToSplunk(t *testing.T) {
 			logDataFn: func() pdata.Logs {
 				logRecord := pdata.NewLogRecord()
 				logRecord.InitEmpty()
-				attArray := pdata.NewAnyValueArray()
+				attVal := pdata.NewAttributeValueArray()
+				attArray := attVal.ArrayVal()
 				attArray.Append(pdata.NewAttributeValueString("foo"))
-				logRecord.Body().SetArrayVal(attArray)
+				attVal.CopyTo(logRecord.Body())
 				logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 				logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
 				logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
@@ -344,7 +346,9 @@ func Test_nilInstrumentationLogs(t *testing.T) {
 
 func Test_nanoTimestampToEpochMilliseconds(t *testing.T) {
 	splunkTs := nanoTimestampToEpochMilliseconds(1001000000)
-	assert.Equal(t, 1.001, splunkTs)
+	assert.Equal(t, 1.001, *splunkTs)
 	splunkTs = nanoTimestampToEpochMilliseconds(1001990000)
-	assert.Equal(t, 1.002, splunkTs)
+	assert.Equal(t, 1.002, *splunkTs)
+	splunkTs = nanoTimestampToEpochMilliseconds(0)
+	assert.True(t, nil == splunkTs)
 }

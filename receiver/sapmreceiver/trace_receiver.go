@@ -34,7 +34,7 @@ import (
 	jaegertranslator "go.opentelemetry.io/collector/translator/trace/jaeger"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 var gzipWriterPool = &sync.Pool{
@@ -212,8 +212,8 @@ func (sr *sapmReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-// this validates at compile time that sapmReceiver implements the component.TraceReceiver interface
-var _ component.TraceReceiver = (*sapmReceiver)(nil)
+// this validates at compile time that sapmReceiver implements the component.TracesReceiver interface
+var _ component.TracesReceiver = (*sapmReceiver)(nil)
 
 // New creates a sapmReceiver that receives SAPM over http
 func New(
@@ -221,7 +221,7 @@ func New(
 	params component.ReceiverCreateParams,
 	config *Config,
 	nextConsumer consumer.TracesConsumer,
-) (component.TraceReceiver, error) {
+) (component.TracesReceiver, error) {
 	// build the response message
 	defaultResponse := &splunksapm.PostSpansResponse{}
 	defaultResponseBytes, err := defaultResponse.Marshal()

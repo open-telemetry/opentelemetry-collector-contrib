@@ -48,11 +48,11 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceExpired",
 			typ:      traceExpired,
-			payload:  pdata.NewTraceID([]byte{1, 2, 3, 4}),
+			payload:  pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
 				em.onTraceExpired = func(expired pdata.TraceID) error {
 					wg.Done()
-					assert.Equal(t, pdata.NewTraceID([]byte{1, 2, 3, 4}), expired)
+					assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
 				}
 			},
@@ -71,11 +71,11 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceRemoved",
 			typ:      traceRemoved,
-			payload:  pdata.NewTraceID([]byte{1, 2, 3, 4}),
+			payload:  pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
 				em.onTraceRemoved = func(expired pdata.TraceID) error {
 					wg.Done()
-					assert.Equal(t, pdata.NewTraceID([]byte{1, 2, 3, 4}), expired)
+					assert.Equal(t, pdata.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
 				}
 			},
@@ -276,11 +276,11 @@ func TestEventShutdown(t *testing.T) {
 	})
 	em.fire(event{
 		typ:     traceRemoved,
-		payload: pdata.NewTraceID([]byte{1, 2, 3, 4}),
+		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 	em.fire(event{
 		typ:     traceRemoved,
-		payload: pdata.NewTraceID([]byte{1, 2, 3, 4}),
+		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	time.Sleep(10 * time.Millisecond) // give it a bit of time to process the items
@@ -301,7 +301,7 @@ func TestEventShutdown(t *testing.T) {
 	// new events should *not* be processed
 	em.fire(event{
 		typ:     traceExpired,
-		payload: pdata.NewTraceID([]byte{1, 2, 3, 4}),
+		payload: pdata.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	// verify

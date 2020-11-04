@@ -42,7 +42,7 @@ func TestRouteIsFoundForGRPCContexts(t *testing.T) {
 			FromAttribute: "X-Tenant",
 		},
 		logger: zap.NewNop(),
-		traceExporters: map[string][]component.TraceExporter{
+		traceExporters: map[string][]component.TracesExporter{
 			"acme": {
 				&mockExporter{
 					ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
@@ -88,7 +88,7 @@ func TestDefaultRouteIsUsedWhenRouteCantBeDetermined(t *testing.T) {
 					FromAttribute: "X-Tenant",
 				},
 				logger: zap.NewNop(),
-				defaultTraceExporters: []component.TraceExporter{
+				defaultTraceExporters: []component.TracesExporter{
 					&mockExporter{
 						ConsumeTracesFunc: func(context.Context, pdata.Traces) error {
 							wg.Done()
@@ -135,7 +135,7 @@ func TestRegisterExportersForValidRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTraceExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
@@ -200,7 +200,7 @@ func TestErrorRequestedExporterNotFoundForDefaultRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTraceExporter(context.Background(), creationParams, otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), creationParams, otlpConfig)
 	require.NoError(t, err)
 	host := &mockHost{
 		GetExportersFunc: func() map[configmodels.DataType]map[configmodels.Exporter]component.Exporter {
@@ -372,7 +372,7 @@ func TestFailedToPushDataToExporter(t *testing.T) {
 	wg.Add(2)
 	exp := &processorImp{
 		logger: zap.NewNop(),
-		traceExporters: map[string][]component.TraceExporter{
+		traceExporters: map[string][]component.TracesExporter{
 			"acme": {
 				&mockExporter{
 					ConsumeTracesFunc: func(context.Context, pdata.Traces) error {

@@ -49,7 +49,7 @@ func BenchmarkForTraceExporter(b *testing.B) {
 	}
 }
 
-func initializeTraceExporter() component.TraceExporter {
+func initializeTraceExporter() component.TracesExporter {
 	os.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
 	os.Setenv("AWS_DEFAULT_REGION", "us-east-1")
@@ -182,7 +182,7 @@ func newTraceID() pdata.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewTraceID(r[:])
+	return pdata.NewTraceID(r)
 }
 
 func newSegmentID() pdata.SpanID {
@@ -191,5 +191,5 @@ func newSegmentID() pdata.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pdata.NewSpanID(r[:])
+	return pdata.NewSpanID(r)
 }

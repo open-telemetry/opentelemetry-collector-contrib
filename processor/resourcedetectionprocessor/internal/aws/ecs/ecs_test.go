@@ -101,7 +101,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 	ld := getValidLogData(containers, &c4, "123")
 
 	for _, attrib := range ld {
-		assert.Equal(t, 0, attrib.Len())
+		assert.Equal(t, 0, attrib.ArrayVal().Len())
 	}
 }
 
@@ -126,10 +126,9 @@ func Test_ecsDetectV4(t *testing.T) {
 	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
 
 	for i, field := range attribFields {
-		av := pdata.NewAnyValueArray()
-		av.Append(pdata.NewAttributeValueString(attribVals[i]))
 		ava := pdata.NewAttributeValueArray()
-		ava.SetArrayVal(av)
+		av := ava.ArrayVal()
+		av.Append(pdata.NewAttributeValueString(attribVals[i]))
 		attr.Insert(field, ava)
 	}
 

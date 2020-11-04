@@ -135,7 +135,7 @@ func TestServerSpanWithInternalServerError(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
+	parentSpanID := pdata.InvalidSpanID()
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, 0, "OK", nil)
 
@@ -272,7 +272,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[semconventions.AttributeNetPeerPort] = "9443"
 	attributes[semconventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(pdata.NewSpanID(nil), spanName, 0, "OK", attributes)
+	span := constructClientSpan(pdata.InvalidSpanID(), spanName, 0, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTime())
 	timeEvents.CopyTo(span.Events())
 	traceID := span.TraceID().Bytes()
@@ -289,10 +289,10 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	TempTraceID := newTraceID()
-	binary.BigEndian.PutUint32(TempTraceID.Bytes()[0:4], uint32(ExpiredEpoch))
+	tempTraceID := newTraceID().Bytes()
+	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
-	_, err := convertToAmazonTraceID(TempTraceID)
+	_, err := convertToAmazonTraceID(pdata.NewTraceID(tempTraceID))
 	assert.NotNil(t, err)
 }
 
@@ -722,26 +722,24 @@ func constructDefaultResource() pdata.Resource {
 	attrs.InsertInt(resourceIntKey, 10)
 	attrs.InsertDouble(resourceDoubleKey, 5.0)
 	attrs.InsertBool(resourceBoolKey, true)
-	resourceMap := pdata.NewAttributeMap()
+
+	resourceMapVal := pdata.NewAttributeValueMap()
+	resourceMap := resourceMapVal.MapVal()
 	resourceMap.InitEmptyWithCapacity(2)
 	resourceMap.InsertInt("key1", 1)
 	resourceMap.InsertString("key2", "value")
-	resourceMapVal := pdata.NewAttributeValue()
-	resourceMapVal.InitEmpty()
-	resourceMapVal.SetMapVal(resourceMap)
 	attrs.Insert(resourceMapKey, resourceMapVal)
-	resourceArray := pdata.NewAnyValueArray()
-	val1 := pdata.NewAttributeValue()
+
+	resourceArrayVal := pdata.NewAttributeValueArray()
+	resourceArray := resourceArrayVal.ArrayVal()
+	val1 := pdata.NewAttributeValueNull()
 	val1.InitEmpty()
 	val1.SetStringVal("foo")
-	val2 := pdata.NewAttributeValue()
+	val2 := pdata.NewAttributeValueNull()
 	val2.InitEmpty()
 	val2.SetStringVal("bar")
 	resourceArray.Append(val1)
 	resourceArray.Append(val2)
-	resourceArrayVal := pdata.NewAttributeValue()
-	resourceArrayVal.InitEmpty()
-	resourceArrayVal.SetArrayVal(resourceArray)
 	attrs.Insert(resourceArrayKey, resourceArrayVal)
 	attrs.CopyTo(resource.Attributes())
 	return resource

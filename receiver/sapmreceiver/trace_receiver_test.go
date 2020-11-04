@@ -44,14 +44,14 @@ import (
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	traceID := pdata.NewTraceID(
-		[]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
-	parentSpanID := pdata.NewSpanID([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
-	childSpanID := pdata.NewSpanID([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+	parentSpanID := pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
@@ -211,7 +211,7 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	return resp, nil
 }
 
-func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TraceReceiver {
+func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) component.TracesReceiver {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	sr, err := New(context.Background(), params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")

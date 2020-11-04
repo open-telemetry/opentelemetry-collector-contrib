@@ -30,6 +30,7 @@ all: common otelcontribcol otelcontribcol-unstable
 .PHONY: e2e-test
 e2e-test: otelcontribcol otelcontribcol-unstable
 	$(MAKE) -C testbed run-tests
+	$(MAKE) -C testbed run-tests TESTS_DIR=tests_unstable_exe
 
 .PHONY: test-with-cover
 unit-tests-with-cover:
@@ -56,6 +57,10 @@ gotidy:
 .PHONY: gofmt
 gofmt:
 	$(MAKE) for-all CMD="make fmt"
+
+.PHONY: golint
+golint:
+	$(MAKE) for-all CMD="make lint"
 
 .PHONY: for-all
 for-all:

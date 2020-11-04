@@ -161,9 +161,9 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 
 	transforms := []internalTransform{
 		{
-			MetricName: "metric1",
-			Action:     Insert,
-			NewName:    "new/metric1",
+			MetricIncludeFilter: internalFilterStrict{include: "metric"},
+			Action:              Insert,
+			NewName:             "new/metric1",
 		},
 	}
 

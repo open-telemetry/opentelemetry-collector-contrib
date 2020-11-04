@@ -40,7 +40,7 @@ func TestCreateExporter(t *testing.T) {
 	eCfg.Endpoint = "http://local"
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
-	te, err := factory.CreateTraceExporter(context.Background(), params, eCfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
 	assert.Nil(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -53,7 +53,7 @@ func TestCreateExporterWithoutAPIEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
-	te, err := factory.CreateTraceExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.Nil(t, te)
 	assert.EqualError(t, err, "`endpoint` not specified")
 }

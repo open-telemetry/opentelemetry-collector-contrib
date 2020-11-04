@@ -49,13 +49,13 @@ func createTraceExporter(
 	_ context.Context,
 	params component.ExporterCreateParams,
 	config configmodels.Exporter,
-) (component.TraceExporter, error) {
+) (component.TracesExporter, error) {
 	sentryConfig, ok := config.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("unexpected config type: %T", config)
 	}
 
 	// Create exporter based on sentry config.
-	exp, err := CreateSentryExporter(sentryConfig)
+	exp, err := CreateSentryExporter(sentryConfig, params)
 	return exp, err
 }

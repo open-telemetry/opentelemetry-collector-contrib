@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
@@ -34,7 +34,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	buildDefaultSplunkDataPt := func() *splunk.Event {
 		return &splunk.Event{
-			Time:       sec,
+			Time:       &sec,
 			Host:       "localhost",
 			Source:     "source",
 			SourceType: "sourcetype",
@@ -233,7 +233,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			name: "zero_timestamp",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
-				pt.Time = 0
+				pt.Time = new(float64)
 				return pt
 			}(),
 			wantMetricsData: func() pdata.Metrics {

@@ -387,7 +387,7 @@ func createAndOptionallyStartReceiver(
 	t *testing.T,
 	receiverName string,
 	csu consumer.TracesConsumer,
-	start bool) (string, component.TraceReceiver, *observer.ObservedLogs) {
+	start bool) (string, component.TracesReceiver, *observer.ObservedLogs) {
 	addr, err := findAvailableUDPAddress()
 	assert.NoError(t, err, "there should be address available")
 	tcpAddr := testutil.GetAvailableLocalAddress(t)

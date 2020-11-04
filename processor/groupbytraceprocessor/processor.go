@@ -57,7 +57,7 @@ type groupByTraceProcessor struct {
 	st storage
 }
 
-var _ component.TraceProcessor = (*groupByTraceProcessor)(nil)
+var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 
 // newGroupByTraceProcessor returns a new processor.
 func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.TracesConsumer, config Config) (*groupByTraceProcessor, error) {
@@ -154,7 +154,7 @@ func (sp *groupByTraceProcessor) processBatch(batch *singleTraceBatch) error {
 
 	// place the trace ID in the buffer, and check if an item had to be evicted
 	evicted := sp.ringBuffer.put(traceID)
-	if evicted.Bytes() != nil {
+	if evicted.IsValid() {
 		// delete from the storage
 		sp.eventMachine.fire(event{
 			typ:     traceRemoved,
@@ -281,7 +281,7 @@ func splitByTrace(rs pdata.ResourceSpans) []*singleTraceBatch {
 		ils := rs.InstrumentationLibrarySpans().At(i)
 		for j := 0; j < ils.Spans().Len(); j++ {
 			span := ils.Spans().At(j)
-			if span.TraceID().Bytes() == nil {
+			if !span.TraceID().IsValid() {
 				// this should have already been caught before our processor, but let's
 				// protect ourselves against bad clients
 				continue

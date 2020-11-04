@@ -160,24 +160,11 @@ func TestSpanToSentrySpan(t *testing.T) {
 		assert.Nil(t, sentrySpan)
 	})
 
-	t.Run("with root span and nil parent span_id", func(t *testing.T) {
+	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		parentSpanID := pdata.NewSpanID(nil)
-		testSpan.SetParentSpanID(parentSpanID)
-
-		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
-		assert.NotNil(t, sentrySpan)
-		assert.True(t, isRootSpan(sentrySpan))
-	})
-
-	t.Run("with root span and 0 byte slice", func(t *testing.T) {
-		testSpan := pdata.NewSpan()
-		testSpan.InitEmpty()
-
-		parentSpanID := pdata.NewSpanID([]byte{0, 0, 0, 0, 0, 0, 0, 0})
-		testSpan.SetParentSpanID(parentSpanID)
+		testSpan.SetParentSpanID(pdata.InvalidSpanID())
 
 		sentrySpan := convertToSentrySpan(testSpan, pdata.NewInstrumentationLibrary(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
@@ -188,9 +175,9 @@ func TestSpanToSentrySpan(t *testing.T) {
 		testSpan := pdata.NewSpan()
 		testSpan.InitEmpty()
 
-		traceID := pdata.NewTraceID([]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pdata.NewSpanID([]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pdata.NewSpanID([]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pdata.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pdata.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pdata.TimestampUnixNano = 123
 		var endTime pdata.TimestampUnixNano = 1234567890

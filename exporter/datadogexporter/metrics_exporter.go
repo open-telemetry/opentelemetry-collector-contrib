@@ -18,6 +18,7 @@ import (
 	"context"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -31,38 +32,26 @@ type metricsExporter struct {
 	logger *zap.Logger
 	cfg    *config.Config
 	client *datadog.Client
-	tags   []string
 }
 
-func newMetricsExporter(logger *zap.Logger, cfg *config.Config) (*metricsExporter, error) {
+func newMetricsExporter(params component.ExporterCreateParams, cfg *config.Config) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	utils.ValidateAPIKey(logger, client)
+	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.ApplicationStartInfo)
+	client.HttpClient = utils.NewHTTPClient(10 * time.Second)
 
-	// Calculate tags at startup
-	tags := cfg.TagsConfig.GetTags(false)
+	utils.ValidateAPIKey(params.Logger, client)
 
-	return &metricsExporter{logger, cfg, client, tags}, nil
-}
-
-func (exp *metricsExporter) processMetrics(ms []datadog.Metric) {
-	addNamespace := exp.cfg.Metrics.Namespace != ""
-
-	if addNamespace {
-		metrics.AddNamespace(ms, exp.cfg.Metrics.Namespace)
-	}
-	metrics.AddHostname(ms, exp.logger, exp.cfg)
-
-	metrics.AddTags(ms, exp.tags)
+	return &metricsExporter{params.Logger, cfg, client}, nil
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) (int, error) {
 	ms, droppedTimeSeries := MapMetrics(exp.logger, exp.cfg.Metrics, md)
-	exp.processMetrics(ms)
 
-	// The running metric is added after metrics are processed, as the running metric is already
-	// processed in a special way in RunningMetric (eg. no namespace is added)
+	// Append the default 'running' metric
 	pushTime := uint64(time.Now().UTC().UnixNano())
-	ms = append(ms, metrics.RunningMetric("metrics", pushTime, exp.logger, exp.cfg)...)
+	ms = append(ms, metrics.DefaultMetrics("metrics", pushTime)...)
+
+	metrics.ProcessMetrics(ms, exp.logger, exp.cfg)
 
 	err := exp.client.PostMetrics(ms)
 	return droppedTimeSeries, err

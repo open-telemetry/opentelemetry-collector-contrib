@@ -15,6 +15,8 @@
 package metricstransformprocessor
 
 import (
+	"regexp"
+
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 )
 
@@ -33,9 +35,9 @@ var (
 			name: "metric_name_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					NewName:             "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -48,17 +50,17 @@ var (
 			},
 		},
 		{
-			name: "metric_name_update_multiple",
+			name: "metric_name_update_chained",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					NewName:             "new/metric1",
 				},
 				{
-					MetricName: "metric2",
-					Action:     Update,
-					NewName:    "new/metric2",
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
+					NewName:             "new/metric2",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -75,12 +77,43 @@ var (
 			},
 		},
 		{
+			name: "metric_names_update_chained",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^(metric)(?P<namedsubmatch>[12])$")},
+					Action:              Update,
+					NewName:             "new/$1/$namedsubmatch",
+				},
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "new/metric/1"},
+					Action:              Update,
+					NewName:             "new/new/metric1",
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+				metricBuilder().setName("metric2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("new/new/metric1").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+				metricBuilder().setName("new/metric/2").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+				metricBuilder().setName("metric3").
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).build(),
+			},
+		},
+		{
 			name: "metric_name_update_nonexist",
 			transforms: []internalTransform{
 				{
-					MetricName: "nonexist",
-					Action:     Update,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "nonexist"},
+					Action:              Update,
+					NewName:             "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -96,8 +129,8 @@ var (
 			name: "metric_label_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -128,8 +161,8 @@ var (
 			name: "metric_label_value_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -166,8 +199,8 @@ var (
 			name: "metric_label_aggregation_sum_int_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -203,8 +236,8 @@ var (
 			name: "metric_label_aggregation_mean_int_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -239,8 +272,8 @@ var (
 			name: "metric_label_aggregation_max_int_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -276,8 +309,8 @@ var (
 			name: "metric_label_aggregation_min_int_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -315,8 +348,8 @@ var (
 			name: "metric_label_aggregation_sum_double_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -352,8 +385,8 @@ var (
 			name: "metric_label_aggregation_mean_double_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -387,8 +420,8 @@ var (
 			name: "metric_label_aggregation_max_double_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -423,8 +456,8 @@ var (
 			name: "metric_label_aggregation_min_double_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -457,8 +490,8 @@ var (
 			name: "metric_label_values_aggregation_sum_int_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -504,8 +537,8 @@ var (
 			name: "metric_label_values_aggregation_sum_distribution_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -541,8 +574,8 @@ var (
 			name: "metric_label_values_aggregation_not_sum_distribution_update",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -575,9 +608,9 @@ var (
 			name: "metric_name_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
+					NewName:             "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -595,14 +628,14 @@ var (
 			name: "metric_name_insert_multiple",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
+					NewName:             "new/metric1",
 				},
 				{
-					MetricName: "metric2",
-					Action:     Insert,
-					NewName:    "new/metric2",
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Insert,
+					NewName:             "new/metric2",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -620,9 +653,9 @@ var (
 			name: "metric_label_update_with_metric_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
+					NewName:             "new/metric1",
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -658,9 +691,9 @@ var (
 			name: "metric_label_value_update_with_metric_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
-					NewName:    "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
+					NewName:             "new/metric1",
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -706,8 +739,8 @@ var (
 			name: "metric_label_aggregation_sum_int_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -749,8 +782,8 @@ var (
 			name: "metric_label_values_aggregation_sum_int_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -785,8 +818,8 @@ var (
 			name: "metric_labels_aggregation_sum_distribution_insert",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Insert,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Insert,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -823,8 +856,8 @@ var (
 			name: "metric_toggle_scalar_data_type_int64_to_double",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -834,8 +867,8 @@ var (
 					},
 				},
 				{
-					MetricName: "metric2",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -858,8 +891,8 @@ var (
 			name: "metric_toggle_scalar_data_type_double_to_int64",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -869,8 +902,8 @@ var (
 					},
 				},
 				{
-					MetricName: "metric2",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric2"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -897,8 +930,8 @@ var (
 			name: "metric_toggle_scalar_data_type_no_effect",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -922,8 +955,8 @@ var (
 			name: "update existing metric by adding a new label when there are no labels",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -954,8 +987,8 @@ var (
 			name: "update existing metric by adding a new label when there are labels",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -986,8 +1019,8 @@ var (
 			name: "update existing metric by adding a label that is duplicated in the list",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric1",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -1018,8 +1051,8 @@ var (
 			name: "update_does_not_happen_because_target_metric_doesn't_exist",
 			transforms: []internalTransform{
 				{
-					MetricName: "mymetric",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "mymetric"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{
@@ -1051,8 +1084,8 @@ var (
 			name: "delete_a_label_value",
 			transforms: []internalTransform{
 				{
-					MetricName: "metric",
-					Action:     Update,
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              Update,
 					Operations: []internalOperation{
 						{
 							configOperation: Operation{

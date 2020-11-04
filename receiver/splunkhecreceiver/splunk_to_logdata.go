@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
@@ -53,7 +53,9 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
-		logRecord.SetTimestamp(pdata.TimestampUnixNano(event.Time * 1e9))
+		if event.Time != nil {
+			logRecord.SetTimestamp(pdata.TimestampUnixNano(*event.Time * 1e9))
+		}
 
 		rl.Resource().InitEmpty()
 		attrs := rl.Resource().Attributes()
@@ -97,20 +99,16 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 	} else if value, ok := originalValue.(bool); ok {
 		return pdata.NewAttributeValueBool(value), nil
 	} else if value, ok := originalValue.(map[string]interface{}); ok {
-		mapContents, err := convertToAttributeMap(logger, value)
+		mapValue, err := convertToAttributeMap(logger, value)
 		if err != nil {
 			return pdata.NewAttributeValueNull(), err
 		}
-		mapValue := pdata.NewAttributeValueMap()
-		mapValue.SetMapVal(mapContents)
 		return mapValue, nil
 	} else if value, ok := originalValue.([]interface{}); ok {
-		arrValue := pdata.NewAttributeValueArray()
-		arrContents, err := convertToArrayVal(logger, value)
+		arrValue, err := convertToArrayVal(logger, value)
 		if err != nil {
 			return pdata.NewAttributeValueNull(), err
 		}
-		arrValue.SetArrayVal(arrContents)
 		return arrValue, nil
 	} else {
 		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
@@ -118,20 +116,22 @@ func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interfac
 	}
 }
 
-func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.AnyValueArray, error) {
-	arr := pdata.NewAnyValueArray()
+func convertToArrayVal(logger *zap.Logger, value []interface{}) (pdata.AttributeValue, error) {
+	attrVal := pdata.NewAttributeValueArray()
+	arr := attrVal.ArrayVal()
 	for _, elt := range value {
 		translatedElt, err := convertInterfaceToAttributeValue(logger, elt)
 		if err != nil {
-			return arr, err
+			return attrVal, err
 		}
 		arr.Append(translatedElt)
 	}
-	return arr, nil
+	return attrVal, nil
 }
 
-func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pdata.AttributeMap, error) {
-	attrMap := pdata.NewAttributeMap()
+func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pdata.AttributeValue, error) {
+	attrVal := pdata.NewAttributeValueMap()
+	attrMap := attrVal.MapVal()
 	keys := make([]string, 0, len(value))
 	for k := range value {
 		keys = append(keys, k)
@@ -141,9 +141,9 @@ func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pd
 		v := value[k]
 		translatedElt, err := convertInterfaceToAttributeValue(logger, v)
 		if err != nil {
-			return attrMap, err
+			return attrVal, err
 		}
 		attrMap.Insert(k, translatedElt)
 	}
-	return attrMap, nil
+	return attrVal, nil
 }

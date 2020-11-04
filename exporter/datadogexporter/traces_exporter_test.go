@@ -157,10 +157,10 @@ func TestNewTraceExporter(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	logger := zap.NewNop()
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 
 	// The client should have been created correctly
-	exp, err := newTraceExporter(logger, cfg)
+	exp, err := newTraceExporter(params, cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
 }
@@ -196,9 +196,9 @@ func TestPushTraceData(t *testing.T) {
 			},
 		},
 	}
-	logger := zap.NewNop()
 
-	exp, err := newTraceExporter(logger, cfg)
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	exp, err := newTraceExporter(params, cfg)
 
 	assert.NoError(t, err)
 
@@ -229,7 +229,7 @@ func TestTraceAndStatsExporter(t *testing.T) {
 }
 
 func simpleTraces() pdata.Traces {
-	return simpleTracesWithID(pdata.NewTraceID([]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pdata.TraceID) pdata.Traces {

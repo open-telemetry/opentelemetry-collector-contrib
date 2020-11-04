@@ -17,34 +17,18 @@ package sapmexporter
 import (
 	"errors"
 	"net/url"
-	"time"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
-	"github.com/signalfx/signalfx-agent/pkg/apm/correlations"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 const (
 	defaultEndpointScheme = "https"
 	defaultNumWorkers     = 8
 )
-
-// CorrelationConfig defines correlation settings.
-type CorrelationConfig struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
-	correlations.Config           `mapstructure:",squash"`
-	// Enabled determines whether correlation is enabled or not.
-	Enabled bool `mapstructure:"enabled"`
-	// How long to wait after a trace span's service name is last seen before
-	// uncorrelating that service.
-	StaleServiceTimeout time.Duration `mapstructure:"stale_service_timeout"`
-	// SyncAttributes is a key of the span attribute name to sync to the dimension as the value.
-	SyncAttributes map[string]string `mapstructure:"sync_attributes"`
-}
 
 // Config defines configuration for SAPM exporter.
 type Config struct {
@@ -53,9 +37,6 @@ type Config struct {
 	// Endpoint is the destination to where traces will be sent to in SAPM format.
 	// It must be a full URL and include the scheme, port and path e.g, https://ingest.signalfx.com/v2/trace
 	Endpoint string `mapstructure:"endpoint"`
-
-	// Correlation settings for associating environment and services observed from traces to metrics.
-	Correlation CorrelationConfig `mapstructure:"correlation"`
 
 	// AccessToken is the authentication token provided by SignalFx.
 	AccessToken string `mapstructure:"access_token"`
@@ -80,10 +61,6 @@ type Config struct {
 func (c *Config) validate() error {
 	if c.Endpoint == "" {
 		return errors.New("`endpoint` not specified")
-	}
-
-	if c.Correlation.Enabled && c.Correlation.Endpoint == "" {
-		return errors.New("`correlation.endpoint` must be set when `correlation.enabled` is true")
 	}
 
 	e, err := url.Parse(c.Endpoint)

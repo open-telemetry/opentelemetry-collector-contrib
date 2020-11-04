@@ -55,11 +55,11 @@ const (
 )
 
 var (
-	defaultTraceID                = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
+	defaultTraceID                = [16]byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 25}
 	defaultTraceIDAsHex           = fmt.Sprintf("%02x", defaultTraceID)
-	defaultSpanID                 = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 26}
+	defaultSpanID                 = [8]byte{35, 191, 77, 229, 162, 242, 217, 76}
 	defaultSpanIDAsHex            = fmt.Sprintf("%02x", defaultSpanID)
-	defaultParentSpanID           = []byte{35, 191, 77, 229, 162, 242, 217, 75, 148, 170, 81, 99, 227, 163, 145, 27}
+	defaultParentSpanID           = [8]byte{35, 191, 77, 229, 162, 242, 217, 77}
 	defaultParentSpanIDAsHex      = fmt.Sprintf("%02x", defaultParentSpanID)
 	defaultSpanStartTime          = pdata.TimestampUnixNano(0)
 	defaultSpanEndTme             = pdata.TimestampUnixNano(60000000000)

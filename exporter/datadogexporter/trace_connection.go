@@ -24,6 +24,7 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
 	"github.com/gogo/protobuf/proto"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/utils"
 )
@@ -38,6 +39,7 @@ type traceEdgeConnection struct {
 	traceURL           string
 	statsURL           string
 	apiKey             string
+	startInfo          component.ApplicationStartInfo
 	InsecureSkipVerify bool
 }
 
@@ -47,12 +49,13 @@ const (
 )
 
 // CreateTraceEdgeConnection returns a new TraceEdgeConnection
-func CreateTraceEdgeConnection(rootURL, apiKey string) TraceEdgeConnection {
+func CreateTraceEdgeConnection(rootURL, apiKey string, startInfo component.ApplicationStartInfo) TraceEdgeConnection {
 
 	return &traceEdgeConnection{
-		traceURL: rootURL + "/api/v0.2/traces",
-		statsURL: rootURL + "/api/v0.2/stats",
-		apiKey:   apiKey,
+		traceURL:  rootURL + "/api/v0.2/traces",
+		statsURL:  rootURL + "/api/v0.2/stats",
+		startInfo: startInfo,
+		apiKey:    apiKey,
 	}
 }
 
@@ -141,6 +144,7 @@ func (con *traceEdgeConnection) SendStats(ctx context.Context, sts *stats.Payloa
 
 // sendPayloadToTraceEdge sends a payload to Trace Edge
 func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiKey string, payload *Payload, url string) (bool, error) {
+
 	// Create the request to be sent to the API
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload.Bytes))
 
@@ -148,7 +152,7 @@ func (con *traceEdgeConnection) sendPayloadToTraceEdge(ctx context.Context, apiK
 		return false, err
 	}
 
-	utils.SetDDHeaders(req.Header, apiKey)
+	utils.SetDDHeaders(req.Header, con.startInfo, apiKey)
 	utils.SetExtraHeaders(req.Header, payload.Headers)
 
 	client := utils.NewHTTPClient(traceEdgeTimeout)

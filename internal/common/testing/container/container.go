@@ -117,10 +117,11 @@ func (c *Containers) pullImage(image string) {
 	}
 }
 
-func (c *Containers) createContainer(image string) container.ContainerCreateCreatedBody {
+func (c *Containers) createContainer(image string, env []string) container.ContainerCreateCreatedBody {
 	created, err := c.cli.ContainerCreate(context.Background(), &container.Config{
 		Image:  image,
 		Labels: map[string]string{"started-by": "opentelemetry-testing"},
+		Env:    env,
 	}, &container.HostConfig{
 		PublishAllPorts: true,
 	}, &network.NetworkingConfig{}, "")
@@ -179,8 +180,12 @@ func (c *Containers) waitForPorts(con Container) {
 
 // StartImage starts a container with the given image and zero or more ContainerOptions.
 func (c *Containers) StartImage(image string, opts ...Option) Container {
+	return c.StartImageWithEnv(image, nil, opts...)
+}
+
+func (c *Containers) StartImageWithEnv(image string, env []string, opts ...Option) Container {
 	c.pullImage(image)
-	created := c.createContainer(image)
+	created := c.createContainer(image, env)
 	con := c.startContainer(created)
 	c.runningContainers[con.ID] = con
 

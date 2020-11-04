@@ -37,7 +37,7 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	te, err := factory.CreateTraceExporter(
+	te, err := factory.CreateTracesExporter(
 		context.Background(),
 		component.ExporterCreateParams{Logger: zap.NewNop()},
 		eCfg,
