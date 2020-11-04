@@ -63,10 +63,18 @@ func TestLoadConfig(t *testing.T) {
 				TypeVal: "k8s_tagger",
 				NameVal: "k8s_tagger/2",
 			},
-			APIConfig:   k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
-			Passthrough: false,
+			APIConfig:          k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
+			Passthrough:        false,
+			OwnerLookupEnabled: true,
 			Extract: ExtractConfig{
-				Metadata: []string{"podName", "podUID", "deployment", "cluster", "namespace", "node", "startTime"},
+				Metadata: []string{
+					"containerId", "containerName", "containerImage", "clusterName", "daemonSetName",
+					"deploymentName", "hostName", "namespace", "nodeName", "podId", "podName",
+					"replicaSetName", "serviceName", "startTime", "statefulSetName",
+				},
+				Tags: map[string]string{
+					"containerid": "my.namespace.containerId",
+				},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)"},
@@ -74,6 +82,9 @@ func TestLoadConfig(t *testing.T) {
 				Labels: []FieldExtractConfig{
 					{TagName: "l1", Key: "label1"},
 					{TagName: "l2", Key: "label2", Regex: "field=(?P<value>.+)"},
+				},
+				NamespaceLabels: []FieldExtractConfig{
+					{TagName: "namespace_labels_%s", Key: "*"},
 				},
 			},
 			Filter: FilterConfig{

@@ -18,6 +18,7 @@ import (
 	"regexp"
 	"time"
 
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -30,8 +31,17 @@ const (
 	podNodeField            = "spec.nodeName"
 	ignoreAnnotation string = "opentelemetry.io/k8s-processor/ignore"
 
-	tagNodeName  = "k8s.node.name"
-	tagStartTime = "k8s.pod.startTime"
+	defaultTagContainerID     = "k8s.container.id"
+	defaultTagContainerImage  = "k8s.container.image"
+	defaultTagContainerName   = "k8s.container.name"
+	defaultTagDaemonSetName   = "k8s.daemonset.name"
+	defaultTagHostName        = "k8s.pod.hostname"
+	defaultTagNodeName        = "k8s.node.name"
+	defaultTagPodUID          = "k8s.pod.id"
+	defaultTagReplicaSetName  = "k8s.replicaset.name"
+	defaultTagServiceName     = "k8s.service.name"
+	defaultTagStatefulSetName = "k8s.statefulset.name"
+	defaultTagStartTime       = "k8s.pod.startTime"
 )
 
 var (
@@ -39,6 +49,9 @@ var (
 	podNameIgnorePatterns = []*regexp.Regexp{
 		regexp.MustCompile(`jaeger-agent`),
 		regexp.MustCompile(`jaeger-collector`),
+		regexp.MustCompile(`otel-collector`),
+		regexp.MustCompile(`otel-agent`),
+		regexp.MustCompile(`collection-sumologic-otelcol`),
 	}
 	defaultPodDeleteGracePeriod = time.Second * 120
 	watchSyncPeriod             = time.Minute * 5
@@ -52,7 +65,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, APIClientsetProvider, InformerProvider) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, APIClientsetProvider, InformerProvider, OwnerProvider) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -80,10 +93,11 @@ type deleteRequest struct {
 // for performance reasons. We can support adding additional custom filters
 // in future if there is a real need.
 type Filters struct {
-	Node      string
-	Namespace string
-	Fields    []FieldFilter
-	Labels    []FieldFilter
+	Node            string
+	Namespace       string
+	Fields          []FieldFilter
+	Labels          []FieldFilter
+	NamespaceLabels []FieldFilter
 }
 
 // FieldFilter represents exactly one filter by field rule.
@@ -102,16 +116,68 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
-	Deployment bool
-	Namespace  bool
-	PodName    bool
-	PodUID     bool
-	Node       bool
-	Cluster    bool
-	StartTime  bool
+	ClusterName     bool
+	ContainerID     bool
+	ContainerImage  bool
+	ContainerName   bool
+	DaemonSetName   bool
+	DeploymentName  bool
+	HostName        bool
+	PodUID          bool
+	PodName         bool
+	ReplicaSetName  bool
+	ServiceName     bool
+	StatefulSetName bool
+	StartTime       bool
+	Namespace       bool
+	NodeName        bool
 
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	OwnerLookupEnabled bool
+
+	Tags            ExtractionFieldTags
+	Annotations     []FieldExtractionRule
+	Labels          []FieldExtractionRule
+	NamespaceLabels []FieldExtractionRule
+}
+
+// ExtractionFieldTags is used to describe selected exported key names for the extracted data
+type ExtractionFieldTags struct {
+	ClusterName     string
+	ContainerID     string
+	ContainerImage  string
+	ContainerName   string
+	DaemonSetName   string
+	DeploymentName  string
+	HostName        string
+	PodUID          string
+	PodName         string
+	Namespace       string
+	NodeName        string
+	ReplicaSetName  string
+	ServiceName     string
+	StartTime       string
+	StatefulSetName string
+}
+
+// NewExtractionFieldTags builds a new instance of tags with default values
+func NewExtractionFieldTags() ExtractionFieldTags {
+	tags := ExtractionFieldTags{}
+	tags.ClusterName = conventions.AttributeK8sCluster
+	tags.ContainerID = defaultTagContainerID
+	tags.ContainerImage = defaultTagContainerImage
+	tags.ContainerName = defaultTagContainerName
+	tags.DaemonSetName = defaultTagDaemonSetName
+	tags.DeploymentName = conventions.AttributeK8sDeployment
+	tags.HostName = defaultTagHostName
+	tags.PodUID = defaultTagPodUID
+	tags.PodName = conventions.AttributeK8sPod
+	tags.Namespace = conventions.AttributeK8sNamespace
+	tags.NodeName = defaultTagNodeName
+	tags.ReplicaSetName = defaultTagReplicaSetName
+	tags.ServiceName = defaultTagServiceName
+	tags.StartTime = defaultTagStartTime
+	tags.StatefulSetName = defaultTagStatefulSetName
+	return tags
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

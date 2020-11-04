@@ -202,23 +202,23 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
-	assert.True(t, p.rules.Deployment)
-	assert.True(t, p.rules.Cluster)
-	assert.True(t, p.rules.Node)
+	assert.True(t, p.rules.DeploymentName)
+	assert.True(t, p.rules.ClusterName)
+	assert.True(t, p.rules.NodeName)
 
 	p = &kubernetesprocessor{}
 	err := WithExtractMetadata("randomfield")(p)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), `"randomfield" is not a supported metadata field`)
 
-	assert.NoError(t, WithExtractMetadata("namespace", "cluster")(p))
+	assert.NoError(t, WithExtractMetadata("namespace", "clusterName")(p))
 	assert.True(t, p.rules.Namespace)
-	assert.True(t, p.rules.Cluster)
+	assert.True(t, p.rules.ClusterName)
 	assert.False(t, p.rules.PodName)
 	assert.False(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
-	assert.False(t, p.rules.Deployment)
-	assert.False(t, p.rules.Node)
+	assert.False(t, p.rules.DeploymentName)
+	assert.False(t, p.rules.NodeName)
 }
 
 func TestWithFilterLabels(t *testing.T) {
@@ -504,7 +504,7 @@ func Test_extractFieldRules(t *testing.T) {
 			}},
 			[]kube.FieldExtractionRule{
 				{
-					Name: "k8s.pod.labels.key",
+					Name: "k8s.labels.key",
 					Key:  "key",
 				},
 			},

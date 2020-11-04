@@ -5,17 +5,29 @@ processors:
   k8s_tagger:
   k8s_tagger/2:
     passthrough: false
+    owner_lookup_enabled: true
     auth_type: "kubeConfig"
     extract:
       metadata:
         # extract the following well-known metadata fields
-        - podName
-        - podUID
-        - deployment
-        - cluster
+        - containerId
+        - containerName
+        - containerImage
+        - clusterName
+        - daemonSetName
+        - deploymentName
+        - hostName
         - namespace
-        - node
+        - nodeName
+        - podId
+        - podName
+        - replicaSetName
+        - serviceName
         - startTime
+        - statefulSetName
+      tags:
+        # It is possible to provide your custom key names for each of the extracted metadata:
+        containerId: my.namespace.containerId
 
       annotations:
         - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
@@ -23,12 +35,21 @@ processors:
         - tag_name: a2 # extracts value of annotation with key `annotation-two` with regexp and inserts it as a tag with key `a2`
           key: annotation-two
           regex: field=(?P<value>.+)
+        # You can also extract all annotations, e.g.:
+        # - tag_name: k8s.annotation.%s
+        #   key: "*"
       labels:
         - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
           key: label1
         - tag_name: l2 # extracts value of label with key `label1` with regexp and inserts it as a tag with key `l2`
           key: label2
           regex: field=(?P<value>.+)
+        # You can also extract all labels, e.g.:
+        # - tag_name: k8s.label.%s
+        #   key: "*"
+      namespace_labels:
+        - tag_name: "namespace_labels_%s"
+          key: "*"
 
     filter:
       namespace: ns2 # only look for pods running in ns2 namespace
