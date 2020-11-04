@@ -261,6 +261,62 @@ func Test_metricDataToSplunk(t *testing.T) {
 			wantSplunkMetrics: []splunk.Event{},
 		},
 		{
+			name: "int_sum_nil_data_point",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				intSum := pdata.NewMetric()
+				intSum.InitEmpty()
+				intSum.SetName("int_sum_with_dims")
+				intSum.SetDataType(pdata.MetricDataTypeIntSum)
+				intSum.IntSum().InitEmpty()
+				sumDataPt := pdata.NewIntDataPoint()
+				intSum.IntSum().DataPoints().Append(sumDataPt)
+				ilm.Metrics().Append(intSum)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
+			name: "double_sum_nil_data_point",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleSum := pdata.NewMetric()
+				doubleSum.InitEmpty()
+				doubleSum.SetName("double_sum_with_dims")
+				doubleSum.SetDataType(pdata.MetricDataTypeDoubleSum)
+				doubleSum.DoubleSum().InitEmpty()
+				doubleDataPt := pdata.NewDoubleDataPoint()
+				doubleSum.DoubleSum().DataPoints().Append(doubleDataPt)
+				ilm.Metrics().Append(doubleSum)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+		{
 			name: "gauges",
 			metricsDataFn: func() pdata.Metrics {
 

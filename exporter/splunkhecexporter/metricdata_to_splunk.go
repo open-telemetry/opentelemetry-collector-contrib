@@ -157,6 +157,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleSum:
+					if tm.DoubleSum().IsNil() {
+						continue
+					}
 					pts := tm.DoubleSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
