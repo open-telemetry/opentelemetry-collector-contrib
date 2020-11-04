@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
 )
@@ -193,9 +194,12 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 }
 
 // Translates OTLP Metric to list of CW Metrics
-func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) []*CWMetrics {
-	var result []*CWMetrics
+func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
 	var dps DataPoints
+
+	if metric == nil {
+		return
+	}
 
 	// metric measure data from OT
 	metricMeasure := make(map[string]string)
@@ -216,10 +220,18 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
 		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
+	default:
+		config.logger.Warn(
+			"Unhandled metric data type.",
+			zap.String("DataType", metric.DataType().String()),
+			zap.String("Name", metric.Name()),
+			zap.String("Unit", metric.Unit()),
+		)
+		return
 	}
 
 	if dps.Len() == 0 {
-		return result
+		return
 	}
 	for m := 0; m < dps.Len(); m++ {
 		dp := dps.At(m)
@@ -228,10 +240,10 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		}
 		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config.DimensionRollupOption)
 		if cwMetric != nil {
-			result = append(result, cwMetric)
+			cwMetrics = append(cwMetrics, cwMetric)
 		}
 	}
-	return result
+	return
 }
 
 // Build CWMetric from DataPoint

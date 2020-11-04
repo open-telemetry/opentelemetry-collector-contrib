@@ -31,6 +31,9 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 // Asserts whether dimension sets are equal (i.e. has same sets of dimensions)
@@ -781,6 +784,42 @@ func TestGetCWMetrics(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("Unhandled metric type", func (t *testing.T) {
+		metric := pdata.NewMetric()
+		metric.InitEmpty()
+		metric.SetName("foo")
+		metric.SetUnit("Count")
+		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
+
+		obs, logs := observer.New(zap.WarnLevel)
+		config := &Config{
+			DimensionRollupOption: "",
+			logger: zap.New(obs),
+		}
+
+		cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
+		assert.Nil(t, cwMetrics)
+
+		// Test output warning logs
+		expectedLogs := []observer.LoggedEntry{
+			{
+				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
+				Context: []zapcore.Field{
+					zap.String("DataType", "IntHistogram"),
+					zap.String("Name", "foo"),
+					zap.String("Unit", "Count"),
+				},
+			},
+		}
+		assert.Equal(t, 1, logs.Len())
+		assert.Equal(t, expectedLogs, logs.AllUntimed())
+	})
+
+	t.Run("Nil metric", func (t *testing.T) {
+		cwMetrics := getCWMetrics(nil, namespace, instrumentationLibName, config)
+		assert.Nil(t, cwMetrics)
+	})
 }
 
 func TestBuildCWMetric(t *testing.T) {
