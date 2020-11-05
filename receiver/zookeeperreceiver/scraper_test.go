@@ -15,7 +15,9 @@
 package zookeeperreceiver
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"io/ioutil"
 	"net"
 	"path"
@@ -61,6 +63,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		mockZKConnectionErr          bool
 		expectedLogs                 []logMsg
 		expectedNumResourceMetrics   int
+		setConnectionDeadline        func(net.Conn, time.Time) error
+		closeConnection              func(net.Conn) error
+		sendCmd                      func(net.Conn, string) (*bufio.Scanner, error)
 		wantErr                      bool
 	}{
 		{
@@ -126,6 +131,57 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			},
 			expectedNumResourceMetrics: 0,
 		},
+		{
+			name:                         "Error setting connection deadline",
+			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			expectedLogs: []logMsg{
+				{
+					msg:   "failed to set deadline on connection",
+					level: zapcore.WarnLevel,
+				},
+			},
+			expectedMetrics: commonMetrics,
+			expectedResourceAttributes: map[string]string{
+				"server.state": "standalone",
+				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedNumResourceMetrics: 1,
+			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
+				return errors.New("")
+			},
+		},
+		{
+			name:                         "Error closing connection",
+			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			expectedLogs: []logMsg{
+				{
+					msg:   "failed to close connection",
+					level: zapcore.WarnLevel,
+				},
+			},
+			expectedMetrics: commonMetrics,
+			expectedResourceAttributes: map[string]string{
+				"server.state": "standalone",
+				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedNumResourceMetrics: 1,
+			closeConnection: func(conn net.Conn) error {
+				return errors.New("")
+			},
+		},
+		{
+			name:                         "Failed to send command",
+			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			expectedLogs: []logMsg{
+				{
+					msg:   "failed to send command",
+					level: zapcore.ErrorLevel,
+				},
+			},
+			sendCmd: func(conn net.Conn, s string) (*bufio.Scanner, error) {
+				return nil, errors.New("")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -142,18 +198,38 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}
 
 			core, observedLogs := observer.New(zap.DebugLevel)
-			z := &zookeeperMetricsScraper{
-				logger: zap.New(core),
-				config: cfg,
-			}
+			z, err := newZookeeperMetricsScraper(zap.New(core), cfg)
+			require.NoError(t, err)
+			require.Equal(t, "zookeeper", z.Name())
+
 			ctx := context.Background()
 			require.NoError(t, z.Initialize(ctx))
 
+			if tt.setConnectionDeadline != nil {
+				z.setConnectionDeadline = tt.setConnectionDeadline
+			}
+
+			if tt.closeConnection != nil {
+				z.closeConnection = tt.closeConnection
+			}
+
+			if tt.sendCmd != nil {
+				z.sendCmd = tt.sendCmd
+			}
+
 			got, err := z.Scrape(ctx, typeStr)
+
+			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
+			for i, log := range tt.expectedLogs {
+				require.Equal(t, log.msg, observedLogs.All()[i].Message)
+				require.Equal(t, log.level, observedLogs.All()[i].Level)
+			}
+
 			if tt.wantErr {
 				require.Error(t, err)
-				require.Equal(t, pdata.ResourceMetricsSlice{}, got)
+				require.Equal(t, pdata.NewResourceMetricsSlice(), got)
 
+				require.NoError(t, z.Close(ctx))
 				return
 			}
 
@@ -173,12 +249,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				for i, metric := range tt.expectedMetrics {
 					assertMetricValid(t, metrics.At(i), metric)
 				}
-			}
-
-			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
-			for i, log := range tt.expectedLogs {
-				require.Equal(t, log.msg, observedLogs.All()[i].Message)
-				require.Equal(t, log.level, observedLogs.All()[i].Level)
 			}
 
 			require.NoError(t, z.Close(ctx))

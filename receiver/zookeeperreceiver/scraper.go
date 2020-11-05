@@ -15,6 +15,7 @@
 package zookeeperreceiver
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -40,6 +41,11 @@ type zookeeperMetricsScraper struct {
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
+
+	// For mocking.
+	closeConnection       func(net.Conn) error
+	setConnectionDeadline func(net.Conn, time.Time) error
+	sendCmd               func(net.Conn, string) (*bufio.Scanner, error)
 }
 
 func (z *zookeeperMetricsScraper) Name() string {
@@ -57,8 +63,11 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	}
 
 	return &zookeeperMetricsScraper{
-		logger: logger,
-		config: config,
+		logger:                logger,
+		config:                config,
+		closeConnection:       closeConnection,
+		setConnectionDeadline: setConnectionDeadline,
+		sendCmd:               sendCmd,
 	}, nil
 }
 
@@ -81,20 +90,33 @@ func (z *zookeeperMetricsScraper) Scrape(ctx context.Context, _ string) (pdata.R
 			zap.String("endpoint", z.config.Endpoint),
 			zap.Error(err),
 		)
-		return pdata.ResourceMetricsSlice{}, err
+		return pdata.NewResourceMetricsSlice(), err
 	}
-	defer conn.Close()
+	defer func() {
+		if closeErr := z.closeConnection(conn); closeErr != nil {
+			z.logger.Warn("failed to close connection", zap.Error(closeErr))
+		}
+	}()
 
 	deadline, ok := ctxWithTimeout.Deadline()
 	if ok {
-		conn.SetDeadline(deadline)
+		if err := z.setConnectionDeadline(conn, deadline); err != nil {
+			z.logger.Warn("failed to set deadline on connection", zap.Error(err))
+		}
 	}
 
-	return z.getResourceMetrics(conn), nil
+	return z.getResourceMetrics(conn)
 }
 
-func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) pdata.ResourceMetricsSlice {
-	scanner := sendCmd(conn, mntrCommand)
+func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
+	scanner, err := z.sendCmd(conn, mntrCommand)
+	if err != nil {
+		z.logger.Error("failed to send command",
+			zap.Error(err),
+			zap.String("command", mntrCommand),
+		)
+		return pdata.NewResourceMetricsSlice(), err
+	}
 	metrics := simple.Metrics{
 		Metrics:                    pdata.NewMetrics(),
 		Timestamp:                  time.Now(),
@@ -114,25 +136,27 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) pdata.Resour
 			continue
 		}
 
-		switch parts[1] {
+		metricKey := parts[1]
+		metricValue := parts[2]
+		switch metricKey {
 		case zkVersionKey:
-			metrics.ResourceAttributes[zkVersionResourceLabel] = parts[2]
+			metrics.ResourceAttributes[zkVersionResourceLabel] = metricValue
 			continue
 		case serverStateKey:
-			metrics.ResourceAttributes[serverStateResourceLabel] = parts[2]
+			metrics.ResourceAttributes[serverStateResourceLabel] = metricValue
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
-			metricDescriptor := getOTLPMetricDescriptor(parts[1])
+			metricDescriptor := getOTLPMetricDescriptor(metricKey)
 			if metricDescriptor.IsNil() {
 				continue
 			}
 
-			int64Val, err := strconv.ParseInt(parts[2], 10, 64)
+			int64Val, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				z.logger.Debug(
 					fmt.Sprintf("non-integer value from %s", mntrCommand),
-					zap.String("value", parts[2]),
+					zap.String("value", metricValue),
 				)
 				continue
 			}
@@ -145,5 +169,23 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) pdata.Resour
 
 		}
 	}
-	return metrics.ResourceMetrics()
+	return metrics.ResourceMetrics(), nil
+}
+
+func closeConnection(conn net.Conn) error {
+	return conn.Close()
+}
+
+func setConnectionDeadline(conn net.Conn, deadline time.Time) error {
+	return conn.SetDeadline(deadline)
+}
+
+func sendCmd(conn net.Conn, cmd string) (*bufio.Scanner, error) {
+	_, err := fmt.Fprintf(conn, "%s\n", cmd)
+	if err != nil {
+		return nil, err
+	}
+	reader := bufio.NewReader(conn)
+	scanner := bufio.NewScanner(reader)
+	return scanner, nil
 }
