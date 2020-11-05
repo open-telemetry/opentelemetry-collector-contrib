@@ -45,8 +45,9 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	if !validateAuthConfig(prwCfg.AuthSettings) {
-		return nil, errors.New("invalid authentication configuration")
+	err := validateAndFixConfig(prwCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
@@ -64,7 +65,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	}
 
 	// initialize an upstream exporter and pass it an http.Client with interceptor
-	prwe, err := prw.NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client)
+	prwe, err := prw.NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +110,19 @@ func createDefaultConfig() configmodels.Exporter {
 			Headers:         map[string]string{},
 		},
 	}
+}
+
+func validateAndFixConfig(prwCfg *Config) error {
+	err := prw.validateAndSanitizeExternalLabels(prwCfg)
+	if err != nil {
+		return err
+	}
+
+	if !validateAuthConfig(prwCfg.AuthSettings) {
+		return errors.New("invalid authentication configuration")
+	}
+
+	return nil
 }
 
 func validateAuthConfig(params AuthSettings) bool {

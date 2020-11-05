@@ -35,6 +35,9 @@ type Config struct {
 	// AWS Sig V4 configuration options
 	AuthSettings AuthSettings `mapstructure:"aws_auth"`
 
+	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
+	ExternalLabels map[string]string `mapstructure:"external_labels"`
+
 	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
