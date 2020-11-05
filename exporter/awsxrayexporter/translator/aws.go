@@ -15,6 +15,7 @@
 package translator
 
 import (
+	"bytes"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,9 +25,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
 
+const (
+	attributeInfrastructureService = "cloud.infrastructure_service"
+	awsEcsClusterArn               = "aws.ecs.cluster.arn"
+	awsEcsContainerArn             = "aws.ecs.container.arn"
+	awsEcsTaskArn                  = "aws.ecs.task.arn"
+	awsEcsTaskFamily               = "aws.ecs.task.family"
+	awsEcsLaunchType               = "aws.ecs.launchtype"
+	awsLogGroupNames               = "aws.log.group.names"
+	awsLogGroupArns                = "aws.log.group.arns"
+)
+
 func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]string, *awsxray.AWSData) {
 	var (
 		cloud        string
+		service      string
 		account      string
 		zone         string
 		hostID       string
@@ -49,6 +62,14 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		containerID  string
 		clusterName  string
 		podUID       string
+		clusterArn   string
+		containerArn string
+		taskArn      string
+		taskFamily   string
+		launchType   string
+		logGroups    pdata.AnyValueArray
+		logGroupArns pdata.AnyValueArray
+		cwl          []awsxray.LogGroupMetadata
 		ec2          *awsxray.EC2Metadata
 		ecs          *awsxray.ECSMetadata
 		ebs          *awsxray.BeanstalkMetadata
@@ -61,6 +82,8 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			switch key {
 			case semconventions.AttributeCloudProvider:
 				cloud = value.StringVal()
+			case attributeInfrastructureService:
+				service = value.StringVal()
 			case semconventions.AttributeCloudAccount:
 				account = value.StringVal()
 			case semconventions.AttributeCloudZone:
@@ -95,6 +118,20 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 				containerID = value.StringVal()
 			case semconventions.AttributeK8sCluster:
 				clusterName = value.StringVal()
+			case awsEcsClusterArn:
+				clusterArn = value.StringVal()
+			case awsEcsContainerArn:
+				containerArn = value.StringVal()
+			case awsEcsTaskArn:
+				taskArn = value.StringVal()
+			case awsEcsTaskFamily:
+				taskFamily = value.StringVal()
+			case awsEcsLaunchType:
+				launchType = value.StringVal()
+			case awsLogGroupNames:
+				logGroups = value.ArrayVal()
+			case awsLogGroupArns:
+				logGroupArns = value.ArrayVal()
 			}
 		})
 	}
@@ -125,12 +162,11 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			filtered[key] = value
 		}
 	}
-	if cloud != "aws" && cloud != "" {
+	if cloud != semconventions.AttributeCloudProviderAWS && cloud != "" {
 		return filtered, nil // not AWS so return nil
 	}
-	// progress from least specific to most specific origin so most specific ends up as origin
-	// as per X-Ray docs
-	if hostID != "" {
+
+	if service == "EC2" || hostID != "" {
 		ec2 = &awsxray.EC2Metadata{
 			InstanceID:       awsxray.String(hostID),
 			AvailabilityZone: awsxray.String(zone),
@@ -138,12 +174,20 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 			AmiID:            awsxray.String(amiID),
 		}
 	}
-	if container != "" {
+	if service == "ECS" || container != "" {
 		ecs = &awsxray.ECSMetadata{
-			ContainerName: awsxray.String(container),
-			ContainerID:   awsxray.String(containerID),
+			ContainerName:    awsxray.String(container),
+			ContainerID:      awsxray.String(containerID),
+			AvailabilityZone: awsxray.String(zone),
+			ContainerArn:     awsxray.String(containerArn),
+			ClusterArn:       awsxray.String(clusterArn),
+			TaskArn:          awsxray.String(taskArn),
+			TaskFamily:       awsxray.String(taskFamily),
+			LaunchType:       awsxray.String(launchType),
 		}
 	}
+
+	// TODO(willarmiros): Add infrastructure_service checks once their resource detectors are implemented
 	if deployID != "" {
 		deployNum, err := strconv.ParseInt(deployID, 10, 64)
 		if err != nil {
@@ -163,6 +207,14 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		}
 	}
 
+	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
+	// names from the ARN, then fall back to just recording the names
+	if logGroupArns != (pdata.AnyValueArray{}) && logGroupArns.Len() > 0 {
+		cwl = getLogGroupMetadata(logGroupArns, true)
+	} else if logGroups != (pdata.AnyValueArray{}) && logGroups.Len() > 0 {
+		cwl = getLogGroupMetadata(logGroups, false)
+	}
+
 	if sdkName != "" && sdkLanguage != "" {
 		// Convention for SDK name for xray SDK information is e.g., `X-Ray SDK for Java`, `X-Ray for Go`.
 		// We fill in with e.g, `opentelemetry for java` by using the conventions
@@ -180,6 +232,7 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 	awsData := &awsxray.AWSData{
 		AccountID:    awsxray.String(account),
 		Beanstalk:    ebs,
+		CWLogs:       cwl,
 		ECS:          ecs,
 		EC2:          ec2,
 		EKS:          eks,
@@ -191,4 +244,33 @@ func makeAws(attributes map[string]string, resource pdata.Resource) (map[string]
 		TableName:    awsxray.String(tableName),
 	}
 	return filtered, awsData
+}
+
+// Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn
+// populated, or given an array of just log group names, create the LogGroupMetadata objects with arn omitted
+func getLogGroupMetadata(logGroups pdata.AnyValueArray, isArn bool) []awsxray.LogGroupMetadata {
+	var lgm []awsxray.LogGroupMetadata
+	for i := 0; i < logGroups.Len(); i++ {
+		if isArn {
+			lgm = append(lgm, awsxray.LogGroupMetadata{
+				Arn:      awsxray.String(logGroups.At(i).StringVal()),
+				LogGroup: awsxray.String(parseLogGroup(logGroups.At(i).StringVal())),
+			})
+		} else {
+			lgm = append(lgm, awsxray.LogGroupMetadata{
+				LogGroup: awsxray.String(logGroups.At(i).StringVal()),
+			})
+		}
+	}
+
+	return lgm
+}
+
+func parseLogGroup(arn string) string {
+	i := bytes.LastIndexByte([]byte(arn), byte(':'))
+	if i != -1 {
+		return arn[i+1:]
+	}
+
+	return arn
 }
