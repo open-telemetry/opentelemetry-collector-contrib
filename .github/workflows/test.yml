@@ -5,6 +5,8 @@ on:
     branches-ignore:
     - 'release/*'
   pull_request:
+env:
+  CORE_REPO_SHA: 47483865854c7adae7455f8441dab7f814f4ce2a
 
 jobs:
   build:
@@ -32,13 +34,13 @@ jobs:
             python-version: py35
             package: instrumentation
     steps:
-      - name: Checkout Contrib Repo at SHA - ${{ github.sha }}
+      - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
-      - name: Checkout Core Repo @ tag v0.15b0
+      - name: Checkout Core Repo @ SHA - ${{ env.CORE_REPO_SHA }}
         uses: actions/checkout@v2
         with:
           repository: open-telemetry/opentelemetry-python
-          ref: v0.15b0
+          ref: ${{ env.CORE_REPO_SHA }}
           path: opentelemetry-python-core
       - name: Set up Python ${{ env[matrix.python-version] }}
         uses: actions/setup-python@v2
@@ -62,13 +64,13 @@ jobs:
     name: ${{ matrix.tox-environment }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Contrib Repo at SHA - ${{ github.sha }}
+      - name: Checkout Contrib Repo @ SHA - ${{ github.sha }}
         uses: actions/checkout@v2
-      - name: Checkout Core Repo @ tag v0.15b0
+      - name: Checkout Core Repo @ SHA ${{ env.CORE_REPO_SHA }}
         uses: actions/checkout@v2
         with:
           repository: open-telemetry/opentelemetry-python
-          ref: v0.15b0
+          ref: ${{ env.CORE_REPO_SHA }}
           path: opentelemetry-python-core
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
