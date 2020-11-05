@@ -51,7 +51,7 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	attributes.InsertString(semconventions.AttributeExceptionType, "EmptyError")
 	attributes.CopyTo(event2.Attributes())
 
-	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributeMap, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	span.Events().Append(event1)
 	span.Events().Append(event2)
@@ -62,8 +62,8 @@ Caused by: java.lang.IllegalArgumentException: bad argument`)
 	res.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, filteredResult, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
-	assert.True(t, isFault)
+	assert.True(t, isError)
+	assert.False(t, isFault)
 	assert.Equal(t, filtered, filteredResult)
 	assert.NotNil(t, cause)
 	assert.Len(t, cause.Exceptions, 3)
@@ -84,7 +84,7 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPMethod] = "POST"
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	span.Status().SetMessage(errorMsg)
 	filtered, _ := makeHTTP(span)
 
@@ -92,8 +92,8 @@ func TestCauseWithStatusMessage(t *testing.T) {
 	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
-	assert.True(t, isFault)
+	assert.True(t, isError)
+	assert.False(t, isFault)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -112,15 +112,15 @@ func TestCauseWithHttpStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPURL] = "https://api.example.com/widgets"
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeInternalError)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
 	res.InitEmpty()
 	isError, isFault, filtered, cause := makeCause(span, filtered, res)
 
-	assert.False(t, isError)
-	assert.True(t, isFault)
+	assert.True(t, isError)
+	assert.False(t, isFault)
 	assert.NotNil(t, filtered)
 	assert.NotNil(t, cause)
 	w := testWriters.borrow()
@@ -140,7 +140,7 @@ func TestCauseWithZeroStatusMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 500
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeOk)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeUnset)
 	filtered, _ := makeHTTP(span)
 	// Status is used to determine whether an error or not.
 	// This span illustrates incorrect instrumentation,
@@ -164,7 +164,7 @@ func TestCauseWithClientErrorMessage(t *testing.T) {
 	attributes[semconventions.AttributeHTTPStatusCode] = 499
 	attributes[semconventions.AttributeHTTPStatusText] = errorMsg
 
-	span := constructExceptionServerSpan(attributes, pdata.StatusCodeCancelled)
+	span := constructExceptionServerSpan(attributes, pdata.StatusCodeError)
 	filtered, _ := makeHTTP(span)
 
 	res := pdata.NewResource()
