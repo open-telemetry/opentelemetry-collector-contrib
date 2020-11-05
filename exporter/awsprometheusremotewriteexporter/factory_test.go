@@ -16,16 +16,16 @@ package awsprometheusremotewriteexporter
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.uber.org/zap"
 )
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
@@ -39,6 +39,10 @@ func Test_createDefaultConfig(t *testing.T) {
 func Test_createMetricsExporter(t *testing.T) {
 	validConfigWithAuth := createDefaultConfig().(*Config)
 	validConfigWithAuth.AuthSettings = AuthSettings{Region: "region", Service: "service"}
+
+	// Some form of AWS credentials chain required to test valid auth case
+	os.Setenv("AWS_ACCESS_KEY", "string")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
 
 	invalidConfigWithAuth := createDefaultConfig().(*Config)
 	invalidConfigWithAuth.AuthSettings = AuthSettings{Region: "", Service: "service"}
