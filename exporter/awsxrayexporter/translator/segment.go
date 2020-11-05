@@ -100,7 +100,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
-		isThrottled                            = !span.Status().IsNil() && span.Status().Code() == pdata.StatusCodeResourceExhausted
 		origin                                 = determineAwsOrigin(resource)
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
 		service                                = makeService(resource)
@@ -185,7 +184,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
-		Throttle:    awsP.Bool(isThrottled),
 		Cause:       cause,
 		Origin:      awsxray.String(origin),
 		Namespace:   awsxray.String(namespace),

@@ -106,7 +106,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					attrs: attrs,
 				}
@@ -150,7 +150,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeInvalidArgument,
+						code: pdata.StatusCodeError,
 					},
 					eventsProps: rootSpanEvts,
 					attrs:       rootSpanAttrs,
@@ -181,7 +181,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7df6.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeInvalidArgument,
+						code: pdata.StatusCodeError,
 					},
 					eventsProps: childSpan7df6Evts,
 					attrs:       childSpan7df6Attrs,
@@ -215,7 +215,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7318.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       childSpan7318Attrs,
@@ -231,7 +231,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg0239.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -247,7 +247,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg23cf.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -270,7 +270,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg417b.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       childSpan417bAttrs,
@@ -293,7 +293,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg0cab.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       childSpan0cabAttrs,
@@ -316,7 +316,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegF8db.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       childSpanF8dbAttrs,
@@ -339,7 +339,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegE2de.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       childSpanE2deAttrs,
@@ -355,7 +355,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegA70b.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -371,7 +371,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegC053.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -387,7 +387,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg5fca.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -423,7 +423,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg7163.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeInvalidArgument,
+						code: pdata.StatusCodeError,
 					},
 					eventsProps: childSpan7163Evts,
 					attrs:       childSpan7163Attrs,
@@ -439,7 +439,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg9da0.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -457,7 +457,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg56b1.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeUnknownError,
+						code: pdata.StatusCodeError,
 					},
 					eventsProps: childSpan56b1Evts,
 					attrs:       nil,
@@ -473,7 +473,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subseg6f90.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -489,7 +489,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegAcfa.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					eventsProps: nil,
 					attrs:       nil,
@@ -507,7 +507,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   subsegBa8d.EndTime,
 					spanKind:     pdata.SpanKindINTERNAL,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeUnknownError,
+						code: pdata.StatusCodeError,
 					},
 					eventsProps: childSpanBa8dEvts,
 					attrs:       nil,
@@ -562,7 +562,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					attrs: attrs,
 				}
@@ -622,7 +622,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					attrs: attrs,
 				}
@@ -657,7 +657,7 @@ func TestTranslation(t *testing.T) {
 					spanKind:     pdata.SpanKindSERVER,
 					spanStatus: spanSt{
 						message: *seg.Cause.ExceptionID,
-						code:    pdata.StatusCodeUnknownError,
+						code:    pdata.StatusCodeError,
 					},
 					attrs: nil,
 				}
@@ -720,7 +720,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					attrs: attrs,
 				}
@@ -765,7 +765,7 @@ func TestTranslation(t *testing.T) {
 					endTimeSec:   seg.EndTime,
 					spanKind:     pdata.SpanKindCLIENT,
 					spanStatus: spanSt{
-						code: pdata.StatusCodeOk,
+						code: pdata.StatusCodeUnset,
 					},
 					attrs: attrs,
 				}
