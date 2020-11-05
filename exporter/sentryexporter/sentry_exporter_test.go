@@ -377,11 +377,11 @@ func TestStatusFromSpanStatus(t *testing.T) {
 				spanStatus := pdata.NewSpanStatus()
 				spanStatus.InitEmpty()
 				spanStatus.SetMessage("message")
-				spanStatus.SetCode(pdata.StatusCodeResourceExhausted)
+				spanStatus.SetCode(pdata.StatusCodeError)
 
 				return spanStatus
 			}(),
-			status:  "resource_exhausted",
+			status:  "unknown",
 			message: "message",
 		},
 		{

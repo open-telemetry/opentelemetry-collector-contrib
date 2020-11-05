@@ -105,14 +105,14 @@ func segToSpans(seg awsxray.Segment,
 		}
 
 		if seg.Cause != nil &&
-			populatedChildSpan.Status().Code() != pdata.StatusCodeOk {
+			populatedChildSpan.Status().Code() != pdata.StatusCodeUnset {
 			// if seg.Cause is not nil, then one of the subsegments must contain a
 			// HTTP error code. Also, span.Status().Code() is already
 			// set to `StatusCodeUnknownError` by `addCause()` in
 			// `populateSpan()` above, so here we are just trying to figure out
 			// whether we can get an even more specific error code.
 
-			if span.Status().Code() == pdata.StatusCodeUnknownError {
+			if span.Status().Code() == pdata.StatusCodeError {
 				// update the error code to a possibly more specific code
 				span.Status().SetCode(populatedChildSpan.Status().Code())
 			}
@@ -127,7 +127,7 @@ func populateSpan(
 	traceID, parentID *string,
 	span *pdata.Span) error {
 
-	span.Status().InitEmpty() // by default this sets the code to `Status_Ok`
+	span.Status().InitEmpty() // by default this sets the code to `Status_Unset`
 	attrs := span.Attributes()
 	attrs.InitEmptyWithCapacity(initAttrCapacity)
 

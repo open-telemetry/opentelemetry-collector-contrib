@@ -54,7 +54,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 
 	status := pdata.NewSpanStatus()
 	status.InitEmpty()
-	status.SetCode(13)
+	status.SetCode(pdata.StatusCodeError)
 	status.SetMessage("This is not a drill!")
 	status.CopyTo(span.Status())
 

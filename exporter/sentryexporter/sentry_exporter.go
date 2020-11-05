@@ -35,25 +35,11 @@ const (
 )
 
 // canonicalCodes maps OpenTelemetry span codes to Sentry's span status.
-// See numeric codes in https://godoc.org/github.com/open-telemetry/opentelemetry-proto/gen/go/trace/v1#Status_StatusCode.
+// See numeric codes in https://github.com/open-telemetry/opentelemetry-proto/blob/6cf77b2f544f6bc7fe1e4b4a8a52e5a42cb50ead/opentelemetry/proto/trace/v1/trace.proto#L303
 var canonicalCodes = [...]string{
+	"unknown",
 	"ok",
-	"cancelled",
-	sentryStatusUnknown,
-	"invalid_argument",
-	"deadline_exceeded",
-	"not_found",
-	"already_exists",
-	"permission_denied",
-	"resource_exhausted",
-	"failed_precondition",
-	"aborted",
-	"out_of_range",
-	"unimplemented",
-	"internal",
-	"unavailable",
-	"data_loss",
-	"unauthenticated",
+	"unknown",
 }
 
 // SentryExporter defines the Sentry Exporter.
