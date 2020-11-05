@@ -71,7 +71,7 @@ func Test_loadConfig(t *testing.T) {
 				Endpoint: "http://localhost:9009",
 				TLSSetting: configtls.TLSClientSetting{
 					TLSSetting: configtls.TLSSetting{
-						CAFile: "/var/lib/mycert.pem", //This is subject to change, but currently I have no idea what else to put here lol
+						CAFile: "/var/lib/mycert.pem",
 					},
 					Insecure: false,
 				},
