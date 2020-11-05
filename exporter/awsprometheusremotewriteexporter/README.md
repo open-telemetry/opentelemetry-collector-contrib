@@ -29,8 +29,8 @@ The following settings can be optionally configured:
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
 - `aws_auth`: whether each request should be signed with AWS Sig v4. The following settings must be configured:
-    - `region`: region string used for AWS Sig V4 signing.
-    - `service`: service string used for AWS Sig V4 signing.
+    - `region`: region of the AWS service being exported to.
+    - `service`: AWS service being exported to.
     
     
 Example:
