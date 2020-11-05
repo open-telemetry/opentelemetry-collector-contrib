@@ -12,6 +12,11 @@ Currently supported detectors include:
 variable. This is expected to be in the format `<key1>=<value1>,<key2>=<value2>,...`, the
 details of which are currently pending confirmation in the OpenTelemetry specification.
 
+* System metadata: Queries the host machine to retrieve the following resource attributes:
+
+    * host.name
+    * os.type
+
 * GCE Metadata: Uses the [Google Cloud Client Libraries for Go](https://github.com/googleapis/google-cloud-go)
 to read resource information from the [GCE metadata server](https://cloud.google.com/compute/docs/storing-retrieving-metadata) to retrieve the following resource attributes:
 
@@ -54,7 +59,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "gce", "ec2", "ecs"
+# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
