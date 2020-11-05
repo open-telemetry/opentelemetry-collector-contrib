@@ -26,7 +26,7 @@ import (
 
 func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
-		&Config{},
+		createDefaultConfig().(*Config),
 		component.ExporterCreateParams{
 			Logger: zap.NewNop(),
 		},
