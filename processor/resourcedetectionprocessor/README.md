@@ -26,6 +26,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
 * AWS EC2: Uses [AWS SDK for Go](https://docs.aws.amazon.com/sdk-for-go/api/aws/ec2metadata/) to read resource information from the [EC2 instance metadata API](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html) to retrieve the following resource attributes:
 
     * cloud.provider (aws)
+    * cloud.infrastructure_service
     * cloud.account.id
     * cloud.region
     * cloud.zone
@@ -41,7 +42,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
     * cloud.region
     * cloud.zone
     * cloud.infrastructure_service
-    * aws.ecs.cluster
+    * aws.ecs.cluster.arn
     * aws.ecs.task.arn
     * aws.ecs.task.family
     * aws.ecs.launchtype (V4 only)

@@ -36,7 +36,7 @@ func (md *mockMetaDataProvider) fetchTaskMetaData(tmde string) (*TaskMetaData, e
 	c.DockerID = "05281997" // Simulate one "application" and one "collector" container
 	cs := []Container{createTestContainer(md.isV4), c}
 	tmd := &TaskMetaData{
-		Cluster:          "cluster",
+		Cluster:          "my-cluster",
 		TaskARN:          "arn:aws:ecs:us-west-2:123456789123:task/123",
 		Family:           "family",
 		AvailabilityZone: "us-west-2a",
@@ -114,13 +114,13 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.infrastructure_service", "ECS")
-	attr.InsertString("aws.ecs.cluster", "cluster")
+	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
 	attr.InsertString("aws.ecs.task.family", "family")
 	attr.InsertString("cloud.region", "us-west-2")
 	attr.InsertString("cloud.zone", "us-west-2a")
 	attr.InsertString("cloud.account.id", "123456789123")
-	attr.InsertString("aws.ecs.launchtype", "EC2")
+	attr.InsertString("aws.ecs.launchtype", "ec2")
 
 	attribFields := []string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
 	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
@@ -149,7 +149,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.infrastructure_service", "ECS")
-	attr.InsertString("aws.ecs.cluster", "cluster")
+	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
 	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
 	attr.InsertString("aws.ecs.task.family", "family")
 	attr.InsertString("cloud.region", "us-west-2")
