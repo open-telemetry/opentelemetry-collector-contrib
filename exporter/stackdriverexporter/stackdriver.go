@@ -242,6 +242,10 @@ func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) (in
 
 	mds := internaldata.MetricsToOC(m)
 	for _, md := range mds {
+		if len(md.Metrics) == 0 {
+			continue
+		}
+
 		points := numPoints(md)
 		dropped, err := me.mexporter.PushMetricsProto(ctx, md.Node, md.Resource, md.Metrics)
 		recordPointCount(ctx, points-dropped, dropped, err)
