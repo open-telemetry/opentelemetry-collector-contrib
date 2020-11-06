@@ -15,11 +15,27 @@
 package sumologicexporter
 
 import (
+	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
+
+func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
+	logs := pdata.NewLogs()
+	logs.ResourceLogs().Resize(1)
+	logs.ResourceLogs().At(0).InstrumentationLibraryLogs().Resize(1)
+	for _, record := range records {
+		logs.ResourceLogs().At(0).InstrumentationLibraryLogs().At(0).Logs().Append(record)
+	}
+
+	return logs
+}
 
 func TestInitExporter(t *testing.T) {
 	_, err := initExporter(&Config{
@@ -87,4 +103,77 @@ func TestInitExporterInvalidEndpoint(t *testing.T) {
 	})
 
 	assert.EqualError(t, err, "endpoint is not set")
+}
+
+func TestAllSuccess(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, `Example log`, body)
+			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	logs := LogRecordsToLogs(exampleLog())
+
+	_, err := test.exp.pushLogsData(context.Background(), logs)
+	assert.NoError(t, err)
+}
+
+func TestAllFailed(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			assert.Equal(t, "Example log\nAnother example log", body)
+			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	logs := LogRecordsToLogs(exampleTwoLogs())
+
+	dropped, err := test.exp.pushLogsData(context.Background(), logs)
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.Equal(t, 2, dropped)
+
+	partial, ok := err.(consumererror.PartialError)
+	require.True(t, ok)
+	assert.Equal(t, logs, partial.GetLogs())
+}
+
+func TestPartiallyFailed(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){
+		func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(500)
+
+			body := extractBody(t, req)
+			assert.Equal(t, "Example log", body)
+			assert.Equal(t, "key1=value1, key2=value2", req.Header.Get("X-Sumo-Fields"))
+		},
+		func(w http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, "Another example log", body)
+			assert.Equal(t, "key3=value3, key4=value4", req.Header.Get("X-Sumo-Fields"))
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	f, err := newFilter([]string{`key\d`})
+	require.NoError(t, err)
+	test.exp.filter = f
+
+	records := exampleTwoDifferentLogs()
+	logs := LogRecordsToLogs(records)
+	expected := LogRecordsToLogs(records[:1])
+
+	dropped, err := test.exp.pushLogsData(context.Background(), logs)
+	assert.EqualError(t, err, "error during sending data: 500 Internal Server Error")
+	assert.Equal(t, 1, dropped)
+
+	partial, ok := err.(consumererror.PartialError)
+	require.True(t, ok)
+	assert.Equal(t, expected, partial.GetLogs())
 }

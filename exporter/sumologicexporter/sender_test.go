@@ -31,6 +31,7 @@ import (
 
 type senderTest struct {
 	srv *httptest.Server
+	exp *sumologicexporter
 	s   *sender
 }
 
@@ -50,9 +51,12 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 			Timeout:  defaultTimeout,
 		},
 		LogFormat:          "text",
+		MetricFormat:       "carbon2",
 		Client:             "otelcol",
 		MaxRequestBodySize: 20_971_520,
 	}
+	exp, err := initExporter(cfg)
+	require.NoError(t, err)
 
 	f, err := newFilter([]string{})
 	require.NoError(t, err)
@@ -62,6 +66,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 
 	return &senderTest{
 		srv: testServer,
+		exp: exp,
 		s: newSender(
 			context.Background(),
 			cfg,
@@ -104,6 +109,20 @@ func exampleTwoLogs() []pdata.LogRecord {
 	buffer[1].Body().SetStringVal("Another example log")
 	buffer[1].Attributes().InsertString("key1", "value1")
 	buffer[1].Attributes().InsertString("key2", "value2")
+
+	return buffer
+}
+
+func exampleTwoDifferentLogs() []pdata.LogRecord {
+	buffer := make([]pdata.LogRecord, 2)
+	buffer[0] = pdata.NewLogRecord()
+	buffer[0].Body().SetStringVal("Example log")
+	buffer[0].Attributes().InsertString("key1", "value1")
+	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[1] = pdata.NewLogRecord()
+	buffer[1].Body().SetStringVal("Another example log")
+	buffer[1].Attributes().InsertString("key3", "value3")
+	buffer[1].Attributes().InsertString("key4", "value4")
 
 	return buffer
 }
