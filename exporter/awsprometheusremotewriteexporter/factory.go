@@ -113,7 +113,7 @@ func createDefaultConfig() configmodels.Exporter {
 }
 
 func validateAndFixConfig(prwCfg *Config) error {
-	err := prw.validateAndSanitizeExternalLabels(prwCfg)
+	err := prw.ValidateAndSanitizeExternalLabels(prwCfg)
 	if err != nil {
 		return err
 	}
