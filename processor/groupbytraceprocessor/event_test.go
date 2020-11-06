@@ -24,14 +24,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.uber.org/goleak"
 	"go.uber.org/zap"
 )
-
-func TestMain(m *testing.M) {
-	// Metrics can run in background, so ignore current goroutines
-	goleak.VerifyTestMain(m, goleak.IgnoreCurrent())
-}
 
 func TestEventCallback(t *testing.T) {
 	for _, tt := range []struct {
