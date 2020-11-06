@@ -59,6 +59,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		logger:                zap.NewNop(),
 	}
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
@@ -67,7 +68,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	ilm.InstrumentationLibrary().InitEmpty()
 	ilm.InstrumentationLibrary().SetName("cloudwatch-lib")
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
-	assert.Equal(t, 1, totalDroppedMetrics)
+	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 5, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
@@ -100,11 +101,12 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: ZeroAndSingleDimensionRollup,
+		logger:                zap.NewNop(),
 	}
 	md := createMetricTestData()
 	rm := internaldata.OCToMetrics(md).ResourceMetrics().At(0)
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
-	assert.Equal(t, 1, totalDroppedMetrics)
+	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
 	assert.Equal(t, 5, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
