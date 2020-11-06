@@ -80,10 +80,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 				metricFieldName := splunkMetricValue + ":" + tm.Name()
 				switch tm.DataType() {
 				case pdata.MetricDataTypeIntGauge:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.IntGauge().IsNil() {
-					//	continue
-					//}
+					if tm.IntGauge().IsNil() {
+						continue
+					}
 					pts := tm.IntGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -98,10 +97,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleGauge:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.DoubleGauge().IsNil() {
-					//	continue
-					//}
+					if tm.DoubleGauge().IsNil() {
+						continue
+					}
 					pts := tm.DoubleGauge().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -115,10 +113,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleHistogram:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.DoubleHistogram().IsNil() {
-					//	continue
-					//}
+					if tm.DoubleHistogram().IsNil() {
+						continue
+					}
 					pts := tm.DoubleHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -138,10 +135,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntHistogram:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.IntHistogram().IsNil() {
-					//	continue
-					//}
+					if tm.IntHistogram().IsNil() {
+						continue
+					}
 					pts := tm.IntHistogram().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -161,10 +157,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeDoubleSum:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.DoubleSum().IsNil() {
-					//	continue
-					//}
+					if tm.DoubleSum().IsNil() {
+						continue
+					}
 					pts := tm.DoubleSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
@@ -179,10 +174,9 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 						splunkMetrics = append(splunkMetrics, sm)
 					}
 				case pdata.MetricDataTypeIntSum:
-					// TODO uncomment after https://github.com/open-telemetry/opentelemetry-collector/pull/2055 is merged.
-					//if tm.IntSum().IsNil() {
-					//	continue
-					//}
+					if tm.IntSum().IsNil() {
+						continue
+					}
 					pts := tm.IntSum().DataPoints()
 					for gi := 0; gi < pts.Len(); gi++ {
 						dataPt := pts.At(gi)
