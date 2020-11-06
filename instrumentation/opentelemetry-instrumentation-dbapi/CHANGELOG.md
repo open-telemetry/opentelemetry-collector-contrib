@@ -3,7 +3,7 @@
 ## Unreleased
 
 Stop capturing query parameters by default
-  ([#????](https://github.com/open-telemetry/opentelemetry-python/pull/???))
+  ([#156](https://github.com/open-telemetry/opentelemetry-python/pull/156))
 
 ## Version 0.13b0
 
