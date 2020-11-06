@@ -15,7 +15,6 @@
 package sumologicexporter
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,7 +36,7 @@ func TestInitExporterInvalidLogFormat(t *testing.T) {
 		CompressEncoding: "gzip",
 	})
 
-	assert.Equal(t, err, errors.New("unexpected log format: test_format"))
+	assert.EqualError(t, err, "unexpected log format: test_format")
 }
 
 func TestInitExporterInvalidMetricFormat(t *testing.T) {
@@ -47,7 +46,7 @@ func TestInitExporterInvalidMetricFormat(t *testing.T) {
 		CompressEncoding: "gzip",
 	})
 
-	assert.Equal(t, err, errors.New("unexpected metric format: test_format"))
+	assert.EqualError(t, err, "unexpected metric format: test_format")
 }
 
 func TestInitExporterInvalidCompressEncoding(t *testing.T) {
@@ -57,5 +56,5 @@ func TestInitExporterInvalidCompressEncoding(t *testing.T) {
 		CompressEncoding: "test_format",
 	})
 
-	assert.Equal(t, err, errors.New("unexpected compression encoding: test_format"))
+	assert.EqualError(t, err, "unexpected compression encoding: test_format")
 }
