@@ -9,7 +9,7 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.14.0
+	go.opentelemetry.io/collector v0.14.1-0.20201106172639-0f8e82223a4b
 	go.uber.org/zap v1.16.0
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 	k8s.io/utils v0.0.0-20200724153422-f32512634ab7 // indirect
