@@ -15,30 +15,16 @@
 package awsprometheusremotewriteexporter
 
 import (
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
 // Config defines configuration for Remote Write exporter.
 type Config struct {
-	// squash ensures fields are correctly decoded in embedded struct.
-	configmodels.ExporterSettings  `mapstructure:",squash"`
-	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
-
-	// prefix attached to each exported metric name
-	// See: https://prometheus.io/docs/practices/naming/#metric-names
-	Namespace string `mapstructure:"namespace"`
+	// import configuration from Prometheus Remote Write Exporter
+	prw.Config `mapstructure:",squash"`
 
 	// AWS Sig V4 configuration options
 	AuthSettings AuthSettings `mapstructure:"aws_auth"`
-
-	// ExternalLabels defines a map of label keys and values that are allowed to start with reserved prefix "__"
-	ExternalLabels map[string]string `mapstructure:"external_labels"`
-
-	HTTPClientSettings confighttp.HTTPClientSettings `mapstructure:",squash"`
 }
 
 // AuthSettings defines AWS authentication configurations for SigningRoundTripper

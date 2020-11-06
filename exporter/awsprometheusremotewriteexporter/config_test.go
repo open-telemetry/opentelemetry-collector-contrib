@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
@@ -49,41 +50,43 @@ func Test_loadConfig(t *testing.T) {
 	e1 := cfg.Exporters["awsprometheusremotewrite/2"]
 	assert.Equal(t, e1,
 		&Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				NameVal: "awsprometheusremotewrite/2",
-				TypeVal: "awsprometheusremotewrite",
-			},
-			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-			QueueSettings: exporterhelper.QueueSettings{
-				Enabled:      true,
-				NumConsumers: 2,
-				QueueSize:    10,
-			},
-			RetrySettings: exporterhelper.RetrySettings{
-				Enabled:         true,
-				InitialInterval: 10 * time.Second,
-				MaxInterval:     1 * time.Minute,
-				MaxElapsedTime:  10 * time.Minute,
-			},
-			Namespace:      "test-space",
-			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://localhost:9009",
-				TLSSetting: configtls.TLSClientSetting{
-					TLSSetting: configtls.TLSSetting{
-						CAFile: "/var/lib/mycert.pem",
-					},
-					Insecure: false,
+			Config: prw.Config{
+				ExporterSettings: configmodels.ExporterSettings{
+					NameVal: "awsprometheusremotewrite/2",
+					TypeVal: "awsprometheusremotewrite",
 				},
-				ReadBufferSize: 0,
+				TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:         true,
+					InitialInterval: 10 * time.Second,
+					MaxInterval:     1 * time.Minute,
+					MaxElapsedTime:  10 * time.Minute,
+				},
+				Namespace:      "test-space",
+				ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Endpoint: "http://localhost:9009",
+					TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.TLSSetting{
+							CAFile: "/var/lib/mycert.pem",
+						},
+						Insecure: false,
+					},
+					ReadBufferSize: 0,
 
-				WriteBufferSize: 512 * 1024,
+					WriteBufferSize: 512 * 1024,
 
-				Timeout: 5 * time.Second,
+					Timeout: 5 * time.Second,
 
-				Headers: map[string]string{
-					"prometheus-remote-write-version": "0.1.0",
-					"x-scope-orgid":                   "234"},
+					Headers: map[string]string{
+						"prometheus-remote-write-version": "0.1.0",
+						"x-scope-orgid":                   "234"},
+				},
 			},
 			AuthSettings: AuthSettings{
 				Region:  "us-west-2",

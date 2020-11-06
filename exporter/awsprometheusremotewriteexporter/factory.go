@@ -45,9 +45,8 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid configuration")
 	}
 
-	err := validateAndFixConfig(prwCfg)
-	if err != nil {
-		return nil, err
+	if !validateAuthConfig(prwCfg.AuthSettings) {
+		return nil, errors.New("invalid authentication configuration")
 	}
 
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
@@ -93,36 +92,30 @@ func createDefaultConfig() configmodels.Exporter {
 	ts.Enabled = false
 
 	return &Config{
-		ExporterSettings: configmodels.ExporterSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
+		Config: prw.Config{
+			ExporterSettings: configmodels.ExporterSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
+			Namespace:       "",
+			ExternalLabels:  map[string]string{},
+			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+			RetrySettings:   ts,
+			QueueSettings:   qs,
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "http://some.url:9411/api/prom/push",
+				// We almost read 0 bytes, so no need to tune ReadBufferSize.
+				ReadBufferSize:  0,
+				WriteBufferSize: 512 * 1024,
+				Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
+				Headers:         map[string]string{},
+			},
 		},
-		Namespace:       "",
-		TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-		RetrySettings:   ts,
-		QueueSettings:   qs,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "http://some.url:9411/api/prom/push",
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			ReadBufferSize:  0,
-			WriteBufferSize: 512 * 1024,
-			Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
-			Headers:         map[string]string{},
+		AuthSettings: AuthSettings{
+			Region:  "",
+			Service: "",
 		},
 	}
-}
-
-func validateAndFixConfig(prwCfg *Config) error {
-	err := prw.ValidateAndSanitizeExternalLabels(prwCfg)
-	if err != nil {
-		return err
-	}
-
-	if !validateAuthConfig(prwCfg.AuthSettings) {
-		return errors.New("invalid authentication configuration")
-	}
-
-	return nil
 }
 
 func validateAuthConfig(params AuthSettings) bool {
