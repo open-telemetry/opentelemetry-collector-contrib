@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,6 +28,28 @@ type sumologicexporter struct {
 }
 
 func initExporter(cfg *Config) (*sumologicexporter, error) {
+	switch cfg.LogFormat {
+	case JSONFormat:
+	case TextFormat:
+	default:
+		return nil, fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
+	}
+
+	switch cfg.MetricFormat {
+	case GraphiteFormat:
+	case Carbon2Format:
+	case PrometheusFormat:
+	default:
+		return nil, fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
+	}
+
+	switch cfg.CompressEncoding {
+	case GZIPCompression:
+	case DeflateCompression:
+	default:
+		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
+	}
+
 	se := &sumologicexporter{
 		config: cfg,
 	}

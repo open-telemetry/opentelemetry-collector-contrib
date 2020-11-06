@@ -33,7 +33,7 @@ type Config struct {
 	// Option to enable compression (default true)
 	Compress bool `mapstructure:"compress"`
 	// Compression encoding format, either gzip or deflate (default gzip)
-	CompressEncoding string `mapstructure:"compress_encoding"`
+	CompressEncoding CompressEncodingType `mapstructure:"compress_encoding"`
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
 	MaxRequestBodySize int `mapstructure:"max_request_body_size"`
@@ -85,6 +85,9 @@ type MetricFormatType string
 // PipelineType represents type of the pipeline
 type PipelineType string
 
+// CompressEncodingType represents type of the pipeline
+type CompressEncodingType string
+
 const (
 	// TextFormat represents log_format: text
 	TextFormat LogFormatType = "text"
@@ -97,9 +100,9 @@ const (
 	// PrometheusFormat represents metric_format: json
 	PrometheusFormat MetricFormatType = "prometheus"
 	// GZIPCompression represents compress_encoding: gzip
-	GZIPCompression string = "gzip"
+	GZIPCompression CompressEncodingType = "gzip"
 	// DeflateCompression represents compress_encoding: deflate
-	DeflateCompression string = "deflate"
+	DeflateCompression CompressEncodingType = "deflate"
 	// MetricsPipeline represents metrics pipeline
 	MetricsPipeline PipelineType = "metrics"
 	// LogsPipeline represents metrics pipeline
@@ -109,7 +112,7 @@ const (
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding
-	DefaultCompressEncoding string = "gzip"
+	DefaultCompressEncoding CompressEncodingType = "gzip"
 	// DefaultMaxRequestBodySize defines default MaxRequestBodySize in bytes
 	DefaultMaxRequestBodySize int = 20 * 1024 * 1024
 	// DefaultLogFormat defines default LogFormat
