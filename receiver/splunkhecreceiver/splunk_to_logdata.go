@@ -33,11 +33,13 @@ const (
 func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pdata.Resource)) (pdata.Logs, error) {
 	ld := pdata.NewLogs()
 	rls := ld.ResourceLogs()
-	rls.Resize(len(events))
-
-	for i, event := range events {
-		rl := rls.At(i)
-		rl.InitEmpty()
+	rls.Resize(1)
+	rl := rls.At(0)
+	rl.InitEmpty()
+	ill := pdata.NewInstrumentationLibraryLogs()
+	ill.InitEmpty()
+	rl.InstrumentationLibraryLogs().Append(ill)
+	for _, event := range events {
 		logRecord := pdata.NewLogRecord()
 		logRecord.InitEmpty()
 
@@ -57,13 +59,19 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			logRecord.SetTimestamp(pdata.TimestampUnixNano(*event.Time * 1e9))
 		}
 
-		attrs := rl.Resource().Attributes()
-		attrs.InitEmptyWithCapacity(3)
-		attrs.InsertString(conventions.AttributeHostHostname, event.Host)
-		attrs.InsertString(conventions.AttributeServiceName, event.Source)
-		attrs.InsertString(splunk.SourcetypeLabel, event.SourceType)
+		if event.Host != "" {
+			logRecord.Attributes().InsertString(conventions.AttributeHostHostname, event.Host)
+		}
+		if event.Source != "" {
+			logRecord.Attributes().InsertString(conventions.AttributeServiceName, event.Source)
+		}
+		if event.SourceType != "" {
+			logRecord.Attributes().InsertString(splunk.SourcetypeLabel, event.SourceType)
+		}
+		if event.Index != "" {
+			logRecord.Attributes().InsertString(splunk.IndexLabel, event.Index)
+		}
 		resourceCustomizer(rl.Resource())
-		//TODO consider setting the index field as well for pass through scenarios.
 		keys := make([]string, 0, len(event.Fields))
 		for k := range event.Fields {
 			keys = append(keys, k)
@@ -77,10 +85,9 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			}
 			logRecord.Attributes().Insert(key, attrValue)
 		}
-		ill := pdata.NewInstrumentationLibraryLogs()
-		ill.InitEmpty()
+
 		ill.Logs().Append(logRecord)
-		rl.InstrumentationLibraryLogs().Append(ill)
+
 	}
 
 	return ld, nil

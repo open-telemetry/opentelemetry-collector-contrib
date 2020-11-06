@@ -119,6 +119,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
@@ -185,7 +186,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	select {
 	case request := <-receivedRequest:
 		return request, nil
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 		return "", errors.New("Timeout")
 	}
 }
@@ -223,7 +224,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	select {
 	case request := <-receivedRequest:
 		return request, nil
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 		return "", errors.New("Timeout")
 	}
 }
@@ -281,11 +282,11 @@ func TestReceiveTraces(t *testing.T) {
 func TestReceiveLogs(t *testing.T) {
 	actual, err := runLogExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
