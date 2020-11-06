@@ -236,6 +236,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.Equal(t, tt.expectedNumResourceMetrics, got.Len())
 			for i := 0; i < tt.expectedNumResourceMetrics; i++ {
 				resource := got.At(i).Resource()
+				require.Equal(t, len(tt.expectedResourceAttributes), resource.Attributes().Len())
 				resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 					require.Equal(t, tt.expectedResourceAttributes[k], v.StringVal())
 				})

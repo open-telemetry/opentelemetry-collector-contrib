@@ -108,6 +108,11 @@ func (z *zookeeperMetricsScraper) Scrape(ctx context.Context, _ string) (pdata.R
 	return z.getResourceMetrics(conn)
 }
 
+type stat struct {
+	metric pdata.Metric
+	val    int64
+}
+
 func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.ResourceMetricsSlice, error) {
 	scanner, err := z.sendCmd(conn, mntrCommand)
 	if err != nil {
@@ -117,14 +122,29 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 		)
 		return pdata.NewResourceMetricsSlice(), err
 	}
+
+	stats, attributes := z.getMetricsAndAttributes(scanner)
 	metrics := simple.Metrics{
 		Metrics:                    pdata.NewMetrics(),
 		Timestamp:                  time.Now(),
 		InstrumentationLibraryName: "otelcol/zookeeper",
 		MetricFactoriesByName:      metadata.M.FactoriesByName(),
-		ResourceAttributes:         map[string]string{},
+		ResourceAttributes:         attributes,
 	}
 
+	for _, stat := range stats {
+		// Currently the receiver only deals with one metric type.
+		switch stat.metric.DataType() {
+		case pdata.MetricDataTypeIntGauge:
+			metrics.AddGaugeDataPoint(stat.metric.Name(), stat.val)
+		}
+	}
+	return metrics.ResourceMetrics(), nil
+}
+
+func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner) ([]stat, map[string]string) {
+	attributes := make(map[string]string, 2)
+	stats := make([]stat, 0, 14)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)
@@ -140,10 +160,10 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			metrics.ResourceAttributes[zkVersionResourceLabel] = metricValue
+			attributes[zkVersionResourceLabel] = metricValue
 			continue
 		case serverStateKey:
-			metrics.ResourceAttributes[serverStateResourceLabel] = metricValue
+			attributes[serverStateResourceLabel] = metricValue
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -160,16 +180,11 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 				)
 				continue
 			}
-
-			// Currently the receiver only deals with one metric type.
-			switch metricDescriptor.DataType() {
-			case pdata.MetricDataTypeIntGauge:
-				metrics.AddGaugeDataPoint(metricDescriptor.Name(), int64Val)
-			}
-
+			stats = append(stats, stat{metric: metricDescriptor, val: int64Val})
 		}
 	}
-	return metrics.ResourceMetrics(), nil
+
+	return stats, attributes
 }
 
 func closeConnection(conn net.Conn) error {
