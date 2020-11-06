@@ -149,13 +149,9 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	spanLink.Attributes().InsertInt("foo", 1)
 	spanLink.Attributes().InsertBool("bar", false)
 	foobarContents := pdata.NewAttributeValueArray()
-	foobarContents.InitEmpty()
-	arrContents := pdata.NewAnyValueArray()
-	arrContents.Append(pdata.NewAttributeValueString("a"))
-	arrContents.Append(pdata.NewAttributeValueString("b"))
-	foobarContents.SetArrayVal(arrContents)
+	foobarContents.ArrayVal().Append(pdata.NewAttributeValueString("a"))
+	foobarContents.ArrayVal().Append(pdata.NewAttributeValueString("b"))
 	spanLink.Attributes().Insert("foobar", foobarContents)
-
 	span.Links().Append(spanLink)
 
 	spanEvent := pdata.NewSpanEvent()
