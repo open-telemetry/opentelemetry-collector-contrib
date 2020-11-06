@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+Stop capturing query parameters by default
+  ([#????](https://github.com/open-telemetry/opentelemetry-python/pull/???))
+
 ## Version 0.13b0
 
 Released 2020-09-17
