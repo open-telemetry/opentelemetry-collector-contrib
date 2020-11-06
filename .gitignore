@@ -21,6 +21,7 @@ lib64
 __pycache__
 venv*/
 .venv*/
+opentelemetry-python-core*/
 
 # Installer logs
 pip-log.txt
