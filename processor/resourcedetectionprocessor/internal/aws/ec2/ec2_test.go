@@ -97,6 +97,7 @@ func TestDetector_Detect(t *testing.T) {
 				attr := res.Attributes()
 				attr.InsertString("cloud.account.id", "account1234")
 				attr.InsertString("cloud.provider", "aws")
+				attr.InsertString("cloud.infrastructure_service", "EC2")
 				attr.InsertString("cloud.region", "us-west-2")
 				attr.InsertString("cloud.zone", "us-west-2a")
 				attr.InsertString("host.id", "i-abcd1234")

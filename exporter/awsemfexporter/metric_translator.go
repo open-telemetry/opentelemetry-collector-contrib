@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/mapwithexpiry"
 )
@@ -118,9 +119,10 @@ func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
-func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption string, namespace string) ([]*CWMetrics, int) {
+func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetrics, int) {
 	var cwMetricList []*CWMetrics
 	totalDroppedMetrics := 0
+	namespace := config.Namespace
 	var instrumentationLibName string
 
 	if len(namespace) == 0 && !rm.Resource().IsNil() {
@@ -158,7 +160,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, dimensionRollupOption stri
 				totalDroppedMetrics++
 				continue
 			}
-			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, dimensionRollupOption)
+			cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, config)
 			cwMetricList = append(cwMetricList, cwMetrics...)
 		}
 	}
@@ -192,9 +194,12 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics) []*LogEvent {
 }
 
 // Translates OTLP Metric to list of CW Metrics
-func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, dimensionRollupOption string) []*CWMetrics {
-	var result []*CWMetrics
+func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
 	var dps DataPoints
+
+	if metric == nil {
+		return
+	}
 
 	// metric measure data from OT
 	metricMeasure := make(map[string]string)
@@ -215,22 +220,30 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
 		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
+	default:
+		config.logger.Warn(
+			"Unhandled metric data type.",
+			zap.String("DataType", metric.DataType().String()),
+			zap.String("Name", metric.Name()),
+			zap.String("Unit", metric.Unit()),
+		)
+		return
 	}
 
 	if dps.Len() == 0 {
-		return result
+		return
 	}
 	for m := 0; m < dps.Len(); m++ {
 		dp := dps.At(m)
 		if dp.IsNil() {
 			continue
 		}
-		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, dimensionRollupOption)
+		cwMetric := buildCWMetric(dp, metric, namespace, metricSlice, instrumentationLibName, config.DimensionRollupOption)
 		if cwMetric != nil {
-			result = append(result, cwMetric)
+			cwMetrics = append(cwMetrics, cwMetric)
 		}
 	}
-	return result
+	return
 }
 
 // Build CWMetric from DataPoint

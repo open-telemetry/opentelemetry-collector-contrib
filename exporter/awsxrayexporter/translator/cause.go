@@ -23,7 +23,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	semconventions "go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/awsxray"
 )
@@ -31,7 +30,7 @@ import (
 func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Resource) (isError, isFault bool,
 	filtered map[string]string, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.IsNil() || status.Code() == 0 {
+	if status.IsNil() || status.Code() == pdata.StatusCodeUnset {
 		return false, false, attributes, nil
 	}
 	filtered = attributes
@@ -118,7 +117,7 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 		}
 	}
 
-	if isClientError(status.Code()) {
+	if status.Code() == pdata.StatusCodeError {
 		isError = true
 		isFault = false
 	} else {
@@ -126,11 +125,6 @@ func makeCause(span pdata.Span, attributes map[string]string, resource pdata.Res
 		isFault = true
 	}
 	return isError, isFault, filtered, cause
-}
-
-func isClientError(code pdata.StatusCode) bool {
-	httpStatus := tracetranslator.HTTPStatusCodeFromOCStatus(int32(code))
-	return httpStatus >= 400 && httpStatus < 500
 }
 
 func parseException(exceptionType string, message string, stacktrace string, language string) []awsxray.Exception {

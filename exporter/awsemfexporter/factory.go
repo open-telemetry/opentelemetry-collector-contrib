@@ -53,6 +53,7 @@ func createDefaultConfig() configmodels.Exporter {
 		Region:                "",
 		RoleARN:               "",
 		DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		logger:                nil,
 	}
 }
 

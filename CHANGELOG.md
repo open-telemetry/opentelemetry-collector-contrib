@@ -2,17 +2,72 @@
 
 ## Unreleased
 
+## v0.14.0
+
+# 🎉 OpenTelemetry Collector Contrib v0.14.0 (Beta) 🎉
+
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.14.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+
+## 🚀 New components 🚀
+
+- `datadog` exporter to send metric and trace data to Datadog (#1352)
+- `tailsampling` processor moved from core to contrib (#1383)
+
+## 🛑 Breaking changes 🛑
+
+- `jmxmetricsextension` migrated to `jmxreceiver` (#1182, #1357)
+- Move signalfx correlation code out of `sapm` to `signalfxcorrelation` exporter (#1376)
+- Move Splunk specific utils outside of common (#1306)
+- `stackdriver` exporter:
+    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/stackdriverexporter/README.md).
+    - Trace status codes no longer reflect gRPC codes as per spec changes: open-telemetry/opentelemetry-specification#1067
+- `datadog` exporter: Remove option to change the namespace prefix (#1483)
+
+## 💡 Enhancements 💡
+
+- `splunkhec` receiver: Add ability to ingest metrics (#1276)
+- `signalfx` receiver: Improve pipeline error handling (#1329)
+- `datadog` exporter:
+  - Improve hostname resolution (#1285)
+  - Add flushing/export of traces and trace-related statistics (#1266)
+  - Enable traces on Windows (#1340)
+  - Send otel.exporter running metric (#1354)
+  - Add tag normalization util method (#1373)
+  - Send host metadata (#1351)
+  - Support resource conventions for hostnames (#1434)
+  - Add version tag extract (#1449)
+- Add `batchpertrace` library to split the incoming batch into several batches, one per trace (#1257)
+- `statsd` receiver:
+  - Add timer support (#1335)
+  - Add sample rate support for counter, transfer gauge to double and transfer counter to int only (#1361)
+- `awsemf` exporter: Restructure metric translator logic (#1353)
+- `resourcedetection` processor:
+  - Add EC2 hostname attribute (#1324)
+  - Add ECS Resource detector (#1360)
+- `sapm` exporter: Add queue settings (#1390)
+- `metrictransform` processor: Add metric filter option (#1447)
+- `awsxray` exporter: Improve ECS attribute and origin translation (#1428)
+- `resourcedetection` processor: Initial system detector (#1405)
+
+## 🧰 Bug fixes 🧰
+
+- Remove duplicate definition of cloud providers with core conventions (#1288)
+- `kubeletstats` receiver: Handle nil references from the kubelet API (#1326)
+- `awsxray` receiver:
+  - Add kind type to root span to fix the empty parentID problem (#1338)
+  - Fix the race condition issue (#1490)
+- `awsxray` exporter:
+  - Setting the tlsconfig InsecureSkipVerify using NoVerifySSL (#1350)
+  - Drop invalid xray trace id (#1366)
+- `elastic` exporter: Ensure span name is limited (#1371)
+- `splunkhec` exporter: Don't send 'zero' timestamps to Splunk HEC (#1157)
+- `stackdriver` exporter: Skip processing empty metrics slice (#1494)
+
 ## v0.13.0
 
 # 🎉 OpenTelemetry Collector Contrib v0.13.0 (Beta) 🎉
 
 The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.13.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
-
-## 🛑 Breaking changes 🛑'
-
-- `stackdriver` exporter:
-    - Config options `metric_prefix` & `skip_create_metric_descriptor` are now nested under `metric`, see [README](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/master/exporter/stackdriverexporter/README.md).
-    - Trace status codes no longer reflect gRPC codes as per spec changes: open-telemetry/opentelemetry-specification#1067
 
 ## 💡 Enhancements 💡
 

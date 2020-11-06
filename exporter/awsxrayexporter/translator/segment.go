@@ -33,10 +33,12 @@ import (
 
 // AWS X-Ray acceptable values for origin field.
 const (
-	OriginEC2 = "AWS::EC2::Instance"
-	OriginECS = "AWS::ECS::Container"
-	OriginEB  = "AWS::ElasticBeanstalk::Environment"
-	OriginEKS = "AWS::EKS::Container"
+	OriginEC2        = "AWS::EC2::Instance"
+	OriginECS        = "AWS::ECS::Container"
+	OriginECSEC2     = "AWS::ECS::EC2"
+	OriginECSFargate = "AWS::ECS::Fargate"
+	OriginEB         = "AWS::ElasticBeanstalk::Environment"
+	OriginEKS        = "AWS::EKS::Container"
 )
 
 var (
@@ -98,7 +100,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		endTime                                = timestampToFloatSeconds(span.EndTime())
 		httpfiltered, http                     = makeHTTP(span)
 		isError, isFault, causefiltered, cause = makeCause(span, httpfiltered, resource)
-		isThrottled                            = !span.Status().IsNil() && span.Status().Code() == pdata.StatusCodeResourceExhausted
 		origin                                 = determineAwsOrigin(resource)
 		awsfiltered, aws                       = makeAws(causefiltered, resource)
 		service                                = makeService(resource)
@@ -183,7 +184,6 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		ParentID:    awsxray.String(span.ParentSpanID().HexString()),
 		Fault:       awsP.Bool(isFault),
 		Error:       awsP.Bool(isError),
-		Throttle:    awsP.Bool(isThrottled),
 		Cause:       cause,
 		Origin:      awsxray.String(origin),
 		Namespace:   awsxray.String(namespace),
@@ -230,6 +230,37 @@ func determineAwsOrigin(resource pdata.Resource) string {
 			return ""
 		}
 	}
+
+	// TODO(willarmiros): Only use infrastructure_service for origin resolution once detectors for all AWS environments are
+	// implemented for robustness
+	if is, present := resource.Attributes().Get("cloud.infrastructure_service"); present {
+		switch is.StringVal() {
+		case "EKS":
+			return OriginEKS
+		case "ElasticBeanstalk":
+			return OriginEB
+		case "ECS":
+			lt, present := resource.Attributes().Get("aws.ecs.launchtype")
+			if !present {
+				return OriginECS
+			}
+			switch lt.StringVal() {
+			case "ec2":
+				return OriginECSEC2
+			case "fargate":
+				return OriginECSFargate
+			default:
+				return OriginECS
+			}
+		case "EC2":
+			return OriginEC2
+
+		// If infrastructure_service is defined with a non-AWS value, we should not assign it an AWS origin
+		default:
+			return ""
+		}
+	}
+
 	// EKS > EB > ECS > EC2
 	_, eks := resource.Attributes().Get(semconventions.AttributeK8sCluster)
 	if eks {
@@ -243,7 +274,11 @@ func determineAwsOrigin(resource pdata.Resource) string {
 	if ecs {
 		return OriginECS
 	}
-	return OriginEC2
+	_, ec2 := resource.Attributes().Get(semconventions.AttributeHostID)
+	if ec2 {
+		return OriginEC2
+	}
+	return ""
 }
 
 // convertToAmazonTraceID converts a trace ID to the Amazon format.

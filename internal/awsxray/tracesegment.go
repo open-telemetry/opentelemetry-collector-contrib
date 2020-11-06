@@ -104,6 +104,7 @@ func (s *Segment) Validate() error {
 type AWSData struct {
 	// Segment-only
 	Beanstalk *BeanstalkMetadata `json:"elastic_beanstalk,omitempty"`
+	CWLogs    []LogGroupMetadata `json:"cloudwatch_logs,omitempty"`
 	ECS       *ECSMetadata       `json:"ecs,omitempty"`
 	EC2       *EC2Metadata       `json:"ec2,omitempty"`
 	EKS       *EKSMetadata       `json:"eks,omitempty"`
@@ -127,10 +128,17 @@ type EC2Metadata struct {
 	AmiID            *string `json:"ami_id"`
 }
 
-// ECSMetadata represents the ECS metadata field
+// ECSMetadata represents the ECS metadata field. All must be omitempty b/c they come from two different detectors:
+// Docker and ECS, so it's possible one is present and not the other
 type ECSMetadata struct {
-	ContainerName *string `json:"container"`
-	ContainerID   *string `json:"container_id"`
+	ContainerName    *string `json:"container,omitempty"`
+	ContainerID      *string `json:"container_id,omitempty"`
+	TaskArn          *string `json:"task_arn,omitempty"`
+	TaskFamily       *string `json:"task_family,omitempty"`
+	ClusterArn       *string `json:"cluster_arn,omitempty"`
+	ContainerArn     *string `json:"container_arn,omitempty"`
+	AvailabilityZone *string `json:"availability_zone,omitempty"`
+	LaunchType       *string `json:"launch_type,omitempty"`
 }
 
 // BeanstalkMetadata represents the Elastic Beanstalk environment metadata field
@@ -140,11 +148,17 @@ type BeanstalkMetadata struct {
 	DeploymentID *int64  `json:"deployment_id"`
 }
 
-// EKSMetadata represents the EkS metadata field
+// EKSMetadata represents the EKS metadata field
 type EKSMetadata struct {
 	ClusterName *string `json:"cluster_name"`
 	Pod         *string `json:"pod"`
 	ContainerID *string `json:"container_id"`
+}
+
+// LogGroupMetadata represents a single CloudWatch Log Group
+type LogGroupMetadata struct {
+	LogGroup *string `json:"log_group"`
+	Arn      *string `json:"arn,omitempty"`
 }
 
 // CauseData is the container that contains the `cause` field

@@ -68,6 +68,7 @@ might be a good starting point.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
+- [Andrew Hsu](https://github.com/andrewhsu), Lightstep
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
@@ -77,6 +78,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [James Bebbington](https://github.com/james-bebbington), Google
 - [Jay Camp](https://github.com/jrcamp), Splunk
 - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Red Hat
+- [Kevin Brockhoff](https://github.com/kbrockhoff), Daugherty Business Solutions
 - [Nail Islamov](https://github.com/nilebox), Google
 - [Owais Lone](https://github.com/owais), Splunk
 

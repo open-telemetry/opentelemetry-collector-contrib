@@ -96,7 +96,7 @@ func TestEncodeSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "root_span",
 		Type:      "unknown",
-		Result:    "STATUS_CODE_OK",
+		Result:    "STATUS_CODE_UNSET",
 		Context: &model.Context{
 			Tags: model.IfaceMap{{
 				Key:   "bool_attr",
