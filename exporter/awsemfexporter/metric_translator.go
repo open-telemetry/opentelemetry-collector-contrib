@@ -203,8 +203,6 @@ func TranslateCWMetricToEMF(cwMetricLists []*CWMetrics, logger *zap.Logger) []*L
 
 // getCWMetrics translates OTLP Metric to a list of CW Metrics
 func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName string, config *Config) (cwMetrics []*CWMetrics) {
-	var dps DataPoints
-
 	if metric == nil {
 		return
 	}
@@ -217,6 +215,7 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 	metricSlice := []map[string]string{metricMeasure}
 
 	// Retrieve data points
+	var dps DataPoints
 	switch metric.DataType() {
 	case pdata.MetricDataTypeIntGauge:
 		dps = IntDataPointSlice{metric.IntGauge().DataPoints()}
