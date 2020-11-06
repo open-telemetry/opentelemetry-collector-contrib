@@ -42,7 +42,6 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	metrics := pdata.NewMetrics()
 	rm := pdata.NewResourceMetrics()
 	rm.InitEmpty()
-	rm.Resource().InitEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
 	metrics.ResourceMetrics().Append(rm)
@@ -81,7 +80,6 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	ils := pdata.NewInstrumentationLibrarySpans()
 	ils.InitEmpty()
 	rs.InstrumentationLibrarySpans().Append(ils)
-	rs.Resource().InitEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	for i := 0; i < numberOfTraces; i++ {
 		span := pdata.NewSpan()

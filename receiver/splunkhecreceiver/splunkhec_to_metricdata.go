@@ -41,7 +41,6 @@ func SplunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 
 		metrics := pdata.NewInstrumentationLibraryMetrics()
 		metrics.InitEmpty()
-		resourceMetrics.Resource().InitEmpty()
 		attrs := resourceMetrics.Resource().Attributes()
 		attrs.InitEmptyWithCapacity(3)
 		attrs.InsertString(conventions.AttributeHostHostname, event.Host)

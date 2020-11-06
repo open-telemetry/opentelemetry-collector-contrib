@@ -68,11 +68,9 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 			}
 
 			resource := rs.Resource()
-			if !resource.IsNil() {
-				if v, ok := resource.Attributes().Get(saf.key); ok {
-					if _, ok := saf.values[v.StringVal()]; ok {
-						return Sampled, nil
-					}
+			if v, ok := resource.Attributes().Get(saf.key); ok {
+				if _, ok := saf.values[v.StringVal()]; ok {
+					return Sampled, nil
 				}
 			}
 

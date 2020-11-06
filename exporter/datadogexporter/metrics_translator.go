@@ -190,12 +190,9 @@ func MapMetrics(logger *zap.Logger, cfg config.MetricsConfig, md pdata.Metrics) 
 				}
 
 				// Try to get host from resource
-				if !rm.Resource().IsNil() {
-					host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes())
-					if ok {
-						for i := range datapoints {
-							datapoints[i].SetHost(host)
-						}
+				if host, ok := metadata.HostnameFromAttributes(rm.Resource().Attributes()); ok {
+					for i := range datapoints {
+						datapoints[i].SetHost(host)
 					}
 				}
 

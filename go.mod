@@ -55,7 +55,7 @@ require (
 	github.com/shirou/gopsutil v3.20.10+incompatible // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.14.1-0.20201106172639-0f8e82223a4b
+	go.opentelemetry.io/collector v0.14.1-0.20201106183657-c6b8f28c60b5
 	golang.org/x/sys v0.0.0-20201101102859-da207088b7d1
 	honnef.co/go/tools v0.0.1-2020.1.6
 )

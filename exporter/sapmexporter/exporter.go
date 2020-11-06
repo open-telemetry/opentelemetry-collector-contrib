@@ -91,16 +91,14 @@ func (se *sapmExporter) tracesByAccessToken(td pdata.Traces) map[string]pdata.Tr
 		}
 
 		accessToken := ""
-		if !resourceSpan.Resource().IsNil() {
-			attrs := resourceSpan.Resource().Attributes()
-			if se.config.AccessTokenPassthrough {
-				attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
-				if ok {
-					accessToken = attributeValue.StringVal()
-				}
+		attrs := resourceSpan.Resource().Attributes()
+		if se.config.AccessTokenPassthrough {
+			attributeValue, ok := attrs.Get(splunk.SFxAccessTokenLabel)
+			if ok {
+				accessToken = attributeValue.StringVal()
 			}
-			attrs.Delete(splunk.SFxAccessTokenLabel)
 		}
+		attrs.Delete(splunk.SFxAccessTokenLabel)
 
 		traceForToken, ok := tracesByToken[accessToken]
 		if !ok {

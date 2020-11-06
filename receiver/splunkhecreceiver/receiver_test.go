@@ -421,7 +421,6 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
 	rl.InitEmpty()
-	rl.Resource().InitEmpty()
 	rl.Resource().Attributes().InsertString("host.hostname", "")
 	rl.Resource().Attributes().InsertString("service.name", "")
 	rl.Resource().Attributes().InsertString("com.splunk.sourcetype", "")
@@ -530,9 +529,6 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			got := sink.AllLogs()
 
 			resource := got[0].ResourceLogs().At(0).Resource()
-			if resource.IsNil() {
-				resource.InitEmpty()
-			}
 			tokenLabel, exists := resource.Attributes().Get("com.splunk.hec.access_token")
 
 			if tt.passthrough {

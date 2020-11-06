@@ -108,7 +108,6 @@ func (p *ResourceProvider) detectResource(ctx context.Context) {
 	p.detectedResource = &resourceResult{}
 
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	p.logger.Info("began detecting resource information")
 
@@ -168,10 +167,6 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 		return
 	}
 
-	if to.IsNil() {
-		to.InitEmpty()
-	}
-
 	toAttr := to.Attributes()
 	from.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
 		if overrideTo {
@@ -183,5 +178,5 @@ func MergeResource(to, from pdata.Resource, overrideTo bool) {
 }
 
 func IsEmptyResource(res pdata.Resource) bool {
-	return res.IsNil() || res.Attributes().Len() == 0
+	return res.Attributes().Len() == 0
 }
