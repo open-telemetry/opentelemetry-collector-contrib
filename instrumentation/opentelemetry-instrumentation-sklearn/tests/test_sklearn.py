@@ -159,3 +159,17 @@ class TestSklearn(TestBase):
         model.predict(x_test)
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 0)
+
+    def test_span_attributes(self):
+        model = pipeline()
+        attributes = {"model_name": "random_forest_model"}
+        ski = SklearnInstrumentor()
+        ski.instrument_estimator(estimator=model, attributes=attributes)
+
+        x_test = random_input()
+
+        model.predict(x_test)
+
+        spans = self.memory_exporter.get_finished_spans()
+        for span in spans:
+            assert span.attributes["model_name"] == "random_forest_model"
