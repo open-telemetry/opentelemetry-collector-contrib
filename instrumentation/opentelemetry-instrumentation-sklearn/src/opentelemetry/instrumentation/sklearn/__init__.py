@@ -80,7 +80,7 @@ from opentelemetry.util.types import Attributes
 logger = logging.getLogger(__name__)
 
 
-def implement_spans(
+def implement_span_estimator(
     func: Callable,
     estimator: Union[BaseEstimator, Type[BaseEstimator]],
     attributes: Attributes = None,
@@ -100,13 +100,27 @@ def implement_spans(
     else:
         name = estimator.__class__.__name__
     logger.debug("Instrumenting: %s.%s", name, func.__name__)
-
     attributes = attributes or {}
+    name = "{cls}.{func}".format(cls=name, func=func.__name__)
+    return implement_span_function(func, name, attributes)
+
+
+def implement_span_function(func: Callable, name: str, attributes: Attributes):
+    """Wrap the function with a span.
+
+    Args:
+        func: A callable to be wrapped in a span
+        name: The name of the span
+        attributes: Attributes to apply to the span
+
+    Returns:
+        The passed function wrapped in a span.
+    """
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         with get_tracer(__name__, __version__).start_as_current_span(
-            name="{cls}.{func}".format(cls=name, func=func.__name__),
+            name=name
         ) as span:
             if span.is_recording():
                 for key, val in attributes.items():
@@ -116,7 +130,7 @@ def implement_spans(
     return wrapper
 
 
-def implement_spans_delegator(
+def implement_span_delegator(
     obj: _IffHasAttrDescriptor, attributes: Attributes = None
 ):
     """Wrap the descriptor's fn with a span.
@@ -129,26 +143,14 @@ def implement_spans_delegator(
     if hasattr(obj, "_otel_original_fn"):
         logger.debug("Already instrumented: %s", obj.fn.__qualname__)
         return
-
-    attributes = attributes or {}
-
-    def implement_spans_fn(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            with get_tracer(__name__, __version__).start_as_current_span(
-                name=func.__qualname__
-            ) as span:
-                if span.is_recording():
-                    for key, val in attributes.items():
-                        span.set_attribute(key, val)
-                return func(*args, **kwargs)
-
-        return wrapper
-
     logger.debug("Instrumenting: %s", obj.fn.__qualname__)
-
+    attributes = attributes or {}
     setattr(obj, "_otel_original_fn", getattr(obj, "fn"))
-    setattr(obj, "fn", implement_spans_fn(obj.fn))
+    setattr(
+        obj,
+        "fn",
+        implement_span_function(obj.fn, obj.fn.__qualname__, attributes),
+    )
 
 
 def get_delegator(
@@ -595,7 +597,7 @@ class SklearnInstrumentor(BaseInstrumentor):
                 method_name,
             )
         elif delegator is not None:
-            implement_spans_delegator(delegator)
+            implement_span_delegator(delegator)
         else:
             setattr(
                 estimator,
@@ -605,7 +607,7 @@ class SklearnInstrumentor(BaseInstrumentor):
             setattr(
                 estimator,
                 method_name,
-                implement_spans(class_attr, estimator, attributes),
+                implement_span_estimator(class_attr, estimator, attributes),
             )
 
     def _unwrap_function(self, function):
@@ -655,7 +657,7 @@ class SklearnInstrumentor(BaseInstrumentor):
             setattr(
                 estimator,
                 method_name,
-                implement_spans(method, estimator, attributes),
+                implement_span_estimator(method, estimator, attributes),
             )
 
     def _instrument_estimator_attribute(
