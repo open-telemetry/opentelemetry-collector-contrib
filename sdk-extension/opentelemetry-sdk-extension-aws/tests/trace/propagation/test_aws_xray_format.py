@@ -247,6 +247,41 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             get_extracted_span_context(build_test_context()),
         )
 
+    def test_extract_with_extra_whitespace(self):
+        default_xray_trace_header_dict = build_dict_with_xray_trace_header()
+        trace_header_components = default_xray_trace_header_dict[
+            AwsXRayFormat.TRACE_HEADER_KEY
+        ].split(AwsXRayFormat.KV_PAIR_DELIMITER)
+        xray_trace_header_dict_with_extra_whitespace = CaseInsensitiveDict(
+            {
+                AwsXRayFormat.TRACE_HEADER_KEY: AwsXRayFormat.KV_PAIR_DELIMITER.join(
+                    [
+                        AwsXRayFormat.KEY_AND_VALUE_DELIMITER.join(
+                            [
+                                "     " + key + "     ",
+                                "     " + value + "     ",
+                            ]
+                        )
+                        for kv_pair_str in trace_header_components
+                        for key, value in [
+                            kv_pair_str.split(
+                                AwsXRayFormat.KEY_AND_VALUE_DELIMITER
+                            )
+                        ]
+                    ]
+                )
+            }
+        )
+        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+            AwsXRayPropagatorTest.carrier_getter,
+            xray_trace_header_dict_with_extra_whitespace,
+        )
+
+        self.assertEqual(
+            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_extracted_span_context(build_test_context()),
+        )
+
     def test_extract_invalid_xray_trace_header(self):
         actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
