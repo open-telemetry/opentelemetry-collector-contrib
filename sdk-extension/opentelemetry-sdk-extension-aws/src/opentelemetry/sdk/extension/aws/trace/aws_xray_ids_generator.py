@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import random
+import time
 
 from opentelemetry import trace
 
@@ -28,10 +28,13 @@ class AwsXRayIdsGenerator(trace.IdsGenerator):
     See: https://docs.aws.amazon.com/xray/latest/devguide/xray-api-sendingdata.html#xray-api-traceids
     """
 
-    def generate_span_id(self) -> int:
-        return trace.RandomIdsGenerator().generate_span_id()
+    random_ids_generator = trace.RandomIdsGenerator()
 
-    def generate_trace_id(self) -> int:
-        trace_time = int(datetime.datetime.utcnow().timestamp())
+    def generate_span_id(self) -> int:
+        return self.random_ids_generator.generate_span_id()
+
+    @staticmethod
+    def generate_trace_id() -> int:
+        trace_time = int(time.time())
         trace_identifier = random.getrandbits(96)
         return (trace_time << 96) + trace_identifier

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import datetime
+import time
 import unittest
 
 from opentelemetry.sdk.extension.aws.trace import AwsXRayIdsGenerator
@@ -33,11 +34,9 @@ class AwsXRayIdsGeneratorTest(unittest.TestCase):
         for _ in range(1000):
             trace_id = ids_generator.generate_trace_id()
             trace_id_time = trace_id >> 96
-            current_time = int(datetime.datetime.utcnow().timestamp())
+            current_time = int(time.time())
             self.assertLessEqual(trace_id_time, current_time)
             one_month_ago_time = int(
-                (
-                    datetime.datetime.utcnow() - datetime.timedelta(30)
-                ).timestamp()
+                (datetime.datetime.now() - datetime.timedelta(30)).timestamp()
             )
             self.assertGreater(trace_id_time, one_month_ago_time)
