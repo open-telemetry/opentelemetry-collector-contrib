@@ -72,7 +72,9 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetStartTime(pdata.TimestampUnixNano(uint64(t1.UnixNano())))
 	span0.SetEndTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span0.Status().InitEmpty()
-	span0.Status().SetCode(pdata.StatusCodeNotFound)
+	// Set invalid status code that is not with the valid list of value.
+	// This will be set from incoming invalid code.
+	span0.Status().SetCode(trace.StatusCodeNotFound)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := rs.InstrumentationLibrarySpans().At(0).Spans().At(1)
@@ -82,7 +84,9 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span1.SetStartTime(pdata.TimestampUnixNano(uint64(t2.UnixNano())))
 	span1.SetEndTime(pdata.TimestampUnixNano(uint64(t3.UnixNano())))
 	span1.Status().InitEmpty()
-	span1.Status().SetCode(pdata.StatusCodeInternalError)
+	// Set invalid status code that is not with the valid list of value.
+	// This will be set from incoming invalid code.
+	span1.Status().SetCode(trace.StatusCodeInternal)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces

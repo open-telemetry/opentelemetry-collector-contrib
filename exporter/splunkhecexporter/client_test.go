@@ -26,80 +26,83 @@ import (
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/testutil/metricstestutil"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 func createMetricsData(numberOfDataPoints int) pdata.Metrics {
-	keys := []string{"k0", "k1"}
-	values := []string{"v0", "v1"}
 
 	doubleVal := 1234.5678
-	var metrics []*metricspb.Metric
+	metrics := pdata.NewMetrics()
+	rm := pdata.NewResourceMetrics()
+	rm.InitEmpty()
+	rm.Resource().InitEmpty()
+	rm.Resource().Attributes().InsertString("k0", "v0")
+	rm.Resource().Attributes().InsertString("k1", "v1")
+	metrics.ResourceMetrics().Append(rm)
+
 	for i := 0; i < numberOfDataPoints; i++ {
 		tsUnix := time.Unix(int64(i), int64(i)*time.Millisecond.Nanoseconds())
 
-		doublePt := metricstestutil.Double(tsUnix, doubleVal)
-		metric := metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt))
-		metrics = append(metrics, metric)
+		ilm := pdata.NewInstrumentationLibraryMetrics()
+		ilm.InitEmpty()
+		metric := pdata.NewMetric()
+		metric.InitEmpty()
+		metric.SetName("gauge_double_with_dims")
+		metric.SetDataType(pdata.MetricDataTypeDoubleGauge)
+		metric.DoubleGauge().InitEmpty()
+		doublePt := pdata.NewDoubleDataPoint()
+		doublePt.InitEmpty()
+		doublePt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+		doublePt.SetValue(doubleVal)
+		doublePt.LabelsMap().Insert("k/n0", "vn0")
+		doublePt.LabelsMap().Insert("k/n1", "vn1")
+		doublePt.LabelsMap().Insert("k/r0", "vr0")
+		doublePt.LabelsMap().Insert("k/r1", "vr1")
+		metric.DoubleGauge().DataPoints().Append(doublePt)
+		ilm.Metrics().Append(metric)
+		rm.InstrumentationLibraryMetrics().Append(ilm)
 	}
 
-	return internaldata.OCToMetrics(consumerdata.MetricsData{
-		Node: &commonpb.Node{
-			Attributes: map[string]string{
-				"k/n0": "vn0",
-				"k/n1": "vn1",
-			},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"k/r0": "vr0",
-				"k/r1": "vr1",
-			},
-		},
-		Metrics: metrics,
-	})
+	return metrics
 }
 
 func createTraceData(numberOfTraces int) pdata.Traces {
-	var traces []*tracepb.Span
+	traces := pdata.NewTraces()
+	rs := pdata.NewResourceSpans()
+	rs.InitEmpty()
+	traces.ResourceSpans().Append(rs)
+	ils := pdata.NewInstrumentationLibrarySpans()
+	ils.InitEmpty()
+	rs.InstrumentationLibrarySpans().Append(ils)
+	rs.Resource().InitEmpty()
+	rs.Resource().Attributes().InsertString("resource", "R1")
 	for i := 0; i < numberOfTraces; i++ {
-		span := &tracepb.Span{
-			TraceId:   []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-			SpanId:    []byte{0, 0, 0, 0, 0, 0, 0, 1},
-			Name:      &tracepb.TruncatableString{Value: "root"},
-			Status:    &tracepb.Status{},
-			StartTime: &timestamppb.Timestamp{Seconds: int64(i + 1)},
-		}
+		span := pdata.NewSpan()
+		span.InitEmpty()
+		span.SetName("root")
+		span.SetStartTime(pdata.TimestampUnixNano((i + 1) * 1e9))
+		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
+		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+		span.SetTraceState(pdata.TraceState("foo"))
+		if i%2 == 0 {
+			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.Status().InitEmpty()
+			span.Status().SetCode(pdata.StatusCodeOk)
+			span.Status().SetMessage("ok")
 
-		traces = append(traces, span)
+		}
+		ils.Spans().Append(span)
 	}
 
-	return internaldata.OCToTraceData(consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				"resource": "R1",
-			},
-		},
-		Spans: traces,
-	})
+	return traces
 }
 
 func createLogData(numberOfLogs int) pdata.Logs {
@@ -260,7 +263,7 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 	select {
 	case request := <-receivedRequest:
 		return request, nil
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 		return "", errors.New("Timeout")
 	}
 }
@@ -268,11 +271,11 @@ func runLogExport(disableCompression bool, numberOfLogs int, t *testing.T) (stri
 func TestReceiveTraces(t *testing.T) {
 	actual, err := runTraceExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"time":1,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":1},"status":{}}}`
+	expected := `{"time":1,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":2000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":1000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":2,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":2},"status":{}}}`
+	expected += `{"time":2,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"","name":"root","end_time":3000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"","code":""},"start_time":2000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":3,"host":"unknown","event":{"trace_id":"AQEBAQEBAQEBAQEBAQEBAQ==","span_id":"AAAAAAAAAAE=","name":{"value":"root"},"start_time":{"seconds":3},"status":{}}}`
+	expected += `{"time":3,"host":"unknown","event":{"trace_id":"01010101010101010101010101010101","span_id":"0000000000000001","parent_span_id":"0102030405060708","name":"root","end_time":4000000000,"kind":"SPAN_KIND_UNSPECIFIED","status":{"message":"ok","code":"STATUS_CODE_OK"},"start_time":3000000000},"fields":{"resource":"R1"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }
@@ -302,19 +305,19 @@ func TestReceiveMetrics(t *testing.T) {
 }
 
 func TestReceiveTracesWithCompression(t *testing.T) {
-	request, err := runTraceExport(false, 5000, t)
+	request, err := runTraceExport(false, 1000, t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }
 
 func TestReceiveLogsWithCompression(t *testing.T) {
-	request, err := runLogExport(false, 5000, t)
+	request, err := runLogExport(false, 1000, t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }
 
 func TestReceiveMetricsWithCompression(t *testing.T) {
-	request, err := runMetricsExport(false, 5000, t)
+	request, err := runMetricsExport(false, 1000, t)
 	assert.NoError(t, err)
 	assert.NotEqual(t, "", request)
 }

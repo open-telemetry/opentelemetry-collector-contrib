@@ -45,12 +45,12 @@ func addHTTP(seg *awsxray.Segment, span *pdata.Span) {
 
 	if resp := seg.HTTP.Response; resp != nil {
 		if resp.Status != nil {
-			otStatus := tracetranslator.OCStatusCodeFromHTTP(int32(*resp.Status))
+			otStatus := tracetranslator.StatusCodeFromHTTP(int(*resp.Status))
 			// in X-Ray exporter, the segment status is set:
 			// first via the span attribute, conventions.AttributeHTTPStatusCode
 			// then the span status. Since we are also setting the span attribute
 			// below, the span status code here will not be actually used
-			span.Status().SetCode(pdata.StatusCode(otStatus))
+			span.Status().SetCode(otStatus)
 			attrs.UpsertInt(conventions.AttributeHTTPStatusCode, *resp.Status)
 		}
 

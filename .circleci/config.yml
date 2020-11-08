@@ -283,6 +283,11 @@ jobs:
       - run:
           name: Checks
           command: make -j4 checklicense impi misspell
+      - run:
+          name: Codegen
+          command: |
+            make generate
+            git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
 
   build-examples:
     docker:

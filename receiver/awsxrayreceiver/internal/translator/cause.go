@@ -37,10 +37,10 @@ func addCause(seg *awsxray.Segment, span *pdata.Span) {
 	// temporarily setting the status to otlptrace.Status_UnknownError. This will be
 	// updated to a more specific error in the `segToSpans()` in translator.go once
 	// we traverse through all the subsegments.
-	if span.Status().Code() == pdata.StatusCodeOk {
-		// otlptrace.Status_Ok is the default value after span.Status().InitEmpty()
+	if span.Status().Code() == pdata.StatusCodeUnset {
+		// StatusCodeUnset is the default value after span.Status().InitEmpty()
 		// is called
-		span.Status().SetCode(pdata.StatusCodeUnknownError)
+		span.Status().SetCode(pdata.StatusCodeError)
 	}
 
 	switch seg.Cause.Type {

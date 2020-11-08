@@ -17,43 +17,156 @@ package splunkhecexporter
 import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
+// HecEvent is a data structure holding a span event to export explicitly to Splunk HEC.
+type HecEvent struct {
+	Attributes map[string]interface{}  `json:"attributes,omitempty"`
+	Name       string                  `json:"name"`
+	Timestamp  pdata.TimestampUnixNano `json:"timestamp"`
+}
+
+// HecLink is a data structure holding a span link to export explicitly to Splunk HEC.
+type HecLink struct {
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
+	TraceID    string                 `json:"trace_id"`
+	SpanID     string                 `json:"span_id"`
+	TraceState pdata.TraceState       `json:"trace_state"`
+}
+
+// HecSpanStatus is a data structure holding the status of a span to export explicitly to Splunk HEC.
+type HecSpanStatus struct {
+	Message string `json:"message"`
+	Code    string `json:"code"`
+}
+
+// HecSpan is a data structure used to export explicitly a span to Splunk HEC.
+type HecSpan struct {
+	TraceID    string                  `json:"trace_id"`
+	SpanID     string                  `json:"span_id"`
+	ParentSpan string                  `json:"parent_span_id"`
+	Name       string                  `json:"name"`
+	Attributes map[string]interface{}  `json:"attributes,omitempty"`
+	EndTime    pdata.TimestampUnixNano `json:"end_time"`
+	Kind       string                  `json:"kind"`
+	Status     HecSpanStatus           `json:"status,omitempty"`
+	StartTime  pdata.TimestampUnixNano `json:"start_time"`
+	Events     []HecEvent              `json:"events,omitempty"`
+	Links      []HecLink               `json:"links,omitempty"`
+}
+
 func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([]*splunk.Event, int) {
-	octds := internaldata.TraceDataToOC(data)
 	numDroppedSpans := 0
 	splunkEvents := make([]*splunk.Event, 0, data.SpanCount())
-	for _, octd := range octds {
-		var host string
-		if octd.Resource != nil {
-			host = octd.Resource.Labels[conventions.AttributeHostHostname]
+	rss := data.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		if rs.IsNil() {
+			continue
 		}
-		if host == "" {
-			host = unknownHostName
+		host := unknownHostName
+		source := config.Source
+		sourceType := config.SourceType
+		commonFields := map[string]interface{}{}
+		if !rs.Resource().IsNil() {
+			if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+				host = conventionHost.StringVal()
+			}
+			if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
+				source = sourceSet.StringVal()
+			}
+			if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
+				sourceType = sourcetypeSet.StringVal()
+			}
+			rs.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+			})
 		}
-		for _, span := range octd.Spans {
-			if span.StartTime == nil {
-				logger.Debug(
-					"Span dropped as it had no start timestamp",
-					zap.Any("span", span))
-				numDroppedSpans++
+		ilss := rs.InstrumentationLibrarySpans()
+		for sils := 0; sils < ilss.Len(); sils++ {
+			ils := ilss.At(sils)
+			if ils.IsNil() {
 				continue
 			}
-			se := &splunk.Event{
-				Time:       timestampToEpochMilliseconds(span.StartTime),
-				Host:       host,
-				Source:     config.Source,
-				SourceType: config.SourceType,
-				Index:      config.Index,
-				Event:      span,
+			spans := ils.Spans()
+			for si := 0; si < spans.Len(); si++ {
+				span := spans.At(si)
+				if span.IsNil() {
+					continue
+				}
+
+				se := &splunk.Event{
+					Time:       timestampToSecondsWithMillisecondPrecision(span.StartTime()),
+					Host:       host,
+					Source:     source,
+					SourceType: sourceType,
+					Index:      config.Index,
+					Event:      toHecSpan(logger, span),
+					Fields:     commonFields,
+				}
+				splunkEvents = append(splunkEvents, se)
 			}
-			splunkEvents = append(splunkEvents, se)
 		}
 	}
 
 	return splunkEvents, numDroppedSpans
+}
+
+func toHecSpan(logger *zap.Logger, span pdata.Span) HecSpan {
+	attributes := map[string]interface{}{}
+	span.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		attributes[k] = convertAttributeValue(v, logger)
+	})
+
+	links := make([]HecLink, span.Links().Len())
+	for i := 0; i < span.Links().Len(); i++ {
+		link := span.Links().At(i)
+		linkAttributes := map[string]interface{}{}
+		link.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			linkAttributes[k] = convertAttributeValue(v, logger)
+		})
+		links[i] = HecLink{
+			Attributes: linkAttributes,
+			TraceID:    link.TraceID().HexString(),
+			SpanID:     link.SpanID().HexString(),
+			TraceState: link.TraceState(),
+		}
+	}
+	events := make([]HecEvent, span.Events().Len())
+	for i := 0; i < span.Events().Len(); i++ {
+		event := span.Events().At(i)
+		eventAttributes := map[string]interface{}{}
+		event.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			eventAttributes[k] = convertAttributeValue(v, logger)
+		})
+		events[i] = HecEvent{
+			Attributes: eventAttributes,
+			Name:       event.Name(),
+			Timestamp:  event.Timestamp(),
+		}
+	}
+	var status HecSpanStatus
+	if !span.Status().IsNil() {
+		status = HecSpanStatus{
+			Message: span.Status().Message(),
+			Code:    span.Status().Code().String(),
+		}
+	}
+	return HecSpan{
+		TraceID:    span.TraceID().HexString(),
+		SpanID:     span.SpanID().HexString(),
+		ParentSpan: span.ParentSpanID().HexString(),
+		Name:       span.Name(),
+		Attributes: attributes,
+		StartTime:  span.StartTime(),
+		EndTime:    span.EndTime(),
+		Kind:       span.Kind().String(),
+		Status:     status,
+		Links:      links,
+		Events:     events,
+	}
 }

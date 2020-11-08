@@ -119,22 +119,7 @@ func pdataStatusCodeToOTCode(c pdata.StatusCode) codes.Code {
 	switch c {
 	case pdata.StatusCodeOk:
 		return codes.Ok
-	case pdata.StatusCodeCancelled,
-		pdata.StatusCodeUnknownError,
-		pdata.StatusCodeInvalidArgument,
-		pdata.StatusCodeDeadlineExceeded,
-		pdata.StatusCodeNotFound,
-		pdata.StatusCodeAlreadyExists,
-		pdata.StatusCodePermissionDenied,
-		pdata.StatusCodeResourceExhausted,
-		pdata.StatusCodeFailedPrecondition,
-		pdata.StatusCodeAborted,
-		pdata.StatusCodeOutOfRange,
-		pdata.StatusCodeUnimplemented,
-		pdata.StatusCodeInternalError,
-		pdata.StatusCodeUnavailable,
-		pdata.StatusCodeDataLoss,
-		pdata.StatusCodeUnauthenticated:
+	case pdata.StatusCodeError:
 		return codes.Error
 	default:
 		return codes.Unset

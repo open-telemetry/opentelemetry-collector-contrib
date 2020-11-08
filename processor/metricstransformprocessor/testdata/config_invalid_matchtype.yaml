@@ -4,7 +4,8 @@ receivers:
 processors:
     metricstransform:
         transforms:
-            - metric_name: # missing metric name
+            - include: metric_name
+              match_type: invalid
               action: update
 
 exporters:

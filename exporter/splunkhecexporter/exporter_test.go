@@ -103,7 +103,7 @@ func TestConsumeMetricsData(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				assert.Equal(t, "test", metric.Source)
+				assert.Equal(t, "test_splunk", metric.Source)
 				assert.Equal(t, "test_type", metric.SourceType)
 				assert.Equal(t, "test_index", metric.Index)
 

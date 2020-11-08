@@ -1,0 +1,23 @@
+receivers:
+    examplereceiver:
+
+processors:
+    metricstransform:
+        transforms:
+            - include: old[\da
+              match_type: regexp
+              action: update
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
