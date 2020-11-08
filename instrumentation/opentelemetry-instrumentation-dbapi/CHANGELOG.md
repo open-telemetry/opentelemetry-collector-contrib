@@ -19,7 +19,7 @@ Released 2020-09-17
 Released 2020-08-14
 
 - Change package name to opentelemetry-instrumentation-dbapi
-  ([#966](https://github.com/open-telemetry/opentelemetry-python/pull/966))
+  ([#156](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/156))
 
 ## 0.7b1
 
