@@ -65,7 +65,7 @@ class TestDBApiIntegration(TestBase):
             span.status.status_code, trace_api.status.StatusCode.UNSET,
         )
 
-    def test_span_succeeded_without_capture_of_statement_parameters(self):
+    def test_span_succeeded_with_capture_of_statement_parameters(self):
         connection_props = {
             "database": "testdatabase",
             "server_host": "testhost",
