@@ -17,35 +17,38 @@ package awsecscontainermetrics
 import (
 	"strings"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func containerResource(cm ContainerMetadata) *resourcepb.Resource {
-	labels := map[string]string{}
+func containerResource(cm ContainerMetadata) pdata.Resource {
+	attributes := map[string]pdata.AttributeValue{}
 
-	labels[conventions.AttributeContainerName] = cm.ContainerName
-	labels[conventions.AttributeContainerID] = cm.DockerID
-	labels[AttributeECSDockerName] = cm.DockerName
-	return &resourcepb.Resource{
-		Type:   MetricResourceType,
-		Labels: labels,
-	}
+	attributes[conventions.AttributeContainerName] = pdata.NewAttributeValueString(cm.ContainerName)
+	attributes[conventions.AttributeContainerID] = pdata.NewAttributeValueString(cm.DockerID)
+	attributes[AttributeECSDockerName] = pdata.NewAttributeValueString(cm.DockerName)
+
+	return createResourceWithAttributes(attributes)
 }
 
-func taskResource(tm TaskMetadata) *resourcepb.Resource {
-	labels := map[string]string{}
+func taskResource(tm TaskMetadata) pdata.Resource {
+	attributes := map[string]pdata.AttributeValue{}
 
-	labels[AttributeECSCluster] = tm.Cluster
-	labels[AttributeECSTaskARN] = tm.TaskARN
-	labels[AttributeECSTaskID] = getTaskIDFromARN(tm.TaskARN)
-	labels[AttributeECSTaskFamily] = tm.Family
-	labels[AttributeECSTaskRevesion] = tm.Revision
-	labels[AttributeECSServiceName] = "undefined"
-	return &resourcepb.Resource{
-		Type:   MetricResourceType,
-		Labels: labels,
-	}
+	attributes[AttributeECSCluster] = pdata.NewAttributeValueString(tm.Cluster)
+	attributes[AttributeECSTaskARN] = pdata.NewAttributeValueString(tm.TaskARN)
+	attributes[AttributeECSTaskID] = pdata.NewAttributeValueString(getTaskIDFromARN(tm.TaskARN))
+	attributes[AttributeECSTaskFamily] = pdata.NewAttributeValueString(tm.Family)
+	attributes[AttributeECSTaskRevesion] = pdata.NewAttributeValueString(tm.Revision)
+	attributes[AttributeECSServiceName] = pdata.NewAttributeValueString("undefined")
+
+	return createResourceWithAttributes(attributes)
+}
+
+func createResourceWithAttributes(attributes map[string]pdata.AttributeValue) pdata.Resource {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
+	resource.Attributes().InitFromMap(attributes)
+	return resource
 }
 
 func getTaskIDFromARN(arn string) string {

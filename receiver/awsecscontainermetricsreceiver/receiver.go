@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/awsecscontainermetrics"
@@ -97,8 +96,7 @@ func (aecmr *awsEcsContainerMetricsReceiver) collectDataFromEndpoint(ctx context
 	// TODO: report self metrics using obsreport
 	mds := awsecscontainermetrics.MetricsData(stats, metadata)
 	for _, md := range mds {
-		metrics := internaldata.OCToMetrics(*md)
-		err = aecmr.nextConsumer.ConsumeMetrics(ctx, metrics)
+		err = aecmr.nextConsumer.ConsumeMetrics(ctx, md)
 		if err != nil {
 			return err
 		}

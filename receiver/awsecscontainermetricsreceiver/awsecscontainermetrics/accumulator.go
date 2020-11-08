@@ -17,21 +17,19 @@ package awsecscontainermetrics
 import (
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // metricDataAccumulator defines the accumulator
 type metricDataAccumulator struct {
-	md []*consumerdata.MetricsData
+	mds []pdata.Metrics
 }
 
 // getMetricsData generates OT Metrics data from task metadata and docker stats
 func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) {
 
 	taskMetrics := ECSMetrics{}
-	timestamp := timestampProto(time.Now())
+	timestamp := pdata.TimeToUnixNano(time.Now())
 	taskResource := taskResource(metadata)
 
 	for _, containerMetadata := range metadata.Containers {
@@ -45,14 +43,11 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 		}
 
 		containerResource := containerResource(containerMetadata)
-		for k, v := range taskResource.Labels {
-			containerResource.Labels[k] = v
-		}
+		taskResource.Attributes().ForEach(func(k string, av pdata.AttributeValue) {
+			containerResource.Attributes().Upsert(k, av)
+		})
 
-		acc.accumulate(
-			containerResource,
-			convertToOCMetrics(ContainerPrefix, containerMetrics, nil, nil, timestamp),
-		)
+		acc.accumulate(convertToOTLPMetrics(ContainerPrefix, containerMetrics, containerResource, timestamp))
 
 		aggregateTaskMetrics(&taskMetrics, containerMetrics)
 	}
@@ -75,27 +70,11 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]Co
 	// all container CPU limits.
 	taskMetrics.CPUUtilized = ((taskMetrics.CPUUsageInVCPU / taskMetrics.CPUReserved) * 100)
 
-	acc.accumulate(
-		taskResource,
-		convertToOCMetrics(TaskPrefix, taskMetrics, nil, nil, timestamp),
-	)
+	acc.accumulate(convertToOTLPMetrics(TaskPrefix, taskMetrics, taskResource, timestamp))
 }
 
-func (acc *metricDataAccumulator) accumulate(
-	r *resourcepb.Resource,
-	m ...[]*metricspb.Metric,
-) {
-	var resourceMetrics []*metricspb.Metric
-	for _, metrics := range m {
-		for _, metric := range metrics {
-			if metric != nil {
-				resourceMetrics = append(resourceMetrics, metric)
-			}
-		}
-	}
+func (acc *metricDataAccumulator) accumulate(rms pdata.ResourceMetricsSlice) {
+	md := pdata.Metrics(rms)
 
-	acc.md = append(acc.md, &consumerdata.MetricsData{
-		Metrics:  resourceMetrics,
-		Resource: r,
-	})
+	acc.mds = append(acc.mds, md)
 }
