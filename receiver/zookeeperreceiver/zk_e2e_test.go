@@ -42,6 +42,8 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
+const zkPort = 2181
+
 func TestIntegration(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -49,18 +51,18 @@ func TestIntegration(t *testing.T) {
 		expectedNumMetrics int
 		env                []string
 	}{
-		//{
-		//	name:               "3.4.14",
-		//	image:              "docker.io/library/zookeeper:3.4",
-		//	expectedNumMetrics: 14,
-		//	env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr", "ZOO_STANDALONE_ENABLED=false"},
-		//},
-		//{
-		//	name:               "3.5.5-standalone",
-		//	image:              "docker.io/library/zookeeper:3.5.5",
-		//	expectedNumMetrics: 13,
-		//	env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr"},
-		//},
+		{
+			name:               "3.4.14",
+			image:              "docker.io/library/zookeeper:3.4",
+			expectedNumMetrics: 14,
+			env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr", "ZOO_STANDALONE_ENABLED=false"},
+		},
+		{
+			name:               "3.5.5-standalone",
+			image:              "docker.io/library/zookeeper:3.5.5",
+			expectedNumMetrics: 13,
+			env:                []string{"ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr"},
+		},
 		{
 			name:               "3.5.5",
 			image:              "docker.io/library/zookeeper:3.5.5",
@@ -72,11 +74,11 @@ func TestIntegration(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			d := container.New(t)
-			c := d.StartImageWithEnv(test.image, test.env, container.WithPortReady(2181))
+			c := d.StartImageWithEnv(test.image, test.env, container.WithPortReady(zkPort))
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.Endpoint = c.AddrForPort(2181)
+			cfg.Endpoint = c.AddrForPort(zkPort)
 
 			consumer := new(consumertest.MetricsSink)
 			params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
@@ -90,13 +92,14 @@ func TestIntegration(t *testing.T) {
 				func() bool {
 					return consumer.MetricsCount() >= test.expectedNumMetrics
 				},
-				20*time.Second, 5*time.Second,
+				20*time.Second, 2*time.Second,
 				fmt.Sprintf(
 					"received %d metrics, expecting %d",
 					consumer.MetricsCount(),
 					test.expectedNumMetrics,
 				),
 			)
+			t.Log("metrics received...")
 
 			require.NoError(t, rcvr.Shutdown(context.Background()))
 		})
