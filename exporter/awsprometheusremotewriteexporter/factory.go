@@ -29,6 +29,9 @@ const (
 	typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
 )
 
+var awsRegion string
+var awsService string
+
 // NewFactory returns a factory of the AWS Prometheus Remote Write exporter that can be registered to the Collector.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
@@ -45,18 +48,16 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 		return nil, errors.New("invalid authentication configuration")
 	}
 
+	// load AWS auth configurations and create interceptor based on configuration
+	if applyAuth(prwCfg.AuthSettings) {
+		awsRegion = prwCfg.AuthSettings.Region
+		awsService = prwCfg.AuthSettings.Service
+		prwCfg.HTTPClientSettings.CustomRoundTripper = signingRoundTripper
+	}
+
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
 	if cerr != nil {
 		return nil, cerr
-	}
-
-	// load AWS auth configurations and create interceptor based on configuration
-	if applyAuth(prwCfg.AuthSettings) {
-		roundTripper, err := newAuth(prwCfg.AuthSettings, client)
-		if err != nil {
-			return nil, err
-		}
-		client.Transport = roundTripper
 	}
 
 	// initialize an upstream exporter and pass it an http.Client with interceptor

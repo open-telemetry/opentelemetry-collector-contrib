@@ -31,7 +31,7 @@ type SigningRoundTripper struct {
 	transport http.RoundTripper
 	signer    *v4.Signer
 	cfg       *aws.Config
-	params    AuthSettings
+	service   string
 }
 
 // RoundTrip signs each outgoing request
@@ -50,7 +50,7 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	body := bytes.NewReader(content)
 
 	// Sign the request
-	_, err = si.signer.Sign(req, body, si.params.Service, *si.cfg.Region, time.Now())
+	_, err = si.signer.Sign(req, body, si.service, *si.cfg.Region, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -65,13 +65,9 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-// newAuth takes a map of strings as parameters and return a http.RoundTripper that perform Sig V4 signing on each
-// request.
-func newAuth(params AuthSettings, origClient *http.Client) (http.RoundTripper, error) {
-	// Initialize session with default credential chain
-	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html
+func signingRoundTripper(roundTripper http.RoundTripper) (http.RoundTripper, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(params.Region)},
+		Region: aws.String(awsRegion)},
 		aws.NewConfig().WithLogLevel(aws.LogDebugWithSigning),
 	)
 	if err != nil {
@@ -86,10 +82,10 @@ func newAuth(params AuthSettings, origClient *http.Client) (http.RoundTripper, e
 	creds := sess.Config.Credentials
 	signer := v4.NewSigner(creds)
 	rtp := SigningRoundTripper{
-		transport: origClient.Transport,
+		transport: roundTripper,
 		signer:    signer,
 		cfg:       sess.Config,
-		params:    params,
+		service:   awsService,
 	}
 	// return a RoundTripper
 	return &rtp, nil
