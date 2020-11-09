@@ -105,9 +105,7 @@ func BenchmarkReadLine(b *testing.B) {
 	defer emitter.Stop()
 
 	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-
-	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -165,9 +163,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	defer emitter.Stop()
 
 	buildContext := testutil.NewBuildContext(b)
-	buildContext.Logger = zap.NewNop().Sugar() // be quiet
-
-	pl, err := pipelineCfg.BuildPipeline(buildContext, nil, emitter)
+	pl, err := pipelineCfg.BuildPipeline(buildContext, emitter)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed

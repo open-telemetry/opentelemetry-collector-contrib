@@ -27,7 +27,6 @@ import (
 
 	"github.com/observiq/nanojack"
 	"github.com/observiq/stanza/entry"
-	"github.com/observiq/stanza/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -48,8 +47,8 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshalConfig(t *testing.T, pipelineYaml string) pipeline.Config {
-	pipelineCfg := pipeline.Config{}
+func unmarshalConfig(t *testing.T, pipelineYaml string) RawPipelineConfig {
+	var pipelineCfg RawPipelineConfig
 	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
 	return pipelineCfg
 }
