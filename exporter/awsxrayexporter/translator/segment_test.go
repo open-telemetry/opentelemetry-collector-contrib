@@ -155,7 +155,6 @@ func TestSpanWithNoStatus(t *testing.T) {
 	span.SetEndTime(pdata.TimestampUnixNano(time.Now().Add(10).UnixNano()))
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	segment, _ := MakeSegment(span, resource, nil, false)
 	assert.NotNil(t, segment)
 }
@@ -476,7 +475,6 @@ func TestOriginNotAws(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderGCP)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
@@ -494,9 +492,9 @@ func TestOriginEc2(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString("cloud.infrastructure_service", "EC2")
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.CopyTo(resource.Attributes())
 	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
@@ -512,9 +510,9 @@ func TestOriginEcs(t *testing.T) {
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString("cloud.infrastructure_service", "ECS")
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
 	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
 	attrs.CopyTo(resource.Attributes())
@@ -526,12 +524,51 @@ func TestOriginEcs(t *testing.T) {
 	assert.Equal(t, OriginECS, *segment.Origin)
 }
 
+func TestOriginEcsEc2(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString("cloud.infrastructure_service", "ECS")
+	attrs.InsertString("aws.ecs.launchtype", "ec2")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginECSEC2, *segment.Origin)
+}
+
+func TestOriginEcsFargate(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString("cloud.infrastructure_service", "ECS")
+	attrs.InsertString("aws.ecs.launchtype", "fargate")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginECSFargate, *segment.Origin)
+}
+
 func TestOriginEb(t *testing.T) {
 	spanName := "/test"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]interface{})
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
@@ -544,6 +581,43 @@ func TestOriginEb(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, OriginEB, *segment.Origin)
+}
+
+func TestOriginBlank(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Nil(t, segment.Origin)
+}
+
+func TestOriginPrefersInfraService(t *testing.T) {
+	spanName := "/test"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]interface{})
+	resource := pdata.NewResource()
+	attrs := pdata.NewAttributeMap()
+	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
+	attrs.InsertString("cloud.infrastructure_service", "EC2")
+	attrs.InsertString(semconventions.AttributeK8sCluster, "cluster-123")
+	attrs.InsertString(semconventions.AttributeHostID, "instance-123")
+	attrs.InsertString(semconventions.AttributeContainerName, "container-123")
+	attrs.InsertString(semconventions.AttributeServiceInstance, "service-123")
+	attrs.CopyTo(resource.Attributes())
+	span := constructServerSpan(parentSpanID, spanName, tracetranslator.OCInternal, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{}, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, OriginEC2, *segment.Origin)
 }
 
 func constructClientSpan(parentSpanID pdata.SpanID, name string, code int32, message string, attributes map[string]interface{}) pdata.Span {
@@ -620,7 +694,6 @@ func constructSpanAttributes(attributes map[string]interface{}) pdata.AttributeM
 
 func constructDefaultResource() pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeServiceName, "signup_aggregator")
 	attrs.InsertString(semconventions.AttributeServiceVersion, "semver:1.1.4")
@@ -639,15 +712,16 @@ func constructDefaultResource() pdata.Resource {
 	attrs.InsertInt(resourceIntKey, 10)
 	attrs.InsertDouble(resourceDoubleKey, 5.0)
 	attrs.InsertBool(resourceBoolKey, true)
-	resourceMap := pdata.NewAttributeMap()
+
+	resourceMapVal := pdata.NewAttributeValueMap()
+	resourceMap := resourceMapVal.MapVal()
 	resourceMap.InitEmptyWithCapacity(2)
 	resourceMap.InsertInt("key1", 1)
 	resourceMap.InsertString("key2", "value")
-	resourceMapVal := pdata.NewAttributeValueNull()
-	resourceMapVal.InitEmpty()
-	resourceMapVal.SetMapVal(resourceMap)
 	attrs.Insert(resourceMapKey, resourceMapVal)
-	resourceArray := pdata.NewAnyValueArray()
+
+	resourceArrayVal := pdata.NewAttributeValueArray()
+	resourceArray := resourceArrayVal.ArrayVal()
 	val1 := pdata.NewAttributeValueNull()
 	val1.InitEmpty()
 	val1.SetStringVal("foo")
@@ -656,9 +730,6 @@ func constructDefaultResource() pdata.Resource {
 	val2.SetStringVal("bar")
 	resourceArray.Append(val1)
 	resourceArray.Append(val2)
-	resourceArrayVal := pdata.NewAttributeValueNull()
-	resourceArrayVal.InitEmpty()
-	resourceArrayVal.SetArrayVal(resourceArray)
 	attrs.Insert(resourceArrayKey, resourceArrayVal)
 	attrs.CopyTo(resource.Attributes())
 	return resource

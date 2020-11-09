@@ -1,94 +1,162 @@
 # Metrics Transform Processor
+
 Supported pipeline types: metrics
-- This ONLY supports renames/aggregations **within individual metrics**. It does not do any aggregation across batches, so it is not suitable for aggregating metrics from multiple sources (e.g. multiple nodes or clients). At this point, it is only for aggregating metrics from a single source that groups its metrics for a particular time period into a single batch (e.g. host metrics from the VM the collector is running on).
-- Rename Collisions will result in a no operation on the metrics data
-  - e.g. If want to rename a metric or label to `new_name` while there is already a metric or label called `new_name`, this operation will not take any effect. There will also be an error logged
 
 ## Description
-The metrics transform processor can be used to rename metrics, labels, or label values. It can also be used to perform aggregations on metrics across labels or label values.
 
-## Capabilities
-- Rename metrics (e.g. rename `cpu/usage` to `cpu/usage_time`)
-- Rename labels (e.g. rename `cpu` to `core`)
-- Rename label values (e.g. rename `done` to `complete`)
-- Aggregate across label sets (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
-  - Aggregation_type: sum, mean, max
-- Aggregate across label values (e.g. want `memory{slab}`, but don’t care about `memory{slab_reclaimable}` & `memory{slab_unreclaimable}`)
-  - Aggregation_type: sum, mean, max
-- Add label to an existing metric
-- When adding or updating a label value, specify `{{version}}` to include the application version number
+The metrics transform processor can be used to rename metrics, and add, rename
+or delete label keys and values. It can also be used to perform aggregations on
+metrics across labels or label values. The complete list of supported operations
+that can be applied to one or more metrics is provided in the below table.
+
+:information_source: This processor only supports renames/aggregations **within
+a batch of metrics**. It does not do any aggregation across batches, so it is
+not suitable for aggregating metrics from multiple sources (e.g. multiple nodes
+or clients).
+
+| Operation                                                         | Example (based on metric `system.cpu.usage`)                                                    |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| Rename metrics                                                    | Rename to `system.cpu.usage_time`                                                               |
+| Add labels                                                        | Add new label `identifier` with value `1` to all points                                         |
+| Rename label keys                                                 | Rename label `state` to `cpu_state`                                                             |
+| Rename label values                                               | For label `state`, rename value `idle` to `-`                                                   |
+| Delete data points based on label values                          | Delete all points where label `state` has value `idle`                                          |
+| Toggle the data type of scalar metrics between `int` and `double` | Change from `int` data points to `double` data points                                           |
+| Aggregate across label sets by sum, mean, min, or max             | Retain only the label `state`, sum all points with the same value for this label                |
+| Aggregate across label values by sum, mean, min, or max           | For label `state`, sum points where the value is `user` or `system` into `used = user + system` |
+
+In addition to the above:
+
+- Operations can be applied to one or more metrics using a `strict` or `regexp`
+  filter
+- When renaming metrics, capturing groups from the `regexp` filter will be
+  expanded
+- When adding or updating a label value, `{{version}}` will be replaced with
+  this collector's version number
 
 ## Configuration
+
+Configuration is specified through a list of transformations and operations.
+Transformations and operations will be applied to all metrics in order so that
+later transformations or operations may reference the result of previous
+transformations or operations.
+
 ```yaml
 # transforms is a list of transformations with each element transforming a metric selected by metric name
 transforms:
-  # name is used to match with the metric to operate on. This implementation doesn’t utilize the filtermetric’s MatchProperties struct because it doesn’t match well with what I need at this phase. All is needed for this processor at this stage is a single name string that can be used to match with selected metrics. The list of metric names and the match type in the filtermetric’s MatchProperties struct are unnecessary. Also, based on the issue about improving filtering configuration, it seems like this struct is subject to be slightly modified.
-  - metric_name: <current_metric_name>
-
-  # action specifies if the operations are performed on the current copy of the metric or on a newly created metric that will be inserted
+    # include specifies the metric name used to determine which metric(s) to operate on
+  - include: <metric_name>
+    # match_type specifies whether the include name should be used as a strict match or regexp match, default = strict
+    match_type: {strict, regexp}
+    # action specifies if the operations are performed on the metric in place, or on an inserted clone
     action: {update, insert}
-
-  # new_name is used to rename metrics (e.g. rename cpu/usage to cpu/usage_time) if action is insert, new_name is required
+    # new_name specifies the updated name of the metric; if action is insert, new_name is required
     new_name: <new_metric_name_inserted>
-
-  # operations contain a list of operations that will be performed on the selected metrics. Each operation block is a key-value pair, where the key can be any arbitrary string set by the users for readability, and the value is a struct with fields required for operations. The action field is important for the processor to identify exactly which operation to perform 
+    # operations contain a list of operations that will be performed on the selected metrics
     operations:
-
-    # update_label action can be used to update the name of a label or the values of this label (e.g. rename label `cpu` to `core`)
-    - action: update_label
-      label: <current_label1>
-      new_label: <new_label>
-      value_actions:
-      - value: <current_label_value>
-        new_value: <new_label_value>
-
-    # aggregate_labels action aggregates metrics across labels (e.g. only want the label `usage`, but don’t care about the labels `core`, and `cpu`)
-    - action: aggregate_labels
-    # label_set contains a list of labels that will remain after the aggregation. The excluded labels will be aggregated by the way specified by aggregation_type.
-      label_set: [labels...]
-      aggregation_type: {sum, mean, max}
-
-    # aggregate_label_values action aggregates labels across label values (e.g. want memory{slab}, but don’t care about memory{slab_reclaimable} & memory{slab_unreclaimable})
-    - action: aggregate_label_values
-      label: <label>
-    # aggregated_values contains a list of label values that will be aggregated by the way specified by aggregation_type into new_value. The excluded label values will remain.
-      aggregated_values: [values...]
-      new_value: <new_value> 
-      aggregation_type: {sum, mean, max}
+        # action defines the type of operation that will be performed, see examples below for more details
+      - action: {add_label, update_label, delete_label_value, toggle_scalar_data_type, aggregate_labels, aggregate_label_values}
+        # label specifies the label to operate on
+        label: <label>
+        # new_label specifies the updated name of the label; if action is add_label, new_label is required
+        new_label: <new_label>
+        # aggregated_values contains a list of label values that will be aggregated; if action is aggregate_label_values, aggregated_values is required
+        aggregated_values: [values...]
+        # new_value specifies the updated name of the label value; if action is add_label or aggregate_label_values, new_value is required
+        new_value: <new_value>
+        # label_value specifies the label value for which points should be deleted; if action is delete_label_value, label_value is required
+        label_value: <label_value>
+        # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
+        label_set: [labels...]
+        # aggregation_type defines how excluded labels will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
+        aggregation_type: {sum, mean, min, max}
+        # value_actions contain a list of operations that will be performed on the selected label
+        value_actions:
+            # value specifies the value to operate on
+          - value: <current_label_value>
+            # new_value specifies the updated value
+            new_value: <new_label_value>
 ```
 
 ## Examples
 
-### Insert New Metric
+### Create a new metric from an existing metric
 ```yaml
 # create host.cpu.utilization from host.cpu.usage
-metric_name: host.cpu.usage
+include: host.cpu.usage
 action: insert
 new_name: host.cpu.utilization
 operations:
   ...
 ```
 
-### Rename Metric
+### Rename metric
 ```yaml
-# rename system.cpu.usage to cpu/usage_time
-metric_name: system.cpu.usage
+# rename system.cpu.usage to system.cpu.usage_time
+include: system.cpu.usage
 action: update
-new_name: cpu/usage_time
+new_name: system.cpu.usage_time
 ```
 
-### Rename Labels
+### Rename multiple metrics using Substitution
 ```yaml
-# rename the label cpu to core
+# rename all system.cpu metrics to system.processor.*
+include: ^system\.cpu\.(.*)$
+match_type: regexp
+action: update
+new_name: system.processor.$1
+```
+
+### Add a label
+```yaml
+# for system.cpu.usage_time, add label `version` with value `opentelemetry collector vX.Y.Z` to all points
+include: system.cpu.usage
+action: update
+operations:
+  - action: add_label
+    new_label: version
+    new_value: opentelemetry collector {{version}}
+```
+
+### Add a label to multiple metrics
+```yaml
+# for all system metrics, add label `version` with value `opentelemetry collector vX.Y.Z` to all points
+include: ^system\.
+match_type: regexp
+action: update
+operations:
+  - action: add_label
+    new_label: version
+    new_value: opentelemetry collector {{version}}
+```
+
+### Rename labels
+```yaml
+# for system.cpu.usage_time, rename the label state to cpu_state
+include: system.cpu.usage
+action: update
 operations:
   - action: update_label
-    label: cpu
-    new_label: core
+    label: state
+    new_label: cpu_state
 ```
 
-### Rename Label Values
+### Rename labels for multiple metrics
+```yaml
+# for all system.cpu metrics, rename the label state to cpu_state
+include: ^system\.cpu\.
+action: update
+operations:
+  - action: update_label
+    label: state
+    new_label: cpu_state
+```
+
+### Rename label values
 ```yaml
 # rename the label value slab_reclaimable to sreclaimable, slab_unreclaimable to sunreclaimable
+include: system.memory.usage
+action: update
 operations:
   - action: update_label
     label: state
@@ -99,52 +167,46 @@ operations:
         new_value: sunreclaimable
 ```
 
-### Aggregate Labels
+### Delete label value
 ```yaml
-# aggregate away everything but `state` using summation
-...
+# delete the label value 'idle' of the label 'state'
+include: system.cpu.usage
+action: update
+operation:
+  - action: delete_label_value
+    label: state
+    label_value: idle
+```
+
+### Toggle datatype
+```yaml
+# toggle the datatype of cpu usage from int (the default) to double
+include: system.cpu.usage
+action: update
+operation:
+  - action: toggle_scalar_data_type
+```
+
+### Aggregate labels
+```yaml
+# aggregate away all labels except `state` using summation
+include: system.cpu.usage
+action: update
 operations:
   - action: aggregate_labels
     label_set: [ state ]
     aggregation_type: sum
 ```
 
-### Aggregate Label Values
+### Aggregate label values
 ```yaml
-# combine slab_reclaimable & slab_unreclaimable by summation
-...
+# aggregate data points with state label value slab_reclaimable & slab_unreclaimable using summation into slab
+include: system.memory.usage
+action: update
 operations:
   - action: aggregate_label_values
     label: state
     aggregated_values: [ slab_reclaimable, slab_unreclaimable ]
     new_value: slab 
     aggregation_type: sum
-```
-
-### Add a label to an existing metric
-```yaml
-...
-# add label `version` with value `opentelemetry collector vX.Y.Z` to all points
-operations:
-  - action: add_label
-    new_label: version
-    new_value: opentelemetry collector {{version}}
-```
-
-### Toggle Datatype
-```yaml
-# toggle the datatype for the metric system.cpu.usage
-...
-operation:
-  - action: toggle_scalar_data_type
-```
-
-### Delete Label Value
-```yaml
-# delete the label value 'value' of the label 'label'
-...
-operation:
-  - action: delete_label_value
-    label: label
-    label_value: value
 ```

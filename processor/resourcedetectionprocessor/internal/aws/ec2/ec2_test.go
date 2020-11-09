@@ -93,10 +93,10 @@ func TestDetector_Detect(t *testing.T) {
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
 				res := pdata.NewResource()
-				res.InitEmpty()
 				attr := res.Attributes()
 				attr.InsertString("cloud.account.id", "account1234")
 				attr.InsertString("cloud.provider", "aws")
+				attr.InsertString("cloud.infrastructure_service", "EC2")
 				attr.InsertString("cloud.region", "us-west-2")
 				attr.InsertString("cloud.zone", "us-west-2a")
 				attr.InsertString("host.id", "i-abcd1234")
@@ -114,9 +114,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: false},
 		{
@@ -128,9 +126,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: true},
 		{
@@ -143,9 +139,7 @@ func TestDetector_Detect(t *testing.T) {
 			}},
 			args: args{ctx: context.Background()},
 			want: func() pdata.Resource {
-				res := pdata.NewResource()
-				res.InitEmpty()
-				return res
+				return pdata.NewResource()
 			}(),
 			wantErr: true},
 	}
@@ -161,7 +155,6 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				require.False(t, got.IsNil())
 				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
 			}
 		})

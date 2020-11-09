@@ -4,7 +4,7 @@ receivers:
 processors:
     metricstransform:
         transforms:
-            - metric_name: old_name
+            - include: old_name
               action: update
               new_name: new_name
               operations:
@@ -24,13 +24,13 @@ processors:
                   aggregation_type: sum
     metricstransform/addlabel:
       transforms:
-        - metric_name: some_name
+        - include: some_name
+          match_type: regexp
           action: update
           operations:
             - action: add_label
               new_label: mylabel
               new_value: myvalue
-            
 
 exporters:
     exampleexporter:

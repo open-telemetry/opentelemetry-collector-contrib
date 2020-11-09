@@ -35,7 +35,6 @@ func TestTrackerAddSpans(t *testing.T) {
 	traces := pdata.NewTraces()
 	spans := pdata.NewResourceSpans()
 	spans.InitEmpty()
-	spans.Resource().InitEmpty()
 	attr := spans.Resource().Attributes()
 	attr.InsertString("host.name", "localhost")
 	traces.ResourceSpans().Append(spans)

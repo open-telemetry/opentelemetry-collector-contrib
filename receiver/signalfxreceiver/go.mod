@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.6.1
-	go.opencensus.io v0.22.4
-	go.opentelemetry.io/collector v0.13.1-0.20201029180312-7ddd2428e51e
+	go.opencensus.io v0.22.5
+	go.opentelemetry.io/collector v0.14.1-0.20201106183657-c6b8f28c60b5
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
 )

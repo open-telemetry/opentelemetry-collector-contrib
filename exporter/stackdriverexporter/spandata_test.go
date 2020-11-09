@@ -21,10 +21,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
-	"google.golang.org/grpc/codes"
 )
 
 func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
@@ -54,7 +54,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 
 	status := pdata.NewSpanStatus()
 	status.InitEmpty()
-	status.SetCode(13)
+	status.SetCode(pdata.StatusCodeError)
 	status.SetMessage("This is not a drill!")
 	status.CopyTo(span.Status())
 
@@ -87,7 +87,6 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 		"namespace": pdata.NewAttributeValueString("kube-system"),
 	}).CopyTo(resource.Attributes())
@@ -150,7 +149,7 @@ func TestPDataResourceSpansToOTSpanData_endToEnd(t *testing.T) {
 				Attributes: []label.KeyValue{},
 			},
 		},
-		StatusCode:    codes.Internal,
+		StatusCode:    codes.Error,
 		StatusMessage: "This is not a drill!",
 		Attributes: []label.KeyValue{
 			label.String("namespace", "kube-system"),

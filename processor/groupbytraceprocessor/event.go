@@ -208,6 +208,8 @@ func (em *eventMachine) shutdown() {
 	em.closed = true
 	em.shutdownLock.Unlock()
 
+	done := make(chan struct{})
+
 	// we never return an error here
 	ok, _ := doWithTimeout(em.shutdownTimeout, func() error {
 		for {
@@ -215,8 +217,16 @@ func (em *eventMachine) shutdown() {
 				return nil
 			}
 			time.Sleep(100 * time.Millisecond)
+
+			// Do not leak goroutine
+			select {
+			case <-done:
+				return nil
+			default:
+			}
 		}
 	})
+	close(done)
 
 	if !ok {
 		em.logger.Info("forcing the shutdown of the event manager", zap.Int("pending-events", len(em.events)))
@@ -254,7 +264,7 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 // doWithTimeout wraps a function in a timeout, returning whether it succeeded before timing out.
 // If the function returns an error within the timeout, it's considered as succeeded and the error will be returned back to the caller.
 func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
-	done := make(chan error)
+	done := make(chan error, 1)
 	go func() {
 		done <- do()
 	}()

@@ -498,7 +498,8 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"k2": pdata.NewAttributeValueString("v2"),
 	})
 
-	propMap := pdata.NewAttributeMap()
+	propMapVal := pdata.NewAttributeValueMap()
+	propMap := propMapVal.MapVal()
 	propMap.InitFromMap(map[string]pdata.AttributeValue{
 		"env":      pdata.NewAttributeValueString("prod"),
 		"isActive": pdata.NewAttributeValueBool(true),
@@ -506,8 +507,6 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 		"temp":     pdata.NewAttributeValueDouble(40.5),
 	})
 	propMap.Sort()
-	propMapVal := pdata.NewAttributeValueMap()
-	propMapVal.SetMapVal(propMap)
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 	attrs.Insert("com.splunk.signalfx.event_category", pdata.NewAttributeValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
 
@@ -515,7 +514,6 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 
 	out := pdata.NewResourceLogs()
 	out.InitEmpty()
-	out.Resource().InitEmpty()
 	out.InstrumentationLibraryLogs().Resize(1)
 	out.InstrumentationLibraryLogs().At(0).InitEmpty()
 	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
@@ -631,7 +629,6 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 
 		if includeToken {
 			res := out.Resource()
-			res.InitEmpty()
 			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out

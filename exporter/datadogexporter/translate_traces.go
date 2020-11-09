@@ -70,11 +70,6 @@ var statusCodes = map[int32]codeDetails{
 
 // converts Traces into an array of datadog trace payloads grouped by env
 func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload, error) {
-	// get hostname tag
-	// this is getting abstracted out to config
-	// TODO pass logger here once traces code stabilizes
-	hostname := *metadata.GetHost(zap.NewNop(), cfg)
-
 	// TODO:
 	// do we apply other global tags, like version+service, to every span or only root spans of a service
 	// should globalTags['service'] take precedence over a trace's resource.service.name? I don't believe so, need to confirm
@@ -89,7 +84,13 @@ func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload
 			continue
 		}
 
-		// TODO: Also pass in globalTags here when we know what to do with them
+		// TODO pass logger here once traces code stabilizes
+		hostname := *metadata.GetHost(zap.NewNop(), cfg)
+		resHostname, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
+		if ok {
+			hostname = resHostname
+		}
+
 		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
 		if err != nil {
 			return traces, err
@@ -143,7 +144,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		Transactions: []*pb.Span{},
 	}
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return payload, nil
 	}
 
@@ -213,19 +214,26 @@ func spanToDatadogSpan(s pdata.Span,
 	datadogTags map[string]string,
 	cfg *config.Config,
 ) (*pb.Span, error) {
+
+	tags := aggregateSpanTags(s, datadogTags)
+
 	// otel specification resource service.name takes precedence
 	// and configuration DD_ENV as fallback if it exists
 	if serviceName == "" && cfg.Service != "" {
 		serviceName = cfg.Service
 	}
 
-	version := cfg.Version
-	tags := aggregateSpanTags(s, datadogTags)
+	//  canonical resource attribute version should override others if it exists
+	if rsTagVersion := tags[conventions.AttributeServiceVersion]; rsTagVersion != "" {
+		tags[versionTag] = rsTagVersion
+	} else {
+		version := cfg.Version
 
-	// if no version tag exists, set it if provided via config
-	if version != "" {
-		if tagVersion := tags[versionTag]; tagVersion == "" {
-			tags[versionTag] = version
+		// if no version tag exists, set it if provided via config
+		if version != "" {
+			if tagVersion := tags[versionTag]; tagVersion == "" {
+				tags[versionTag] = version
+			}
 		}
 	}
 
@@ -306,10 +314,6 @@ func resourceToDatadogServiceNameAndAttributeMap(
 ) (serviceName string, datadogTags map[string]string) {
 
 	datadogTags = make(map[string]string)
-	if resource.IsNil() {
-		return tracetranslator.ResourceNoServiceName, datadogTags
-	}
-
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
 		return tracetranslator.ResourceNoServiceName, datadogTags

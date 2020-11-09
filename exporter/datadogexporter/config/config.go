@@ -54,10 +54,6 @@ func (api *APIConfig) GetCensoredKey() string {
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
-	// Namespace is the namespace under which the metrics are sent
-	// By default metrics are not namespaced
-	Namespace string `mapstructure:"namespace"`
-
 	// Buckets states whether to report buckets from distribution metrics
 	Buckets bool `mapstructure:"report_buckets"`
 
@@ -137,11 +133,6 @@ func (c *Config) OnceMetadata() *sync.Once {
 
 // Sanitize tries to sanitize a given configuration
 func (c *Config) Sanitize() error {
-	// Add '.' at the end of namespace
-	if c.Metrics.Namespace != "" && !strings.HasSuffix(c.Metrics.Namespace, ".") {
-		c.Metrics.Namespace = c.Metrics.Namespace + "."
-	}
-
 	if c.TagsConfig.Env == "" {
 		c.TagsConfig.Env = "none"
 	}

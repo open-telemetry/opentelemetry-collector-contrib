@@ -21,11 +21,11 @@ import (
 
 	"go.opentelemetry.io/collector/consumer/pdata"
 	apitrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
 	export "go.opentelemetry.io/otel/sdk/export/trace"
 	"go.opentelemetry.io/otel/sdk/instrumentation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-	"google.golang.org/grpc/codes"
 )
 
 var errNilSpan = errors.New("expected a non-nil span")
@@ -89,7 +89,7 @@ func pdataSpanToOTSpanData(
 		}
 	}
 	if status := span.Status(); !status.IsNil() {
-		sd.StatusCode = pdataStatusCodeToGRPCCode(status.Code())
+		sd.StatusCode = pdataStatusCodeToOTCode(status.Code())
 		sd.StatusMessage = status.Message()
 	}
 
@@ -115,8 +115,15 @@ func pdataSpanKindToOTSpanKind(k pdata.SpanKind) apitrace.SpanKind {
 	}
 }
 
-func pdataStatusCodeToGRPCCode(c pdata.StatusCode) codes.Code {
-	return codes.Code(c)
+func pdataStatusCodeToOTCode(c pdata.StatusCode) codes.Code {
+	switch c {
+	case pdata.StatusCodeOk:
+		return codes.Ok
+	case pdata.StatusCodeError:
+		return codes.Error
+	default:
+		return codes.Unset
+	}
 }
 
 func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Resource) []label.KeyValue {
@@ -138,9 +145,7 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 			}
 		})
 	}
-	if !resource.IsNil() {
-		appendAttrs(resource.Attributes())
-	}
+	appendAttrs(resource.Attributes())
 	appendAttrs(attrs)
 	return otAttrs
 }

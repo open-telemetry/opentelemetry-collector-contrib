@@ -88,13 +88,13 @@ func NewResourceSpansData(mockTraceID [16]byte, mockSpanID [8]byte, mockParentSp
 	}).CopyTo(span.Attributes())
 
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 
 	if resourceEnvAndService {
 		pdata.NewAttributeMap().InitFromMap(map[string]pdata.AttributeValue{
 			"namespace":              pdata.NewAttributeValueString("kube-system"),
 			"service.name":           pdata.NewAttributeValueString("test-resource-service-name"),
 			"deployment.environment": pdata.NewAttributeValueString("test-env"),
+			"service.version":        pdata.NewAttributeValueString("test-version"),
 		}).CopyTo(resource.Attributes())
 
 	} else {
@@ -142,7 +142,6 @@ func TestConvertToDatadogTdNoResourceSpans(t *testing.T) {
 
 func TestObfuscation(t *testing.T) {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"service.name": pdata.NewAttributeValueString("sure"),
 	})
@@ -162,9 +161,7 @@ func TestObfuscation(t *testing.T) {
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	r := rs.Resource()
-	r.InitEmpty()
-	resource.CopyTo(r)
+	resource.CopyTo(rs.Resource())
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ilss := rs.InstrumentationLibrarySpans().At(0)
 	instrumentationLibrary.CopyTo(ilss.InstrumentationLibrary())
@@ -263,7 +260,13 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 	rs := NewResourceSpansData(mockTraceID, mockSpanID, mockParentSpanID, true, true)
 
 	// translate mocks to datadog traces
-	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &config.Config{})
+	cfg := config.Config{
+		TagsConfig: config.TagsConfig{
+			Version: "v1",
+		},
+	}
+
+	datadogPayload, err := resourceSpansToDatadogSpans(rs, hostname, &cfg)
 
 	if err != nil {
 		t.Fatalf("Failed to convert from pdata ResourceSpans to pb.TracePayload: %v", err)
@@ -284,7 +287,11 @@ func TestTracesTranslationErrorsAndResource(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
-	assert.Equal(t, 12, len(datadogPayload.Traces[0].Spans[0].Meta))
+
+	// ensure that version gives resource service.version priority
+	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the datadog span uses the configured unified service tags
@@ -329,8 +336,11 @@ func TestTracesTranslationConfig(t *testing.T) {
 
 	// ensure that env gives resource deployment.environment priority
 	assert.Equal(t, "test-env", datadogPayload.Env)
-	assert.Equal(t, 13, len(datadogPayload.Traces[0].Spans[0].Meta))
-	assert.Equal(t, "v1", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
+	// ensure that version gives resource service.version priority
+	assert.Equal(t, "test-version", datadogPayload.Traces[0].Spans[0].Meta["version"])
+
+	assert.Equal(t, 14, len(datadogPayload.Traces[0].Spans[0].Meta))
 }
 
 // ensure that the translation returns early if no resource instrumentation library spans

@@ -46,10 +46,9 @@ func NewDetector() (internal.Detector, error) {
 }
 
 // Records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
-// TODO: Replace all attribute fields and enums with values defined in "conventions" once they exist
+// TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	tmde := getTmdeFromEnv()
 
@@ -71,10 +70,6 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	attr.InsertString("aws.ecs.task.arn", tmdeResp.TaskARN)
 	attr.InsertString("aws.ecs.task.family", tmdeResp.Family)
 
-	// TMDE returns the the short name or ARN, so we need to parse out the short name from ARN if applicable
-	cluster := parseCluster(tmdeResp.Cluster)
-	attr.InsertString("aws.ecs.cluster", cluster)
-
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
 		attr.InsertString(conventions.AttributeCloudAccount, account)
@@ -84,6 +79,9 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 		attr.InsertString(conventions.AttributeCloudRegion, region)
 	}
 
+	// TMDE returns the the cluster short name or ARN, so we need to construct the ARN if necessary
+	attr.InsertString("aws.ecs.cluster.arn", constructClusterArn(tmdeResp.Cluster, region, account))
+
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
 		attr.InsertString(conventions.AttributeCloudZone, tmdeResp.AvailabilityZone)
@@ -92,10 +90,10 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.InsertString("aws.ecs.launchtype", "EC2")
+		attr.InsertString("aws.ecs.launchtype", "ec2")
 
 	case "fargate":
-		attr.InsertString("aws.ecs.launchtype", "Fargate")
+		attr.InsertString("aws.ecs.launchtype", "fargate")
 	}
 
 	selfMetaData, err := d.provider.fetchContainerMetaData(tmde)
@@ -107,10 +105,8 @@ func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	logAttributes := [4]string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
 
 	for i, attribVal := range getValidLogData(tmdeResp.Containers, selfMetaData, account) {
-		if attribVal.Len() > 0 {
-			ava := pdata.NewAttributeValueArray()
-			ava.SetArrayVal(attribVal)
-			attr.Insert(logAttributes[i], ava)
+		if attribVal.ArrayVal().Len() > 0 {
+			attr.Insert(logAttributes[i], attribVal)
 		}
 	}
 
@@ -126,13 +122,13 @@ func getTmdeFromEnv() string {
 	return tmde
 }
 
-func parseCluster(cluster string) string {
-	i := bytes.IndexByte([]byte(cluster), byte('/'))
-	if i != -1 {
-		return cluster[i+1:]
+func constructClusterArn(cluster, region, account string) string {
+	// If cluster is already an ARN, return it
+	if bytes.IndexByte([]byte(cluster), byte(':')) != -1 {
+		return cluster
 	}
 
-	return cluster
+	return fmt.Sprintf("arn:aws:ecs:%s:%s:cluster/%s", region, account, cluster)
 }
 
 // Parses the AWS Account ID and AWS Region from a task ARN
@@ -150,11 +146,11 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // "init" containers which only run at startup then shutdown (as indicated by the "KnownStatus" attribute),
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
-func getValidLogData(containers []Container, self *Container, account string) [4]pdata.AnyValueArray {
-	logGroupNames := pdata.NewAnyValueArray()
-	logGroupArns := pdata.NewAnyValueArray()
-	logStreamNames := pdata.NewAnyValueArray()
-	logStreamArns := pdata.NewAnyValueArray()
+func getValidLogData(containers []Container, self *Container, account string) [4]pdata.AttributeValue {
+	logGroupNames := pdata.NewAttributeValueArray()
+	logGroupArns := pdata.NewAttributeValueArray()
+	logStreamNames := pdata.NewAttributeValueArray()
+	logStreamArns := pdata.NewAttributeValueArray()
 
 	for _, container := range containers {
 		logData := container.LogOptions
@@ -164,14 +160,14 @@ func getValidLogData(containers []Container, self *Container, account string) [4
 			self.DockerID != container.DockerID &&
 			logData != (LogData{}) {
 
-			logGroupNames.Append(pdata.NewAttributeValueString(logData.LogGroup))
-			logGroupArns.Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
-			logStreamNames.Append(pdata.NewAttributeValueString(logData.Stream))
-			logStreamArns.Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
+			logGroupNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.LogGroup))
+			logGroupArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogGroupArn(logData.Region, account, logData.LogGroup)))
+			logStreamNames.ArrayVal().Append(pdata.NewAttributeValueString(logData.Stream))
+			logStreamArns.ArrayVal().Append(pdata.NewAttributeValueString(constructLogStreamArn(logData.Region, account, logData.LogGroup, logData.Stream)))
 		}
 	}
 
-	return [4]pdata.AnyValueArray{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
+	return [4]pdata.AttributeValue{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
 }
 
 func constructLogGroupArn(region, account, group string) string {

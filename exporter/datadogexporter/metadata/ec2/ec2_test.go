@@ -17,7 +17,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/translator/conventions"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/testutils"
 )
 
 const (
@@ -49,4 +52,15 @@ func TestGetHostname(t *testing.T) {
 		EC2Hostname: customHost,
 	}
 	assert.Equal(t, customHost, hostInfo.GetHostname(logger))
+}
+
+func TestHostnameFromAttributes(t *testing.T) {
+	attrs := testutils.NewAttributeMap(map[string]string{
+		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+		conventions.AttributeHostID:        testInstanceID,
+		conventions.AttributeHostName:      testIP,
+	})
+	hostname, ok := HostnameFromAttributes(attrs)
+	assert.True(t, ok)
+	assert.Equal(t, hostname, testInstanceID)
 }

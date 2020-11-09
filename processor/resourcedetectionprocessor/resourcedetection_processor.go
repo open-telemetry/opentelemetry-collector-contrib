@@ -30,7 +30,7 @@ type resourceDetectionProcessor struct {
 }
 
 // Start is invoked during service startup.
-func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component.Host) error {
+func (rdp *resourceDetectionProcessor) Start(ctx context.Context, _ component.Host) error {
 	var err error
 	rdp.resource, err = rdp.provider.Get(ctx)
 	return err
@@ -41,10 +41,6 @@ func (rdp *resourceDetectionProcessor) ProcessTraces(_ context.Context, td pdata
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		res := rs.At(i).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
-
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return td, nil
@@ -55,10 +51,6 @@ func (rdp *resourceDetectionProcessor) ProcessMetrics(_ context.Context, md pdat
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		res := rm.At(i).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
-
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return md, nil
@@ -69,10 +61,6 @@ func (rdp *resourceDetectionProcessor) ProcessLogs(_ context.Context, ld pdata.L
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		res := rls.At(i).Resource()
-		if res.IsNil() {
-			res.InitEmpty()
-		}
-
 		internal.MergeResource(res, rdp.resource, rdp.override)
 	}
 	return ld, nil

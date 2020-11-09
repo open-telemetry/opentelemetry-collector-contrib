@@ -18,6 +18,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 // DatadogServerMock mocks a Datadog backend server
@@ -54,4 +56,17 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write(resJSON)
+}
+
+// NewAttributeMap creates a new attribute map (string only)
+// from a Go map
+func NewAttributeMap(mp map[string]string) pdata.AttributeMap {
+	attrs := pdata.NewAttributeMap()
+	attrs.InitEmptyWithCapacity(len(mp))
+
+	for k, v := range mp {
+		attrs.Insert(k, pdata.NewAttributeValueString(v))
+	}
+
+	return attrs
 }
