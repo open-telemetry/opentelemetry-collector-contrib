@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
 
-go 1.15
+go 1.14
 
 require (
 	github.com/stretchr/testify v1.6.1
