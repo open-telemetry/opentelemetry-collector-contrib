@@ -45,8 +45,6 @@ func NewDetector() (internal.Detector, error) {
 
 func (d *Detector) Detect(ctx context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
-
 	if !d.provider.available(ctx) {
 		return res, nil
 	}

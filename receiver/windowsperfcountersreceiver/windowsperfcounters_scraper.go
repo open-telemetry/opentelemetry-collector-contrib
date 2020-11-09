@@ -58,17 +58,29 @@ func (s *scraper) initialize(ctx context.Context) error {
 	var errors []error
 
 	for _, perfCounterCfg := range s.cfg.PerfCounters {
-		for _, counterName := range perfCounterCfg.Counters {
-			c, err := pdh.NewPerfCounter(fmt.Sprintf("\\%s\\%s", perfCounterCfg.Object, counterName), true)
-			if err != nil {
-				errors = append(errors, err)
-			} else {
-				s.counters = append(s.counters, c)
+		for _, instance := range perfCounterCfg.instances() {
+			for _, counterName := range perfCounterCfg.Counters {
+				counterPath := counterPath(perfCounterCfg.Object, instance, counterName)
+
+				c, err := pdh.NewPerfCounter(counterPath, true)
+				if err != nil {
+					errors = append(errors, fmt.Errorf("error initializing counter %v: %w", counterPath, err))
+				} else {
+					s.counters = append(s.counters, c)
+				}
 			}
 		}
 	}
 
 	return componenterror.CombineErrors(errors)
+}
+
+func counterPath(object, instance, counterName string) string {
+	if instance != "" {
+		instance = fmt.Sprintf("(%s)", instance)
+	}
+
+	return fmt.Sprintf("\\%s%s\\%s", object, instance, counterName)
 }
 
 func (s *scraper) close(ctx context.Context) error {

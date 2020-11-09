@@ -514,7 +514,6 @@ func makeSampleResourceLogs() pdata.ResourceLogs {
 
 	out := pdata.NewResourceLogs()
 	out.InitEmpty()
-	out.Resource().InitEmpty()
 	out.InstrumentationLibraryLogs().Resize(1)
 	out.InstrumentationLibraryLogs().At(0).InitEmpty()
 	logSlice.MoveAndAppendTo(out.InstrumentationLibraryLogs().At(0).Logs())
@@ -630,7 +629,6 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 
 		if includeToken {
 			res := out.Resource()
-			res.InitEmpty()
 			res.Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out

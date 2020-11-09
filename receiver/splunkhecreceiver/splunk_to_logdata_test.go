@@ -162,7 +162,6 @@ func createLogsSlice(body string, nanoseconds int) pdata.ResourceLogsSlice {
 	lrs.Resize(1)
 	lr := lrs.At(0)
 	lr.InitEmpty()
-	lr.Resource().InitEmpty()
 	logRecord := pdata.NewLogRecord()
 	logRecord.InitEmpty()
 

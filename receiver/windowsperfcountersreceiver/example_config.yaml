@@ -9,6 +9,14 @@ receivers:
       - object: "Memory"
         counters:
           - "Committed Bytes"
+      - object: "Processor"
+        instances: "*"
+        counters:
+          - "% Processor Time"
+      - object: "Processor"
+        instances: [1, 2]
+        counters:
+          - "% Idle Time"
 
 exporters:
   logging:

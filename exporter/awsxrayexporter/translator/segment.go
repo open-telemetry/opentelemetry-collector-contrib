@@ -142,7 +142,7 @@ func MakeSegment(span pdata.Span, resource pdata.Resource, indexedAttrs []string
 		}
 	}
 
-	if name == "" && span.Kind() == pdata.SpanKindSERVER && !resource.IsNil() {
+	if name == "" && span.Kind() == pdata.SpanKindSERVER {
 		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(semconventions.AttributeServiceName); ok {
 			name = service.StringVal()
@@ -221,7 +221,7 @@ func newSegmentID() pdata.SpanID {
 }
 
 func determineAwsOrigin(resource pdata.Resource) string {
-	if resource.IsNil() {
+	if resource.Attributes().Len() == 0 {
 		return ""
 	}
 

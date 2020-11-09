@@ -84,6 +84,7 @@ func TestLoadConfig_Error(t *testing.T) {
 		noPerfCountersErr             = "must specify at least one perf counter"
 		noObjectNameErr               = "must specify object name for all perf counters"
 		noCountersErr                 = `perf counter for object "%s" does not specify any counters`
+		emptyInstanceErr              = `perf counter for object "%s" includes an empty instance`
 	)
 
 	testCases := []testCase{
@@ -108,9 +109,21 @@ func TestLoadConfig_Error(t *testing.T) {
 			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(noCountersErr, "object")),
 		},
 		{
-			name:        "AllErrors",
-			cfgFile:     "config-allerrors.yaml",
-			expectedErr: fmt.Sprintf("%s: [%s; %s; %s]", errorPrefix, negativeCollectionIntervalErr, fmt.Sprintf(noCountersErr, "object"), noObjectNameErr),
+			name:        "EmptyInstance",
+			cfgFile:     "config-emptyinstance.yaml",
+			expectedErr: fmt.Sprintf("%s: %s", errorPrefix, fmt.Sprintf(emptyInstanceErr, "object")),
+		},
+		{
+			name:    "AllErrors",
+			cfgFile: "config-allerrors.yaml",
+			expectedErr: fmt.Sprintf(
+				"%s: [%s; %s; %s; %s]",
+				errorPrefix,
+				negativeCollectionIntervalErr,
+				fmt.Sprintf(emptyInstanceErr, "object"),
+				fmt.Sprintf(noCountersErr, "object"),
+				noObjectNameErr,
+			),
 		},
 	}
 

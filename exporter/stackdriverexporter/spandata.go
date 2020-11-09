@@ -145,9 +145,7 @@ func pdataAttributesToOTAttributes(attrs pdata.AttributeMap, resource pdata.Reso
 			}
 		})
 	}
-	if !resource.IsNil() {
-		appendAttrs(resource.Attributes())
-	}
+	appendAttrs(resource.Attributes())
 	appendAttrs(attrs)
 	return otAttrs
 }

@@ -86,11 +86,9 @@ func ConvertToDatadogTd(td pdata.Traces, cfg *config.Config) ([]*pb.TracePayload
 
 		// TODO pass logger here once traces code stabilizes
 		hostname := *metadata.GetHost(zap.NewNop(), cfg)
-		if !rs.Resource().IsNil() {
-			resHostname, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
-			if ok {
-				hostname = resHostname
-			}
+		resHostname, ok := metadata.HostnameFromAttributes(rs.Resource().Attributes())
+		if ok {
+			hostname = resHostname
 		}
 
 		payload, err := resourceSpansToDatadogSpans(rs, hostname, cfg)
@@ -146,7 +144,7 @@ func resourceSpansToDatadogSpans(rs pdata.ResourceSpans, hostname string, cfg *c
 		Transactions: []*pb.Span{},
 	}
 
-	if resource.IsNil() && ilss.Len() == 0 {
+	if resource.Attributes().Len() == 0 && ilss.Len() == 0 {
 		return payload, nil
 	}
 
@@ -316,10 +314,6 @@ func resourceToDatadogServiceNameAndAttributeMap(
 ) (serviceName string, datadogTags map[string]string) {
 
 	datadogTags = make(map[string]string)
-	if resource.IsNil() {
-		return tracetranslator.ResourceNoServiceName, datadogTags
-	}
-
 	attrs := resource.Attributes()
 	if attrs.Len() == 0 {
 		return tracetranslator.ResourceNoServiceName, datadogTags

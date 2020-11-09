@@ -3,7 +3,8 @@ receivers:
     collection_interval: -1m
     perfcounters:
       - 
-      - Object: "object"
+      - object: "object"
+        instances: [ "instance", "", "*" ]
 
 processors:
   exampleprocessor:
