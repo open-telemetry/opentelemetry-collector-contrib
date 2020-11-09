@@ -389,6 +389,9 @@ func TestForceShutdown(t *testing.T) {
 
 	// verify
 	assert.True(t, duration > 20*time.Millisecond)
+
+	// wait for shutdown goroutine to end
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestDoWithTimeout(t *testing.T) {
@@ -396,13 +399,15 @@ func TestDoWithTimeout(t *testing.T) {
 	start := time.Now()
 
 	// test
-	doWithTimeout(10*time.Millisecond, func() error {
-		time.Sleep(20 * time.Second)
+	done := make(chan struct{})
+	doWithTimeout(5*time.Millisecond, func() error {
+		<-done
 		return nil
 	})
+	close(done)
 
 	// verify
-	assert.WithinDuration(t, start, time.Now(), 20*time.Millisecond)
+	assert.WithinDuration(t, start, time.Now(), 10*time.Millisecond)
 }
 
 func assertGauge(t *testing.T, expected int, gauge *stats.Int64Measure) {
