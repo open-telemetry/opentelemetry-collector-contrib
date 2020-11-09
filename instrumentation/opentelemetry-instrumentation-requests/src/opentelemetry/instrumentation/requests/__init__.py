@@ -64,7 +64,7 @@ _SUPPRESS_REQUESTS_INSTRUMENTATION_KEY = "suppress_requests_instrumentation"
 
 # pylint: disable=unused-argument
 # pylint: disable=R0915
-def _instrument(tracer_provider=None, span_callback=None, name_callback=get_default_span_name):
+def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
     """Enables tracing of all requests calls that go through
     :code:`requests.session.Session.request` (this includes
     :code:`requests.get`, etc.)."""
@@ -124,7 +124,11 @@ def _instrument(tracer_provider=None, span_callback=None, name_callback=get_defa
         # See
         # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-client
         method = method.upper()
-        span_name = name_callback(method, url)
+        span_name = ""
+        if name_callback:
+            span_name = name_callback()
+        if not span_name:
+            span_name = get_default_span_name(method)
 
         recorder = RequestsInstrumentor().metric_recorder
 
@@ -217,10 +221,9 @@ def _uninstrument_from(instr_root, restore_as_bound_func=False):
         setattr(instr_root, instr_func_name, original)
 
 
-# pylint: disable=unused-argument
-def get_default_span_name(method_name, url):
+def get_default_span_name(method):
     """Default implementation for name_callback, returns HTTP {method_name}."""
-    return "HTTP {}".format(method_name).strip()
+    return "HTTP {}".format(method).strip()
 
 
 class RequestsInstrumentor(BaseInstrumentor, MetricMixin):

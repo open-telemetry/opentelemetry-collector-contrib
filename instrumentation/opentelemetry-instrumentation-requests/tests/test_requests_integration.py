@@ -110,6 +110,7 @@ class RequestsIntegrationTestBase(abc.ABC):
     def test_name_callback(self):
         def name_callback():
             return "test_name"
+
         RequestsInstrumentor().uninstrument()
         RequestsInstrumentor().instrument(name_callback=name_callback)
         result = self.perform_request(self.URL)
@@ -121,6 +122,7 @@ class RequestsIntegrationTestBase(abc.ABC):
     def test_name_callback_default(self):
         def name_callback():
             return 123
+
         RequestsInstrumentor().uninstrument()
         RequestsInstrumentor().instrument(name_callback=name_callback)
         result = self.perform_request(self.URL)
