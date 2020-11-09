@@ -107,6 +107,28 @@ class RequestsIntegrationTestBase(abc.ABC):
                 self.assertEqual(view_data.aggregator.current.count, 1)
                 self.assertGreaterEqual(view_data.aggregator.current.sum, 0)
 
+    def test_name_callback(self):
+        def name_callback():
+            return "test_name"
+        RequestsInstrumentor().uninstrument()
+        RequestsInstrumentor().instrument(name_callback=name_callback)
+        result = self.perform_request(self.URL)
+        self.assertEqual(result.text, "Hello!")
+        span = self.assert_span()
+
+        self.assertEqual(span.name, "test_name")
+
+    def test_name_callback_default(self):
+        def name_callback():
+            return 123
+        RequestsInstrumentor().uninstrument()
+        RequestsInstrumentor().instrument(name_callback=name_callback)
+        result = self.perform_request(self.URL)
+        self.assertEqual(result.text, "Hello!")
+        span = self.assert_span()
+
+        self.assertEqual(span.name, "HTTP GET")
+
     def test_not_foundbasic(self):
         url_404 = "http://httpbin.org/status/404"
         httpretty.register_uri(
