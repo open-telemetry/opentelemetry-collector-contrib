@@ -17,9 +17,12 @@ package jmxreceiver
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/subprocess"
@@ -28,24 +31,35 @@ import (
 var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
-	logger     *zap.Logger
-	config     *config
-	subprocess *subprocess.Subprocess
+	logger       *zap.Logger
+	config       *config
+	subprocess   *subprocess.Subprocess
+	params       component.ReceiverCreateParams
+	otlpReceiver component.MetricsReceiver
+	nextConsumer consumer.MetricsConsumer
 }
 
 func newJMXMetricReceiver(
-	logger *zap.Logger,
+	params component.ReceiverCreateParams,
 	config *config,
-	consumer consumer.MetricsConsumer,
+	nextConsumer consumer.MetricsConsumer,
 ) *jmxMetricReceiver {
 	return &jmxMetricReceiver{
-		logger: logger,
-		config: config,
+		logger:       params.Logger,
+		params:       params,
+		config:       config,
+		nextConsumer: nextConsumer,
 	}
 }
 
-func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
+func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) (err error) {
 	jmx.logger.Debug("Starting JMX Receiver")
+
+	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
+	if err != nil {
+		return err
+	}
+
 	javaConfig, err := jmx.buildJMXMetricGathererConfig()
 	if err != nil {
 		return err
@@ -57,18 +71,59 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 	}
 
 	jmx.subprocess = subprocess.NewSubprocess(&subprocessConfig, jmx.logger)
+
+	err = jmx.otlpReceiver.Start(ctx, host)
+	if err != nil {
+		return err
+	}
+
 	return jmx.subprocess.Start(context.Background())
 }
 
 func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	jmx.logger.Debug("Shutting down JMX Receiver")
-	return jmx.subprocess.Shutdown(ctx)
+	subprocessErr := jmx.subprocess.Shutdown(ctx)
+	otlpErr := jmx.otlpReceiver.Shutdown(ctx)
+	if subprocessErr != nil {
+		return subprocessErr
+	}
+	return otlpErr
+}
+
+func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
+	endpoint := jmx.config.OTLPExporterConfig.Endpoint
+	host, port, err := net.SplitHostPort(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse OTLPExporterConfig.Endpoint %s: %w", jmx.config.OTLPExporterConfig.Endpoint, err)
+	}
+	if port == "0" {
+		// We need to know the port OTLP receiver will use to specify w/ java properties and not
+		// rely on gRPC server's connection.
+		listener, err := net.Listen("tcp", endpoint)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"failed determining desired port from OTLPExporterConfig.Endpoint %s: %w", jmx.config.OTLPExporterConfig.Endpoint, err,
+			)
+		}
+		defer listener.Close()
+		addr := listener.Addr().(*net.TCPAddr)
+		port = fmt.Sprintf("%d", addr.Port)
+		endpoint = fmt.Sprintf("%s:%s", host, port)
+		jmx.config.OTLPExporterConfig.Endpoint = endpoint
+	}
+
+	factory := otlpreceiver.NewFactory()
+	config := factory.CreateDefaultConfig().(*otlpreceiver.Config)
+	config.GRPC.NetAddr = confignet.NetAddr{Endpoint: endpoint, Transport: "tcp"}
+	config.HTTP = nil
+
+	return factory.CreateMetricsReceiver(context.Background(), jmx.params, config, jmx.nextConsumer)
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
-`, jmx.config.ServiceURL, jmx.config.Interval.Milliseconds())
+`, jmx.config.ServiceURL, jmx.config.CollectionInterval.Milliseconds())
 
 	if jmx.config.TargetSystem != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)
@@ -76,17 +131,10 @@ otel.jmx.interval.milliseconds = %v
 		javaConfig += fmt.Sprintf("otel.jmx.groovy.script = %v\n", jmx.config.GroovyScript)
 	}
 
-	if jmx.config.Exporter == otlpExporter {
-		javaConfig += fmt.Sprintf(`otel.exporter = otlp
+	javaConfig += fmt.Sprintf(`otel.exporter = otlp
 otel.otlp.endpoint = %v
 otel.otlp.metric.timeout = %v
-`, jmx.config.OTLPEndpoint, jmx.config.OTLPTimeout.Milliseconds())
-	} else if jmx.config.Exporter == prometheusExporter {
-		javaConfig += fmt.Sprintf(`otel.exporter = prometheus
-otel.prometheus.host = %v
-otel.prometheus.port = %v
-`, jmx.config.PrometheusHost, jmx.config.PrometheusPort)
-	}
+`, jmx.config.OTLPExporterConfig.Endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
 
 	if jmx.config.Username != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.username = %v\n", jmx.config.Username)
