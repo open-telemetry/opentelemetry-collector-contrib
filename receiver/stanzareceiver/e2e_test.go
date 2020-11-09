@@ -21,7 +21,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -108,10 +107,6 @@ func TestReadStaticFile(t *testing.T) {
 }
 
 func TestReadRotatingFiles(t *testing.T) {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1382
-	if runtime.GOOS == "windows" {
-		t.Skip()
-	}
 
 	tests := []rotationTest{
 		{
