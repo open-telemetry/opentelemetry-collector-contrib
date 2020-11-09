@@ -4,4 +4,3 @@ omit =
     */setup.py
     */gen/*
     reference/*
-    opentelemetry-python-core/*
