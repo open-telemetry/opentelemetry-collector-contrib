@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 )
@@ -31,7 +32,9 @@ import (
 func TestReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	config := &config{
-		OTLPEndpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+		OTLPExporterConfig: otlpExporterConfig{
+			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
+		},
 	}
 
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
@@ -56,8 +59,12 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
-				OTLPEndpoint:       "myotlpendpoint",
-				OTLPTimeout:        234 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
 			},
 			`otel.jmx.service.url = myserviceurl
 otel.jmx.interval.milliseconds = 123000
@@ -73,8 +80,12 @@ otel.otlp.metric.timeout = 234000
 				ServiceURL:         "myserviceurl",
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
-				OTLPEndpoint:       "myotlpendpoint",
-				OTLPTimeout:        234 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
 			},
 			`otel.jmx.service.url = myserviceurl
 otel.jmx.interval.milliseconds = 123000
@@ -104,14 +115,14 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			"missing OTLPEndpoint",
+			"missing OTLPExporterConfig.Endpoint",
 			config{},
-			"failed to parse OTLPEndpoint : missing port in address",
+			"failed to parse OTLPExporterConfig.Endpoint : missing port in address",
 		},
 		{
-			"invalid OTLPEndpoint host with 0 port",
-			config{OTLPEndpoint: ".:0"},
-			"failed determining desired port from OTLPEndpoint .:0: listen tcp: lookup .: no such host",
+			"invalid OTLPExporterConfig.Endpoint host with 0 port",
+			config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
+			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .: no such host",
 		},
 	}
 	for _, test := range tests {

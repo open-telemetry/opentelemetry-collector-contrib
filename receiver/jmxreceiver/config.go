@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 type config struct {
@@ -35,16 +36,12 @@ type config struct {
 	// The duration in between groovy script invocations and metric exports (10 seconds by default).
 	// Will be converted to milliseconds.
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
+	// The exporter settings for
+	OTLPExporterConfig otlpExporterConfig `mapstructure:"otlp"`
 	// The JMX username
 	Username string `mapstructure:"username"`
 	// The JMX password
 	Password string `mapstructure:"password"`
-	// The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
-	OTLPEndpoint string `mapstructure:"otlp_endpoint"`
-	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
-	OTLPTimeout time.Duration `mapstructure:"otlp_timeout"`
-	// The headers to include in OTLP metric submission requests.
-	OTLPHeaders map[string]string `mapstructure:"otlp_headers"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
@@ -61,6 +58,16 @@ type config struct {
 	RemoteProfile string `mapstructure:"remote_profile"`
 	// The SASL/DIGEST-MD5 realm
 	Realm string `mapstructure:"realm"`
+}
+
+// We don't embed the existing OTLP Exporter config as most fields are unsupported
+type otlpExporterConfig struct {
+	// The OTLP Receiver endpoint to send metrics to ("0.0.0.0:<random open port>" by default).
+	Endpoint string `mapstructure:"endpoint"`
+	// The OTLP exporter timeout (5 seconds by default).  Will be converted to milliseconds.
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	// The headers to include in OTLP metric submission requests.
+	Headers map[string]string `mapstructure:"headers"`
 }
 
 func (c *config) validate() error {
@@ -83,8 +90,8 @@ func (c *config) validate() error {
 		return fmt.Errorf("%v `interval` must be positive: %vms", c.Name(), c.CollectionInterval.Milliseconds())
 	}
 
-	if c.OTLPTimeout < 0 {
-		return fmt.Errorf("%v `otlp_timeout` must be positive: %vms", c.Name(), c.OTLPTimeout.Milliseconds())
+	if c.OTLPExporterConfig.Timeout < 0 {
+		return fmt.Errorf("%v `otlp.timeout` must be positive: %vms", c.Name(), c.OTLPExporterConfig.Timeout.Milliseconds())
 	}
 	return nil
 }

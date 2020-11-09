@@ -35,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -142,10 +143,14 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
 		JARPath:            suite.JARPath,
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
-		OTLPEndpoint:       "127.0.0.1:0",
-		OTLPTimeout:        1000 * time.Millisecond,
-		Password:           "cassandra",
-		Username:           "cassandra",
+		OTLPExporterConfig: otlpExporterConfig{
+			Endpoint: "127.0.0.1:0",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 1000 * time.Millisecond,
+			},
+		},
+		Password: "cassandra",
+		Username: "cassandra",
 	}
 
 	consumer := &exportertest.SinkMetricsExporter{}
@@ -211,8 +216,12 @@ func TestJMXReceiverInvalidEndpointIntegration(t *testing.T) {
 		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
-		OTLPEndpoint:       "<invalid>:123",
-		OTLPTimeout:        1000 * time.Millisecond,
+		OTLPExporterConfig: otlpExporterConfig{
+			Endpoint: "<invalid>:123",
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 1000 * time.Millisecond,
+			},
+		},
 	}
 	receiver := newJMXMetricReceiver(params, config, consumertest.NewMetricsNop())
 	require.NotNil(t, receiver)

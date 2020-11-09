@@ -91,10 +91,10 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
-	endpoint := jmx.config.OTLPEndpoint
+	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse OTLPEndpoint %s: %w", jmx.config.OTLPEndpoint, err)
+		return nil, fmt.Errorf("failed to parse OTLPExporterConfig.Endpoint %s: %w", jmx.config.OTLPExporterConfig.Endpoint, err)
 	}
 	if port == "0" {
 		// We need to know the port OTLP receiver will use to specify w/ java properties and not
@@ -102,14 +102,14 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, er
 		listener, err := net.Listen("tcp", endpoint)
 		if err != nil {
 			return nil, fmt.Errorf(
-				"failed determining desired port from OTLPEndpoint %s: %w", jmx.config.OTLPEndpoint, err,
+				"failed determining desired port from OTLPExporterConfig.Endpoint %s: %w", jmx.config.OTLPExporterConfig.Endpoint, err,
 			)
 		}
 		defer listener.Close()
 		addr := listener.Addr().(*net.TCPAddr)
 		port = fmt.Sprintf("%d", addr.Port)
 		endpoint = fmt.Sprintf("%s:%s", host, port)
-		jmx.config.OTLPEndpoint = endpoint
+		jmx.config.OTLPExporterConfig.Endpoint = endpoint
 	}
 
 	factory := otlpreceiver.NewFactory()
@@ -134,7 +134,7 @@ otel.jmx.interval.milliseconds = %v
 	javaConfig += fmt.Sprintf(`otel.exporter = otlp
 otel.otlp.endpoint = %v
 otel.otlp.metric.timeout = %v
-`, jmx.config.OTLPEndpoint, jmx.config.OTLPTimeout.Milliseconds())
+`, jmx.config.OTLPExporterConfig.Endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
 
 	if jmx.config.Username != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.username = %v\n", jmx.config.Username)

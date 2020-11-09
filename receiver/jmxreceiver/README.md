@@ -30,7 +30,8 @@ receivers:
     target_system: jvm
     collection_interval: 10s
     # optional: the same as specifying OTLP receiver endpoint.
-    otlp_endpoint: mycollectorotlpreceiver:55680
+    otlp:
+      endpoint: mycollectorotlpreceiver:55680
     username: my_jmx_username
     # determined by the environment variable value
     password: $MY_JMX_PASSWORD
@@ -82,19 +83,19 @@ The password to use for JMX authentication.
 
 Corresponds to the `otel.jmx.password` property.
 
-### otlp_endpoint (default: `0.0.0.0:<random open port>`)
+### otlp.endpoint (default: `0.0.0.0:<random open port>`)
 
 The otlp exporter endpoint to which to listen and submit metrics.
 
 Corresponds to the `otel.otlp.endpoint` property.
 
-### otlp_timeout (default: `5s`)
+### otlp.timeout (default: `5s`)
 
 The otlp exporter request timeout.
 
 Corresponds to the `otel.otlp.metric.timeout` property.
 
-### otlp_headers
+### otlp.headers
 
 The headers to include in otlp metric submission requests.
 

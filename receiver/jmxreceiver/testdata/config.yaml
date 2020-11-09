@@ -7,11 +7,12 @@ receivers:
     collection_interval: 15s
     username: myusername
     password: mypassword
-    otlp_endpoint: myotlpendpoint
-    otlp_headers:
-      x-header-1: value1
-      x-header-2: value2
-    otlp_timeout: 5s
+    otlp:
+      endpoint: myotlpendpoint
+      headers:
+        x-header-1: value1
+        x-header-2: value2
+      timeout: 5s
     keystore_path: mykeystorepath
     keystore_password: mykeystorepassword
     keystore_type: mykeystoretype
@@ -30,7 +31,8 @@ receivers:
   jmx/invalidotlptimeout:
     service_url: myserviceurl
     groovy_script: mygroovyscriptpath
-    otlp_timeout: -100ms
+    otlp:
+      timeout: -100ms
 
 processors:
   exampleprocessor:

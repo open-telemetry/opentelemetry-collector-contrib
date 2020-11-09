@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
@@ -45,8 +46,12 @@ func createDefaultConfig() configmodels.Receiver {
 		},
 		JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 		CollectionInterval: 10 * time.Second,
-		OTLPEndpoint:       otlpEndpoint,
-		OTLPTimeout:        5 * time.Second,
+		OTLPExporterConfig: otlpExporterConfig{
+			Endpoint: otlpEndpoint,
+			TimeoutSettings: exporterhelper.TimeoutSettings{
+				Timeout: 5 * time.Second,
+			},
+		},
 	}
 }
 
