@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Add span name callback
-  ([#157](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/157))
+  ([#158](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/158))
 
 ## Version 0.15b0
 
