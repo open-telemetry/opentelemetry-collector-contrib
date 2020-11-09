@@ -48,9 +48,9 @@ func (h *testHost) ReportFatalError(err error) {
 var _ component.Host = (*testHost)(nil)
 
 func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
-	var pipelineCfg OperatorConfig
-	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
-	return pipelineCfg
+	var operatorCfg OperatorConfig
+	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfg))
+	return operatorCfg
 }
 
 func expectNLogs(sink *exportertest.SinkLogsExporter, expected int) func() bool {
