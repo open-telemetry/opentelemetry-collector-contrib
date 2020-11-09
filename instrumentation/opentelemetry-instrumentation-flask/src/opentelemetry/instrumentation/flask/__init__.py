@@ -74,6 +74,7 @@ def get_excluded_urls():
 
 _excluded_urls = get_excluded_urls()
 
+
 def get_default_span_name():
     span_name = None
     try:
@@ -81,6 +82,7 @@ def get_default_span_name():
     except AttributeError:
         span_name = otel_wsgi.get_default_span_name(flask.request.environ)
     return span_name
+
 
 def _rewrapped_app(wsgi_app):
     def _wrapped_app(environ, start_response):
@@ -110,6 +112,7 @@ def _rewrapped_app(wsgi_app):
         return wsgi_app(environ, _start_response)
 
     return _wrapped_app
+
 
 def _wrapped_before_request(name_callback):
     def _before_request():
@@ -143,7 +146,9 @@ def _wrapped_before_request(name_callback):
         environ[_ENVIRON_ACTIVATION_KEY] = activation
         environ[_ENVIRON_SPAN_KEY] = span
         environ[_ENVIRON_TOKEN] = token
+
     return _before_request
+
 
 def _teardown_request(exc):
     if _excluded_urls.url_disabled(flask.request.url):
@@ -191,7 +196,9 @@ class FlaskInstrumentor(BaseInstrumentor):
         self._original_flask = flask.Flask
         flask.Flask = _InstrumentedFlask
 
-    def instrument_app(self, app, name_callback=get_default_span_name):  # pylint: disable=no-self-use
+    def instrument_app(
+        self, app, name_callback=get_default_span_name
+    ):  # pylint: disable=no-self-use
         if not hasattr(app, "_is_instrumented"):
             app._is_instrumented = False
 

@@ -179,7 +179,10 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
 
-class TestProgrammaticCustomSpanName(InstrumentationTest, TestBase, WsgiTestBase):
+
+class TestProgrammaticCustomSpanName(
+    InstrumentationTest, TestBase, WsgiTestBase
+):
     def setUp(self):
         super().setUp()
 
@@ -188,7 +191,9 @@ class TestProgrammaticCustomSpanName(InstrumentationTest, TestBase, WsgiTestBase
 
         self.app = Flask(__name__)
 
-        FlaskInstrumentor().instrument_app(self.app, name_callback=custom_span_name)
+        FlaskInstrumentor().instrument_app(
+            self.app, name_callback=custom_span_name
+        )
 
         self._common_initialization()
 
