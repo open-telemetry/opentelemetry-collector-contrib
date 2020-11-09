@@ -137,6 +137,8 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 		switch stat.metric.DataType() {
 		case pdata.MetricDataTypeIntGauge:
 			metrics.AddGaugeDataPoint(stat.metric.Name(), stat.val)
+		case pdata.MetricDataTypeIntSum:
+			metrics.AddSumDataPoint(stat.metric.Name(), stat.val)
 		}
 	}
 	return metrics.ResourceMetrics(), nil
@@ -144,7 +146,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pdata.Resou
 
 func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner) ([]stat, map[string]string) {
 	attributes := make(map[string]string, 2)
-	stats := make([]stat, 0, 14)
+	stats := make([]stat, 0, metricsLen)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := zookeeperFormatRE.FindStringSubmatch(line)

@@ -44,20 +44,23 @@ func (m *metricImpl) New() pdata.Metric {
 }
 
 type metricStruct struct {
-	ZookeeperApproximateDateSize metricIntf
-	ZookeeperConnectionsAlive    metricIntf
-	ZookeeperEphemeralNodes      metricIntf
-	ZookeeperFollowers           metricIntf
-	ZookeeperLatencyAvg          metricIntf
-	ZookeeperLatencyMax          metricIntf
-	ZookeeperLatencyMin          metricIntf
-	ZookeeperMaxFileDescriptors  metricIntf
-	ZookeeperOpenFileDescriptors metricIntf
-	ZookeeperOutstandingRequests metricIntf
-	ZookeeperPendingSyncs        metricIntf
-	ZookeeperSyncedFollowers     metricIntf
-	ZookeeperWatches             metricIntf
-	ZookeeperZnodes              metricIntf
+	ZookeeperApproximateDateSize   metricIntf
+	ZookeeperConnectionsAlive      metricIntf
+	ZookeeperEphemeralNodes        metricIntf
+	ZookeeperFollowers             metricIntf
+	ZookeeperFsyncThresholdExceeds metricIntf
+	ZookeeperLatencyAvg            metricIntf
+	ZookeeperLatencyMax            metricIntf
+	ZookeeperLatencyMin            metricIntf
+	ZookeeperMaxFileDescriptors    metricIntf
+	ZookeeperOpenFileDescriptors   metricIntf
+	ZookeeperOutstandingRequests   metricIntf
+	ZookeeperPacketsReceived       metricIntf
+	ZookeeperPacketsSent           metricIntf
+	ZookeeperPendingSyncs          metricIntf
+	ZookeeperSyncedFollowers       metricIntf
+	ZookeeperWatches               metricIntf
+	ZookeeperZnodes                metricIntf
 }
 
 // Names returns a list of all the metric name strings.
@@ -67,12 +70,15 @@ func (m *metricStruct) Names() []string {
 		"zookeeper.connections_alive",
 		"zookeeper.ephemeral_nodes",
 		"zookeeper.followers",
+		"zookeeper.fsync_threshold_exceeds",
 		"zookeeper.latency.avg",
 		"zookeeper.latency.max",
 		"zookeeper.latency.min",
 		"zookeeper.max_file_descriptors",
 		"zookeeper.open_file_descriptors",
 		"zookeeper.outstanding_requests",
+		"zookeeper.packets.received",
+		"zookeeper.packets.sent",
 		"zookeeper.pending_syncs",
 		"zookeeper.synced_followers",
 		"zookeeper.watches",
@@ -81,20 +87,23 @@ func (m *metricStruct) Names() []string {
 }
 
 var metricsByName = map[string]metricIntf{
-	"zookeeper.approximate_date_size": Metrics.ZookeeperApproximateDateSize,
-	"zookeeper.connections_alive":     Metrics.ZookeeperConnectionsAlive,
-	"zookeeper.ephemeral_nodes":       Metrics.ZookeeperEphemeralNodes,
-	"zookeeper.followers":             Metrics.ZookeeperFollowers,
-	"zookeeper.latency.avg":           Metrics.ZookeeperLatencyAvg,
-	"zookeeper.latency.max":           Metrics.ZookeeperLatencyMax,
-	"zookeeper.latency.min":           Metrics.ZookeeperLatencyMin,
-	"zookeeper.max_file_descriptors":  Metrics.ZookeeperMaxFileDescriptors,
-	"zookeeper.open_file_descriptors": Metrics.ZookeeperOpenFileDescriptors,
-	"zookeeper.outstanding_requests":  Metrics.ZookeeperOutstandingRequests,
-	"zookeeper.pending_syncs":         Metrics.ZookeeperPendingSyncs,
-	"zookeeper.synced_followers":      Metrics.ZookeeperSyncedFollowers,
-	"zookeeper.watches":               Metrics.ZookeeperWatches,
-	"zookeeper.znodes":                Metrics.ZookeeperZnodes,
+	"zookeeper.approximate_date_size":   Metrics.ZookeeperApproximateDateSize,
+	"zookeeper.connections_alive":       Metrics.ZookeeperConnectionsAlive,
+	"zookeeper.ephemeral_nodes":         Metrics.ZookeeperEphemeralNodes,
+	"zookeeper.followers":               Metrics.ZookeeperFollowers,
+	"zookeeper.fsync_threshold_exceeds": Metrics.ZookeeperFsyncThresholdExceeds,
+	"zookeeper.latency.avg":             Metrics.ZookeeperLatencyAvg,
+	"zookeeper.latency.max":             Metrics.ZookeeperLatencyMax,
+	"zookeeper.latency.min":             Metrics.ZookeeperLatencyMin,
+	"zookeeper.max_file_descriptors":    Metrics.ZookeeperMaxFileDescriptors,
+	"zookeeper.open_file_descriptors":   Metrics.ZookeeperOpenFileDescriptors,
+	"zookeeper.outstanding_requests":    Metrics.ZookeeperOutstandingRequests,
+	"zookeeper.packets.received":        Metrics.ZookeeperPacketsReceived,
+	"zookeeper.packets.sent":            Metrics.ZookeeperPacketsSent,
+	"zookeeper.pending_syncs":           Metrics.ZookeeperPendingSyncs,
+	"zookeeper.synced_followers":        Metrics.ZookeeperSyncedFollowers,
+	"zookeeper.watches":                 Metrics.ZookeeperWatches,
+	"zookeeper.znodes":                  Metrics.ZookeeperZnodes,
 }
 
 func (m *metricStruct) ByName(n string) metricIntf {
@@ -103,20 +112,23 @@ func (m *metricStruct) ByName(n string) metricIntf {
 
 func (m *metricStruct) FactoriesByName() map[string]func() pdata.Metric {
 	return map[string]func() pdata.Metric{
-		Metrics.ZookeeperApproximateDateSize.Name(): Metrics.ZookeeperApproximateDateSize.New,
-		Metrics.ZookeeperConnectionsAlive.Name():    Metrics.ZookeeperConnectionsAlive.New,
-		Metrics.ZookeeperEphemeralNodes.Name():      Metrics.ZookeeperEphemeralNodes.New,
-		Metrics.ZookeeperFollowers.Name():           Metrics.ZookeeperFollowers.New,
-		Metrics.ZookeeperLatencyAvg.Name():          Metrics.ZookeeperLatencyAvg.New,
-		Metrics.ZookeeperLatencyMax.Name():          Metrics.ZookeeperLatencyMax.New,
-		Metrics.ZookeeperLatencyMin.Name():          Metrics.ZookeeperLatencyMin.New,
-		Metrics.ZookeeperMaxFileDescriptors.Name():  Metrics.ZookeeperMaxFileDescriptors.New,
-		Metrics.ZookeeperOpenFileDescriptors.Name(): Metrics.ZookeeperOpenFileDescriptors.New,
-		Metrics.ZookeeperOutstandingRequests.Name(): Metrics.ZookeeperOutstandingRequests.New,
-		Metrics.ZookeeperPendingSyncs.Name():        Metrics.ZookeeperPendingSyncs.New,
-		Metrics.ZookeeperSyncedFollowers.Name():     Metrics.ZookeeperSyncedFollowers.New,
-		Metrics.ZookeeperWatches.Name():             Metrics.ZookeeperWatches.New,
-		Metrics.ZookeeperZnodes.Name():              Metrics.ZookeeperZnodes.New,
+		Metrics.ZookeeperApproximateDateSize.Name():   Metrics.ZookeeperApproximateDateSize.New,
+		Metrics.ZookeeperConnectionsAlive.Name():      Metrics.ZookeeperConnectionsAlive.New,
+		Metrics.ZookeeperEphemeralNodes.Name():        Metrics.ZookeeperEphemeralNodes.New,
+		Metrics.ZookeeperFollowers.Name():             Metrics.ZookeeperFollowers.New,
+		Metrics.ZookeeperFsyncThresholdExceeds.Name(): Metrics.ZookeeperFsyncThresholdExceeds.New,
+		Metrics.ZookeeperLatencyAvg.Name():            Metrics.ZookeeperLatencyAvg.New,
+		Metrics.ZookeeperLatencyMax.Name():            Metrics.ZookeeperLatencyMax.New,
+		Metrics.ZookeeperLatencyMin.Name():            Metrics.ZookeeperLatencyMin.New,
+		Metrics.ZookeeperMaxFileDescriptors.Name():    Metrics.ZookeeperMaxFileDescriptors.New,
+		Metrics.ZookeeperOpenFileDescriptors.Name():   Metrics.ZookeeperOpenFileDescriptors.New,
+		Metrics.ZookeeperOutstandingRequests.Name():   Metrics.ZookeeperOutstandingRequests.New,
+		Metrics.ZookeeperPacketsReceived.Name():       Metrics.ZookeeperPacketsReceived.New,
+		Metrics.ZookeeperPacketsSent.Name():           Metrics.ZookeeperPacketsSent.New,
+		Metrics.ZookeeperPendingSyncs.Name():          Metrics.ZookeeperPendingSyncs.New,
+		Metrics.ZookeeperSyncedFollowers.Name():       Metrics.ZookeeperSyncedFollowers.New,
+		Metrics.ZookeeperWatches.Name():               Metrics.ZookeeperWatches.New,
+		Metrics.ZookeeperZnodes.Name():                Metrics.ZookeeperZnodes.New,
 	}
 }
 
@@ -179,6 +191,23 @@ var Metrics = &metricStruct{
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			data := metric.IntGauge()
 			data.InitEmpty()
+
+			return metric
+		},
+	},
+	&metricImpl{
+		"zookeeper.fsync_threshold_exceeds",
+		func() pdata.Metric {
+			metric := pdata.NewMetric()
+			metric.InitEmpty()
+			metric.SetName("zookeeper.fsync_threshold_exceeds")
+			metric.SetDescription("Number of times fsync duration has exceeded warning threshold.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			data := metric.IntSum()
+			data.InitEmpty()
+			data.SetIsMonotonic(true)
+			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},
@@ -269,6 +298,40 @@ var Metrics = &metricStruct{
 			metric.SetDataType(pdata.MetricDataTypeIntGauge)
 			data := metric.IntGauge()
 			data.InitEmpty()
+
+			return metric
+		},
+	},
+	&metricImpl{
+		"zookeeper.packets.received",
+		func() pdata.Metric {
+			metric := pdata.NewMetric()
+			metric.InitEmpty()
+			metric.SetName("zookeeper.packets.received")
+			metric.SetDescription("Number of ZooKeeper packets received by a server.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			data := metric.IntSum()
+			data.InitEmpty()
+			data.SetIsMonotonic(true)
+			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+
+			return metric
+		},
+	},
+	&metricImpl{
+		"zookeeper.packets.sent",
+		func() pdata.Metric {
+			metric := pdata.NewMetric()
+			metric.InitEmpty()
+			metric.SetName("zookeeper.packets.sent")
+			metric.SetDescription("Number of ZooKeeper packets sent by a server.")
+			metric.SetUnit("1")
+			metric.SetDataType(pdata.MetricDataTypeIntSum)
+			data := metric.IntSum()
+			data.InitEmpty()
+			data.SetIsMonotonic(true)
+			data.SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
 
 			return metric
 		},

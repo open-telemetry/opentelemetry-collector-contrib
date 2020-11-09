@@ -77,3 +77,24 @@ metrics:
     unit: 1
     data:
       type: int gauge
+  zookeeper.packets.received:
+    description: Number of ZooKeeper packets received by a server.
+    unit: 1
+    data:
+      type: int sum
+      monotonic: true
+      aggregation: cumulative
+  zookeeper.packets.sent:
+    description: Number of ZooKeeper packets sent by a server.
+    unit: 1
+    data:
+      type: int sum
+      monotonic: true
+      aggregation: cumulative
+  zookeeper.fsync_threshold_exceeds:
+    description: Number of times fsync duration has exceeded warning threshold.
+    unit: 1
+    data:
+      type: int sum
+      monotonic: true
+      aggregation: cumulative
