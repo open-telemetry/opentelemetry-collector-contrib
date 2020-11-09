@@ -76,7 +76,7 @@ _excluded_urls = get_excluded_urls()
 
 
 def get_default_span_name():
-    span_name = None
+    span_name = ""
     try:
         span_name = flask.request.url_rule.rule
     except AttributeError:
