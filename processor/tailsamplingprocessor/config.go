@@ -34,6 +34,8 @@ const (
 	StringAttribute PolicyType = "string_attribute"
 	// RateLimiting allows all traces until the specified limits are satisfied.
 	RateLimiting PolicyType = "rate_limiting"
+	// Composite allows a combination of above policies with rate limiting.
+	Composite PolicyType = "composite"
 )
 
 // PolicyCfg holds the common configuration to all policies.
@@ -48,6 +50,8 @@ type PolicyCfg struct {
 	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
 	// Configs for rate limiting filter sampling policy evaluator.
 	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+	// CompositeCfg for defining composite policy
+	CompositeCfg CompositeCfg `mapstructure:"composite"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter
@@ -75,6 +79,35 @@ type StringAttributeCfg struct {
 type RateLimitingCfg struct {
 	// SpansPerSecond sets the limit on the maximum nuber of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
+}
+
+// RateAllocationCfg used within composite policy
+type RateAllocationCfg struct {
+	Policy  string `mapstructure:"policy"`
+	Percent int64  `mapstructure:"percent"`
+}
+
+// SubPolicyCfg holds the common configuration to all policies under composite policy.
+type SubPolicyCfg struct {
+	// Name given to the instance of the policy to make easy to identify it in metrics and logs.
+	Name string `mapstructure:"name"`
+	// Type of the policy this will be used to match the proper configuration of the policy.
+	Type PolicyType `mapstructure:"type"`
+	// Configs for numeric attribute filter sampling policy evaluator.
+	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
+	// Configs for string attribute filter sampling policy evaluator.
+	StringAttributeCfg StringAttributeCfg `mapstructure:"string_attribute"`
+	// Configs for rate limiting filter sampling policy evaluator.
+	RateLimitingCfg RateLimitingCfg `mapstructure:"rate_limiting"`
+}
+
+// CompositeCfg holds the configurable settings to create a composite
+// sampling policy evaluator.
+type CompositeCfg struct {
+	MaxTotalSpansPerSecond int64               `mapstructure:"max_total_spans_per_second"`
+	PolicyOrder            []string            `mapstructure:"policy_order"`
+	SubPolicyCfg           []SubPolicyCfg      `mapstructure:"composite_sub_policy"`
+	RateAllocation         []RateAllocationCfg `mapstructure:"rate_allocation"`
 }
 
 // Config holds the configuration for tail-based sampling.
