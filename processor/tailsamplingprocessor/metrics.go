@@ -45,6 +45,11 @@ var (
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
 )
 
+func init() {
+	// TODO: this is hardcoding the metrics level and skips error handling
+	_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+}
+
 // SamplingProcessorMetricViews return the metrics views according to given telemetry level.
 func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
