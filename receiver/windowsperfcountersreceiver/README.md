@@ -1,10 +1,18 @@
 # Windows Performance Counters Receiver
 
-#### :warning: This receiver is still under construction. It currently only supports very basic functionality, i.e. performance counters with no 'Instance'.
+#### :warning: This receiver is still under construction.
 
 This receiver, for Windows only, captures the configured system, application, or
 custom performance counter data from the Windows registry using the [PDH
 interface](https://docs.microsoft.com/en-us/windows/win32/perfctrs/using-the-pdh-functions-to-consume-counter-data).
+It is based on the [Telegraf Windows Performance Counters Input
+Plugin](https://github.com/influxdata/telegraf/tree/master/plugins/inputs/win_perf_counters).
+
+Metrics will be generated with names and labels that match the performance
+counter path, i.e.
+
+- `Memory\Committed Bytes`
+- `Processor\% Processor Time`, with a datapoint for each `Instance` label = (`_Total`, `1`, `2`, `3`, ... )
 
 ## Configuration
 
@@ -16,9 +24,22 @@ windowsperfcounters:
   collection_interval: <duration> # default = "1m"
   counters:
     - object: <object name>
+      instances: [<instance name>]*
       counters:
         - <counter name>
 ```
+
+*Note `instances` can have several special values depending on the type of
+counter:
+
+Value | Interpretation
+-- | --
+`""` (or not specified) | This is the only valid value if the counter has no instances
+`"*"` | All instances
+`"_Total"` | The "total" instance
+`"instance1"` | A single instance
+`["instance1", "instance2", ...]` | A set of instances
+`["_Total", "instance1", "instance2", ...]` | A set of instances including the "total" instance
 
 ### Scraping at different frequencies
 
@@ -31,27 +52,36 @@ receivers:
   windowsperfcounters/memory:
     collection_interval: 30s
     counters:
-    - object: Memory
-      counters:
-        - Committed Bytes
+      - object: Memory
+        counters:
+          - Committed Bytes
 
-  windowsperfcounters/connections:
+  windowsperfcounters/processor:
     collection_interval: 1m
     counters:
-    - object: TCPv4
-      counters:
-        - Connections Established
+      - object: "Processor"
+        instances: "*"
+        counters:
+          - "% Processor Time"
+      - object: "Processor"
+        instances: [1, 2]
+        counters:
+          - "% Idle Time"
 
 service:
   pipelines:
     metrics:
-      receivers: [windowsperfcounters/memory, windowsperfcounters/connections]
+      receivers: [windowsperfcounters/memory, windowsperfcounters/processor]
 ```
 
 ### Changing metric format
 
 To report metrics in the desired output format, it's recommended you use this
-receiver with the metrics transform processor, e.g.:
+receiver with the [metrics transform
+processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/master/processor/metricstransformprocessor).
+
+e.g. To output the `Memory/Committed Bytes` counter as a metric with the name
+`system.memory.usage`:
 
 ```yaml
 receivers:
@@ -65,7 +95,6 @@ receivers:
 processors:
   metricstransformprocessor:
     transforms:
-      # rename "Memory/Committed Bytes" -> system.memory.usage
       - metric_name: "Memory/Committed Bytes"
         action: update
         new_name: system.memory.usage
