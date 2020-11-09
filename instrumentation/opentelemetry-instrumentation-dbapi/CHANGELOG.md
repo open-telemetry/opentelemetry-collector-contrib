@@ -3,7 +3,7 @@
 ## Unreleased
 
 Stop capturing query parameters by default
-  ([#156](https://github.com/open-telemetry/opentelemetry-python/pull/156))
+  ([#156](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/156))
 
 ## Version 0.13b0
 
@@ -19,7 +19,7 @@ Released 2020-09-17
 Released 2020-08-14
 
 - Change package name to opentelemetry-instrumentation-dbapi
-  ([#156](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/156))
+  ([#966](https://github.com/open-telemetry/opentelemetry-python/pull/966))
 
 ## 0.7b1
 
