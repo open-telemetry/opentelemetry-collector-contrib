@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/configcheck"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -51,7 +52,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		SourceHost:         "",
 		Client:             "otelcol",
 
-		TimeoutSettings: exporterhelper.TimeoutSettings{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Timeout: 55 * time.Second,
 		},
 		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),

@@ -50,6 +50,10 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
 
+	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
+		return nil, fmt.Errorf("endpoint is not set")
+	}
+
 	se := &sumologicexporter{
 		config: cfg,
 	}
@@ -72,7 +76,6 @@ func newLogsExporter(
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	)
