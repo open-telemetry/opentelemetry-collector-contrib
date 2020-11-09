@@ -23,14 +23,14 @@ import (
 // Config defines configuration for the stanza receiver
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	OffsetsFile                   string            `mapstructure:"offsets_file"`
-	PluginDir                     string            `mapstructure:"plugin_dir"`
-	Pipeline                      RawPipelineConfig `mapstructure:"pipeline"`
+	OffsetsFile                   string         `mapstructure:"offsets_file"`
+	PluginDir                     string         `mapstructure:"plugin_dir"`
+	Operators                     OperatorConfig `mapstructure:"operators"`
 }
 
-type RawPipelineConfig []map[string]interface{}
+type OperatorConfig []map[string]interface{}
 
-func (r RawPipelineConfig) IntoPipelineConfig() (pipeline.Config, error) {
+func (r OperatorConfig) IntoPipelineConfig() (pipeline.Config, error) {
 	yamlBytes, err := yaml.Marshal(r)
 	if err != nil {
 		return nil, err

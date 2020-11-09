@@ -58,7 +58,7 @@ func createLogsReceiver(
 
 	emitter := NewLogEmitter(params.Logger.Sugar())
 
-	pipeline, err := obsConfig.Pipeline.IntoPipelineConfig()
+	pipeline, err := obsConfig.Operators.IntoPipelineConfig()
 	if err != nil {
 		return nil, err
 	}

@@ -47,8 +47,8 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshalConfig(t *testing.T, pipelineYaml string) RawPipelineConfig {
-	var pipelineCfg RawPipelineConfig
+func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
+	var pipelineCfg OperatorConfig
 	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
 	return pipelineCfg
 }
@@ -87,7 +87,7 @@ func TestReadStaticFile(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshalConfig(t, `
+	cfg.Operators = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
   start_at: beginning
@@ -177,7 +177,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	}
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshalConfig(t, fmt.Sprintf(`
+	cfg.Operators = unmarshalConfig(t, fmt.Sprintf(`
   - type: file_input
     include: [%s/*]
     include_file_name: false
