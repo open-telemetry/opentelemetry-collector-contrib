@@ -14,6 +14,11 @@ counter path, i.e.
 - `Memory\Committed Bytes`
 - `Processor\% Processor Time`, with a datapoint for each `Instance` label = (`_Total`, `1`, `2`, `3`, ... )
 
+If one of the specified performance counters cannot be loaded on startup, a
+warning will be printed, but the application will not fail fast. It is expected
+that some performance counters may not exist on some systems due to different OS
+configuration.
+
 ## Configuration
 
 The collection interval and the list of performance counters to be scraped can
