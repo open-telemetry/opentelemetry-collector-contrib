@@ -72,20 +72,18 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		source := config.Source
 		sourceType := config.SourceType
 		commonFields := map[string]interface{}{}
-		if !rs.Resource().IsNil() {
-			if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
-				host = conventionHost.StringVal()
-			}
-			if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
-				source = sourceSet.StringVal()
-			}
-			if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
-				sourceType = sourcetypeSet.StringVal()
-			}
-			rs.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
-			})
+		if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+			host = conventionHost.StringVal()
 		}
+		if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
+			source = sourceSet.StringVal()
+		}
+		if sourcetypeSet, isSet := rs.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
+			sourceType = sourcetypeSet.StringVal()
+		}
+		rs.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+		})
 		ilss := rs.InstrumentationLibrarySpans()
 		for sils := 0; sils < ilss.Len(); sils++ {
 			ils := ilss.At(sils)

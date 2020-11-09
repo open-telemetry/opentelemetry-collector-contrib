@@ -42,7 +42,6 @@ func NewDetector() (internal.Detector, error) {
 
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	if !d.metadata.OnGCE() {
 		return res, nil

@@ -835,7 +835,6 @@ func getDefaultInternalSpan() pdata.Span {
 // Returns a default Resource
 func getResource() pdata.Resource {
 	r := pdata.NewResource()
-	r.InitEmpty()
 	r.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		conventions.AttributeServiceName:      pdata.NewAttributeValueString(defaultServiceName),
 		conventions.AttributeServiceNamespace: pdata.NewAttributeValueString(defaultServiceNamespace),

@@ -327,7 +327,6 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			resource.InitEmpty()
 			resource.Attributes().InsertString(splunk.SFxAccessTokenLabel, accessToken)
 		}
 	}

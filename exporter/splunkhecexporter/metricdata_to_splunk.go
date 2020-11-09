@@ -51,20 +51,18 @@ func metricDataToSplunk(logger *zap.Logger, data pdata.Metrics, config *Config) 
 		sourceType := config.SourceType
 		index := config.Index
 		commonFields := map[string]interface{}{}
-		if !rm.Resource().IsNil() {
-			if conventionHost, isSet := rm.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
-				host = conventionHost.StringVal()
-			}
-			if sourceSet, isSet := rm.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
-				source = sourceSet.StringVal()
-			}
-			if sourcetypeSet, isSet := rm.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
-				sourceType = sourcetypeSet.StringVal()
-			}
-			rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-				commonFields[k] = tracetranslator.AttributeValueToString(v, false)
-			})
+		if conventionHost, isSet := rm.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+			host = conventionHost.StringVal()
 		}
+		if sourceSet, isSet := rm.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
+			source = sourceSet.StringVal()
+		}
+		if sourcetypeSet, isSet := rm.Resource().Attributes().Get(splunk.SourcetypeLabel); isSet {
+			sourceType = sourcetypeSet.StringVal()
+		}
+		rm.Resource().Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+		})
 		ilms := rm.InstrumentationLibraryMetrics()
 		for ilmi := 0; ilmi < ilms.Len(); ilmi++ {
 			ilm := ilms.At(ilmi)

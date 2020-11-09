@@ -932,7 +932,6 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 
 	rs := pdata.NewResourceSpans()
 	rs.InitEmpty()
-	rs.Resource().InitEmpty()
 
 	if len(resourceAttrs) > 0 {
 		rs.Resource().Attributes().InitFromMap(resourceAttrs)
@@ -1007,8 +1006,6 @@ func compare2ResourceSpans(t *testing.T, testCase string, exp, act *pdata.Resour
 		exp.Resource().Attributes().Sort(),
 		act.Resource().Attributes().Sort(),
 		testCase+": Resource.Attributes() differ")
-	exp.Resource().InitEmpty()
-	act.Resource().InitEmpty()
 
 	actSpans := act.InstrumentationLibrarySpans().At(0).Spans()
 	expSpans := exp.InstrumentationLibrarySpans().At(0).Spans()

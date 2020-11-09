@@ -116,12 +116,10 @@ func (kp *kubernetesprocessor) ProcessLogs(ctx context.Context, ld pdata.Logs) (
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pdata.Resource, attributeExtractors ...ipExtractor) {
 	var podIP string
 
-	if !resource.IsNil() {
-		for _, extractor := range attributeExtractors {
-			podIP = extractor(resource.Attributes())
-			if podIP != "" {
-				break
-			}
+	for _, extractor := range attributeExtractors {
+		podIP = extractor(resource.Attributes())
+		if podIP != "" {
+			break
 		}
 	}
 
@@ -137,9 +135,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pda
 		return
 	}
 
-	if resource.IsNil() {
-		resource.InitEmpty()
-	}
 	resource.Attributes().InsertString(k8sIPLabelName, podIP)
 
 	// Don't invoke any k8s client functionality in passthrough mode.

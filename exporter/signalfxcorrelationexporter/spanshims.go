@@ -30,11 +30,7 @@ type spanWrap struct {
 }
 
 func (s spanWrap) Environment() (string, bool) {
-	res := s.Resource()
-	if res.IsNil() {
-		return "", false
-	}
-	attr := res.Attributes()
+	attr := s.Resource().Attributes()
 
 	// Try to find deployment.environment before falling back to environment (SignalFx value).
 	env, ok := attr.Get(conventions.AttributeDeploymentEnvironment)
@@ -51,11 +47,7 @@ func (s spanWrap) Environment() (string, bool) {
 }
 
 func (s spanWrap) ServiceName() (string, bool) {
-	res := s.Resource()
-	if res.IsNil() {
-		return "", false
-	}
-	attr := res.Attributes()
+	attr := s.Resource().Attributes()
 
 	serviceName, ok := attr.Get(conventions.AttributeServiceName)
 	if ok && serviceName.StringVal() != "" {
@@ -66,11 +58,7 @@ func (s spanWrap) ServiceName() (string, bool) {
 }
 
 func (s spanWrap) Tag(tag string) (string, bool) {
-	res := s.Resource()
-	if res.IsNil() {
-		return "", false
-	}
-	attr := res.Attributes()
+	attr := s.Resource().Attributes()
 	val, ok := attr.Get(tag)
 	if ok {
 		return val.StringVal(), true
@@ -79,11 +67,7 @@ func (s spanWrap) Tag(tag string) (string, bool) {
 }
 
 func (s spanWrap) NumTags() int {
-	res := s.Resource()
-	if res.IsNil() {
-		return 0
-	}
-	attr := res.Attributes()
+	attr := s.Resource().Attributes()
 	return attr.Len()
 }
 
