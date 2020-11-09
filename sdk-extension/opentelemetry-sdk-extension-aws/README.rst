@@ -41,7 +41,7 @@ Propagator:
 
 ::
 
-    export OTEL_PYTHON_PROPAGATORS = aws_xray
+    export OTEL_PROPAGATORS = aws_xray
 
 
 References

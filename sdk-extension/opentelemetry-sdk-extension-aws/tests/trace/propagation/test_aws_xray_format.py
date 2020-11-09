@@ -18,6 +18,7 @@ from requests.structures import CaseInsensitiveDict
 
 import opentelemetry.trace as trace_api
 from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import (
+    TRACE_HEADER_KEY,
     AwsXRayFormat,
 )
 from opentelemetry.trace import (
@@ -29,6 +30,7 @@ from opentelemetry.trace import (
     TraceState,
     set_span_in_context,
 )
+from opentelemetry.trace.propagation.textmap import DictGetter
 
 TRACE_ID_BASE16 = "8a3c60f7d188f8fa79d48a391a778fa6"
 
@@ -83,7 +85,7 @@ def build_test_span_context(
 
 class AwsXRayPropagatorTest(unittest.TestCase):
     carrier_setter = CaseInsensitiveDict.__setitem__
-    carrier_getter = get_as_list
+    carrier_getter = DictGetter()
     XRAY_PROPAGATOR = AwsXRayFormat()
 
     # Inject Tests
@@ -101,7 +103,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         expected_items = set(
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
                 }
             ).items()
         )
@@ -123,7 +125,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         expected_items = set(
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
                 }
             ).items()
         )
@@ -144,7 +146,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         expected_items = set(
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
                 }
             ).items()
         )
@@ -168,7 +170,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
                 }
             ),
         )
@@ -183,7 +185,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
                 }
             ),
         )
@@ -200,7 +202,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Sampled=0;Parent=53995c3f42cd8ad8;Root=1-8a3c60f7-d188f8fa79d48a391a778fa6"
+                    TRACE_HEADER_KEY: "Sampled=0;Parent=53995c3f42cd8ad8;Root=1-8a3c60f7-d188f8fa79d48a391a778fa6"
                 }
             ),
         )
@@ -215,7 +217,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0;Foo=Bar"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0;Foo=Bar"
                 }
             ),
         )
@@ -230,7 +232,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "  Root  =  1-8a3c60f7-d188f8fa79d48a391a778fa6  ;  Parent  =  53995c3f42cd8ad8  ;  Sampled  =  0   "
+                    TRACE_HEADER_KEY: "  Root  =  1-8a3c60f7-d188f8fa79d48a391a778fa6  ;  Parent  =  53995c3f42cd8ad8  ;  Sampled  =  0   "
                 }
             ),
         )
@@ -243,7 +245,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
     def test_extract_invalid_xray_trace_header(self):
         context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            CaseInsensitiveDict({AwsXRayFormat.TRACE_HEADER_KEY: ""}),
+            CaseInsensitiveDict({TRACE_HEADER_KEY: ""}),
         )
 
         self.assertEqual(
@@ -256,7 +258,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0"
                 }
             ),
         )
@@ -271,7 +273,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0="
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0="
                 }
             ),
         )
@@ -286,7 +288,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0"
                 }
             ),
         )
@@ -301,7 +303,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"
                 }
             ),
         )
@@ -316,7 +318,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled="
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled="
                 }
             ),
         )
@@ -331,7 +333,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011"
                 }
             ),
         )
@@ -346,7 +348,7 @@ class AwsXRayPropagatorTest(unittest.TestCase):
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict(
                 {
-                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a"
+                    TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a"
                 }
             ),
         )
