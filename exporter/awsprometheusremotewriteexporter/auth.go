@@ -65,9 +65,9 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-// NewAuth takes a map of strings as parameters and return a http.RoundTripper that perform Sig V4 signing on each
+// newAuth takes a map of strings as parameters and return a http.RoundTripper that perform Sig V4 signing on each
 // request.
-func NewAuth(params AuthSettings, origClient *http.Client) (http.RoundTripper, error) {
+func newAuth(params AuthSettings, origClient *http.Client) (http.RoundTripper, error) {
 	// Initialize session with default credential chain
 	// https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html
 	sess, err := session.NewSession(&aws.Config{

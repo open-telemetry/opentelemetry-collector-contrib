@@ -39,11 +39,7 @@ func NewFactory() component.ExporterFactory {
 
 func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
-	// check if the configuration is valid
-	prwCfg, ok := cfg.(*Config)
-	if !ok {
-		return nil, errors.New("invalid configuration")
-	}
+	prwCfg := cfg.(*Config)
 
 	if !validateAuthConfig(prwCfg.AuthSettings) {
 		return nil, errors.New("invalid authentication configuration")
@@ -56,7 +52,7 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 
 	// load AWS auth configurations and create interceptor based on configuration
 	if applyAuth(prwCfg.AuthSettings) {
-		roundTripper, err := NewAuth(prwCfg.AuthSettings, client)
+		roundTripper, err := newAuth(prwCfg.AuthSettings, client)
 		if err != nil {
 			return nil, err
 		}
