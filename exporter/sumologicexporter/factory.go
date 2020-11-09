@@ -56,9 +56,9 @@ func createDefaultConfig() configmodels.Exporter {
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
 
-		TimeoutSettings: CreateDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.CreateDefaultRetrySettings(),
-		QueueSettings:   qs,
+		HTTPClientSettings: CreateDefaultHTTPClientSettings(),
+		RetrySettings:      exporterhelper.CreateDefaultRetrySettings(),
+		QueueSettings:      qs,
 	}
 }
 

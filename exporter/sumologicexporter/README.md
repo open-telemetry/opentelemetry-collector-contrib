@@ -4,7 +4,7 @@ This exporter supports sending logs and metrics data to [Sumo Logic](https://www
 
 The following configuration options are supported:
 
-- `url` (required): Unique URL generated for your HTTP Metrics Source. This is the address to send metrics to.
+- `endpoint` (required): Unique URL generated for your HTTP Metrics Source. This is the address to send metrics to.
 - `compress` (optional): Option to enable compression (default true)
 - `compress_encoding` (optional): Compression encoding format, either gzip or deflate (default gzip)
 - `max_request_body_size` (optional): Max HTTP request body size in bytes before compression (if applied). By default 1MB is recommended.

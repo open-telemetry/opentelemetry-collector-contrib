@@ -17,6 +17,7 @@ package sumologicexporter
 import (
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -24,12 +25,10 @@ import (
 // Config defines configuration for Sumo Logic exporter.
 type Config struct {
 	configmodels.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
-	// Global options
-	// Unique URL generated for your HTTP Source.
-	// This is the address to send data to.
-	// url: "https://collectors.sumologic.com/receiver/v1/http/<UniqueHTTPCollectorCode>"
-	URL string `mapstructure:"url"`
 	// Option to enable compression (default true)
 	Compress bool `mapstructure:"compress"`
 	// Compression encoding format, either gzip or deflate (default gzip)
@@ -63,15 +62,11 @@ type Config struct {
 	SourceHost string `mapstructure:"source_host"`
 	// Name of the client
 	Client string `mapstructure:"client"`
-
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 }
 
-// CreateDefaultTimeoutSettings returns default timeout settings
-func CreateDefaultTimeoutSettings() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
+// CreateDefaultHTTPClientSettings returns default http client settings
+func CreateDefaultHTTPClientSettings() confighttp.HTTPClientSettings {
+	return confighttp.HTTPClientSettings{
 		Timeout: defaultTimeout,
 	}
 }

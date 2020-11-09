@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 func TestInitExporter(t *testing.T) {
@@ -25,6 +26,10 @@ func TestInitExporter(t *testing.T) {
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:  defaultTimeout,
+			Endpoint: "test_endpoint",
+		},
 	})
 	assert.NoError(t, err)
 }
@@ -34,6 +39,10 @@ func TestInitExporterInvalidLogFormat(t *testing.T) {
 		LogFormat:        "test_format",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "gzip",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:  defaultTimeout,
+			Endpoint: "test_endpoint",
+		},
 	})
 
 	assert.EqualError(t, err, "unexpected log format: test_format")
@@ -41,8 +50,12 @@ func TestInitExporterInvalidLogFormat(t *testing.T) {
 
 func TestInitExporterInvalidMetricFormat(t *testing.T) {
 	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "test_format",
+		LogFormat:    "json",
+		MetricFormat: "test_format",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:  defaultTimeout,
+			Endpoint: "test_endpoint",
+		},
 		CompressEncoding: "gzip",
 	})
 
@@ -54,7 +67,24 @@ func TestInitExporterInvalidCompressEncoding(t *testing.T) {
 		LogFormat:        "json",
 		MetricFormat:     "carbon2",
 		CompressEncoding: "test_format",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout:  defaultTimeout,
+			Endpoint: "test_endpoint",
+		},
 	})
 
 	assert.EqualError(t, err, "unexpected compression encoding: test_format")
+}
+
+func TestInitExporterInvalidEndpoint(t *testing.T) {
+	_, err := initExporter(&Config{
+		LogFormat:        "json",
+		MetricFormat:     "carbon2",
+		CompressEncoding: "gzip",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: defaultTimeout,
+		},
+	})
+
+	assert.EqualError(t, err, "endpoint is not set")
 }
