@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/testbed/testbed"
 )
 
@@ -38,7 +39,48 @@ func TestFactory(t *testing.T) {
 	assert.Equal(t, 10*time.Second, rCfg.Timeout)
 	assert.Equal(t, ":2181", rCfg.Endpoint)
 
-	r, err := f.CreateMetricsReceiver(context.Background(), component.ReceiverCreateParams{}, cfg, &testbed.MockMetricConsumer{})
-	require.NoError(t, err)
-	require.NotNil(t, r)
+	tests := []struct {
+		name    string
+		config  configmodels.Receiver
+		wantErr bool
+	}{
+		{
+			name:   "Happy path",
+			config: createDefaultConfig(),
+		},
+		{
+			name:    "Invalid endpoint",
+			config:  &Config{},
+			wantErr: true,
+		},
+		{
+			name: "Invalid timeout",
+			config: &Config{
+				TCPAddr: confignet.TCPAddr{
+					Endpoint: ":2181",
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			r, err := f.CreateMetricsReceiver(
+				context.Background(),
+				component.ReceiverCreateParams{},
+				test.config,
+				&testbed.MockMetricConsumer{},
+			)
+
+			if test.wantErr {
+				require.Error(t, err)
+				require.Nil(t, r)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, r)
+		})
+	}
 }
