@@ -45,7 +45,7 @@ def get_as_list(dict_object, key):
 # Inject Methods
 
 
-def build_test_context(
+def build_test_current_context(
     trace_id=int(TRACE_ID_BASE16, 16),
     span_id=int(SPAN_ID_BASE16, 16),
     is_remote=True,
@@ -54,56 +54,31 @@ def build_test_context(
 ):
     return set_span_in_context(
         trace_api.DefaultSpan(
-            SpanContext(
-                trace_id, span_id, is_remote, trace_flags, trace_state,
+            build_test_span_context(
+                trace_id, span_id, is_remote, trace_flags, trace_state
             )
         )
     )
 
 
-def build_dict_with_xray_trace_header(
-    trace_id="{}{}{}{}{}".format(
-        AwsXRayFormat.TRACE_ID_VERSION,
-        AwsXRayFormat.TRACE_ID_DELIMITER,
-        TRACE_ID_BASE16[: AwsXRayFormat.TRACE_ID_FIRST_PART_LENGTH],
-        AwsXRayFormat.TRACE_ID_DELIMITER,
-        TRACE_ID_BASE16[AwsXRayFormat.TRACE_ID_FIRST_PART_LENGTH :],
-    ),
-    span_id=SPAN_ID_BASE16,
-    sampled="0",
-):
-    carrier = CaseInsensitiveDict()
-
-    carrier[AwsXRayFormat.TRACE_HEADER_KEY] = "".join(
-        [
-            "{}{}{}{}".format(
-                AwsXRayFormat.TRACE_ID_KEY,
-                AwsXRayFormat.KEY_AND_VALUE_DELIMITER,
-                trace_id,
-                AwsXRayFormat.KV_PAIR_DELIMITER,
-            ),
-            "{}{}{}{}".format(
-                AwsXRayFormat.PARENT_ID_KEY,
-                AwsXRayFormat.KEY_AND_VALUE_DELIMITER,
-                span_id,
-                AwsXRayFormat.KV_PAIR_DELIMITER,
-            ),
-            "{}{}{}".format(
-                AwsXRayFormat.SAMPLED_FLAG_KEY,
-                AwsXRayFormat.KEY_AND_VALUE_DELIMITER,
-                sampled,
-            ),
-        ]
-    )
-
-    return carrier
-
-
 # Extract Methods
 
 
-def get_extracted_span_context(encompassing_context):
-    return trace_api.get_current_span(encompassing_context).get_span_context()
+def get_nested_span_context(parent_context):
+    return trace_api.get_current_span(parent_context).get_span_context()
+
+
+# Helper Methods
+
+
+def build_test_span_context(
+    trace_id=int(TRACE_ID_BASE16, 16),
+    span_id=int(SPAN_ID_BASE16, 16),
+    is_remote=True,
+    trace_flags=DEFAULT_TRACE_OPTIONS,
+    trace_state=DEFAULT_TRACE_STATE,
+):
+    return SpanContext(trace_id, span_id, is_remote, trace_flags, trace_state,)
 
 
 class AwsXRayPropagatorTest(unittest.TestCase):
@@ -117,15 +92,21 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         carrier = CaseInsensitiveDict()
 
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
-            AwsXRayPropagatorTest.carrier_setter, carrier, build_test_context()
+            AwsXRayPropagatorTest.carrier_setter,
+            carrier,
+            build_test_current_context(),
         )
 
-        self.assertTrue(
-            set(carrier.items()).issubset(
-                set(build_dict_with_xray_trace_header().items())
-            ),
-            "Failed to inject into context that was not yet sampled",
+        injected_items = set(carrier.items())
+        expected_items = set(
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                }
+            ).items()
         )
+
+        self.assertEqual(injected_items, expected_items)
 
     def test_inject_into_sampled_context(self):
         carrier = CaseInsensitiveDict()
@@ -133,15 +114,21 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
             AwsXRayPropagatorTest.carrier_setter,
             carrier,
-            build_test_context(trace_flags=TraceFlags(TraceFlags.SAMPLED)),
+            build_test_current_context(
+                trace_flags=TraceFlags(TraceFlags.SAMPLED)
+            ),
         )
 
-        self.assertTrue(
-            set(carrier.items()).issubset(
-                set(build_dict_with_xray_trace_header(sampled="1").items(),)
-            ),
-            "Failed to inject into context that was already sampled",
+        injected_items = set(carrier.items())
+        expected_items = set(
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
+                }
+            ).items()
         )
+
+        self.assertEqual(injected_items, expected_items)
 
     def test_inject_into_context_with_non_default_state(self):
         carrier = CaseInsensitiveDict()
@@ -149,227 +136,222 @@ class AwsXRayPropagatorTest(unittest.TestCase):
         AwsXRayPropagatorTest.XRAY_PROPAGATOR.inject(
             AwsXRayPropagatorTest.carrier_setter,
             carrier,
-            build_test_context(trace_state=TraceState({"foo": "bar"})),
+            build_test_current_context(trace_state=TraceState({"foo": "bar"})),
         )
 
         # TODO: (NathanielRN) Assert trace state when the propagator supports it
-        self.assertTrue(
-            set(carrier.items()).issubset(
-                set(build_dict_with_xray_trace_header().items(),)
-            ),
-            "Failed to inject into context with non default state",
+        injected_items = set(carrier.items())
+        expected_items = set(
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                }
+            ).items()
         )
+
+        self.assertEqual(injected_items, expected_items)
 
     # Extract Tests
 
-    def test_extract_empty_carrier_from_none_carrier(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
-            AwsXRayPropagatorTest.carrier_getter, CaseInsensitiveDict()
-        )
-
-        self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            INVALID_SPAN_CONTEXT,
-        )
-
     def test_extract_empty_carrier_from_invalid_context(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter, CaseInsensitiveDict()
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_not_sampled_context(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            get_extracted_span_context(build_test_context()),
+            get_nested_span_context(context_with_extracted),
+            build_test_span_context(),
         )
 
     def test_extract_sampled_context(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(sampled="1"),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=1"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            get_extracted_span_context(
-                build_test_context(trace_flags=TraceFlags(TraceFlags.SAMPLED))
+            get_nested_span_context(context_with_extracted),
+            build_test_span_context(
+                trace_flags=TraceFlags(TraceFlags.SAMPLED)
             ),
         )
 
     def test_extract_different_order(self):
-        default_xray_trace_header_dict = build_dict_with_xray_trace_header()
-        trace_header_components = default_xray_trace_header_dict[
-            AwsXRayFormat.TRACE_HEADER_KEY
-        ].split(AwsXRayFormat.KV_PAIR_DELIMITER)
-        reversed_trace_header_components = AwsXRayFormat.KV_PAIR_DELIMITER.join(
-            trace_header_components[::-1]
-        )
-        xray_trace_header_dict_in_different_order = CaseInsensitiveDict(
-            {AwsXRayFormat.TRACE_HEADER_KEY: reversed_trace_header_components}
-        )
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            xray_trace_header_dict_in_different_order,
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Sampled=0;Parent=53995c3f42cd8ad8;Root=1-8a3c60f7-d188f8fa79d48a391a778fa6"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            get_extracted_span_context(build_test_context()),
+            get_nested_span_context(context_with_extracted),
+            build_test_span_context(),
         )
 
     def test_extract_with_additional_fields(self):
-        default_xray_trace_header_dict = build_dict_with_xray_trace_header()
-        xray_trace_header_dict_with_extra_fields = CaseInsensitiveDict(
-            {
-                AwsXRayFormat.TRACE_HEADER_KEY: default_xray_trace_header_dict[
-                    AwsXRayFormat.TRACE_HEADER_KEY
-                ]
-                + ";Foo=Bar"
-            }
-        )
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            xray_trace_header_dict_with_extra_fields,
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=0;Foo=Bar"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            get_extracted_span_context(build_test_context()),
+            get_nested_span_context(context_with_extracted),
+            build_test_span_context(),
         )
 
     def test_extract_with_extra_whitespace(self):
-        default_xray_trace_header_dict = build_dict_with_xray_trace_header()
-        trace_header_components = default_xray_trace_header_dict[
-            AwsXRayFormat.TRACE_HEADER_KEY
-        ].split(AwsXRayFormat.KV_PAIR_DELIMITER)
-        xray_trace_header_dict_with_extra_whitespace = CaseInsensitiveDict(
-            {
-                AwsXRayFormat.TRACE_HEADER_KEY: AwsXRayFormat.KV_PAIR_DELIMITER.join(
-                    [
-                        AwsXRayFormat.KEY_AND_VALUE_DELIMITER.join(
-                            [
-                                "     " + key + "     ",
-                                "     " + value + "     ",
-                            ]
-                        )
-                        for kv_pair_str in trace_header_components
-                        for key, value in [
-                            kv_pair_str.split(
-                                AwsXRayFormat.KEY_AND_VALUE_DELIMITER
-                            )
-                        ]
-                    ]
-                )
-            }
-        )
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            xray_trace_header_dict_with_extra_whitespace,
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "  Root  =  1-8a3c60f7-d188f8fa79d48a391a778fa6  ;  Parent  =  53995c3f42cd8ad8  ;  Sampled  =  0   "
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
-            get_extracted_span_context(build_test_context()),
+            get_nested_span_context(context_with_extracted),
+            build_test_span_context(),
         )
 
     def test_extract_invalid_xray_trace_header(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
             CaseInsensitiveDict({AwsXRayFormat.TRACE_HEADER_KEY: ""}),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_trace_id(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(
-                trace_id="abcdefghijklmnopqrstuvwxyz123456"
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-12345678-abcdefghijklmnopqrstuvwx;Parent=53995c3f42cd8ad8;Sampled=0"
+                }
             ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_trace_id_size(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(
-                trace_id="1-8a3c60f7-d188f8fa79d48a391a778fa600"
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa600;Parent=53995c3f42cd8ad8;Sampled=0="
+                }
             ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_span_id(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(span_id="abcdefghijklmnop"),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=abcdefghijklmnop;Sampled=0"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_span_id_size(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(span_id="53995c3f42cd8ad800"),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad800;Sampled=0"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_empty_sampled_flag(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(sampled=""),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled="
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_sampled_flag_size(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(sampled="10002"),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=011"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
 
     def test_extract_invalid_non_numeric_sampled_flag(self):
-        actual_context_encompassing_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
+        context_with_extracted = AwsXRayPropagatorTest.XRAY_PROPAGATOR.extract(
             AwsXRayPropagatorTest.carrier_getter,
-            build_dict_with_xray_trace_header(sampled="a"),
+            CaseInsensitiveDict(
+                {
+                    AwsXRayFormat.TRACE_HEADER_KEY: "Root=1-8a3c60f7-d188f8fa79d48a391a778fa6;Parent=53995c3f42cd8ad8;Sampled=a"
+                }
+            ),
         )
 
         self.assertEqual(
-            get_extracted_span_context(actual_context_encompassing_extracted),
+            get_nested_span_context(context_with_extracted),
             INVALID_SPAN_CONTEXT,
         )
