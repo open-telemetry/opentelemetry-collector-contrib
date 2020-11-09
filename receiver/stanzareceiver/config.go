@@ -17,12 +17,29 @@ package stanzareceiver
 import (
 	"github.com/observiq/stanza/pipeline"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"gopkg.in/yaml.v2"
 )
 
 // Config defines configuration for the stanza receiver
 type Config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
-	OffsetsFile                   string          `mapstructure:"offsets_file"`
-	PluginDir                     string          `mapstructure:"plugin_dir"`
-	Pipeline                      pipeline.Config `mapstructure:"pipeline"`
+	OffsetsFile                   string            `mapstructure:"offsets_file"`
+	PluginDir                     string            `mapstructure:"plugin_dir"`
+	Pipeline                      RawPipelineConfig `mapstructure:"pipeline"`
+}
+
+type RawPipelineConfig []map[string]interface{}
+
+func (r RawPipelineConfig) IntoPipelineConfig() (pipeline.Config, error) {
+	yamlBytes, err := yaml.Marshal(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg pipeline.Config
+	if err := yaml.Unmarshal(yamlBytes, &cfg); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
 }
