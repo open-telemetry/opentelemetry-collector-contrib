@@ -263,9 +263,6 @@ func (r *splunkReceiver) createResourceCustomizer(req *http.Request) func(pdata.
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.HECTokenHeader); accessToken != "" {
 			return func(resource pdata.Resource) {
-				if resource.IsNil() {
-					resource.InitEmpty()
-				}
 				resource.Attributes().InsertString(splunk.HecTokenLabel, accessToken)
 			}
 		}

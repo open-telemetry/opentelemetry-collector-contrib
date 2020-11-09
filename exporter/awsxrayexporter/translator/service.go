@@ -22,12 +22,8 @@ import (
 )
 
 func makeService(resource pdata.Resource) *awsxray.ServiceData {
-	var (
-		service *awsxray.ServiceData
-	)
-	if resource.IsNil() {
-		return service
-	}
+	var service *awsxray.ServiceData
+
 	verStr, ok := resource.Attributes().Get(semconventions.AttributeServiceVersion)
 	if !ok {
 		verStr, ok = resource.Attributes().Get(semconventions.AttributeContainerTag)

@@ -30,7 +30,6 @@ func TestAwsFromEc2Resource(t *testing.T) {
 	hostType := "m5.xlarge"
 	imageID := "ami-0123456789"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(attributeInfrastructureService, "EC2")
@@ -71,7 +70,6 @@ func TestAwsFromEcsResource(t *testing.T) {
 	clusterArn := "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster"
 	containerArn := "arn:aws:ecs:us-west-2:123456789123:container-instance/123"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(attributeInfrastructureService, "ECS")
@@ -121,7 +119,6 @@ func TestAwsFromBeanstalkResource(t *testing.T) {
 	deployID := "232"
 	versionLabel := "4"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
@@ -153,7 +150,6 @@ func TestAwsFromEksResource(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
@@ -192,7 +188,6 @@ func TestAwsWithAwsSqsResources(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
@@ -242,7 +237,6 @@ func TestAwsWithAwsDynamoDbResources(t *testing.T) {
 	containerName := "signup_aggregator-x82ufje83"
 	containerID := "0123456789A"
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	attrs := pdata.NewAttributeMap()
 	attrs.InsertString(semconventions.AttributeCloudProvider, semconventions.AttributeCloudProviderAWS)
 	attrs.InsertString(semconventions.AttributeCloudAccount, "123456789")
@@ -301,7 +295,6 @@ func TestAwsWithRequestIdAlternateAttribute(t *testing.T) {
 func TestJavaSDK(t *testing.T) {
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "1.2.3")
@@ -317,7 +310,6 @@ func TestJavaSDK(t *testing.T) {
 func TestJavaAutoInstrumentation(t *testing.T) {
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "1.2.3")
@@ -335,7 +327,6 @@ func TestJavaAutoInstrumentation(t *testing.T) {
 func TestGoSDK(t *testing.T) {
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentelemetry")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "go")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "2.0.3")
@@ -351,7 +342,6 @@ func TestGoSDK(t *testing.T) {
 func TestCustomSDK(t *testing.T) {
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKName, "opentracing")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKLanguage, "java")
 	resource.Attributes().InsertString(semconventions.AttributeTelemetrySDKVersion, "2.0.3")
@@ -374,7 +364,6 @@ func TestLogGroups(t *testing.T) {
 
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	lg := pdata.NewAttributeValueArray()
 	ava := lg.ArrayVal()
 	ava.Append(pdata.NewAttributeValueString("group1"))
@@ -405,7 +394,6 @@ func TestLogGroupsFromArns(t *testing.T) {
 
 	attributes := make(map[string]string)
 	resource := pdata.NewResource()
-	resource.InitEmpty()
 	lga := pdata.NewAttributeValueArray()
 	ava := lga.ArrayVal()
 	ava.Append(pdata.NewAttributeValueString(group1))

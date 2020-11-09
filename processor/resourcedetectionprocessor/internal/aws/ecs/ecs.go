@@ -49,7 +49,6 @@ func NewDetector() (internal.Detector, error) {
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
 func (d *Detector) Detect(context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 
 	tmde := getTmdeFromEnv()
 

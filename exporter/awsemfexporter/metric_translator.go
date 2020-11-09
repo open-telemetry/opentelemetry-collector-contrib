@@ -125,7 +125,7 @@ func TranslateOtToCWMetric(rm *pdata.ResourceMetrics, config *Config) ([]*CWMetr
 	namespace := config.Namespace
 	var instrumentationLibName string
 
-	if len(namespace) == 0 && !rm.Resource().IsNil() {
+	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
 		if svcNameOk && svcNsOk && serviceName.Type() == pdata.AttributeValueSTRING && serviceNamespace.Type() == pdata.AttributeValueSTRING {

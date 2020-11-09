@@ -57,7 +57,6 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 			logRecord.SetTimestamp(pdata.TimestampUnixNano(*event.Time * 1e9))
 		}
 
-		rl.Resource().InitEmpty()
 		attrs := rl.Resource().Attributes()
 		attrs.InitEmptyWithCapacity(3)
 		attrs.InsertString(conventions.AttributeHostHostname, event.Host)

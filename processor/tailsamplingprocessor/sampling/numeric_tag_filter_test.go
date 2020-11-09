@@ -94,7 +94,6 @@ func newTraceIntAttrs(nodeAttrs map[string]pdata.AttributeValue, spanAttrKey str
 	traces := pdata.NewTraces()
 	traces.ResourceSpans().Resize(1)
 	rs := traces.ResourceSpans().At(0)
-	rs.Resource().InitEmpty()
 	rs.Resource().Attributes().InitFromMap(nodeAttrs)
 	rs.InstrumentationLibrarySpans().Resize(1)
 	ils := rs.InstrumentationLibrarySpans().At(0)

@@ -35,50 +35,48 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 	var k8sPod model.KubernetesPod
 	var labels model.IfaceMap
 
-	if !resource.IsNil() {
-		resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-			switch k {
-			case conventions.AttributeServiceName:
-				service.Name = cleanServiceName(v.StringVal())
-			case conventions.AttributeServiceVersion:
-				service.Version = truncate(v.StringVal())
-			case conventions.AttributeServiceInstance:
-				serviceNode.ConfiguredName = truncate(v.StringVal())
-				service.Node = &serviceNode
-			case conventions.AttributeDeploymentEnvironment:
-				service.Environment = truncate(v.StringVal())
+	resource.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
+		switch k {
+		case conventions.AttributeServiceName:
+			service.Name = cleanServiceName(v.StringVal())
+		case conventions.AttributeServiceVersion:
+			service.Version = truncate(v.StringVal())
+		case conventions.AttributeServiceInstance:
+			serviceNode.ConfiguredName = truncate(v.StringVal())
+			service.Node = &serviceNode
+		case conventions.AttributeDeploymentEnvironment:
+			service.Environment = truncate(v.StringVal())
 
-			case conventions.AttributeTelemetrySDKName:
-				agent.Name = truncate(v.StringVal())
-			case conventions.AttributeTelemetrySDKLanguage:
-				serviceLanguage.Name = truncate(v.StringVal())
-				service.Language = &serviceLanguage
-			case conventions.AttributeTelemetrySDKVersion:
-				agent.Version = truncate(v.StringVal())
+		case conventions.AttributeTelemetrySDKName:
+			agent.Name = truncate(v.StringVal())
+		case conventions.AttributeTelemetrySDKLanguage:
+			serviceLanguage.Name = truncate(v.StringVal())
+			service.Language = &serviceLanguage
+		case conventions.AttributeTelemetrySDKVersion:
+			agent.Version = truncate(v.StringVal())
 
-			case conventions.AttributeK8sNamespace:
-				k8s.Namespace = truncate(v.StringVal())
-				system.Kubernetes = &k8s
-			case conventions.AttributeK8sPod:
-				k8sPod.Name = truncate(v.StringVal())
-				k8s.Pod = &k8sPod
-				system.Kubernetes = &k8s
-			case conventions.AttributeK8sPodUID:
-				k8sPod.UID = truncate(v.StringVal())
-				k8s.Pod = &k8sPod
-				system.Kubernetes = &k8s
+		case conventions.AttributeK8sNamespace:
+			k8s.Namespace = truncate(v.StringVal())
+			system.Kubernetes = &k8s
+		case conventions.AttributeK8sPod:
+			k8sPod.Name = truncate(v.StringVal())
+			k8s.Pod = &k8sPod
+			system.Kubernetes = &k8s
+		case conventions.AttributeK8sPodUID:
+			k8sPod.UID = truncate(v.StringVal())
+			k8s.Pod = &k8sPod
+			system.Kubernetes = &k8s
 
-			case conventions.AttributeHostHostname:
-				system.Hostname = truncate(v.StringVal())
+		case conventions.AttributeHostHostname:
+			system.Hostname = truncate(v.StringVal())
 
-			default:
-				labels = append(labels, model.IfaceMapItem{
-					Key:   cleanLabelKey(k),
-					Value: ifaceAttributeValue(v),
-				})
-			}
-		})
-	}
+		default:
+			labels = append(labels, model.IfaceMapItem{
+				Key:   cleanLabelKey(k),
+				Value: ifaceAttributeValue(v),
+			})
+		}
+	})
 
 	if service.Name == "" {
 		// service.name is a required field.

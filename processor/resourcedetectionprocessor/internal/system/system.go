@@ -44,7 +44,6 @@ func NewDetector() (internal.Detector, error) {
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(_ context.Context) (pdata.Resource, error) {
 	res := pdata.NewResource()
-	res.InitEmpty()
 	attrs := res.Attributes()
 
 	osType, err := d.provider.OSType()
