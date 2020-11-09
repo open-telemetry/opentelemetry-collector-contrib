@@ -156,11 +156,11 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	tempDir := newTempDir(t)
 
-	// With a max of 2 logs per file and 1 backup file, rotation will occur
-	// when more than 2 logs are written, and deletion when more than 4 logs are written.
-	// Write 10 and validate that we got the all despite rotation and deletion.
-	logger := newRotatingLogger(t, tempDir, 2, 1, rt.copyTruncate, rt.sequential)
-	numLogs := 10
+	// With a max of 100 logs per file and 1 backup file, rotation will occur
+	// when more than 100 logs are written, and deletion when more than 200 are written.
+	// Write 300 and validate that we got the all despite rotation and deletion.
+	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
+	numLogs := 300
 
 	// Build input lines and expected outputs
 	lines := make([]string, numLogs)
@@ -182,7 +182,7 @@ func (rt *rotationTest) Run(t *testing.T) {
     include: [%s/*]
     include_file_name: false
     start_at: beginning
-    poll_interval: 5ms
+    poll_interval: 10ms
   - type: regex_parser
     regex: '^(?P<ts>\d{4}-\d{2}-\d{2}) (?P<msg>[^\n]+)'
     timestamp:
