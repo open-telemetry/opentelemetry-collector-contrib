@@ -61,7 +61,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20200918.184353-3.jar"
+	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20201110.155252-5.jar"
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
