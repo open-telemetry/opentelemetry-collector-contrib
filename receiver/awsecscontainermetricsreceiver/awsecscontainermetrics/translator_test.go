@@ -46,7 +46,7 @@ func TestIntGauge(t *testing.T) {
 
 func TestDoubleGauge(t *testing.T) {
 	timestamp := pdata.TimeToUnixNano(time.Now())
-	floatValue := float64(100.01)
+	floatValue := 100.01
 
 	m := doubleGauge("cpu_utilized", "Count", floatValue, timestamp)
 	require.NotNil(t, m)

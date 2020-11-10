@@ -737,7 +737,7 @@ func assertAttributesCopiedToPropertiesOrMeasurements(
 			case pdata.AttributeValueDOUBLE:
 				m, exists := measurements[k]
 				assert.True(t, exists)
-				assert.Equal(t, float64(v.DoubleVal()), m)
+				assert.Equal(t, v.DoubleVal(), m)
 			}
 		})
 }

@@ -115,9 +115,9 @@ func (ar *MockAwsXrayReceiver) handleRequest(ctx context.Context, req *http.Requ
 
 	var result map[string]interface{}
 
-	json.Unmarshal([]byte(body), &result)
+	json.Unmarshal(body, &result)
 
-	traces, _ := ToTraces([]byte(body))
+	traces, _ := ToTraces(body)
 
 	ar.nextConsumer.ConsumeTraces(ctx, *traces)
 

@@ -43,7 +43,7 @@ type UnstartableOperator struct {
 }
 
 func newUnstartableParams() pipeline.Params {
-	return pipeline.Params(map[string]interface{}{"type": "unstartable_operator"})
+	return map[string]interface{}{"type": "unstartable_operator"}
 }
 
 // NewUnstartableConfig creates new output config
