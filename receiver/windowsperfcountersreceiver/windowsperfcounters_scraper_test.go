@@ -117,7 +117,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				},
 				ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
-			initializeMessage: "error initializing counters",
+			initializeMessage: "some performance counters could not be initialized",
 			initializeErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
