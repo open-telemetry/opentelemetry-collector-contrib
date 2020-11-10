@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_RequestSignature(t *testing.T) {
