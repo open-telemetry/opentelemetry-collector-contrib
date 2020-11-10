@@ -466,6 +466,41 @@ func Test_metricDataToSplunk(t *testing.T) {
 				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myhost"),
 			},
 		},
+
+		{
+			name: "double_histogram_no_upper_bound",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				doubleHistogram := pdata.NewMetric()
+				doubleHistogram.InitEmpty()
+				doubleHistogram.SetName("double_histogram_with_dims")
+				doubleHistogram.SetDataType(pdata.MetricDataTypeDoubleHistogram)
+				doubleHistogram.DoubleHistogram().InitEmpty()
+				doubleHistogramPt := pdata.NewDoubleHistogramDataPoint()
+				doubleHistogramPt.InitEmpty()
+				doubleHistogramPt.SetExplicitBounds(distributionBounds)
+				doubleHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
+				doubleHistogramPt.SetSum(23)
+				doubleHistogramPt.SetCount(7)
+				doubleHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				doubleHistogram.DoubleHistogram().DataPoints().Append(doubleHistogramPt)
+				ilm.Metrics().Append(doubleHistogram)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
 		{
 			name: "double_histogram",
 			metricsDataFn: func() pdata.Metrics {
@@ -577,6 +612,41 @@ func Test_metricDataToSplunk(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "int_histogram_no_upper_bound",
+			metricsDataFn: func() pdata.Metrics {
+
+				metrics := pdata.NewMetrics()
+				rm := pdata.NewResourceMetrics()
+				rm.InitEmpty()
+				metrics.ResourceMetrics().Append(rm)
+				rm.Resource().InitEmpty()
+				rm.Resource().Attributes().InsertString("k0", "v0")
+				rm.Resource().Attributes().InsertString("k1", "v1")
+				ilm := pdata.NewInstrumentationLibraryMetrics()
+				ilm.InitEmpty()
+
+				intHistogram := pdata.NewMetric()
+				intHistogram.InitEmpty()
+				intHistogram.SetName("int_histogram_with_dims")
+				intHistogram.SetDataType(pdata.MetricDataTypeIntHistogram)
+				intHistogram.IntHistogram().InitEmpty()
+				intHistogramPt := pdata.NewIntHistogramDataPoint()
+				intHistogramPt.InitEmpty()
+				intHistogramPt.SetExplicitBounds(distributionBounds)
+				intHistogramPt.SetBucketCounts([]uint64{4, 2, 3})
+				intHistogramPt.SetCount(7)
+				intHistogramPt.SetSum(23)
+				intHistogramPt.SetTimestamp(pdata.TimestampUnixNano(tsUnix.UnixNano()))
+				intHistogram.IntHistogram().DataPoints().Append(intHistogramPt)
+				ilm.Metrics().Append(intHistogram)
+
+				rm.InstrumentationLibraryMetrics().Append(ilm)
+				return metrics
+			},
+			wantSplunkMetrics: []splunk.Event{},
+		},
+
 		{
 			name: "int_histogram",
 			metricsDataFn: func() pdata.Metrics {
