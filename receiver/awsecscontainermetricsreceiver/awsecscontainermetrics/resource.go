@@ -22,32 +22,27 @@ import (
 )
 
 func containerResource(cm ContainerMetadata) pdata.Resource {
-	attributes := map[string]pdata.AttributeValue{}
+	resource := pdata.NewResource()
+	resource.InitEmpty()
 
-	attributes[conventions.AttributeContainerName] = pdata.NewAttributeValueString(cm.ContainerName)
-	attributes[conventions.AttributeContainerID] = pdata.NewAttributeValueString(cm.DockerID)
-	attributes[AttributeECSDockerName] = pdata.NewAttributeValueString(cm.DockerName)
+	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
+	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
+	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
 
-	return createResourceWithAttributes(attributes)
+	return resource
 }
 
 func taskResource(tm TaskMetadata) pdata.Resource {
-	attributes := map[string]pdata.AttributeValue{}
-
-	attributes[AttributeECSCluster] = pdata.NewAttributeValueString(tm.Cluster)
-	attributes[AttributeECSTaskARN] = pdata.NewAttributeValueString(tm.TaskARN)
-	attributes[AttributeECSTaskID] = pdata.NewAttributeValueString(getTaskIDFromARN(tm.TaskARN))
-	attributes[AttributeECSTaskFamily] = pdata.NewAttributeValueString(tm.Family)
-	attributes[AttributeECSTaskRevesion] = pdata.NewAttributeValueString(tm.Revision)
-	attributes[AttributeECSServiceName] = pdata.NewAttributeValueString("undefined")
-
-	return createResourceWithAttributes(attributes)
-}
-
-func createResourceWithAttributes(attributes map[string]pdata.AttributeValue) pdata.Resource {
 	resource := pdata.NewResource()
 	resource.InitEmpty()
-	resource.Attributes().InitFromMap(attributes)
+
+	resource.Attributes().UpsertString(AttributeECSCluster, tm.Cluster)
+	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
+	resource.Attributes().UpsertString(AttributeECSTaskID, getTaskIDFromARN(tm.TaskARN))
+	resource.Attributes().UpsertString(AttributeECSTaskFamily, tm.Family)
+	resource.Attributes().UpsertString(AttributeECSTaskRevesion, tm.Revision)
+	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
+
 	return resource
 }
 
