@@ -132,8 +132,8 @@ otel.jmx.interval.milliseconds = %v
 	}
 
 	javaConfig += fmt.Sprintf(`otel.exporter = otlp
-otel.otlp.endpoint = %v
-otel.otlp.metric.timeout = %v
+otel.exporter.otlp.endpoint = %v
+otel.exporter.otlp.metric.timeout = %v
 `, jmx.config.OTLPExporterConfig.Endpoint, jmx.config.OTLPExporterConfig.Timeout.Milliseconds())
 
 	if jmx.config.Username != "" {
