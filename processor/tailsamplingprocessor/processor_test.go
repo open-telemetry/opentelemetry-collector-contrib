@@ -450,7 +450,6 @@ type mockPolicyEvaluator struct {
 	NextError              error
 	EvaluationCount        int
 	LateArrivingSpansCount int
-	OnDroppedSpansCount    int
 }
 
 var _ sampling.PolicyEvaluator = (*mockPolicyEvaluator)(nil)
@@ -461,10 +460,6 @@ func (m *mockPolicyEvaluator) OnLateArrivingSpans(sampling.Decision, []*pdata.Sp
 }
 func (m *mockPolicyEvaluator) Evaluate(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
 	m.EvaluationCount++
-	return m.NextDecision, m.NextError
-}
-func (m *mockPolicyEvaluator) OnDroppedSpans(pdata.TraceID, *sampling.TraceData) (sampling.Decision, error) {
-	m.OnDroppedSpansCount++
 	return m.NextDecision, m.NextError
 }
 
