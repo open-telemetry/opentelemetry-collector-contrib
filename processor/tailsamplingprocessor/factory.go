@@ -16,6 +16,7 @@ package tailsamplingprocessor
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"go.opencensus.io/stats/view"
@@ -31,10 +32,14 @@ const (
 	typeStr = "tail_sampling"
 )
 
+var onceMetrics sync.Once
+
 // NewFactory returns a new factory for the Tail Sampling processor.
 func NewFactory() component.ProcessorFactory {
-	// TODO: this is hardcoding the metrics level and skips error handling
-	_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+	onceMetrics.Do(func() {
+		// TODO: this is hardcoding the metrics level and skips error handling
+		_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+	})
 
 	return processorhelper.NewFactory(
 		typeStr,
