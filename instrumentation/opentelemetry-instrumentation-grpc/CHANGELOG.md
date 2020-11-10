@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Update protobuf versions
+  ([#1356](https://github.com/open-telemetry/opentelemetry-python/pull/1356))
+
 ## Version 0.15b0
 
 Released 2020-11-02
