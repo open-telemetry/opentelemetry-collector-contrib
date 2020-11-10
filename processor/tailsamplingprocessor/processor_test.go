@@ -53,7 +53,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 	}
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
+		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -88,7 +88,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 	wg.Wait()
 
 	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
+		d, ok := tsp.idToTrace.Load(traceIds[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount, "Incorrect number of spans for entry %d", i)
@@ -112,7 +112,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
 	for i := 0; i < len(traceIds)-maxSize; i++ {
-		_, ok := tsp.idToTrace.Load(traceKey(traceIds[i].Bytes()))
+		_, ok := tsp.idToTrace.Load(traceIds[i])
 		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
 	}
 }
@@ -164,7 +164,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan traceKey, maxSize),
+		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
 
@@ -227,7 +227,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 			{
 				Name: "policy-2", Evaluator: mpe2, ctx: context.TODO(),
 			}},
-		deleteChan:   make(chan traceKey, maxSize),
+		deleteChan:   make(chan pdata.TraceID, maxSize),
 		policyTicker: mtt,
 	}
 
@@ -286,7 +286,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan traceKey, maxSize),
+		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
 
@@ -345,7 +345,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies:        []*Policy{{Name: "mock-policy", Evaluator: mpe, ctx: context.TODO()}},
-		deleteChan:      make(chan traceKey, maxSize),
+		deleteChan:      make(chan pdata.TraceID, maxSize),
 		policyTicker:    mtt,
 	}
 
