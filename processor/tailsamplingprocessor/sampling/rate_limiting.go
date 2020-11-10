@@ -64,10 +64,3 @@ func (r *rateLimiting) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, er
 
 	return NotSampled, nil
 }
-
-// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-// pressure, before the decision_wait time has been reached.
-func (r *rateLimiting) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
-	r.logger.Debug("Triggering action for dropped spans in rate-limiting filter")
-	return Sampled, nil
-}

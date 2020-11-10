@@ -389,19 +389,8 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID traceKey, deletionTime t
 		tsp.logger.Error("Attempt to delete traceID not on table")
 		return
 	}
-	policiesLen := len(tsp.policies)
+
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
-	for j := 0; j < policiesLen; j++ {
-		if trace.Decisions[j] == sampling.Pending {
-			policy := tsp.policies[j]
-			if decision, err := policy.Evaluator.OnDroppedSpans(pdata.NewTraceID(traceID), trace); err != nil {
-				tsp.logger.Warn("OnDroppedSpans",
-					zap.String("policy", policy.Name),
-					zap.Int("decision", int(decision)),
-					zap.Error(err))
-			}
-		}
-	}
 }
 
 func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {

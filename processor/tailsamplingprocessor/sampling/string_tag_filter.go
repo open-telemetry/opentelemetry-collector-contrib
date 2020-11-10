@@ -100,10 +100,3 @@ func (saf *stringAttributeFilter) Evaluate(_ pdata.TraceID, trace *TraceData) (D
 	}
 	return NotSampled, nil
 }
-
-// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-// pressure, before the decision_wait time has been reached.
-func (saf *stringAttributeFilter) OnDroppedSpans(pdata.TraceID, *TraceData) (Decision, error) {
-	saf.logger.Debug("Triggering action for dropped spans in string-tag filter")
-	return NotSampled, nil
-}
