@@ -41,12 +41,12 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 	ilms.Append(intGauge(prefix+AttributeCPUCores, UnitCount, int64(m.NumOfCPUCores), timestamp))
 	ilms.Append(intGauge(prefix+AttributeCPUOnlines, UnitCount, int64(m.CPUOnlineCpus), timestamp))
 	ilms.Append(intSum(prefix+AttributeCPUSystemUsage, UnitNanoSecond, int64(m.SystemCPUUsage), timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUUtilized, UnitPercent, float64(m.CPUUtilized), timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUReserved, UnitVCpu, float64(m.CPUReserved), timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, float64(m.CPUUsageInVCPU), timestamp))
+	ilms.Append(doubleGauge(prefix+AttributeCPUUtilized, UnitPercent, m.CPUUtilized, timestamp))
+	ilms.Append(doubleGauge(prefix+AttributeCPUReserved, UnitVCpu, m.CPUReserved, timestamp))
+	ilms.Append(doubleGauge(prefix+AttributeCPUUsageInVCPU, UnitVCpu, m.CPUUsageInVCPU, timestamp))
 
-	ilms.Append(doubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, float64(m.NetworkRateRxBytesPerSecond), timestamp))
-	ilms.Append(doubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, float64(m.NetworkRateTxBytesPerSecond), timestamp))
+	ilms.Append(doubleGauge(prefix+AttributeNetworkRateRx, UnitBytesPerSec, m.NetworkRateRxBytesPerSecond, timestamp))
+	ilms.Append(doubleGauge(prefix+AttributeNetworkRateTx, UnitBytesPerSec, m.NetworkRateTxBytesPerSecond, timestamp))
 
 	ilms.Append(intSum(prefix+AttributeNetworkRxBytes, UnitBytes, int64(m.NetworkRxBytes), timestamp))
 	ilms.Append(intSum(prefix+AttributeNetworkRxPackets, UnitCount, int64(m.NetworkRxPackets), timestamp))

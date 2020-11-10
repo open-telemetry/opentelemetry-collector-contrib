@@ -32,7 +32,7 @@ import (
 const (
 	typeStr               = "collectd"
 	defaultBindEndpoint   = "localhost:8081"
-	defaultTimeout        = time.Duration(time.Second * 30)
+	defaultTimeout        = time.Second * 30
 	defaultEncodingFormat = "json"
 )
 
