@@ -76,7 +76,7 @@ func (s *scraper) initialize(ctx context.Context) error {
 
 	// log a warning if some counters cannot be loaded, but do not crash the app
 	if len(errors) > 0 {
-		s.logger.Warn("error initializing counters", zap.Error(componenterror.CombineErrors(errors)))
+		s.logger.Warn("some performance counters could not be initialized", zap.Error(componenterror.CombineErrors(errors)))
 	}
 
 	return nil
