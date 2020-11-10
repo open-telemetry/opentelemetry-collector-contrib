@@ -25,8 +25,6 @@ func convertToOTLPMetrics(prefix string, m ECSMetrics, r pdata.Resource, timesta
 
 	rm := rms.At(0)
 	rm.InitEmpty()
-
-	rm.Resource().InitEmpty()
 	r.CopyTo(rm.Resource())
 
 	ilms := rm.InstrumentationLibraryMetrics()
