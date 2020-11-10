@@ -411,6 +411,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				rm.Resource().Attributes().InsertString("service.name", "mysource")
 				rm.Resource().Attributes().InsertString("host.hostname", "myhost")
 				rm.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+				rm.Resource().Attributes().InsertString("com.splunk.index", "myindex")
 
 				metrics.ResourceMetrics().Append(rm)
 				rm.Resource().Attributes().InsertString("k0", "v0")
@@ -447,8 +448,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return metrics
 			},
 			wantSplunkMetrics: []splunk.Event{
-				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"mysourcetype", "myhost", "mysource", "v0", "v1"}, doubleVal, "mysource", "mysourcetype", "myhost"),
-				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myhost"),
+				commonSplunkMetric("gauge_double_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, doubleVal, "mysource", "mysourcetype", "myindex", "myhost"),
+				commonSplunkMetric("gauge_int_with_dims", tsMSecs, []string{"com.splunk.index", "com.splunk.sourcetype", "host.hostname", "service.name", "k0", "k1"}, []interface{}{"myindex", "mysourcetype", "myhost", "mysource", "v0", "v1"}, int64Val, "mysource", "mysourcetype", "myindex", "myhost"),
 			},
 		},
 		{
@@ -682,6 +683,7 @@ func commonSplunkMetric(
 	val interface{},
 	source string,
 	sourcetype string,
+	index string,
 	host string,
 ) splunk.Event {
 	fields := map[string]interface{}{fmt.Sprintf("metric_name:%s", metricName): val}
@@ -694,6 +696,7 @@ func commonSplunkMetric(
 		Time:       ts,
 		Source:     source,
 		SourceType: sourcetype,
+		Index:      index,
 		Host:       host,
 		Event:      "metric",
 		Fields:     fields,
