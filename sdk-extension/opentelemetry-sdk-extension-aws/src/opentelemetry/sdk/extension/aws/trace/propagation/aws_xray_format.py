@@ -242,12 +242,12 @@ class AwsXRayFormat(TextMapPropagator):
             return
 
         otel_trace_id = "{:032x}".format(span_context.trace_id)
-        xray_trace_id = (
-            TRACE_ID_VERSION
-            + TRACE_ID_DELIMITER
-            + otel_trace_id[:TRACE_ID_FIRST_PART_LENGTH]
-            + TRACE_ID_DELIMITER
-            + otel_trace_id[TRACE_ID_FIRST_PART_LENGTH:]
+        xray_trace_id = TRACE_ID_DELIMITER.join(
+            [
+                TRACE_ID_VERSION,
+                otel_trace_id[:TRACE_ID_FIRST_PART_LENGTH],
+                otel_trace_id[TRACE_ID_FIRST_PART_LENGTH:],
+            ]
         )
 
         parent_id = "{:016x}".format(span_context.span_id)
@@ -260,18 +260,15 @@ class AwsXRayFormat(TextMapPropagator):
 
         # TODO: Add OT trace state to the X-Ray trace header
 
-        trace_header = (
-            TRACE_ID_KEY
-            + KEY_AND_VALUE_DELIMITER
-            + xray_trace_id
-            + KV_PAIR_DELIMITER
-            + PARENT_ID_KEY
-            + KEY_AND_VALUE_DELIMITER
-            + parent_id
-            + KV_PAIR_DELIMITER
-            + SAMPLED_FLAG_KEY
-            + KEY_AND_VALUE_DELIMITER
-            + sampling_flag
+        trace_header = KV_PAIR_DELIMITER.join(
+            [
+                KEY_AND_VALUE_DELIMITER.join([key, value])
+                for key, value in [
+                    (TRACE_ID_KEY, xray_trace_id),
+                    (PARENT_ID_KEY, parent_id),
+                    (SAMPLED_FLAG_KEY, sampling_flag),
+                ]
+            ]
         )
 
         set_in_carrier(
