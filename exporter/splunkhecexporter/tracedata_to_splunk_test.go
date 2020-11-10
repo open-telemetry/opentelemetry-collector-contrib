@@ -45,6 +45,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
 				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
+				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
 				ils.InitEmpty()
@@ -171,6 +172,7 @@ func commonSplunkEvent(
 		Host:       "myhost",
 		Source:     "myservice",
 		SourceType: "mysourcetype",
+		Index:      "myindex",
 		Event: HecSpan{Name: name, StartTime: ts,
 			TraceID:    "",
 			SpanID:     "",
@@ -198,7 +200,7 @@ func commonSplunkEvent(
 			},
 		},
 		Fields: map[string]interface{}{
-			"com.splunk.sourcetype": "mysourcetype", "host.hostname": "myhost", "service.name": "myservice",
+			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.hostname": "myhost", "service.name": "myservice",
 		},
 	}
 }

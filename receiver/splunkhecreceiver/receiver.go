@@ -58,8 +58,9 @@ const (
 )
 
 var (
-	errNilNextConsumer = errors.New("nil metricsConsumer")
-	errEmptyEndpoint   = errors.New("empty endpoint")
+	errNilNextMetricsConsumer = errors.New("nil metricsConsumer")
+	errNilNextLogsConsumer    = errors.New("nil logsConsumer")
+	errEmptyEndpoint          = errors.New("empty endpoint")
 
 	okRespBody                = initJSONResponse(responseOK)
 	invalidMethodRespBody     = initJSONResponse(responseInvalidMethod)
@@ -91,7 +92,7 @@ func NewMetricsReceiver(
 	nextConsumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, errNilNextMetricsConsumer
 	}
 
 	if config.Endpoint == "" {
@@ -119,9 +120,9 @@ func NewLogsReceiver(
 	logger *zap.Logger,
 	config Config,
 	nextConsumer consumer.LogsConsumer,
-) (component.MetricsReceiver, error) {
+) (component.LogsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, errNilNextConsumer
+		return nil, errNilNextLogsConsumer
 	}
 
 	if config.Endpoint == "" {

@@ -209,6 +209,7 @@ func generateLargeLogsBatch(t *testing.T) pdata.Logs {
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
