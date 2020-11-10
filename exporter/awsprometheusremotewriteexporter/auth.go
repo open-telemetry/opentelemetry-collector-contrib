@@ -68,7 +68,6 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 func signingRoundTripper(roundTripper http.RoundTripper) (http.RoundTripper, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region: aws.String(awsRegion)},
-		aws.NewConfig().WithLogLevel(aws.LogDebugWithSigning),
 	)
 	if err != nil {
 		return nil, err
