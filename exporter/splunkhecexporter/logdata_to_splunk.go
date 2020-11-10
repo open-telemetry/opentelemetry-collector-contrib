@@ -64,37 +64,24 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 	if lr.Body().IsNil() {
 		return nil
 	}
-	var host string
-	var source string
-	var sourcetype string
+	host := unknownHostName
+	source := config.Source
+	sourcetype := config.SourceType
+	index := config.Index
 	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if v.Type() != pdata.AttributeValueSTRING {
-			logger.Debug("Failed to convert log record attribute value to Splunk property value, value is not a string", zap.String("key", k))
-			return
-		}
 		if k == conventions.AttributeHostHostname {
 			host = v.StringVal()
 		} else if k == conventions.AttributeServiceName {
 			source = v.StringVal()
 		} else if k == splunk.SourcetypeLabel {
 			sourcetype = v.StringVal()
+		} else if k == splunk.IndexLabel {
+			index = v.StringVal()
 		} else {
-			fields[k] = v.StringVal()
+			fields[k] = convertAttributeValue(v, logger)
 		}
 	})
-
-	if host == "" {
-		host = unknownHostName
-	}
-
-	if source == "" {
-		source = config.Source
-	}
-
-	if sourcetype == "" {
-		sourcetype = config.SourceType
-	}
 
 	eventValue := convertAttributeValue(lr.Body(), logger)
 	return &splunk.Event{
@@ -102,7 +89,7 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,
-		Index:      config.Index,
+		Index:      index,
 		Event:      eventValue,
 		Fields:     fields,
 	}

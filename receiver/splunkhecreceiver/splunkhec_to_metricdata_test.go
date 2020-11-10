@@ -309,6 +309,7 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	attrs.InsertString("host.hostname", "localhost")
 	attrs.InsertString("service.name", "source")
 	attrs.InsertString("com.splunk.sourcetype", "sourcetype")
+	attrs.InsertString("com.splunk.index", "index")
 
 	ilm := pdata.NewInstrumentationLibraryMetrics()
 	ilm.InitEmpty()

@@ -66,8 +66,4 @@ type PolicyEvaluator interface {
 
 	// Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 	Evaluate(traceID pdata.TraceID, trace *TraceData) (Decision, error)
-
-	// OnDroppedSpans is called when the trace needs to be dropped, due to memory
-	// pressure, before the decision_wait time has been reached.
-	OnDroppedSpans(traceID pdata.TraceID, trace *TraceData) (Decision, error)
 }
