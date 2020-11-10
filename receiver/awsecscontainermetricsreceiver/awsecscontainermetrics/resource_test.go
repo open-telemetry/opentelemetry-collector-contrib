@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
@@ -27,15 +28,20 @@ func TestContainerResource(t *testing.T) {
 		DockerID:      "001",
 		DockerName:    "docker-container-1",
 	}
+
 	r := containerResource(cm)
 	require.NotNil(t, r)
 
-	labels := r.Labels
-	require.EqualValues(t, 3, len(labels))
+	attrMap := r.Attributes()
+	require.EqualValues(t, 3, attrMap.Len())
 
-	require.EqualValues(t, "container-1", labels[conventions.AttributeContainerName])
-	require.EqualValues(t, "001", labels[conventions.AttributeContainerID])
-	require.EqualValues(t, "docker-container-1", labels[AttributeECSDockerName])
+	expected := map[string]string{
+		conventions.AttributeContainerName: "container-1",
+		conventions.AttributeContainerID:   "001",
+		AttributeECSDockerName:             "docker-container-1",
+	}
+
+	verifyAttributeMap(t, expected, attrMap)
 }
 
 func TestTaskResource(t *testing.T) {
@@ -43,21 +49,33 @@ func TestTaskResource(t *testing.T) {
 		Cluster:  "cluster-1",
 		TaskARN:  "arn:aws:some-value/001",
 		Family:   "task-def-family-1",
-		Revision: "task-def-version-1",
+		Revision: "v1.2",
 	}
 	r := taskResource(tm)
 	require.NotNil(t, r)
 
-	labels := r.Labels
-	require.EqualValues(t, 6, len(labels))
+	attrMap := r.Attributes()
+	require.EqualValues(t, 6, attrMap.Len())
 
-	require.EqualValues(t, "cluster-1", labels[AttributeECSCluster])
-	require.EqualValues(t, "arn:aws:some-value/001", labels[AttributeECSTaskARN])
-	require.EqualValues(t, "001", labels[AttributeECSTaskID])
-	require.EqualValues(t, "task-def-family-1", labels[AttributeECSTaskFamily])
-	require.EqualValues(t, "task-def-version-1", labels[AttributeECSTaskRevesion])
+	expected := map[string]string{
+		AttributeECSCluster:      "cluster-1",
+		AttributeECSTaskARN:      "arn:aws:some-value/001",
+		AttributeECSTaskID:       "001",
+		AttributeECSTaskFamily:   "task-def-family-1",
+		AttributeECSTaskRevesion: "v1.2",
+	}
+
+	verifyAttributeMap(t, expected, attrMap)
 }
 
+func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.AttributeMap) {
+	for key, val := range expected {
+		attributeVal, found := found.Get(key)
+		require.EqualValues(t, true, found)
+
+		require.EqualValues(t, val, attributeVal.StringVal())
+	}
+}
 func TestGetTaskIDFromARN(t *testing.T) {
 	id := getTaskIDFromARN("arn:aws:something/001")
 	require.EqualValues(t, "001", id)
