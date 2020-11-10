@@ -70,8 +70,8 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.target.system = mytargetsystem
 otel.exporter = otlp
-otel.otlp.endpoint = myotlpendpoint
-otel.otlp.metric.timeout = 234000
+otel.exporter.otlp.endpoint = myotlpendpoint
+otel.exporter.otlp.metric.timeout = 234000
 `,
 		},
 		{
@@ -91,8 +91,8 @@ otel.otlp.metric.timeout = 234000
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.groovy.script = mygroovyscript
 otel.exporter = otlp
-otel.otlp.endpoint = myotlpendpoint
-otel.otlp.metric.timeout = 234000
+otel.exporter.otlp.endpoint = myotlpendpoint
+otel.exporter.otlp.metric.timeout = 234000
 `,
 		},
 	}

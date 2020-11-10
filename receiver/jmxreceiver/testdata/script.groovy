@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import io.opentelemetry.common.Labels
+import io.opentelemetry.api.common.Labels
 
 def loadMatches = otel.queryJmx("org.apache.cassandra.metrics:type=Storage,name=Load")
 if (loadMatches.size() > 0) {
