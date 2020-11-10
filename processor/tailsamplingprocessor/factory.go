@@ -18,8 +18,10 @@ import (
 	"context"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
@@ -31,6 +33,9 @@ const (
 
 // NewFactory returns a new factory for the Tail Sampling processor.
 func NewFactory() component.ProcessorFactory {
+	// TODO: this is hardcoding the metrics level and skips error handling
+	_ = view.Register(SamplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+
 	return processorhelper.NewFactory(
 		typeStr,
 		createDefaultConfig,
