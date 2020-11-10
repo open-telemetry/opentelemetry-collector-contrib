@@ -91,7 +91,7 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 			name: "no instances",
 			path: `\Memory\Committed Bytes`,
 			assertExpected: func(t *testing.T, data []win_perf_counters.CounterValue) {
-				assert.Equal(t, 1, len(data))
+				assert.Len(t, data, 1)
 				assert.Empty(t, data[0].InstanceName)
 			},
 		},
