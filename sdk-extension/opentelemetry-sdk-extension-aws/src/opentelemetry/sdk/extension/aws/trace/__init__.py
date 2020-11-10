@@ -11,13 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pkg_resources
 
-# IMPORTANT: Only the wsgi module needs this because it is always the first
-# package that uses the `{rootdir}/*/tests/` path and gets installed by
-# `eachdist.py` and according to `eachdist.ini`.
+from opentelemetry.sdk.extension.aws.trace.aws_xray_ids_generator import (
+    AwsXRayIdsGenerator,
+)
 
-# Naming the tests module as a namespace package ensures that
-# relative imports will resolve properly for subsequent test packages,
-# as it enables searching for a composite of multiple test modules.
-pkg_resources.declare_namespace(__name__)
+__all__ = ["AwsXRayIdsGenerator"]

@@ -11,13 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import pkg_resources
+import os
 
-# IMPORTANT: Only the wsgi module needs this because it is always the first
-# package that uses the `{rootdir}/*/tests/` path and gets installed by
-# `eachdist.py` and according to `eachdist.ini`.
+import setuptools
 
-# Naming the tests module as a namespace package ensures that
-# relative imports will resolve properly for subsequent test packages,
-# as it enables searching for a composite of multiple test modules.
-pkg_resources.declare_namespace(__name__)
+BASE_DIR = os.path.dirname(__file__)
+VERSION_FILENAME = os.path.join(
+    BASE_DIR, "src", "opentelemetry", "sdk", "extension", "aws", "version.py"
+)
+PACKAGE_INFO = {}
+with open(VERSION_FILENAME) as f:
+    exec(f.read(), PACKAGE_INFO)
+
+setuptools.setup(version=PACKAGE_INFO["__version__"])
