@@ -17,35 +17,33 @@ package awsecscontainermetrics
 import (
 	"strings"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/conventions"
 )
 
-func containerResource(cm ContainerMetadata) *resourcepb.Resource {
-	labels := map[string]string{}
+func containerResource(cm ContainerMetadata) pdata.Resource {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
 
-	labels[conventions.AttributeContainerName] = cm.ContainerName
-	labels[conventions.AttributeContainerID] = cm.DockerID
-	labels[AttributeECSDockerName] = cm.DockerName
-	return &resourcepb.Resource{
-		Type:   MetricResourceType,
-		Labels: labels,
-	}
+	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
+	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
+	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
+
+	return resource
 }
 
-func taskResource(tm TaskMetadata) *resourcepb.Resource {
-	labels := map[string]string{}
+func taskResource(tm TaskMetadata) pdata.Resource {
+	resource := pdata.NewResource()
+	resource.InitEmpty()
 
-	labels[AttributeECSCluster] = tm.Cluster
-	labels[AttributeECSTaskARN] = tm.TaskARN
-	labels[AttributeECSTaskID] = getTaskIDFromARN(tm.TaskARN)
-	labels[AttributeECSTaskFamily] = tm.Family
-	labels[AttributeECSTaskRevesion] = tm.Revision
-	labels[AttributeECSServiceName] = "undefined"
-	return &resourcepb.Resource{
-		Type:   MetricResourceType,
-		Labels: labels,
-	}
+	resource.Attributes().UpsertString(AttributeECSCluster, tm.Cluster)
+	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
+	resource.Attributes().UpsertString(AttributeECSTaskID, getTaskIDFromARN(tm.TaskARN))
+	resource.Attributes().UpsertString(AttributeECSTaskFamily, tm.Family)
+	resource.Attributes().UpsertString(AttributeECSTaskRevesion, tm.Revision)
+	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
+
+	return resource
 }
 
 func getTaskIDFromARN(arn string) string {
