@@ -74,7 +74,7 @@ func TestSpanAttributesToMap(t *testing.T) {
 		got := spanAttributesToMap(attrs)
 		want := wantResults[i]
 		for k := range want {
-			if interface{}(got[k]) != want[k] {
+			if got[k] != want[k] {
 				t.Errorf("Got: %+v, Want: %+v", got[k], want[k])
 			}
 		}

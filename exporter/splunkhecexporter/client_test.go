@@ -89,7 +89,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-		span.SetTraceState(pdata.TraceState("foo"))
+		span.SetTraceState("foo")
 		if i%2 == 0 {
 			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 			span.Status().InitEmpty()

@@ -958,7 +958,7 @@ func TestBuildCWMetric(t *testing.T) {
 			"label1": "value1",
 		})
 		dp.SetCount(uint64(17))
-		dp.SetSum(float64(17.13))
+		dp.SetSum(17.13)
 		dp.SetBucketCounts([]uint64{1, 2, 3})
 		dp.SetExplicitBounds([]float64{1, 2, 3})
 
