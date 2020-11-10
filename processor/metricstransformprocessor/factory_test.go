@@ -109,6 +109,11 @@ func TestCreateProcessors(t *testing.T) {
 			succeed:      false,
 			errorMessage: fmt.Sprintf("operation %v: %q must be in %q", 1, AggregationTypeFieldName, AggregationTypes),
 		},
+		{
+			configName:   "config_invalid_submatchcase.yaml",
+			succeed:      false,
+			errorMessage: fmt.Sprintf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases),
+		},
 	}
 
 	for _, test := range tests {

@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
@@ -42,6 +43,7 @@ type internalTransform struct {
 	Action              ConfigAction
 	NewName             string
 	AggregationType     AggregationType
+	SubmatchCase        SubmatchCase
 	Operations          []internalOperation
 }
 
@@ -245,6 +247,7 @@ func (mtp *metricsTransformProcessor) combine(matchedMetrics []*match, transform
 			// append label values based on regex submatches
 			for i := 1; i < len(match.submatches)/2; i++ {
 				submatch := match.metric.MetricDescriptor.Name[match.submatches[2*i]:match.submatches[2*i+1]]
+				submatch = replaceCaseOfSubmatch(transform.SubmatchCase, submatch)
 				ts.LabelValues = append(ts.LabelValues, &metricspb.LabelValue{Value: submatch, HasValue: (submatch != "")})
 			}
 
@@ -259,6 +262,17 @@ func (mtp *metricsTransformProcessor) combine(matchedMetrics []*match, transform
 	combinedMetric.Timeseries = aggregatedTimeseries
 
 	return combinedMetric
+}
+
+func replaceCaseOfSubmatch(replacement SubmatchCase, submatch string) string {
+	switch replacement {
+	case Lower:
+		return strings.ToLower(submatch)
+	case Upper:
+		return strings.ToUpper(submatch)
+	}
+
+	return submatch
 }
 
 // removeMatchedMetricsAndAppendCombined removes the set of matched metrics from metrics and appends the combined metric at the end.

@@ -45,6 +45,9 @@ const (
 
 	// NewValueFieldName is the mapstructure field name for NewValue field
 	NewValueFieldName = "new_value"
+
+	// SubmatchCaseFieldName is the mapstructure field name for SubmatchCase field
+	SubmatchCaseFieldName = "submatch_case"
 )
 
 // Config defines configuration for Resource processor.
@@ -76,6 +79,9 @@ type Transform struct {
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
 	AggregationType AggregationType `mapstructure:"aggregation_type"`
+
+	// SubmatchCase specifies what case to use for label values created from regexp submatches.
+	SubmatchCase SubmatchCase `mapstructure:"submatch_case"`
 
 	// Operations contains a list of operations that will be performed on the selected metric.
 	Operations []Operation `mapstructure:"operations"`
@@ -129,7 +135,7 @@ type ValueAction struct {
 	NewValue string `mapstructure:"new_value"`
 }
 
-// ConfigAction is the enum to capture the two types of actions to perform on a metric.
+// ConfigAction is the enum to capture the type of action to perform on a metric.
 type ConfigAction string
 
 const (
@@ -237,6 +243,29 @@ var MatchTypes = []MatchType{StrictMatchType, RegexpMatchType}
 func (mt MatchType) isValid() bool {
 	for _, matchType := range MatchTypes {
 		if mt == matchType {
+			return true
+		}
+	}
+
+	return false
+}
+
+// SubmatchCase is the enum to capture the two types of case changes to apply to submatches.
+type SubmatchCase string
+
+const (
+	// Lower is the SubmatchCase for lower casing the submatch.
+	Lower SubmatchCase = "lower"
+
+	// Upper is the SubmatchCase for upper casing the submatch.
+	Upper SubmatchCase = "upper"
+)
+
+var SubmatchCases = []SubmatchCase{Lower, Upper}
+
+func (sc SubmatchCase) isValid() bool {
+	for _, submatchCase := range SubmatchCases {
+		if sc == submatchCase {
 			return true
 		}
 	}

@@ -49,6 +49,7 @@ processors:
         match_type: regexp
         action: combine
         new_name: combined_metric_name
+        submatch_case: lower
 
 exporters:
   exampleexporter:

@@ -856,13 +856,14 @@ var (
 			name: "combine",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^(metric)(?P<namedsubmatch>[12])$")},
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^([mM]etric)(?P<namedsubmatch>[12])$")},
 					Action:              Combine,
 					NewName:             "new",
+					SubmatchCase:        "lower",
 				},
 			},
 			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
+				metricBuilder().setName("Metric1").
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, nil).addInt64Point(0, 1, 1).
 					build(),
@@ -930,13 +931,14 @@ var (
 			name: "combine_single_match",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^(metric)(?P<namedsubmatch>[1])$")},
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^([mM]etric)(?P<namedsubmatch>[1])$")},
 					Action:              Combine,
 					NewName:             "new",
+					SubmatchCase:        "upper",
 				},
 			},
 			in: []*metricspb.Metric{
-				metricBuilder().setName("metric1").
+				metricBuilder().setName("Metric1").
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
 					addTimeseries(1, nil).addInt64Point(0, 1, 1).
 					build(),
@@ -961,7 +963,7 @@ var (
 				metricBuilder().setName("new").
 					setLabels([]string{"$1", "namedsubmatch"}).
 					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
-					addTimeseries(1, []string{"metric", "1"}).addInt64Point(0, 1, 1).
+					addTimeseries(1, []string{"METRIC", "1"}).addInt64Point(0, 1, 1).
 					build(),
 			},
 		},
