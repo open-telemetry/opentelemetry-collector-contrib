@@ -33,7 +33,7 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	oCfg := cfg.(*Config)
-	scraper, err := newScraper(oCfg)
+	scraper, err := newScraper(oCfg, params.Logger)
 	if err != nil {
 		return nil, err
 	}
