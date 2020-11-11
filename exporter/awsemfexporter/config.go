@@ -16,6 +16,7 @@ package awsemfexporter
 
 import (
 	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
 
@@ -54,6 +55,11 @@ type Config struct {
 	// "SingleDimensionRollupOnly" - Enable single dimension rollup
 	// "NoDimensionRollup" - No dimension rollup (only keep original metrics which contain all dimensions)
 	DimensionRollupOption string `mapstructure:"dimension_rollup_option"`
+
+	// ResourceToTelemetrySettings is the option for converting resource attrihutes to telemetry attributes.
+	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
+	// If enabled, all the resource attributes will be converted to metric labels by default.
+	exporterhelper.ResourceToTelemetrySettings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// logger is the Logger used for writing error/warning logs
 	logger *zap.Logger

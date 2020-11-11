@@ -23,8 +23,9 @@ The following exporter configuration parameters are supported.
 | `region`          | Send Structured Logs to AWS CloudWatch in a specific region. If this field is not present in config, environment variable "AWS_REGION" can then be used to set region.| determined by metadata |
 | `role_arn`        | IAM role to upload segments to a different account.                    |         |
 | `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
-| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)|
-
+| `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)| 
+| `resource_to_telemetry_conversion` | "resource_to_telemetry_conversion" is the option for converting resource attributes to telemetry attributes. It has only one config onption- `enabled`. For metrics, if `enabled=true`, all the resource attributes will be converted to metric labels by default. See `Resource Attributes to Metric Labels` section below for examples. | `enabled=false` | 
+ 
 
 ## AWS Credential Configuration
 
@@ -33,3 +34,18 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the 
 credential configuration.
+
+
+## Configuration Examples
+
+
+### Resource Attributes to Metric Labels
+`resource_to_telemetry_conversion`  option can be enabled to convert all the resource attributes to metric labels. By default, this option is disabled. Users need to set `enabled=true` to opt-in. See the config example below.
+
+```yaml
+exporters:
+    awsemf:
+        region: 'us-west-2'
+        resource_to_telemetry_conversion:
+            enabled: true
+```

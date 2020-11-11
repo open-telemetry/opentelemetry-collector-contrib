@@ -250,3 +250,19 @@ func TestWrapErrorIfBadRequest(t *testing.T) {
 	err = wrapErrorIfBadRequest(&awsErr)
 	assert.False(t, consumererror.IsPermanent(err))
 }
+
+// This test verifies that if func New() returns an error then NewEmfExporter()
+// will do so.
+func TestNewEmfExporterWithoutConfig(t *testing.T) {
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	env := stashEnv()
+	defer popEnv(env)
+	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
+
+	assert.Nil(t, expCfg.logger)
+	exp, err := NewEmfExporter(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
+	assert.NotNil(t, err)
+	assert.Nil(t, exp)
+	assert.NotNil(t, expCfg.logger)
+}
