@@ -97,7 +97,7 @@ func (kv *KeyValues) String() string {
 
 func (kv *KeyValues) labelToStringBuilder(sb *strings.Builder) {
 	for index, label := range kv.keyValues {
-		sb.WriteString(string(label.Key))
+		sb.WriteString(label.Key)
 		sb.WriteString("#$#")
 		sb.WriteString(label.Value)
 		if index != len(kv.keyValues)-1 {

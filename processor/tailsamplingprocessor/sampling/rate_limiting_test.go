@@ -15,10 +15,8 @@
 package sampling
 
 import (
-	"math"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
@@ -52,15 +50,6 @@ func TestRateLimiter(t *testing.T) {
 	// Trace span count less than spans per second
 	trace.SpanCount = 0
 	decision, err = rateLimiter.Evaluate(traceID, trace)
-	assert.Nil(t, err)
-	assert.Equal(t, decision, Sampled)
-}
-
-func TestOnDroppedSpans_RateLimiter(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-	u, _ := uuid.NewRandom()
-	rateLimiter := NewRateLimiting(zap.NewNop(), 3)
-	decision, err := rateLimiter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
 	assert.Nil(t, err)
 	assert.Equal(t, decision, Sampled)
 }

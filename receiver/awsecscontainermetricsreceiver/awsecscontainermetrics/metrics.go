@@ -15,12 +15,13 @@
 package awsecscontainermetrics
 
 import (
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
-func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) []*consumerdata.MetricsData {
+// MetricsData generates OTLP metrics from endpoint raw data
+func MetricsData(containerStatsMap map[string]ContainerStats, metadata TaskMetadata) []pdata.Metrics {
 	acc := &metricDataAccumulator{}
 	acc.getMetricsData(containerStatsMap, metadata)
 
-	return acc.md
+	return acc.mds
 }

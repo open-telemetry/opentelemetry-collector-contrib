@@ -87,19 +87,19 @@ Corresponds to the `otel.jmx.password` property.
 
 The otlp exporter endpoint to which to listen and submit metrics.
 
-Corresponds to the `otel.otlp.endpoint` property.
+Corresponds to the `otel.exporter.otlp.endpoint` property.
 
 ### otlp.timeout (default: `5s`)
 
 The otlp exporter request timeout.
 
-Corresponds to the `otel.otlp.metric.timeout` property.
+Corresponds to the `otel.exporter.otlp.metric.timeout` property.
 
 ### otlp.headers
 
 The headers to include in otlp metric submission requests.
 
-Corresponds to the `otel.otlp.metadata` property.
+Corresponds to the `otel.exporter.otlp.metadata` property.
 
 ### keystore_path
 

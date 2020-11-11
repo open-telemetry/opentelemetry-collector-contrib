@@ -81,7 +81,7 @@ func Test_logDataToSplunk(t *testing.T) {
 				}
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{}, "myhost", "myapp", "myapp-type"),
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"foo": float64(123)}, "myhost", "myapp", "myapp-type"),
 			},
 			wantNumDroppedLogs: 0,
 		},

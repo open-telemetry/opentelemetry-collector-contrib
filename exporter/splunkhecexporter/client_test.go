@@ -89,7 +89,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 		span.SetEndTime(pdata.TimestampUnixNano((i + 2) * 1e9))
 		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-		span.SetTraceState(pdata.TraceState("foo"))
+		span.SetTraceState("foo")
 		if i%2 == 0 {
 			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 			span.Status().InitEmpty()
@@ -119,6 +119,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Body().SetStringVal("mylog")
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
+		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
 		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
@@ -185,7 +186,7 @@ func runMetricsExport(disableCompression bool, numberOfDataPoints int, t *testin
 	select {
 	case request := <-receivedRequest:
 		return request, nil
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 		return "", errors.New("Timeout")
 	}
 }
@@ -223,7 +224,7 @@ func runTraceExport(disableCompression bool, numberOfTraces int, t *testing.T) (
 	select {
 	case request := <-receivedRequest:
 		return request, nil
-	case <-time.After(5 * time.Second):
+	case <-time.After(1 * time.Second):
 		return "", errors.New("Timeout")
 	}
 }
@@ -281,11 +282,11 @@ func TestReceiveTraces(t *testing.T) {
 func TestReceiveLogs(t *testing.T) {
 	actual, err := runLogExport(true, 3, t)
 	assert.NoError(t, err)
-	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected := `{"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.001,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
-	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","event":"mylog","fields":{"custom":"custom"}}`
+	expected += `{"time":0.002,"host":"myhost","source":"myapp","sourcetype":"myapp-type","index":"myindex","event":"mylog","fields":{"custom":"custom"}}`
 	expected += "\n\r\n\r\n"
 	assert.Equal(t, expected, actual)
 }

@@ -71,10 +71,26 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 		host := unknownHostName
 		source := config.Source
 		sourceType := config.SourceType
+		index := config.Index
 		commonFields := map[string]interface{}{}
-		if conventionHost, isSet := rs.Resource().Attributes().Get(conventions.AttributeHostHostname); isSet {
+		resource := rs.Resource()
+		attributes := resource.Attributes()
+		if conventionHost, isSet := attributes.Get(conventions.AttributeHostHostname); isSet {
 			host = conventionHost.StringVal()
 		}
+		if sourceSet, isSet := attributes.Get(conventions.AttributeServiceName); isSet {
+			source = sourceSet.StringVal()
+		}
+		if sourcetypeSet, isSet := attributes.Get(splunk.SourcetypeLabel); isSet {
+			sourceType = sourcetypeSet.StringVal()
+		}
+		if indexSet, isSet := attributes.Get(splunk.IndexLabel); isSet {
+			index = indexSet.StringVal()
+		}
+		attributes.ForEach(func(k string, v pdata.AttributeValue) {
+			commonFields[k] = tracetranslator.AttributeValueToString(v, false)
+		})
+
 		if sourceSet, isSet := rs.Resource().Attributes().Get(conventions.AttributeServiceName); isSet {
 			source = sourceSet.StringVal()
 		}
@@ -102,7 +118,7 @@ func traceDataToSplunk(logger *zap.Logger, data pdata.Traces, config *Config) ([
 					Host:       host,
 					Source:     source,
 					SourceType: sourceType,
-					Index:      config.Index,
+					Index:      index,
 					Event:      toHecSpan(logger, span),
 					Fields:     commonFields,
 				}
