@@ -3,7 +3,7 @@ name: zookeeperreceiver
 labels:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
-  version:
+  zk.version:
     description: Zookeeper version of the instance.
 
 metrics:

@@ -162,10 +162,10 @@ func (z *zookeeperMetricsScraper) getMetricsAndAttributes(scanner *bufio.Scanner
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			attributes[zkVersionResourceLabel] = metricValue
+			attributes[metadata.Labels.ZkVersion] = metricValue
 			continue
 		case serverStateKey:
-			attributes[serverStateResourceLabel] = metricValue
+			attributes[metadata.Labels.ServerState] = metricValue
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.

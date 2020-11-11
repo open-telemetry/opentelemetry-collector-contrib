@@ -81,7 +81,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedMetrics:              metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
-				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
 		},
@@ -101,7 +101,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			}(),
 			expectedResourceAttributes: map[string]string{
 				"server.state": "leader",
-				"version":      "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
+				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
 			},
 			expectedNumResourceMetrics: 1,
 		},
@@ -150,7 +150,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedMetrics: metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
-				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
 			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
@@ -169,7 +169,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			expectedMetrics: metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
-				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
 			},
 			expectedNumResourceMetrics: 1,
 			closeConnection: func(conn net.Conn) error {
