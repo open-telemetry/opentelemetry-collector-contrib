@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	assert.Equal(t, len(cfg.Exporters), 2)
+	assert.Equal(t, 3, len(cfg.Exporters))
 
 	r0 := cfg.Exporters["awsemf"]
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
@@ -57,5 +58,22 @@ func TestLoadConfig(t *testing.T) {
 			Region:                "us-west-2",
 			RoleARN:               "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole",
 			DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+		})
+
+	r2 := cfg.Exporters["awsemf/resource_attr_to_label"].(*Config)
+	assert.Equal(t, r2,
+		&Config{
+			ExporterSettings:            configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "awsemf/resource_attr_to_label"},
+			LogGroupName:                "",
+			LogStreamName:               "",
+			Endpoint:                    "",
+			RequestTimeoutSeconds:       30,
+			MaxRetries:                  1,
+			NoVerifySSL:                 false,
+			ProxyAddress:                "",
+			Region:                      "",
+			RoleARN:                     "",
+			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
 		})
 }
