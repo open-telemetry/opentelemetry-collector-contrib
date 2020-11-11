@@ -25,6 +25,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/third_party/telegraf/win_perf_counters"
 )
@@ -64,11 +67,12 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		name string
 		cfg  *Config
 
-		newErr          string
-		mockCounterPath string
-		initializeErr   string
-		scrapeErr       error
-		closeErr        error
+		newErr            string
+		mockCounterPath   string
+		initializeMessage string
+		initializeErr     string
+		scrapeErr         error
+		closeErr          error
 
 		expectedMetrics []expectedMetric
 	}
@@ -113,7 +117,8 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				},
 				ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
-			initializeErr: "error initializing counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
+			initializeMessage: "some performance counters could not be initialized",
+			initializeErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
 			name:      "ScrapeError",
@@ -132,15 +137,24 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			if cfg == nil {
 				cfg = defaultConfig
 			}
-			scraper, err := newScraper(cfg)
+
+			core, obs := observer.New(zapcore.WarnLevel)
+			logger := zap.New(core)
+			scraper, err := newScraper(cfg, logger)
 			if test.newErr != "" {
-				assert.EqualError(t, err, test.newErr)
+				require.EqualError(t, err, test.newErr)
 				return
 			}
 
 			err = scraper.initialize(context.Background())
+			require.NoError(t, err)
 			if test.initializeErr != "" {
-				assert.EqualError(t, err, test.initializeErr)
+				require.Equal(t, 1, obs.Len())
+				log := obs.All()[0]
+				assert.Equal(t, log.Level, zapcore.WarnLevel)
+				assert.Equal(t, test.initializeMessage, log.Message)
+				assert.Equal(t, "error", log.Context[0].Key)
+				assert.EqualError(t, log.Context[0].Interface.(error), test.initializeErr)
 				return
 			}
 			require.NoError(t, err)
