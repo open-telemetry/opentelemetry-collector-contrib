@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/zap"
 )
@@ -76,6 +77,26 @@ func New(
 	emfExporter.groupStreamToPusherMap = map[string]map[string]Pusher{}
 
 	return emfExporter, nil
+}
+
+// NewEmfExporter creates a new exporter using exporterhelper
+func NewEmfExporter(
+	config configmodels.Exporter,
+	params component.ExporterCreateParams,
+) (component.MetricsExporter, error) {
+
+	exp, err := New(config, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return exporterhelper.NewMetricsExporter(
+		config,
+		params.Logger,
+		exp.(*emfExporter).pushMetricsData,
+		exporterhelper.WithResourceToTelemetryConversion(config.(*Config).ResourceToTelemetrySettings),
+		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
+	)
 }
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
