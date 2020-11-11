@@ -230,7 +230,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 
 	if r.metricsConsumer == nil {
@@ -250,7 +250,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	if len(msg.Datapoints) == 0 {
-		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, 0, nil)
+		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, nil)
 		resp.Write(okRespBody)
 		return
 	}
@@ -274,7 +274,6 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		ctx,
 		typeStr,
 		len(msg.Datapoints),
-		len(msg.Datapoints),
 		err)
 
 	r.writeResponse(ctx, resp, err)
@@ -286,7 +285,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		transport = "https"
 	}
 
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
 	ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 
 	if r.logsConsumer == nil {
@@ -306,7 +305,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, 0, nil)
+		obsreport.EndMetricsReceiveOp(ctx, typeStr, 0, nil)
 		resp.Write(okRespBody)
 		return
 	}
@@ -335,7 +334,6 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	obsreport.EndMetricsReceiveOp(
 		ctx,
 		typeStr,
-		len(msg.Events),
 		len(msg.Events),
 		err)
 
