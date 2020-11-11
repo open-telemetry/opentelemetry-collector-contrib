@@ -20,6 +20,7 @@ INTEGRATION_TEST_MODULES := \
 	receiver/dockerstatsreceiver \
 	receiver/jmxreceiver/ \
 	receiver/redisreceiver \
+	receiver/zookeeperreceiver \
 	internal/common
 
 .DEFAULT_GOAL := all

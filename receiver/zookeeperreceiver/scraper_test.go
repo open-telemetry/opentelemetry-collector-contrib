@@ -45,6 +45,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		metadata.Metrics.ZookeeperLatencyAvg.New(),
 		metadata.Metrics.ZookeeperLatencyMax.New(),
 		metadata.Metrics.ZookeeperLatencyMin.New(),
+		metadata.Metrics.ZookeeperPacketsReceived.New(),
+		metadata.Metrics.ZookeeperPacketsSent.New(),
 		metadata.Metrics.ZookeeperConnectionsAlive.New(),
 		metadata.Metrics.ZookeeperOutstandingRequests.New(),
 		metadata.Metrics.ZookeeperZnodes.New(),
@@ -54,6 +56,11 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		metadata.Metrics.ZookeeperOpenFileDescriptors.New(),
 		metadata.Metrics.ZookeeperMaxFileDescriptors.New(),
 	}
+
+	var metricsV3414 []pdata.Metric
+	metricsV3414 = append(metricsV3414, commonMetrics...)
+	metricsV3414 = append(metricsV3414, metadata.Metrics.ZookeeperFsyncThresholdExceeds.New())
+
 	localAddr := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name                         string
@@ -71,7 +78,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 		{
 			name:                         "Test correctness with v3.4.14",
 			mockedZKOutputSourceFilename: "mntr-3.4.14",
-			expectedMetrics:              commonMetrics,
+			expectedMetrics:              metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -140,7 +147,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: commonMetrics,
+			expectedMetrics: metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -159,7 +166,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.WarnLevel,
 				},
 			},
-			expectedMetrics: commonMetrics,
+			expectedMetrics: metricsV3414,
 			expectedResourceAttributes: map[string]string{
 				"server.state": "standalone",
 				"version":      "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
@@ -259,7 +266,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 
 func assertMetricValid(t *testing.T, metric pdata.Metric, descriptor pdata.Metric) {
 	assertDescriptorEqual(t, descriptor, metric)
-	require.GreaterOrEqual(t, metric.IntGauge().DataPoints().Len(), 1)
+	switch metric.DataType() {
+	case pdata.MetricDataTypeIntGauge:
+		require.GreaterOrEqual(t, metric.IntGauge().DataPoints().Len(), 1)
+	case pdata.MetricDataTypeIntSum:
+		require.GreaterOrEqual(t, metric.IntSum().DataPoints().Len(), 1)
+	}
 }
 
 func assertDescriptorEqual(t *testing.T, expected pdata.Metric, actual pdata.Metric) {
