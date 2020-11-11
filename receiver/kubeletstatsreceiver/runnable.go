@@ -96,16 +96,16 @@ func (r *runnable) Run() error {
 	mds := kubelet.MetricsData(r.logger, summary, metadata, typeStr, r.metricGroupsToCollect)
 	metrics := internaldata.OCSliceToMetrics(mds)
 
-	var numTimeSeries, numPoints int
-	ctx := obsreport.ReceiverContext(r.ctx, typeStr, transport, r.receiverName)
+	var numPoints int
+	ctx := obsreport.ReceiverContext(r.ctx, r.receiverName, transport)
 	ctx = obsreport.StartMetricsReceiveOp(ctx, typeStr, transport)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		r.logger.Error("ConsumeMetricsData failed", zap.Error(err))
 	} else {
-		numTimeSeries, numPoints = metrics.MetricAndDataPointCount()
+		_, numPoints = metrics.MetricAndDataPointCount()
 	}
-	obsreport.EndMetricsReceiveOp(ctx, typeStr, numTimeSeries, numPoints, err)
+	obsreport.EndMetricsReceiveOp(ctx, typeStr, numPoints, err)
 
 	return nil
 }

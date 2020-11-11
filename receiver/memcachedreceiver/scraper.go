@@ -21,6 +21,7 @@ import (
 	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
@@ -36,19 +37,16 @@ type memcachedScraper struct {
 func newMemcachedScraper(
 	logger *zap.Logger,
 	config *config,
-) *memcachedScraper {
-	return &memcachedScraper{
+) receiverhelper.ResourceMetricsScraper {
+	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
+	return receiverhelper.NewResourceMetricsScraper(config.Name(), ms.scrape)
 }
 
-func (r *memcachedScraper) Initialize(ctx context.Context) error {
-	return nil
-}
-
-func (r *memcachedScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
-	// Init client in Scrape method in case there are transient errors in the
+func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {
+	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
 		var err error
@@ -92,8 +90,4 @@ func (r *memcachedScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSli
 	}
 
 	return metrics.Metrics.ResourceMetrics(), nil
-}
-
-func (r *memcachedScraper) Close(ctx context.Context) error {
-	return nil
 }

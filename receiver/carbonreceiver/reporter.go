@@ -33,7 +33,7 @@ type reporter struct {
 	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
 }
 
-var _ (transport.Reporter) = (*reporter)(nil)
+var _ transport.Reporter = (*reporter)(nil)
 
 func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 	return &reporter{
@@ -49,7 +49,7 @@ func newReporter(receiverName string, logger *zap.Logger) transport.Reporter {
 // reporter instance. The caller code should include a call to end the
 // returned span.
 func (r *reporter) OnDataReceived(ctx context.Context) context.Context {
-	ctx = obsreport.ReceiverContext(ctx, r.name, "tcp", r.name)
+	ctx = obsreport.ReceiverContext(ctx, r.name, "tcp")
 	return obsreport.StartMetricsReceiveOp(ctx, r.name, "tcp")
 }
 
@@ -81,16 +81,14 @@ func (r *reporter) OnTranslationError(ctx context.Context, err error) {
 // the next consumer - the reporter is expected to handle nil error too.
 func (r *reporter) OnMetricsProcessed(
 	ctx context.Context,
-	numReceivedTimeseries int,
-	numInvalidTimeseries int,
+	numReceivedMetricPoints int,
 	err error,
 ) {
 	if err != nil {
 		r.logger.Debug(
 			"Carbon receiver failed to push metrics into pipeline",
 			zap.String("receiver", r.name),
-			zap.Int("numReceivedTimeseries", numReceivedTimeseries),
-			zap.Int("numInvalidTimeseries", numInvalidTimeseries),
+			zap.Int("numReceivedMetricPoints", numReceivedMetricPoints),
 			zap.Error(err))
 
 		span := trace.FromContext(ctx)
@@ -100,7 +98,7 @@ func (r *reporter) OnMetricsProcessed(
 		})
 	}
 
-	obsreport.EndMetricsReceiveOp(ctx, "carbon", numReceivedTimeseries, numReceivedTimeseries, err)
+	obsreport.EndMetricsReceiveOp(ctx, "carbon", numReceivedMetricPoints, err)
 }
 
 func (r *reporter) OnDebugf(template string, args ...interface{}) {
