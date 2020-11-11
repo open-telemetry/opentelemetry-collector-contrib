@@ -16,5 +16,5 @@ Installation
 
 References
 ----------
-* `OpenTelemetry Pymemcache Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/pymemcache/pymemcache.html>`_
+* `OpenTelemetry Pymemcache Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/pymemcache/pymemcache.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

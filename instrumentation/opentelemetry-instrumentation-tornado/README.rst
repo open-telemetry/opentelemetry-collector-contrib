@@ -47,5 +47,5 @@ will extract path_info and content_type attributes from every traced request and
 References
 ----------
 
-* `OpenTelemetry Tornado Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/tornado/tornado.html>`_
+* `OpenTelemetry Tornado Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/tornado/tornado.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

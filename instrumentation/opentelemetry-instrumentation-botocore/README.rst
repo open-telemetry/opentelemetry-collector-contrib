@@ -19,5 +19,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry Botocore Tracing <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/botocore/botocore.html>`_
+* `OpenTelemetry Botocore Tracing <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/botocore/botocore.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
