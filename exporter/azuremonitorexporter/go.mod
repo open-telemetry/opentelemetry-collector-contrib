@@ -7,9 +7,9 @@ require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	go.opentelemetry.io/collector v0.14.1-0.20201106183657-c6b8f28c60b5
+	go.opentelemetry.io/collector v0.14.1-0.20201110213227-d322a4161b8d
 	go.uber.org/zap v1.16.0
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/net v0.0.0-20200904194848-62affa334b73
 	google.golang.org/grpc v1.33.2
 	google.golang.org/grpc/examples v0.0.0-20200728194956-1c32b02682df // indirect
 )

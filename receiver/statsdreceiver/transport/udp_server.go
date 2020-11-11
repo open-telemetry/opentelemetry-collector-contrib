@@ -92,7 +92,7 @@ func (u *udpServer) handlePacket(
 	data []byte,
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
-	var numReceivedMessages, numInvalidMessages int
+	var numReceivedMessages int
 	var metrics []*metricspb.Metric
 	buf := bytes.NewBuffer(data)
 	for {
@@ -108,7 +108,6 @@ func (u *udpServer) handlePacket(
 			numReceivedMessages++
 			metric, err := p.Parse(line)
 			if err != nil {
-				numInvalidMessages++
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
@@ -121,5 +120,5 @@ func (u *udpServer) handlePacket(
 		Metrics: metrics,
 	}
 	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-	u.reporter.OnMetricsProcessed(ctx, numReceivedMessages, numInvalidMessages, err)
+	u.reporter.OnMetricsProcessed(ctx, numReceivedMessages, err)
 }

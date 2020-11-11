@@ -5,13 +5,13 @@ go 1.14
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver v0.0.0-00010101000000-000000000000
 	github.com/shirou/gopsutil v2.20.9+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.14.1-0.20201106183657-c6b8f28c60b5
+	go.opentelemetry.io/collector v0.14.1-0.20201110213227-d322a4161b8d
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0
