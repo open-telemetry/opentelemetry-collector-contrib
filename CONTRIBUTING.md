@@ -104,12 +104,13 @@ A PR is considered to be **ready to merge** when:
   reasonable time to review.
 * Trivial change (typo, cosmetic, doc, etc.) doesn't have to wait for one day.
 * Urgent fix can take exception as long as it has been actively communicated.
+* A changelog entry is added to the corresponding changelog for the code base, if there is any impact on behavior. e.g. doc entries are not required, but small bug entries are.
 
 Any Approver / Maintainer can merge the PR once it is **ready to merge**.
 
 ## Design Choices
 
-As with other OpenTelemetry clients, opentelemetry-python follows the 
+As with other OpenTelemetry clients, opentelemetry-python follows the
 [opentelemetry-specification](https://github.com/open-telemetry/opentelemetry-specification).
 
 It's especially valuable to read through the [library guidelines](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/library-guidelines.md).
@@ -122,7 +123,7 @@ use cases are clear, but the method to satisfy those uses cases are not.
 As such, contributions should provide functionality and behavior that
 conforms to the specification, but the interface and structure is flexible.
 
-It is preferable to have contributions follow the idioms of the language 
+It is preferable to have contributions follow the idioms of the language
 rather than conform to specific API names or argument patterns in the spec.
 
 For a deeper discussion, see: https://github.com/open-telemetry/opentelemetry-specification/issues/165

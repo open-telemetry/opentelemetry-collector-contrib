@@ -21,6 +21,8 @@ Please describe the tests that you ran to verify your changes. Provide instructi
 
 # Checklist:
 
+See [contributing.md](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/master/CONTRIBUTING.md) for styleguide, changelog guidelines, and more.
+
 - [ ] Followed the style guidelines of this project
 - [ ] Changelogs have been updated
 - [ ] Unit tests have been added
