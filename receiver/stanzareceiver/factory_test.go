@@ -36,13 +36,30 @@ func TestCreateReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{
 		Logger: zap.NewNop(),
 	}
-	receiver, err := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockLogsConsumer{})
-	require.NoError(t, err, "receiver creation failed")
-	require.NotNil(t, receiver, "receiver creation failed")
 
-	badCfg := createDefaultConfig().(*Config)
-	badCfg.OffsetsFile = os.Args[0] // current executable cannot be opened
-	receiver, err = createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
-	require.Error(t, err, "receiver creation should fail if offsets file is invalid")
-	require.Nil(t, receiver, "receiver creation should have failed due to invalid offsets file")
+	t.Run("Success", func(t *testing.T) {
+		receiver, err := createLogsReceiver(context.Background(), params, createDefaultConfig(), &mockLogsConsumer{})
+		require.NoError(t, err, "receiver creation failed")
+		require.NotNil(t, receiver, "receiver creation failed")
+	})
+
+	t.Run("IntoPipelineFailure", func(t *testing.T) {
+		badCfg := createDefaultConfig().(*Config)
+		badCfg.Operators = []map[string]interface{}{
+			{
+				"badparam": "badvalue",
+			},
+		}
+		receiver, err := createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		require.Error(t, err, "receiver creation should fail if operator configs aren't valid")
+		require.Nil(t, receiver, "receiver creation should fail if operator configs aren't valid")
+	})
+
+	t.Run("BuildFailure", func(t *testing.T) {
+		badCfg := createDefaultConfig().(*Config)
+		badCfg.OffsetsFile = os.Args[0] // current executable cannot be opened
+		receiver, err := createLogsReceiver(context.Background(), params, badCfg, &mockLogsConsumer{})
+		require.Error(t, err, "receiver creation should fail if offsets file is invalid")
+		require.Nil(t, receiver, "receiver creation should have failed due to invalid offsets file")
+	})
 }

@@ -21,7 +21,6 @@ import (
 	"github.com/observiq/stanza/entry"
 	"github.com/observiq/stanza/operator"
 	"github.com/observiq/stanza/operator/helper"
-	"github.com/observiq/stanza/pipeline"
 	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
@@ -42,7 +41,7 @@ type UnstartableOperator struct {
 	helper.OutputOperator
 }
 
-func newUnstartableParams() pipeline.Params {
+func newUnstartableParams() map[string]interface{} {
 	return map[string]interface{}{"type": "unstartable_operator"}
 }
 
@@ -54,9 +53,9 @@ func NewUnstartableConfig() *UnstartableConfig {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(context operator.BuildContext) (operator.Operator, error) {
+func (c *UnstartableConfig) Build(context operator.BuildContext) ([]operator.Operator, error) {
 	o, _ := c.OutputConfig.Build(context)
-	return &UnstartableOperator{OutputOperator: o}, nil
+	return []operator.Operator{&UnstartableOperator{OutputOperator: o}}, nil
 }
 
 // Start will return an error
