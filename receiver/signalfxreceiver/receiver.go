@@ -27,7 +27,6 @@ import (
 	"time"
 	"unsafe"
 
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/gorilla/mux"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opencensus.io/trace"
@@ -37,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/translator/conventions"
-	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -255,21 +253,23 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	md, _ := signalFxV2ToMetricsData(r.logger, msg.Datapoints)
+	md, _ := signalFxV2ToMetrics(r.logger, msg.Datapoints)
 
 	if r.config.AccessTokenPassthrough {
 		if accessToken := req.Header.Get(splunk.SFxAccessTokenHeader); accessToken != "" {
-			if md.Resource == nil {
-				md.Resource = &resourcepb.Resource{}
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
+				rm := md.ResourceMetrics().At(i)
+				if rm.IsNil() {
+					rm.InitEmpty()
+				}
+
+				res := rm.Resource()
+				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pdata.NewAttributeValueString(accessToken))
 			}
-			if md.Resource.Labels == nil {
-				md.Resource.Labels = make(map[string]string, 1)
-			}
-			md.Resource.Labels[splunk.SFxAccessTokenLabel] = accessToken
 		}
 	}
 
-	err := r.metricsConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
+	err := r.metricsConsumer.ConsumeMetrics(ctx, md)
 	obsreport.EndMetricsReceiveOp(
 		ctx,
 		typeStr,
