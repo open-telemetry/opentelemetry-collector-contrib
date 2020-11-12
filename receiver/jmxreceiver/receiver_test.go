@@ -32,6 +32,7 @@ import (
 func TestReceiver(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	config := &config{
+		Endpoint: "service:jmx:protocol:sap",
 		OTLPExporterConfig: otlpExporterConfig{
 			Endpoint: fmt.Sprintf("localhost:%d", testutil.GetAvailablePort(t)),
 		},
@@ -51,11 +52,12 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 		name           string
 		config         config
 		expectedConfig string
+		expectedError  string
 	}{
 		{
 			"uses target system",
 			config{
-				ServiceURL:         "myserviceurl",
+				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
 				TargetSystem:       "mytargetsystem",
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
@@ -66,18 +68,18 @@ func TestBuildJMXMetricGathererConfig(t *testing.T) {
 					},
 				},
 			},
-			`otel.jmx.service.url = myserviceurl
+			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.target.system = mytargetsystem
 otel.exporter = otlp
 otel.exporter.otlp.endpoint = myotlpendpoint
 otel.exporter.otlp.metric.timeout = 234000
-`,
+`, "",
 		},
 		{
 			"uses groovy script",
 			config{
-				ServiceURL:         "myserviceurl",
+				Endpoint:           "service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/",
 				GroovyScript:       "mygroovyscript",
 				CollectionInterval: 123 * time.Second,
 				OTLPExporterConfig: otlpExporterConfig{
@@ -87,13 +89,83 @@ otel.exporter.otlp.metric.timeout = 234000
 					},
 				},
 			},
-			`otel.jmx.service.url = myserviceurl
+			`otel.jmx.service.url = service:jmx:rmi///jndi/rmi://myservice:12345/jmxrmi/
 otel.jmx.interval.milliseconds = 123000
 otel.jmx.groovy.script = mygroovyscript
 otel.exporter = otlp
 otel.exporter.otlp.endpoint = myotlpendpoint
 otel.exporter.otlp.metric.timeout = 234000
-`,
+`, "",
+		},
+		{
+			"uses endpoint as service url",
+			config{
+				Endpoint:           "myhost:12345",
+				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
+			},
+			`otel.jmx.service.url = service:jmx:rmi:///jndi/rmi://myhost:12345/jmxrmi
+otel.jmx.interval.milliseconds = 123000
+otel.jmx.target.system = mytargetsystem
+otel.exporter = otlp
+otel.exporter.otlp.endpoint = myotlpendpoint
+otel.exporter.otlp.metric.timeout = 234000
+`, "",
+		},
+		{
+			"errors on portless endpoint",
+			config{
+				Endpoint:           "myhostwithoutport",
+				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
+			}, "",
+			`failed to parse Endpoint "myhostwithoutport": address myhostwithoutport: missing port in address`,
+		},
+		{
+			"errors on invalid port in endpoint",
+			config{
+				Endpoint:           "myhost:withoutvalidport",
+				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
+			}, "",
+			`failed to parse Endpoint "myhost:withoutvalidport": strconv.ParseInt: parsing "withoutvalidport": invalid syntax`,
+		},
+		{
+			"errors on invalid endpoint",
+			config{
+				Endpoint:           ":::",
+				TargetSystem:       "mytargetsystem",
+				GroovyScript:       "mygroovyscript",
+				CollectionInterval: 123 * time.Second,
+				OTLPExporterConfig: otlpExporterConfig{
+					Endpoint: "myotlpendpoint",
+					TimeoutSettings: exporterhelper.TimeoutSettings{
+						Timeout: 234 * time.Second,
+					},
+				},
+			}, "",
+			`failed to parse Endpoint ":::": parse ":::": missing protocol scheme`,
 		},
 	}
 
@@ -102,7 +174,12 @@ otel.exporter.otlp.metric.timeout = 234000
 			params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 			receiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
 			jmxConfig, err := receiver.buildJMXMetricGathererConfig()
-			require.NoError(t, err)
+			if test.expectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.EqualError(t, err, test.expectedError)
+			}
 			require.Equal(t, test.expectedConfig, jmxConfig)
 		})
 	}
