@@ -76,5 +76,6 @@ func TestLoadConfig(t *testing.T) {
 			RoleARN:                     "",
 			DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 			ResourceToTelemetrySettings: exporterhelper.ResourceToTelemetrySettings{Enabled: true},
+			MetricDeclarations:          []*MetricDeclaration{},
 		})
 }

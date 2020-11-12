@@ -69,7 +69,7 @@ func New(
 
 	// Initialize metric declarations and filter out invalid ones
 	emfConfig := config.(*Config)
-	validDeclarations := make([]*MetricDeclaration, 0, len(emfConfig.MetricDeclarations))
+	var validDeclarations []*MetricDeclaration
 	for _, declaration := range emfConfig.MetricDeclarations {
 		err := declaration.Init(logger)
 		if err != nil {
