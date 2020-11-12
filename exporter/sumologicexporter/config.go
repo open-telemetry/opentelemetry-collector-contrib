@@ -29,9 +29,8 @@ type Config struct {
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
-	// Option to enable compression (default true)
-	Compress bool `mapstructure:"compress"`
-	// Compression encoding format, either gzip or deflate (default gzip)
+	// Compression encoding format, either empty string, gzip or deflate (default gzip)
+	// Empty string means no compression
 	CompressEncoding CompressEncodingType `mapstructure:"compress_encoding"`
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
@@ -98,6 +97,8 @@ const (
 	GZIPCompression CompressEncodingType = "gzip"
 	// DeflateCompression represents compress_encoding: deflate
 	DeflateCompression CompressEncodingType = "deflate"
+	// NoCompression represents disabled compression
+	NoCompression CompressEncodingType = ""
 	// MetricsPipeline represents metrics pipeline
 	MetricsPipeline PipelineType = "metrics"
 	// LogsPipeline represents metrics pipeline
