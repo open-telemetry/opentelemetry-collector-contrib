@@ -140,7 +140,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	config := &config{
 		CollectionInterval: 100 * time.Millisecond,
-		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
+		Endpoint:           fmt.Sprintf("%v:7199", hostname),
 		JARPath:            suite.JARPath,
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
@@ -209,11 +209,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
 }
 
-func TestJMXReceiverInvalidEndpointIntegration(t *testing.T) {
+func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	config := &config{
 		CollectionInterval: 100 * time.Millisecond,
-		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
+		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{

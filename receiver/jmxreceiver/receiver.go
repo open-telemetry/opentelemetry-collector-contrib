@@ -18,6 +18,9 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -121,9 +124,27 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, er
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
+	failedToParse := `failed to parse Endpoint "%s": %w`
+	parsed, err := url.Parse(jmx.config.Endpoint)
+	if err != nil {
+		return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
+	}
+
+	if !(parsed.Scheme == "service" && strings.HasPrefix(parsed.Opaque, "jmx:")) {
+		host, portStr, err := net.SplitHostPort(jmx.config.Endpoint)
+		if err != nil {
+			return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
+		}
+		port, err := strconv.ParseInt(portStr, 10, 0)
+		if err != nil {
+			return "", fmt.Errorf(failedToParse, jmx.config.Endpoint, err)
+		}
+		jmx.config.Endpoint = fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:%d/jmxrmi", host, port)
+	}
+
 	javaConfig := fmt.Sprintf(`otel.jmx.service.url = %v
 otel.jmx.interval.milliseconds = %v
-`, jmx.config.ServiceURL, jmx.config.CollectionInterval.Milliseconds())
+`, jmx.config.Endpoint, jmx.config.CollectionInterval.Milliseconds())
 
 	if jmx.config.TargetSystem != "" {
 		javaConfig += fmt.Sprintf("otel.jmx.target.system = %v\n", jmx.config.TargetSystem)

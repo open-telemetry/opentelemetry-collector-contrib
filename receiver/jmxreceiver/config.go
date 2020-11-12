@@ -27,8 +27,8 @@ type config struct {
 	configmodels.ReceiverSettings `mapstructure:",squash"`
 	// The path for the JMX Metric Gatherer uber JAR (/opt/opentelemetry-java-contrib-jmx-metrics.jar by default).
 	JARPath string `mapstructure:"jar_path"`
-	// The target JMX service url.
-	ServiceURL string `mapstructure:"service_url"`
+	// The Service URL or host:port for the target coerced to one of form: service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi.
+	Endpoint string `mapstructure:"endpoint"`
 	// The target system for the metric gatherer whose built in groovy script to run.  Cannot be set with GroovyScript.
 	TargetSystem string `mapstructure:"target_system"`
 	// The script for the metric gatherer to run on the configured interval.  Cannot be set with TargetSystem.
@@ -72,8 +72,8 @@ type otlpExporterConfig struct {
 
 func (c *config) validate() error {
 	var missingFields []string
-	if c.ServiceURL == "" {
-		missingFields = append(missingFields, "`service_url`")
+	if c.Endpoint == "" {
+		missingFields = append(missingFields, "`endpoint`")
 	}
 	if c.TargetSystem == "" && c.GroovyScript == "" {
 		missingFields = append(missingFields, "`target_system` or `groovy_script`")
