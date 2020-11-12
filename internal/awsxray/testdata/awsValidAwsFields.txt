@@ -22,7 +22,9 @@
             "sdk": "X-Ray for Go"
         },
         "ecs": {
-            "container": "containerId1234"
+            "container": "containerId1234",
+            "container_id": "d8453812a556",
+            "availability_zone": "us-west-2c"
         },
         "ec2": {
             "availability_zone": "us-west-2c",
