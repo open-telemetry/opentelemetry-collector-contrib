@@ -45,9 +45,6 @@ const (
 	serverStateKey = "zk_server_state"
 	zkVersionKey   = "zk_version"
 
-	serverStateResourceLabel = "server.state"
-	zkVersionResourceLabel   = "version"
-
 	metricsLen = 17
 )
 

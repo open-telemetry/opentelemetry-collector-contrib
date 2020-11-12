@@ -406,11 +406,11 @@ var M = Metrics
 var Labels = struct {
 	// ServerState (State of the Zookeeper server (leader, standalone or follower).)
 	ServerState string
-	// Version (Zookeeper version of the instance.)
-	Version string
+	// ZkVersion (Zookeeper version of the instance.)
+	ZkVersion string
 }{
 	"server.state",
-	"version",
+	"zk.version",
 }
 
 // L contains the possible metric labels that can be used. L is an alias for
