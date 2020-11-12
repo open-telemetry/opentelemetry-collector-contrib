@@ -260,7 +260,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				if rm.IsNil() {
-					rm.InitEmpty()
+					continue
 				}
 
 				res := rm.Resource()

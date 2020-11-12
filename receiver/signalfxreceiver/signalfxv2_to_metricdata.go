@@ -42,11 +42,9 @@ func signalFxV2ToMetrics(
 	md := pdata.NewMetrics()
 	md.ResourceMetrics().Resize(1)
 	rm := md.ResourceMetrics().At(0)
-	rm.InitEmpty()
 
 	rm.InstrumentationLibraryMetrics().Resize(1)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
-	ilm.InitEmpty()
 
 	metrics := ilm.Metrics()
 	metrics.Resize(len(sfxDataPoints))
