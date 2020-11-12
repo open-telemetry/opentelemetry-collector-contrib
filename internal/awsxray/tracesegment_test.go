@@ -527,6 +527,11 @@ var rawExpectedSegmentForInstrumentedServer = Segment{
 			SDKVersion: String("1.1.0"),
 			SDK:        String("X-Ray for Go"),
 		},
+		EKS: &EKSMetadata{
+			String("containerName"),
+			String("podname"),
+			String("d8453812a556"),
+		},
 	},
 	Service: &ServiceData{
 		CompilerVersion: String("go1.14.6"),
