@@ -42,7 +42,6 @@ func TestCreateDefaultConfig(t *testing.T) {
 			NameVal: typeStr,
 			TypeVal: typeStr,
 		},
-		Compress:           true,
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 20_971_520,
 		LogFormat:          "json",

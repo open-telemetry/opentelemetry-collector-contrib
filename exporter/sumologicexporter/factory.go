@@ -46,7 +46,6 @@ func createDefaultConfig() configmodels.Exporter {
 			NameVal: typeStr,
 		},
 
-		Compress:           DefaultCompress,
 		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
 		LogFormat:          DefaultLogFormat,

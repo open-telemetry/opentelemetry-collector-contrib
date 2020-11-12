@@ -46,6 +46,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 	switch cfg.CompressEncoding {
 	case GZIPCompression:
 	case DeflateCompression:
+	case NoCompression:
 	default:
 		return nil, fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
