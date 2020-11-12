@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Add propagator injection for botocore calls
+  ([#181](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/181))
 
 ## Version 0.13b0
 

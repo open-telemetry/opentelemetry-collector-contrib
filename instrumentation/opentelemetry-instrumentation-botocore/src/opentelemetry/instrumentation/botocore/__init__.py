@@ -56,13 +56,21 @@ import logging
 from botocore.client import BaseClient
 from wrapt import ObjectProxy, wrap_function_wrapper
 
+from opentelemetry import propagators
 from opentelemetry.instrumentation.botocore.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.sdk.trace import Resource
-from opentelemetry import propagators
 from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
+
+
+# pylint: disable=unused-argument
+def _patched_endpoint_prepare_request(wrapped, instance, args, kwargs):
+    request = args[0]
+    headers = request.headers
+    propagators.inject(type(headers).__setitem__, headers)
+    return wrapped(*args, **kwargs)
 
 
 class BotocoreInstrumentor(BaseInstrumentor):
@@ -89,7 +97,7 @@ class BotocoreInstrumentor(BaseInstrumentor):
         wrap_function_wrapper(
             "botocore.endpoint",
             "Endpoint.prepare_request",
-            self._patched_prepare_request,
+            _patched_endpoint_prepare_request,
         )
 
     def _uninstrument(self, **kwargs):
@@ -150,12 +158,6 @@ class BotocoreInstrumentor(BaseInstrumentor):
                 )
 
             return result
-
-    def _patched_prepare_request(self, wrapped, instance, args, kwargs):
-        request = args[0]
-        headers = request.headers
-        propagators.inject(type(headers).__setitem__, headers)
-        return wrapped(*args, **kwargs)
 
 
 def unwrap(obj, attr):

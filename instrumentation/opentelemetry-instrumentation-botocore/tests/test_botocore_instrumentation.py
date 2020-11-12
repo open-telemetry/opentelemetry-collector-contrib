@@ -25,8 +25,8 @@ from moto import (  # pylint: disable=import-error
     mock_sqs,
 )
 
-from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry import propagators
+from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
