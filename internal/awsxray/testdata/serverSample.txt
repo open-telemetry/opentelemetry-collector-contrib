@@ -20,6 +20,11 @@
         "xray": {
             "sdk_version": "1.1.0",
             "sdk": "X-Ray for Go"
+        },
+        "eks": {
+            "cluster_name": "containerName",
+            "pod": "podname",
+            "container_id": "d8453812a556"
         }
     },
     "service": {
