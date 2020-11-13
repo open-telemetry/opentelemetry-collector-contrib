@@ -52,7 +52,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Client:             "otelcol",
 
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout: 55 * time.Second,
+			Timeout: 5 * time.Second,
 		},
 		RetrySettings: exporterhelper.CreateDefaultRetrySettings(),
 		QueueSettings: qs,

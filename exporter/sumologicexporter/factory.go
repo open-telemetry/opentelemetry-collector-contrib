@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
@@ -27,7 +28,7 @@ const (
 	typeStr = "sumologic"
 )
 
-// NewFactory returns a new factory for the sumologic processor.
+// NewFactory returns a new factory for the sumologic exporter.
 func NewFactory() component.ExporterFactory {
 	return exporterhelper.NewFactory(
 		typeStr,
@@ -68,7 +69,7 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 	exp, err := newLogsExporter(cfg.(*Config), params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
 	}
 
 	return exp, nil

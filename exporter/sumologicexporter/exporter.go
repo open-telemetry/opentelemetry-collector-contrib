@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -52,7 +53,7 @@ func initExporter(cfg *Config) (*sumologicexporter, error) {
 	}
 
 	if len(cfg.HTTPClientSettings.Endpoint) == 0 {
-		return nil, fmt.Errorf("endpoint is not set")
+		return nil, errors.New("endpoint is not set")
 	}
 
 	se := &sumologicexporter{
@@ -68,7 +69,7 @@ func newLogsExporter(
 ) (component.LogsExporter, error) {
 	se, err := initExporter(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(

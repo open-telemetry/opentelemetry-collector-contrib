@@ -104,7 +104,7 @@ const (
 	// LogsPipeline represents metrics pipeline
 	LogsPipeline PipelineType = "logs"
 	// defaultTimeout
-	defaultTimeout time.Duration = 55 * time.Second
+	defaultTimeout time.Duration = 5 * time.Second
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding

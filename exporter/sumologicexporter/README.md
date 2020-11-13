@@ -14,7 +14,8 @@ Empty string means no compression
 - `source_category` (optional): Desired source category. Useful if you want to override the source category configured for the source.
 - `source_name` (optional): Desired source name. Useful if you want to override the source name configured for the source.
 - `source_host` (optional): Desired host name. Useful if you want to override the source host configured for the source.
-- `timeout` (default = 55s): Is the timeout for every attempt to send data to the backend.
+- `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+Maximum connection timeout is 55s.
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -33,7 +34,6 @@ Example:
 ```yaml
 exporters:
   sumologic:
-  # sumologic/customname:
     url: "https://events.sumologic.net/receiver/v1/http/<UniqueHTTPCollectorCode>"
     compress: true
     compress_encoding: "gzip"
