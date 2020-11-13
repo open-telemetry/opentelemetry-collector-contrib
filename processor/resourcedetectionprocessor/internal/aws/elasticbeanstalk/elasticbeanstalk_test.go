@@ -31,7 +31,6 @@ const xrayConf = "{\"deployment_id\":23,\"version_label\":\"env-version-1234\",\
 
 type fakeFile struct {
 	reader io.Reader
-	closer io.Closer
 }
 
 type mockFileSystem struct {
@@ -60,6 +59,13 @@ func (mfs *mockFileSystem) Open(path string) (file, error) {
 
 func (mfs *mockFileSystem) IsWindows() bool {
 	return mfs.windows
+}
+
+func Test_newDetector(t *testing.T) {
+	d, err := NewDetector()
+
+	assert.Nil(t, err)
+	assert.NotNil(t, d)
 }
 
 func Test_windowsPath(t *testing.T) {
