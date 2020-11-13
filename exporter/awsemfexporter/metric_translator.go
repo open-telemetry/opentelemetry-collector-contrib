@@ -82,6 +82,7 @@ type CWMetricStats struct {
 // 	- pdata.DoubleDataPointSlice
 // 	- pdata.IntHistogramDataPointSlice
 // 	- pdata.DoubleHistogramDataPointSlice
+//  - pdata.DoubleSummaryDataPointSlice
 type DataPoints interface {
 	Len() int
 	At(int) DataPoint
@@ -92,6 +93,7 @@ type DataPoints interface {
 // 	- pdata.DoubleDataPoint
 // 	- pdata.IntHistogramDataPoint
 // 	- pdata.DoubleHistogramDataPoint
+//  - pdata.DoubleSummaryDataPointSlice
 type DataPoint interface {
 	IsNil() bool
 	LabelsMap() pdata.StringMap
@@ -103,9 +105,6 @@ type IntDataPointSlice struct {
 }
 type DoubleDataPointSlice struct {
 	pdata.DoubleDataPointSlice
-}
-type IntHistogramDataPointSlice struct {
-	pdata.IntHistogramDataPointSlice
 }
 type DoubleHistogramDataPointSlice struct {
 	pdata.DoubleHistogramDataPointSlice
@@ -119,9 +118,6 @@ func (dps IntDataPointSlice) At(i int) DataPoint {
 }
 func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	return dps.DoubleDataPointSlice.At(i)
-}
-func (dps IntHistogramDataPointSlice) At(i int) DataPoint {
-	return dps.IntHistogramDataPointSlice.At(i)
 }
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	return dps.DoubleHistogramDataPointSlice.At(i)
@@ -230,8 +226,6 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		dps = IntDataPointSlice{metric.IntSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleSum:
 		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
-	case pdata.MetricDataTypeIntHistogram:
-		dps = IntHistogramDataPointSlice{metric.IntHistogram().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
 		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
 	case pdata.MetricDataTypeDoubleSummary:
@@ -289,11 +283,6 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 		metricVal = metric.Value()
 		if needsCalculateRate(pmd) {
 			metricVal = calculateRate(fields, metric.Value(), timestamp)
-		}
-	case pdata.IntHistogramDataPoint:
-		metricVal = &CWMetricStats{
-			Count: metric.Count(),
-			Sum:   float64(metric.Sum()),
 		}
 	case pdata.DoubleHistogramDataPoint:
 		metricVal = &CWMetricStats{
