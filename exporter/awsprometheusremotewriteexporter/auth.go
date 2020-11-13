@@ -17,7 +17,6 @@ package awsprometheusremotewriteexporter
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -58,7 +57,6 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	// Send the request to Prometheus Remote Write Backend
 	resp, err := si.transport.RoundTrip(req)
 	if err != nil {
-		log.Fatal(err)
 		return nil, err
 	}
 

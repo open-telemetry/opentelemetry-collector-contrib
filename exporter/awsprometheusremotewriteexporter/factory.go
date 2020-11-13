@@ -37,10 +37,6 @@ type AwsFactory struct {
 // NewFactory returns a factory of the AWS Prometheus Remote Write exporter that can be registered to the Collector.
 func NewFactory() component.ExporterFactory {
 	return &AwsFactory{ExporterFactory: prw.NewFactory()}
-	// return exporterhelper.NewFactory(
-	// 	typeStr,
-	// 	createDefaultConfig,
-	// 	exporterhelper.WithMetrics(createMetricsExporter))
 }
 
 func (af *AwsFactory) Type() configmodels.Type {
@@ -59,7 +55,6 @@ func (af *AwsFactory) CreateMetricsExporter(ctx context.Context, params componen
 		return newSigningRoundTripper(prwCfg.AuthSettings, next)
 	}
 
-	// return af.ExporterFactory.CreateMetricsExporter(ctx, params, prwCfg)
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
 	if cerr != nil {
 		return nil, cerr
@@ -71,8 +66,6 @@ func (af *AwsFactory) CreateMetricsExporter(ctx context.Context, params componen
 		return nil, err
 	}
 
-	// use upstream helper package to return an exporter that implements the required interface, and has timeout,
-	// queueing and retry feature enabled
 	prwexp, err := exporterhelper.NewMetricsExporter(
 		cfg,
 		params.Logger,
