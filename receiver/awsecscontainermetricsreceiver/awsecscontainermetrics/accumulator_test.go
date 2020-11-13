@@ -18,12 +18,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 )
 
 func TestGetMetricsData(t *testing.T) {
 	v := uint64(1)
-	f := float64(1.0)
+	f := 1.0
 
 	memStats := make(map[string]uint64)
 	memStats["cache"] = v
@@ -101,11 +101,12 @@ func TestGetMetricsData(t *testing.T) {
 	cstats := make(map[string]ContainerStats)
 	cstats["001"] = containerStats
 
-	var mds []*consumerdata.MetricsData
+	var md []pdata.Metrics
+
 	acc := metricDataAccumulator{
-		md: mds,
+		mds: md,
 	}
 
 	acc.getMetricsData(cstats, tm)
-	require.Less(t, 0, len(acc.md))
+	require.Less(t, 0, len(acc.mds))
 }

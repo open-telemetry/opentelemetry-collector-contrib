@@ -65,8 +65,7 @@ type Reporter interface {
 	// the next consumer - the reporter is expected to handle nil error too.
 	OnMetricsProcessed(
 		ctx context.Context,
-		numReceivedTimeSeries int,
-		numInvalidTimeSeries int,
+		numReceivedMetricPoints int,
 		err error)
 
 	// OnDebugf allows less structured reporting for debugging scenarios.

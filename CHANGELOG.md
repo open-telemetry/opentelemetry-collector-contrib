@@ -6,7 +6,7 @@
 
 # 🎉 OpenTelemetry Collector Contrib v0.14.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.14.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.14.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 
@@ -67,7 +67,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.13.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.13.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.13.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 💡 Enhancements 💡
 
@@ -99,7 +99,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.12.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.12.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.12.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 
@@ -143,7 +143,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.11.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.11.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.11.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 - add `dockerstats` receiver as top level component (#1081)
@@ -166,7 +166,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.10.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.10.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.10.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 - add initial docker stats receiver, without sourcing in top level components (#495)
@@ -201,7 +201,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.9.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.9.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.9.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🛑 Breaking changes 🛑
 - Remove deprecated `lightstep` exporter (#828)
@@ -233,7 +233,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.8.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.8.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.8.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 
@@ -280,7 +280,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.7.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.7.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.7.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🛑 Breaking changes 🛑
 
@@ -312,7 +312,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 # 🎉 OpenTelemetry Collector Contrib v0.6.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.6.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.6.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🛑 Breaking changes 🛑
 
@@ -346,7 +346,7 @@ Released 01-07-2020
 
 # 🎉 OpenTelemetry Collector Contrib v0.5.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.5.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.5.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🚀 New components 🚀
 
@@ -374,7 +374,7 @@ Released 17-06-2020
 
 # 🎉 OpenTelemetry Collector Contrib v0.4.0 (Beta) 🎉
 
-The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.4.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/about/) for deployment and configuration information.
+The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/v0.4.0) (be sure to check the release notes here as well!). Check out the [Getting Started Guide](https://opentelemetry.io/docs/collector/getting-started/) for deployment and configuration information.
 
 ## 🛑 Breaking changes 🛑
 

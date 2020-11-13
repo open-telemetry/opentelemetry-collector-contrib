@@ -30,8 +30,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testing/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/testutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/utils"
 )
 
 func TestPodAndContainerMetrics(t *testing.T) {
@@ -217,7 +217,7 @@ var commonPodMetadata = map[string]string{
 }
 
 var allPodMetadata = func(metadata map[string]string) map[string]string {
-	out := utils.MergeStringMaps(metadata, commonPodMetadata)
+	out := util.MergeStringMaps(metadata, commonPodMetadata)
 	return out
 }
 

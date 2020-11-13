@@ -32,6 +32,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -41,6 +42,7 @@ import (
 	"go.opentelemetry.io/collector/testutil"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -62,7 +64,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: errNilNextLogsConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -122,7 +124,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: errNilNextConsumer,
+			wantErr: errNilNextMetricsConsumer,
 		},
 		{
 			name: "empty_endpoint",
@@ -416,14 +418,14 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	lr := pdata.NewLogRecord()
 	lr.InitEmpty()
 	lr.SetTimestamp(pdata.TimestampUnixNano(int64(sec * 1e9)))
+	lr.SetName("custom:sourcetype")
 
 	lr.Body().SetStringVal("foo")
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
 	rl.InitEmpty()
-	rl.Resource().Attributes().InsertString("host.hostname", "")
-	rl.Resource().Attributes().InsertString("service.name", "")
-	rl.Resource().Attributes().InsertString("com.splunk.sourcetype", "")
+	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")
+	lr.Attributes().InsertString("com.splunk.index", "myindex")
 	ill := pdata.NewInstrumentationLibraryLogs()
 	ill.InitEmpty()
 	ill.Logs().Append(lr)
@@ -544,6 +546,202 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 	}
 }
 
+func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
+	tests := []struct {
+		name       string
+		index      string
+		sourcetype string
+	}{
+		{
+			name: "No index, no source type",
+		},
+		{
+			name:  "Index, no source type",
+			index: "myindex",
+		},
+		{
+			name:       "Index and source type",
+			index:      "myindex",
+			sourcetype: "source:type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := createDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+
+			receivedSplunkLogs := make(chan []byte)
+			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				body, err := ioutil.ReadAll(req.Body)
+				assert.NoError(t, err)
+				rw.WriteHeader(http.StatusAccepted)
+				receivedSplunkLogs <- body
+			}))
+			defer endServer.Close()
+
+			factory := splunkhecexporter.NewFactory()
+			exporterConfig := splunkhecexporter.Config{
+				Token:              "ignored",
+				SourceType:         "defaultsourcetype",
+				Index:              "defaultindex",
+				InsecureSkipVerify: true,
+				DisableCompression: true,
+				Endpoint:           endServer.URL,
+			}
+			exporter, err := factory.CreateLogsExporter(context.Background(), component.ExporterCreateParams{
+				Logger: zap.NewNop(),
+			}, &exporterConfig)
+			exporter.Start(context.Background(), nil)
+			assert.NoError(t, err)
+			rcv, err := NewLogsReceiver(zap.NewNop(), *config, exporter)
+			assert.NoError(t, err)
+
+			currentTime := float64(time.Now().UnixNano()) / 1e6
+			splunkhecMsg := buildSplunkHecMsg(currentTime, "foo", 3)
+			splunkhecMsg.Index = tt.index
+			splunkhecMsg.SourceType = tt.sourcetype
+			msgBytes, _ := json.Marshal(splunkhecMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			done := make(chan bool)
+			go func() {
+				got := <-receivedSplunkLogs
+				var event splunk.Event
+				e := json.Unmarshal(got, &event)
+				assert.NoError(t, e)
+				if tt.index == "" {
+					assert.Equal(t, "defaultindex", event.Index)
+				} else {
+					assert.Equal(t, tt.index, event.Index)
+				}
+				if tt.sourcetype == "" {
+					assert.Equal(t, "defaultsourcetype", event.SourceType)
+				} else {
+					assert.Equal(t, tt.sourcetype, event.SourceType)
+				}
+				done <- true
+			}()
+
+			r := rcv.(*splunkReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+			select {
+			case <-done:
+				break
+			case <-time.After(5 * time.Second):
+				assert.Fail(t, "Timeout waiting for logs")
+			}
+		})
+	}
+}
+
+func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
+	tests := []struct {
+		name       string
+		index      string
+		sourcetype string
+	}{
+		{
+			name: "No index, no source type",
+		},
+		{
+			name:  "Index, no source type",
+			index: "myindex",
+		},
+		{
+			name:       "Index and source type",
+			index:      "myindex",
+			sourcetype: "source:type",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := createDefaultConfig().(*Config)
+			config.Endpoint = "localhost:0"
+
+			receivedSplunkMetrics := make(chan []byte)
+			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+				body, err := ioutil.ReadAll(req.Body)
+				assert.NoError(t, err)
+				rw.WriteHeader(http.StatusAccepted)
+				receivedSplunkMetrics <- body
+			}))
+			defer endServer.Close()
+
+			factory := splunkhecexporter.NewFactory()
+			exporterConfig := splunkhecexporter.Config{
+				Token:              "ignored",
+				SourceType:         "defaultsourcetype",
+				Index:              "defaultindex",
+				InsecureSkipVerify: true,
+				DisableCompression: true,
+				Endpoint:           endServer.URL,
+			}
+			exporter, err := factory.CreateMetricsExporter(context.Background(), component.ExporterCreateParams{
+				Logger: zap.NewNop(),
+			}, &exporterConfig)
+			exporter.Start(context.Background(), nil)
+			assert.NoError(t, err)
+			rcv, err := NewMetricsReceiver(zap.NewNop(), *config, exporter)
+			assert.NoError(t, err)
+
+			currentTime := float64(time.Now().UnixNano()) / 1e6
+			splunkhecMsg := buildSplunkHecMetricsMsg(currentTime, 42, 3)
+			splunkhecMsg.Index = tt.index
+			splunkhecMsg.SourceType = tt.sourcetype
+			msgBytes, _ := json.Marshal(splunkhecMsg)
+			req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+			req.Header.Set("Content-Type", "application/json")
+
+			done := make(chan bool)
+			go func() {
+				got := <-receivedSplunkMetrics
+				var event splunk.Event
+				e := json.Unmarshal(got, &event)
+				assert.NoError(t, e)
+				if tt.index == "" {
+					assert.Equal(t, "defaultindex", event.Index)
+				} else {
+					assert.Equal(t, tt.index, event.Index)
+				}
+				if tt.sourcetype == "" {
+					assert.Equal(t, "defaultsourcetype", event.SourceType)
+				} else {
+					assert.Equal(t, tt.sourcetype, event.SourceType)
+				}
+				done <- true
+			}()
+
+			r := rcv.(*splunkReceiver)
+			w := httptest.NewRecorder()
+			r.handleReq(w, req)
+			resp := w.Result()
+			respBytes, err := ioutil.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			var bodyStr string
+			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
+			assert.Equal(t, http.StatusAccepted, resp.StatusCode)
+			assert.Equal(t, responseOK, bodyStr)
+			select {
+			case <-done:
+				break
+			case <-time.After(5 * time.Second):
+				assert.Fail(t, "Timeout waiting for logs")
+			}
+		})
+	}
+}
+
 func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
 		Time:  &time,
@@ -561,9 +759,11 @@ func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splun
 
 func buildSplunkHecMsg(time float64, value string, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:   &time,
-		Event:  value,
-		Fields: map[string]interface{}{},
+		Time:       &time,
+		Event:      value,
+		Fields:     map[string]interface{}{},
+		Index:      "myindex",
+		SourceType: "custom:sourcetype",
 	}
 	for dim := uint(0); dim < dimensions; dim++ {
 		ev.Fields[fmt.Sprintf("k%d", dim)] = fmt.Sprintf("v%d", dim)

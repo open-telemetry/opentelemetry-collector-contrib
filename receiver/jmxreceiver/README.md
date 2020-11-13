@@ -26,7 +26,7 @@ Example configuration:
 receivers:
   jmx:
     jar_path: /opt/opentelemetry-java-contrib-jmx-metrics.jar
-    service_url: service:jmx:rmi:///jndi/rmi://<my-jmx-host>:<my-jmx-port>/jmxrmi
+    endpoint: my_jmx_host:12345
     target_system: jvm
     collection_interval: 10s
     # optional: the same as specifying OTLP receiver endpoint.
@@ -41,11 +41,13 @@ receivers:
 
 The path for the JMX Metric Gatherer uber JAR to run.
 
-### service_url
+### endpoint
+The [JMX Service URL](https://docs.oracle.com/javase/8/docs/api/javax/management/remote/JMXServiceURL.html) or host
+and port used to construct the Service URL the Metric Gatherer's JMX client should use. Value must be in the form of
+`service:jmx:<protocol>:<sap>` or `host:port`. Values in `host:port` form will be used to create a Service URL of
+`service:jmx:rmi:///jndi/rmi://<host>:<port>/jmxrmi`.
 
-The JMX Service URL the Metric Gatherer's JMX client should use.
-
-Corresponds to the `otel.jmx.service.url` property.
+When in or coerced to `service:jmx:<protocol>:<sap>` form, corresponds to the `otel.jmx.service.url` property.
 
 _Required._
 
@@ -87,19 +89,19 @@ Corresponds to the `otel.jmx.password` property.
 
 The otlp exporter endpoint to which to listen and submit metrics.
 
-Corresponds to the `otel.otlp.endpoint` property.
+Corresponds to the `otel.exporter.otlp.endpoint` property.
 
 ### otlp.timeout (default: `5s`)
 
 The otlp exporter request timeout.
 
-Corresponds to the `otel.otlp.metric.timeout` property.
+Corresponds to the `otel.exporter.otlp.metric.timeout` property.
 
 ### otlp.headers
 
 The headers to include in otlp metric submission requests.
 
-Corresponds to the `otel.otlp.metadata` property.
+Corresponds to the `otel.exporter.otlp.metadata` property.
 
 ### keystore_path
 

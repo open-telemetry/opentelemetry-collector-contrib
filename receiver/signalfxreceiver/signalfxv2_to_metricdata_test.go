@@ -19,22 +19,19 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.uber.org/zap"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func Test_signalFxV2ToMetricsData(t *testing.T) {
 	now := time.Now()
-	msec := now.Unix() * 1e3
 
 	buildDefaulstSFxDataPt := func() *sfxpb.DataPoint {
 		return &sfxpb.DataPoint{
 			Metric:    "single",
-			Timestamp: msec,
+			Timestamp: now.UnixNano() / 1e6,
 			Value: sfxpb.Datum{
 				IntValue: int64Ptr(13),
 			},
@@ -43,55 +40,78 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 		}
 	}
 
-	buildDefaultMetricsData := func() consumerdata.MetricsData {
-		return consumerdata.MetricsData{
-			Metrics: []*metricspb.Metric{{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name: "single",
-					Type: metricspb.MetricDescriptor_GAUGE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "k0"}, {Key: "k1"}, {Key: "k2"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{
-								Value:    "v0",
-								HasValue: true,
-							},
-							{
-								Value:    "v1",
-								HasValue: true,
-							},
-							{
-								Value:    "v2",
-								HasValue: true,
-							},
-						},
-						Points: []*metricspb.Point{{
-							Timestamp: &timestamppb.Timestamp{
-								Seconds: msec / 1e3,
-								Nanos:   int32(msec%1e3) * 1e3,
-							},
-							Value: &metricspb.Point_Int64Value{Int64Value: 13},
-						}},
-					},
-				},
-			}},
+	buildDefaultMetricsData := func(typ pdata.MetricDataType, val interface{}) pdata.Metrics {
+		out := pdata.NewMetrics()
+		out.ResourceMetrics().Resize(1)
+		rm := out.ResourceMetrics().At(0)
+		rm.InitEmpty()
+		rm.InstrumentationLibraryMetrics().Resize(1)
+		ilm := rm.InstrumentationLibraryMetrics().At(0)
+		ms := ilm.Metrics()
+
+		ms.Resize(1)
+		m := ms.At(0)
+		m.InitEmpty()
+
+		m.SetDataType(typ)
+		m.SetName("single")
+
+		var dps interface{}
+
+		switch typ {
+		case pdata.MetricDataTypeIntGauge:
+			m.IntGauge().InitEmpty()
+			dps = m.IntGauge().DataPoints()
+		case pdata.MetricDataTypeIntSum:
+			m.IntSum().InitEmpty()
+			m.IntSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			dps = m.IntSum().DataPoints()
+		case pdata.MetricDataTypeDoubleGauge:
+			m.DoubleGauge().InitEmpty()
+			dps = m.DoubleGauge().DataPoints()
+		case pdata.MetricDataTypeDoubleSum:
+			m.DoubleSum().InitEmpty()
+			m.DoubleSum().SetAggregationTemporality(pdata.AggregationTemporalityCumulative)
+			dps = m.DoubleSum().DataPoints()
 		}
+
+		var labels pdata.StringMap
+
+		switch typ {
+		case pdata.MetricDataTypeIntGauge, pdata.MetricDataTypeIntSum:
+			dps.(pdata.IntDataPointSlice).Resize(1)
+			dp := dps.(pdata.IntDataPointSlice).At(0)
+			labels = dp.LabelsMap()
+			dp.SetTimestamp(pdata.TimestampUnixNano(now.Truncate(time.Millisecond).UnixNano()))
+			dp.SetValue(int64(val.(int)))
+		case pdata.MetricDataTypeDoubleGauge, pdata.MetricDataTypeDoubleSum:
+			dps.(pdata.DoubleDataPointSlice).Resize(1)
+			dp := dps.(pdata.DoubleDataPointSlice).At(0)
+			labels = dp.LabelsMap()
+			dp.SetTimestamp(pdata.TimestampUnixNano(now.Truncate(time.Millisecond).UnixNano()))
+			dp.SetValue(val.(float64))
+		}
+
+		labels.InitFromMap(map[string]string{
+			"k0": "v0",
+			"k1": "v1",
+			"k2": "v2",
+		})
+		labels.Sort()
+
+		return out
 	}
 
 	tests := []struct {
 		name                  string
 		sfxDataPoints         []*sfxpb.DataPoint
-		wantMetricsData       consumerdata.MetricsData
+		wantMetricsData       pdata.Metrics
 		wantDroppedTimeseries int
 	}{
 		{
 			name:            "int_gauge",
 			sfxDataPoints:   []*sfxpb.DataPoint{buildDefaulstSFxDataPt()},
-			wantMetricsData: buildDefaultMetricsData(),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
 		},
 		{
 			name: "double_gauge",
@@ -103,12 +123,7 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_DOUBLE
-				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
-				return md
-			}(),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeDoubleGauge, 13.13),
 		},
 		{
 			name: "int_counter",
@@ -117,10 +132,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.MetricType = sfxTypePtr(sfxpb.MetricType_COUNTER)
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
-				return md
+			wantMetricsData: func() pdata.Metrics {
+				m := buildDefaultMetricsData(pdata.MetricDataTypeIntSum, 13)
+				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntSum()
+				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				d.SetIsMonotonic(true)
+				return m
 			}(),
 		},
 		{
@@ -133,11 +150,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				}
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_DOUBLE
-				md.Metrics[0].Timeseries[0].Points[0].Value = &metricspb.Point_DoubleValue{DoubleValue: 13.13}
-				return md
+			wantMetricsData: func() pdata.Metrics {
+				m := buildDefaultMetricsData(pdata.MetricDataTypeDoubleSum, 13.13)
+				d := m.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).DoubleSum()
+				d.SetAggregationTemporality(pdata.AggregationTemporalityDelta)
+				d.SetIsMonotonic(true)
+				return m
 			}(),
 		},
 		{
@@ -147,9 +165,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Timestamp = 0
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].Points[0].Timestamp = nil
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).SetTimestamp(0)
 				return md
 			}(),
 		},
@@ -160,10 +178,9 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions[0].Value = ""
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: func() consumerdata.MetricsData {
-				md := buildDefaultMetricsData()
-				md.Metrics[0].Timeseries[0].LabelValues[0].Value = ""
-				md.Metrics[0].Timeseries[0].LabelValues[0].HasValue = true
+			wantMetricsData: func() pdata.Metrics {
+				md := buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13)
+				md.ResourceMetrics().At(0).InstrumentationLibraryMetrics().At(0).Metrics().At(0).IntGauge().DataPoints().At(0).LabelsMap().Update("k0", "")
 				return md
 			}(),
 		},
@@ -179,12 +196,12 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				pt.Dimensions = dimensions
 				return []*sfxpb.DataPoint{pt}
 			}(),
-			wantMetricsData: buildDefaultMetricsData(),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
 		},
 		{
 			name:            "nil_datapoint_ignored",
 			sfxDataPoints:   []*sfxpb.DataPoint{nil, buildDefaulstSFxDataPt(), nil},
-			wantMetricsData: buildDefaultMetricsData(),
+			wantMetricsData: buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
 		},
 		{
 			name: "drop_inconsistent_datapoints",
@@ -208,103 +225,16 @@ func Test_signalFxV2ToMetricsData(t *testing.T) {
 				return []*sfxpb.DataPoint{
 					pt0, buildDefaulstSFxDataPt(), pt1, pt2, pt3}
 			}(),
-			wantMetricsData:       buildDefaultMetricsData(),
+			wantMetricsData:       buildDefaultMetricsData(pdata.MetricDataTypeIntGauge, 13),
 			wantDroppedTimeseries: 4,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			md, numDroppedTimeseries := signalFxV2ToMetricsData(zap.NewNop(), tt.sfxDataPoints)
+			md, numDroppedTimeseries := signalFxV2ToMetrics(zap.NewNop(), tt.sfxDataPoints)
 			assert.Equal(t, tt.wantMetricsData, md)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
-		})
-	}
-}
-
-func Test_buildPoint_errors(t *testing.T) {
-	type args struct {
-		sfxDataPoint       *sfxpb.DataPoint
-		expectedMetricType metricspb.MetricDescriptor_Type
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *metricspb.Point
-		wantErr error
-	}{
-		{
-			name: "no_value",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{},
-				},
-			},
-			wantErr: errSFxNoDatumValue,
-		},
-		{
-			name: "expect_double_value",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{
-						IntValue: int64Ptr(13),
-					},
-				},
-				expectedMetricType: metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-			},
-			wantErr: errSFxUnexpectedInt64DatumType,
-		},
-		{
-			name: "expect_int_value",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{
-						DoubleValue: float64Ptr(13.13),
-					},
-				},
-				expectedMetricType: metricspb.MetricDescriptor_GAUGE_INT64,
-			},
-			wantErr: errSFxUnexpectedFloat64DatumType,
-		},
-		{
-			name: "unexpect_str_value",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{
-						StrValue: strPtr("13.13"),
-					},
-				},
-			},
-			wantErr: errSFxUnexpectedStringDatumType,
-		},
-		{
-			name: "dbl_as_str",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{StrValue: strPtr("13.13")},
-				},
-				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			},
-			want: &metricspb.Point{
-				Value: &metricspb.Point_DoubleValue{DoubleValue: 13.13},
-			},
-		},
-		{
-			name: "str_not_dbl",
-			args: args{
-				sfxDataPoint: &sfxpb.DataPoint{
-					Value: sfxpb.Datum{StrValue: strPtr("not_a_number")},
-				},
-				expectedMetricType: metricspb.MetricDescriptor_GAUGE_DOUBLE,
-			},
-			wantErr: errSFxStringDatumNotNumber,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := buildPoint(tt.args.sfxDataPoint, tt.args.expectedMetricType)
-			assert.Equal(t, tt.want, got)
-			assert.Equal(t, tt.wantErr, err)
 		})
 	}
 }

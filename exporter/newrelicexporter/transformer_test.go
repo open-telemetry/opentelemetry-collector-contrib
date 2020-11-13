@@ -174,7 +174,7 @@ func TestTransformSpan(t *testing.T) {
 					"resource":          "R1",
 					"prod":              true,
 					"weight":            int64(10),
-					"score":             float64(99.8),
+					"score":             99.8,
 					"user":              "alice",
 				},
 			},

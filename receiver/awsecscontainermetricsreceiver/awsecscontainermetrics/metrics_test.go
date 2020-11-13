@@ -28,7 +28,7 @@ func TestMetricSampleFile(t *testing.T) {
 
 func TestMetricData(t *testing.T) {
 	v := uint64(1)
-	f := float64(1.0)
+	f := 1.0
 
 	memStats := make(map[string]uint64)
 	memStats["cache"] = v

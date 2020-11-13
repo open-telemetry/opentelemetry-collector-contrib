@@ -74,15 +74,6 @@ func TestNumericTagFilter(t *testing.T) {
 	}
 }
 
-func TestOnDroppedSpans_NumericTagFilter(t *testing.T) {
-	var empty = map[string]pdata.AttributeValue{}
-	u, _ := uuid.NewRandom()
-	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
-	decision, err := filter.OnDroppedSpans(pdata.NewTraceID(u), newTraceIntAttrs(empty, "example", math.MaxInt32+1))
-	assert.Nil(t, err)
-	assert.Equal(t, decision, NotSampled)
-}
-
 func TestOnLateArrivingSpans_NumericTagFilter(t *testing.T) {
 	filter := NewNumericAttributeFilter(zap.NewNop(), "example", math.MinInt32, math.MaxInt32)
 	err := filter.OnLateArrivingSpans(NotSampled, nil)

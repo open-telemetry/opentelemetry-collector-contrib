@@ -12,41 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package memcachedreceiver
 
 import (
-	"testing"
+	"time"
 
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
-func TestMergeStringMaps(t *testing.T) {
-	m1 := map[string]string{
-		"key-1": "val-1",
-	}
+type config struct {
+	configmodels.ReceiverSettings            `mapstructure:",squash"`
+	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confignet.TCPAddr                        `mapstructure:",squash"`
 
-	m2 := map[string]string{
-		"key-2": "val-2",
-	}
-
-	actual := MergeStringMaps(m1, m2)
-	expected := map[string]string{
-		"key-1": "val-1",
-		"key-2": "val-2",
-	}
-
-	require.Equal(t, expected, actual)
-}
-
-func TestCloneStringMap(t *testing.T) {
-	m := map[string]string{
-		"key-1": "val-1",
-	}
-
-	actual := CloneStringMap(m)
-	expected := map[string]string{
-		"key-1": "val-1",
-	}
-
-	require.Equal(t, expected, actual)
+	// Timeout for the memcache stats request
+	Timeout time.Duration `mapstructure:"timeout"`
 }

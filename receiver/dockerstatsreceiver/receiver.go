@@ -79,7 +79,7 @@ func (r *Receiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	r.obsCtx = obsreport.ReceiverContext(ctx, typeStr, r.transport, r.config.Name())
+	r.obsCtx = obsreport.ReceiverContext(ctx, r.config.Name(), r.transport)
 
 	r.runnerCtx, r.runnerCancel = context.WithCancel(context.Background())
 	r.runner = interval.NewRunner(r.config.CollectionInterval, r)
@@ -139,16 +139,13 @@ func (r *Receiver) Run() error {
 	close(results)
 
 	numPoints := 0
-	numTimeSeries := 0
 	var lastErr error
 	for result := range results {
 		var err error
 		if result.md != nil {
-			nts, np := obsreport.CountMetricPoints(*result.md)
-			numTimeSeries += nts
-			numPoints += np
-
 			md := internaldata.OCToMetrics(*result.md)
+			_, np := md.MetricAndDataPointCount()
+			numPoints += np
 			err = r.nextConsumer.ConsumeMetrics(r.runnerCtx, md)
 		} else {
 			err = result.err
@@ -159,6 +156,6 @@ func (r *Receiver) Run() error {
 		}
 	}
 
-	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, numTimeSeries, lastErr)
+	obsreport.EndMetricsReceiveOp(c, typeStr, numPoints, lastErr)
 	return nil
 }

@@ -80,12 +80,50 @@ func TestPerfCounter_Close(t *testing.T) {
 }
 
 func TestPerfCounter_ScrapeData(t *testing.T) {
-	pc, err := NewPerfCounter(`\Memory\Committed Bytes`, false)
-	require.NoError(t, err)
+	type testCase struct {
+		name           string
+		path           string
+		assertExpected func(t *testing.T, data []win_perf_counters.CounterValue)
+	}
 
-	performanceCounters, err := pc.ScrapeData()
-	require.NoError(t, err, "Failed to scrape data: %v", err)
+	testCases := []testCase{
+		{
+			name: "no instances",
+			path: `\Memory\Committed Bytes`,
+			assertExpected: func(t *testing.T, data []win_perf_counters.CounterValue) {
+				assert.Len(t, data, 1)
+				assert.Empty(t, data[0].InstanceName)
+			},
+		},
+		{
+			name: "total instance",
+			path: `\LogicalDisk(_Total)\Free Megabytes`,
+			assertExpected: func(t *testing.T, data []win_perf_counters.CounterValue) {
+				assert.Equal(t, 1, len(data))
+				assert.Empty(t, data[0].InstanceName)
+			},
+		},
+		{
+			name: "all instances",
+			path: `\LogicalDisk(*)\Free Megabytes`,
+			assertExpected: func(t *testing.T, data []win_perf_counters.CounterValue) {
+				assert.GreaterOrEqual(t, len(data), 1)
+				for _, d := range data {
+					assert.NotEmpty(t, d.InstanceName)
+				}
+			},
+		},
+	}
 
-	assert.Equal(t, 1, len(performanceCounters))
-	assert.NotNil(t, 1, performanceCounters[0])
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			pc, err := NewPerfCounter(test.path, false)
+			require.NoError(t, err)
+
+			data, err := pc.ScrapeData()
+			require.NoError(t, err, "Failed to scrape data: %v", err)
+
+			test.assertExpected(t, data)
+		})
+	}
 }

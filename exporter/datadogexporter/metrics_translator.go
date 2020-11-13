@@ -48,9 +48,7 @@ func mapIntMetrics(name string, slice pdata.IntDataPointSlice) []datadog.Metric 
 		if p.IsNil() {
 			continue
 		}
-		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
-		)
+		ms = append(ms, metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())))
 	}
 	return ms
 }
@@ -65,7 +63,7 @@ func mapDoubleMetrics(name string, slice pdata.DoubleDataPointSlice) []datadog.M
 			continue
 		}
 		ms = append(ms,
-			metrics.NewGauge(name, uint64(p.Timestamp()), float64(p.Value()), getTags(p.LabelsMap())),
+			metrics.NewGauge(name, uint64(p.Timestamp()), p.Value(), getTags(p.LabelsMap())),
 		)
 	}
 	return ms
@@ -131,7 +129,7 @@ func mapDoubleHistogramMetrics(name string, slice pdata.DoubleHistogramDataPoint
 
 		ms = append(ms,
 			metrics.NewGauge(fmt.Sprintf("%s.count", name), ts, float64(p.Count()), tags),
-			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, float64(p.Sum()), tags),
+			metrics.NewGauge(fmt.Sprintf("%s.sum", name), ts, p.Sum(), tags),
 		)
 
 		if buckets {
