@@ -78,10 +78,10 @@ type CWMetricStats struct {
 }
 
 // Wrapper interface for:
-// 	- pdata.IntDataPointSlice
-// 	- pdata.DoubleDataPointSlice
-// 	- pdata.IntHistogramDataPointSlice
-// 	- pdata.DoubleHistogramDataPointSlice
+//  - pdata.IntDataPointSlice
+//  - pdata.DoubleDataPointSlice
+//  - pdata.IntHistogramDataPointSlice
+//  - pdata.DoubleHistogramDataPointSlice
 //  - pdata.DoubleSummaryDataPointSlice
 type DataPoints interface {
 	Len() int
@@ -89,10 +89,10 @@ type DataPoints interface {
 }
 
 // Wrapper interface for:
-// 	- pdata.IntDataPoint
-// 	- pdata.DoubleDataPoint
-// 	- pdata.IntHistogramDataPoint
-// 	- pdata.DoubleHistogramDataPoint
+//  - pdata.IntDataPoint
+//  - pdata.DoubleDataPoint
+//  - pdata.IntHistogramDataPoint
+//  - pdata.DoubleHistogramDataPoint
 //  - pdata.DoubleSummaryDataPointSlice
 type DataPoint interface {
 	IsNil() bool
