@@ -99,7 +99,7 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		// Dedup dimensions within dimension set
 		dedupedDims, hasDuplicate := dedupDimensionSet(dimSet)
 		if hasDuplicate {
-			logger.Warn("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
+			logger.Debug("Removed duplicates from dimension set.", zap.String("dimensions", concatenatedDims))
 		}
 
 		// Sort dimensions
@@ -108,7 +108,7 @@ func (m *MetricDeclaration) Init(logger *zap.Logger) (err error) {
 		// Dedup dimension sets
 		key := strings.Join(dedupedDims, ",")
 		if _, ok := seen[key]; ok {
-			logger.Warn("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
+			logger.Debug("Dropped dimension set: duplicated dimension set.", zap.String("dimensions", concatenatedDims))
 			continue
 		}
 		seen[key] = true
@@ -180,7 +180,7 @@ func (m *MetricDeclaration) ExtractDimensions(labels map[string]string) (dimensi
 func (lm *LabelMatcher) Init() (err error) {
 	// Throw error if no label names are specified
 	if len(lm.LabelNames) == 0 {
-		return errors.New("Label matcher must have at least one label name specified.")
+		return errors.New("label matcher must have at least one label name specified")
 	}
 	if len(lm.Separator) == 0 {
 		lm.Separator = ";"

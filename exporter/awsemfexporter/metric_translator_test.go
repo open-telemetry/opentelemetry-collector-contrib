@@ -690,7 +690,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 		Fields:       fields,
 		Measurements: nil,
 	}
-	obs, logs := observer.New(zap.WarnLevel)
+	obs, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(obs)
 	inputLogEvent := TranslateCWMetricToEMF([]*CWMetrics{met}, logger)
 	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
@@ -700,7 +700,7 @@ func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
 	// Check logged warning message
 	fieldsStr, _ := json.Marshal(fields)
 	expectedLogs := []observer.LoggedEntry{{
-		Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped metric due to no matching metric declarations"},
+		Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped metric due to no matching metric declarations"},
 		Context: []zapcore.Field{zap.String("labels", string(fieldsStr))},
 	}}
 	assert.Equal(t, 1, logs.Len())

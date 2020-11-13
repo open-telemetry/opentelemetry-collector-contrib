@@ -54,7 +54,7 @@ func TestLabelMatcherInit(t *testing.T) {
 	lm.LabelNames = []string{}
 	err = lm.Init()
 	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Label matcher must have at least one label name specified.")
+	assert.EqualError(t, err, "label matcher must have at least one label name specified")
 }
 
 func TestGetConcatenatedLabels(t *testing.T) {
@@ -277,7 +277,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 			},
 			MetricNameSelectors: []string{"a.*", "b$", "aa+"},
 		}
-		obs, logs := observer.New(zap.WarnLevel)
+		obs, logs := observer.New(zap.DebugLevel)
 		obsLogger := zap.New(obs)
 		err := m.Init(obsLogger)
 		assert.Nil(t, err)
@@ -286,11 +286,11 @@ func TestMetricDeclarationInit(t *testing.T) {
 		// Check logged warning message
 		expectedLogs := []observer.LoggedEntry{
 			{
-				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Removed duplicates from dimension set."},
+				Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Removed duplicates from dimension set."},
 				Context: []zapcore.Field{zap.String("dimensions", "a,c,b,c")},
 			},
 			{
-				Entry:   zapcore.Entry{Level: zap.WarnLevel, Message: "Dropped dimension set: duplicated dimension set."},
+				Entry:   zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped dimension set: duplicated dimension set."},
 				Context: []zapcore.Field{zap.String("dimensions", "c,b,a")},
 			},
 		}
@@ -347,7 +347,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 		}
 		err := m.Init(logger)
 		assert.NotNil(t, err)
-		assert.EqualError(t, err, "Label matcher must have at least one label name specified.")
+		assert.EqualError(t, err, "label matcher must have at least one label name specified")
 	})
 }
 
