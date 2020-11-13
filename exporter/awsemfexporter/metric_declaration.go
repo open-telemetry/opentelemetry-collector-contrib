@@ -51,8 +51,7 @@ type LabelMatcher struct {
 	LabelNames []string `mapstructure:"label_names"`
 	// (Optional) Separator placed between concatenated source label values. (Default: ';')
 	Separator string `mapstructure:"separator"`
-	// (Optional) Regex string to be used to match against values of the concatenated
-	// labels. (Default: '.+)
+	// Regex string to be used to match against values of the concatenated labels.
 	Regex string `mapstructure:"regex"`
 
 	compiledRegex *regexp.Regexp
@@ -182,11 +181,11 @@ func (lm *LabelMatcher) Init() (err error) {
 	if len(lm.LabelNames) == 0 {
 		return errors.New("label matcher must have at least one label name specified")
 	}
+	if len(lm.Regex) == 0 {
+		return errors.New("regex not specified for label matcher")
+	}
 	if len(lm.Separator) == 0 {
 		lm.Separator = ";"
-	}
-	if len(lm.Regex) == 0 {
-		lm.Regex = ".+"
 	}
 	lm.compiledRegex = regexp.MustCompile(lm.Regex)
 	return

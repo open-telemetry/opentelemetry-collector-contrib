@@ -27,6 +27,7 @@ import (
 func TestLabelMatcherInit(t *testing.T) {
 	lm := &LabelMatcher{
 		LabelNames: []string{"label1", "label2"},
+		Regex: ".+",
 	}
 	err := lm.Init()
 	assert.Nil(t, err)
@@ -51,7 +52,13 @@ func TestLabelMatcherInit(t *testing.T) {
 	assert.NotNil(t, lm.compiledRegex)
 
 	// Test error
+	lm.Regex = ""
+	err = lm.Init()
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "regex not specified for label matcher")
+
 	lm.LabelNames = []string{}
+	lm.Regex = ".+"
 	err = lm.Init()
 	assert.NotNil(t, err)
 	assert.EqualError(t, err, "label matcher must have at least one label name specified")
@@ -105,6 +112,7 @@ func TestGetConcatenatedLabels(t *testing.T) {
 		lm := &LabelMatcher{
 			LabelNames: tc.labelNames,
 			Separator:  tc.separator,
+			Regex: ".+",
 		}
 		lm.Init()
 		t.Run(tc.testName, func(t *testing.T) {
@@ -150,6 +158,7 @@ func TestLabelMatcherMatches(t *testing.T) {
 			},
 			&LabelMatcher{
 				LabelNames: []string{"label2"},
+				Regex: ".+",
 			},
 			false,
 		},
@@ -313,6 +322,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 			LabelMatchers: []*LabelMatcher{
 				{
 					LabelNames: []string{"label1", "label2"},
+					Regex: ".+",
 				},
 				{
 					LabelNames: []string{"label1", "label3"},
@@ -339,15 +349,29 @@ func TestMetricDeclarationInit(t *testing.T) {
 			LabelMatchers: []*LabelMatcher{
 				{
 					LabelNames: []string{"label1", "label2"},
+					Regex: ".+",
 				},
 				{
 					LabelNames: []string{},
+					Regex: ".+",
 				},
 			},
 		}
 		err := m.Init(logger)
 		assert.NotNil(t, err)
 		assert.EqualError(t, err, "label matcher must have at least one label name specified")
+
+		m = &MetricDeclaration{
+			MetricNameSelectors: []string{"foo"},
+			LabelMatchers: []*LabelMatcher{
+				{
+					LabelNames: []string{"label1", "label2"},
+				},
+			},
+		}
+		err = m.Init(logger)
+		assert.NotNil(t, err)
+		assert.EqualError(t, err, "regex not specified for label matcher")
 	})
 }
 
