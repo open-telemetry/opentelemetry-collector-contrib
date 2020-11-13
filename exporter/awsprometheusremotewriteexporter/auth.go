@@ -26,8 +26,8 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
 
-// SigningRoundTripper is a Custom RoundTripper that performs AWS Sig V4
-type SigningRoundTripper struct {
+// signingRoundTripper is a Custom RoundTripper that performs AWS Sig V4
+type signingRoundTripper struct {
 	transport http.RoundTripper
 	signer    *v4.Signer
 	cfg       *aws.Config
@@ -35,7 +35,7 @@ type SigningRoundTripper struct {
 }
 
 // RoundTrip signs each outgoing request
-func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	reqBody, err := req.GetBody()
 	if err != nil {
 		return nil, err
@@ -65,9 +65,13 @@ func (si *SigningRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-func signingRoundTripper(roundTripper http.RoundTripper) (http.RoundTripper, error) {
+func newSigningRoundTripper(auth AuthSettings, next http.RoundTripper) (http.RoundTripper, error) {
+	if !applyAuth(auth) {
+		return next, nil
+	}
+
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(awsRegion)},
+		Region: aws.String(auth.Region)},
 	)
 	if err != nil {
 		return nil, err
@@ -80,12 +84,18 @@ func signingRoundTripper(roundTripper http.RoundTripper) (http.RoundTripper, err
 	// Get Credentials, either from ./aws or from environmental variables
 	creds := sess.Config.Credentials
 	signer := v4.NewSigner(creds)
-	rtp := SigningRoundTripper{
-		transport: roundTripper,
+
+	rtp := signingRoundTripper{
+		transport: next,
 		signer:    signer,
 		cfg:       sess.Config,
-		service:   awsService,
+		service:   auth.Service,
 	}
+
 	// return a RoundTripper
 	return &rtp, nil
+}
+
+func applyAuth(params AuthSettings) bool {
+	return params.Region != "" && params.Service != ""
 }

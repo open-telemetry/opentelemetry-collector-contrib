@@ -17,6 +17,7 @@ package awsprometheusremotewriteexporter
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -29,32 +30,36 @@ const (
 	typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
 )
 
-var awsRegion string
-var awsService string
+type AwsFactory struct {
+	component.ExporterFactory
+}
 
 // NewFactory returns a factory of the AWS Prometheus Remote Write exporter that can be registered to the Collector.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		exporterhelper.WithMetrics(createMetricsExporter))
+	return &AwsFactory{ExporterFactory: prw.NewFactory()}
+	// return exporterhelper.NewFactory(
+	// 	typeStr,
+	// 	createDefaultConfig,
+	// 	exporterhelper.WithMetrics(createMetricsExporter))
 }
 
-func createMetricsExporter(_ context.Context, params component.ExporterCreateParams,
+func (af *AwsFactory) Type() configmodels.Type {
+	return typeStr
+}
+
+func (af *AwsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	prwCfg := cfg.(*Config)
 
-	if !validateAuthConfig(prwCfg.AuthSettings) {
-		return nil, errors.New("invalid authentication configuration")
+	prwCfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
+		if !validateAuthConfig(prwCfg.AuthSettings) {
+			return nil, errors.New("invalid authentication configuration")
+		}
+
+		return newSigningRoundTripper(prwCfg.AuthSettings, next)
 	}
 
-	// load AWS auth configurations and create interceptor based on configuration
-	if applyAuth(prwCfg.AuthSettings) {
-		awsRegion = prwCfg.AuthSettings.Region
-		awsService = prwCfg.AuthSettings.Service
-		prwCfg.HTTPClientSettings.CustomRoundTripper = signingRoundTripper
-	}
-
+	// return af.ExporterFactory.CreateMetricsExporter(ctx, params, prwCfg)
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
 	if cerr != nil {
 		return nil, cerr
@@ -81,14 +86,14 @@ func createMetricsExporter(_ context.Context, params component.ExporterCreatePar
 	return prwexp, err
 }
 
-func createDefaultConfig() configmodels.Exporter {
+func (af *AwsFactory) CreateDefaultConfig() configmodels.Exporter {
 	qs := exporterhelper.CreateDefaultQueueSettings()
 	qs.Enabled = false
 
 	ts := exporterhelper.CreateDefaultRetrySettings()
 	ts.Enabled = false
 
-	return &Config{
+	cfg := &Config{
 		Config: prw.Config{
 			ExporterSettings: configmodels.ExporterSettings{
 				TypeVal: typeStr,
@@ -113,12 +118,10 @@ func createDefaultConfig() configmodels.Exporter {
 			Service: "",
 		},
 	}
+
+	return cfg
 }
 
 func validateAuthConfig(params AuthSettings) bool {
 	return !(params.Region != "" && params.Service == "" || params.Region == "" && params.Service != "")
-}
-
-func applyAuth(params AuthSettings) bool {
-	return params.Region != "" && params.Service != ""
 }

@@ -28,29 +28,36 @@ import (
 	"go.uber.org/zap"
 )
 
+func Test_Type(t *testing.T) {
+	af := NewFactory()
+	assert.Equal(t, af.Type(), configmodels.Type(typeStr))
+}
+
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
-func Test_createDefaultConfig(t *testing.T) {
-	cfg := createDefaultConfig()
+func Test_CreateDefaultConfig(t *testing.T) {
+	af := NewFactory()
+	cfg := af.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configcheck.ValidateConfig(cfg))
 }
 
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
-func Test_createMetricsExporter(t *testing.T) {
-	validConfigWithAuth := createDefaultConfig().(*Config)
+func Test_CreateMetricsExporter(t *testing.T) {
+	af := NewFactory()
+	validConfigWithAuth := af.CreateDefaultConfig().(*Config)
 	validConfigWithAuth.AuthSettings = AuthSettings{Region: "region", Service: "service"}
 
 	// Some form of AWS credentials chain required to test valid auth case
 	os.Setenv("AWS_ACCESS_KEY", "string")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
 
-	invalidConfigWithAuth := createDefaultConfig().(*Config)
+	invalidConfigWithAuth := af.CreateDefaultConfig().(*Config)
 	invalidConfigWithAuth.AuthSettings = AuthSettings{Region: "", Service: "service"}
 
-	invalidConfig := createDefaultConfig().(*Config)
+	invalidConfig := af.CreateDefaultConfig().(*Config)
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}
 
-	invalidTLSConfig := createDefaultConfig().(*Config)
+	invalidTLSConfig := af.CreateDefaultConfig().(*Config)
 	invalidTLSConfig.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
 		TLSSetting: configtls.TLSSetting{
 			CAFile:   "non-existent file",
@@ -68,7 +75,7 @@ func Test_createMetricsExporter(t *testing.T) {
 		returnError bool
 	}{
 		{"success_case_default",
-			createDefaultConfig(),
+			af.CreateDefaultConfig(),
 			component.ExporterCreateParams{Logger: zap.NewNop()},
 			false,
 		},
@@ -96,7 +103,7 @@ func Test_createMetricsExporter(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := createMetricsExporter(context.Background(), tt.params, tt.cfg)
+			_, err := af.CreateMetricsExporter(context.Background(), tt.params, tt.cfg)
 			if tt.returnError {
 				assert.Error(t, err)
 				return

@@ -41,12 +41,15 @@ func Test_RequestSignature(t *testing.T) {
 	defer server.Close()
 	serverURL, _ := url.Parse(server.URL)
 	setting := confighttp.HTTPClientSettings{
-		Endpoint:           serverURL.String(),
-		TLSSetting:         configtls.TLSClientSetting{},
-		ReadBufferSize:     0,
-		WriteBufferSize:    0,
-		Timeout:            0,
-		CustomRoundTripper: signingRoundTripper,
+		Endpoint:        serverURL.String(),
+		TLSSetting:      configtls.TLSClientSetting{},
+		ReadBufferSize:  0,
+		WriteBufferSize: 0,
+		Timeout:         0,
+		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			settings := AuthSettings{Region: "region", Service: "service"}
+			return newSigningRoundTripper(settings, next)
+		},
 	}
 	client, _ := setting.ToClient()
 	req, err := http.NewRequest("POST", setting.Endpoint, strings.NewReader("a=1&b=2"))
@@ -54,7 +57,7 @@ func Test_RequestSignature(t *testing.T) {
 	client.Do(req)
 
 }
-func Test_signingRoundTripper(t *testing.T) {
+func Test_newSigningRoundTripper(t *testing.T) {
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
@@ -65,23 +68,41 @@ func Test_signingRoundTripper(t *testing.T) {
 	tests := []struct {
 		name         string
 		roundTripper http.RoundTripper
+		settings     AuthSettings
+		authApplied  bool
 		returnError  bool
 	}{
 		{
 			"success_case",
 			defaultRoundTripper,
+			AuthSettings{Region: "region", Service: "service"},
+			true,
+			false,
+		},
+		{
+			"success_case_no_auth_applied",
+			defaultRoundTripper,
+			AuthSettings{Region: "", Service: ""},
+			false,
 			false,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := signingRoundTripper(tt.roundTripper)
+			rtp, err := newSigningRoundTripper(tt.settings, tt.roundTripper)
 			if tt.returnError {
 				assert.Error(t, err)
 				return
 			}
 			assert.NoError(t, err)
+			if tt.authApplied {
+				sRtp := rtp.(*signingRoundTripper)
+				assert.Equal(t, sRtp.transport, tt.roundTripper)
+				assert.Equal(t, tt.settings.Service, sRtp.service)
+			} else {
+				assert.Equal(t, rtp, tt.roundTripper)
+			}
 		})
 	}
 }
