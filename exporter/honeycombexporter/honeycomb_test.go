@@ -38,8 +38,7 @@ import (
 )
 
 type honeycombData struct {
-	Data       map[string]interface{} `json:"data"`
-	SampleRate int                    `json:"samplerate"`
+	Data map[string]interface{} `json:"data"`
 }
 
 func testingServer(callback func(data []honeycombData)) *httptest.Server {
@@ -93,7 +92,6 @@ func baseConfig() *Config {
 		APIKey:              "test",
 		Dataset:             "test",
 		Debug:               false,
-		SampleRate:          1,
 		SampleRateAttribute: "",
 	}
 }
@@ -348,14 +346,12 @@ func TestSampleRateAttribute(t *testing.T) {
 	}
 
 	cfg := baseConfig()
-	cfg.SampleRate = 2 // default sample rate
 	cfg.SampleRateAttribute = "hc.sample.rate"
 
 	got := testTraceExporter(internaldata.OCToTraceData(td), t, cfg)
 
 	want := []honeycombData{
 		{
-			SampleRate: 13,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
 				"has_remote_parent":                      false,
@@ -372,7 +368,6 @@ func TestSampleRateAttribute(t *testing.T) {
 			},
 		},
 		{
-			SampleRate: 2,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
 				"has_remote_parent":                      false,
@@ -388,7 +383,6 @@ func TestSampleRateAttribute(t *testing.T) {
 			},
 		},
 		{
-			SampleRate: 2,
 			Data: map[string]interface{}{
 				"duration_ms":                            float64(0),
 				"has_remote_parent":                      false,

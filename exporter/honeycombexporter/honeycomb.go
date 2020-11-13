@@ -84,10 +84,9 @@ type spanRefType int64
 // wraps the exporter in the component.TraceExporterOld helper method.
 func newHoneycombTraceExporter(cfg *Config, logger *zap.Logger) (component.TracesExporter, error) {
 	libhoneyConfig := libhoney.Config{
-		WriteKey:   cfg.APIKey,
-		Dataset:    cfg.Dataset,
-		APIHost:    cfg.APIURL,
-		SampleRate: cfg.SampleRate,
+		WriteKey: cfg.APIKey,
+		Dataset:  cfg.Dataset,
+		APIHost:  cfg.APIURL,
 	}
 	userAgent := oTelCollectorUserAgentStr
 	libhoney.UserAgentAddition = userAgent
