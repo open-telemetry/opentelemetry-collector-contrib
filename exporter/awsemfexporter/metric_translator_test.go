@@ -549,6 +549,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 	testCases := []struct {
 		testName              string
 		metricNameSelectors   []string
+		labelMatchers         []*LabelMatcher
 		dimensionRollupOption string
 		expectedDimensions    [][]string
 		numMeasurements       int
@@ -556,6 +557,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ Zero + Single dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -568,6 +570,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"has match w/ no dim rollup",
 			[]string{"spanCounter"},
+			nil,
 			"",
 			[][]string{
 				{"spanName", "isItAnError"},
@@ -576,8 +579,38 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 			1,
 		},
 		{
+			"has label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "false;testSpan",
+				},
+			},
+			"",
+			[][]string{
+				{"spanName", "isItAnError"},
+				{"spanName", OTellibDimensionKey},
+			},
+			1,
+		},
+		{
+			"no label match w/ no dim rollup",
+			[]string{"spanCounter"},
+			[]*LabelMatcher{
+				{
+					LabelNames: []string{"isItAnError", "spanName"},
+					Regex:      "true;testSpan",
+				},
+			},
+			"",
+			nil,
+			0,
+		},
+		{
 			"No match w/ rollup",
 			[]string{"invalid"},
+			nil,
 			ZeroAndSingleDimensionRollup,
 			[][]string{
 				{OTellibDimensionKey, "spanName"},
@@ -589,6 +622,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		{
 			"No match w/ no rollup",
 			[]string{"invalid"},
+			nil,
 			"",
 			nil,
 			0,
@@ -600,6 +634,7 @@ func TestTranslateOtToCWMetricWithFiltering(t *testing.T) {
 		m := MetricDeclaration{
 			Dimensions:          [][]string{{"isItAnError", "spanName"}, {"spanName", OTellibDimensionKey}},
 			MetricNameSelectors: tc.metricNameSelectors,
+			LabelMatchers:       tc.labelMatchers,
 		}
 		config := &Config{
 			Namespace:             "",
