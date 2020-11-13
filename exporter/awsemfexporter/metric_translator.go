@@ -104,8 +104,14 @@ type IntDataPointSlice struct {
 type DoubleDataPointSlice struct {
 	pdata.DoubleDataPointSlice
 }
+type IntHistogramDataPointSlice struct {
+	pdata.IntHistogramDataPointSlice
+}
 type DoubleHistogramDataPointSlice struct {
 	pdata.DoubleHistogramDataPointSlice
+}
+type DoubleSummaryDataPointSlice struct {
+	pdata.DoubleSummaryDataPointSlice
 }
 
 func (dps IntDataPointSlice) At(i int) DataPoint {
@@ -114,8 +120,14 @@ func (dps IntDataPointSlice) At(i int) DataPoint {
 func (dps DoubleDataPointSlice) At(i int) DataPoint {
 	return dps.DoubleDataPointSlice.At(i)
 }
+func (dps IntHistogramDataPointSlice) At(i int) DataPoint {
+	return dps.IntHistogramDataPointSlice.At(i)
+}
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	return dps.DoubleHistogramDataPointSlice.At(i)
+}
+func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
+	return dps.DoubleSummaryDataPointSlice.At(i)
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
@@ -218,8 +230,12 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		dps = IntDataPointSlice{metric.IntSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleSum:
 		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
+	case pdata.MetricDataTypeIntHistogram:
+		dps = IntHistogramDataPointSlice{metric.IntHistogram().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
 		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
+	case pdata.MetricDataTypeDoubleSummary:
+		dps = DoubleSummaryDataPointSlice{metric.DoubleSummary().DataPoints()}
 	default:
 		config.logger.Warn(
 			"Unhandled metric data type.",
@@ -274,14 +290,27 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 		if needsCalculateRate(pmd) {
 			metricVal = calculateRate(fields, metric.Value(), timestamp)
 		}
-	case pdata.DoubleHistogramDataPoint:
-		bucketBounds := metric.ExplicitBounds()
+	case pdata.IntHistogramDataPoint:
 		metricVal = &CWMetricStats{
-			Min:   bucketBounds[0],
-			Max:   bucketBounds[len(bucketBounds)-1],
+			Count: metric.Count(),
+			Sum:   float64(metric.Sum()),
+		}
+	case pdata.DoubleHistogramDataPoint:
+		metricVal = &CWMetricStats{
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
 		}
+	case pdata.DoubleSummaryDataPoint:
+		metricStat := &CWMetricStats{
+			Count: metric.Count(),
+			Sum:   metric.Sum(),
+		}
+		quantileValues := metric.QuantileValues()
+		if quantileValues.Len() > 0 {
+			metricStat.Min = quantileValues.At(0).Value()
+			metricStat.Max = quantileValues.At(quantileValues.Len() - 1).Value()
+		}
+		metricVal = metricStat
 	}
 	if metricVal == nil {
 		return nil

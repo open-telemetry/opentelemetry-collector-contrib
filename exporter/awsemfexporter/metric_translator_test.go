@@ -32,8 +32,6 @@ import (
 	"go.opentelemetry.io/collector/translator/conventions"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 // Asserts whether dimension sets are equal (i.e. has same sets of dimensions)
@@ -70,7 +68,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -108,7 +106,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -716,8 +714,145 @@ func TestGetCWMetrics(t *testing.T) {
 					Fields: map[string]interface{}{
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
-							Min:   0,
-							Max:   10,
+							Sum:   15.0,
+							Count: 5,
+						},
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Sum:   35.0,
+							Count: 18,
+						},
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double summary",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_SUMMARY,
+					Unit: "Seconds",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 5,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 5,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 15.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      1,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 35.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 18,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 18,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 35.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      0,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Min:   1,
+							Max:   5,
 							Sum:   15.0,
 							Count: 5,
 						},
@@ -741,7 +876,7 @@ func TestGetCWMetrics(t *testing.T) {
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
 							Min:   0,
-							Max:   10,
+							Max:   5,
 							Sum:   35.0,
 							Count: 18,
 						},
@@ -786,37 +921,6 @@ func TestGetCWMetrics(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("Unhandled metric type", func(t *testing.T) {
-		metric := pdata.NewMetric()
-		metric.InitEmpty()
-		metric.SetName("foo")
-		metric.SetUnit("Count")
-		metric.SetDataType(pdata.MetricDataTypeIntHistogram)
-
-		obs, logs := observer.New(zap.WarnLevel)
-		obsConfig := &Config{
-			DimensionRollupOption: "",
-			logger:                zap.New(obs),
-		}
-
-		cwMetrics := getCWMetrics(&metric, namespace, instrumentationLibName, obsConfig)
-		assert.Nil(t, cwMetrics)
-
-		// Test output warning logs
-		expectedLogs := []observer.LoggedEntry{
-			{
-				Entry: zapcore.Entry{Level: zap.WarnLevel, Message: "Unhandled metric data type."},
-				Context: []zapcore.Field{
-					zap.String("DataType", "IntHistogram"),
-					zap.String("Name", "foo"),
-					zap.String("Unit", "Count"),
-				},
-			},
-		}
-		assert.Equal(t, 1, logs.Len())
-		assert.Equal(t, expectedLogs, logs.AllUntimed())
-	})
 
 	t.Run("Nil metric", func(t *testing.T) {
 		cwMetrics := getCWMetrics(nil, namespace, instrumentationLibName, config)
@@ -975,23 +1079,12 @@ func TestBuildCWMetric(t *testing.T) {
 		expectedFields := map[string]interface{}{
 			OTelLib: instrLibName,
 			"foo": &CWMetricStats{
-				Min:   1,
-				Max:   3,
 				Sum:   17.13,
 				Count: 17,
 			},
 			"label1": "value1",
 		}
 		assert.Equal(t, expectedFields, cwMetric.Fields)
-	})
-
-	t.Run("Invalid datapoint type", func(t *testing.T) {
-		metric.SetDataType(pdata.MetricDataTypeIntGauge)
-		dp := pdata.NewIntHistogramDataPoint()
-		dp.InitEmpty()
-
-		cwMetric := buildCWMetric(dp, &metric, namespace, metricSlice, instrLibName, "")
-		assert.Nil(t, cwMetric)
 	})
 }
 
