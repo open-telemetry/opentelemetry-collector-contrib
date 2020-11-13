@@ -97,12 +97,10 @@ func TestExportTraceDataMinimum(t *testing.T) {
 
 func TestExportTraceDataFullTrace(t *testing.T) {
 	td := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
-		},
 		Resource: &resourcepb.Resource{
 			Labels: map[string]string{
-				"resource": "R1",
+				serviceNameKey: "test-service",
+				"resource":     "R1",
 			},
 		},
 		Spans: []*tracepb.Span{
