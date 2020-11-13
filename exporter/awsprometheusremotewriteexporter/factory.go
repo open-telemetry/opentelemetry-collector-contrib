@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
@@ -30,20 +29,20 @@ const (
 	typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
 )
 
-type AwsFactory struct {
+type awsFactory struct {
 	component.ExporterFactory
 }
 
 // NewFactory returns a factory of the AWS Prometheus Remote Write exporter that can be registered to the Collector.
 func NewFactory() component.ExporterFactory {
-	return &AwsFactory{ExporterFactory: prw.NewFactory()}
+	return &awsFactory{ExporterFactory: prw.NewFactory()}
 }
 
-func (af *AwsFactory) Type() configmodels.Type {
+func (af *awsFactory) Type() configmodels.Type {
 	return typeStr
 }
 
-func (af *AwsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
+func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
 	prwCfg := cfg.(*Config)
 
@@ -79,38 +78,17 @@ func (af *AwsFactory) CreateMetricsExporter(ctx context.Context, params componen
 	return prwexp, err
 }
 
-func (af *AwsFactory) CreateDefaultConfig() configmodels.Exporter {
-	qs := exporterhelper.CreateDefaultQueueSettings()
-	qs.Enabled = false
-
-	ts := exporterhelper.CreateDefaultRetrySettings()
-	ts.Enabled = false
-
+func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 	cfg := &Config{
-		Config: prw.Config{
-			ExporterSettings: configmodels.ExporterSettings{
-				TypeVal: typeStr,
-				NameVal: typeStr,
-			},
-			Namespace:       "",
-			ExternalLabels:  map[string]string{},
-			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-			RetrySettings:   ts,
-			QueueSettings:   qs,
-			HTTPClientSettings: confighttp.HTTPClientSettings{
-				Endpoint: "http://some.url:9411/api/prom/push",
-				// We almost read 0 bytes, so no need to tune ReadBufferSize.
-				ReadBufferSize:  0,
-				WriteBufferSize: 512 * 1024,
-				Timeout:         exporterhelper.CreateDefaultTimeoutSettings().Timeout,
-				Headers:         map[string]string{},
-			},
-		},
+		Config: *af.ExporterFactory.CreateDefaultConfig().(*prw.Config),
 		AuthSettings: AuthSettings{
 			Region:  "",
 			Service: "",
 		},
 	}
+
+	cfg.TypeVal = typeStr
+	cfg.NameVal = typeStr
 
 	return cfg
 }
