@@ -25,7 +25,15 @@ The following exporter configuration parameters are supported.
 | `max_retries`     | Maximum number of retries before abandoning an attempt to post data.   |    1    |
 | `dimension_rollup_option`| DimensionRollupOption is the option for metrics dimension rollup. Three options are available. |"ZeroAndSingleDimensionRollup" (Enable both zero dimension rollup and single dimension rollup)| 
 | `resource_to_telemetry_conversion` | "resource_to_telemetry_conversion" is the option for converting resource attributes to telemetry attributes. It has only one config onption- `enabled`. For metrics, if `enabled=true`, all the resource attributes will be converted to metric labels by default. See `Resource Attributes to Metric Labels` section below for examples. | `enabled=false` | 
- 
+| [`metric_declarations`](#metric_declaration) | List of rules for filtering exported metrics and their dimensions. |    [ ]   |
+
+### <metric_declaration>
+A metric_declaration section characterizes a rule to be used to set dimensions for exported metrics, filtered by the incoming metrics' metric names.
+| Name              | Description                                                            | Default |
+| :---------------- | :--------------------------------------------------------------------- | ------- |
+| `dimensions`      | List of dimension sets to be exported.                                 |  [[ ]]   |
+| `metric_name_selectors` | List of regex strings to filter metric names by.                 |   [ ]    |
+
 
 ## AWS Credential Configuration
 
