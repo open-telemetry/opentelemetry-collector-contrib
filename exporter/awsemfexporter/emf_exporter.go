@@ -67,6 +67,19 @@ func New(
 	svcStructuredLog := NewCloudWatchLogsClient(logger, awsConfig, session)
 	collectorIdentifier, _ := uuid.NewRandom()
 
+	// Initialize metric declarations and filter out invalid ones
+	emfConfig := config.(*Config)
+	var validDeclarations []*MetricDeclaration
+	for _, declaration := range emfConfig.MetricDeclarations {
+		err := declaration.Init(logger)
+		if err != nil {
+			logger.Warn("Dropped metric declaration. Error: " + err.Error() + ".")
+		} else {
+			validDeclarations = append(validDeclarations, declaration)
+		}
+	}
+	emfConfig.MetricDeclarations = validDeclarations
+
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
 		config:           config,
@@ -212,7 +225,7 @@ func generateLogEventFromMetric(metric pdata.Metrics, config *Config) ([]*LogEve
 		cwMetricLists = append(cwMetricLists, cwm...)
 	}
 
-	return TranslateCWMetricToEMF(cwMetricLists), totalDroppedMetrics, namespace
+	return TranslateCWMetricToEMF(cwMetricLists, config.logger), totalDroppedMetrics, namespace
 }
 
 func wrapErrorIfBadRequest(err *error) error {
