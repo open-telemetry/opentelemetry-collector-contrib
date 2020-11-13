@@ -23,9 +23,11 @@ from moto import (  # pylint: disable=import-error
     mock_lambda,
     mock_s3,
     mock_sqs,
+    mock_xray,
 )
 
 from opentelemetry import propagators
+from opentelemetry.context import attach, detach, set_value
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.test.mock_textmap import MockTextMapPropagator
@@ -330,3 +332,16 @@ class TestBotocoreInstrumentor(TestBase):
 
         finally:
             propagators.set_global_textmap(previous_propagator)
+
+    @mock_xray
+    def test_suppress_instrumentation_xray_client(self):
+        xray_client = self.session.create_client(
+            "xray", region_name="us-east-1"
+        )
+        token = attach(set_value("suppress_instrumentation", True))
+        xray_client.put_trace_segments(TraceSegmentDocuments=["str1"])
+        xray_client.put_trace_segments(TraceSegmentDocuments=["str2"])
+        detach(token)
+
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(0, len(spans))
