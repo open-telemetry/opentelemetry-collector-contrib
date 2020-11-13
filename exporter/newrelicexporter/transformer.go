@@ -32,14 +32,16 @@ import (
 )
 
 const (
-	unitAttrKey          = "unit"
-	descriptionAttrKey   = "description"
-	collectorNameKey     = "collector.name"
-	collectorVersionKey  = "collector.version"
-	statusCodeKey        = "otel.status_code"
-	statusDescriptionKey = "otel.status_description"
-	spanKindKey          = "span.kind"
-	serviceNameKey       = "service.name"
+	unitAttrKey               = "unit"
+	descriptionAttrKey        = "description"
+	collectorNameKey          = "collector.name"
+	collectorVersionKey       = "collector.version"
+	instrumentationNameKey    = "instrumentation.name"
+	instrumentationVersionKey = "instrumentation.version"
+	statusCodeKey             = "otel.status_code"
+	statusDescriptionKey      = "otel.status_description"
+	spanKindKey               = "span.kind"
+	serviceNameKey            = "service.name"
 )
 
 // TODO (MrAlias): unify this with the traceTransformer when the metric data
@@ -62,8 +64,14 @@ func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibra
 			resource.Attributes(),
 		),
 	}
-	if resource.Attributes().Len() == 0 {
-		return t
+
+	if !lib.IsNil() {
+		if n := lib.Name(); n != nil {
+			t.ResourceAttributes[instrumentationNameKey] = n
+			if v := lib.Version(); v != nil {
+				t.ResourceAttributes[instrumentationVersionKey] = v
+			}
+		}
 	}
 
 	var srv string
