@@ -27,7 +27,7 @@ import (
 func TestLabelMatcherInit(t *testing.T) {
 	lm := &LabelMatcher{
 		LabelNames: []string{"label1", "label2"},
-		Regex: ".+",
+		Regex:      ".+",
 	}
 	err := lm.Init()
 	assert.Nil(t, err)
@@ -112,7 +112,7 @@ func TestGetConcatenatedLabels(t *testing.T) {
 		lm := &LabelMatcher{
 			LabelNames: tc.labelNames,
 			Separator:  tc.separator,
-			Regex: ".+",
+			Regex:      ".+",
 		}
 		lm.Init()
 		t.Run(tc.testName, func(t *testing.T) {
@@ -158,7 +158,7 @@ func TestLabelMatcherMatches(t *testing.T) {
 			},
 			&LabelMatcher{
 				LabelNames: []string{"label2"},
-				Regex: ".+",
+				Regex:      ".+",
 			},
 			false,
 		},
@@ -322,7 +322,7 @@ func TestMetricDeclarationInit(t *testing.T) {
 			LabelMatchers: []*LabelMatcher{
 				{
 					LabelNames: []string{"label1", "label2"},
-					Regex: ".+",
+					Regex:      ".+",
 				},
 				{
 					LabelNames: []string{"label1", "label3"},
@@ -349,11 +349,11 @@ func TestMetricDeclarationInit(t *testing.T) {
 			LabelMatchers: []*LabelMatcher{
 				{
 					LabelNames: []string{"label1", "label2"},
-					Regex: ".+",
+					Regex:      ".+",
 				},
 				{
 					LabelNames: []string{},
-					Regex: ".+",
+					Regex:      ".+",
 				},
 			},
 		}
