@@ -28,17 +28,47 @@ The following settings can be optionally configured:
 - `timeout` (default = 5s): How long to wait until the connection is close.
 - `read_buffer_size` (default = 0): ReadBufferSize for HTTP client.
 - `write_buffer_size` (default = 512 * 1024): WriteBufferSize for HTTP client.
-- `aws_auth`: whether each request should be signed with AWS Sig v4. The following settings must be configured:
+- `aws_auth`: specify if each request should be signed with AWS Sig v4. The following settings must be configured:
     - `region`: region of the AWS service being exported to.
     - `service`: AWS service being exported to.
     
     
-Example:
+#### Examples:
 
+Simplest configuration:
 ```yaml
 exporters:
   awsprometheusremotewrite:
     endpoint: "http://some.url:9411/api/prom/push"
 ```
+
+All configurations:
+```yaml
+exporters:
+  awsprometheusremotewrite:
+    namespace: "test-space"
+    sending_queue:
+        enabled: true
+        num_consumers: 2
+        queue_size: 10
+    retry_on_failure:
+        enabled: true
+        initial_interval: 10s
+        max_interval: 60s
+        max_elapsed_time: 10m
+    endpoint: "http://localhost:9009"
+    ca_file: "/var/lib/mycert.pem"
+    write_buffer_size: 524288
+    headers:
+        Prometheus-Remote-Write-Version: "0.1.0"
+        X-Scope-OrgID: 234
+    aws_auth:
+        region: "us-west-2"
+        service: "service-name"
+    external_labels:
+        key1: value1
+        key2: value2
+```
+
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).

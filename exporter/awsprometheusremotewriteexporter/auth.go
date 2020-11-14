@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -48,14 +49,17 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 
 	body := bytes.NewReader(content)
 
+	// Clone request to ensure thread safety
+	req2 := cloneRequest(req)
+
 	// Sign the request
-	_, err = si.signer.Sign(req, body, si.service, *si.cfg.Region, time.Now())
+	_, err = si.signer.Sign(req2, body, si.service, *si.cfg.Region, time.Now())
 	if err != nil {
 		return nil, err
 	}
 
 	// Send the request to Prometheus Remote Write Backend
-	resp, err := si.transport.RoundTrip(req)
+	resp, err := si.transport.RoundTrip(req2)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +67,8 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	return resp, err
 }
 
-func newSigningRoundTripper(auth AuthSettings, next http.RoundTripper) (http.RoundTripper, error) {
-	if !applyAuth(auth) {
+func newSigningRoundTripper(auth AuthConfig, next http.RoundTripper) (http.RoundTripper, error) {
+	if !isValidAuth(auth) {
 		return next, nil
 	}
 
@@ -83,7 +87,7 @@ func newSigningRoundTripper(auth AuthSettings, next http.RoundTripper) (http.Rou
 	creds := sess.Config.Credentials
 	signer := v4.NewSigner(creds)
 
-	rtp := signingRoundTripper{
+	rt := signingRoundTripper{
 		transport: next,
 		signer:    signer,
 		cfg:       sess.Config,
@@ -91,9 +95,21 @@ func newSigningRoundTripper(auth AuthSettings, next http.RoundTripper) (http.Rou
 	}
 
 	// return a RoundTripper
-	return &rtp, nil
+	return &rt, nil
 }
 
-func applyAuth(params AuthSettings) bool {
+func isValidAuth(params AuthConfig) bool {
 	return params.Region != "" && params.Service != ""
+}
+
+func cloneRequest(r *http.Request) *http.Request {
+	// shallow copy of the struct
+	r2 := new(http.Request)
+	*r2 = *r
+	// deep copy of the Header
+	r2.Header = make(http.Header, len(r.Header))
+	for k, s := range r.Header {
+		r2.Header[k] = append([]string(nil), s...)
+	}
+	return r2
 }

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -28,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
-func Test_RequestSignature(t *testing.T) {
+func TestRequestSignature(t *testing.T) {
 	// Some form of AWS credentials must be set up for tests to succeed
 	os.Setenv("AWS_ACCESS_KEY", "string")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
@@ -47,7 +48,7 @@ func Test_RequestSignature(t *testing.T) {
 		WriteBufferSize: 0,
 		Timeout:         0,
 		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
-			settings := AuthSettings{Region: "region", Service: "service"}
+			settings := AuthConfig{Region: "region", Service: "service"}
 			return newSigningRoundTripper(settings, next)
 		},
 	}
@@ -57,7 +58,7 @@ func Test_RequestSignature(t *testing.T) {
 	client.Do(req)
 
 }
-func Test_newSigningRoundTripper(t *testing.T) {
+func TestNewSigningRoundTripper(t *testing.T) {
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 
@@ -68,21 +69,21 @@ func Test_newSigningRoundTripper(t *testing.T) {
 	tests := []struct {
 		name         string
 		roundTripper http.RoundTripper
-		settings     AuthSettings
+		settings     AuthConfig
 		authApplied  bool
 		returnError  bool
 	}{
 		{
 			"success_case",
 			defaultRoundTripper,
-			AuthSettings{Region: "region", Service: "service"},
+			AuthConfig{Region: "region", Service: "service"},
 			true,
 			false,
 		},
 		{
 			"success_case_no_auth_applied",
 			defaultRoundTripper,
-			AuthSettings{Region: "", Service: ""},
+			AuthConfig{Region: "", Service: ""},
 			false,
 			false,
 		},

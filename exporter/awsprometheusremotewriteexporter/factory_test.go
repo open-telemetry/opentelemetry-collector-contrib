@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -28,13 +29,13 @@ import (
 	"go.uber.org/zap"
 )
 
-func Test_Type(t *testing.T) {
+func TestType(t *testing.T) {
 	af := NewFactory()
 	assert.Equal(t, af.Type(), configmodels.Type(typeStr))
 }
 
 //Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
-func Test_CreateDefaultConfig(t *testing.T) {
+func TestCreateDefaultConfig(t *testing.T) {
 	af := NewFactory()
 	cfg := af.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
@@ -42,17 +43,17 @@ func Test_CreateDefaultConfig(t *testing.T) {
 }
 
 //Tests whether or not a correct Metrics Exporter from the default Config parameters
-func Test_CreateMetricsExporter(t *testing.T) {
+func TestCreateMetricsExporter(t *testing.T) {
 	af := NewFactory()
 	validConfigWithAuth := af.CreateDefaultConfig().(*Config)
-	validConfigWithAuth.AuthSettings = AuthSettings{Region: "region", Service: "service"}
+	validConfigWithAuth.AuthConfig = AuthConfig{Region: "region", Service: "service"}
 
 	// Some form of AWS credentials chain required to test valid auth case
 	os.Setenv("AWS_ACCESS_KEY", "string")
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
 
 	invalidConfigWithAuth := af.CreateDefaultConfig().(*Config)
-	invalidConfigWithAuth.AuthSettings = AuthSettings{Region: "", Service: "service"}
+	invalidConfigWithAuth.AuthConfig = AuthConfig{Region: "", Service: "service"}
 
 	invalidConfig := af.CreateDefaultConfig().(*Config)
 	invalidConfig.HTTPClientSettings = confighttp.HTTPClientSettings{}

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -31,7 +32,7 @@ import (
 )
 
 // TestLoadConfig checks whether yaml configuration can be loaded correctly
-func Test_loadConfig(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.ExampleComponents()
 	assert.NoError(t, err)
 
@@ -88,7 +89,7 @@ func Test_loadConfig(t *testing.T) {
 						"x-scope-orgid":                   "234"},
 				},
 			},
-			AuthSettings: AuthSettings{
+			AuthConfig: AuthConfig{
 				Region:  "us-west-2",
 				Service: "service-name",
 			},

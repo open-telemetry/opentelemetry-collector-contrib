@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package awsprometheusremotewriteexporter provides a Prometheus Remote Write Exporter with AWS Sigv4 authentication
 package awsprometheusremotewriteexporter
 
 import (
@@ -25,9 +26,7 @@ import (
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
-const (
-	typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
-)
+const typeStr = "awsprometheusremotewrite" // The value of "type" key in configuration.
 
 type awsFactory struct {
 	component.ExporterFactory
@@ -47,11 +46,11 @@ func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params componen
 	prwCfg := cfg.(*Config)
 
 	prwCfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		if !validateAuthConfig(prwCfg.AuthSettings) {
+		if !isAuthConfigValid(prwCfg.AuthConfig) {
 			return nil, errors.New("invalid authentication configuration")
 		}
 
-		return newSigningRoundTripper(prwCfg.AuthSettings, next)
+		return newSigningRoundTripper(prwCfg.AuthConfig, next)
 	}
 
 	client, cerr := prwCfg.HTTPClientSettings.ToClient()
@@ -81,7 +80,7 @@ func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params componen
 func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 	cfg := &Config{
 		Config: *af.ExporterFactory.CreateDefaultConfig().(*prw.Config),
-		AuthSettings: AuthSettings{
+		AuthConfig: AuthConfig{
 			Region:  "",
 			Service: "",
 		},
@@ -93,6 +92,6 @@ func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 	return cfg
 }
 
-func validateAuthConfig(params AuthSettings) bool {
+func isAuthConfigValid(params AuthConfig) bool {
 	return !(params.Region != "" && params.Service == "" || params.Region == "" && params.Service != "")
 }
