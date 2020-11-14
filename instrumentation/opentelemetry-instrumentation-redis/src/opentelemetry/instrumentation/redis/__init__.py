@@ -59,7 +59,6 @@ from opentelemetry.instrumentation.utils import unwrap
 
 _DEFAULT_SERVICE = "redis"
 _RAWCMD = "db.statement"
-_CMD = "redis.command"
 
 
 def _set_connection_attributes(span, conn):
@@ -75,7 +74,7 @@ def _traced_execute_command(func, instance, args, kwargs):
     tracer = getattr(redis, "_opentelemetry_tracer")
     query = _format_command_args(args)
     with tracer.start_as_current_span(
-        _CMD, kind=trace.SpanKind.CLIENT
+        args[0], kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
             span.set_attribute("service", tracer.instrumentation_info.name)
@@ -91,8 +90,11 @@ def _traced_execute_pipeline(func, instance, args, kwargs):
     cmds = [_format_command_args(c) for c, _ in instance.command_stack]
     resource = "\n".join(cmds)
 
+    pipeline_cmnds = " ".join([args[0] for args, _ in instance.command_stack])
+    span_name = "PIPELINE" + " " + pipeline_cmnds
+
     with tracer.start_as_current_span(
-        _CMD, kind=trace.SpanKind.CLIENT
+        span_name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
             span.set_attribute("service", tracer.instrumentation_info.name)

@@ -20,15 +20,16 @@ Some utils used by the redis integration
 def _extract_conn_attributes(conn_kwargs):
     """ Transform redis conn info into dict """
     attributes = {
-        "db.type": "redis",
-        "db.instance": conn_kwargs.get("db", 0),
+        "db.system": "redis",
+        "db.name": conn_kwargs.get("db", 0),
     }
     try:
-        attributes["db.url"] = "redis://{}:{}".format(
-            conn_kwargs["host"], conn_kwargs["port"]
-        )
+        attributes["net.peer.name"] = conn_kwargs["host"]
+        attributes["net.peer.ip"] = conn_kwargs["port"]
+        attributes["net.transport"] = "IP.TCP"
     except KeyError:
-        pass  # don't include url attribute
+        attributes["net.peer.name"] = conn_kwargs["path"]
+        attributes["net.transport"] = "Unix"
 
     return attributes
 

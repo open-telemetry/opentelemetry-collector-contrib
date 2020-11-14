@@ -31,7 +31,7 @@ class TestRedis(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self.assertEqual(span.name, "redis.command")
+        self.assertEqual(span.name, "GET")
         self.assertEqual(span.kind, SpanKind.CLIENT)
 
     def test_not_recording(self):
