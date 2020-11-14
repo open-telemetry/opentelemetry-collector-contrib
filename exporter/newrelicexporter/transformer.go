@@ -26,7 +26,6 @@ import (
 	"github.com/newrelic/newrelic-telemetry-sdk-go/telemetry"
 	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
 	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -53,65 +52,47 @@ type metricTransformer struct {
 }
 
 type traceTransformer struct {
-	ServiceName        string
 	ResourceAttributes map[string]interface{}
 }
 
 func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibrary) *traceTransformer {
 	t := &traceTransformer{
-		ServiceName: tracetranslator.ResourceNoServiceName,
 		ResourceAttributes: tracetranslator.AttributeMapToMap(
 			resource.Attributes(),
 		),
 	}
 
 	if !lib.IsNil() {
-		if n := lib.Name(); n != nil {
+		if n := lib.Name(); n != "" {
 			t.ResourceAttributes[instrumentationNameKey] = n
-			if v := lib.Version(); v != nil {
+			if v := lib.Version(); v != "" {
 				t.ResourceAttributes[instrumentationVersionKey] = v
 			}
 		}
 	}
-
-	var srv string
-	if sn, ok := t.ResourceAttributes[conventions.AttributeServiceName]; ok {
-		srv, ok = sn.(string)
-		if ok {
-			delete(t.ResourceAttributes, conventions.AttributeServiceName)
-		}
-	} else if fn, ok := t.ResourceAttributes[conventions.AttributeFaasName]; ok {
-		srv, _ = fn.(string)
-	} else if fn, ok := t.ResourceAttributes[conventions.AttributeK8sDeployment]; ok {
-		srv, _ = fn.(string)
-	} else if fn, ok := t.ResourceAttributes[conventions.AttributeProcessExecutableName]; ok {
-		srv, _ = fn.(string)
-	}
-	if srv != "" {
-		t.ServiceName = srv
-	}
-
 	return t
 }
 
-var emptySpan telemetry.Span
+var (
+	emptySpan      telemetry.Span
+	emptySpanError = errors.New("empty span")
+)
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 	if span.IsNil() {
-		return emptySpan, errors.New("empty span")
+		return emptySpan, emptySpanError
 	}
 
 	startTime := pdata.UnixNanoToTime(span.StartTime())
 	sp := telemetry.Span{
 		// HexString validates the IDs, it will be an empty string if invalid.
-		ID:          span.SpanID().HexString(),
-		TraceID:     span.TraceID().HexString(),
-		ParentID:    span.ParentSpanID().HexString(),
-		Name:        span.Name(),
-		Timestamp:   startTime,
-		Duration:    pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
-		ServiceName: t.ServiceName,
-		Attributes:  t.SpanAttributes(span),
+		ID:         span.SpanID().HexString(),
+		TraceID:    span.TraceID().HexString(),
+		ParentID:   span.ParentSpanID().HexString(),
+		Name:       span.Name(),
+		Timestamp:  startTime,
+		Duration:   pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
+		Attributes: t.SpanAttributes(span),
 	}
 
 	if sp.ID == "" {
@@ -148,7 +129,8 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	attrs := make(map[string]interface{}, length)
 
 	if hasStatusCode {
-		attrs[statusCodeKey] = int(span.Status().Code())
+		code := strings.TrimPrefix(span.Status().Code().String(), "STATUS_CODE_")
+		attrs[statusCodeKey] = code
 	}
 	if hasStatusDesc {
 		attrs[statusDescriptionKey] = span.Status().Message()
@@ -156,7 +138,8 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 
 	// Add span kind if it is set
 	if validSpanKind {
-		attrs[spanKindKey] = strings.ToLower(span.Kind().String())
+		kind := strings.TrimPrefix(span.Kind().String(), "SPAN_KIND_")
+		attrs[spanKindKey] = strings.ToLower(kind)
 	}
 
 	for k, v := range t.ResourceAttributes {

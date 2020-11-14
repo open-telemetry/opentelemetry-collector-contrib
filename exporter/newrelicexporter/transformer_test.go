@@ -41,45 +41,37 @@ func TestTransformEmptySpan(t *testing.T) {
 func TestTransformSpan(t *testing.T) {
 	now := time.Unix(100, 0)
 	tests := []struct {
+		name     string
 		spanFunc func() pdata.Span
 		want     telemetry.Span
 	}{
 		{
-			spanFunc: pdata.NewSpan,
-			want: telemetry.Span{
-				ID:          "0000000000000000",
-				TraceID:     "00000000000000000000000000000000",
-				ServiceName: "test-service",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					"resource":          "R1",
-				},
-			},
-		},
-		{
+			name: "root",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
+				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 				s.SetName("root")
 				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000001",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "root",
-				ServiceName: "test-service",
+				ID:      "0000000000000001",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "root",
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 				},
 			},
 		},
 		{
+			name: "client",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
+				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 2}))
 				s.SetParentSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
@@ -87,19 +79,20 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000002",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "client",
-				ParentID:    "0000000000000001",
-				ServiceName: "test-service",
+				ID:       "0000000000000002",
+				TraceID:  "01010101010101010101010101010101",
+				Name:     "client",
+				ParentID: "0000000000000001",
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 				},
 			},
 		},
 		{
+			name: "error code",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
 				return internaldata.OCToTraceData(
@@ -116,19 +109,20 @@ func TestTransformSpan(t *testing.T) {
 				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000003",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "error code",
-				ServiceName: "test-service",
+				ID:      "0000000000000003",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "error code",
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
-					statusCodeKey:       int32(1),
+					statusCodeKey:       "ERROR",
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 				},
 			},
 		},
 		{
+			name: "error message",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for a Status so convert instead.
 				return internaldata.OCToTraceData(
@@ -145,20 +139,21 @@ func TestTransformSpan(t *testing.T) {
 				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000003",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "error message",
-				ServiceName: "test-service",
+				ID:      "0000000000000003",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "error message",
 				Attributes: map[string]interface{}{
 					collectorNameKey:     name,
 					collectorVersionKey:  version,
-					statusCodeKey:        int32(1),
+					statusCodeKey:        "ERROR",
 					statusDescriptionKey: "error message",
+					serviceNameKey:       "test-service",
 					"resource":           "R1",
 				},
 			},
 		},
 		{
+			name: "attributes",
 			spanFunc: func() pdata.Span {
 				// There is no setter method for Attributes so convert instead.
 				return internaldata.OCToTraceData(
@@ -171,7 +166,6 @@ func TestTransformSpan(t *testing.T) {
 								Status:  &tracepb.Status{},
 								Attributes: &tracepb.Span_Attributes{
 									AttributeMap: map[string]*tracepb.AttributeValue{
-										"empty": nil,
 										"prod": {
 											Value: &tracepb.AttributeValue_BoolValue{
 												BoolValue: true,
@@ -200,13 +194,13 @@ func TestTransformSpan(t *testing.T) {
 				).ResourceSpans().At(0).InstrumentationLibrarySpans().At(0).Spans().At(0)
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000004",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "attrs",
-				ServiceName: "test-service",
+				ID:      "0000000000000004",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "attrs",
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 					"prod":              true,
 					"weight":            int64(10),
@@ -216,8 +210,10 @@ func TestTransformSpan(t *testing.T) {
 			},
 		},
 		{
+			name: "with timestamps",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
+				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 5}))
 				s.SetName("with time")
@@ -226,22 +222,24 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000005",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "with time",
-				Timestamp:   now,
-				Duration:    time.Second * 5,
-				ServiceName: "test-service",
+				ID:        "0000000000000005",
+				TraceID:   "01010101010101010101010101010101",
+				Name:      "with time",
+				Timestamp: now.UTC(),
+				Duration:  time.Second * 5,
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 				},
 			},
 		},
 		{
+			name: "span kind server",
 			spanFunc: func() pdata.Span {
 				s := pdata.NewSpan()
+				s.InitEmpty()
 				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
 				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 6}))
 				s.SetName("span kind server")
@@ -249,13 +247,13 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:          "0000000000000005",
-				TraceID:     "01010101010101010101010101010101",
-				Name:        "span kind server",
-				ServiceName: "test-service",
+				ID:      "0000000000000006",
+				TraceID: "01010101010101010101010101010101",
+				Name:    "span kind server",
 				Attributes: map[string]interface{}{
 					collectorNameKey:    name,
 					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
 					"resource":          "R1",
 					spanKindKey:         "server",
 				},
@@ -264,15 +262,17 @@ func TestTransformSpan(t *testing.T) {
 	}
 
 	transform := &traceTransformer{
-		ServiceName: "test-service",
 		ResourceAttributes: map[string]interface{}{
-			"resource": "R1",
+			serviceNameKey: "test-service",
+			"resource":     "R1",
 		},
 	}
 	for _, test := range tests {
-		got, err := transform.Span(test.spanFunc())
-		require.NoError(t, err)
-		assert.Equal(t, test.want, got)
+		t.Run(test.name, func(t *testing.T) {
+			got, err := transform.Span(test.spanFunc())
+			require.NoError(t, err)
+			assert.Equal(t, test.want, got)
+		})
 	}
 }
 
