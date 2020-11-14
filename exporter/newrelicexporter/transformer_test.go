@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -36,6 +37,7 @@ func TestTransformEmptySpan(t *testing.T) {
 	transform := new(traceTransformer)
 	_, err := transform.Span(pdata.NewSpan())
 	assert.Error(t, err)
+	assert.True(t, errors.Is(err, emptySpanError))
 }
 
 func TestTransformSpan(t *testing.T) {
