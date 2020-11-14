@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 	err = r0.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx missing required fields: `service_url`, `target_system` or `groovy_script`", err.Error())
+	assert.Equal(t, "jmx missing required fields: `endpoint`, `target_system` or `groovy_script`", err.Error())
 
 	r1 := cfg.Receivers["jmx/all"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r1))
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "jmx/all",
 			},
 			JARPath:            "myjarpath",
-			ServiceURL:         "myserviceurl",
+			Endpoint:           "myendpoint:12345",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 15 * time.Second,
 			Username:           "myusername",
@@ -82,13 +82,13 @@ func TestLoadConfig(t *testing.T) {
 			Realm:              "myrealm",
 		}, r1)
 
-	r2 := cfg.Receivers["jmx/missingservice"].(*config)
+	r2 := cfg.Receivers["jmx/missingendpoint"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r2))
 	assert.Equal(t,
 		&config{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: "jmx",
-				NameVal: "jmx/missingservice",
+				NameVal: "jmx/missingendpoint",
 			},
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
 			GroovyScript:       "mygroovyscriptpath",
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 		}, r2)
 	err = r2.validate()
 	require.Error(t, err)
-	assert.Equal(t, "jmx/missingservice missing required field: `service_url`", err.Error())
+	assert.Equal(t, "jmx/missingendpoint missing required field: `endpoint`", err.Error())
 
 	r3 := cfg.Receivers["jmx/missinggroovy"].(*config)
 	require.NoError(t, configcheck.ValidateConfig(r3))
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "jmx/missinggroovy",
 			},
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:         "myserviceurl",
+			Endpoint:           "service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{
 				Endpoint: "0.0.0.0:0",
@@ -135,7 +135,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "jmx/invalidinterval",
 			},
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:         "myserviceurl",
+			Endpoint:           "myendpoint:23456",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: -100 * time.Millisecond,
 			OTLPExporterConfig: otlpExporterConfig{
@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 				NameVal: "jmx/invalidotlptimeout",
 			},
 			JARPath:            "/opt/opentelemetry-java-contrib-jmx-metrics.jar",
-			ServiceURL:         "myserviceurl",
+			Endpoint:           "myendpoint:34567",
 			GroovyScript:       "mygroovyscriptpath",
 			CollectionInterval: 10 * time.Second,
 			OTLPExporterConfig: otlpExporterConfig{

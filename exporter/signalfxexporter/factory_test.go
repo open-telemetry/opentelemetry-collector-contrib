@@ -30,7 +30,9 @@ import (
 	"go.opentelemetry.io/collector/config/configcheck"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -275,7 +277,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	data := testMetricsData()
 
 	c := translation.NewMetricsConverter(zap.NewNop(), tr)
-	translated, _ := c.MetricDataToSignalFxV2(data, nil)
+	translated, _ := c.MetricDataToSignalFxV2(data)
 	require.NotNil(t, translated)
 
 	metrics := make(map[string][]*sfxpb.DataPoint)
@@ -339,7 +341,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.True(t, ok, "container_memory_major_page_faults not found")
 }
 
-func testMetricsData() []consumerdata.MetricsData {
+func testMetricsData() pdata.ResourceMetrics {
 	md := consumerdata.MetricsData{
 		Metrics: []*metricspb.Metric{
 			{
@@ -782,7 +784,7 @@ func testMetricsData() []consumerdata.MetricsData {
 			},
 		},
 	}
-	return []consumerdata.MetricsData{md}
+	return internaldata.OCSliceToMetrics([]consumerdata.MetricsData{md}).ResourceMetrics().At(0)
 }
 
 func TestDefaultDiskTranslations(t *testing.T) {

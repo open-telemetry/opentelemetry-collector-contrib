@@ -135,7 +135,7 @@ func makeSpan(name string, ts *pdata.TimestampUnixNano) pdata.Span {
 	}
 	spanLink := pdata.NewSpanLink()
 	spanLink.InitEmpty()
-	spanLink.SetTraceState(pdata.TraceState("OK"))
+	spanLink.SetTraceState("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)

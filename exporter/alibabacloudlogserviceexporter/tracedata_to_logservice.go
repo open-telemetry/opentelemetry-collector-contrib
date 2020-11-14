@@ -217,7 +217,7 @@ func spansToLogServiceData(spans []*tracepb.Span) []*sls.Log {
 
 		for k, v := range span.GetAttributes().GetAttributeMap() {
 			contents = append(contents, &sls.LogContent{
-				Key:   proto.String(tagsPrefix + string(k)),
+				Key:   proto.String(tagsPrefix + k),
 				Value: proto.String(attributeValueToString(v)),
 			})
 		}

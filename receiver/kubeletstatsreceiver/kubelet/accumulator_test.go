@@ -27,7 +27,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 )
 
@@ -53,7 +52,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("pod-uid-123"),
+							UID: "pod-uid-123",
 						},
 						Status: v1.PodStatus{
 							ContainerStatuses: []v1.ContainerStatus{
@@ -121,7 +120,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("pod-uid-123"),
+							UID: "pod-uid-123",
 						},
 						Spec: v1.PodSpec{
 							Volumes: []v1.Volume{
@@ -163,7 +162,7 @@ func TestMetadataErrorCases(t *testing.T) {
 				Items: []v1.Pod{
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							UID: types.UID("pod-uid-123"),
+							UID: "pod-uid-123",
 						},
 						Spec: v1.PodSpec{
 							Volumes: []v1.Volume{

@@ -21,13 +21,11 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
 	"github.com/observiq/nanojack"
 	"github.com/observiq/stanza/entry"
-	"github.com/observiq/stanza/pipeline"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -48,10 +46,10 @@ func (h *testHost) ReportFatalError(err error) {
 
 var _ component.Host = (*testHost)(nil)
 
-func unmarshalConfig(t *testing.T, pipelineYaml string) pipeline.Config {
-	pipelineCfg := pipeline.Config{}
-	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &pipelineCfg))
-	return pipelineCfg
+func unmarshalConfig(t *testing.T, pipelineYaml string) OperatorConfig {
+	var operatorCfg OperatorConfig
+	require.NoError(t, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfg))
+	return operatorCfg
 }
 
 func expectNLogs(sink *exportertest.SinkLogsExporter, expected int) func() bool {
@@ -88,7 +86,7 @@ func TestReadStaticFile(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zaptest.NewLogger(t)}
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshalConfig(t, `
+	cfg.Operators = unmarshalConfig(t, `
 - type: file_input
   include: [testdata/simple.log]
   start_at: beginning
@@ -109,10 +107,6 @@ func TestReadStaticFile(t *testing.T) {
 }
 
 func TestReadRotatingFiles(t *testing.T) {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1382
-	if runtime.GOOS == "windows" {
-		t.Skip()
-	}
 
 	tests := []rotationTest{
 		{
@@ -158,7 +152,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	tempDir := newTempDir(t)
 
 	// With a max of 100 logs per file and 1 backup file, rotation will occur
-	// when more than 100 logs are written, and deletion after 200 logs are written.
+	// when more than 100 logs are written, and deletion when more than 200 are written.
 	// Write 300 and validate that we got the all despite rotation and deletion.
 	logger := newRotatingLogger(t, tempDir, 100, 1, rt.copyTruncate, rt.sequential)
 	numLogs := 300
@@ -178,7 +172,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	}
 
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Pipeline = unmarshalConfig(t, fmt.Sprintf(`
+	cfg.Operators = unmarshalConfig(t, fmt.Sprintf(`
   - type: file_input
     include: [%s/*]
     include_file_name: false

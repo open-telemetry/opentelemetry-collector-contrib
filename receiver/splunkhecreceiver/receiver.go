@@ -194,7 +194,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 	if r.config.TLSSetting != nil {
 		transport = "https"
 	}
-	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport, r.config.Name())
+	ctx := obsreport.ReceiverContext(req.Context(), r.config.Name(), transport)
 	if r.logsConsumer == nil {
 		ctx = obsreport.StartMetricsReceiveOp(ctx, r.config.Name(), transport)
 	}
@@ -275,12 +275,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 	md, _ := SplunkHecToMetricsData(r.logger, events, r.createResourceCustomizer(req))
 
 	decodeErr := r.metricsConsumer.ConsumeMetrics(ctx, md)
-	obsreport.EndMetricsReceiveOp(
-		ctx,
-		typeStr,
-		len(events),
-		len(events),
-		decodeErr)
+	obsreport.EndMetricsReceiveOp(ctx, typeStr, len(events), decodeErr)
 
 	if decodeErr != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, decodeErr)

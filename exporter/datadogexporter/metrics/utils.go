@@ -49,7 +49,7 @@ func NewGauge(name string, ts uint64, value float64, tags []string) datadog.Metr
 // DefaultMetrics creates built-in metrics to report that an exporter is running
 func DefaultMetrics(exporterType string, timestamp uint64) []datadog.Metric {
 	return []datadog.Metric{
-		NewGauge(fmt.Sprintf("datadog_exporter.%s.running", exporterType), timestamp, float64(1.0), []string{}),
+		NewGauge(fmt.Sprintf("datadog_exporter.%s.running", exporterType), timestamp, 1.0, []string{}),
 	}
 }
 

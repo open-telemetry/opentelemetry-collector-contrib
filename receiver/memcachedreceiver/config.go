@@ -12,26 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package memcachedreceiver
 
-// MergeStringMaps merges n maps with a later map's keys overriding earlier maps.
-func MergeStringMaps(maps ...map[string]string) map[string]string {
-	ret := map[string]string{}
+import (
+	"time"
 
-	for _, m := range maps {
-		for k, v := range m {
-			ret[k] = v
-		}
-	}
+	"go.opentelemetry.io/collector/config/configmodels"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
+)
 
-	return ret
-}
+type config struct {
+	configmodels.ReceiverSettings            `mapstructure:",squash"`
+	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confignet.TCPAddr                        `mapstructure:",squash"`
 
-// CloneStringMap makes a shallow copy of a map[string]string.
-func CloneStringMap(m map[string]string) map[string]string {
-	m2 := make(map[string]string, len(m))
-	for k, v := range m {
-		m2[k] = v
-	}
-	return m2
+	// Timeout for the memcache stats request
+	Timeout time.Duration `mapstructure:"timeout"`
 }

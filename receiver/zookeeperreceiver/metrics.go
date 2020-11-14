@@ -25,6 +25,8 @@ const (
 	avgLatencyMetricKey              = "zk_avg_latency"
 	maxLatencyMetricKey              = "zk_max_latency"
 	minLatencyMetricKey              = "zk_min_latency"
+	packetsReceivedMetricKey         = "zk_packets_received"
+	packetsSentMetricKey             = "zk_packets_sent"
 	numAliveConnectionsMetricKey     = "zk_num_alive_connections"
 	outstandingRequestsMetricKey     = "zk_outstanding_requests"
 	zNodeCountMetricKey              = "zk_znode_count"
@@ -34,6 +36,8 @@ const (
 	openFileDescriptorCountMetricKey = "zk_open_file_descriptor_count"
 	maxFileDescriptorCountMetricKey  = "zk_max_file_descriptor_count"
 
+	fSyncThresholdExceedCountMetricKey = "zk_fsync_threshold_exceed_count"
+
 	followersMetricKey       = "zk_followers"
 	syncedFollowersMetricKey = "zk_synced_followers"
 	pendingSyncsMetricKey    = "zk_pending_syncs"
@@ -41,8 +45,7 @@ const (
 	serverStateKey = "zk_server_state"
 	zkVersionKey   = "zk_version"
 
-	serverStateResourceLabel = "server.state"
-	zkVersionResourceLabel   = "version"
+	metricsLen = 17
 )
 
 func getOTLPMetricDescriptor(metric string) pdata.Metric {
@@ -75,6 +78,12 @@ func getOTLPMetricDescriptor(metric string) pdata.Metric {
 		return metadata.Metrics.ZookeeperOpenFileDescriptors.New()
 	case maxFileDescriptorCountMetricKey:
 		return metadata.Metrics.ZookeeperMaxFileDescriptors.New()
+	case fSyncThresholdExceedCountMetricKey:
+		return metadata.Metrics.ZookeeperFsyncThresholdExceeds.New()
+	case packetsReceivedMetricKey:
+		return metadata.Metrics.ZookeeperPacketsReceived.New()
+	case packetsSentMetricKey:
+		return metadata.Metrics.ZookeeperPacketsSent.New()
 	}
 
 	return pdata.NewMetric()

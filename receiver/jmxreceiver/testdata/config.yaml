@@ -2,7 +2,7 @@ receivers:
   jmx:
   jmx/all:
     jar_path: myjarpath
-    service_url: myserviceurl
+    endpoint: myendpoint:12345
     groovy_script: mygroovyscriptpath
     collection_interval: 15s
     username: myusername
@@ -20,16 +20,16 @@ receivers:
     truststore_password: mytruststorepassword
     remote_profile: myremoteprofile
     realm: myrealm
-  jmx/missingservice:
+  jmx/missingendpoint:
     groovy_script: mygroovyscriptpath
   jmx/missinggroovy:
-    service_url: myserviceurl
+    endpoint: service:jmx:rmi:///jndi/rmi://host:12345/jmxrmi
   jmx/invalidinterval:
-    service_url: myserviceurl
+    endpoint: myendpoint:23456
     groovy_script: mygroovyscriptpath
     collection_interval: -100ms
   jmx/invalidotlptimeout:
-    service_url: myserviceurl
+    endpoint: myendpoint:34567
     groovy_script: mygroovyscriptpath
     otlp:
       timeout: -100ms

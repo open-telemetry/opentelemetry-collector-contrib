@@ -61,7 +61,7 @@ func (suite *JMXIntegrationSuite) TearDownSuite() {
 }
 
 func downloadJMXMetricGathererJAR() (string, error) {
-	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20200918.184353-3.jar"
+	url := "https://oss.jfrog.org/artifactory/list/oss-snapshot-local/io/opentelemetry/contrib/opentelemetry-java-contrib-jmx-metrics/0.0.1-SNAPSHOT/opentelemetry-java-contrib-jmx-metrics-0.0.1-20201110.155252-5.jar"
 	resp, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -140,7 +140,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 
 	config := &config{
 		CollectionInterval: 100 * time.Millisecond,
-		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://%v:7199/jmxrmi", hostname),
+		Endpoint:           fmt.Sprintf("%v:7199", hostname),
 		JARPath:            suite.JARPath,
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{
@@ -209,11 +209,11 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 	}, 30*time.Second, 100*time.Millisecond, getJavaStdout(receiver))
 }
 
-func TestJMXReceiverInvalidEndpointIntegration(t *testing.T) {
+func TestJMXReceiverInvalidOTLPEndpointIntegration(t *testing.T) {
 	params := component.ReceiverCreateParams{Logger: zap.NewNop()}
 	config := &config{
 		CollectionInterval: 100 * time.Millisecond,
-		ServiceURL:         fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
+		Endpoint:           fmt.Sprintf("service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"),
 		JARPath:            "/notavalidpath",
 		GroovyScript:       path.Join(".", "testdata", "script.groovy"),
 		OTLPExporterConfig: otlpExporterConfig{

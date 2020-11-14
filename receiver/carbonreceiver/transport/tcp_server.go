@@ -45,7 +45,7 @@ type tcpServer struct {
 	reporter    Reporter
 }
 
-var _ (Server) = (*tcpServer)(nil)
+var _ Server = (*tcpServer)(nil)
 
 // NewTCPServer creates a transport.Server using TCP as its transport.
 func NewTCPServer(
@@ -174,14 +174,13 @@ func (t *tcpServer) handleConnection(
 
 		// It is possible to have new data in bytes and err to be io.EOF
 		ctx := t.reporter.OnDataReceived(context.Background())
-		var numReceivedTimeSeries, numInvalidTimeSeries int
+		var numReceivedMetricPoints int
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			numReceivedTimeSeries++
+			numReceivedMetricPoints++
 			var metric *metricspb.Metric
 			metric, err = p.Parse(line)
 			if err != nil {
-				numInvalidTimeSeries++
 				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
@@ -190,7 +189,7 @@ func (t *tcpServer) handleConnection(
 				Metrics: []*metricspb.Metric{metric},
 			}
 			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(md))
-			t.reporter.OnMetricsProcessed(ctx, numReceivedTimeSeries, numInvalidTimeSeries, err)
+			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 			if err != nil {
 				// The protocol doesn't account for returning errors.
 				// Since this is a TCP connection it seems reasonable to close the

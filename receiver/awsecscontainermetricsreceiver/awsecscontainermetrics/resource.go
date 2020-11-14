@@ -23,8 +23,6 @@ import (
 
 func containerResource(cm ContainerMetadata) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
-
 	resource.Attributes().UpsertString(conventions.AttributeContainerName, cm.ContainerName)
 	resource.Attributes().UpsertString(conventions.AttributeContainerID, cm.DockerID)
 	resource.Attributes().UpsertString(AttributeECSDockerName, cm.DockerName)
@@ -34,8 +32,6 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 
 func taskResource(tm TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.InitEmpty()
-
 	resource.Attributes().UpsertString(AttributeECSCluster, tm.Cluster)
 	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
 	resource.Attributes().UpsertString(AttributeECSTaskID, getTaskIDFromARN(tm.TaskARN))
