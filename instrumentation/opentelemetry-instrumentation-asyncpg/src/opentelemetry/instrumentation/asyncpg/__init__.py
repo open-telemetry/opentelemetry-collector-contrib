@@ -119,9 +119,7 @@ class AsyncPGInstrumentor(BaseInstrumentor):
 
         exception = None
         span_attributes = _hydrate_span_from_args(
-            instance,
-            args[0],
-            args[1:] if self.capture_parameters else None,
+            instance, args[0], args[1:] if self.capture_parameters else None
         )
         name = ""
         if args[0]:
