@@ -75,14 +75,14 @@ func newTraceTransformer(resource pdata.Resource, lib pdata.InstrumentationLibra
 
 var (
 	emptySpan         telemetry.Span
-	emptySpanErr      = errors.New("empty span")
-	invalidSpanIDErr  = errors.New("SpanID is invalid")
-	invalidTraceIDErr = errors.New("TraceID is invalid")
+	errEmptySpan      = errors.New("empty span")
+	errInvalidSpanID  = errors.New("SpanID is invalid")
+	errInvalidTraceID = errors.New("TraceID is invalid")
 )
 
 func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 	if span.IsNil() {
-		return emptySpan, emptySpanErr
+		return emptySpan, errEmptySpan
 	}
 
 	startTime := pdata.UnixNanoToTime(span.StartTime())
@@ -98,10 +98,10 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 	}
 
 	if sp.ID == "" {
-		return sp, invalidSpanIDErr
+		return sp, errInvalidSpanID
 	}
 	if sp.TraceID == "" {
-		return sp, invalidTraceIDErr
+		return sp, errInvalidTraceID
 	}
 
 	return sp, nil

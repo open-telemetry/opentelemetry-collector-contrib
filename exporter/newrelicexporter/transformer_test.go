@@ -79,7 +79,7 @@ func TestTransformSpan(t *testing.T) {
 		{
 			name:     "nil span",
 			spanFunc: pdata.NewSpan,
-			err:      emptySpanErr,
+			err:      errEmptySpan,
 			want:     emptySpan,
 		},
 		{
@@ -91,7 +91,7 @@ func TestTransformSpan(t *testing.T) {
 				s.SetName("invalid TraceID")
 				return s
 			},
-			err: invalidTraceIDErr,
+			err: errInvalidTraceID,
 			want: telemetry.Span{
 				ID:         "0000000000000001",
 				Name:       "invalid TraceID",
@@ -107,7 +107,7 @@ func TestTransformSpan(t *testing.T) {
 				s.SetName("invalid SpanID")
 				return s
 			},
-			err: invalidSpanIDErr,
+			err: errInvalidSpanID,
 			want: telemetry.Span{
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "invalid SpanID",
