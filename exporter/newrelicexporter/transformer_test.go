@@ -33,20 +33,62 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestTransformEmptySpan(t *testing.T) {
-	transform := new(traceTransformer)
-	_, err := transform.Span(pdata.NewSpan())
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, emptySpanError))
-}
-
 func TestTransformSpan(t *testing.T) {
 	now := time.Unix(100, 0)
 	tests := []struct {
 		name     string
+		err      error
 		spanFunc func() pdata.Span
 		want     telemetry.Span
 	}{
+		{
+			name:     "nil span",
+			spanFunc: pdata.NewSpan,
+			err:      emptySpanErr,
+			want:     emptySpan,
+		},
+		{
+			name: "invalid TraceID",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+				s.SetName("invalid TraceID")
+				return s
+			},
+			err: invalidTraceIDErr,
+			want: telemetry.Span{
+				ID:   "0000000000000001",
+				Name: "invalid TraceID",
+				Attributes: map[string]interface{}{
+					collectorNameKey:    name,
+					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
+					"resource":          "R1",
+				},
+			},
+		},
+		{
+			name: "invalid SpanID",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetName("invalid SpanID")
+				return s
+			},
+			err: invalidSpanIDErr,
+			want: telemetry.Span{
+				TraceID: "01010101010101010101010101010101",
+				Name:    "invalid SpanID",
+				Attributes: map[string]interface{}{
+					collectorNameKey:    name,
+					collectorVersionKey: version,
+					serviceNameKey:      "test-service",
+					"resource":          "R1",
+				},
+			},
+		},
 		{
 			name: "root",
 			spanFunc: func() pdata.Span {
@@ -272,7 +314,11 @@ func TestTransformSpan(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := transform.Span(test.spanFunc())
-			require.NoError(t, err)
+			if test.err != nil {
+				assert.True(t, errors.Is(err, test.err))
+			} else {
+				require.NoError(t, err)
+			}
 			assert.Equal(t, test.want, got)
 		})
 	}
