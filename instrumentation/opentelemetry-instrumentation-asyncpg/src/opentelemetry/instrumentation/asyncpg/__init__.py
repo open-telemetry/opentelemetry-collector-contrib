@@ -49,11 +49,24 @@ _APPLIED = "_opentelemetry_tracer"
 
 
 def _hydrate_span_from_args(connection, query, parameters) -> dict:
-    span_attributes = {"db.type": "sql"}
+    span_attributes = {"db.system": "postgresql"}
 
     params = getattr(connection, "_params", None)
-    span_attributes["db.instance"] = getattr(params, "database", None)
-    span_attributes["db.user"] = getattr(params, "user", None)
+    dbname = getattr(params, "database", None)
+    if dbname:
+        span_attributes["db.name"] = dbname
+    user = getattr(params, "user", None)
+    if user:
+        span_attributes["db.user"] = user
+
+    addr = getattr(connection, "_addr", None)
+    if isinstance(addr, tuple):
+        span_attributes["net.peer.name"] = addr[0]
+        span_attributes["net.peer.ip"] = addr[1]
+        span_attributes["net.transport"] = "IP.TCP"
+    elif isinstance(addr, str):
+        span_attributes["net.peer.name"] = addr
+        span_attributes["net.transport"] = "Unix"
 
     if query is not None:
         span_attributes["db.statement"] = query
@@ -105,16 +118,21 @@ class AsyncPGInstrumentor(BaseInstrumentor):
         tracer = getattr(asyncpg, _APPLIED)
 
         exception = None
+        span_attributes = _hydrate_span_from_args(
+            instance,
+            args[0],
+            args[1:] if self.capture_parameters else None,
+        )
+        name = ""
+        if args[0]:
+            name = args[0]
+        elif span_attributes.get("db.name"):
+            name = span_attributes["db.name"]
+        else:
+            name = "postgresql"  # Does it ever happen?
 
-        with tracer.start_as_current_span(
-            "postgresql", kind=SpanKind.CLIENT
-        ) as span:
+        with tracer.start_as_current_span(name, kind=SpanKind.CLIENT) as span:
             if span.is_recording():
-                span_attributes = _hydrate_span_from_args(
-                    instance,
-                    args[0],
-                    args[1:] if self.capture_parameters else None,
-                )
                 for attribute, value in span_attributes.items():
                     span.set_attribute(attribute, value)
 
