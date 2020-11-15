@@ -33,6 +33,19 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func TestNewTraceTransformerInstrumentation(t *testing.T) {
+	ilm := pdata.NewInstrumentationLibrary()
+	ilm.InitEmpty()
+	ilm.SetName("test name")
+	ilm.SetVersion("test version")
+
+	transform := newTraceTransformer(pdata.NewResource(), ilm)
+	require.Contains(t, transform.ResourceAttributes, instrumentationNameKey)
+	require.Contains(t, transform.ResourceAttributes, instrumentationVersionKey)
+	assert.Equal(t, transform.ResourceAttributes[instrumentationNameKey], "test name")
+	assert.Equal(t, transform.ResourceAttributes[instrumentationVersionKey], "test version")
+}
+
 func defaultAttrFunc(res map[string]interface{}) func(map[string]interface{}) map[string]interface{} {
 	return func(add map[string]interface{}) map[string]interface{} {
 		full := make(map[string]interface{}, 2+len(res)+len(add))
