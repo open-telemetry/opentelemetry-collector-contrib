@@ -33,8 +33,30 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func defaultAttrFunc(res map[string]interface{}) func(map[string]interface{}) map[string]interface{} {
+	return func(add map[string]interface{}) map[string]interface{} {
+		full := make(map[string]interface{}, 2+len(res)+len(add))
+		full[collectorNameKey] = name
+		full[collectorVersionKey] = version
+		for k, v := range res {
+			full[k] = v
+		}
+		for k, v := range add {
+			full[k] = v
+		}
+		return full
+	}
+}
+
 func TestTransformSpan(t *testing.T) {
 	now := time.Unix(100, 0)
+	rattr := map[string]interface{}{
+		serviceNameKey: "test-service",
+		"resource":     "R1",
+	}
+	transform := &traceTransformer{ResourceAttributes: rattr}
+	withDefaults := defaultAttrFunc(rattr)
+
 	tests := []struct {
 		name     string
 		err      error
@@ -58,14 +80,9 @@ func TestTransformSpan(t *testing.T) {
 			},
 			err: invalidTraceIDErr,
 			want: telemetry.Span{
-				ID:   "0000000000000001",
-				Name: "invalid TraceID",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				ID:         "0000000000000001",
+				Name:       "invalid TraceID",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
@@ -79,14 +96,9 @@ func TestTransformSpan(t *testing.T) {
 			},
 			err: invalidSpanIDErr,
 			want: telemetry.Span{
-				TraceID: "01010101010101010101010101010101",
-				Name:    "invalid SpanID",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "invalid SpanID",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
@@ -100,15 +112,10 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:      "0000000000000001",
-				TraceID: "01010101010101010101010101010101",
-				Name:    "root",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				ID:         "0000000000000001",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "root",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
@@ -123,16 +130,11 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:       "0000000000000002",
-				TraceID:  "01010101010101010101010101010101",
-				Name:     "client",
-				ParentID: "0000000000000001",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				ID:         "0000000000000002",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "client",
+				ParentID:   "0000000000000001",
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
@@ -156,13 +158,9 @@ func TestTransformSpan(t *testing.T) {
 				ID:      "0000000000000003",
 				TraceID: "01010101010101010101010101010101",
 				Name:    "error code",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					statusCodeKey:       "ERROR",
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				Attributes: withDefaults(map[string]interface{}{
+					statusCodeKey: "ERROR",
+				}),
 			},
 		},
 		{
@@ -186,14 +184,10 @@ func TestTransformSpan(t *testing.T) {
 				ID:      "0000000000000003",
 				TraceID: "01010101010101010101010101010101",
 				Name:    "error message",
-				Attributes: map[string]interface{}{
-					collectorNameKey:     name,
-					collectorVersionKey:  version,
+				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey:        "ERROR",
 					statusDescriptionKey: "error message",
-					serviceNameKey:       "test-service",
-					"resource":           "R1",
-				},
+				}),
 			},
 		},
 		{
@@ -241,16 +235,12 @@ func TestTransformSpan(t *testing.T) {
 				ID:      "0000000000000004",
 				TraceID: "01010101010101010101010101010101",
 				Name:    "attrs",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-					"prod":              true,
-					"weight":            int64(10),
-					"score":             99.8,
-					"user":              "alice",
-				},
+				Attributes: withDefaults(map[string]interface{}{
+					"prod":   true,
+					"weight": int64(10),
+					"score":  99.8,
+					"user":   "alice",
+				}),
 			},
 		},
 		{
@@ -266,17 +256,12 @@ func TestTransformSpan(t *testing.T) {
 				return s
 			},
 			want: telemetry.Span{
-				ID:        "0000000000000005",
-				TraceID:   "01010101010101010101010101010101",
-				Name:      "with time",
-				Timestamp: now.UTC(),
-				Duration:  time.Second * 5,
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-				},
+				ID:         "0000000000000005",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "with time",
+				Timestamp:  now.UTC(),
+				Duration:   time.Second * 5,
+				Attributes: withDefaults(nil),
 			},
 		},
 		{
@@ -294,23 +279,13 @@ func TestTransformSpan(t *testing.T) {
 				ID:      "0000000000000006",
 				TraceID: "01010101010101010101010101010101",
 				Name:    "span kind server",
-				Attributes: map[string]interface{}{
-					collectorNameKey:    name,
-					collectorVersionKey: version,
-					serviceNameKey:      "test-service",
-					"resource":          "R1",
-					spanKindKey:         "server",
-				},
+				Attributes: withDefaults(map[string]interface{}{
+					spanKindKey: "server",
+				}),
 			},
 		},
 	}
 
-	transform := &traceTransformer{
-		ResourceAttributes: map[string]interface{}{
-			serviceNameKey: "test-service",
-			"resource":     "R1",
-		},
-	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := transform.Span(test.spanFunc())
