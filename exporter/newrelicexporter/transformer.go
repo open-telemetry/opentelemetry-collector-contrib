@@ -95,6 +95,7 @@ func (t *traceTransformer) Span(span pdata.Span) (telemetry.Span, error) {
 		Timestamp:  startTime,
 		Duration:   pdata.UnixNanoToTime(span.EndTime()).Sub(startTime),
 		Attributes: t.SpanAttributes(span),
+		Events:     t.SpanEvents(span),
 	}
 
 	if sp.ID == "" {
@@ -158,6 +159,26 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	attrs[collectorVersionKey] = version
 
 	return attrs
+}
+
+func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
+	length := span.Events().Len()
+	if length == 0 {
+		return nil
+	}
+
+	events := make([]telemetry.Event, length)
+
+	for i := 0; i < span.Events().Len(); i++ {
+		event := span.Events().At(i)
+		evt := telemetry.Event{
+			EventType:  event.Name(),
+			Timestamp:  pdata.UnixNanoToTime(event.Timestamp()),
+			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
+		}
+		events[i] = evt
+	}
+	return events
 }
 
 func (t *metricTransformer) Timestamp(ts *timestamppb.Timestamp) time.Time {
