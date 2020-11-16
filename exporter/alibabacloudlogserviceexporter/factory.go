@@ -33,7 +33,8 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		exporterhelper.WithTraces(createTraceExporter),
-		exporterhelper.WithMetrics(createMetricsExporter))
+		exporterhelper.WithMetrics(createMetricsExporter),
+		exporterhelper.WithLogs(createLogsExporter))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.
@@ -60,4 +61,12 @@ func createMetricsExporter(
 	cfg configmodels.Exporter,
 ) (exp component.MetricsExporter, err error) {
 	return newMetricsExporter(params.Logger, cfg)
+}
+
+func createLogsExporter(
+	_ context.Context,
+	params component.ExporterCreateParams,
+	cfg configmodels.Exporter,
+) (exp component.LogsExporter, err error) {
+	return newLogsExporter(params.Logger, cfg)
 }

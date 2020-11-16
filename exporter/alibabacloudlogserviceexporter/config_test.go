@@ -72,6 +72,9 @@ func TestLoadConfig(t *testing.T) {
 	me, err := factory.CreateMetricsExporter(context.Background(), params, e0)
 	require.Error(t, err)
 	require.Nil(t, me)
+	le, err := factory.CreateLogsExporter(context.Background(), params, e0)
+	require.Error(t, err)
+	require.Nil(t, le)
 
 	te, err = factory.CreateTracesExporter(context.Background(), params, e1)
 	require.NoError(t, err)
@@ -79,5 +82,8 @@ func TestLoadConfig(t *testing.T) {
 	me, err = factory.CreateMetricsExporter(context.Background(), params, e1)
 	require.NoError(t, err)
 	require.NotNil(t, me)
+	le, err = factory.CreateLogsExporter(context.Background(), params, e1)
+	require.NoError(t, err)
+	require.NotNil(t, le)
 
 }

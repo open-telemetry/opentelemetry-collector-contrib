@@ -34,9 +34,20 @@ func TestNewTraceExporter(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
+	traceData := pdata.NewTraces()
+	spanData := pdata.NewResourceSpans()
+	spanData.InitEmpty()
+	spans := pdata.NewInstrumentationLibrarySpans()
+	spans.InitEmpty()
+	span := pdata.NewSpan()
+	span.InitEmpty()
+	spans.Spans().Append(span)
+	spanData.InstrumentationLibrarySpans().Append(spans)
+	traceData.ResourceSpans().Append(spanData)
+
 	// This will put trace data to send buffer and return success.
-	err = got.ConsumeTraces(context.Background(), pdata.NewTraces())
-	assert.NoError(t, err)
+	err = got.ConsumeTraces(context.Background(), traceData)
+	assert.Error(t, err)
 	assert.Nil(t, got.Shutdown(context.Background()))
 }
 
