@@ -16,6 +16,7 @@
 package awsprometheusremotewriteexporter
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -58,6 +59,64 @@ func TestRequestSignature(t *testing.T) {
 	client.Do(req)
 
 }
+
+type ErrorRoundTripper struct{}
+
+func (ert *ErrorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	return nil, errors.New("error")
+}
+
+func TestRoundTrip(t *testing.T) {
+	// Some form of AWS credentials must be set up for tests to succeed
+	os.Setenv("AWS_ACCESS_KEY", "string")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "string2")
+
+	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
+	errorRoundTripper := &ErrorRoundTripper{}
+
+	tests := []struct {
+		name        string
+		rt          http.RoundTripper
+		shouldError bool
+	}{
+		{
+			"valid_round_tripper",
+			defaultRoundTripper,
+			false,
+		},
+		{
+			"round_tripper_error",
+			errorRoundTripper,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, err := v4.GetSignedRequestSignature(r)
+				assert.NoError(t, err)
+				w.WriteHeader(200)
+			}))
+			defer server.Close()
+			serverURL, _ := url.Parse(server.URL)
+			settings := AuthConfig{Region: "region", Service: "service"}
+			rt, err := newSigningRoundTripper(settings, tt.rt)
+			assert.NoError(t, err)
+			req, err := http.NewRequest("POST", serverURL.String(), strings.NewReader(""))
+			assert.NoError(t, err)
+			res, err := rt.RoundTrip(req)
+			if tt.shouldError {
+				assert.Nil(t, res)
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, res.StatusCode, 200)
+		})
+	}
+}
+
 func TestNewSigningRoundTripper(t *testing.T) {
 
 	defaultRoundTripper := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
@@ -104,6 +163,39 @@ func TestNewSigningRoundTripper(t *testing.T) {
 			} else {
 				assert.Equal(t, rtp, tt.roundTripper)
 			}
+		})
+	}
+}
+
+func TestCloneRequest(t *testing.T) {
+	req1, err := http.NewRequest("GET", "http://example.com", nil)
+	assert.NoError(t, err)
+
+	req2, err := http.NewRequest("GET", "http://example.com", nil)
+	assert.NoError(t, err)
+	req2.Header.Add("Header1", "val1")
+
+	tests := []struct {
+		name    string
+		request *http.Request
+		headers http.Header
+	}{
+		{
+			"no_headers",
+			req1,
+			http.Header{},
+		},
+		{
+			"headers",
+			req2,
+			http.Header{"Header1": []string{"val1"}},
+		},
+	}
+	// run tests
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r2 := cloneRequest(tt.request)
+			assert.EqualValues(t, tt.request.Header, r2.Header)
 		})
 	}
 }
