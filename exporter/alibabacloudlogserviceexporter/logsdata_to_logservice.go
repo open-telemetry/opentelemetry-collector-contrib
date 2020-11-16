@@ -131,6 +131,7 @@ func mapLogRecordToLogService(lr pdata.LogRecord, logger *zap.Logger) *sls.Log {
 	})
 
 	if lr.Timestamp() > 0 {
+		// convert time nano to time seconds
 		slsLog.Time = proto.Uint32(uint32(lr.Timestamp() / 1000000000))
 	} else {
 		slsLog.Time = proto.Uint32(uint32(time.Now().Unix()))
