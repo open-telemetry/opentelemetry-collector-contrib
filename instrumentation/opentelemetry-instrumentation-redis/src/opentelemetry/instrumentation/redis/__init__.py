@@ -90,8 +90,7 @@ def _traced_execute_pipeline(func, instance, args, kwargs):
     cmds = [_format_command_args(c) for c, _ in instance.command_stack]
     resource = "\n".join(cmds)
 
-    pipeline_cmnds = " ".join([args[0] for args, _ in instance.command_stack])
-    span_name = "PIPELINE" + " " + pipeline_cmnds
+    span_name = " ".join([args[0] for args, _ in instance.command_stack])
 
     with tracer.start_as_current_span(
         span_name, kind=trace.SpanKind.CLIENT

@@ -72,7 +72,7 @@ class TestRedisInstrument(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span, "PIPELINE SET RPUSH HGETALL")
+        self._check_span(span, "SET RPUSH HGETALL")
         self.assertEqual(
             span.attributes.get("db.statement"),
             "SET blah 32\nRPUSH foo éé\nHGETALL xxx",
