@@ -60,6 +60,7 @@ func TestEncodeSpan(t *testing.T) {
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
 	clientSpan.Status().InitEmpty()
+	clientSpan.Status().SetCode(pdata.StatusCodeError)
 	clientSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
 		"int.attr":    pdata.NewAttributeValueInt(123),
@@ -74,7 +75,7 @@ func TestEncodeSpan(t *testing.T) {
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
 	serverSpan.Status().InitEmpty()
-	serverSpan.Status().SetCode(-1)
+	serverSpan.Status().SetCode(pdata.StatusCodeOk)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
 		span.SetTraceID(pdata.NewTraceID(traceID))
@@ -96,7 +97,6 @@ func TestEncodeSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "root_span",
 		Type:      "unknown",
-		Result:    "STATUS_CODE_UNSET",
 		Context: &model.Context{
 			Tags: model.IfaceMap{{
 				Key:   "bool_attr",
@@ -120,7 +120,8 @@ func TestEncodeSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "server_span",
 		Type:      "unknown",
-		Result:    "-1",
+		Result:    "OK",
+		Outcome:   "success",
 	}}, payloads.Transactions)
 
 	assert.Equal(t, []model.Span{{
@@ -146,6 +147,7 @@ func TestEncodeSpan(t *testing.T) {
 				Value: "string_value",
 			}},
 		},
+		Outcome: "failure",
 	}}, payloads.Spans)
 
 	assert.Empty(t, payloads.Errors)

@@ -183,11 +183,15 @@ func setTransactionProperties(
 		context.setFramework(otlpLibrary.Name(), otlpLibrary.Version())
 	}
 
-	statusCode := pdata.StatusCode(0) // Default span staus is "Ok"
 	if status := otlpSpan.Status(); !status.IsNil() {
-		statusCode = status.Code()
+		tx.Outcome = spanStatusOutcome(status)
+		switch status.Code() {
+		case pdata.StatusCodeOk:
+			tx.Result = "OK"
+		case pdata.StatusCodeError:
+			tx.Result = "Error"
+		}
 	}
-	tx.Result = statusCode.String()
 
 	tx.Type = "unknown"
 	if context.model.Request != nil {
@@ -349,6 +353,7 @@ func setSpanProperties(otlpSpan pdata.Span, span *model.Span) error {
 		context.model.Destination.Service.Type = span.Type
 	}
 	span.Context = context.modelContext()
+	span.Outcome = spanStatusOutcome(otlpSpan.Status())
 	return nil
 }
 
@@ -557,4 +562,18 @@ func schemeDefaultPort(scheme string) int {
 		return 443
 	}
 	return 0
+}
+
+func spanStatusOutcome(status pdata.SpanStatus) string {
+	if status.IsNil() {
+		return ""
+	}
+	switch status.Code() {
+	case pdata.StatusCodeOk:
+		return "success"
+	case pdata.StatusCodeError:
+		return "failure"
+	}
+	// Outcome will be set by the server.
+	return ""
 }
