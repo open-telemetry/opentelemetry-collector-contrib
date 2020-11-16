@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	prw "go.opentelemetry.io/collector/exporter/prometheusremotewriteexporter"
 )
 
@@ -43,38 +42,7 @@ func (af *awsFactory) Type() configmodels.Type {
 
 func (af *awsFactory) CreateMetricsExporter(ctx context.Context, params component.ExporterCreateParams,
 	cfg configmodels.Exporter) (component.MetricsExporter, error) {
-	prwCfg := cfg.(*Config)
-
-	prwCfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
-		if !isAuthConfigValid(prwCfg.AuthConfig) {
-			return nil, errors.New("invalid authentication configuration")
-		}
-
-		return newSigningRoundTripper(prwCfg.AuthConfig, next)
-	}
-
-	client, cerr := prwCfg.HTTPClientSettings.ToClient()
-	if cerr != nil {
-		return nil, cerr
-	}
-
-	// initialize an upstream exporter and pass it an http.Client with interceptor
-	prwe, err := prw.NewPrwExporter(prwCfg.Namespace, prwCfg.HTTPClientSettings.Endpoint, client, prwCfg.ExternalLabels)
-	if err != nil {
-		return nil, err
-	}
-
-	prwexp, err := exporterhelper.NewMetricsExporter(
-		cfg,
-		params.Logger,
-		prwe.PushMetrics,
-		exporterhelper.WithTimeout(prwCfg.TimeoutSettings),
-		exporterhelper.WithQueue(prwCfg.QueueSettings),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
-		exporterhelper.WithShutdown(prwe.Shutdown),
-	)
-
-	return prwexp, err
+	return af.ExporterFactory.CreateMetricsExporter(ctx, params, &cfg.(*Config).Config)
 }
 
 func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
@@ -88,6 +56,14 @@ func (af *awsFactory) CreateDefaultConfig() configmodels.Exporter {
 
 	cfg.TypeVal = typeStr
 	cfg.NameVal = typeStr
+
+	cfg.HTTPClientSettings.CustomRoundTripper = func(next http.RoundTripper) (http.RoundTripper, error) {
+		if !isAuthConfigValid(cfg.AuthConfig) {
+			return nil, errors.New("invalid authentication configuration")
+		}
+
+		return newSigningRoundTripper(cfg.AuthConfig, next)
+	}
 
 	return cfg
 }

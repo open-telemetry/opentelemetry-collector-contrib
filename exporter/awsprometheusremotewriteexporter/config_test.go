@@ -45,53 +45,60 @@ func TestLoadConfig(t *testing.T) {
 
 	// From the default configurations -- checks if a correct exporter is instantiated
 	e0 := cfg.Exporters["awsprometheusremotewrite"]
-	assert.Equal(t, e0, factory.CreateDefaultConfig())
+	cfgDefault := factory.CreateDefaultConfig()
+	// testing function equality is not supported in Go hence these will be ignored for this test
+	cfgDefault.(*Config).HTTPClientSettings.CustomRoundTripper = nil
+	e0.(*Config).HTTPClientSettings.CustomRoundTripper = nil
+	assert.Equal(t, e0, cfgDefault)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
 	e1 := cfg.Exporters["awsprometheusremotewrite/2"]
-	assert.Equal(t, e1,
-		&Config{
-			Config: prw.Config{
-				ExporterSettings: configmodels.ExporterSettings{
-					NameVal: "awsprometheusremotewrite/2",
-					TypeVal: "awsprometheusremotewrite",
-				},
-				TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
-				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      true,
-					NumConsumers: 2,
-					QueueSize:    10,
-				},
-				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
-				},
-				Namespace:      "test-space",
-				ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "http://localhost:9009",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
-							CAFile: "/var/lib/mycert.pem",
-						},
-						Insecure: false,
+	cfgComplete := &Config{
+		Config: prw.Config{
+			ExporterSettings: configmodels.ExporterSettings{
+				NameVal: "awsprometheusremotewrite/2",
+				TypeVal: "awsprometheusremotewrite",
+			},
+			TimeoutSettings: exporterhelper.CreateDefaultTimeoutSettings(),
+			QueueSettings: exporterhelper.QueueSettings{
+				Enabled:      true,
+				NumConsumers: 2,
+				QueueSize:    10,
+			},
+			RetrySettings: exporterhelper.RetrySettings{
+				Enabled:         true,
+				InitialInterval: 10 * time.Second,
+				MaxInterval:     1 * time.Minute,
+				MaxElapsedTime:  10 * time.Minute,
+			},
+			Namespace:      "test-space",
+			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
+			HTTPClientSettings: confighttp.HTTPClientSettings{
+				Endpoint: "http://localhost:9009",
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "/var/lib/mycert.pem",
 					},
-					ReadBufferSize: 0,
-
-					WriteBufferSize: 512 * 1024,
-
-					Timeout: 5 * time.Second,
-
-					Headers: map[string]string{
-						"prometheus-remote-write-version": "0.1.0",
-						"x-scope-orgid":                   "234"},
+					Insecure: false,
 				},
+				ReadBufferSize: 0,
+
+				WriteBufferSize: 512 * 1024,
+
+				Timeout: 5 * time.Second,
+
+				Headers: map[string]string{
+					"prometheus-remote-write-version": "0.1.0",
+					"x-scope-orgid":                   "234"},
 			},
-			AuthConfig: AuthConfig{
-				Region:  "us-west-2",
-				Service: "service-name",
-			},
-		})
+		},
+		AuthConfig: AuthConfig{
+			Region:  "us-west-2",
+			Service: "service-name",
+		},
+	}
+	// testing function equality is not supported in Go hence these will be ignored for this test
+	cfgComplete.HTTPClientSettings.CustomRoundTripper = nil
+	e1.(*Config).HTTPClientSettings.CustomRoundTripper = nil
+	assert.Equal(t, e1, cfgComplete)
 }
