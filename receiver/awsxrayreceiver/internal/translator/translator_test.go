@@ -139,7 +139,7 @@ func TestTranslation(t *testing.T) {
 					*seg.AWS.XRay.SDKVersion)
 				attrs[conventions.AttributeTelemetrySDKName] = pdata.NewAttributeValueString(
 					*seg.AWS.XRay.SDK)
-				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("java")
+				attrs[conventions.AttributeTelemetrySDKLanguage] = pdata.NewAttributeValueString("Go")
 
 				return attrs
 			},
