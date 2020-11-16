@@ -317,7 +317,7 @@ func TestTranslateOtToCWMetricWithInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -353,7 +353,7 @@ func TestTranslateOtToCWMetricWithoutInstrLibrary(t *testing.T) {
 	cwm, totalDroppedMetrics := TranslateOtToCWMetric(&rm, config)
 	assert.Equal(t, 0, totalDroppedMetrics)
 	assert.NotNil(t, cwm)
-	assert.Equal(t, 5, len(cwm))
+	assert.Equal(t, 6, len(cwm))
 	assert.Equal(t, 1, len(cwm[0].Measurements))
 
 	met := cwm[0]
@@ -1144,8 +1144,145 @@ func TestGetCWMetrics(t *testing.T) {
 					Fields: map[string]interface{}{
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
-							Min:   0,
-							Max:   10,
+							Sum:   15.0,
+							Count: 5,
+						},
+						"label1": "value1",
+						"label2": "value2",
+					},
+				},
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Sum:   35.0,
+							Count: 18,
+						},
+						"label2": "value2",
+					},
+				},
+			},
+		},
+		{
+			"Double summary",
+			&metricspb.Metric{
+				MetricDescriptor: &metricspb.MetricDescriptor{
+					Name: "foo",
+					Type: metricspb.MetricDescriptor_SUMMARY,
+					Unit: "Seconds",
+					LabelKeys: []*metricspb.LabelKey{
+						{Key: "label1"},
+						{Key: "label2"},
+					},
+				},
+				Timeseries: []*metricspb.TimeSeries{
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{Value: "value1", HasValue: true},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 15.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 5,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 5,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 15.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      1,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						LabelValues: []*metricspb.LabelValue{
+							{HasValue: false},
+							{Value: "value2", HasValue: true},
+						},
+						Points: []*metricspb.Point{
+							{
+								Value: &metricspb.Point_SummaryValue{
+									SummaryValue: &metricspb.SummaryValue{
+										Sum: &wrappers.DoubleValue{
+											Value: 35.0,
+										},
+										Count: &wrappers.Int64Value{
+											Value: 18,
+										},
+										Snapshot: &metricspb.SummaryValue_Snapshot{
+											Count: &wrappers.Int64Value{
+												Value: 18,
+											},
+											Sum: &wrappers.DoubleValue{
+												Value: 35.0,
+											},
+											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{
+												{
+													Percentile: 0.0,
+													Value:      0,
+												},
+												{
+													Percentile: 100.0,
+													Value:      5,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			[]*CWMetrics{
+				{
+					Measurements: []CwMeasurement{
+						{
+							Namespace: namespace,
+							Dimensions: [][]string{
+								{"label1", "label2", OTelLib},
+							},
+							Metrics: []map[string]string{
+								{"Name": "foo", "Unit": "Seconds"},
+							},
+						},
+					},
+					Fields: map[string]interface{}{
+						OTelLib: instrumentationLibName,
+						"foo": &CWMetricStats{
+							Min:   1,
+							Max:   5,
 							Sum:   15.0,
 							Count: 5,
 						},
@@ -1169,7 +1306,7 @@ func TestGetCWMetrics(t *testing.T) {
 						OTelLib: instrumentationLibName,
 						"foo": &CWMetricStats{
 							Min:   0,
-							Max:   10,
+							Max:   5,
 							Sum:   35.0,
 							Count: 18,
 						},
@@ -1411,8 +1548,6 @@ func TestBuildCWMetric(t *testing.T) {
 		expectedFields := map[string]interface{}{
 			OTelLib: instrLibName,
 			"foo": &CWMetricStats{
-				Min:   1,
-				Max:   3,
 				Sum:   17.13,
 				Count: 17,
 			},
