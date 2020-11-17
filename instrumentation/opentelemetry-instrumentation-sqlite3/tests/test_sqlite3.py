@@ -37,7 +37,7 @@ class TestSQLite3(TestBase):
         if cls._connection:
             cls._connection.close()
 
-    def validate_spans(self):
+    def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 2)
         for span in spans:
@@ -50,34 +50,30 @@ class TestSQLite3(TestBase):
         self.assertIsNotNone(root_span)
         self.assertIsNotNone(child_span)
         self.assertEqual(root_span.name, "rootSpan")
-        self.assertEqual(child_span.name, "sqlite3")
+        self.assertEqual(child_span.name, span_name)
         self.assertIsNotNone(child_span.parent)
         self.assertIs(child_span.parent, root_span.get_span_context())
         self.assertIs(child_span.kind, trace_api.SpanKind.CLIENT)
 
     def test_execute(self):
-        """Should create a child span for execute method
-        """
+        """Should create a child span for execute method"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id integer)"
         with self._tracer.start_as_current_span("rootSpan"):
-            self._cursor.execute(
-                "CREATE TABLE IF NOT EXISTS test (id integer)"
-            )
-        self.validate_spans()
+            self._cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_executemany(self):
-        """Should create a child span for executemany
-        """
+        """Should create a child span for executemany"""
+        stmt = "INSERT INTO test (id) VALUES (?)"
         with self._tracer.start_as_current_span("rootSpan"):
             data = [("1",), ("2",), ("3",)]
-            stmt = "INSERT INTO test (id) VALUES (?)"
             self._cursor.executemany(stmt, data)
-        self.validate_spans()
+        self.validate_spans(stmt)
 
     def test_callproc(self):
-        """Should create a child span for callproc
-        """
+        """Should create a child span for callproc"""
         with self._tracer.start_as_current_span("rootSpan"), self.assertRaises(
             Exception
         ):
             self._cursor.callproc("test", ())
-            self.validate_spans()
+            self.validate_spans("test")
