@@ -27,10 +27,7 @@ Usage
 
     from jinja2 import Environment, FileSystemLoader
     from opentelemetry.instrumentation.jinja2 import Jinja2Instrumentor
-    from opentelemetry import trace
-    from opentelemetry.trace import TracerProvider
 
-    trace.set_tracer_provider(TracerProvider())
 
     Jinja2Instrumentor().instrument()
 
@@ -52,7 +49,6 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.instrumentation.jinja2.version import __version__
 from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.trace import SpanKind, get_tracer
-from opentelemetry.trace.status import Status, StatusCode
 
 logger = logging.getLogger(__name__)
 

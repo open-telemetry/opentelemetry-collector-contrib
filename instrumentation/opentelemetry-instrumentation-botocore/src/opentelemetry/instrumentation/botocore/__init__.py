@@ -27,17 +27,12 @@ Usage
 
 .. code:: python
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
     import botocore
 
-    trace.set_tracer_provider(TracerProvider())
 
     # Instrument Botocore
-    BotocoreInstrumentor().instrument(
-        tracer_provider=trace.get_tracer_provider()
-    )
+    BotocoreInstrumentor().instrument()
 
     # This will create a span with Botocore-specific attributes
     session = botocore.session.get_session()
@@ -56,12 +51,22 @@ import logging
 from botocore.client import BaseClient
 from wrapt import ObjectProxy, wrap_function_wrapper
 
+from opentelemetry import context as context_api
+from opentelemetry import propagators
 from opentelemetry.instrumentation.botocore.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.sdk.trace import Resource
 from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
+
+
+# pylint: disable=unused-argument
+def _patched_endpoint_prepare_request(wrapped, instance, args, kwargs):
+    request = args[0]
+    headers = request.headers
+    propagators.inject(type(headers).__setitem__, headers)
+    return wrapped(*args, **kwargs)
 
 
 class BotocoreInstrumentor(BaseInstrumentor):
@@ -85,10 +90,18 @@ class BotocoreInstrumentor(BaseInstrumentor):
             self._patched_api_call,
         )
 
+        wrap_function_wrapper(
+            "botocore.endpoint",
+            "Endpoint.prepare_request",
+            _patched_endpoint_prepare_request,
+        )
+
     def _uninstrument(self, **kwargs):
         unwrap(BaseClient, "_make_api_call")
 
     def _patched_api_call(self, original_func, instance, args, kwargs):
+        if context_api.get_value("suppress_instrumentation"):
+            return original_func(*args, **kwargs)
 
         endpoint_name = deep_getattr(instance, "_endpoint._endpoint_prefix")
 

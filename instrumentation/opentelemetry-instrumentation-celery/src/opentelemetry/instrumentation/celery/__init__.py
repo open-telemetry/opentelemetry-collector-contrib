@@ -30,9 +30,6 @@ Usage
 
 .. code:: python
 
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchExportSpanProcessor
     from opentelemetry.instrumentation.celery import CeleryInstrumentor
 
     from celery import Celery
@@ -40,9 +37,6 @@ Usage
 
     @worker_process_init.connect(weak=False)
     def init_celery_tracing(*args, **kwargs):
-        trace.set_tracer_provider(TracerProvider())
-        span_processor = BatchExportSpanProcessor(ConsoleSpanExporter())
-        trace.get_tracer_provider().add_span_processor(span_processor)
         CeleryInstrumentor().instrument()
 
     app = Celery("tasks", broker="amqp://localhost")

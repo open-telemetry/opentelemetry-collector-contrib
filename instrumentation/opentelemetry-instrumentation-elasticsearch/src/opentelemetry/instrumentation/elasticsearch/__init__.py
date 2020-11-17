@@ -21,15 +21,12 @@ Usage
 
 .. code-block:: python
 
-    from opentelemetry import trace
-    from opentelemetry.instrumentation.elasticsearch import ElasticSearchInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.instrumentation.elasticsearch import ElasticsearchInstrumentor
     import elasticsearch
 
-    trace.set_tracer_provider(TracerProvider())
 
     # instrument elasticsearch
-    ElasticSearchInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
+    ElasticsearchInstrumentor().instrument()
 
     # Using elasticsearch as normal now will automatically generate spans
     es = elasticsearch.Elasticsearch()
@@ -46,7 +43,7 @@ environment variable or by passing the prefix as an argument to the instrumentor
 
 .. code-block:: python
 
-    ElasticSearchInstrumentor("my-custom-prefix").instrument()
+    ElasticsearchInstrumentor("my-custom-prefix").instrument()
 """
 
 import functools
