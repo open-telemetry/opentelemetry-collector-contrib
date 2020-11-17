@@ -199,7 +199,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 		{
 			"invalid OTLPExporterConfig.Endpoint host with 0 port",
 			config{OTLPExporterConfig: otlpExporterConfig{Endpoint: ".:0"}},
-			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .: no such host",
+			"failed determining desired port from OTLPExporterConfig.Endpoint .:0: listen tcp: lookup .:",
 		},
 	}
 	for _, test := range tests {
@@ -208,7 +208,7 @@ func TestBuildOTLPReceiverInvalidEndpoints(t *testing.T) {
 			jmxReceiver := newJMXMetricReceiver(params, &test.config, consumertest.NewMetricsNop())
 			otlpReceiver, err := jmxReceiver.buildOTLPReceiver()
 			require.Error(t, err)
-			require.EqualError(t, err, test.expectedErr)
+			require.Contains(t, err.Error(), test.expectedErr)
 			require.Nil(t, otlpReceiver)
 		})
 	}
