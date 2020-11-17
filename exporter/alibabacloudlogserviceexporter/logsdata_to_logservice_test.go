@@ -62,7 +62,6 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		switch i {
 		case 0:
 			// do nothing, left body nil
-			break
 		case 1:
 			logRecord.Body().SetBoolVal(true)
 		case 2:
