@@ -20,11 +20,11 @@ from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.mysql import MySQLInstrumentor
 from opentelemetry.test.test_base import TestBase
 
-MYSQL_USER = os.getenv("MYSQL_USER ", "testuser")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD ", "testpassword")
-MYSQL_HOST = os.getenv("MYSQL_HOST ", "localhost")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT ", "3306"))
-MYSQL_DB_NAME = os.getenv("MYSQL_DB_NAME ", "opentelemetry-tests")
+MYSQL_USER = os.getenv("MYSQL_USER", "testuser")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "testpassword")
+MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
+MYSQL_DB_NAME = os.getenv("MYSQL_DB_NAME", "opentelemetry-tests")
 
 
 class TestFunctionalMysql(TestBase):
@@ -53,7 +53,7 @@ class TestFunctionalMysql(TestBase):
         )
         self._cursor = self._connection.cursor()
 
-    def validate_spans(self):
+    def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 2)
         for span in spans:
@@ -66,42 +66,47 @@ class TestFunctionalMysql(TestBase):
         self.assertIsNotNone(root_span)
         self.assertIsNotNone(db_span)
         self.assertEqual(root_span.name, "rootSpan")
-        self.assertEqual(db_span.name, "mysql.opentelemetry-tests")
+        self.assertEqual(db_span.name, span_name)
         self.assertIsNotNone(db_span.parent)
         self.assertIs(db_span.parent, root_span.get_span_context())
         self.assertIs(db_span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(db_span.attributes["db.instance"], MYSQL_DB_NAME)
+        self.assertEqual(db_span.attributes["db.system"], "mysql")
+        self.assertEqual(db_span.attributes["db.name"], MYSQL_DB_NAME)
+        self.assertEqual(db_span.attributes["db.user"], MYSQL_USER)
         self.assertEqual(db_span.attributes["net.peer.name"], MYSQL_HOST)
         self.assertEqual(db_span.attributes["net.peer.port"], MYSQL_PORT)
 
     def test_execute(self):
         """Should create a child span for execute"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
-            self._cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
-        self.validate_spans()
+            self._cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_execute_with_connection_context_manager(self):
         """Should create a child span for execute with connection context"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection as conn:
                 cursor = conn.cursor()
-                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
-        self.validate_spans()
+                cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_execute_with_cursor_context_manager(self):
         """Should create a child span for execute with cursor context"""
+        stmt = "CREATE TABLE IF NOT EXISTS test (id INT)"
         with self._tracer.start_as_current_span("rootSpan"):
             with self._connection.cursor() as cursor:
-                cursor.execute("CREATE TABLE IF NOT EXISTS test (id INT)")
-        self.validate_spans()
+                cursor.execute(stmt)
+        self.validate_spans(stmt)
 
     def test_executemany(self):
         """Should create a child span for executemany"""
+        stmt = "INSERT INTO test (id) VALUES (%s)"
         with self._tracer.start_as_current_span("rootSpan"):
             data = (("1",), ("2",), ("3",))
-            stmt = "INSERT INTO test (id) VALUES (%s)"
             self._cursor.executemany(stmt, data)
-        self.validate_spans()
+        self.validate_spans(stmt)
 
     def test_callproc(self):
         """Should create a child span for callproc"""
@@ -109,4 +114,4 @@ class TestFunctionalMysql(TestBase):
             Exception
         ):
             self._cursor.callproc("test", ())
-            self.validate_spans()
+            self.validate_spans("test")
