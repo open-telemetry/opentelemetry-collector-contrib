@@ -70,8 +70,13 @@ def _set_connection_attributes(span, conn):
 def _traced_execute_command(func, instance, args, kwargs):
     tracer = getattr(redis, "_opentelemetry_tracer")
     query = _format_command_args(args)
+    name = ""
+    if len(args) > 0 and args[0]:
+        name = args[0]
+    else:
+        name = instance.connection_pool.connection_kwargs.get("db", 0)
     with tracer.start_as_current_span(
-        args[0], kind=trace.SpanKind.CLIENT
+        name, kind=trace.SpanKind.CLIENT
     ) as span:
         if span.is_recording():
             span.set_attribute("service", tracer.instrumentation_info.name)
