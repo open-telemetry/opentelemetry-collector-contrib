@@ -1,0 +1,24 @@
+receivers:
+    examplereceiver:
+
+processors:
+    metricstransform:
+        transforms:
+          - include: old_name
+            action: combine
+            new_name: new_name
+            aggregation_type: invalid
+
+exporters:
+    exampleexporter:
+
+service:
+    pipelines:
+        traces:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
+        metrics:
+            receivers: [examplereceiver]
+            processors: [metricstransform]
+            exporters: [exampleexporter]
