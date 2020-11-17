@@ -26,15 +26,12 @@ Usage
 
 .. code:: python
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.boto import BotoInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
     import boto
 
-    trace.set_tracer_provider(TracerProvider())
 
     # Instrument Boto
-    BotoInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
+    BotoInstrumentor().instrument()
 
     # This will create a span with Boto-specific attributes
     ec2 = boto.ec2.connect_to_region("us-west-2")

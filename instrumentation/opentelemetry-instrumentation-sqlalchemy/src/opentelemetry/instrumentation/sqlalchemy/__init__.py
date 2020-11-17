@@ -28,12 +28,9 @@ Usage
 
     from sqlalchemy import create_engine
 
-    from opentelemetry import trace
     from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
     import sqlalchemy
 
-    trace.set_tracer_provider(TracerProvider())
     engine = create_engine("sqlite:///:memory:")
     SQLAlchemyInstrumentor().instrument(
         engine=engine,

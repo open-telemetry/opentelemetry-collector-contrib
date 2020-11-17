@@ -24,11 +24,8 @@ Usage
 .. code-block:: python
 
     import psycopg2
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
-    trace.set_tracer_provider(TracerProvider())
 
     Psycopg2Instrumentor().instrument()
 
