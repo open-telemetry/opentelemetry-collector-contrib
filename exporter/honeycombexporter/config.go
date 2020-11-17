@@ -24,6 +24,8 @@ type Config struct {
 	Dataset string `mapstructure:"dataset"`
 	// API URL to use (defaults to https://api.honeycomb.io)
 	APIURL string `mapstructure:"api_url"`
+	// Deprecated - do not use. This will be removed in a future release.
+	SampleRate uint `mapstructure:"sample_rate"`
 	// The name of an attribute that contains the sample_rate for each span.
 	// If the attribute is on the span, it takes precedence over the static sample_rate configuration
 	SampleRateAttribute string `mapstructure:"sample_rate_attribute"`

@@ -55,6 +55,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2, &Config{
 		ExporterSettings:    configmodels.ExporterSettings{TypeVal: configmodels.Type(typeStr), NameVal: "honeycomb/sample_rate"},
 		APIURL:              "https://api.honeycomb.io",
+		SampleRate:          5,
 		SampleRateAttribute: "custom.sample_rate",
 	})
 }
