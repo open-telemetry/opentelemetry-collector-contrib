@@ -77,8 +77,8 @@ func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	}
 	if cfg.Endpoint != "" {
 		if cfg.UseInsecure {
-			// option.WithGRPCConn option takes precedent over all other supplied options so need to provide
-			// user agent here as well, for both exporters
+			// option.WithGRPCConn option takes precedent over all other supplied options so the
+			// following user agent will be used by both exporters if we reach this branch
 			var dialOpts []grpc.DialOption
 			if cfg.UserAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
