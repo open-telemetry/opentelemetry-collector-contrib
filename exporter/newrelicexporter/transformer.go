@@ -251,9 +251,11 @@ func (t *metricTransformer) MetricAttributes(metric *metricspb.Metric) map[strin
 	return attrs
 }
 
+var errIncompatibleLabels = errors.New("label keys and values do not match")
+
 func (t *metricTransformer) MergeAttributes(base map[string]interface{}, lk []*metricspb.LabelKey, lv []*metricspb.LabelValue) (map[string]interface{}, error) {
 	if len(lk) != len(lv) {
-		return nil, fmt.Errorf("number of label keys (%d) different than label values (%d)", len(lk), len(lv))
+		return nil, fmt.Errorf("%w: number of label keys (%d) different than label values (%d)", errIncompatibleLabels, len(lk), len(lv))
 	}
 
 	attrs := make(map[string]interface{}, len(base)+len(lk))

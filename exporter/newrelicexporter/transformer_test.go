@@ -312,6 +312,15 @@ func TestTransformSpan(t *testing.T) {
 	}
 }
 
+func TestMergeAttributesIncompatibleLenghts(t *testing.T) {
+	transform := &metricTransformer{}
+	lk := make([]*metricspb.LabelKey, 2)
+	lv := make([]*metricspb.LabelValue, 3)
+	_, err := transform.MergeAttributes(nil, lk, lv)
+	require.Error(t, err)
+	assert.True(t, errors.Is(err, errIncompatibleLabels))
+}
+
 func TestTransformEmptyMetric(t *testing.T) {
 	transform := &metricTransformer{}
 	_, err := transform.Metric(nil)
