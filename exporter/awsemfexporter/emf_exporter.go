@@ -113,39 +113,63 @@ func NewEmfExporter(
 }
 
 func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) (droppedTimeSeries int, err error) {
+	var cwm []*CWMetrics
+	var totalDroppedMetrics int
+	var droppedMetrics int
 	expConfig := emf.config.(*Config)
+	namespace := expConfig.Namespace
 	logGroup := "/metrics/default"
 	logStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
-	// override log group if customer has specified Resource Attributes service.name or service.namespace
-	putLogEvents, totalDroppedMetrics, namespace := generateLogEventFromMetric(md, expConfig)
-	if namespace != "" {
-		logGroup = fmt.Sprintf("/metrics/%s", namespace)
-	}
-	// override log group if found it in exp configuration, this configuration has top priority. However, in this case, customer won't have correlation experience
 
-	if len(expConfig.LogGroupName) > 0 {
-		logGroup = expConfig.LogGroupName
-	}
-	if len(expConfig.LogStreamName) > 0 {
-		logStream = expConfig.LogStreamName
-	}
-	pusher := emf.getPusher(logGroup, logStream)
-	if pusher != nil {
-		for _, ple := range putLogEvents {
-			returnError := pusher.AddLogEntry(ple)
+	rms := md.ResourceMetrics()
+
+	for i := 0; i < rms.Len(); i++ {
+		droppedMetrics = 0
+		rm := rms.At(i)
+		if rm.IsNil() {
+			continue
+		}
+
+		cwm, droppedMetrics = TranslateOtToCWMetric(&rm, expConfig)
+		totalDroppedMetrics = totalDroppedMetrics + droppedMetrics
+
+		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
+			namespace = cwm[0].Measurements[0].Namespace
+		}
+
+		putLogEvents := TranslateCWMetricToEMF(cwm, expConfig.logger)
+
+		if namespace != "" {
+			logGroup = fmt.Sprintf("/metrics/%s", namespace)
+		}
+
+		// override log group if found it in exp configuration, this configuration has top priority.
+		// However, in this case, customer won't have correlation experience
+		if len(expConfig.LogGroupName) > 0 {
+			logGroup = replacePatterns(expConfig.LogGroupName, rm.Resource().Attributes(), expConfig.logger)
+		}
+		if len(expConfig.LogStreamName) > 0 {
+			logStream = replacePatterns(expConfig.LogStreamName, rm.Resource().Attributes(), expConfig.logger)
+		}
+
+		pusher := emf.getPusher(logGroup, logStream)
+		if pusher != nil {
+			for _, ple := range putLogEvents {
+				returnError := pusher.AddLogEntry(ple)
+				if returnError != nil {
+					err = wrapErrorIfBadRequest(&returnError)
+				}
+				if err != nil {
+					return totalDroppedMetrics, err
+				}
+			}
+			returnError := pusher.ForceFlush()
 			if returnError != nil {
 				err = wrapErrorIfBadRequest(&returnError)
 			}
 			if err != nil {
 				return totalDroppedMetrics, err
 			}
-		}
-		returnError := pusher.ForceFlush()
-		if returnError != nil {
-			err = wrapErrorIfBadRequest(&returnError)
-		}
-		if err != nil {
-			return totalDroppedMetrics, err
 		}
 	}
 	return totalDroppedMetrics, nil
@@ -203,29 +227,6 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 // Start
 func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
-}
-
-func generateLogEventFromMetric(metric pdata.Metrics, config *Config) ([]*LogEvent, int, string) {
-	namespace := config.Namespace
-	rms := metric.ResourceMetrics()
-	cwMetricLists := []*CWMetrics{}
-	var cwm []*CWMetrics
-	var totalDroppedMetrics int
-
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-		if rm.IsNil() {
-			continue
-		}
-		cwm, totalDroppedMetrics = TranslateOtToCWMetric(&rm, config)
-		if len(cwm) > 0 && len(cwm[0].Measurements) > 0 {
-			namespace = cwm[0].Measurements[0].Namespace
-		}
-		// append all datapoint metrics in the request into CWMetric list
-		cwMetricLists = append(cwMetricLists, cwm...)
-	}
-
-	return TranslateCWMetricToEMF(cwMetricLists, config.logger), totalDroppedMetrics, namespace
 }
 
 func wrapErrorIfBadRequest(err *error) error {
