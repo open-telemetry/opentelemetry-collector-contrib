@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -24,25 +23,32 @@ import (
 
 // aggregateLabelsOp aggregates points that have the labels excluded in label_set
 func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric, mtpOp internalOperation) {
-	op := mtpOp.configOperation
-	labelSet := mtpOp.labelSetMap
-	labelIdxs, labels := mtp.getLabelIdxs(metric, labelSet)
-	groupedTimeseries := mtp.groupTimeseriesByLabelSet(metric, labelIdxs)
+	labelIdxs, labels := mtp.getLabelIdxs(metric, mtpOp.labelSetMap)
+	groupedTimeseries := mtp.groupTimeseriesByLabelSet(metric.Timeseries, labelIdxs)
+	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, mtpOp.configOperation.AggregationType, metric.MetricDescriptor.Type)
 
-	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
-	sort.Slice(aggregatedTimeseries, func(i, j int) bool {
-		return mtp.compareTimestamps(aggregatedTimeseries[i].StartTimestamp, aggregatedTimeseries[j].StartTimestamp)
-	})
-	metric.Timeseries = aggregatedTimeseries
 	metric.MetricDescriptor.LabelKeys = labels
+
+	mtp.sortTimeseries(aggregatedTimeseries)
+	metric.Timeseries = aggregatedTimeseries
 }
 
-// groupTimeseriesByLabelSet groups all timeseries in the metric that will be aggregated together based on the selected labels' values indicated by labelIdxs.
+// groupTimeseries groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
-func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(metric *metricspb.Metric, labelIdxs []int) map[string]*timeseriesAndLabelValues {
+func (mtp *metricsTransformProcessor) groupTimeseries(timeseries []*metricspb.TimeSeries, labelCount int) map[string]*timeseriesAndLabelValues {
+	labelIdxs := make([]int, labelCount)
+	for i := 0; i < labelCount; i++ {
+		labelIdxs[i] = i
+	}
+	return mtp.groupTimeseriesByLabelSet(timeseries, labelIdxs)
+}
+
+// groupTimeseriesByLabelSet groups all the provided timeseries that will be aggregated together based on the selected label values as indicated by labelIdxs.
+// Returns a map of grouped timeseries and the corresponding selected labels
+func (mtp *metricsTransformProcessor) groupTimeseriesByLabelSet(timeseries []*metricspb.TimeSeries, labelIdxs []int) map[string]*timeseriesAndLabelValues {
 	// key is a composite of the label values as a single string
 	groupedTimeseries := make(map[string]*timeseriesAndLabelValues)
-	for _, timeseries := range metric.Timeseries {
+	for _, timeseries := range timeseries {
 		key, newLabelValues := mtp.selectedLabelsAsKey(labelIdxs, timeseries)
 		if timeseries.StartTimestamp != nil {
 			key += strconv.FormatInt(timeseries.StartTimestamp.Seconds, 10)
