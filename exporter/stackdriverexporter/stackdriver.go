@@ -65,18 +65,21 @@ func (me *metricsExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, error) {
-	userAgent := strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
+func setVersionInUserAgent(cfg *Config, version string) {
+	cfg.UserAgent = strings.ReplaceAll(cfg.UserAgent, "{{version}}", version)
+}
+
+func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	var copts []option.ClientOption
-	if userAgent != "" {
-		copts = append(copts, option.WithUserAgent(userAgent))
+	if cfg.UserAgent != "" {
+		copts = append(copts, option.WithUserAgent(cfg.UserAgent))
 	}
 	if cfg.Endpoint != "" {
 		if cfg.UseInsecure {
 			// WithGRPCConn option takes precedent over all other supplied options so need to provide user agent here as well
 			var dialOpts []grpc.DialOption
-			if userAgent != "" {
-				dialOpts = append(dialOpts, grpc.WithUserAgent(userAgent))
+			if cfg.UserAgent != "" {
+				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
 			}
 			conn, err := grpc.Dial(cfg.Endpoint, append(dialOpts, grpc.WithInsecure())...)
 			if err != nil {
@@ -94,12 +97,14 @@ func generateClientOptions(cfg *Config, version string) ([]option.ClientOption, 
 }
 
 func newStackdriverTraceExporter(cfg *Config, params component.ExporterCreateParams) (component.TracesExporter, error) {
+	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+
 	topts := []cloudtrace.Option{
 		cloudtrace.WithProjectID(cfg.ProjectID),
 		cloudtrace.WithTimeout(cfg.Timeout),
 	}
 
-	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
+	copts, err := generateClientOptions(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -184,6 +189,8 @@ func validateAndAppendDurationOption(topts []cloudtrace.Option, name string, val
 }
 
 func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateParams) (component.MetricsExporter, error) {
+	setVersionInUserAgent(cfg, params.ApplicationStartInfo.Version)
+
 	// TODO:  For each ProjectID, create a different exporter
 	// or at least a unique Stackdriver client per ProjectID.
 	options := stackdriver.Options{
@@ -199,7 +206,11 @@ func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateP
 		Timeout: cfg.Timeout,
 	}
 
-	copts, err := generateClientOptions(cfg, params.ApplicationStartInfo.Version)
+	if cfg.UserAgent != "" {
+		options.UserAgent = cfg.UserAgent
+	}
+
+	copts, err := generateClientOptions(cfg)
 	if err != nil {
 		return nil, err
 	}
