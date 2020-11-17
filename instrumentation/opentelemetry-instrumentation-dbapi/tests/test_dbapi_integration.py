@@ -50,19 +50,19 @@ class TestDBApiIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-        self.assertEqual(span.name, "testcomponent.testdatabase")
+        self.assertEqual(span.name, "Test query")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
         self.assertEqual(span.attributes["component"], "testcomponent")
-        self.assertEqual(span.attributes["db.type"], "testtype")
-        self.assertEqual(span.attributes["db.instance"], "testdatabase")
+        self.assertEqual(span.attributes["db.system"], "testcomponent")
+        self.assertEqual(span.attributes["db.name"], "testdatabase")
         self.assertEqual(span.attributes["db.statement"], "Test query")
         self.assertFalse("db.statement.parameters" in span.attributes)
         self.assertEqual(span.attributes["db.user"], "testuser")
         self.assertEqual(span.attributes["net.peer.name"], "testhost")
         self.assertEqual(span.attributes["net.peer.port"], 123)
         self.assertIs(
-            span.status.status_code, trace_api.status.StatusCode.UNSET,
+            span.status.status_code, trace_api.status.StatusCode.UNSET
         )
 
     def test_span_succeeded_with_capture_of_statement_parameters(self):
@@ -93,12 +93,12 @@ class TestDBApiIntegration(TestBase):
         spans_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-        self.assertEqual(span.name, "testcomponent.testdatabase")
+        self.assertEqual(span.name, "Test query")
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
 
         self.assertEqual(span.attributes["component"], "testcomponent")
-        self.assertEqual(span.attributes["db.type"], "testtype")
-        self.assertEqual(span.attributes["db.instance"], "testdatabase")
+        self.assertEqual(span.attributes["db.system"], "testcomponent")
+        self.assertEqual(span.attributes["db.name"], "testdatabase")
         self.assertEqual(span.attributes["db.statement"], "Test query")
         self.assertEqual(
             span.attributes["db.statement.parameters"],
@@ -108,7 +108,7 @@ class TestDBApiIntegration(TestBase):
         self.assertEqual(span.attributes["net.peer.name"], "testhost")
         self.assertEqual(span.attributes["net.peer.port"], 123)
         self.assertIs(
-            span.status.status_code, trace_api.status.StatusCode.UNSET,
+            span.status.status_code, trace_api.status.StatusCode.UNSET
         )
 
     def test_span_not_recording(self):
@@ -159,7 +159,7 @@ class TestDBApiIntegration(TestBase):
         span = spans_list[0]
         self.assertEqual(span.attributes["db.statement"], "Test query")
         self.assertIs(
-            span.status.status_code, trace_api.status.StatusCode.ERROR,
+            span.status.status_code, trace_api.status.StatusCode.ERROR
         )
         self.assertEqual(span.status.description, "Test Exception")
 
