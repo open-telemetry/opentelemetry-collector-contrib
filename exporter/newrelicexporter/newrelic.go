@@ -106,16 +106,15 @@ func (e exporter) pushTraceData(ctx context.Context, td pdata.Traces) (int, erro
 
 				nrSpan, err := transform.Span(span)
 				if err != nil {
-					// Record the error and try export anyway to help debug.
 					errs = append(errs, err)
-				} else {
-					goodSpans++
+					continue
 				}
 
 				if err := e.harvester.RecordSpan(nrSpan); err != nil {
 					errs = append(errs, err)
 					continue
 				}
+				goodSpans++
 			}
 		}
 	}
