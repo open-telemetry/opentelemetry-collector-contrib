@@ -71,12 +71,14 @@ func setVersionInUserAgent(cfg *Config, version string) {
 
 func generateClientOptions(cfg *Config) ([]option.ClientOption, error) {
 	var copts []option.ClientOption
+	// option.WithUserAgent is used by the Trace exporter, but not the Metric exporter (see comment below)
 	if cfg.UserAgent != "" {
 		copts = append(copts, option.WithUserAgent(cfg.UserAgent))
 	}
 	if cfg.Endpoint != "" {
 		if cfg.UseInsecure {
-			// WithGRPCConn option takes precedent over all other supplied options so need to provide user agent here as well
+			// option.WithGRPCConn option takes precedent over all other supplied options so need to provide
+			// user agent here as well, for both exporters
 			var dialOpts []grpc.DialOption
 			if cfg.UserAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(cfg.UserAgent))
@@ -206,6 +208,7 @@ func newStackdriverMetricsExporter(cfg *Config, params component.ExporterCreateP
 		Timeout: cfg.Timeout,
 	}
 
+	// note options.UserAgent overrides the option.WithUserAgent client option in the Metric exporter
 	if cfg.UserAgent != "" {
 		options.UserAgent = cfg.UserAgent
 	}
