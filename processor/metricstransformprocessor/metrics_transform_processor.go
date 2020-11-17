@@ -254,7 +254,9 @@ func (mtp *metricsTransformProcessor) combine(matchedMetrics []*match, transform
 
 	groupedTimeseries := mtp.groupTimeseries(allTimeseries, len(combinedMetric.MetricDescriptor.LabelKeys))
 	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, transform.AggregationType, combinedMetric.MetricDescriptor.Type)
-	combinedMetric.Timeseries = mtp.sortTimeseries(aggregatedTimeseries)
+
+	mtp.sortTimeseries(aggregatedTimeseries)
+	combinedMetric.Timeseries = aggregatedTimeseries
 
 	return combinedMetric
 }

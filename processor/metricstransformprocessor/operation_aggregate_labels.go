@@ -28,7 +28,9 @@ func (mtp *metricsTransformProcessor) aggregateLabelsOp(metric *metricspb.Metric
 	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, mtpOp.configOperation.AggregationType, metric.MetricDescriptor.Type)
 
 	metric.MetricDescriptor.LabelKeys = labels
-	metric.Timeseries = mtp.sortTimeseries(aggregatedTimeseries)
+
+	mtp.sortTimeseries(aggregatedTimeseries)
+	metric.Timeseries = aggregatedTimeseries
 }
 
 // groupTimeseries groups all the provided timeseries that will be aggregated together based on all the label values.

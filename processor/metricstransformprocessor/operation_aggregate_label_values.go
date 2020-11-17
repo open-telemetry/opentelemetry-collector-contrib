@@ -35,7 +35,8 @@ func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.M
 	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, mtpOp.configOperation.AggregationType, metric.MetricDescriptor.Type)
 	aggregatedTimeseries = append(aggregatedTimeseries, unchangedTimeseries...)
 
-	metric.Timeseries = mtp.sortTimeseries(aggregatedTimeseries)
+	mtp.sortTimeseries(aggregatedTimeseries)
+	metric.Timeseries = aggregatedTimeseries
 }
 
 // groupTimeseriesByNewLabelValue groups all timeseries in the metric that will be aggregated together based on the entire label values after replacing the aggregatedValues by newValue.
