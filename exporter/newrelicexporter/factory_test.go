@@ -50,3 +50,15 @@ func TestCreateExporter(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }
+
+func TestCreateTraceExporterError(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createTraceExporter(context.Background(), params, nil)
+	assert.Error(t, err)
+}
+
+func TestCreateMetricsExporterError(t *testing.T) {
+	params := component.ExporterCreateParams{Logger: zap.NewNop()}
+	_, err := createMetricsExporter(context.Background(), params, nil)
+	assert.Error(t, err)
+}
