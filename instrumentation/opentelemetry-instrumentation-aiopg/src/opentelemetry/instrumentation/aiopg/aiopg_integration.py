@@ -101,9 +101,16 @@ class AsyncTracedCursor(TracedCursor):
         *args: typing.Tuple[typing.Any, typing.Any],
         **kwargs: typing.Dict[typing.Any, typing.Any]
     ):
+        name = ""
+        if len(args) > 0 and args[0]:
+            name = args[0]
+        elif self._db_api_integration.database:
+            name = self._db_api_integration.database
+        else:
+            name = self._db_api_integration.name
 
         with self._db_api_integration.get_tracer().start_as_current_span(
-            self._db_api_integration.name, kind=SpanKind.CLIENT
+            name, kind=SpanKind.CLIENT
         ) as span:
             self._populate_span(span, *args)
             try:
