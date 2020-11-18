@@ -153,6 +153,40 @@ func TestEncodeSpan(t *testing.T) {
 	assert.Empty(t, payloads.Errors)
 }
 
+func TestEncodeSpanStatus(t *testing.T) {
+	testStatusCode := func(t *testing.T, statusCode pdata.StatusCode, expectedResult, expectedOutcome string) {
+		t.Helper()
+
+		var w fastjson.Writer
+		var recorder transporttest.RecorderTransport
+		elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+
+		span := pdata.NewSpan()
+		span.InitEmpty()
+		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span.SetName("span")
+
+		if statusCode >= 0 {
+			span.Status().InitEmpty()
+			span.Status().SetCode(statusCode)
+		}
+
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+		require.NoError(t, err)
+		sendStream(t, &w, &recorder)
+		payloads := recorder.Payloads()
+		require.Len(t, payloads.Transactions, 1)
+		assert.Equal(t, expectedResult, payloads.Transactions[0].Result)
+		assert.Equal(t, expectedOutcome, payloads.Transactions[0].Outcome)
+	}
+
+	testStatusCode(t, -1, "", "")
+	testStatusCode(t, pdata.StatusCodeUnset, "", "")
+	testStatusCode(t, pdata.StatusCodeOk, "OK", "success")
+	testStatusCode(t, pdata.StatusCodeError, "Error", "failure")
+}
+
 func TestEncodeSpanTruncation(t *testing.T) {
 	span := pdata.NewSpan()
 	span.InitEmpty()

@@ -5,7 +5,6 @@ go 1.14
 require (
 	github.com/elastic/go-sysinfo v1.4.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
-	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/stretchr/testify v1.6.1
 	go.elastic.co/apm v1.9.0
 	go.elastic.co/fastjson v1.1.0
