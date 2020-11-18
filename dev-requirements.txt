@@ -8,3 +8,7 @@ sphinx-rtd-theme~=0.4
 sphinx-autodoc-typehints~=1.10.2
 pytest!=5.2.3
 pytest-cov>=2.8
+readme-renderer~=24.0
+grpcio-tools==1.29.0
+mypy-protobuf>=1.23
+protobuf>=3.13.0
