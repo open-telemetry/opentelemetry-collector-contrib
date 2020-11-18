@@ -16,6 +16,7 @@ package sumologicexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -56,6 +57,9 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 	f, err := newFilter([]string{})
 	require.NoError(t, err)
 
+	c, err := newCompressor(NoCompression)
+	require.NoError(t, err)
+
 	return &senderTest{
 		srv: testServer,
 		s: newSender(
@@ -70,6 +74,7 @@ func prepareSenderTest(t *testing.T, cb []func(w http.ResponseWriter, req *http.
 				category: getTestSourceFormat(t, "source_category"),
 				name:     getTestSourceFormat(t, "source_name"),
 			},
+			c,
 		),
 	}
 }
@@ -418,4 +423,74 @@ func TestInvalidPipeline(t *testing.T) {
 
 	err := test.s.send("invalidPipeline", strings.NewReader(""), fields{})
 	assert.EqualError(t, err, `unexpected pipeline`)
+}
+
+func TestSendCompressGzip(t *testing.T) {
+	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
+		func(res http.ResponseWriter, req *http.Request) {
+			res.WriteHeader(200)
+			res.Write([]byte(""))
+			body := decodeGzip(t, req.Body)
+			assert.Equal(t, "gzip", req.Header.Get("Content-Encoding"))
+			assert.Equal(t, "Some example log", body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.CompressEncoding = "gzip"
+
+	c, err := newCompressor("gzip")
+	require.NoError(t, err)
+
+	test.s.compressor = c
+	reader := strings.NewReader("Some example log")
+
+	err = test.s.send(LogsPipeline, reader, fields{})
+	require.NoError(t, err)
+}
+
+func TestSendCompressDeflate(t *testing.T) {
+	test := prepareSenderTest(t, []func(res http.ResponseWriter, req *http.Request){
+		func(res http.ResponseWriter, req *http.Request) {
+			res.WriteHeader(200)
+			res.Write([]byte(""))
+			body := decodeDeflate(t, req.Body)
+			assert.Equal(t, "deflate", req.Header.Get("Content-Encoding"))
+			assert.Equal(t, "Some example log", body)
+		},
+	})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.CompressEncoding = "deflate"
+
+	c, err := newCompressor("deflate")
+	require.NoError(t, err)
+
+	test.s.compressor = c
+	reader := strings.NewReader("Some example log")
+
+	err = test.s.send(LogsPipeline, reader, fields{})
+	require.NoError(t, err)
+}
+
+func TestCompressionError(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.compressor = getTestCompressor(errors.New("read error"), nil)
+	reader := strings.NewReader("Some example log")
+
+	err := test.s.send(LogsPipeline, reader, fields{})
+	assert.EqualError(t, err, "read error")
+}
+
+func TestInvalidContentEncoding(t *testing.T) {
+	test := prepareSenderTest(t, []func(w http.ResponseWriter, req *http.Request){})
+	defer func() { test.srv.Close() }()
+
+	test.s.config.CompressEncoding = "test"
+	reader := strings.NewReader("Some example log")
+
+	err := test.s.send(LogsPipeline, reader, fields{})
+	assert.EqualError(t, err, "invalid content encoding: test")
 }
