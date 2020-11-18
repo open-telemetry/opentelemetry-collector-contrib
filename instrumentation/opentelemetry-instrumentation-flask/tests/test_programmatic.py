@@ -220,6 +220,7 @@ class TestProgrammaticCustomSpanNameCallbackWithoutApp(
             return "instrument-without-app"
 
         FlaskInstrumentor().instrument(name_callback=custom_span_name)
+        # pylint: disable=import-outside-toplevel,reimported,redefined-outer-name
         from flask import Flask
 
         self.app = Flask(__name__)
