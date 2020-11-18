@@ -35,7 +35,7 @@ Task Level Metrics | Container Level Metrics | Unit
 ecs.task.memory.usage | container.memory.usage | Bytes
 ecs.task.memory.usage.max | container.memory.usage.max | Bytes
 ecs.task.memory.usage.limit | container.memory.usage.limit | Bytes
-ecs.task.memory.reserved | Bcontainer.memory.reserved | Megabytes
+ecs.task.memory.reserved | container.memory.reserved | Megabytes
 ecs.task.memory.utilized | container.memory.utilized | Megabytes
 ecs.task.cpu.usage.total | container.cpu.usage.total | Nanoseconds
 ecs.task.cpu.usage.kernelmode | container.cpu.usage.kernelmode | Nanoseconds
