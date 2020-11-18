@@ -1,0 +1,24 @@
+receivers:
+  examplereceiver:
+
+processors:
+  exampleprocessor:
+
+exporters:
+  dynatrace/valid:
+    tags:
+      - example=tag
+
+    prefix: myprefix
+
+    endpoint: http://example.com/api/v2/metrics/ingest
+    api_token: token
+
+  dynatrace/invalid:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [examplereceiver]
+      processors: [exampleprocessor]
+      exporters: [dynatrace/valid, dynatrace/invalid]
