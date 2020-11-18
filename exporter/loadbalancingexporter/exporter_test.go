@@ -219,11 +219,11 @@ func TestConsumeTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	p.exporters["endpoint-1"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters[endpointWithPort("endpoint-1")] = &componenttest.ExampleExporterConsumer{}
 	p.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
+			return []string{endpointWithPort("endpoint-1")}, nil
 		},
 	}
 
@@ -301,11 +301,11 @@ func TestAddMissingExporters(t *testing.T) {
 		return &componenttest.ExampleExporterConsumer{}, nil
 	}))
 
-	p.exporters["endpoint-1:55680"] = &componenttest.ExampleExporterConsumer{}
+	p.exporters[endpointWithPort("endpoint-1")] = &componenttest.ExampleExporterConsumer{}
 	resolved := []string{"endpoint-1", "endpoint-2"}
 
 	// test
-	p.addMissingExporters(context.Background(), resolved)
+	p.addMissingExporters(context.Background(), endpointsWithPort(resolved))
 
 	// verify
 	assert.Len(t, p.exporters, 2)
@@ -450,7 +450,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	require.NoError(t, err)
 
 	sink := &componenttest.ExampleExporterConsumer{}
-	p.exporters["endpoint-1"] = sink
+	p.exporters[endpointWithPort("endpoint-1")] = sink
 
 	first := simpleTraces()
 	second := simpleTraceWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
