@@ -48,12 +48,14 @@ from boto.connection import AWSAuthConnection, AWSQueryConnection
 from wrapt import wrap_function_wrapper
 
 from opentelemetry.instrumentation.boto.version import __version__
-from opentelemetry.instrumentation.botocore import add_span_arg_tags, unwrap
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.instrumentation.utils import unwrap
 from opentelemetry.sdk.trace import Resource
 from opentelemetry.trace import SpanKind, get_tracer
 
 logger = logging.getLogger(__name__)
+
+SERVICE_PARAMS_BLOCK_LIST = {"s3": ["params.Body"]}
 
 
 def _get_instance_region_name(instance):
@@ -201,3 +203,50 @@ class BotoInstrumentor(BaseInstrumentor):
             args,
             kwargs,
         )
+
+
+def flatten_dict(dict_, sep=".", prefix=""):
+    """
+    Returns a normalized dict of depth 1 with keys in order of embedding
+    """
+    # NOTE: This should probably be in `opentelemetry.instrumentation.utils`.
+    # adapted from https://stackoverflow.com/a/19647596
+    return (
+        {
+            prefix + sep + k if prefix else k: v
+            for kk, vv in dict_.items()
+            for k, v in flatten_dict(vv, sep, kk).items()
+        }
+        if isinstance(dict_, dict)
+        else {prefix: dict_}
+    )
+
+
+def add_span_arg_tags(span, aws_service, args, args_names, args_traced):
+    def truncate_arg_value(value, max_len=1024):
+        """Truncate values which are bytes and greater than `max_len`.
+        Useful for parameters like "Body" in `put_object` operations.
+        """
+        if isinstance(value, bytes) and len(value) > max_len:
+            return b"..."
+
+        return value
+
+    if not span.is_recording():
+        return
+
+    # Do not trace `Key Management Service` or `Secure Token Service` API calls
+    # over concerns of security leaks.
+    if aws_service not in {"kms", "sts"}:
+        tags = dict(
+            (name, value)
+            for (name, value) in zip(args_names, args)
+            if name in args_traced
+        )
+        tags = flatten_dict(tags)
+
+        for param_key, value in tags.items():
+            if param_key in SERVICE_PARAMS_BLOCK_LIST.get(aws_service, {}):
+                continue
+
+            span.set_attribute(param_key, truncate_arg_value(value))

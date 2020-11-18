@@ -20,7 +20,7 @@ This library builds on the OpenTelemetry WSGI middleware to track web requests
 in Flask applications. In addition to opentelemetry-instrumentation-wsgi, it supports
 flask-specific features such as:
 
-* The Flask endpoint name is used as the Span name.
+* The Flask url rule pattern is used as the Span name.
 * The ``http.route`` Span attribute is set so that one can see which URL rule
   matched a request.
 
@@ -75,6 +75,15 @@ def get_excluded_urls():
 _excluded_urls = get_excluded_urls()
 
 
+def get_default_span_name():
+    span_name = ""
+    try:
+        span_name = flask.request.url_rule.rule
+    except AttributeError:
+        span_name = otel_wsgi.get_default_span_name(flask.request.environ)
+    return span_name
+
+
 def _rewrapped_app(wsgi_app):
     def _wrapped_app(environ, start_response):
         # We want to measure the time for route matching, etc.
@@ -105,43 +114,40 @@ def _rewrapped_app(wsgi_app):
     return _wrapped_app
 
 
-def _before_request():
-    if _excluded_urls.url_disabled(flask.request.url):
-        return
+def _wrapped_before_request(name_callback):
+    def _before_request():
+        if _excluded_urls.url_disabled(flask.request.url):
+            return
 
-    environ = flask.request.environ
-    span_name = None
-    try:
-        span_name = flask.request.url_rule.rule
-    except AttributeError:
-        pass
-    if span_name is None:
-        span_name = otel_wsgi.get_default_span_name(environ)
-    token = context.attach(
-        propagators.extract(otel_wsgi.carrier_getter, environ)
-    )
+        environ = flask.request.environ
+        span_name = name_callback()
+        token = context.attach(
+            propagators.extract(otel_wsgi.carrier_getter, environ)
+        )
 
-    tracer = trace.get_tracer(__name__, __version__)
+        tracer = trace.get_tracer(__name__, __version__)
 
-    span = tracer.start_span(
-        span_name,
-        kind=trace.SpanKind.SERVER,
-        start_time=environ.get(_ENVIRON_STARTTIME_KEY),
-    )
-    if span.is_recording():
-        attributes = otel_wsgi.collect_request_attributes(environ)
-        if flask.request.url_rule:
-            # For 404 that result from no route found, etc, we
-            # don't have a url_rule.
-            attributes["http.route"] = flask.request.url_rule.rule
-        for key, value in attributes.items():
-            span.set_attribute(key, value)
+        span = tracer.start_span(
+            span_name,
+            kind=trace.SpanKind.SERVER,
+            start_time=environ.get(_ENVIRON_STARTTIME_KEY),
+        )
+        if span.is_recording():
+            attributes = otel_wsgi.collect_request_attributes(environ)
+            if flask.request.url_rule:
+                # For 404 that result from no route found, etc, we
+                # don't have a url_rule.
+                attributes["http.route"] = flask.request.url_rule.rule
+            for key, value in attributes.items():
+                span.set_attribute(key, value)
 
-    activation = tracer.use_span(span, end_on_exit=True)
-    activation.__enter__()
-    environ[_ENVIRON_ACTIVATION_KEY] = activation
-    environ[_ENVIRON_SPAN_KEY] = span
-    environ[_ENVIRON_TOKEN] = token
+        activation = tracer.use_span(span, end_on_exit=True)
+        activation.__enter__()
+        environ[_ENVIRON_ACTIVATION_KEY] = activation
+        environ[_ENVIRON_SPAN_KEY] = span
+        environ[_ENVIRON_TOKEN] = token
+
+    return _before_request
 
 
 def _teardown_request(exc):
@@ -167,12 +173,19 @@ def _teardown_request(exc):
 
 
 class _InstrumentedFlask(flask.Flask):
+
+    name_callback = get_default_span_name
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._original_wsgi_ = self.wsgi_app
         self.wsgi_app = _rewrapped_app(self.wsgi_app)
 
+        _before_request = _wrapped_before_request(
+            _InstrumentedFlask.name_callback
+        )
+        self._before_request = _before_request
         self.before_request(_before_request)
         self.teardown_request(_teardown_request)
 
@@ -186,9 +199,14 @@ class FlaskInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs):
         self._original_flask = flask.Flask
+        name_callback = kwargs.get("name_callback")
+        if callable(name_callback):
+            _InstrumentedFlask.name_callback = name_callback
         flask.Flask = _InstrumentedFlask
 
-    def instrument_app(self, app):  # pylint: disable=no-self-use
+    def instrument_app(
+        self, app, name_callback=get_default_span_name
+    ):  # pylint: disable=no-self-use
         if not hasattr(app, "_is_instrumented"):
             app._is_instrumented = False
 
@@ -196,6 +214,8 @@ class FlaskInstrumentor(BaseInstrumentor):
             app._original_wsgi_app = app.wsgi_app
             app.wsgi_app = _rewrapped_app(app.wsgi_app)
 
+            _before_request = _wrapped_before_request(name_callback)
+            app._before_request = _before_request
             app.before_request(_before_request)
             app.teardown_request(_teardown_request)
             app._is_instrumented = True
@@ -215,7 +235,7 @@ class FlaskInstrumentor(BaseInstrumentor):
             app.wsgi_app = app._original_wsgi_app
 
             # FIXME add support for other Flask blueprints that are not None
-            app.before_request_funcs[None].remove(_before_request)
+            app.before_request_funcs[None].remove(app._before_request)
             app.teardown_request_funcs[None].remove(_teardown_request)
             del app._original_wsgi_app
 
