@@ -68,6 +68,30 @@ func TestTaskResource(t *testing.T) {
 	verifyAttributeMap(t, expected, attrMap)
 }
 
+func TestTaskResourceWithClusterARN(t *testing.T) {
+	tm := TaskMetadata{
+		Cluster:  "arn:aws:ecs:us-west-2:803860917211:cluster/main-cluster",
+		TaskARN:  "arn:aws:some-value/001",
+		Family:   "task-def-family-1",
+		Revision: "v1.2",
+	}
+	r := taskResource(tm)
+	require.NotNil(t, r)
+
+	attrMap := r.Attributes()
+	require.EqualValues(t, 6, attrMap.Len())
+
+	expected := map[string]string{
+		AttributeECSCluster:      "main-cluster",
+		AttributeECSTaskARN:      "arn:aws:some-value/001",
+		AttributeECSTaskID:       "001",
+		AttributeECSTaskFamily:   "task-def-family-1",
+		AttributeECSTaskRevesion: "v1.2",
+	}
+
+	verifyAttributeMap(t, expected, attrMap)
+}
+
 func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.AttributeMap) {
 	for key, val := range expected {
 		attributeVal, found := found.Get(key)
@@ -77,12 +101,12 @@ func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.At
 	}
 }
 func TestGetTaskIDFromARN(t *testing.T) {
-	id := getTaskIDFromARN("arn:aws:something/001")
+	id := getResourceFromARN("arn:aws:something/001")
 	require.EqualValues(t, "001", id)
 
-	id = getTaskIDFromARN("not-arn:aws:something/001")
-	require.LessOrEqual(t, 0, len(id))
+	id = getResourceFromARN("not-arn:aws:something/001")
+	require.EqualValues(t, "not-arn:aws:something/001", id)
 
-	id = getTaskIDFromARN("")
+	id = getResourceFromARN("")
 	require.LessOrEqual(t, 0, len(id))
 }
