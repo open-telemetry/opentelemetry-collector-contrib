@@ -173,13 +173,18 @@ def _teardown_request(exc):
 
 
 class _InstrumentedFlask(flask.Flask):
+
+    name_callback = get_default_span_name
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self._original_wsgi_ = self.wsgi_app
         self.wsgi_app = _rewrapped_app(self.wsgi_app)
 
-        _before_request = _wrapped_before_request(get_default_span_name)
+        _before_request = _wrapped_before_request(
+            _InstrumentedFlask.name_callback
+        )
         self._before_request = _before_request
         self.before_request(_before_request)
         self.teardown_request(_teardown_request)
@@ -194,6 +199,9 @@ class FlaskInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs):
         self._original_flask = flask.Flask
+        name_callback = kwargs.get("name_callback")
+        if callable(name_callback):
+            _InstrumentedFlask.name_callback = name_callback
         flask.Flask = _InstrumentedFlask
 
     def instrument_app(
