@@ -64,7 +64,7 @@ _SUPPRESS_REQUESTS_INSTRUMENTATION_KEY = "suppress_requests_instrumentation"
 
 # pylint: disable=unused-argument
 # pylint: disable=R0915
-def _instrument(tracer_provider=None, span_callback=None):
+def _instrument(tracer_provider=None, span_callback=None, name_callback=None):
     """Enables tracing of all requests calls that go through
     :code:`requests.session.Session.request` (this includes
     :code:`requests.get`, etc.)."""
@@ -124,7 +124,11 @@ def _instrument(tracer_provider=None, span_callback=None):
         # See
         # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/http.md#http-client
         method = method.upper()
-        span_name = "HTTP {}".format(method)
+        span_name = ""
+        if name_callback is not None:
+            span_name = name_callback()
+        if not span_name or not isinstance(span_name, str):
+            span_name = get_default_span_name(method)
 
         recorder = RequestsInstrumentor().metric_recorder
 
@@ -217,6 +221,11 @@ def _uninstrument_from(instr_root, restore_as_bound_func=False):
         setattr(instr_root, instr_func_name, original)
 
 
+def get_default_span_name(method):
+    """Default implementation for name_callback, returns HTTP {method_name}."""
+    return "HTTP {}".format(method).strip()
+
+
 class RequestsInstrumentor(BaseInstrumentor, MetricMixin):
     """An instrumentor for requests
     See `BaseInstrumentor`
@@ -229,10 +238,14 @@ class RequestsInstrumentor(BaseInstrumentor, MetricMixin):
             **kwargs: Optional arguments
                 ``tracer_provider``: a TracerProvider, defaults to global
                 ``span_callback``: An optional callback invoked before returning the http response. Invoked with Span and requests.Response
+                ``name_callback``: Callback which calculates a generic span name for an
+                    outgoing HTTP request based on the method and url.
+                    Optional: Defaults to get_default_span_name.
         """
         _instrument(
             tracer_provider=kwargs.get("tracer_provider"),
             span_callback=kwargs.get("span_callback"),
+            name_callback=kwargs.get("name_callback"),
         )
         self.init_metrics(
             __name__, __version__,

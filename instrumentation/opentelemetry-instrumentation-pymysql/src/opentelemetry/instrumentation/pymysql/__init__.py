@@ -24,11 +24,8 @@ Usage
 .. code:: python
 
     import pymysql
-    from opentelemetry import trace
     from opentelemetry.instrumentation.pymysql import PyMySQLInstrumentor
-    from opentelemetry.sdk.trace import TracerProvider
 
-    trace.set_tracer_provider(TracerProvider())
 
     PyMySQLInstrumentor().instrument()
 

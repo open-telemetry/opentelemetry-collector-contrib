@@ -62,17 +62,12 @@ class PymemcacheClientTestCase(
         self.assertEqual(num_expected, len(spans))
 
         for span, query in zip(spans, queries_expected):
-            self.assertEqual(span.name, "memcached.command")
-            self.assertIs(span.kind, trace_api.SpanKind.INTERNAL)
-            self.assertEqual(
-                span.attributes["net.peer.name"], "{}".format(TEST_HOST)
-            )
+            command, *_ = query.split(" ")
+            self.assertEqual(span.name, command)
+            self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
+            self.assertEqual(span.attributes["net.peer.name"], TEST_HOST)
             self.assertEqual(span.attributes["net.peer.port"], TEST_PORT)
-            self.assertEqual(span.attributes["db.type"], "memcached")
-            self.assertEqual(
-                span.attributes["db.url"],
-                "memcached://{}:{}".format(TEST_HOST, TEST_PORT),
-            )
+            self.assertEqual(span.attributes["db.system"], "memcached")
             self.assertEqual(span.attributes["db.statement"], query)
 
     def test_set_success(self):
@@ -214,10 +209,8 @@ class PymemcacheClientTestCase(
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 2)
-        self.assertEqual(
-            spans[0].attributes["db.url"],
-            "memcached://{}:{}".format(TEST_HOST, TEST_PORT),
-        )
+        self.assertEqual(spans[0].attributes["net.peer.name"], TEST_HOST)
+        self.assertEqual(spans[0].attributes["net.peer.port"], TEST_PORT)
 
     def test_append_stored(self):
         client = self.make_client([b"STORED\r\n"])
@@ -517,17 +510,12 @@ class PymemcacheHashClientTestCase(TestBase):
         self.assertEqual(num_expected, len(spans))
 
         for span, query in zip(spans, queries_expected):
-            self.assertEqual(span.name, "memcached.command")
-            self.assertIs(span.kind, trace_api.SpanKind.INTERNAL)
-            self.assertEqual(
-                span.attributes["net.peer.name"], "{}".format(TEST_HOST)
-            )
+            command, *_ = query.split(" ")
+            self.assertEqual(span.name, command)
+            self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
+            self.assertEqual(span.attributes["net.peer.name"], TEST_HOST)
             self.assertEqual(span.attributes["net.peer.port"], TEST_PORT)
-            self.assertEqual(span.attributes["db.type"], "memcached")
-            self.assertEqual(
-                span.attributes["db.url"],
-                "memcached://{}:{}".format(TEST_HOST, TEST_PORT),
-            )
+            self.assertEqual(span.attributes["db.system"], "memcached")
             self.assertEqual(span.attributes["db.statement"], query)
 
     def test_delete_many_found(self):

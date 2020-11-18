@@ -23,10 +23,14 @@ from moto import (  # pylint: disable=import-error
     mock_lambda,
     mock_s3,
     mock_sqs,
+    mock_xray,
 )
 
+from opentelemetry import propagators
+from opentelemetry.context import attach, detach, set_value
 from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from opentelemetry.sdk.resources import Resource
+from opentelemetry.test.mock_textmap import MockTextMapPropagator
 from opentelemetry.test.test_base import TestBase
 
 
@@ -275,3 +279,69 @@ class TestBotocoreInstrumentor(TestBase):
 
         # checking for protection on sts against security leak
         self.assertTrue("params" not in span.attributes.keys())
+
+    @mock_ec2
+    def test_propagator_injects_into_request(self):
+        headers = {}
+        previous_propagator = propagators.get_global_textmap()
+
+        def check_headers(**kwargs):
+            nonlocal headers
+            headers = kwargs["request"].headers
+
+        try:
+            propagators.set_global_textmap(MockTextMapPropagator())
+
+            ec2 = self.session.create_client("ec2", region_name="us-west-2")
+            ec2.meta.events.register_first(
+                "before-send.ec2.DescribeInstances", check_headers
+            )
+            ec2.describe_instances()
+
+            spans = self.memory_exporter.get_finished_spans()
+            assert spans
+            span = spans[0]
+            self.assertEqual(len(spans), 1)
+            self.assertEqual(span.attributes["aws.agent"], "botocore")
+            self.assertEqual(span.attributes["aws.region"], "us-west-2")
+            self.assertEqual(
+                span.attributes["aws.operation"], "DescribeInstances"
+            )
+            assert_span_http_status_code(span, 200)
+            self.assertEqual(
+                span.resource,
+                Resource(
+                    attributes={
+                        "endpoint": "ec2",
+                        "operation": "describeinstances",
+                    }
+                ),
+            )
+            self.assertEqual(span.name, "ec2.command")
+
+            self.assertIn(MockTextMapPropagator.TRACE_ID_KEY, headers)
+            self.assertEqual(
+                str(span.get_span_context().trace_id),
+                headers[MockTextMapPropagator.TRACE_ID_KEY],
+            )
+            self.assertIn(MockTextMapPropagator.SPAN_ID_KEY, headers)
+            self.assertEqual(
+                str(span.get_span_context().span_id),
+                headers[MockTextMapPropagator.SPAN_ID_KEY],
+            )
+
+        finally:
+            propagators.set_global_textmap(previous_propagator)
+
+    @mock_xray
+    def test_suppress_instrumentation_xray_client(self):
+        xray_client = self.session.create_client(
+            "xray", region_name="us-east-1"
+        )
+        token = attach(set_value("suppress_instrumentation", True))
+        xray_client.put_trace_segments(TraceSegmentDocuments=["str1"])
+        xray_client.put_trace_segments(TraceSegmentDocuments=["str2"])
+        detach(token)
+
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(0, len(spans))

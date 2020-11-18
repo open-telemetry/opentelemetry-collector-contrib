@@ -24,11 +24,10 @@ Usage
 
 .. code-block:: python
 
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.instrumentation.pymemcache import PymemcacheInstrumentor
-    trace.set_tracer_provider(TracerProvider())
+
     PymemcacheInstrumentor().instrument()
+
     from pymemcache.client.base import Client
     client = Client(('localhost', 11211))
     client.set('some_key', 'some_value')
@@ -55,14 +54,13 @@ logger = logging.getLogger(__name__)
 # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes
 _HOST = "net.peer.name"
 _PORT = "net.peer.port"
+_TRANSPORT = "net.transport"
 # Database semantic conventions here:
 # https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/database.md
-_DB = "db.type"
-_URL = "db.url"
+_DB = "db.system"
 
 _DEFAULT_SERVICE = "memcached"
 _RAWCMD = "db.statement"
-_CMD = "memcached.command"
 COMMANDS = [
     "set",
     "set_many",
@@ -115,7 +113,7 @@ def _with_tracer_wrapper(func):
 @_with_tracer_wrapper
 def _wrap_cmd(tracer, cmd, wrapped, instance, args, kwargs):
     with tracer.start_as_current_span(
-        _CMD, kind=SpanKind.INTERNAL, attributes={}
+        cmd, kind=SpanKind.CLIENT, attributes={}
     ) as span:
         try:
             if span.is_recording():
@@ -173,9 +171,10 @@ def _get_address_attributes(instance):
             host, port = instance.server
             address_attributes[_HOST] = host
             address_attributes[_PORT] = port
-            address_attributes[_URL] = "memcached://{}:{}".format(host, port)
+            address_attributes[_TRANSPORT] = "IP.TCP"
         elif isinstance(instance.server, str):
-            address_attributes[_URL] = "memcached://{}".format(instance.server)
+            address_attributes[_HOST] = instance.server
+            address_attributes[_TRANSPORT] = "Unix"
 
     return address_attributes
 
