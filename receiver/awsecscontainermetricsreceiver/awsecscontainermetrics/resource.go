@@ -32,9 +32,9 @@ func containerResource(cm ContainerMetadata) pdata.Resource {
 
 func taskResource(tm TaskMetadata) pdata.Resource {
 	resource := pdata.NewResource()
-	resource.Attributes().UpsertString(AttributeECSCluster, tm.Cluster)
+	resource.Attributes().UpsertString(AttributeECSCluster, getResourceFromARN(tm.Cluster))
 	resource.Attributes().UpsertString(AttributeECSTaskARN, tm.TaskARN)
-	resource.Attributes().UpsertString(AttributeECSTaskID, getTaskIDFromARN(tm.TaskARN))
+	resource.Attributes().UpsertString(AttributeECSTaskID, getResourceFromARN(tm.TaskARN))
 	resource.Attributes().UpsertString(AttributeECSTaskFamily, tm.Family)
 	resource.Attributes().UpsertString(AttributeECSTaskRevesion, tm.Revision)
 	resource.Attributes().UpsertString(AttributeECSServiceName, "undefined")
@@ -42,9 +42,9 @@ func taskResource(tm TaskMetadata) pdata.Resource {
 	return resource
 }
 
-func getTaskIDFromARN(arn string) string {
+func getResourceFromARN(arn string) string {
 	if arn == "" || !strings.HasPrefix(arn, "arn:aws") {
-		return ""
+		return arn
 	}
 	splits := strings.Split(arn, "/")
 
