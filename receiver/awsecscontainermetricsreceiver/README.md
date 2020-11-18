@@ -64,16 +64,16 @@ ecs.task.storage.write_bytes | container.storage.write_bytes | Bytes
 Metrics emitted by this receiver comes with a set of resource attributes. These resource attributes can be converted to metrics labels using appropriate processors/exporters (See `Full Configuration Examples` section below). Finally, these metrics labels can be set as metrics dimensions while exporting to desired destinations. Check the following table to see available resource attributes for Task and Container level metrics. Container level metrics have three additional attributes than task level metrics.
 
 Resource Attributes for Task Level Metrics | Resource Attributes for Container Level Metrics
------------- | -------------
-ecs.cluster | ecs.cluster
-ecs.task-definition-family | ecs.task-definition-family
-ecs.task-arn | ecs.task-arn
-ecs.task-id | ecs.task-id
-ecs.task-definition-version | ecs.task-definition-version
-ecs.service | ecs.service
+-------------------- | -----------------------------
+aws.ecs.cluster.name | aws.ecs.cluster.name
+aws.ecs.task.family  | aws.ecs.task.family
+aws.ecs.task.arn     | aws.ecs.task.arn
+aws.ecs.task.id      | aws.ecs.task.id
+aws.ecs.task.version | aws.ecs.task.version
+aws.ecs.service.name | aws.ecs.service.name
 &nbsp; | container.name
 &nbsp; | container.id
-&nbsp; | ecs.docker-name 
+&nbsp; | aws.ecs.docker.name 
 
 ## Full Configuration Examples
 This receiver emits 52 unique metrics. Customer may not want to send all of them to destinations. This section will show full configuration files for filtering and transforming existing metrics with different processors/exporters. 
