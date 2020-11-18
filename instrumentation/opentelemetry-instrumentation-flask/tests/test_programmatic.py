@@ -178,3 +178,63 @@ class TestProgrammatic(InstrumentationTest, TestBase, WsgiTestBase):
         self.client.get("/excluded_noarg2")
         span_list = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(span_list), 1)
+
+
+class TestProgrammaticCustomSpanName(
+    InstrumentationTest, TestBase, WsgiTestBase
+):
+    def setUp(self):
+        super().setUp()
+
+        def custom_span_name():
+            return "flask-custom-span-name"
+
+        self.app = Flask(__name__)
+
+        FlaskInstrumentor().instrument_app(
+            self.app, name_callback=custom_span_name
+        )
+
+        self._common_initialization()
+
+    def tearDown(self):
+        super().tearDown()
+        with self.disable_logging():
+            FlaskInstrumentor().uninstrument_app(self.app)
+
+    def test_custom_span_name(self):
+        self.client.get("/hello/123")
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        self.assertEqual(span_list[0].name, "flask-custom-span-name")
+
+
+class TestProgrammaticCustomSpanNameCallbackWithoutApp(
+    InstrumentationTest, TestBase, WsgiTestBase
+):
+    def setUp(self):
+        super().setUp()
+
+        def custom_span_name():
+            return "instrument-without-app"
+
+        FlaskInstrumentor().instrument(name_callback=custom_span_name)
+        # pylint: disable=import-outside-toplevel,reimported,redefined-outer-name
+        from flask import Flask
+
+        self.app = Flask(__name__)
+
+        self._common_initialization()
+
+    def tearDown(self):
+        super().tearDown()
+        with self.disable_logging():
+            FlaskInstrumentor().uninstrument()
+
+    def test_custom_span_name(self):
+        self.client.get("/hello/123")
+
+        span_list = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(span_list), 1)
+        self.assertEqual(span_list[0].name, "instrument-without-app")
