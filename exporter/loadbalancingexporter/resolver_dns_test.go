@@ -259,6 +259,23 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 	assert.Len(t, res.onChangeCallbacks, 1)
 }
 
+func TestTrimPort(t *testing.T) {
+	for _, tt := range []struct {
+		input, expected string
+	}{
+		{
+			"hostname-1:55681",
+			"hostname-1",
+		},
+		{
+			"hostname-1",
+			"hostname-1",
+		},
+	} {
+		assert.Equal(t, tt.expected, trimPort(tt.input))
+	}
+}
+
 var _ netResolver = (*mockDNSResolver)(nil)
 
 type mockDNSResolver struct {

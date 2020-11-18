@@ -382,6 +382,26 @@ func TestEndpointWithPort(t *testing.T) {
 	}
 }
 
+func TestEndpointWithPorts(t *testing.T) {
+	for _, tt := range []struct {
+		input    []string
+		expected []string
+	}{
+		{
+			[]string{
+				"endpoint-1",
+				"endpoint-1:55690",
+			},
+			[]string{
+				"endpoint-1:55680",
+				"endpoint-1:55690",
+			},
+		},
+	} {
+		assert.Equal(t, tt.expected, endpointsWithPort(tt.input))
+	}
+}
+
 func TestBuildExporterConfig(t *testing.T) {
 	// prepare
 	factories, err := componenttest.ExampleComponents()
