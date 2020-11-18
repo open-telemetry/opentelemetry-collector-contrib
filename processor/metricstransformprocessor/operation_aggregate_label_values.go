@@ -16,7 +16,6 @@ package metricstransformprocessor
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
@@ -24,7 +23,6 @@ import (
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
 func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.Metric, mtpOp internalOperation) {
-	op := mtpOp.configOperation
 	var operationLabelIdx int
 	for idx, label := range metric.MetricDescriptor.LabelKeys {
 		if label.Key == mtpOp.configOperation.Label {
@@ -32,12 +30,12 @@ func (mtp *metricsTransformProcessor) aggregateLabelValuesOp(metric *metricspb.M
 			break
 		}
 	}
-	groupedTimeseries, unchangedTimeseries := mtp.groupTimeseriesByNewLabelValue(metric, operationLabelIdx, op.NewValue, mtpOp.aggregatedValuesSet)
-	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, op.AggregationType, metric.MetricDescriptor.Type)
+
+	groupedTimeseries, unchangedTimeseries := mtp.groupTimeseriesByNewLabelValue(metric, operationLabelIdx, mtpOp.configOperation.NewValue, mtpOp.aggregatedValuesSet)
+	aggregatedTimeseries := mtp.mergeTimeseries(groupedTimeseries, mtpOp.configOperation.AggregationType, metric.MetricDescriptor.Type)
 	aggregatedTimeseries = append(aggregatedTimeseries, unchangedTimeseries...)
-	sort.Slice(aggregatedTimeseries, func(i, j int) bool {
-		return mtp.compareTimestamps(aggregatedTimeseries[i].StartTimestamp, aggregatedTimeseries[j].StartTimestamp)
-	})
+
+	mtp.sortTimeseries(aggregatedTimeseries)
 	metric.Timeseries = aggregatedTimeseries
 }
 

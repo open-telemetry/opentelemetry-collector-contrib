@@ -16,6 +16,7 @@ package newrelicexporter
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumerdata"
+	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/translator/internaldata"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -50,7 +52,7 @@ func TestLogWriter(t *testing.T) {
 	assert.Len(t, messages, 2)
 }
 
-func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
+func runMock(ptrace pdata.Traces) (*Mock, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -63,10 +65,42 @@ func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
 	c.APIKey, c.SpansURLOverride = "1", srv.URL
 	params := component.ExporterCreateParams{Logger: zap.NewNop()}
 	exp, err := f.CreateTracesExporter(context.Background(), params, c)
+	if err != nil {
+		return m, err
+	}
+	if err := exp.ConsumeTraces(ctx, ptrace); err != nil {
+		return m, err
+	}
+	if err := exp.Shutdown(ctx); err != nil {
+		return m, err
+	}
+	return m, nil
+}
+
+func testTraceData(t *testing.T, expected []Span, td consumerdata.TraceData) {
+	m, err := runMock(internaldata.OCToTraceData(td))
 	require.NoError(t, err)
-	require.NoError(t, exp.ConsumeTraces(ctx, internaldata.OCToTraceData(td)))
-	require.NoError(t, exp.Shutdown(ctx))
 	assert.Equal(t, expected, m.Spans())
+}
+
+func TestExportTracePartialData(t *testing.T) {
+	ptrace := internaldata.OCToTraceData(consumerdata.TraceData{
+		Spans: []*tracepb.Span{
+			{
+				SpanId: []byte{0, 0, 0, 0, 0, 0, 0, 1},
+				Name:   &tracepb.TruncatableString{Value: "no trace id"},
+			},
+			{
+				TraceId: []byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+				Name:    &tracepb.TruncatableString{Value: "no span id"},
+			},
+		},
+	})
+
+	_, err := runMock(ptrace)
+	require.Error(t, err)
+	assert.True(t, strings.Contains(err.Error(), errInvalidSpanID.Error()))
+	assert.True(t, strings.Contains(err.Error(), errInvalidTraceID.Error()))
 }
 
 func TestExportTraceDataMinimum(t *testing.T) {
@@ -97,12 +131,10 @@ func TestExportTraceDataMinimum(t *testing.T) {
 
 func TestExportTraceDataFullTrace(t *testing.T) {
 	td := consumerdata.TraceData{
-		Node: &commonpb.Node{
-			ServiceInfo: &commonpb.ServiceInfo{Name: "test-service"},
-		},
 		Resource: &resourcepb.Resource{
 			Labels: map[string]string{
-				"resource": "R1",
+				serviceNameKey: "test-service",
+				"resource":     "R1",
 			},
 		},
 		Spans: []*tracepb.Span{

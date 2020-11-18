@@ -1,0 +1,39 @@
+receivers:
+    examplereceiver:
+  
+processors:
+    exampleprocessor:
+ 
+exporters:
+    awsprometheusremotewrite:
+    awsprometheusremotewrite/2:
+        namespace: "test-space"
+        sending_queue:
+            enabled: true
+            num_consumers: 2
+            queue_size: 10
+        retry_on_failure:
+            enabled: true
+            initial_interval: 10s
+            max_interval: 60s
+            max_elapsed_time: 10m
+        endpoint: "http://localhost:9009"
+        ca_file: "/var/lib/mycert.pem"
+        write_buffer_size: 524288
+        headers:
+            Prometheus-Remote-Write-Version: "0.1.0"
+            X-Scope-OrgID: 234
+        aws_auth:
+            region: "us-west-2"
+            service: "service-name"
+        external_labels:
+            key1: value1
+            key2: value2
+service:
+    pipelines:
+        metrics:
+            receivers: [examplereceiver]
+            processors: [exampleprocessor]
+            exporters: [awsprometheusremotewrite]
+    
+    

@@ -78,20 +78,22 @@ type CWMetricStats struct {
 }
 
 // Wrapper interface for:
-// 	- pdata.IntDataPointSlice
-// 	- pdata.DoubleDataPointSlice
-// 	- pdata.IntHistogramDataPointSlice
-// 	- pdata.DoubleHistogramDataPointSlice
+//  - pdata.IntDataPointSlice
+//  - pdata.DoubleDataPointSlice
+//  - pdata.IntHistogramDataPointSlice
+//  - pdata.DoubleHistogramDataPointSlice
+//  - pdata.DoubleSummaryDataPointSlice
 type DataPoints interface {
 	Len() int
 	At(int) DataPoint
 }
 
 // DataPoint is a wrapper interface for:
-// 	- pdata.IntDataPoint
-// 	- pdata.DoubleDataPoint
-// 	- pdata.IntHistogramDataPoint
-// 	- pdata.DoubleHistogramDataPoint
+//  - pdata.IntDataPoint
+//  - pdata.DoubleDataPoint
+//  - pdata.IntHistogramDataPoint
+//  - pdata.DoubleHistogramDataPoint
+//  - pdata.DoubleSummaryDataPointSlice
 type DataPoint interface {
 	IsNil() bool
 	LabelsMap() pdata.StringMap
@@ -107,6 +109,9 @@ type DoubleDataPointSlice struct {
 type DoubleHistogramDataPointSlice struct {
 	pdata.DoubleHistogramDataPointSlice
 }
+type DoubleSummaryDataPointSlice struct {
+	pdata.DoubleSummaryDataPointSlice
+}
 
 func (dps IntDataPointSlice) At(i int) DataPoint {
 	return dps.IntDataPointSlice.At(i)
@@ -116,6 +121,9 @@ func (dps DoubleDataPointSlice) At(i int) DataPoint {
 }
 func (dps DoubleHistogramDataPointSlice) At(i int) DataPoint {
 	return dps.DoubleHistogramDataPointSlice.At(i)
+}
+func (dps DoubleSummaryDataPointSlice) At(i int) DataPoint {
+	return dps.DoubleSummaryDataPointSlice.At(i)
 }
 
 // TranslateOtToCWMetric converts OT metrics to CloudWatch Metric format
@@ -227,6 +235,8 @@ func getCWMetrics(metric *pdata.Metric, namespace string, instrumentationLibName
 		dps = DoubleDataPointSlice{metric.DoubleSum().DataPoints()}
 	case pdata.MetricDataTypeDoubleHistogram:
 		dps = DoubleHistogramDataPointSlice{metric.DoubleHistogram().DataPoints()}
+	case pdata.MetricDataTypeDoubleSummary:
+		dps = DoubleSummaryDataPointSlice{metric.DoubleSummary().DataPoints()}
 	default:
 		config.logger.Warn(
 			"Unhandled metric data type.",
@@ -341,13 +351,21 @@ func buildCWMetric(dp DataPoint, pmd *pdata.Metric, namespace string, metricSlic
 			metricVal = calculateRate(fields, metric.Value(), timestamp)
 		}
 	case pdata.DoubleHistogramDataPoint:
-		bucketBounds := metric.ExplicitBounds()
 		metricVal = &CWMetricStats{
-			Min:   bucketBounds[0],
-			Max:   bucketBounds[len(bucketBounds)-1],
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
 		}
+	case pdata.DoubleSummaryDataPoint:
+		metricStat := &CWMetricStats{
+			Count: metric.Count(),
+			Sum:   metric.Sum(),
+		}
+		quantileValues := metric.QuantileValues()
+		if quantileValues.Len() > 0 {
+			metricStat.Min = quantileValues.At(0).Value()
+			metricStat.Max = quantileValues.At(quantileValues.Len() - 1).Value()
+		}
+		metricVal = metricStat
 	}
 	if metricVal == nil {
 		return nil
