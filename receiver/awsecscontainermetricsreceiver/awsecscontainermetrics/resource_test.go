@@ -77,12 +77,12 @@ func verifyAttributeMap(t *testing.T, expected map[string]string, found pdata.At
 	}
 }
 func TestGetTaskIDFromARN(t *testing.T) {
-	id := getTaskIDFromARN("arn:aws:something/001")
+	id := getResourceFromARN("arn:aws:something/001")
 	require.EqualValues(t, "001", id)
 
-	id = getTaskIDFromARN("not-arn:aws:something/001")
-	require.LessOrEqual(t, 0, len(id))
+	id = getResourceFromARN("not-arn:aws:something/001")
+	require.EqualValues(t, "not-arn:aws:something/001", id)
 
-	id = getTaskIDFromARN("")
+	id = getResourceFromARN("")
 	require.LessOrEqual(t, 0, len(id))
 }
