@@ -85,7 +85,7 @@ func Test_fileNotExists(t *testing.T) {
 
 	r, err := d.Detect(context.TODO())
 
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 	assert.NotNil(t, r)
 	assert.Equal(t, 0, r.Attributes().Len())
 }
