@@ -51,7 +51,7 @@ class SQLite3Instrumentor(BaseInstrumentor):
     # No useful attributes of sqlite3 connection object
     _CONNECTION_ATTRIBUTES = {}
 
-    _DATABASE_COMPONENT = "sqlite3"
+    _DATABASE_COMPONENT = "sqlite"
     _DATABASE_TYPE = "sql"
 
     def _instrument(self, **kwargs):
