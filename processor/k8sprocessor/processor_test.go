@@ -285,7 +285,7 @@ func withPassthroughIP(passthroughIP string) generateResourceFunc {
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pdata.Resource) {
-		res.Attributes().InsertString(conventions.AttributeHostHostname, hostname)
+		res.Attributes().InsertString(conventions.AttributeHostName, hostname)
 	}
 }
 
@@ -602,16 +602,16 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			name:     "invalid IP in hostname",
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
-				conventions.AttributeHostHostname: "invalid-ip",
+				conventions.AttributeHostName: "invalid-ip",
 			},
 		},
 		{
 			name:     "valid IP in hostname",
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
-				conventions.AttributeHostHostname: "3.3.3.3",
-				k8sIPLabelName:                    "3.3.3.3",
-				"kk":                              "vv",
+				conventions.AttributeHostName: "3.3.3.3",
+				k8sIPLabelName:                "3.3.3.3",
+				"kk":                          "vv",
 			},
 		},
 	}
