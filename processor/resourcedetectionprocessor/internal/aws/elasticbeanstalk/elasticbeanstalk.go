@@ -17,7 +17,6 @@ package elasticbeanstalk
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"strconv"
 
 	"go.opentelemetry.io/collector/consumer/pdata"
@@ -27,7 +26,7 @@ import (
 )
 
 const (
-	TypeStr     = "elasticBeanstalk"
+	TypeStr     = "elastic_beanstalk"
 	linuxPath   = "/var/elasticbeanstalk/xray/environment.conf"
 	windowsPath = "C:\\Program Files\\Amazon\\XRay\\environment.conf"
 )
@@ -59,17 +58,18 @@ func (d Detector) Detect(context.Context) (pdata.Resource, error) {
 		conf, err = d.fs.Open(linuxPath)
 	}
 
+	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
-		log.Println("Unable to find Elastic Beanstalk config file, skipping resource detection")
-		return res, err
+		// TODO: Log a more specific message with zap
+		return res, nil
 	}
 
 	ebmd := &EbMetaData{}
 	err = json.NewDecoder(conf).Decode(ebmd)
-	defer conf.Close()
+	conf.Close()
 
 	if err != nil {
-		log.Printf("Encountered unexpected error reading Elastic Beanstalk config file: %v", err)
+		// TODO: Log a more specific error with zap
 		return res, err
 	}
 

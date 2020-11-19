@@ -67,7 +67,7 @@ to read resource information from the [GCE metadata server](https://cloud.google
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elasticBeanstalk"
+# a list of resource detectors to run, valid options are: "env", "system",  "gce", "ec2", "ecs", "elastic_beanstalk"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
