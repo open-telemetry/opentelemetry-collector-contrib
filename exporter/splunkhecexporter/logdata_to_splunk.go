@@ -70,7 +70,7 @@ func mapLogRecordToSplunkEvent(lr pdata.LogRecord, config *Config, logger *zap.L
 	index := config.Index
 	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		if k == conventions.AttributeHostHostname {
+		if k == conventions.AttributeHostName {
 			host = v.StringVal()
 		} else if k == conventions.AttributeServiceName {
 			source = v.StringVal()

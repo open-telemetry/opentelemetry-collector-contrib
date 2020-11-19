@@ -120,6 +120,7 @@ install-tools:
 	go install github.com/pavius/impi/cmd/impi
 	go install github.com/tcnksm/ghr
 	go install honnef.co/go/tools/cmd/staticcheck
+	go install go.opentelemetry.io/collector/cmd/mdatagen
 	go install go.opentelemetry.io/collector/cmd/issuegenerator
 
 .PHONY: run

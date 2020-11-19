@@ -43,7 +43,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.Resource().Attributes().InsertString("com.splunk.index", "myindex")
 
@@ -77,7 +77,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
@@ -95,7 +95,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs := pdata.NewResourceSpans()
 				rs.InitEmpty()
 				rs.Resource().Attributes().InsertString("service.name", "myservice")
-				rs.Resource().Attributes().InsertString("host.hostname", "myhost")
+				rs.Resource().Attributes().InsertString("host.name", "myhost")
 				rs.Resource().Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
 
 				ils := pdata.NewInstrumentationLibrarySpans()
@@ -200,7 +200,7 @@ func commonSplunkEvent(
 			},
 		},
 		Fields: map[string]interface{}{
-			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.hostname": "myhost", "service.name": "myservice",
+			"com.splunk.sourcetype": "mysourcetype", "com.splunk.index": "myindex", "host.name": "myhost", "service.name": "myservice",
 		},
 	}
 }

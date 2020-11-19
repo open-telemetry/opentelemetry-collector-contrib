@@ -60,7 +60,7 @@ func SplunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		}
 
 		if event.Host != "" {
-			logRecord.Attributes().InsertString(conventions.AttributeHostHostname, event.Host)
+			logRecord.Attributes().InsertString(conventions.AttributeHostName, event.Host)
 		}
 		if event.Source != "" {
 			logRecord.Attributes().InsertString(conventions.AttributeServiceName, event.Source)
