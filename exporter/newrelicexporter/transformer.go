@@ -161,6 +161,7 @@ func (t *traceTransformer) SpanAttributes(span pdata.Span) map[string]interface{
 	return attrs
 }
 
+// SpanEvents transforms the recorded events of span into New Relic tracing events.
 func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
 	length := span.Events().Len()
 	if length == 0 {
@@ -169,14 +170,13 @@ func (t *traceTransformer) SpanEvents(span pdata.Span) []telemetry.Event {
 
 	events := make([]telemetry.Event, length)
 
-	for i := 0; i < span.Events().Len(); i++ {
+	for i := 0; i < length; i++ {
 		event := span.Events().At(i)
-		evt := telemetry.Event{
+		events[i] = telemetry.Event{
 			EventType:  event.Name(),
 			Timestamp:  pdata.UnixNanoToTime(event.Timestamp()),
 			Attributes: tracetranslator.AttributeMapToMap(event.Attributes()),
 		}
-		events[i] = evt
 	}
 	return events
 }
