@@ -1,4 +1,5 @@
 version: 2.1
+
 parameters:
   run-build-publish:
     type: boolean
@@ -10,6 +11,9 @@ parameters:
     type: string
     default: ""
 
+orbs:
+  win: circleci/windows@2.4.0
+
 executors:
   golang:
     docker:
@@ -19,6 +23,34 @@ executors:
       image: ubuntu-1604:201903-01
 
 commands:
+  verify_dist_files_exist:
+    parameters:
+      files:
+        type: string
+        default: |
+          bin/otelcontribcol_darwin_amd64
+          bin/otelcontribcol_linux_arm64
+          bin/otelcontribcol_linux_amd64
+          bin/otelcontribcol_windows_amd64.exe
+          dist/otel-contrib-collector-*.arm64.rpm
+          dist/otel-contrib-collector_*_amd64.deb
+          dist/otel-contrib-collector-*.x86_64.rpm
+          dist/otel-contrib-collector_*_arm64.deb
+          dist/otel-contrib-collector-*amd64.msi
+    steps:
+      - run:
+          name: Check if distribution files exist
+          command: |
+            files="<< parameters.files >>"
+            for f in $files; do
+              if [[ ! -f $f ]]
+              then
+                  echo "$f does not exist."
+                  exit 1
+              fi
+            done
+
+
   setup:
     steps:
       - checkout
@@ -59,7 +91,7 @@ commands:
   save_module_cache:
     steps:
       - save_cache:
-          key: cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
+          key: cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
           paths:
             - "/home/circleci/go/pkg/mod"
 
@@ -70,7 +102,7 @@ commands:
           command: mkdir -p ~/go/pkg/mod
       - restore_cache: # restores saved cache if no changes are detected since last run
           keys:
-            - cimg-go-pkg-mod-{{ checksum "go.sum" }}-v4
+            - cimg-go-pkg-mod-{{ arch }}-{{ checksum "go.sum" }}-v4
 
   publish_docker_images:
     parameters:
@@ -103,12 +135,12 @@ workflows:
       - setup:
           requires:
             - checkout-commit
-      - build:
+      - cross-compile:
           requires:
             - setup
       - run-stability-tests:
           requires:
-            - build
+            - cross-compile
       - publish-dev:
           requires:
             - run-stability-tests
@@ -116,17 +148,15 @@ workflows:
   build-publish:
     when: << pipeline.parameters.run-build-publish >>
     jobs:
+      - windows-test:
+          filters:
+            tags:
+              only: /.*/
       - setup:
           filters:
             tags:
               only: /.*/
-#      - lint:
-#          requires:
-#            - setup
-#          filters:
-#            tags:
-#              only: /.*/
-      - build:
+      - lint:
           requires:
             - setup
           filters:
@@ -144,23 +174,84 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - loadtest:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /.*/
       - unit-tests:
           requires:
             - setup
           filters:
             tags:
               only: /.*/
+      - windows-msi:
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /.*/
+      - publish-check:
+          requires:
+            - lint
+            - unit-tests
+            - integration-tests
+            - cross-compile
+            - loadtest
+            - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
       - publish-stable:
           requires:
-#            - lint
+            - lint
             - unit-tests
-            - build
+            - integration-tests
             - cross-compile
+            - loadtest
+            - windows-test
+            - windows-msi
+            - deb-package
+            - rpm-package
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: /^v[0-9].[0-9]+.[0-9]+.*/
+              only: /.*/
+      - spawn-stability-tests-job:
+          requires:
+            - lint
+            - unit-tests
+            - loadtest
+            - windows-test
+            - integration-tests
+            - cross-compile
+          filters:
+            branches:
+              only: /master|release\/.+/
+            tags:
+              ignore: /.*/
+      - integration-tests:
+          filters:
+            tags:
+              only: /.*/
+      - build-package:
+          name: deb-package
+          package_type: deb
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /.*/
+      - build-package:
+          name: rpm-package
+          package_type: rpm
+          requires:
+            - cross-compile
+          filters:
+            tags:
+              only: /.*/
 
 
 jobs:
@@ -173,27 +264,16 @@ jobs:
           paths:
             - project
             - go/bin
-#  lint:
-#    executor: golang
-#    steps:
-#      - restore_workspace
-#      - run:
-#          name: Lint
-#          command: make -j8 for-all-target TARGET=lint
-#      - run:
-#          name: Checks
-#          command: make -j4 checklicense impi misspell
-
-  build:
+  lint:
     executor: golang
     steps:
       - restore_workspace
       - run:
-          name: Build collector for linux_amd64
-          command: make otelcontribcol
-      - persist_to_workspace:
-          root: ~/
-          paths: project/bin
+          name: Lint
+          command: make -j2 for-all-target TARGET=lint
+      - run:
+          name: Checks
+          command: make -j4 checklicense impi misspell
 
   build-examples:
     docker:
@@ -213,6 +293,9 @@ jobs:
       - run:
           name: Build collector for all archs
           command: grep ^otelcontribcol-all-sys Makefile|fmt -w 1|tail -n +2|circleci tests split|xargs make
+      - persist_to_workspace:
+          root: ~/
+          paths: project/bin
 
   unit-tests:
     executor: golang
@@ -239,13 +322,71 @@ jobs:
           path: testbed/tests/results
       - store_test_results:
           path: testbed/tests/results/junit
-      - github_issue_generator
+
+  windows-test:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    environment:
+      GOPATH=~/go
+    steps:
+      - checkout
+      - restore_module_cache
+      - run:
+          name: Upgrade golang
+          command: |
+            choco upgrade golang --version=1.15
+            refreshenv
+      - run:
+          name: Unit tests
+          command: (Get-Childitem -Include go.mod -Recurse) | ForEach-Object { cd (Split-Path $_ -Parent); go test ./...; if ($LastExitCode -gt 0) { exit $LastExitCode } }
+      - save_module_cache
+
+  windows-msi:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - attach_to_workspace
+      - run:
+          command: mkdir -p dist
+      - run:
+          name: Install Wix Toolset
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
+      - run:
+          name: Build MSI
+          command: |
+            $Version = if ($env:CIRCLE_TAG -match '^v(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
+            .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
+      - run:
+          name: Validate MSI
+          command: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
+      - persist_to_workspace:
+          root: ~/
+          paths: project/dist/*.msi
+
+  publish-check:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - attach_to_workspace
+      - setup_remote_docker
+      - verify_dist_files_exist
+      - run:
+          name: Check passed
+          command: echo "publish check passed meaning release CI jobs should work as expected"
+          when: on_success
+      - run:
+          name: Check failed
+          command: echo "publish check failed. This means release CI jobs will likely fail as well"
+          when: on_fail
 
   publish-stable:
     docker:
       - image: cimg/go:1.14
     steps:
       - restore_workspace
+      - verify_dist_files_exist
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector
@@ -261,6 +402,12 @@ jobs:
     executor: golang
     steps:
       - restore_workspace
+      - verify_dist_files_exist:
+          files: |
+            bin/otelcontribcol_darwin_amd64
+            bin/otelcontribcol_linux_arm64
+            bin/otelcontribcol_linux_amd64
+            bin/otelcontribcol_windows_amd64.exe
       - setup_remote_docker
       - publish_docker_images:
           repo: opentelemetry-collector-dev
@@ -297,6 +444,8 @@ jobs:
     executor: golang
     resource_class: medium+
     parallelism: << parameters.runners-number >>
+    environment:
+      TEST_RESULTS: testbed/stabilitytests/results/junit/results.xml
     steps:
       - restore_workspace
       - run:
@@ -328,3 +477,69 @@ jobs:
                 }'
           when: on_fail
 
+  integration-tests:
+    executor: machine
+    environment:
+      GOPATH: /home/circleci/go
+    steps:
+      - setup_go
+      - setup
+      - run:
+          name: Integration tests with coverage
+          command: |
+            mkdir -p test-results/junit
+            trap "go-junit-report -set-exit-code < test-results/go-integration-tests.out > test-results/junit/results.xml" EXIT
+            make integration-tests-with-cover | tee test-results/go-integration-tests.out
+      - run:
+          name: Upload integration test coverage
+          command: bash <(curl -s https://codecov.io/bash) -F integration
+      - store_test_results:
+          path: test-results/junit
+      - store_artifacts:
+          path: test-results
+      - run:
+          name: Run on fail status
+          command: |
+            curl --request POST \
+            --url https://api.github.com/repos/SumoLogic/opentelemetry-collector-contrib/issues \
+            --header "authorization: Bearer ${GITHUB_TOKEN}" \
+            --header "content-type: application/json" \
+            --data '{
+              "title": "Stability tests failed in branch '"${CIRCLE_BRANCH}"' for commit << pipeline.parameters.collector-sha >>",
+              "body": "Link to failed job: '"${CIRCLE_BUILD_URL}"'."
+              }'
+          when: on_fail
+
+  build-package:
+    machine:
+      image: ubuntu-1604:202007-01
+    parameters:
+      package_type:
+        type: enum
+        enum: ["deb", "rpm"]
+    steps:
+      - checkout
+      - attach_to_workspace
+      - run:
+          name: Install fpm and dependencies
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+            gem install --no-document fpm -v 1.11.0
+      - run:
+          name: Build << parameters.package_type >> amd64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "amd64" "./dist/"
+      - run:
+          name: Build << parameters.package_type >> arm64 package
+          command: ./internal/buildscripts/packaging/fpm/<< parameters.package_type >>/build.sh "${CIRCLE_TAG:-}" "arm64" "./dist/"
+      - run:
+          name: Test << parameters.package_type >> package installation
+          command: |
+            if [[ "<< parameters.package_type >>" = "deb" ]]; then
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*amd64.deb examples/tracing/otel-collector-config.yml
+            else
+                ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/tracing/otel-collector-config.yml
+            fi
+      - persist_to_workspace:
+          root: ~/
+          paths: project/dist/*.<< parameters.package_type >>
