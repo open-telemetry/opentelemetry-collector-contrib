@@ -33,14 +33,13 @@ class TestRedisInstrument(TestBase):
         super().tearDown()
         RedisInstrumentor().uninstrument()
 
-    def _check_span(self, span):
+    def _check_span(self, span, name):
         self.assertEqual(span.attributes["service"], self.test_service)
-        self.assertEqual(span.name, "redis.command")
+        self.assertEqual(span.name, name)
         self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
-        self.assertEqual(span.attributes.get("db.instance"), 0)
-        self.assertEqual(
-            span.attributes.get("db.url"), "redis://localhost:6379"
-        )
+        self.assertEqual(span.attributes.get("db.name"), 0)
+        self.assertEqual(span.attributes["net.peer.name"], "localhost")
+        self.assertEqual(span.attributes["net.peer.ip"], 6379)
 
     def test_long_command(self):
         self.redis_client.mget(*range(1000))
@@ -48,7 +47,7 @@ class TestRedisInstrument(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        self._check_span(span, "MGET")
         self.assertTrue(
             span.attributes.get("db.statement").startswith("MGET 0 1 2 3")
         )
@@ -59,7 +58,7 @@ class TestRedisInstrument(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        self._check_span(span, "GET")
         self.assertEqual(span.attributes.get("db.statement"), "GET cheese")
         self.assertEqual(span.attributes.get("redis.args_length"), 2)
 
@@ -73,7 +72,7 @@ class TestRedisInstrument(TestBase):
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 1)
         span = spans[0]
-        self._check_span(span)
+        self._check_span(span, "SET RPUSH HGETALL")
         self.assertEqual(
             span.attributes.get("db.statement"),
             "SET blah 32\nRPUSH foo éé\nHGETALL xxx",
@@ -91,7 +90,7 @@ class TestRedisInstrument(TestBase):
         # single span for the whole pipeline
         self.assertEqual(len(spans), 2)
         span = spans[0]
-        self._check_span(span)
+        self._check_span(span, "SET")
         self.assertEqual(span.attributes.get("db.statement"), "SET b 2")
 
     def test_parent(self):
@@ -115,4 +114,4 @@ class TestRedisInstrument(TestBase):
         self.assertEqual(
             child_span.attributes.get("service"), self.test_service
         )
-        self.assertEqual(child_span.name, "redis.command")
+        self.assertEqual(child_span.name, "GET")
