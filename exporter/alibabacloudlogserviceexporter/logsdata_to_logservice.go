@@ -22,6 +22,8 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/translator/conventions"
+	tracetranslator "go.opentelemetry.io/collector/translator/trace"
 	"go.uber.org/zap"
 )
 
@@ -33,6 +35,12 @@ const (
 	slsLogContent        = "content"
 	slsLogAttribute      = "attribute"
 	slsLogFlags          = "flags"
+	slsLogResource       = "resource"
+	slsLogHost           = "host"
+	slsLogService        = "service"
+	// shortcut for "otlp.instrumentation.library.name" "otlp.instrumentation.library.version"
+	slsLogInstrumentationName    = "otlp.name"
+	slsLogInstrumentationVersion = "otlp.version"
 )
 
 func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
@@ -46,19 +54,21 @@ func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
 		}
 
 		ills := rl.InstrumentationLibraryLogs()
+		resource := rl.Resource()
+		resourceContents := resourceToLogContents(resource)
 		for j := 0; j < ills.Len(); j++ {
 			ils := ills.At(j)
 			if ils.IsNil() {
 				continue
 			}
-
+			instrumentationLibraryContents := instrumentationLibraryToLogContents(ils.InstrumentationLibrary())
 			logs := ils.Logs()
 			for j := 0; j < logs.Len(); j++ {
 				lr := logs.At(j)
 				if lr.IsNil() {
 					continue
 				}
-				slsLog := mapLogRecordToLogService(lr, logger)
+				slsLog := mapLogRecordToLogService(lr, resourceContents, instrumentationLibraryContents)
 				if slsLog == nil {
 					numDroppedLogs++
 				} else {
@@ -71,64 +81,134 @@ func logDataToLogService(logger *zap.Logger, ld pdata.Logs) ([]*sls.Log, int) {
 	return slsLogs, numDroppedLogs
 }
 
-func mapLogRecordToLogService(lr pdata.LogRecord, logger *zap.Logger) *sls.Log {
+func resourceToLogContents(resource pdata.Resource) []*sls.LogContent {
+	logContents := make([]*sls.LogContent, 3)
+	attrs := resource.Attributes()
+	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok && !hostName.IsNil() {
+		logContents[0] = &sls.LogContent{
+			Key:   proto.String(slsLogHost),
+			Value: proto.String(tracetranslator.AttributeValueToString(hostName, false)),
+		}
+	} else {
+		logContents[0] = &sls.LogContent{
+			Key:   proto.String(slsLogHost),
+			Value: proto.String(""),
+		}
+	}
+
+	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok && !serviceName.IsNil() {
+		logContents[1] = &sls.LogContent{
+			Key:   proto.String(slsLogService),
+			Value: proto.String(tracetranslator.AttributeValueToString(serviceName, false)),
+		}
+	} else {
+		logContents[1] = &sls.LogContent{
+			Key:   proto.String(slsLogService),
+			Value: proto.String(""),
+		}
+	}
+
+	fields := map[string]interface{}{}
+	attrs.ForEach(func(k string, v pdata.AttributeValue) {
+		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
+			return
+		}
+		fields[k] = tracetranslator.AttributeValueToString(v, false)
+	})
+	attributeBuffer, _ := json.Marshal(fields)
+	logContents[2] = &sls.LogContent{
+		Key:   proto.String(slsLogResource),
+		Value: proto.String(string(attributeBuffer)),
+	}
+
+	return logContents
+}
+
+func instrumentationLibraryToLogContents(instrumentationLibrary pdata.InstrumentationLibrary) []*sls.LogContent {
+	if instrumentationLibrary.IsNil() {
+		return nil
+	}
+	logContents := make([]*sls.LogContent, 2)
+	logContents[0] = &sls.LogContent{
+		Key:   proto.String(slsLogInstrumentationName),
+		Value: proto.String(instrumentationLibrary.Name()),
+	}
+	logContents[1] = &sls.LogContent{
+		Key:   proto.String(slsLogInstrumentationVersion),
+		Value: proto.String(instrumentationLibrary.Version()),
+	}
+	return logContents
+}
+
+func mapLogRecordToLogService(lr pdata.LogRecord,
+	resourceContents,
+	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
 	if lr.Body().IsNil() {
 		return nil
 	}
 	var slsLog sls.Log
 
 	// pre alloc, refine if logContent's len > 16
-	slsLog.Contents = make([]*sls.LogContent, 0, 16)
+	preAllocCount := 16
+	slsLog.Contents = make([]*sls.LogContent, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
+	contentsBuffer := make([]sls.LogContent, 0, preAllocCount)
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	slsLog.Contents = append(slsLog.Contents, resourceContents...)
+	slsLog.Contents = append(slsLog.Contents, instrumentationLibraryContents...)
+
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogTimeUnixNano),
 		Value: proto.String(strconv.FormatUint(uint64(lr.Timestamp()), 10)),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogSeverityNumber),
 		Value: proto.String(strconv.FormatInt(int64(lr.SeverityNumber()), 10)),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogSeverityText),
 		Value: proto.String(lr.SeverityText()),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogName),
 		Value: proto.String(lr.Name()),
 	})
 
 	fields := map[string]interface{}{}
 	lr.Attributes().ForEach(func(k string, v pdata.AttributeValue) {
-		fields[k] = convertAttributeValue(v, logger)
+		fields[k] = tracetranslator.AttributeValueToString(v, false)
 	})
 	attributeBuffer, _ := json.Marshal(fields)
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogAttribute),
 		Value: proto.String(string(attributeBuffer)),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogContent),
-		Value: proto.String(convertAttributeValueToString(lr.Body(), logger)),
+		Value: proto.String(tracetranslator.AttributeValueToString(lr.Body(), false)),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogFlags),
 		Value: proto.String(strconv.FormatUint(uint64(lr.Flags()), 16)),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceIDField),
 		Value: proto.String(lr.TraceID().HexString()),
 	})
 
-	slsLog.Contents = append(slsLog.Contents, &sls.LogContent{
+	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(spanIDField),
 		Value: proto.String(lr.SpanID().HexString()),
 	})
+
+	for i := range contentsBuffer {
+		slsLog.Contents = append(slsLog.Contents, &contentsBuffer[i])
+	}
 
 	if lr.Timestamp() > 0 {
 		// convert time nano to time seconds
@@ -138,68 +218,4 @@ func mapLogRecordToLogService(lr pdata.LogRecord, logger *zap.Logger) *sls.Log {
 	}
 
 	return &slsLog
-}
-
-func convertAttributeValueToString(value pdata.AttributeValue, logger *zap.Logger) string {
-	switch value.Type() {
-	case pdata.AttributeValueINT:
-		return strconv.FormatInt(value.IntVal(), 10)
-	case pdata.AttributeValueBOOL:
-		return strconv.FormatBool(value.BoolVal())
-	case pdata.AttributeValueDOUBLE:
-		return strconv.FormatFloat(value.DoubleVal(), 'g', -1, 64)
-	case pdata.AttributeValueSTRING:
-		return value.StringVal()
-	case pdata.AttributeValueMAP:
-		values := map[string]interface{}{}
-		value.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
-			values[k] = convertAttributeValue(v, logger)
-		})
-		buffer, _ := json.Marshal(values)
-		return string(buffer)
-	case pdata.AttributeValueARRAY:
-		arrayVal := value.ArrayVal()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = convertAttributeValue(arrayVal.At(i), logger)
-		}
-		buffer, _ := json.Marshal(values)
-		return string(buffer)
-	case pdata.AttributeValueNULL:
-		return ""
-	default:
-		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
-		return ""
-	}
-}
-
-func convertAttributeValue(value pdata.AttributeValue, logger *zap.Logger) interface{} {
-	switch value.Type() {
-	case pdata.AttributeValueINT:
-		return value.IntVal()
-	case pdata.AttributeValueBOOL:
-		return value.BoolVal()
-	case pdata.AttributeValueDOUBLE:
-		return value.DoubleVal()
-	case pdata.AttributeValueSTRING:
-		return value.StringVal()
-	case pdata.AttributeValueMAP:
-		values := map[string]interface{}{}
-		value.MapVal().ForEach(func(k string, v pdata.AttributeValue) {
-			values[k] = convertAttributeValue(v, logger)
-		})
-		return values
-	case pdata.AttributeValueARRAY:
-		arrayVal := value.ArrayVal()
-		values := make([]interface{}, arrayVal.Len())
-		for i := 0; i < arrayVal.Len(); i++ {
-			values[i] = convertAttributeValue(arrayVal.At(i), logger)
-		}
-		return values
-	case pdata.AttributeValueNULL:
-		return nil
-	default:
-		logger.Debug("Unhandled value type", zap.String("type", value.Type().String()))
-		return value
-	}
 }

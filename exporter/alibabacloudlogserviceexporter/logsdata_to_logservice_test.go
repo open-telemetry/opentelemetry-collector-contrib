@@ -50,9 +50,18 @@ func createLogData(numberOfLogs int) pdata.Logs {
 	logs := pdata.NewLogs()
 	rl := pdata.NewResourceLogs()
 	rl.InitEmpty()
+	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
+	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
 	logs.ResourceLogs().Append(rl)
+	rl2 := pdata.NewResourceLogs()
+	rl2.InitEmpty()
+	logs.ResourceLogs().Append(rl2)
 	ill := pdata.NewInstrumentationLibraryLogs()
 	ill.InitEmpty()
+	ill.InstrumentationLibrary().InitEmpty()
+	ill.InstrumentationLibrary().SetName("collector")
+	ill.InstrumentationLibrary().SetVersion("v0.1.0")
 	rl.InstrumentationLibraryLogs().Append(ill)
 
 	for i := 0; i < numberOfLogs; i++ {
@@ -135,23 +144,4 @@ func TestLogsDataToLogService(t *testing.T) {
 			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
 		}
 	}
-}
-
-func TestComplexMapValueToString(t *testing.T) {
-	mapVal := getComplexAttributeValueMap()
-	str := convertAttributeValueToString(mapVal, zap.NewNop())
-	assert.Equal(t, str,
-		"{\"array\":[\"array\"],\"code\":200,\"map\":{\"data\":\"hello world\"},\"null\":null,\"result\":true,\"status\":\"ok\",\"value\":1.3}")
-}
-
-func TestNullValueToString(t *testing.T) {
-	str := convertAttributeValueToString(pdata.NewAttributeValueNull(), zap.NewNop())
-	assert.Equal(t, str, "")
-}
-
-func TestArrayValueToString(t *testing.T) {
-	arrayVal := pdata.NewAttributeValueArray()
-	arrayVal.ArrayVal().Append(pdata.NewAttributeValueString("array"))
-	str := convertAttributeValueToString(arrayVal, zap.NewNop())
-	assert.Equal(t, str, "[\"array\"]")
 }
