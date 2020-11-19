@@ -73,36 +73,36 @@ func TestLoadConfig(t *testing.T) {
 					RateLimitingCfg: config.RateLimitingCfg{SpansPerSecond: 35},
 				},
 				{
-					Name: "test-policy-5",
-					Type: config.Cascading,
+					Name:           "test-policy-5",
+					Type:           config.Cascading,
 					SpansPerSecond: 1000,
-					Rules:     []config.CascadingRuleCfg{
+					Rules: []config.CascadingRuleCfg{
 						{
-							Name: "num",
+							Name:           "num",
 							SpansPerSecond: 123,
 							NumericAttributeCfg: &config.NumericAttributeCfg{
 								Key: "key1", MinValue: 50, MaxValue: 100},
 						},
 						{
-							Name: "dur",
+							Name:           "dur",
 							SpansPerSecond: 50,
 							PropertiesCfg: &config.PropertiesCfg{
 								MinDurationMicros: &minDurationValue,
 							},
 						},
 						{
-							Name: "everything_else",
+							Name:           "everything_else",
 							SpansPerSecond: -1,
 						},
 					},
 				},
 				{
-					Name:            "test-policy-6",
-					Type:            config.Properties,
+					Name: "test-policy-6",
+					Type: config.Properties,
 					PropertiesCfg: config.PropertiesCfg{
-						NamePattern: &namePatternValue,
+						NamePattern:       &namePatternValue,
 						MinDurationMicros: &minDurationValue,
-						MinNumberOfSpans: &minSpansValue,
+						MinNumberOfSpans:  &minSpansValue,
 					},
 				},
 			},
