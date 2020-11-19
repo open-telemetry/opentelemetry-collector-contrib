@@ -120,7 +120,7 @@ func createLogData(numberOfLogs int) pdata.Logs {
 		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
 		logRecord.Attributes().InsertString(splunk.SourcetypeLabel, "myapp-type")
 		logRecord.Attributes().InsertString(splunk.IndexLabel, "myindex")
-		logRecord.Attributes().InsertString(conventions.AttributeHostHostname, "myhost")
+		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
 

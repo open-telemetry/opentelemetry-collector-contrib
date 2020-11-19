@@ -76,7 +76,7 @@ func TestMetadataServiceEnvironment(t *testing.T) {
 
 func TestMetadataSystemHostname(t *testing.T) {
 	resource := resourceFromAttributesMap(map[string]pdata.AttributeValue{
-		"host.hostname": pdata.NewAttributeValueString("foo"),
+		"host.name": pdata.NewAttributeValueString("foo"),
 	})
 	out := metadataWithResource(t, resource)
 	assert.Equal(t, "foo", out.system.Hostname)

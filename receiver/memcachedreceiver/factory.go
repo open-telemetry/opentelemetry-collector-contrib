@@ -56,7 +56,7 @@ func createDefaultConfig() configmodels.Receiver {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateParams,
 	rConf configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
@@ -66,7 +66,7 @@ func createMetricsReceiver(
 	scraper := newMemcachedScraper(params.Logger, cfg)
 
 	return receiverhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, consumer,
+		&cfg.ScraperControllerSettings, params.Logger, consumer,
 		receiverhelper.AddResourceMetricsScraper(scraper),
 	)
 }

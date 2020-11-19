@@ -306,7 +306,7 @@ func buildDefaultMetricsData(time int64) pdata.Metrics {
 	resourceMetrics.InitEmpty()
 	metrics.ResourceMetrics().Append(resourceMetrics)
 	attrs := resourceMetrics.Resource().Attributes()
-	attrs.InsertString("host.hostname", "localhost")
+	attrs.InsertString("host.name", "localhost")
 	attrs.InsertString("service.name", "source")
 	attrs.InsertString("com.splunk.sourcetype", "sourcetype")
 	attrs.InsertString("com.splunk.index", "index")

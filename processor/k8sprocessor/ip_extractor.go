@@ -36,11 +36,11 @@ func k8sIPFromAttributes() ipExtractor {
 }
 
 // k8sIPFromHostnameAttributes leverages the observation that most of the metric receivers
-// uses "host.hostname" resource label to identify metrics origin. In k8s environment,
+// uses "host.name" resource label to identify metrics origin. In k8s environment,
 // it's set to a pod IP address. If the value doesn't represent an IP address, we skip it.
 func k8sIPFromHostnameAttributes() ipExtractor {
 	return func(attrs pdata.AttributeMap) string {
-		hostname := stringAttributeFromMap(attrs, conventions.AttributeHostHostname)
+		hostname := stringAttributeFromMap(attrs, conventions.AttributeHostName)
 		if net.ParseIP(hostname) != nil {
 			return hostname
 		}
