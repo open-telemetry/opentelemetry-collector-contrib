@@ -60,6 +60,7 @@ func TestEncodeSpan(t *testing.T) {
 	clientSpan.SetKind(pdata.SpanKindCLIENT)
 	clientSpan.SetName("client_span")
 	clientSpan.Status().InitEmpty()
+	clientSpan.Status().SetCode(pdata.StatusCodeError)
 	clientSpan.Attributes().InitFromMap(map[string]pdata.AttributeValue{
 		"string.attr": pdata.NewAttributeValueString("string_value"),
 		"int.attr":    pdata.NewAttributeValueInt(123),
@@ -74,7 +75,7 @@ func TestEncodeSpan(t *testing.T) {
 	serverSpan.SetKind(pdata.SpanKindSERVER)
 	serverSpan.SetName("server_span")
 	serverSpan.Status().InitEmpty()
-	serverSpan.Status().SetCode(-1)
+	serverSpan.Status().SetCode(pdata.StatusCodeOk)
 
 	for _, span := range []pdata.Span{rootSpan, clientSpan, serverSpan} {
 		span.SetTraceID(pdata.NewTraceID(traceID))
@@ -96,7 +97,6 @@ func TestEncodeSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "root_span",
 		Type:      "unknown",
-		Result:    "STATUS_CODE_UNSET",
 		Context: &model.Context{
 			Tags: model.IfaceMap{{
 				Key:   "bool_attr",
@@ -120,7 +120,8 @@ func TestEncodeSpan(t *testing.T) {
 		Duration:  5.0,
 		Name:      "server_span",
 		Type:      "unknown",
-		Result:    "-1",
+		Result:    "OK",
+		Outcome:   "success",
 	}}, payloads.Transactions)
 
 	assert.Equal(t, []model.Span{{
@@ -146,9 +147,44 @@ func TestEncodeSpan(t *testing.T) {
 				Value: "string_value",
 			}},
 		},
+		Outcome: "failure",
 	}}, payloads.Spans)
 
 	assert.Empty(t, payloads.Errors)
+}
+
+func TestEncodeSpanStatus(t *testing.T) {
+	testStatusCode := func(t *testing.T, statusCode pdata.StatusCode, expectedResult, expectedOutcome string) {
+		t.Helper()
+
+		var w fastjson.Writer
+		var recorder transporttest.RecorderTransport
+		elastic.EncodeResourceMetadata(pdata.NewResource(), &w)
+
+		span := pdata.NewSpan()
+		span.InitEmpty()
+		span.SetTraceID(pdata.NewTraceID([16]byte{1}))
+		span.SetSpanID(pdata.NewSpanID([8]byte{1}))
+		span.SetName("span")
+
+		if statusCode >= 0 {
+			span.Status().InitEmpty()
+			span.Status().SetCode(statusCode)
+		}
+
+		err := elastic.EncodeSpan(span, pdata.NewInstrumentationLibrary(), &w)
+		require.NoError(t, err)
+		sendStream(t, &w, &recorder)
+		payloads := recorder.Payloads()
+		require.Len(t, payloads.Transactions, 1)
+		assert.Equal(t, expectedResult, payloads.Transactions[0].Result)
+		assert.Equal(t, expectedOutcome, payloads.Transactions[0].Outcome)
+	}
+
+	testStatusCode(t, -1, "", "")
+	testStatusCode(t, pdata.StatusCodeUnset, "", "")
+	testStatusCode(t, pdata.StatusCodeOk, "OK", "success")
+	testStatusCode(t, pdata.StatusCodeError, "Error", "failure")
 }
 
 func TestEncodeSpanTruncation(t *testing.T) {
