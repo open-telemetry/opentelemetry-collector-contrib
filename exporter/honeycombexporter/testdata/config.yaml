@@ -11,7 +11,7 @@ exporters:
     dataset: "test-dataset"
     api_url: "https://api.testhost.io"
   honeycomb/sample_rate:
-    sample_rate: 5
+    sample_rate: 5 # deprecated but left to ensure existing configs do not break
     sample_rate_attribute: "custom.sample_rate"
 
 service:
