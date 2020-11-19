@@ -49,5 +49,5 @@ References
 ----------
 
 * `Django <https://www.djangoproject.com/>`_
-* `OpenTelemetry Instrumentation for Django <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/django/django.html>`_
+* `OpenTelemetry Instrumentation for Django <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/django/django.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

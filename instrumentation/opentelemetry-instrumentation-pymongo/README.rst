@@ -16,6 +16,6 @@ Installation
 
 References
 ----------
-* `OpenTelemetry pymongo Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/pymongo/pymongo.html>`_
+* `OpenTelemetry pymongo Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/pymongo/pymongo.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
 

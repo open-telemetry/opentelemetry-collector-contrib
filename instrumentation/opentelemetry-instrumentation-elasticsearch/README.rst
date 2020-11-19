@@ -19,5 +19,5 @@ Installation
 References
 ----------
 
-* `OpenTelemetry elasticsearch Integration <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/elasticsearch/elasticsearch.html>`_
+* `OpenTelemetry elasticsearch Integration <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/elasticsearch/elasticsearch.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_

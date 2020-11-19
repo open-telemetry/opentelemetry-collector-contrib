@@ -16,5 +16,5 @@ Installation
 
 References
 ----------
-* `OpenTelemetry Psycopg Instrumentation <https://opentelemetry-python.readthedocs.io/en/latest/instrumentation/psycopg2/psycopg2.html>`_
+* `OpenTelemetry Psycopg Instrumentation <https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/psycopg2/psycopg2.html>`_
 * `OpenTelemetry Project <https://opentelemetry.io/>`_
