@@ -327,7 +327,7 @@ func TestTransformSpan(t *testing.T) {
 				Name:       "with events",
 				Attributes: withDefaults(nil),
 				Events: []telemetry.Event{
-					telemetry.Event{
+					{
 						EventType:  "this is the event name",
 						Timestamp:  now.UTC(),
 						Attributes: map[string]interface{}{},
