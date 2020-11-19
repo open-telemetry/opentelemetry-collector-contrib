@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Update redis instrumentation to follow semantic conventions ([#184](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/184))
+- Update redis instrumentation to follow semantic conventions
+  ([#184](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/184))
 
 ## Version 0.13b0
 
