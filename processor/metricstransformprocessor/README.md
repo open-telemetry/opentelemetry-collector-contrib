@@ -56,6 +56,8 @@ transforms:
     new_name: <new_metric_name_inserted>
     # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
     aggregation_type: {sum, mean, min, max}
+    # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
+    submatch_case: {lower, upper}
     # operations contain a list of operations that will be performed on the selected metrics
     operations:
         # action defines the type of operation that will be performed, see examples below for more details
@@ -219,13 +221,14 @@ operations:
 ```yaml
 # convert a set of metrics for each http_method into a single metric with an http_method label, i.e.
 #
-# Web Service (*)/Total DELETE Requests     iis.requests{http_method=DELETE}
-# Web Service (*)/Total GET Requests     >  iis.requests{http_method=GET}
-# Web Service (*)/Total POST Requests       iis.requests{http_method=POST}
+# Web Service (*)/Total Delete Requests     iis.requests{http_method=delete}
+# Web Service (*)/Total Get Requests     >  iis.requests{http_method=get}
+# Web Service (*)/Total Post Requests       iis.requests{http_method=post}
 metric_names: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
 match_type: regexp
 action: combine
 new_name: iis.requests
+submatch_case: lower
 operations:
   ...
 ```

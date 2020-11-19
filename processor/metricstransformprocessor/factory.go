@@ -105,6 +105,10 @@ func validateConfiguration(config *Config) error {
 			return fmt.Errorf("%q must be in %q", AggregationTypeFieldName, AggregationTypes)
 		}
 
+		if transform.SubmatchCase != "" && !transform.SubmatchCase.isValid() {
+			return fmt.Errorf("%q must be in %q", SubmatchCaseFieldName, SubmatchCases)
+		}
+
 		for i, op := range transform.Operations {
 			if !op.Action.isValid() {
 				return fmt.Errorf("operation %v: %q must be in %q", i+1, ActionFieldName, OperationActions)
