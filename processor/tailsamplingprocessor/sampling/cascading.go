@@ -119,13 +119,13 @@ func NewCascadingFilter(logger *zap.Logger, cfg *config.PolicyCfg) (PolicyEvalua
 	for _, ruleCfg := range cfg.Rules {
 		attributesSet := 0
 		if ruleCfg.StringAttributeCfg != nil {
-			attributesSet += 1
+			attributesSet++
 		}
 		if ruleCfg.NumericAttributeCfg != nil {
-			attributesSet += 1
+			attributesSet++
 		}
 		if ruleCfg.PropertiesCfg != nil {
-			attributesSet += 1
+			attributesSet++
 		}
 
 		if attributesSet > 1 {
@@ -211,7 +211,7 @@ func (cp *cascadingPolicy) Evaluate(traceID pdata.TraceID, trace *TraceData) (De
 				}
 
 				// This will ensure it's not sampled (otherwise it would get into SecondChance)
-				// This behaviour might be worth giving a deeper thought, as it effective removes matching
+				// This behavior might be worth giving a deeper thought, as it effective removes matching
 				// traces from the SecondChance pool.
 				recordSampled(rule.context, "matched", NotSampled)
 				return NotSampled, nil
