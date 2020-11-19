@@ -129,6 +129,7 @@ func TestTransformSpan(t *testing.T) {
 				TraceID:    "01010101010101010101010101010101",
 				Name:       "root",
 				Attributes: withDefaults(nil),
+				Events:     nil,
 			},
 		},
 		{
@@ -148,6 +149,7 @@ func TestTransformSpan(t *testing.T) {
 				Name:       "client",
 				ParentID:   "0000000000000001",
 				Attributes: withDefaults(nil),
+				Events:     nil,
 			},
 		},
 		{
@@ -174,6 +176,7 @@ func TestTransformSpan(t *testing.T) {
 				Attributes: withDefaults(map[string]interface{}{
 					statusCodeKey: "ERROR",
 				}),
+				Events: nil,
 			},
 		},
 		{
@@ -201,6 +204,7 @@ func TestTransformSpan(t *testing.T) {
 					statusCodeKey:        "ERROR",
 					statusDescriptionKey: "error message",
 				}),
+				Events: nil,
 			},
 		},
 		{
@@ -254,6 +258,7 @@ func TestTransformSpan(t *testing.T) {
 					"score":  99.8,
 					"user":   "alice",
 				}),
+				Events: nil,
 			},
 		},
 		{
@@ -275,6 +280,7 @@ func TestTransformSpan(t *testing.T) {
 				Timestamp:  now.UTC(),
 				Duration:   time.Second * 5,
 				Attributes: withDefaults(nil),
+				Events:     nil,
 			},
 		},
 		{
@@ -295,6 +301,38 @@ func TestTransformSpan(t *testing.T) {
 				Attributes: withDefaults(map[string]interface{}{
 					spanKindKey: "server",
 				}),
+				Events: nil,
+			},
+		},
+		{
+			name: "with events",
+			spanFunc: func() pdata.Span {
+				s := pdata.NewSpan()
+				s.InitEmpty()
+				s.SetTraceID(pdata.NewTraceID([...]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+				s.SetSpanID(pdata.NewSpanID([...]byte{0, 0, 0, 0, 0, 0, 0, 7}))
+				s.SetName("with events")
+
+				ev := pdata.NewSpanEventSlice()
+				ev.Resize(1)
+				event := ev.At(0)
+				event.SetName("this is the event name")
+				event.SetTimestamp(pdata.TimeToUnixNano(now))
+				s.Events().Append(event)
+				return s
+			},
+			want: telemetry.Span{
+				ID:         "0000000000000007",
+				TraceID:    "01010101010101010101010101010101",
+				Name:       "with events",
+				Attributes: withDefaults(nil),
+				Events: []telemetry.Event{
+					{
+						EventType:  "this is the event name",
+						Timestamp:  now.UTC(),
+						Attributes: map[string]interface{}{},
+					},
+				},
 			},
 		},
 	}
