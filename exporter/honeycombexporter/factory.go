@@ -44,7 +44,6 @@ func createDefaultConfig() configmodels.Exporter {
 		APIKey:              "",
 		Dataset:             "",
 		APIURL:              "https://api.honeycomb.io",
-		SampleRate:          1,
 		SampleRateAttribute: "",
 		Debug:               false,
 	}
