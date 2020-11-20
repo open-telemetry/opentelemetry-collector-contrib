@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-Stop capturing query parameters by default
+- Update dbapi and its dependant instrumentations to follow semantic conventions
+  ([#195](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/195))
+
+- Stop capturing query parameters by default
   ([#156](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/156))
 
 ## Version 0.13b0
