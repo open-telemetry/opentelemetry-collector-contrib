@@ -88,7 +88,7 @@ func newExporter(params component.ExporterCreateParams, cfg configmodels.Exporte
 		dnsLogger := params.Logger.With(zap.String("resolver", "dns"))
 
 		var err error
-		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname)
+		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port)
 		if err != nil {
 			return nil, err
 		}

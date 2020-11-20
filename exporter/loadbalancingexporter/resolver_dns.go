@@ -41,6 +41,7 @@ type dnsResolver struct {
 	logger *zap.Logger
 
 	hostname    string
+	port        string
 	resolver    netResolver
 	resInterval time.Duration
 	resTimeout  time.Duration
@@ -58,7 +59,7 @@ type netResolver interface {
 	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
-func newDNSResolver(logger *zap.Logger, hostname string) (*dnsResolver, error) {
+func newDNSResolver(logger *zap.Logger, hostname string, port string) (*dnsResolver, error) {
 	if len(hostname) == 0 {
 		return nil, errNoHostname
 	}
@@ -66,6 +67,7 @@ func newDNSResolver(logger *zap.Logger, hostname string) (*dnsResolver, error) {
 	return &dnsResolver{
 		logger:      logger,
 		hostname:    hostname,
+		port:        port,
 		resolver:    &net.Resolver{},
 		resInterval: defaultResInterval,
 		resTimeout:  defaultResTimeout,
@@ -134,6 +136,12 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 			// it's an IPv6 address
 			backend = fmt.Sprintf("[%s]", ip.String())
 		}
+
+		// if a port is specified in the configuration, add it
+		if r.port != "" {
+			backend = fmt.Sprintf("%s:%s", backend, r.port)
+		}
+
 		backends = append(backends, backend)
 	}
 
