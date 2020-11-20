@@ -43,12 +43,8 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) Initialize(ctx context.Context) error {
-	return nil
-}
-
-func (r *nginxScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
-	// Init client in Scrape method in case there are transient errors in the
+func (r *nginxScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
+	// Init client in scrape method in case there are transient errors in the
 	// constructor.
 	if r.client == nil {
 		httpClient, err := r.config.ToClient()
@@ -85,8 +81,4 @@ func (r *nginxScraper) Scrape(ctx context.Context) (pdata.ResourceMetricsSlice, 
 	metrics.AddGaugeDataPoint(metadata.M.NginxConnectionsWaiting.Name(), stats.Connections.Waiting)
 
 	return metrics.Metrics.ResourceMetrics(), nil
-}
-
-func (r *nginxScraper) Close(ctx context.Context) error {
-	return nil
 }

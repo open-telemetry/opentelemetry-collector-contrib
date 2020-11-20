@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // This file implements Factory for WindowsPerfCounters receiver.
@@ -50,11 +51,11 @@ func customUnmarshaler(componentViperSection *viper.Viper, intoCfg interface{}) 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
 			CollectionInterval: time.Minute,
 		},
 	}

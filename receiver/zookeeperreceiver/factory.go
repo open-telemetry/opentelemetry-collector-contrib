@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -42,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() configmodels.Receiver {
 	return &Config{
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings: configmodels.ReceiverSettings{
 				TypeVal: typeStr,
 				NameVal: typeStr,
@@ -69,15 +70,15 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return receiverhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewScraperControllerReceiver(
 		&rConfig.ScraperControllerSettings,
 		params.Logger,
 		consumer,
-		receiverhelper.AddResourceMetricsScraper(
-			receiverhelper.NewResourceMetricsScraper(
+		scraperhelper.AddResourceMetricsScraper(
+			scraperhelper.NewResourceMetricsScraper(
 				typeStr,
 				zms.scrape,
-				receiverhelper.WithClose(zms.close),
+				scraperhelper.WithClose(zms.close),
 			),
 		),
 	)

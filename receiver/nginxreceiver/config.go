@@ -16,10 +16,10 @@ package nginxreceiver
 
 import (
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type config struct {
-	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings            `mapstructure:",squash"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 }

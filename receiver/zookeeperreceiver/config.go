@@ -18,12 +18,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 type Config struct {
-	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                        `mapstructure:",squash"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confignet.TCPAddr                       `mapstructure:",squash"`
 
 	// Timeout within which requests should be completed.
 	Timeout time.Duration `mapstructure:"timeout"`

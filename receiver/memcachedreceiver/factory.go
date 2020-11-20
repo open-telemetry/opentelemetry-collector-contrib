@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
@@ -40,12 +41,12 @@ func NewFactory() component.ReceiverFactory {
 }
 
 func createDefaultConfig() configmodels.Receiver {
-	return &config{
-		ReceiverSettings: configmodels.ReceiverSettings{
-			TypeVal: typeStr,
-			NameVal: typeStr,
-		},
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings: configmodels.ReceiverSettings{
+				TypeVal: typeStr,
+				NameVal: typeStr,
+			},
 			CollectionInterval: 10 * time.Second,
 		},
 		Timeout: 10 * time.Second,
@@ -61,12 +62,12 @@ func createMetricsReceiver(
 	rConf configmodels.Receiver,
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
-	cfg := rConf.(*config)
+	cfg := rConf.(*Config)
 
 	scraper := newMemcachedScraper(params.Logger, cfg)
 
-	return receiverhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewScraperControllerReceiver(
 		&cfg.ScraperControllerSettings, params.Logger, consumer,
-		receiverhelper.AddResourceMetricsScraper(scraper),
+		scraperhelper.AddResourceMetricsScraper(scraper),
 	)
 }

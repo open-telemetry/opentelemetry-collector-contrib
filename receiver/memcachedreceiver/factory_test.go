@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcheck"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.opentelemetry.io/collector/testbed/testbed"
 	"go.uber.org/zap"
 )
@@ -44,8 +44,8 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		component.ReceiverCreateParams{Logger: zap.NewNop()},
-		&config{
-			ScraperControllerSettings: receiverhelper.ScraperControllerSettings{
+		&Config{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
 			},
 		},
