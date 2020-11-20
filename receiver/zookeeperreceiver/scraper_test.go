@@ -210,7 +210,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.Equal(t, "zookeeper", z.Name())
 
 			ctx := context.Background()
-			require.NoError(t, z.Initialize(ctx))
 
 			if tt.setConnectionDeadline != nil {
 				z.setConnectionDeadline = tt.setConnectionDeadline
@@ -224,7 +223,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				z.sendCmd = tt.sendCmd
 			}
 
-			got, err := z.Scrape(ctx, typeStr)
+			got, err := z.scrape(ctx)
 
 			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
 			for i, log := range tt.expectedLogs {
@@ -236,7 +235,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				require.Error(t, err)
 				require.Equal(t, pdata.NewResourceMetricsSlice(), got)
 
-				require.NoError(t, z.Close(ctx))
+				require.NoError(t, z.close(ctx))
 				return
 			}
 
@@ -259,7 +258,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				}
 			}
 
-			require.NoError(t, z.Close(ctx))
+			require.NoError(t, z.close(ctx))
 		})
 	}
 }

@@ -64,13 +64,21 @@ func createMetricsReceiver(
 	consumer consumer.MetricsConsumer,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
-	scraper, err := newZookeeperMetricsScraper(params.Logger, rConfig)
+	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return receiverhelper.NewScraperControllerReceiver(
-		&rConfig.ScraperControllerSettings, params.Logger, consumer,
-		receiverhelper.AddResourceMetricsScraper(scraper),
+		&rConfig.ScraperControllerSettings,
+		params.Logger,
+		consumer,
+		receiverhelper.AddResourceMetricsScraper(
+			receiverhelper.NewResourceMetricsScraper(
+				typeStr,
+				zms.scrape,
+				receiverhelper.WithClose(zms.close),
+			),
+		),
 	)
 }
