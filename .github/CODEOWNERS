@@ -34,6 +34,7 @@ exporter/signalfxexporter/               @open-telemetry/collector-contrib-appro
 exporter/signalfxcorrelationexporter/    @open-telemetry/collector-contrib-approvers @jrcamp @keitwb
 exporter/splunkhecexporter/              @open-telemetry/collector-contrib-approvers @atoulme
 exporter/stackdriverexporter/            @open-telemetry/collector-contrib-approvers @nilebox @james-bebbington
+exporter/sumologicexporter/              @open-telemetry/collector-contrib-approvers @pmm-sumo @sumo-drosiek
 
 extension/httpforwarder/                 @open-telemetry/collector-contrib-approvers @asuresh4
 extension/observer/                      @open-telemetry/collector-contrib-approvers @asuresh4 @jrcamp

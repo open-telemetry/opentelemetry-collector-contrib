@@ -145,6 +145,10 @@ updates:
     directory: "/exporter/stackdriverexporter"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/exporter/sumologicexporter"
+    schedule:
+      interval: "weekly"
 
   ##################
   #   PROCESSORS   #
