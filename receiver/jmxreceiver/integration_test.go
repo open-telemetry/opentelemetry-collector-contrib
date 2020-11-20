@@ -36,7 +36,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -153,7 +152,7 @@ func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
 		Username: "cassandra",
 	}
 
-	consumer := &exportertest.SinkMetricsExporter{}
+	consumer := new(consumertest.MetricsSink)
 	require.NotNil(t, consumer)
 
 	receiver := newJMXMetricReceiver(params, config, consumer)
