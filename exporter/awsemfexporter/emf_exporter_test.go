@@ -335,7 +335,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	expCfg.Region = "us-west-2"
 	expCfg.MaxRetries = defaultRetryCount
 	expCfg.LogGroupName = "test-logGroupName"
-	expCfg.LogStreamName = "{WorngKey}"
+	expCfg.LogStreamName = "{WrongKey}"
 	exp, err := New(expCfg, component.ExporterCreateParams{Logger: zap.NewNop()})
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
@@ -391,7 +391,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Shutdown(ctx))
 	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
 	assert.True(t, ok)
-	pusher, ok := streamToPusherMap["{WorngKey}"]
+	pusher, ok := streamToPusherMap["{WrongKey}"]
 	assert.True(t, ok)
 	assert.NotNil(t, pusher)
 }
