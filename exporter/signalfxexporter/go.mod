@@ -11,7 +11,7 @@ require (
 	github.com/shirou/gopsutil v3.20.10+incompatible
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.2
 	github.com/stretchr/testify v1.6.1
-	go.opentelemetry.io/collector v0.15.1-0.20201120034949-1f3f91f464fd
+	go.opentelemetry.io/collector v0.15.1-0.20201120151746-8ceddba7ea03
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.16.0
 	google.golang.org/protobuf v1.25.0

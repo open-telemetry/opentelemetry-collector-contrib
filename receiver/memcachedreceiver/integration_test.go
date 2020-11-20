@@ -38,7 +38,7 @@ func TestIntegration(t *testing.T) {
 	c := cs.StartImage("memcached:1.6-alpine", container.WithPortReady(11211))
 
 	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*config)
+	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = c.AddrForPort(11211)
 
 	consumer := &exportertest.SinkMetricsExporter{}

@@ -17,15 +17,13 @@ package memcachedreceiver
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/config/configmodels"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-type config struct {
-	configmodels.ReceiverSettings            `mapstructure:",squash"`
-	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                        `mapstructure:",squash"`
+type Config struct {
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	confignet.TCPAddr                       `mapstructure:",squash"`
 
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`

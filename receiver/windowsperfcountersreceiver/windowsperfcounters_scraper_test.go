@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -81,7 +81,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 		PerfCounters: []PerfCounterConfig{
 			{Object: "Memory", Counters: []string{"Committed Bytes"}},
 		},
-		ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 	}
 
 	testCases := []testCase{
@@ -93,7 +93,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 					{Object: "Processor", Instances: []string{"*"}, Counters: []string{"% Processor Time"}},
 					{Object: "Processor", Instances: []string{"1", "2"}, Counters: []string{"% Idle Time"}},
 				},
-				ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
 			expectedMetrics: []expectedMetric{
 				{name: `\Memory\Committed Bytes`},
@@ -115,7 +115,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 						Counters: []string{"Invalid Counter"},
 					},
 				},
-				ScraperControllerSettings: receiverhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: time.Minute},
 			},
 			initializeMessage: "some performance counters could not be initialized",
 			initializeErr:     "counter \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
