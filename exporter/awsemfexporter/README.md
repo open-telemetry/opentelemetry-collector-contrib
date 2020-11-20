@@ -14,8 +14,8 @@ The following exporter configuration parameters are supported.
 
 | Name              | Description                                                            | Default |
 | :---------------- | :--------------------------------------------------------------------- | ------- |
-| `log_group_name`  | Customized log group name                                              |"/metrics/default"|
-| `log_stream_name` | Customized log stream name                                             |"otel-stream"|
+| `log_group_name`  | Customized log group name which supports `{{ClusterName}}` and `{{TaskId}}` placeholders. One valid example is `/aws/metrics/{{ClusterName}}`. It will search for `ClusterName` (or `aws.ecs.cluster.name`) resource attribute in the metrics data and replace with the actual cluster name. If none of them are found in the resource attribute map, `{{ClusterName}}` will be replaced by `undefined`. Similar way, for the `{{TaskId}}`, it searches for `TaskId` (or `aws.ecs.task.id`) key in the resource attribute map.                                           |"/metrics/default"|
+| `log_stream_name` | Customized log stream name which supports `{{TaskId}}` and `{{ClusterName}}` placeholders. One valid example is `{{TaskId}}`. It will search for `TaskId` (or `aws.ecs.task.id`) resource attribute in the metrics data and replace with the actual task id. If none of them are found in the resource attribute map, `{{TaskId}}` will be replaced by `undefined`. Similar way, for the `{{ClusterName}}`, it searches for `ClusterName` (or `aws.ecs.cluster.name`) key in the resource attribute map.                                             |"otel-stream"|
 | `namespace`       | Customized CloudWatch metrics namespace                                | "default" |
 | `endpoint`        | Optionally override the default CloudWatch service endpoint.           |         |
 | `no_verify_ssl`   | Enable or disable TLS certificate verification.                        | false   |
