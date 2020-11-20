@@ -59,7 +59,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/stretchr/testify v1.6.1
 	github.com/tcnksm/ghr v0.13.0
-	go.opentelemetry.io/collector v0.15.0
+	go.opentelemetry.io/collector v0.15.1-0.20201120034949-1f3f91f464fd
 	go.opentelemetry.io/collector/cmd/issuegenerator v0.0.0-20201119034459-612c5ba3e7ad
 	go.opentelemetry.io/collector/cmd/mdatagen v0.0.0-20201119034459-612c5ba3e7ad
 	golang.org/x/sys v0.0.0-20201113233024-12cec1faf1ba
