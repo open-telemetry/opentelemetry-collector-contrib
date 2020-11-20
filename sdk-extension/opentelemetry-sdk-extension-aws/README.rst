@@ -24,9 +24,19 @@ Usage (AWS X-Ray IDs Generator)
 Configure the OTel SDK TracerProvider with the provided custom IDs Generator to 
 make spans compatible with the AWS X-Ray backend tracing service.
 
+Install the OpenTelemetry SDK package.
+
+::
+
+    pip install opentelemetry-sdk-extension-aws
+
+Next, use the provided `AwsXRayIdsGenerator` to initialize the `TracerProvider`.
+
 .. code-block:: python
 
+    import opentelemetry.trace as trace
     from opentelemetry.sdk.extension.aws.trace import AwsXRayIdsGenerator
+    from opentelemetry.sdk.trace import TracerProvider
 
     trace.set_tracer_provider(
         TracerProvider(ids_generator=AwsXRayIdsGenerator())
@@ -36,13 +46,24 @@ make spans compatible with the AWS X-Ray backend tracing service.
 Usage (AWS X-Ray Propagator)
 ----------------------------
 
-Set this environment variable to have the OTel SDK use the provided AWS X-Ray 
-Propagator:
+Use the provided AWS X-Ray Propagator to inject the necessary context into
+traces sent to external systems.
+
+This can be done by either setting this environment variable:
 
 ::
 
     export OTEL_PROPAGATORS = aws_xray
 
+
+Or by setting this propagator in your instrumented application:
+
+.. code-block:: python
+
+    from opentelemetry import propagators
+    from opentelemetry.sdk.extension.aws.trace.propagation.aws_xray_format import AwsXRayFormat
+
+    propagators.set_global_textmap(AwsXRayFormat())
 
 References
 ----------
