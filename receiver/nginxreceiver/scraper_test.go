@@ -45,7 +45,7 @@ Reading: 6 Writing: 179 Waiting: 106
 			Endpoint: nginxMock.URL + "/status",
 		},
 	})
-	rms, err := sc.Scrape(context.Background())
+	rms, err := sc.scrape(context.Background())
 	require.Nil(t, err)
 
 	require.Equal(t, 1, rms.Len())
@@ -105,7 +105,7 @@ func TestScraperError(t *testing.T) {
 			},
 		})
 
-		_, err := sc.Scrape(context.Background())
+		_, err := sc.scrape(context.Background())
 		require.Equal(t, errors.New("expected 200 response, got 404"), err)
 	})
 
@@ -115,7 +115,7 @@ func TestScraperError(t *testing.T) {
 				Endpoint: nginxMock.URL + "/status",
 			},
 		})
-		_, err := sc.Scrape(context.Background())
+		_, err := sc.scrape(context.Background())
 		require.Equal(t, errors.New("failed to parse response body \"Bad status page\": invalid input \"Bad status page\""), err)
 	})
 }

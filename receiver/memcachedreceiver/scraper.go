@@ -21,7 +21,7 @@ import (
 	"github.com/grobie/gomemcache/memcache"
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/consumer/simple"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
@@ -31,18 +31,18 @@ type memcachedScraper struct {
 	client *memcache.Client
 
 	logger *zap.Logger
-	config *config
+	config *Config
 }
 
 func newMemcachedScraper(
 	logger *zap.Logger,
-	config *config,
-) receiverhelper.ResourceMetricsScraper {
+	config *Config,
+) scraperhelper.ResourceMetricsScraper {
 	ms := &memcachedScraper{
 		logger: logger,
 		config: config,
 	}
-	return receiverhelper.NewResourceMetricsScraper(config.Name(), ms.scrape)
+	return scraperhelper.NewResourceMetricsScraper(config.Name(), ms.scrape)
 }
 
 func (r *memcachedScraper) scrape(_ context.Context) (pdata.ResourceMetricsSlice, error) {

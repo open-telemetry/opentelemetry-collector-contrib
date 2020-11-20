@@ -18,14 +18,12 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component/componenterror"
-	"go.opentelemetry.io/collector/config/configmodels"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
-	configmodels.ReceiverSettings            `mapstructure:",squash"`
-	receiverhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
 	PerfCounters []PerfCounterConfig `mapstructure:"perfcounters"`
 }
