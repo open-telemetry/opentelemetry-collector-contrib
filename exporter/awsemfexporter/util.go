@@ -21,29 +21,37 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	AttributeCluster   = "ecs.cluster"
-	AttributeECSTaskID = "ecs.task-id"
-)
+var patternKeyToAttributeMap = map[string]string{
+	"ClusterName": "aws.ecs.cluster.name",
+	"TaskId":      "aws.ecs.task.id",
+}
 
 func replacePatterns(s string, attrMap pdata.AttributeMap, logger *zap.Logger) string {
-	s = replacePatternWithResource(s, AttributeCluster, attrMap, logger)
-	s = replacePatternWithResource(s, AttributeECSTaskID, attrMap, logger)
+	for key := range patternKeyToAttributeMap {
+		s = replacePatternWithResource(s, key, attrMap, logger)
+	}
 	return s
 }
 
 func replacePatternWithResource(s, patternKey string, attrMap pdata.AttributeMap, logger *zap.Logger) string {
 	pattern := "{{" + patternKey + "}}"
 	if strings.Contains(s, pattern) {
-		value, ok := attrMap.Get(patternKey)
-		if ok {
-			if !value.IsNil() {
-				stringVal := value.StringVal()
-				s = strings.ReplaceAll(s, pattern, stringVal)
-			}
+		if value, ok := attrMap.Get(patternKey); ok {
+			return replace(s, pattern, value, logger)
+		} else if value, ok := attrMap.Get(patternKeyToAttributeMap[patternKey]); ok {
+			return replace(s, pattern, value, logger)
 		} else {
-			logger.Error("No resource attribute found for pattern " + pattern)
+			logger.Debug("No resource attribute found for pattern " + pattern)
+			return strings.Replace(s, pattern, "undefined", -1)
 		}
 	}
 	return s
+}
+
+func replace(s, pattern string, value pdata.AttributeValue, logger *zap.Logger) string {
+	if value.IsNil() || value.StringVal() == "" {
+		logger.Debug("Nil resource attribute value found for pattern " + pattern)
+		return strings.Replace(s, pattern, "undefined", -1)
+	}
+	return strings.Replace(s, pattern, value.StringVal(), -1)
 }
