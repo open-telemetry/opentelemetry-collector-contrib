@@ -71,16 +71,12 @@ func newZookeeperMetricsScraper(logger *zap.Logger, config *Config) (*zookeeperM
 	}, nil
 }
 
-func (z *zookeeperMetricsScraper) Initialize(_ context.Context) error {
-	return nil
-}
-
-func (z *zookeeperMetricsScraper) Close(_ context.Context) error {
+func (z *zookeeperMetricsScraper) close(_ context.Context) error {
 	z.cancel()
 	return nil
 }
 
-func (z *zookeeperMetricsScraper) Scrape(ctx context.Context, _ string) (pdata.ResourceMetricsSlice, error) {
+func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pdata.ResourceMetricsSlice, error) {
 	var ctxWithTimeout context.Context
 	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
 
