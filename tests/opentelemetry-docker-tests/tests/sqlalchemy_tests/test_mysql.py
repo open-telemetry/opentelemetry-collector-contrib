@@ -23,8 +23,8 @@ from opentelemetry.instrumentation.sqlalchemy.engine import (
     _DB,
     _HOST,
     _PORT,
-    _USER,
     _STMT,
+    _USER,
 )
 
 from .mixins import SQLAlchemyTestMixin
