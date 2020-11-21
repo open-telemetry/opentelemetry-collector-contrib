@@ -25,7 +25,7 @@ import (
 func TestReplacePatternValidTaskId(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "{{TaskId}}"
+	input := "{TaskId}"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(2)
@@ -41,7 +41,7 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 func TestReplacePatternValidClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "/aws/ecs/containerinsights/{{ClusterName}}/performance"
+	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(2)
@@ -57,7 +57,7 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 func TestReplacePatternMissingAttribute(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "/aws/ecs/containerinsights/{{ClusterName}}/performance"
+	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(1)
@@ -72,7 +72,7 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "/aws/ecs/containerinsights/{{ClusterName}}/performance"
+	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(1)
@@ -87,7 +87,7 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 func TestReplacePatternWrongKey(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "/aws/ecs/containerinsights/{{WrongKey}}/performance"
+	input := "/aws/ecs/containerinsights/{WrongKey}/performance"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InitEmptyWithCapacity(1)
@@ -96,13 +96,13 @@ func TestReplacePatternWrongKey(t *testing.T) {
 
 	s := replacePatterns(input, attrMap, logger)
 
-	assert.Equal(t, "/aws/ecs/containerinsights/{{WrongKey}}/performance", s)
+	assert.Equal(t, "/aws/ecs/containerinsights/{WrongKey}/performance", s)
 }
 
 func TestReplacePatternNilAttrValue(t *testing.T) {
 	logger := zap.NewNop()
 
-	input := "/aws/ecs/containerinsights/{{ClusterName}}/performance"
+	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pdata.NewAttributeMap()
 	attrMap.InsertNull("ClusterName")
