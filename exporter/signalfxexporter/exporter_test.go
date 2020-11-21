@@ -18,6 +18,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+<<<<<<< HEAD
 	"go.opentelemetry.io/collector/component/componenttest"
+=======
+	"go.opentelemetry.io/collector/consumer/consumererror"
+>>>>>>> 0006cef5 ([SignalFx]: Disable retry on 400 and 401, retry with backoff on 429 and 503)
 	"go.opentelemetry.io/collector/consumer/pdata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -127,29 +132,50 @@ func TestConsumeMetrics(t *testing.T) {
 	tests := []struct {
 		name                 string
 		md                   pdata.Metrics
-		reqTestFunc          func(t *testing.T, r *http.Request)
 		httpResponseCode     int
+		retryAfter           int
 		numDroppedTimeSeries int
 		wantErr              bool
+		wantPermanentErr     bool
+		wantThrottleErr      bool
 	}{
 		{
 			name:             "happy_path",
 			md:               smallBatch,
-			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
 		{
 			name:                 "response_forbidden",
 			md:                   smallBatch,
-			reqTestFunc:          nil,
 			httpResponseCode:     http.StatusForbidden,
 			numDroppedTimeSeries: 1,
 			wantErr:              true,
 		},
 		{
+			name:                 "response_bad_request",
+			md:                   smallBatch,
+			httpResponseCode:     http.StatusBadRequest,
+			numDroppedTimeSeries: 1,
+			wantPermanentErr:     true,
+		},
+		{
+			name:                 "response_throttle",
+			md:                   smallBatch,
+			httpResponseCode:     http.StatusTooManyRequests,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
+			name:                 "response_throttle_with_header",
+			md:                   smallBatch,
+			retryAfter:           123,
+			httpResponseCode:     http.StatusServiceUnavailable,
+			numDroppedTimeSeries: 1,
+			wantThrottleErr:      true,
+		},
+		{
 			name:             "large_batch",
 			md:               generateLargeDPBatch(),
-			reqTestFunc:      nil,
 			httpResponseCode: http.StatusAccepted,
 		},
 	}
@@ -157,8 +183,9 @@ func TestConsumeMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, "test", r.Header.Get("test_header_"))
-				if tt.reqTestFunc != nil {
-					tt.reqTestFunc(t, r)
+				if (tt.httpResponseCode == http.StatusTooManyRequests ||
+					tt.httpResponseCode == http.StatusServiceUnavailable) && tt.retryAfter != 0 {
+					w.Header().Add(headerRetryAfter, strconv.Itoa(tt.retryAfter))
 				}
 				w.WriteHeader(tt.httpResponseCode)
 			}))
@@ -187,6 +214,19 @@ func TestConsumeMetrics(t *testing.T) {
 
 			if tt.wantErr {
 				assert.Error(t, err)
+				return
+			}
+
+			if tt.wantPermanentErr {
+				assert.Error(t, err)
+				assert.True(t, consumererror.IsPermanent(err))
+				return
+			}
+
+			if tt.wantThrottleErr {
+				expected := fmt.Errorf("HTTP %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
+				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
+				assert.EqualValues(t, expected, err)
 				return
 			}
 

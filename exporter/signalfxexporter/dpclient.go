@@ -24,17 +24,22 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/pdata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+const headerRetryAfter = "Retry-After"
 
 type sfxClientBase struct {
 	ingestURL *url.URL
@@ -134,15 +139,34 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 	resp.Body.Close()
 
 	// SignalFx accepts all 2XX codes.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		err = fmt.Errorf(
-			"HTTP %d %q",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode))
-		return len(sfxDataPoints), err
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return 0, nil
 	}
 
-	return 0, nil
+	err = fmt.Errorf(
+		"HTTP %d %q",
+		resp.StatusCode,
+		http.StatusText(resp.StatusCode))
+
+	switch resp.StatusCode {
+	// Check for responses that may include "Retry-After" header.
+	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
+		// Fallback to 0 if the Retry-After header is not present. This will trigger the
+		// default backoff policy by our caller (retry handler).
+		retryAfter := 0
+		if val := resp.Header.Get(headerRetryAfter); val != "" {
+			if seconds, err2 := strconv.Atoi(val); err2 == nil {
+				retryAfter = seconds
+			}
+		}
+		// Indicate to our caller to pause for the specified number of seconds.
+		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
+	// Check for permanent errors.
+	case http.StatusBadRequest, http.StatusUnauthorized:
+		err = consumererror.Permanent(err)
+	}
+
+	return len(sfxDataPoints), err
 }
 
 func buildHeaders(config *Config) map[string]string {
