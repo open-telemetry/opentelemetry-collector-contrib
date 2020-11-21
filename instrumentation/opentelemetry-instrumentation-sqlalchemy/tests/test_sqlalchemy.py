@@ -36,7 +36,7 @@ class TestSqlalchemyInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "sqlite.query")
+        self.assertEqual(spans[0].name, "SELECT	1 + 1;")
 
     def test_not_recording(self):
         mock_tracer = mock.Mock()
@@ -70,4 +70,4 @@ class TestSqlalchemyInstrumentation(TestBase):
         spans = self.memory_exporter.get_finished_spans()
 
         self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "sqlite.query")
+        self.assertEqual(spans[0].name, "SELECT	1 + 1;")

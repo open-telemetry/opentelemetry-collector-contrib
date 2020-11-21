@@ -64,7 +64,6 @@ class SQLAlchemyInstrumentTestCase(TestBase):
         self.assertEqual(len(traces), 1)
         span = traces[0]
         # check subset of span fields
-        self.assertEqual(span.name, "postgres.query")
-        self.assertEqual(span.attributes.get("service"), "postgres")
+        self.assertEqual(span.name, "SELECT 1")
         self.assertIs(span.status.status_code, trace.status.StatusCode.UNSET)
         self.assertGreater((span.end_time - span.start_time), 0)
