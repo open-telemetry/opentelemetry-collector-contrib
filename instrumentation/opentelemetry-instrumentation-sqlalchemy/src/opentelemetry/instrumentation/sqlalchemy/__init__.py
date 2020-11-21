@@ -78,7 +78,6 @@ class SQLAlchemyInstrumentor(BaseInstrumentor):
                 _get_tracer(
                     kwargs.get("engine"), kwargs.get("tracer_provider")
                 ),
-                kwargs.get("service"),
                 kwargs.get("engine"),
             )
         return None
