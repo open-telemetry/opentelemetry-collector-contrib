@@ -34,7 +34,7 @@ func replacePatterns(s string, attrMap pdata.AttributeMap, logger *zap.Logger) s
 }
 
 func replacePatternWithResource(s, patternKey string, attrMap pdata.AttributeMap, logger *zap.Logger) string {
-	pattern := "{{" + patternKey + "}}"
+	pattern := "{" + patternKey + "}"
 	if strings.Contains(s, pattern) {
 		if value, ok := attrMap.Get(patternKey); ok {
 			return replace(s, pattern, value, logger)
